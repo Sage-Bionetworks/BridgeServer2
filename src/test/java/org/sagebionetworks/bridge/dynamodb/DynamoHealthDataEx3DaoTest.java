@@ -29,7 +29,10 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 
 @SuppressWarnings({ "ConstantConditions", "unchecked" })
@@ -133,10 +136,12 @@ public class DynamoHealthDataEx3DaoTest {
         doReturn(ImmutableList.of(record)).when(dao).queryHelper(any());
 
         // Execute.
-        List<HealthDataRecordEx3> resultList = dao.getRecordsForHealthCode(TestConstants.HEALTH_CODE, CREATED_ON_START,
-                CREATED_ON_END);
-        assertEquals(resultList.size(), 1);
-        assertSame(resultList.get(0), record);
+        ForwardCursorPagedResourceList<HealthDataRecordEx3> resultList = dao.getRecordsForHealthCode(
+                TestConstants.HEALTH_CODE, CREATED_ON_START, CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE,
+                null);
+        assertEquals(resultList.getItems().size(), 1);
+        assertSame(resultList.getItems().get(0), record);
+        assertNull(resultList.getNextPageOffsetKey());
 
         // Validate.
         ArgumentCaptor<DynamoDBQueryExpression<DynamoHealthDataRecordEx3>> queryCaptor = ArgumentCaptor.forClass(
@@ -147,6 +152,7 @@ public class DynamoHealthDataEx3DaoTest {
         assertFalse(query.isConsistentRead());
         assertEquals(query.getIndexName(), DynamoHealthDataRecordEx3.HEALTHCODE_CREATEDON_INDEX);
         assertEquals(query.getHashKeyValues().getHealthCode(), TestConstants.HEALTH_CODE);
+        assertEquals(query.getLimit().intValue(), BridgeConstants.API_DEFAULT_PAGE_SIZE+1);
         assertEquals(query.getRangeKeyConditions().size(), 1);
 
         Condition rangeKeyCondition = query.getRangeKeyConditions().get("createdOn");
@@ -157,16 +163,83 @@ public class DynamoHealthDataEx3DaoTest {
     }
 
     @Test
+    public void getRecordsForHealthCode_offsetKeyBeforeCreatedOnStart() {
+        // Mock dependencies.
+        DynamoHealthDataRecordEx3 record = new DynamoHealthDataRecordEx3();
+        doReturn(ImmutableList.of(record)).when(dao).queryHelper(any());
+
+        // Execute.
+        dao.getRecordsForHealthCode(TestConstants.HEALTH_CODE, CREATED_ON_START, CREATED_ON_END,
+                BridgeConstants.API_DEFAULT_PAGE_SIZE, String.valueOf(CREATED_ON_START - 10000));
+
+        // Validate.
+        ArgumentCaptor<DynamoDBQueryExpression<DynamoHealthDataRecordEx3>> queryCaptor = ArgumentCaptor.forClass(
+                DynamoDBQueryExpression.class);
+        verify(dao).queryHelper(queryCaptor.capture());
+
+        DynamoDBQueryExpression<DynamoHealthDataRecordEx3> query = queryCaptor.getValue();
+        Condition rangeKeyCondition = query.getRangeKeyConditions().get("createdOn");
+        assertEquals(rangeKeyCondition.getAttributeValueList().get(0).getN(), String.valueOf(CREATED_ON_START));
+    }
+
+    @Test
+    public void getRecordsForHealthCode_offsetKeyAfterCreatedOnStart() {
+        // Mock dependencies.
+        DynamoHealthDataRecordEx3 record = new DynamoHealthDataRecordEx3();
+        doReturn(ImmutableList.of(record)).when(dao).queryHelper(any());
+
+        // Execute.
+        dao.getRecordsForHealthCode(TestConstants.HEALTH_CODE, CREATED_ON_START, CREATED_ON_END,
+                BridgeConstants.API_DEFAULT_PAGE_SIZE, String.valueOf(CREATED_ON_START + 10000));
+
+        // Validate.
+        ArgumentCaptor<DynamoDBQueryExpression<DynamoHealthDataRecordEx3>> queryCaptor = ArgumentCaptor.forClass(
+                DynamoDBQueryExpression.class);
+        verify(dao).queryHelper(queryCaptor.capture());
+
+        DynamoDBQueryExpression<DynamoHealthDataRecordEx3> query = queryCaptor.getValue();
+        Condition rangeKeyCondition = query.getRangeKeyConditions().get("createdOn");
+        assertEquals(rangeKeyCondition.getAttributeValueList().get(0).getN(), String.valueOf(CREATED_ON_START + 10000));
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp =
+            "Invalid offsetKey not a millisecond timestamp")
+    public void getRecordsForHealthCode_offsetKeyInvalid() {
+        dao.getRecordsForHealthCode(TestConstants.HEALTH_CODE, CREATED_ON_START, CREATED_ON_END,
+                BridgeConstants.API_DEFAULT_PAGE_SIZE, "not a millisecond timestamp");
+    }
+
+    @Test
+    public void getRecordsForHealthCode_withNextOffsetKey() {
+        // Mock dependencies.
+        DynamoHealthDataRecordEx3 record0 = new DynamoHealthDataRecordEx3();
+        DynamoHealthDataRecordEx3 record1 = new DynamoHealthDataRecordEx3();
+        DynamoHealthDataRecordEx3 record2 = new DynamoHealthDataRecordEx3();
+        record2.setCreatedOn(CREATED_ON_START + 10000);
+        doReturn(ImmutableList.of(record0, record1, record2)).when(dao).queryHelper(any());
+
+        // Execute.
+        ForwardCursorPagedResourceList<HealthDataRecordEx3> resultList = dao.getRecordsForHealthCode(
+                TestConstants.HEALTH_CODE, CREATED_ON_START, CREATED_ON_END, 2, null);
+        assertEquals(resultList.getItems().size(), 2);
+        assertSame(resultList.getItems().get(0), record0);
+        assertSame(resultList.getItems().get(1), record1);
+        assertEquals(resultList.getNextPageOffsetKey(), String.valueOf(CREATED_ON_START + 10000));
+    }
+
+    @Test
     public void getRecordsForApp() {
         // Mock dependencies.
         DynamoHealthDataRecordEx3 record = new DynamoHealthDataRecordEx3();
         doReturn(ImmutableList.of(record)).when(dao).queryHelper(any());
 
         // Execute.
-        List<HealthDataRecordEx3> resultList = dao.getRecordsForApp(TestConstants.TEST_APP_ID, CREATED_ON_START,
-                CREATED_ON_END);
-        assertEquals(resultList.size(), 1);
-        assertSame(resultList.get(0), record);
+        ForwardCursorPagedResourceList<HealthDataRecordEx3> resultList = dao.getRecordsForApp(
+                TestConstants.TEST_APP_ID, CREATED_ON_START, CREATED_ON_END,
+                BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
+        assertEquals(resultList.getItems().size(), 1);
+        assertSame(resultList.getItems().get(0), record);
+        assertNull(resultList.getNextPageOffsetKey());
 
         // Validate.
         ArgumentCaptor<DynamoDBQueryExpression<DynamoHealthDataRecordEx3>> queryCaptor = ArgumentCaptor.forClass(
@@ -177,6 +250,7 @@ public class DynamoHealthDataEx3DaoTest {
         assertFalse(query.isConsistentRead());
         assertEquals(query.getIndexName(), DynamoHealthDataRecordEx3.APPID_CREATEDON_INDEX);
         assertEquals(query.getHashKeyValues().getAppId(), TestConstants.TEST_APP_ID);
+        assertEquals(query.getLimit().intValue(), BridgeConstants.API_DEFAULT_PAGE_SIZE+1);
         assertEquals(query.getRangeKeyConditions().size(), 1);
 
         Condition rangeKeyCondition = query.getRangeKeyConditions().get("createdOn");
@@ -193,10 +267,12 @@ public class DynamoHealthDataEx3DaoTest {
         doReturn(ImmutableList.of(record)).when(dao).queryHelper(any());
 
         // Execute.
-        List<HealthDataRecordEx3> resultList = dao.getRecordsForAppAndStudy(TestConstants.TEST_APP_ID, STUDY_ID,
-                CREATED_ON_START, CREATED_ON_END);
-        assertEquals(resultList.size(), 1);
-        assertSame(resultList.get(0), record);
+        ForwardCursorPagedResourceList<HealthDataRecordEx3> resultList = dao.getRecordsForAppAndStudy(
+                TestConstants.TEST_APP_ID, STUDY_ID, CREATED_ON_START, CREATED_ON_END,
+                BridgeConstants.API_DEFAULT_PAGE_SIZE, null);
+        assertEquals(resultList.getItems().size(), 1);
+        assertSame(resultList.getItems().get(0), record);
+        assertNull(resultList.getNextPageOffsetKey());
 
         // Validate.
         ArgumentCaptor<DynamoDBQueryExpression<DynamoHealthDataRecordEx3>> queryCaptor = ArgumentCaptor.forClass(
@@ -208,6 +284,7 @@ public class DynamoHealthDataEx3DaoTest {
         assertEquals(query.getIndexName(), DynamoHealthDataRecordEx3.APPSTUDYKEY_CREATEDON_INDEX);
         assertEquals(query.getHashKeyValues().getAppId(), TestConstants.TEST_APP_ID);
         assertEquals(query.getHashKeyValues().getStudyId(), STUDY_ID);
+        assertEquals(query.getLimit().intValue(), BridgeConstants.API_DEFAULT_PAGE_SIZE+1);
         assertEquals(query.getRangeKeyConditions().size(), 1);
 
         Condition rangeKeyCondition = query.getRangeKeyConditions().get("createdOn");

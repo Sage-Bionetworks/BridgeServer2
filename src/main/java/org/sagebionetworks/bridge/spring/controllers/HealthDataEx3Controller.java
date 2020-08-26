@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
-import java.util.List;
-
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -16,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.DateTimeRangeResourceList;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -91,9 +89,9 @@ public class HealthDataEx3Controller extends BaseController {
 
     /** Retrieves all records for the given user and time range. */
     @GetMapping(path="/v1/admin/exporter3/participants/{userId}/healthdata")
-    public ResourceList<HealthDataRecordEx3> getRecordsForUser(@PathVariable String userId,
-            @RequestParam(required = false) String createdOnStart,
-            @RequestParam(required = false) String createdOnEnd) {
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForUser(@PathVariable String userId,
+            @RequestParam(required = false) String createdOnStart, @RequestParam(required = false) String createdOnEnd,
+            @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         String healthCode = accountService.getHealthCodeForAccount(AccountId.forId(session.getAppId(), userId));
@@ -103,49 +101,50 @@ public class HealthDataEx3Controller extends BaseController {
 
         DateTime createdOnStartDateTime = BridgeUtils.getDateTimeOrDefault(createdOnStart, null);
         DateTime createdOnEndDateTime = BridgeUtils.getDateTimeOrDefault(createdOnEnd, null);
-        List<HealthDataRecordEx3> recordList = healthDataEx3Service.getRecordsForHealthCode(healthCode,
-                createdOnStartDateTime, createdOnEndDateTime);
-
-        return new DateTimeRangeResourceList<>(recordList)
+        Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
+        return healthDataEx3Service.getRecordsForHealthCode(healthCode, createdOnStartDateTime, createdOnEndDateTime,
+                pageSizeInt, offsetKey)
                 .withRequestParam("userId", userId)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
-                .withRequestParam(ResourceList.END_TIME, createdOnEnd);
+                .withRequestParam(ResourceList.END_TIME, createdOnEnd)
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSizeInt)
+                .withRequestParam(ResourceList.OFFSET_KEY, offsetKey);
     }
 
     /** Retrieves all records in the current app for the given time range. */
     @GetMapping(path="/v1/admin/exporter3/apps/self/healthdata")
-    public ResourceList<HealthDataRecordEx3> getRecordsForCurrentApp(
-            @RequestParam(required = false) String createdOnStart,
-            @RequestParam(required = false) String createdOnEnd) {
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForCurrentApp(
+            @RequestParam(required = false) String createdOnStart, @RequestParam(required = false) String createdOnEnd,
+            @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         DateTime createdOnStartDateTime = BridgeUtils.getDateTimeOrDefault(createdOnStart, null);
         DateTime createdOnEndDateTime = BridgeUtils.getDateTimeOrDefault(createdOnEnd, null);
-        List<HealthDataRecordEx3> recordList = healthDataEx3Service.getRecordsForApp(session.getAppId(),
-                createdOnStartDateTime, createdOnEndDateTime);
-
-        return new DateTimeRangeResourceList<>(recordList)
-                .withRequestParam("appId", session.getAppId())
+        Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
+        return healthDataEx3Service.getRecordsForApp(session.getAppId(), createdOnStartDateTime, createdOnEndDateTime,
+                pageSizeInt, offsetKey)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
-                .withRequestParam(ResourceList.END_TIME, createdOnEnd);
+                .withRequestParam(ResourceList.END_TIME, createdOnEnd)
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSizeInt)
+                .withRequestParam(ResourceList.OFFSET_KEY, offsetKey);
     }
 
     /** Retrieves all records in the current app for the given study and time range. */
-    @GetMapping(path="/v1/admin/exporter3/apps/self/study/{studyId}/healthdata")
-    public ResourceList<HealthDataRecordEx3> getRecordsForStudy(@PathVariable String studyId,
-            @RequestParam(required = false) String createdOnStart,
-            @RequestParam(required = false) String createdOnEnd) {
+    @GetMapping(path="/v1/admin/exporter3/apps/self/studies/{studyId}/healthdata")
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForStudy(@PathVariable String studyId,
+            @RequestParam(required = false) String createdOnStart, @RequestParam(required = false) String createdOnEnd,
+            @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
         DateTime createdOnStartDateTime = BridgeUtils.getDateTimeOrDefault(createdOnStart, null);
         DateTime createdOnEndDateTime = BridgeUtils.getDateTimeOrDefault(createdOnEnd, null);
-        List<HealthDataRecordEx3> recordList = healthDataEx3Service.getRecordsForAppAndStudy(session.getAppId(),
-                studyId, createdOnStartDateTime, createdOnEndDateTime);
-
-        return new DateTimeRangeResourceList<>(recordList)
-                .withRequestParam("appId", session.getAppId())
+        Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
+        return healthDataEx3Service.getRecordsForAppAndStudy(session.getAppId(), studyId, createdOnStartDateTime,
+                createdOnEndDateTime, pageSizeInt, offsetKey)
                 .withRequestParam("studyId", studyId)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
-                .withRequestParam(ResourceList.END_TIME, createdOnEnd);
+                .withRequestParam(ResourceList.END_TIME, createdOnEnd)
+                .withRequestParam(ResourceList.PAGE_SIZE, pageSizeInt)
+                .withRequestParam(ResourceList.OFFSET_KEY, offsetKey);
     }
 }

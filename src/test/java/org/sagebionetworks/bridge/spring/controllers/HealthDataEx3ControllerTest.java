@@ -13,7 +13,6 @@ import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
-import java.util.List;
 import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 
@@ -27,9 +26,11 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -44,6 +45,8 @@ public class HealthDataEx3ControllerTest {
     private static final DateTime CREATED_ON_START = DateTime.parse(CREATED_ON_START_STRING);
     private static final String CREATED_ON_END_STRING = "2020-07-29T15:22:58.998-0700";
     private static final DateTime CREATED_ON_END = DateTime.parse(CREATED_ON_END_STRING);
+    private static final String OFFSET_KEY = "dummy-offset-key";
+    private static final String PAGE_SIZE_STRING = String.valueOf(BridgeConstants.API_DEFAULT_PAGE_SIZE);
     private static final String RECORD_ID = "test-record";
     private static final String STUDY_ID = "test-study";
 
@@ -152,16 +155,21 @@ public class HealthDataEx3ControllerTest {
     public void getRecordsForUser() {
         when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(TestConstants.HEALTH_CODE);
 
-        List<HealthDataRecordEx3> recordList = ImmutableList.of(HealthDataRecordEx3.create());
+        ForwardCursorPagedResourceList<HealthDataRecordEx3> recordList = new ForwardCursorPagedResourceList<>(
+                ImmutableList.of(HealthDataRecordEx3.create()), null);
         when(mockHealthDataEx3Service.getRecordsForHealthCode(TestConstants.HEALTH_CODE, CREATED_ON_START,
-                CREATED_ON_END)).thenReturn(recordList);
+                CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY)).thenReturn(recordList);
 
-        ResourceList<HealthDataRecordEx3> resourceList = controller.getRecordsForUser(TestConstants.USER_ID,
-                CREATED_ON_START_STRING, CREATED_ON_END_STRING);
-        assertSame(resourceList.getItems(), recordList);
-        assertEquals(resourceList.getRequestParams().get("userId"), TestConstants.USER_ID);
-        assertEquals(resourceList.getRequestParams().get(ResourceList.START_TIME), CREATED_ON_START_STRING);
-        assertEquals(resourceList.getRequestParams().get(ResourceList.END_TIME), CREATED_ON_END_STRING);
+        ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForUser(TestConstants.USER_ID,
+                CREATED_ON_START_STRING, CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
+        assertSame(outputList, recordList);
+        assertEquals(outputList.getRequestParams().size(), 6);
+        assertEquals(outputList.getRequestParams().get("userId"), TestConstants.USER_ID);
+        assertEquals(outputList.getRequestParams().get(ResourceList.START_TIME), CREATED_ON_START_STRING);
+        assertEquals(outputList.getRequestParams().get(ResourceList.END_TIME), CREATED_ON_END_STRING);
+        assertEquals(outputList.getRequestParams().get(ResourceList.PAGE_SIZE), BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        assertEquals(outputList.getRequestParams().get(ResourceList.OFFSET_KEY), OFFSET_KEY);
+        assertEquals(outputList.getRequestParams().get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
 
         ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
         verify(mockAccountService).getHealthCodeForAccount(accountIdCaptor.capture());
@@ -170,46 +178,56 @@ public class HealthDataEx3ControllerTest {
         assertEquals(accountId.getId(), TestConstants.USER_ID);
 
         verify(mockHealthDataEx3Service).getRecordsForHealthCode(TestConstants.HEALTH_CODE, CREATED_ON_START,
-                CREATED_ON_END);
+                CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getRecordsForUser_UserNotFound() {
         when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(null);
-        controller.getRecordsForUser(TestConstants.USER_ID, CREATED_ON_START_STRING, CREATED_ON_END_STRING);
+        controller.getRecordsForUser(TestConstants.USER_ID, CREATED_ON_START_STRING, CREATED_ON_END_STRING,
+                PAGE_SIZE_STRING, OFFSET_KEY);
     }
 
     @Test
     public void getRecordsForCurrentApp() {
-        List<HealthDataRecordEx3> recordList = ImmutableList.of(HealthDataRecordEx3.create());
-        when(mockHealthDataEx3Service.getRecordsForApp(TestConstants.TEST_APP_ID, CREATED_ON_START, CREATED_ON_END))
-                .thenReturn(recordList);
+        ForwardCursorPagedResourceList<HealthDataRecordEx3> recordList = new ForwardCursorPagedResourceList<>(
+                ImmutableList.of(HealthDataRecordEx3.create()), null);
+        when(mockHealthDataEx3Service.getRecordsForApp(TestConstants.TEST_APP_ID, CREATED_ON_START, CREATED_ON_END,
+                BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY)).thenReturn(recordList);
 
-        ResourceList<HealthDataRecordEx3> resourceList = controller.getRecordsForCurrentApp(CREATED_ON_START_STRING,
-                CREATED_ON_END_STRING);
-        assertSame(resourceList.getItems(), recordList);
-        assertEquals(resourceList.getRequestParams().get("appId"), TestConstants.TEST_APP_ID);
-        assertEquals(resourceList.getRequestParams().get(ResourceList.START_TIME), CREATED_ON_START_STRING);
-        assertEquals(resourceList.getRequestParams().get(ResourceList.END_TIME), CREATED_ON_END_STRING);
+        ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForCurrentApp(CREATED_ON_START_STRING,
+                CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
+        assertSame(outputList, recordList);
+        assertEquals(outputList.getRequestParams().size(), 5);
+        assertEquals(outputList.getRequestParams().get(ResourceList.START_TIME), CREATED_ON_START_STRING);
+        assertEquals(outputList.getRequestParams().get(ResourceList.END_TIME), CREATED_ON_END_STRING);
+        assertEquals(outputList.getRequestParams().get(ResourceList.PAGE_SIZE), BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        assertEquals(outputList.getRequestParams().get(ResourceList.OFFSET_KEY), OFFSET_KEY);
+        assertEquals(outputList.getRequestParams().get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
 
-        verify(mockHealthDataEx3Service).getRecordsForApp(TestConstants.TEST_APP_ID, CREATED_ON_START, CREATED_ON_END);
+        verify(mockHealthDataEx3Service).getRecordsForApp(TestConstants.TEST_APP_ID, CREATED_ON_START, CREATED_ON_END,
+                BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY);
     }
 
     @Test
     public void getRecordsForStudy() {
-        List<HealthDataRecordEx3> recordList = ImmutableList.of(HealthDataRecordEx3.create());
+        ForwardCursorPagedResourceList<HealthDataRecordEx3> recordList = new ForwardCursorPagedResourceList<>(
+                ImmutableList.of(HealthDataRecordEx3.create()), null);
         when(mockHealthDataEx3Service.getRecordsForAppAndStudy(TestConstants.TEST_APP_ID, STUDY_ID, CREATED_ON_START,
-                CREATED_ON_END)).thenReturn(recordList);
+                CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY)).thenReturn(recordList);
 
-        ResourceList<HealthDataRecordEx3> resourceList = controller.getRecordsForStudy(STUDY_ID,
-                CREATED_ON_START_STRING, CREATED_ON_END_STRING);
-        assertSame(resourceList.getItems(), recordList);
-        assertEquals(resourceList.getRequestParams().get("appId"), TestConstants.TEST_APP_ID);
-        assertEquals(resourceList.getRequestParams().get("studyId"), STUDY_ID);
-        assertEquals(resourceList.getRequestParams().get(ResourceList.START_TIME), CREATED_ON_START_STRING);
-        assertEquals(resourceList.getRequestParams().get(ResourceList.END_TIME), CREATED_ON_END_STRING);
+        ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForStudy(STUDY_ID,
+                CREATED_ON_START_STRING, CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
+        assertSame(outputList, recordList);
+        assertEquals(outputList.getRequestParams().size(), 6);
+        assertEquals(outputList.getRequestParams().get("studyId"), STUDY_ID);
+        assertEquals(outputList.getRequestParams().get(ResourceList.START_TIME), CREATED_ON_START_STRING);
+        assertEquals(outputList.getRequestParams().get(ResourceList.END_TIME), CREATED_ON_END_STRING);
+        assertEquals(outputList.getRequestParams().get(ResourceList.PAGE_SIZE), BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        assertEquals(outputList.getRequestParams().get(ResourceList.OFFSET_KEY), OFFSET_KEY);
+        assertEquals(outputList.getRequestParams().get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
 
         verify(mockHealthDataEx3Service).getRecordsForAppAndStudy(TestConstants.TEST_APP_ID, STUDY_ID,
-                CREATED_ON_START, CREATED_ON_END);
+                CREATED_ON_START, CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY);
     }
 }

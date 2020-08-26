@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.dao;
 
-import java.util.List;
 import java.util.Optional;
 
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 
 /**
@@ -20,12 +20,14 @@ public interface HealthDataEx3Dao {
     Optional<HealthDataRecordEx3> getRecord(String id);
 
     /** Retrieves all records for the given healthcode and time range. */
-    List<HealthDataRecordEx3> getRecordsForHealthCode(String healthCode, long createdOnStart, long createdOnEnd);
+    ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForHealthCode(String healthCode, long createdOnStart,
+            long createdOnEnd, int pageSize, String offsetKey);
 
     /** Retrives all records for the given app and time range. */
-    List<HealthDataRecordEx3> getRecordsForApp(String appId, long createdOnStart, long createdOnEnd);
+    ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForApp(String appId, long createdOnStart,
+            long createdOnEnd, int pageSize, String offsetKey);
 
     /** Retrives all records for the given app, study, and time range. */
-    List<HealthDataRecordEx3> getRecordsForAppAndStudy(String appId, String studyId, long createdOnStart,
-            long createdOnEnd);
+    ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForAppAndStudy(String appId, String studyId,
+            long createdOnStart, long createdOnEnd, int pageSize, String offsetKey);
 }

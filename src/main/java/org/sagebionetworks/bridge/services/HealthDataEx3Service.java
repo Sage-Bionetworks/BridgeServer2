@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import java.util.List;
 import java.util.Optional;
 
 import org.apache.commons.lang3.StringUtils;
@@ -8,9 +7,11 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.HealthDataEx3Dao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.validators.HealthDataRecordEx3Validator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -21,7 +22,7 @@ import org.sagebionetworks.bridge.validators.Validate;
  */
 @Component
 public class HealthDataEx3Service {
-    private static final int MAX_DATE_RANGE_DAYS = 60;
+    static final int MAX_DATE_RANGE_DAYS = 60;
 
     private HealthDataEx3Dao healthDataEx3Dao;
 
@@ -59,30 +60,34 @@ public class HealthDataEx3Service {
     }
 
     /** Retrieves all records for the given healthcode and time range. */
-    public List<HealthDataRecordEx3> getRecordsForHealthCode(String healthCode, DateTime createdOnStart,
-            DateTime createdOnEnd) {
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForHealthCode(String healthCode,
+            DateTime createdOnStart, DateTime createdOnEnd, Integer pageSize, String offsetKey) {
         if (StringUtils.isBlank(healthCode)) {
             throw new BadRequestException("Health code must be specified");
         }
         validateCreatedOnParameters(createdOnStart, createdOnEnd);
+        pageSize = validatePageSize(pageSize);
 
         return healthDataEx3Dao.getRecordsForHealthCode(healthCode, createdOnStart.getMillis(),
-                createdOnEnd.getMillis());
+                createdOnEnd.getMillis(), pageSize, offsetKey);
     }
 
     /** Retrieves all records for the given app and time range. */
-    public List<HealthDataRecordEx3> getRecordsForApp(String appId, DateTime createdOnStart, DateTime createdOnEnd) {
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForApp(String appId, DateTime createdOnStart,
+            DateTime createdOnEnd, Integer pageSize, String offsetKey) {
         if (StringUtils.isBlank(appId)) {
             throw new BadRequestException("App ID must be specified");
         }
         validateCreatedOnParameters(createdOnStart, createdOnEnd);
+        pageSize = validatePageSize(pageSize);
 
-        return healthDataEx3Dao.getRecordsForApp(appId, createdOnStart.getMillis(), createdOnEnd.getMillis());
+        return healthDataEx3Dao.getRecordsForApp(appId, createdOnStart.getMillis(), createdOnEnd.getMillis(), pageSize,
+                offsetKey);
     }
 
     /** Retrieves all records for the given app, study, and time range. */
-    public List<HealthDataRecordEx3> getRecordsForAppAndStudy(String appId, String studyId, DateTime createdOnStart,
-            DateTime createdOnEnd) {
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForAppAndStudy(String appId, String studyId,
+            DateTime createdOnStart, DateTime createdOnEnd, Integer pageSize, String offsetKey) {
         if (StringUtils.isBlank(appId)) {
             throw new BadRequestException("App ID must be specified");
         }
@@ -90,9 +95,10 @@ public class HealthDataEx3Service {
             throw new BadRequestException("Study ID must be specified");
         }
         validateCreatedOnParameters(createdOnStart, createdOnEnd);
+        pageSize = validatePageSize(pageSize);
 
         return healthDataEx3Dao.getRecordsForAppAndStudy(appId, studyId, createdOnStart.getMillis(),
-                createdOnEnd.getMillis());
+                createdOnEnd.getMillis(), pageSize, offsetKey);
     }
 
     // Package-scoped for unit tests.
@@ -109,5 +115,15 @@ public class HealthDataEx3Service {
         if (start.plusDays(MAX_DATE_RANGE_DAYS).isBefore(end)) {
             throw new BadRequestException("Maximum time range is " + MAX_DATE_RANGE_DAYS + " days");
         }
+    }
+
+    // Package-scoped for unit tests.
+    static int validatePageSize(Integer pageSize) {
+        if (pageSize == null) {
+            pageSize = BridgeConstants.API_DEFAULT_PAGE_SIZE;
+        } else if (pageSize < 1 || pageSize > BridgeConstants.API_MAXIMUM_PAGE_SIZE) {
+            throw new BadRequestException("Page size must be between 1 and " + BridgeConstants.API_MAXIMUM_PAGE_SIZE);
+        }
+        return pageSize;
     }
 }
