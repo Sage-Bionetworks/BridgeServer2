@@ -197,7 +197,7 @@
         <dependency>
             <groupId>org.sagebionetworks</groupId>
             <artifactId>synapseJavaClient</artifactId>
-            <version>302.0</version>
+            <version>322.0</version>
         </dependency>
         <dependency>
             <groupId>org.xhtmlrenderer</groupId>
@@ -298,14 +298,15 @@
 
     <repositories>
         <repository>
+            <id>sagebionetworks-releases-local</id>
+            <name>sagebionetworks-releases-local</name>
+            <url>https://sagebionetworks.jfrog.io/sagebionetworks/libs-releases-local
+            </url>
+        </repository>    
+        <repository>
             <id>org-sagebridge-repo-maven-releases</id>
             <name>org-sagebridge-repo-maven-releases</name>
             <url>https://repo-maven.sagebridge.org/</url>
-        </repository>
-        <repository>
-            <id>sagebionetworks-libs-releases-local</id>
-            <name>sagebionetworks-libs-releases-local</name>
-            <url>https://sagebionetworks.artifactoryonline.com/sagebionetworks/libs-releases-local</url>
         </repository>
     </repositories>
 

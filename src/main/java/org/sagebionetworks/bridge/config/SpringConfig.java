@@ -108,6 +108,8 @@ import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.hibernate.HibernateStudy;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplateRevision;
+import org.sagebionetworks.bridge.hibernate.OrganizationPersistenceExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.SponsorPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.StudyPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.TagEventListener;
 import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
@@ -718,6 +720,20 @@ public class SpringConfig {
     @Autowired
     public HibernateHelper accountHibernateHelper(SessionFactory sessionFactory,
             AccountPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+    @Bean(name = "sponsorHibernateHelper")
+    @Autowired
+    public HibernateHelper sponsorHibernateHelper(SessionFactory sessionFactory,
+            SponsorPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+    @Bean(name = "organizationHibernateHelper")
+    @Autowired
+    public HibernateHelper organizationHibernateHelper(SessionFactory sessionFactory,
+            OrganizationPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     

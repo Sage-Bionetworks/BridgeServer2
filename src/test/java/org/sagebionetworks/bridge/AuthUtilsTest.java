@@ -2,9 +2,9 @@ package org.sagebionetworks.bridge;
 
 import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -29,9 +29,9 @@ public class AuthUtilsTest {
     }
     
     @Test
-    public void checkOrgMembershipSucceedsForSuperadmin() {
+    public void checkOrgMembershipSucceedsForAdmin() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         assertTrue( AuthUtils.checkOrgMembership(TEST_ORG_ID) );
     }
@@ -99,7 +99,7 @@ public class AuthUtilsTest {
     @Test
     public void checkSharedOwnershipAdminUser() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         AuthUtils.checkSharedAssessmentOwnership(TEST_APP_ID, GUID, SHARED_OWNER_ID);
     }
     

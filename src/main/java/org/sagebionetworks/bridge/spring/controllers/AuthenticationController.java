@@ -12,6 +12,7 @@ import javax.servlet.http.Cookie;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import org.sagebionetworks.bridge.spring.util.HttpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -85,14 +86,16 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
+
         UserSession session = null;
         try {
             session = authenticationService.emailSignIn(context, signInRequest);
-        } catch(ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+        } catch (ConsentRequiredException e) {
+            session = e.getUserSession();
             throw e;
+        } finally {
+            updateRequestInfoFromSession(session);
         }
-        setCookieAndRecordMetrics(session);
 
         return UserSessionInfo.toJSON(session);
     }
@@ -124,15 +127,16 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
-        
+
         UserSession session = null;
         try {
             session = authenticationService.phoneSignIn(context, signInRequest);
-        } catch(ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+        } catch (ConsentRequiredException e) {
+            session = e.getUserSession();
             throw e;
+        } finally {
+            updateRequestInfoFromSession(session);
         }
-        setCookieAndRecordMetrics(session);
 
         return UserSessionInfo.toJSON(session);
     }
@@ -147,15 +151,16 @@ public class AuthenticationController extends BaseController {
 
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
 
-        UserSession session;
+        UserSession session = null;
         try {
             session = authenticationService.signIn(app, context, signIn);
         } catch (ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+            session = e.getUserSession();
             throw e;
+        } finally {
+            updateRequestInfoFromSession(session);
         }
 
-        setCookieAndRecordMetrics(session);
         return UserSessionInfo.toJSON(session);
     }
 
@@ -172,15 +177,15 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
-        UserSession session;
+        UserSession session = null;
         try {
             session = authenticationService.reauthenticate(app, context, signInRequest);
         } catch (ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+            session = e.getUserSession();
             throw e;
+        } finally {
+            updateRequestInfoFromSession(session);
         }
-
-        setCookieAndRecordMetrics(session);
         
         return UserSessionInfo.toJSON(session);
     }
@@ -206,7 +211,7 @@ public class AuthenticationController extends BaseController {
             authenticationService.signOut(session);
         }
         // Servlet API has no way to delete cookies. strange but true. Set it "blank" to remove
-        Cookie cookie = makeSessionCookie("", 0);
+        Cookie cookie = HttpUtil.makeSessionCookie("", 0);
         response().addCookie(cookie);
         return new StatusMessage("Signed out.");
     }
@@ -221,7 +226,7 @@ public class AuthenticationController extends BaseController {
     public StatusMessage signOutV4() {
         final UserSession session = getSessionIfItExists();
         // Always set, even if we eventually decide to return an error code when there's no session
-        Cookie cookie = makeSessionCookie("", 0);
+        Cookie cookie = HttpUtil.makeSessionCookie("", 0);
         response().addCookie(cookie);
         response().setHeader(CLEAR_SITE_DATA_HEADER, CLEAR_SITE_DATA_VALUE);
         if (session != null) {
@@ -362,9 +367,16 @@ public class AuthenticationController extends BaseController {
         
         App app = appService.getApp(token.getAppId());
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
-        
-        UserSession session = authenticationService.oauthSignIn(context, token);
-        setCookieAndRecordMetrics(session);
+
+        UserSession session = null;
+        try {
+            session = authenticationService.oauthSignIn(context, token);
+        } catch (ConsentRequiredException e) {
+            session = e.getUserSession();
+            throw e;
+        } finally {
+            updateRequestInfoFromSession(session);
+        }
         
         return UserSessionInfo.toJSON(session);
     }

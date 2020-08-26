@@ -16,6 +16,8 @@ import static org.sagebionetworks.bridge.spring.controllers.FileController.UPLOA
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
+import java.util.Optional;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -34,6 +36,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -92,6 +95,7 @@ public class FileControllerTest extends Mockito {
         assertPost(FileController.class, "updateFile");
         assertDelete(FileController.class, "deleteFile");
         assertGet(FileController.class, "getFileRevisions");
+        assertGet(FileController.class, "getFileRevision");
         assertCreate(FileController.class, "createFileRevision");
         assertPost(FileController.class, "finishFileRevision");
     }
@@ -264,5 +268,33 @@ public class FileControllerTest extends Mockito {
         controller.getFileRevisions(GUID, null, null);
         
         verify(mockFileService).getFileRevisions(TEST_APP_ID, GUID, 0, API_DEFAULT_PAGE_SIZE);
+    }
+    
+    @Test
+    public void getFileRevision() { 
+        FileRevision revision = new FileRevision();
+        when(mockFileService.getFile(TEST_APP_ID, GUID)).thenReturn(new FileMetadata());
+        when(mockFileService.getFileRevision(eq(GUID), any())).thenReturn(Optional.of(revision));
+        
+        FileRevision retValue = controller.getFileRevision(GUID, CREATED_ON.toString());
+        assertSame(retValue, revision);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "FileMetadata not found.")
+    public void getFileRevisionFileNotFound() throws Exception {
+        when(mockFileService.getFile(TEST_APP_ID, GUID))
+            .thenThrow(new EntityNotFoundException(FileMetadata.class));
+        
+        controller.getFileRevision(GUID, CREATED_ON.toString());
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "FileRevision not found.")
+    public void getFileRevisionFileRevisionNotFound() {
+        when(mockFileService.getFile(TEST_APP_ID, GUID)).thenReturn(new FileMetadata());
+        when(mockFileService.getFileRevision(eq(GUID), any())).thenReturn(Optional.empty());
+        
+        controller.getFileRevision(GUID, CREATED_ON.toString());
     }
 }

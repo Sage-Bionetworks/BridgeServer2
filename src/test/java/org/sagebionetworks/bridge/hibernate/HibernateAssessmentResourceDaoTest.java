@@ -38,8 +38,8 @@ public class HibernateAssessmentResourceDaoTest extends Mockito {
     private static final HibernateAssessmentResource ASSESSMENT_RESOURCE = createHibernateAssessmentResource();
     
     private static String FULL_PAGE_QUERY = "from HibernateAssessmentResource WHERE appId = :appId "
-           +"AND assessmentId = :assessmentId AND (minRevision is null OR minRevision >= :minRevision) "
-           +"AND (maxRevision is null OR maxRevision <= :maxRevision) AND deleted = 0 AND category "
+           +"AND assessmentId = :assessmentId AND (minRevision is null OR minRevision <= :maxRevision) "
+           +"AND (maxRevision is null OR maxRevision >= :minRevision) AND deleted = 0 AND category "
            +"in :categories ORDER BY title ASC";
     
     private static String FULL_PAGE_COUNT_QUERY = "SELECT COUNT(DISTINCT guid) " + FULL_PAGE_QUERY;

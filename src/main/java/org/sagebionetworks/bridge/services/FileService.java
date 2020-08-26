@@ -158,7 +158,11 @@ public class FileService {
         checkNotNull(guid);
         checkNotNull(createdOn);
 
-        return fileRevisionDao.getFileRevision(guid, createdOn);
+        Optional<FileRevision> opt = fileRevisionDao.getFileRevision(guid, createdOn);
+        if (opt.isPresent()) {
+            opt.get().setDownloadURL(getDownloadURL(opt.get()));
+        }
+        return opt;
     }
     
     public PagedResourceList<FileRevision> getFileRevisions(String appId, String guid, int offset, int pageSize) {

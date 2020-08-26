@@ -1,14 +1,9 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.testng.Assert.assertEquals;
 
-import java.util.List;
 import java.util.Map;
 
 import javax.persistence.PersistenceException;
@@ -16,19 +11,21 @@ import javax.persistence.PersistenceException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyId;
 
 import com.google.common.collect.ImmutableList;
 
-public class HibernateStudyDaoTest {
-    private static final List<HibernateStudy> STUDIES = ImmutableList.of(new HibernateStudy(),
-            new HibernateStudy());
+public class HibernateStudyDaoTest extends Mockito {
+    private static final PagedResourceList<HibernateStudy> STUDIES = new PagedResourceList<>(
+            ImmutableList.of(new HibernateStudy(), new HibernateStudy()), 2);
     
     @Mock
     private HibernateHelper hibernateHelper;
@@ -56,14 +53,16 @@ public class HibernateStudyDaoTest {
     
     @Test
     public void getStudiesIncludeDeleted() {
-        when(hibernateHelper.queryGet(any(), any(), eq(null), eq(null), eq(HibernateStudy.class)))
-                .thenReturn(STUDIES);
+        when(hibernateHelper.queryGet(any(), any(), eq(5), eq(10), eq(HibernateStudy.class)))
+                .thenReturn(STUDIES.getItems());
+        when(hibernateHelper.queryCount(any(), any())).thenReturn(10);
         
-        List<Study> list = dao.getStudies(TEST_APP_ID, true);
-        assertEquals(list.size(), 2);
+        PagedResourceList<Study> list = dao.getStudies(TEST_APP_ID, 5, 10, true);
+        assertEquals(list.getItems(), STUDIES.getItems());
+        assertEquals(list.getTotal(), (Integer)10);
         
         verify(hibernateHelper).queryGet(queryCaptor.capture(), paramsCaptor.capture(), 
-                eq(null), eq(null), eq(HibernateStudy.class));
+                eq(5), eq(10), eq(HibernateStudy.class));
         
         assertEquals(queryCaptor.getValue(), "from HibernateStudy as study where appId=:appId");
         Map<String,Object> parameters = paramsCaptor.getValue();
@@ -72,14 +71,16 @@ public class HibernateStudyDaoTest {
 
     @Test
     public void getStudiesExcludeDeleted() {
-        when(hibernateHelper.queryGet(any(), any(), eq(null), eq(null), eq(HibernateStudy.class)))
-            .thenReturn(STUDIES);
-
-        List<Study> list = dao.getStudies(TEST_APP_ID, false);
-        assertEquals(list.size(), 2);
+        when(hibernateHelper.queryGet(any(), any(), eq(0), eq(100), eq(HibernateStudy.class)))
+            .thenReturn(STUDIES.getItems());
+        when(hibernateHelper.queryCount(any(), any())).thenReturn(10);
+        
+        PagedResourceList<Study> list = dao.getStudies(TEST_APP_ID, 0, 100, false);
+        assertEquals(list.getItems(), STUDIES.getItems());
+        assertEquals(list.getTotal(), (Integer)10);
         
         verify(hibernateHelper).queryGet(queryCaptor.capture(), paramsCaptor.capture(), 
-                eq(null), eq(null), eq(HibernateStudy.class));
+                eq(0), eq(100), eq(HibernateStudy.class));
         
         assertEquals(queryCaptor.getValue(),
                 "from HibernateStudy as study where appId=:appId and deleted != 1");
@@ -98,15 +99,17 @@ public class HibernateStudyDaoTest {
         verify(hibernateHelper).getById(eq(HibernateStudy.class), studyIdCaptor.capture());
         
         StudyId studyId = studyIdCaptor.getValue();
-        assertEquals(studyId.getId(), "id");
+        assertEquals(studyId.getIdentifier(), "id");
         assertEquals(studyId.getAppId(), TEST_APP_ID);
     }
     
     @Test
     public void createStudy() {
-        Study study = Study.create();
+        HibernateStudy study = new HibernateStudy();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setAppId(TEST_APP_ID);
         study.setVersion(2L);
-        
+
         VersionHolder holder = dao.createStudy(study);
         assertEquals(holder.getVersion(), new Long(2));
         
@@ -136,7 +139,7 @@ public class HibernateStudyDaoTest {
         
         verify(hibernateHelper).deleteById(eq(HibernateStudy.class), studyIdCaptor.capture());
         StudyId studyId = studyIdCaptor.getValue();
-        assertEquals(studyId.getId(), "oneId");
+        assertEquals(studyId.getIdentifier(), "oneId");
         assertEquals(studyId.getAppId(), TEST_APP_ID);
     }    
 

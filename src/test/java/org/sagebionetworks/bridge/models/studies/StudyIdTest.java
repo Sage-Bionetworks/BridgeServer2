@@ -21,6 +21,6 @@ public class StudyIdTest {
         StudyId studyId = new StudyId(TEST_APP_ID, "id");
         
         assertEquals(studyId.getAppId(), TEST_APP_ID);
-        assertEquals(studyId.getId(), "id");
+        assertEquals(studyId.getIdentifier(), "id");
     }    
 }

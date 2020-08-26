@@ -314,7 +314,7 @@ public class BridgeUtils {
      * This value will be replaced with the value of the variable name. The variable name/value pairs are passed to the
      * method as a map. Variables that are not found in the map will be left in the string as is.
      *
-     * @see https://sagebionetworks.jira.com/wiki/display/BRIDGE/EmailTemplate
+     * @see <a href="https://sagebionetworks.jira.com/wiki/display/BRIDGE/EmailTemplate"></a>
      * 
      * @param template
      * @param values
@@ -749,4 +749,5 @@ public class BridgeUtils {
         }
         return new InvalidEntityException("Error parsing JSON in request body: " + throwable.getMessage());
     }
+
 }

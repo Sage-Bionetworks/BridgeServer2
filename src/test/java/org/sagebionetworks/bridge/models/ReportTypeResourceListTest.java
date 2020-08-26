@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.models.reports.ReportType;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -45,5 +46,23 @@ public class ReportTypeResourceListTest {
         assertEquals(node.size(), 5);
         
         // We never deserialize this on the server side (only in the SDK).
+    }
+    
+    @Test
+    public void canSerializeWithoutDeprecated() throws Exception {
+        ReportIndex index1 = ReportIndex.create();
+        index1.setKey("doesn't matter what this is");
+        index1.setIdentifier("foo");
+        
+        ReportIndex index2 = ReportIndex.create();
+        index2.setKey("doesn't matter what this is");
+        index2.setIdentifier("bar");
+        index2.setPublic(true);
+        
+        ReportTypeResourceList<ReportIndex> list = new ReportTypeResourceList<>(Lists.newArrayList(index1, index2),
+                true).withRequestParam(ResourceList.REPORT_TYPE, ReportType.PARTICIPANT);
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(list);
+        assertNull(node.get("reportType"));
     }
 }

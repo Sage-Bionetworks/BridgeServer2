@@ -162,17 +162,6 @@ public class UserManagementControllerTest extends Mockito {
         // This isn't in the session that is returned to the user, but verify it has been changed
         assertEquals(session.getAppId(), "originalStudy");
         assertEquals(signInCaptor.getValue().getAppId(), API_APP_ID);
-
-        verify(mockResponse).addCookie(cookieCaptor.capture());
-        
-        Cookie cookie = cookieCaptor.getValue();
-        assertEquals(cookie.getName(), SESSION_TOKEN_HEADER);
-        assertEquals(cookie.getValue(), session.getSessionToken());
-        assertEquals(cookie.getMaxAge(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-        assertEquals(cookie.getPath(), "/");
-        assertEquals(cookie.getDomain(), "localhost");
-        assertFalse(cookie.isHttpOnly());
-        assertFalse(cookie.getSecure());
     }
 
     @Test
