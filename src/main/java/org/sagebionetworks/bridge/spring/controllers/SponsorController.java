@@ -51,6 +51,7 @@ public class SponsorController extends BaseController {
         return sponsorService.getStudySponsors(session.getAppId(), studyId, offsetByInt, pageSizeInt);
     }
     
+    // Will not return logically deleted studies.
     @GetMapping("/v1/organizations/{orgId}/studies")
     public PagedResourceList<Study> getSponsoredStudies(@PathVariable String orgId, 
             @RequestParam(required = false) String offsetBy, 

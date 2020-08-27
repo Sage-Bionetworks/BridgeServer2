@@ -89,10 +89,10 @@ public class HibernateSponsorDaoTest extends Mockito {
         
         assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) FROM Substudies s INNER JOIN " 
                 + "OrganizationsStudies os ON s.id = os.studyId AND  s.studyId = :appId AND os.appId = " 
-                + ":appId  AND os.orgId = :orgId");
+                + ":appId  AND os.orgId = :orgId AND s.deleted != 1");
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * FROM Substudies s INNER JOIN " 
                 + "OrganizationsStudies os ON s.id = os.studyId AND  s.studyId = :appId AND os.appId = " 
-                + ":appId  AND os.orgId = :orgId");
+                + ":appId  AND os.orgId = :orgId AND s.deleted != 1");
     }
     
     @Test

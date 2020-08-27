@@ -48,6 +48,7 @@ public class HibernateSponsorDao implements SponsorDao {
         builder.append("FROM Substudies s INNER JOIN OrganizationsStudies os ON s.id = os.studyId AND ");
         builder.append("s.studyId = :appId AND os.appId = :appId ", "appId", appId);
         builder.append("AND os.orgId = :orgId", "orgId", orgId);
+        builder.append("AND s.deleted != 1");
 
         int total = hibernateHelper.nativeQueryCount("SELECT count(*) " + builder.getQuery(), builder.getParameters());
 
