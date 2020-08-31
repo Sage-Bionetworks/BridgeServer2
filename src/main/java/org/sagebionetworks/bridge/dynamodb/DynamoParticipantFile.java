@@ -2,38 +2,23 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.json.DateTimeDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 
 @DynamoDBTable(tableName = "ParticipantFiles")
 public class DynamoParticipantFile implements ParticipantFile {
-    /**
-     * the file Id for this ParticipantFile.
-     * Unique in the scope of the user (StudyParticipant).
-     */
     private String fileId;
-
-    /**
-     * The StudyParticipant who owns this file.
-     */
     private String userId;
-
-    /**
-     * The time when this file is created.
-     */
     private DateTime createdOn;
-
-    /**
-     * The media type of this file.
-     */
     private String mimeType;
-
-    /**
-     * The App ID of this file.
-     */
     private String appId;
 
     @JsonIgnore
@@ -49,16 +34,52 @@ public class DynamoParticipantFile implements ParticipantFile {
         this.fileId = fileId;
     }
 
+    /**
+     * the file Id for this ParticipantFile.
+     * Unique in the scope of the user (StudyParticipant).
+     */
+    @Override
+    @DynamoDBRangeKey(attributeName = "fileId")
+    public String getFileId() {
+        return this.fileId;
+    }
+
     public void setFileId(String fileId) {
         this.fileId = fileId;
+    }
+
+    /**
+     * The StudyParticipant who owns this file.
+     */
+    @Override
+    @DynamoDBHashKey(attributeName = "userId")
+    public String getUserId() {
+        return this.userId;
     }
 
     public void setUserId(String userId) {
         this.userId = userId;
     }
 
+    /**
+     * The time when this file is created.
+     */
+    @Override
+    @DynamoDBAttribute(attributeName = "createdOn")
+    @JsonSerialize(using = DateTimeSerializer.class)
+    public DateTime getCreatedOn() {
+        return this.createdOn;
+    }
+
+    @JsonDeserialize(using = DateTimeDeserializer.class)
     public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
+    }
+
+    @Override
+    @DynamoDBIgnore
+    public String getDownloadUrl() {
+        return this.downloadUrl;
     }
 
     @Override
@@ -67,32 +88,19 @@ public class DynamoParticipantFile implements ParticipantFile {
     }
 
     @Override
+    @DynamoDBIgnore
+    public String getUploadUrl() {
+        return this.uploadUrl;
+    }
+
+    @Override
     public void setUploadUrl(String url) {
         this.uploadUrl = url;
     }
 
-    @Override
-    public void setMimeType(String mimeType) {
-        this.mimeType = mimeType;
-    }
-
-    @Override
-    public void setAppId(String appId) {
-        this.appId = appId;
-    }
-
-    @Override
-    @DynamoDBRangeKey(attributeName = "fileId")
-    public String getFileId() {
-        return this.fileId;
-    }
-
-    @Override
-    @DynamoDBHashKey(attributeName = "userId")
-    public String getUserId() {
-        return this.userId;
-    }
-
+    /**
+     * The media type of this file.
+     */
     @Override
     @DynamoDBAttribute(attributeName = "mimeType")
     public String getMimeType() {
@@ -100,23 +108,19 @@ public class DynamoParticipantFile implements ParticipantFile {
     }
 
     @Override
-    @DynamoDBAttribute(attributeName = "createdOn")
-    public DateTime getCreatedOn() {
-        return this.createdOn;
+    public void setMimeType(String mimeType) {
+        this.mimeType = mimeType;
     }
 
+    /**
+     * The App ID of this file.
+     */
     @Override
     @DynamoDBAttribute(attributeName = "appId")
     public String getAppId() { return this.appId; }
 
     @Override
-    public String getDownloadUrl() {
-        return this.downloadUrl;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
-
-    @Override
-    public String getUploadUrl() {
-        return this.uploadUrl;
-    }
-
 }

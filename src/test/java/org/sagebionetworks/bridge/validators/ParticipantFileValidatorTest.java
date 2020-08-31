@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.ParticipantFileValidator.INSTANCE;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoParticipantFile;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 import org.testng.annotations.Test;
 
@@ -11,7 +10,9 @@ public class ParticipantFileValidatorTest {
 
     @Test
     public void validates() {
-        ParticipantFile file = new DynamoParticipantFile("user", "file");
+        ParticipantFile file = ParticipantFile.create();
+        file.setUserId("user");
+        file.setFileId("file");
         file.setMimeType("dummy");
         file.setAppId("api");
 
@@ -20,9 +21,27 @@ public class ParticipantFileValidatorTest {
 
     @Test
     public void fileIdRequired() {
-        ParticipantFile file = new DynamoParticipantFile("user", "file");
-        file.setMimeType("dummy");
+        ParticipantFile file = ParticipantFile.create();
+        file.setUserId("user");
+
+        assertValidatorMessage(INSTANCE, file, "fileId", "is required");
+    }
+
+    @Test
+    public void appIdRequired() {
+        ParticipantFile file = ParticipantFile.create();
+        file.setUserId("user");
+        file.setFileId("file");
 
         assertValidatorMessage(INSTANCE, file, "appId", "is required");
+    }
+
+    @Test
+    public void userIdRequired() {
+        ParticipantFile file = ParticipantFile.create();
+        file.setFileId("file");
+        file.setAppId("api");
+
+        assertValidatorMessage(INSTANCE, file, "userId", "is required");
     }
 }

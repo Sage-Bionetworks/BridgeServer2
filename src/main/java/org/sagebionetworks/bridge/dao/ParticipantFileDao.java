@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
-import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 
 import java.util.Optional;
@@ -15,8 +14,6 @@ public interface ParticipantFileDao {
      * @param offsetKey the exclusive starting offset of the query, if null, then query from the start
      * @param pageSize the number of items in the result page
      * @return a ForwardCursorPagedResourceList of ParticipantFiles
-     * @throws org.sagebionetworks.bridge.exceptions.BadRequestException if pageSize is less than 1 or greater
-     *         than API_MAXIMUM_PAGE_SIZE
      */
     ForwardCursorPagedResourceList<ParticipantFile> getParticipantFiles(String userId, String offsetKey, int pageSize);
 
@@ -34,7 +31,6 @@ public interface ParticipantFileDao {
      *
      * @param file the file to be uploaded
      */
-    // TODO: Not decided what will happen if such file already exists.
     void uploadParticipantFile(ParticipantFile file);
 
     /**

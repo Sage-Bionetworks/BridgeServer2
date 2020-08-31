@@ -24,9 +24,6 @@ public class ParticipantFileValidator implements Validator {
         if (StringUtils.isBlank(file.getFileId())) {
             errors.rejectValue("fileId", "is required");
         }
-        if (StringUtils.isBlank(file.getMimeType())) {
-            errors.rejectValue("mimeType", "is required");
-        }
         if (StringUtils.isBlank(file.getAppId())) {
             errors.rejectValue("appId", "is required");
         }

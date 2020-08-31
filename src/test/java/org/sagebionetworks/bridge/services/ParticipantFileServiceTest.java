@@ -1,16 +1,17 @@
 package org.sagebionetworks.bridge.services;
 
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoParticipantFile;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -22,15 +23,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.testng.Assert.assertEquals;
 
 public class ParticipantFileServiceTest {
 
-    private static final String UPLOAD_BUCKET = "participant-file.sagebridge.org";
-    // private static final String UPLOAD_BUCKET_STAGING = "participant-file-staging.sagebridge.org";
-    private static final String DOWNLOAD_URL_1 = "https://participant-file.sagebridge.org/test_user/file_id";
-    // private static final String DOWNLOAD_URL_2 = "https://participant-file.sagebridge.org/oneGuid.1422311912486";
+    private static final String UPLOAD_BUCKET = "file-bucket";
 
     @Mock
     ParticipantFileDao mockFileDao;
@@ -42,17 +39,20 @@ public class ParticipantFileServiceTest {
     AmazonS3 mockS3Client;
 
     @InjectMocks
-    @Spy
     ParticipantFileService service;
 
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
 
-        when(mockConfig.getHostnameWithPostfix("participant-file")).thenReturn(UPLOAD_BUCKET);
-        when(mockConfig.getEnvironment()).thenReturn(PROD);
+        when(mockConfig.get("participant-file.bucket")).thenReturn(UPLOAD_BUCKET);
         service.setConfig(mockConfig);
 
+        when(mockS3Client.generatePresignedUrl(any())).thenAnswer(i -> {
+            GeneratePresignedUrlRequest request = i.getArgument(0);
+            String filePath = request.getKey();
+            return new URL("https://" + UPLOAD_BUCKET + "/" + filePath);
+        });
     }
 
     @Test
@@ -69,13 +69,25 @@ public class ParticipantFileServiceTest {
         verify(mockFileDao).getParticipantFiles("test_user", null, 20);
     }
 
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getParticipantFilesPageSizeTooSmall() {
+        service.getParticipantFiles("test_user", null, 1);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getParticipantFilesPageSizeTooLarge() {
+        service.getParticipantFiles("test_user", null, 5000);
+    }
+
     @Test
     public void getParticipantFile() {
-        ParticipantFile file = new DynamoParticipantFile("test_user", "file_id");
+        String downloadUrl = "https://" + UPLOAD_BUCKET + "/test_user/file_id";
+        ParticipantFile file = ParticipantFile.create();
+        file.setFileId("file_id");
+        file.setUserId("test_user");
         file.setAppId("api");
         file.setMimeType("dummy-type");
         file.setCreatedOn(TestConstants.TIMESTAMP);
-        file.setDownloadUrl(DOWNLOAD_URL_1);
 
         when(mockFileDao.getParticipantFile("test_user", "file_id")).thenReturn(Optional.of(file));
 
@@ -84,7 +96,7 @@ public class ParticipantFileServiceTest {
         assertEquals(result.getFileId(), "file_id");
         assertEquals(result.getCreatedOn(), TestConstants.TIMESTAMP);
         assertEquals(result.getMimeType(), "dummy-type");
-        assertEquals(result.getDownloadUrl(), DOWNLOAD_URL_1);
+        assertEquals(result.getDownloadUrl(), downloadUrl);
         assertEquals(result.getAppId(), "api");
     }
 
@@ -96,13 +108,14 @@ public class ParticipantFileServiceTest {
     }
 
     @Test
-    public void createParticipantFile() throws Exception {
-        URL url = new URL("https://" + UPLOAD_BUCKET);
-        when(mockS3Client.generatePresignedUrl(any())).thenReturn(url);
+    public void createParticipantFile() {
+        String upload = "https://" + UPLOAD_BUCKET + "/test_user/file_id";
 
         when(mockFileDao.getParticipantFile(any(), any())).thenReturn(Optional.empty());
 
-        ParticipantFile file = new DynamoParticipantFile("test_user", "file_id");
+        ParticipantFile file = ParticipantFile.create();
+        file.setFileId("file_id");
+        file.setUserId("test_user");
         file.setMimeType("dummy-type");
         file.setAppId("api");
         file.setCreatedOn(TestConstants.TIMESTAMP);
@@ -111,19 +124,28 @@ public class ParticipantFileServiceTest {
         assertEquals(result.getFileId(), "file_id");
         assertEquals(result.getMimeType(), "dummy-type");
         assertEquals(result.getCreatedOn(), TestConstants.TIMESTAMP);
-        assertEquals(result.getUploadUrl(), "https://" + UPLOAD_BUCKET);
+        assertEquals(result.getUploadUrl(), upload);
         assertEquals(result.getAppId(), "api");
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void createParticipantFileInvalidFile() {
+        ParticipantFile file = ParticipantFile.create();
+        service.createParticipantFile(file);
     }
 
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
     public void createParticipantFileAlreadyExists() {
-        ParticipantFile file = new DynamoParticipantFile("test_user", "file_id");
+        ParticipantFile file = ParticipantFile.create();
+        file.setFileId("file_id");
+        file.setUserId("test_user");
         file.setAppId("api");
         file.setMimeType("dummy-type");
         file.setCreatedOn(TestConstants.TIMESTAMP);
-        file.setDownloadUrl(DOWNLOAD_URL_1);
 
-        ParticipantFile newFile = new DynamoParticipantFile("test_user", "file_id");
+        ParticipantFile newFile = ParticipantFile.create();
+        newFile.setFileId("file_id");
+        newFile.setUserId("test_user");
         newFile.setAppId("not_api");
         newFile.setMimeType("new-dummy-type");
         newFile.setCreatedOn(TestConstants.TIMESTAMP);
@@ -134,16 +156,18 @@ public class ParticipantFileServiceTest {
 
     @Test
     public void deleteParticipantFile() {
-        ParticipantFile file = new DynamoParticipantFile("test_user", "file_id");
+        ParticipantFile file = ParticipantFile.create();
+        file.setFileId("file_id");
+        file.setUserId("test_user");
         file.setAppId("api");
         file.setMimeType("dummy-type");
         file.setCreatedOn(TestConstants.TIMESTAMP);
-        file.setDownloadUrl(DOWNLOAD_URL_1);
 
         when(mockFileDao.getParticipantFile(eq("test_user"), eq("file_id"))).thenReturn(Optional.of(file));
         service.deleteParticipantFile("test_user", "file_id");
 
         verify(mockFileDao).deleteParticipantFile(eq("test_user"), eq("file_id"));
+        verify(mockS3Client).deleteObject(UPLOAD_BUCKET, "test_user/file_id");
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)

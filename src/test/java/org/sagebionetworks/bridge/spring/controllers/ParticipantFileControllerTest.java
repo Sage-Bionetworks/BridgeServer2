@@ -6,7 +6,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dynamodb.DynamoParticipantFile;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -34,7 +33,6 @@ import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
-import static org.sagebionetworks.bridge.spring.controllers.ParticipantFileController.DELETE_FAIL_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.sagebionetworks.bridge.spring.controllers.ParticipantFileController.DELETE_MSG;
@@ -69,7 +67,9 @@ public class ParticipantFileControllerTest {
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
 
-        persisted = new DynamoParticipantFile("test_user", "file_id");
+        persisted = ParticipantFile.create();
+        persisted.setFileId("file_id");
+        persisted.setUserId("test_user");
         persisted.setCreatedOn(TestConstants.TIMESTAMP);
         persisted.setAppId("api");
         persisted.setMimeType("dummy-type");
@@ -86,8 +86,11 @@ public class ParticipantFileControllerTest {
 
     @Test
     public void getParticipantFiles() {
+        ParticipantFile file = ParticipantFile.create();
+        file.setUserId("test_user");
+        file.setFileId("file_id");
         ForwardCursorPagedResourceList<ParticipantFile> page = new ForwardCursorPagedResourceList<>(
-                ImmutableList.of(new DynamoParticipantFile("test_user", "file_id")), null);
+                ImmutableList.of(file), null);
         when(mockFileService.getParticipantFiles(eq("test_user"), isNull(), anyInt())).thenReturn(page);
 
         ForwardCursorPagedResourceList<ParticipantFile> result = controller.getParticipantFiles(null, "5");
@@ -106,10 +109,12 @@ public class ParticipantFileControllerTest {
 
     @Test
     public void createParticipantFile() throws Exception {
-        ParticipantFile newFile = new DynamoParticipantFile("test_user", "file_id");
+        ParticipantFile newFile = ParticipantFile.create();
+        newFile.setUserId("test_user");
+        newFile.setFileId("file_id");
         newFile.setAppId("api");
         newFile.setMimeType("dummy-type");
-        mockRequestBody(mockRequest, persisted);
+        mockRequestBody(mockRequest, newFile);
         when(mockFileService.createParticipantFile(any())).thenReturn(persisted);
         ParticipantFile result = controller.createParticipantFile("file_id");
 
@@ -117,18 +122,19 @@ public class ParticipantFileControllerTest {
         assertEquals(result.getUserId(), "test_user");
         assertEquals(result.getAppId(), "api");
         assertEquals(result.getMimeType(), "dummy-type");
+        assertEquals(result.getCreatedOn(), TestConstants.TIMESTAMP);
     }
 
     @Test
     public void deleteParticipantFile() {
         StatusMessage message = controller.deleteParticipantFile("file_id");
         assertEquals(message.getMessage(), DELETE_MSG.getMessage());
+        verify(mockFileService).deleteParticipantFile(eq("test_user"), eq("file_id"));
     }
 
-    @Test
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteParticipantFileNoSuchFile() {
         doThrow(EntityNotFoundException.class).when(mockFileService).deleteParticipantFile(any(), any());
         StatusMessage message = controller.deleteParticipantFile("file_id");
-        assertEquals(message.getMessage(), DELETE_FAIL_MSG.getMessage());
     }
 }

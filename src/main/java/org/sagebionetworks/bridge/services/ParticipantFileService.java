@@ -1,12 +1,15 @@
 package org.sagebionetworks.bridge.services;
 
+import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.ResponseHeaderOverrides;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.Environment;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -22,24 +25,25 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import static com.amazonaws.HttpMethod.GET;
 import static com.amazonaws.HttpMethod.PUT;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.joda.time.DateTimeZone.UTC;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.config.Environment.LOCAL;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.validators.ParticipantFileValidator.INSTANCE;
 
 @Component
 public class ParticipantFileService {
 
-    static final int EXPIRATION_IN_MINUTES = 10;
+    static final int EXPIRATION_IN_MINUTES = 1440;
+
+    static final String PARTICIPANT_FILE_BUCKET = "participant-file.bucket";
 
     private ParticipantFileDao participantFileDao;
 
     private AmazonS3 s3Client;
-
-    private Environment env;
 
     private String bucketName;
 
@@ -50,11 +54,10 @@ public class ParticipantFileService {
 
     @Autowired
     final void setConfig(BridgeConfig config) {
-        bucketName = config.getHostnameWithPostfix("participant-file");
-        env = config.getEnvironment();
+        bucketName = config.get(PARTICIPANT_FILE_BUCKET);
     }
 
-    @Resource(name = "participantFileS3Client")
+    @Resource(name = "s3Client")
     final void setS3client(AmazonS3 s3) {
         this.s3Client = s3;
     }
@@ -68,12 +71,15 @@ public class ParticipantFileService {
      *                  (the exclusive starting offset of the query, if null, then query from the start)
      * @param pageSize the number of items in the result page
      * @return a ForwardCursorPagedResourceList of ParticipantFiles
+     * @throws BadRequestException if pageSize is less than API_MINIMUM_PAGE_SIZE or greater
+     *         than API_MAXIMUM_PAGE_SIZE
      */
     public ForwardCursorPagedResourceList<ParticipantFile> getParticipantFiles(String userId, String offsetKey, int pageSize) {
-        checkNotNull(userId);
         checkArgument(isNotBlank(userId));
 
-        // pageSize validation is checked in DAO
+        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
+            throw new BadRequestException(PAGE_SIZE_ERROR);
+        }
         return participantFileDao.getParticipantFiles(userId, offsetKey, pageSize);
     }
 
@@ -83,18 +89,17 @@ public class ParticipantFileService {
      *
      * @param userId the userId to be queried
      * @param fileId the fileId of the file
-     * @return the ParticipantFile for download if this file exists
+     * @return the ParticipantFile with the pre-signed S3 download URL if this file exists
      * @throws EntityNotFoundException if the file does not exist.
      */
     public ParticipantFile getParticipantFile(String userId, String fileId) {
-        checkNotNull(userId);
-        checkNotNull(fileId);
         checkArgument(isNotBlank(userId));
         checkArgument(isNotBlank(fileId));
 
         ParticipantFile file = participantFileDao.getParticipantFile(userId, fileId)
                 .orElseThrow(() -> new EntityNotFoundException(ParticipantFile.class));
-        file.setDownloadUrl(getDownloadUrl(file));
+
+        file.setDownloadUrl(generatePresignedRequest(file, GET).toExternalForm());
         return file;
     }
 
@@ -118,16 +123,7 @@ public class ParticipantFileService {
                 }
         );
 
-        Date expiration = new DateTime().withZone(UTC).plusMinutes(EXPIRATION_IN_MINUTES).toDate();
-        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, getFilePath(file), PUT);
-        request.setExpiration(expiration);
-        request.setContentType(file.getMimeType());
-        ResponseHeaderOverrides headers = new ResponseHeaderOverrides()
-                .withContentDisposition("attachment; filename=\""+getFilePath(file)+"\"");
-        request.setResponseHeaders(headers);
-
-        URL uploadUrl = s3Client.generatePresignedUrl(request);
-        file.setUploadUrl(uploadUrl.toExternalForm());
+        file.setUploadUrl(generatePresignedRequest(file, PUT).toExternalForm());
         return file;
     }
 
@@ -140,7 +136,7 @@ public class ParticipantFileService {
      * @throws EntityNotFoundException if the file does not exist
      */
     public void deleteParticipantFile(String userId, String fileId) {
-        ParticipantFile file = participantFileDao.getParticipantFile(userId, fileId)
+        participantFileDao.getParticipantFile(userId, fileId)
                 .orElseThrow(() -> new EntityNotFoundException(ParticipantFile.class));
 
         participantFileDao.deleteParticipantFile(userId, fileId);
@@ -150,23 +146,21 @@ public class ParticipantFileService {
     }
 
     /**
-     * Returns the download URL for the given ParticipantFile.
-     * This method does not check whether this file actually exists.
-     *
-     * @param file the file whose URL is returned
-     * @return the download URL for the given ParticipantFile.
-     */
-    protected String getDownloadUrl(ParticipantFile file) {
-        String protocol = (env == LOCAL) ? "http" : "https";
-        return protocol + "://" + bucketName + "/" + getFilePath(file);
-    }
-
-    /**
      * Returns the url path of the given file.
      * @param file the file
      * @return the url path of the given file
      */
-    protected String getFilePath(ParticipantFile file) {
+    private String getFilePath(ParticipantFile file) {
         return file.getUserId() + "/" + file.getFileId();
+    }
+
+    private URL generatePresignedRequest(ParticipantFile file, HttpMethod method) {
+        Date expiration = new DateTime().plusMinutes(EXPIRATION_IN_MINUTES).toDate();
+        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, getFilePath(file), method);
+        request.setExpiration(expiration);
+        request.setContentType(file.getMimeType());
+        request.addRequestParameter(Headers.SERVER_SIDE_ENCRYPTION, ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+
+        return s3Client.generatePresignedUrl(request);
     }
 }

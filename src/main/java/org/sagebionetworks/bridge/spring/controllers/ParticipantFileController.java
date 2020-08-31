@@ -20,7 +20,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
 @CrossOrigin
@@ -28,7 +27,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 public class ParticipantFileController extends BaseController {
 
     static final StatusMessage DELETE_MSG = new StatusMessage("Participant file deleted.");
-    static final StatusMessage DELETE_FAIL_MSG = new StatusMessage("File does not exist.");
 
     private ParticipantFileService fileService;
 
@@ -52,18 +50,23 @@ public class ParticipantFileController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         String userId = session.getParticipant().getId();
 
-        return fileService.getParticipantFile(userId, fileId);
+        ParticipantFile file = fileService.getParticipantFile(userId, fileId);
+        response().setHeader("Location", file.getDownloadUrl());
+        return file;
     }
 
     @PostMapping("v3/participants/self/files/{fileId}")
+    @ResponseStatus(HttpStatus.CREATED)
     public ParticipantFile createParticipantFile(@PathVariable String fileId) {
         UserSession session = getAuthenticatedAndConsentedSession();
         String userId = session.getParticipant().getId();
+        String appId = session.getAppId();
 
         ParticipantFile file = parseJson(DynamoParticipantFile.class);
         file.setUserId(userId);
-        file.setCreatedOn(new DateTime().withZone(UTC));
+        file.setCreatedOn(new DateTime());
         file.setFileId(fileId);
+        file.setAppId(appId);
 
         return fileService.createParticipantFile(file);
     }
@@ -73,11 +76,7 @@ public class ParticipantFileController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         String userId = session.getParticipant().getId();
 
-        try {
-            fileService.deleteParticipantFile(userId, fileId);
-        } catch (EntityNotFoundException e) {
-            return DELETE_FAIL_MSG;
-        }
+        fileService.deleteParticipantFile(userId, fileId);
         return DELETE_MSG;
     }
 }

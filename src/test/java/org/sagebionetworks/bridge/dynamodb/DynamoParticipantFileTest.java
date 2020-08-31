@@ -27,4 +27,16 @@ public class DynamoParticipantFileTest {
         assertEquals(node.get("appId").textValue(), "api_test");
         assertEquals(node.size(), 6);
     }
+
+    @Test
+    public void canDeserialize() throws Exception {
+        String json = "{\"fileId\":\"fileId\",\"userId\":\"userId\",\"createdOn\":\"2015-01-27T00:38:32.486Z\",\"mimeType\":\"image/jpeg\",\"appId\":\"api_test\",\"type\":\"DynamoParticipantFile\"}";
+        DynamoParticipantFile file = MAPPER.readValue(json, DynamoParticipantFile.class);
+
+        assertEquals(file.getFileId(), "fileId");
+        assertEquals(file.getUserId(), "userId");
+        assertEquals(file.getAppId(), "api_test");
+        assertEquals(file.getCreatedOn().toString(), TestConstants.TIMESTAMP.toString());
+        assertEquals(file.getMimeType(), "image/jpeg");
+    }
 }

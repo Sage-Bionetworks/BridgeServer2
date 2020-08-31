@@ -5,7 +5,6 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
@@ -18,9 +17,6 @@ import java.util.Optional;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 
 @Component
 public class DynamoParticipantFileDao implements ParticipantFileDao {
@@ -33,12 +29,8 @@ public class DynamoParticipantFileDao implements ParticipantFileDao {
 
     @Override
     public ForwardCursorPagedResourceList<ParticipantFile> getParticipantFiles(String userId, String offsetKey, int pageSize) {
-        checkNotNull(userId);
         checkArgument(isNotBlank(userId));
 
-        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
-            throw new BadRequestException(PAGE_SIZE_ERROR);
-        }
         ParticipantFile key = new DynamoParticipantFile(userId, null);
         DynamoDBQueryExpression<ParticipantFile> queryExpression = new DynamoDBQueryExpression<>();
         queryExpression.withHashKeyValues(key)
@@ -61,8 +53,6 @@ public class DynamoParticipantFileDao implements ParticipantFileDao {
 
     @Override
     public Optional<ParticipantFile> getParticipantFile(String userId, String fileId) {
-        checkNotNull(userId);
-        checkNotNull(fileId);
         checkArgument(isNotBlank(userId));
         checkArgument(isNotBlank(fileId));
 
@@ -84,12 +74,10 @@ public class DynamoParticipantFileDao implements ParticipantFileDao {
 
     @Override
     public void deleteParticipantFile(String userId, String fileId) {
-        checkNotNull(fileId);
-        checkNotNull(userId);
         checkArgument(isNotBlank(fileId));
         checkArgument(isNotBlank(userId));
 
-        DynamoParticipantFile deleteTarget = new DynamoParticipantFile(fileId, userId);
+        DynamoParticipantFile deleteTarget = new DynamoParticipantFile(userId, fileId);
         if (mapper.load(deleteTarget) != null) {
             mapper.delete(deleteTarget);
         }
