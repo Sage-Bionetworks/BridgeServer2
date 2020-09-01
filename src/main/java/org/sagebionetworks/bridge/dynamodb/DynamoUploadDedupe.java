@@ -11,7 +11,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
 
 /** DDB implementation of UploadDedupe. */
-@DynamoThroughput(readCapacity=5, writeCapacity=10)
 @DynamoDBTable(tableName = "UploadDedupe2")
 public class DynamoUploadDedupe {
     private String healthCode;

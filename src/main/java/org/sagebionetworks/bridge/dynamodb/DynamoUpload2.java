@@ -30,7 +30,6 @@ import com.google.common.collect.ImmutableList;
  * This DynamoDB table stores metadata for Bridge uploads. This class also defines global secondary indices, which can
  * be used for more efficient queries.
  */
-@DynamoThroughput(readCapacity=40, writeCapacity=20)
 @DynamoDBTable(tableName = "Upload2")
 public class DynamoUpload2 implements Upload {
     private long contentLength;
