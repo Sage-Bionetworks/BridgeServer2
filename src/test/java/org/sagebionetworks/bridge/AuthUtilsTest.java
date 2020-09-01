@@ -9,18 +9,21 @@ import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableSet;
 
+import org.mockito.Mockito;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.services.SponsorService;
 
-public class AuthUtilsTest {
+public class AuthUtilsTest extends Mockito {
     private static final String SHARED_OWNER_ID = TEST_APP_ID + ":" + OWNER_ID;
     
     @AfterMethod
@@ -175,5 +178,92 @@ public class AuthUtilsTest {
                 .withCallerUserId("notUserId").build());
         
         AuthUtils.checkSelfOrResearcherAndThrow(USER_ID);
+    }
+    
+    @Test
+    public void checkSelfAdminOrSponsorFails() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerUserId("adminUser")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        SponsorService mockSponsorService = mock(SponsorService.class);
+        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.FALSE);
+
+        assertFalse(AuthUtils.checkSelfAdminOrSponsor(mockSponsorService, TEST_STUDY_ID, null));
+    }
+    
+    @Test
+    public void checkSelfAdminOrSponsorForAdminSucceeds() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        SponsorService mockSponsorService = mock(SponsorService.class);
+        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.FALSE);
+
+        assertTrue(AuthUtils.checkSelfAdminOrSponsor(mockSponsorService, TEST_STUDY_ID, null));
+    }
+    
+    @Test
+    public void checkSelfAdminOrSponsorForSponsorSucceeds() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        SponsorService mockSponsorService = mock(SponsorService.class);
+        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.TRUE);
+
+        assertTrue(AuthUtils.checkSelfAdminOrSponsor(mockSponsorService, TEST_STUDY_ID, null));
+    }
+    
+    @Test
+    public void checkSelfAdminOrSponsorForSponsorFails() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        SponsorService mockSponsorService = mock(SponsorService.class);
+        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.FALSE);
+
+        assertFalse(AuthUtils.checkSelfAdminOrSponsor(mockSponsorService, TEST_STUDY_ID, null));
+    }
+    
+    
+    @Test
+    public void checkSelfAdminOrSponsorForSelfSucceeds() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerUserId(USER_ID).build());
+        
+        SponsorService mockSponsorService = mock(SponsorService.class);
+        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.TRUE);
+
+        assertTrue(AuthUtils.checkSelfAdminOrSponsor(mockSponsorService, TEST_STUDY_ID, USER_ID));
+    }
+
+    @Test
+    public void checkSelfAdminOrSponsorAndThrow() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerUserId("adminUser")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        SponsorService mockSponsorService = mock(SponsorService.class);
+        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.TRUE);
+
+        AuthUtils.checkSelfAdminOrSponsorAndThrow(mockSponsorService, TEST_STUDY_ID, null);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkSelfAdminOrSponsorAndThrowFails() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerUserId("adminUser")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        SponsorService mockSponsorService = mock(SponsorService.class);
+        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.FALSE);
+
+        AuthUtils.checkSelfAdminOrSponsorAndThrow(mockSponsorService, TEST_STUDY_ID, null);
     }
 }

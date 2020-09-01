@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.AuthUtils.checkOrgMembershipAndThrow;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
@@ -12,6 +13,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.SponsorDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -113,5 +115,15 @@ public class SponsorService {
             organizationService.getOrganization(appId, orgId);
             throw new BadRequestException(String.format(NOT_A_SPONSOR_MSG, orgId, studyId));
         }
+    }
+    
+    public boolean isStudySponsoredBy(String studyId, String orgId) {
+        checkNotNull(studyId);
+        
+        if (isBlank(studyId) || isBlank(orgId)) {
+            return false;
+        }
+        String appId = BridgeUtils.getRequestContext().getCallerAppId();
+        return sponsorDao.doesOrganizationSponsorStudy(appId, studyId, orgId);
     }
 }

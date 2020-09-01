@@ -13,7 +13,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 
 @Component
 public class SponsorPersistenceExceptionConverter implements PersistenceExceptionConverter {
-    static final String DUPLICATE_MSG = "Organization is already a sponsor of this study";
+    static final String DUPLICATE_MSG = "Organization is already a sponsor of this study.";
 
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {

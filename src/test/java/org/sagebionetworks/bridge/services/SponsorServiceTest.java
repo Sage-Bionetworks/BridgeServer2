@@ -9,7 +9,9 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -242,5 +244,28 @@ public class SponsorServiceTest extends Mockito {
         service.removeStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
         
         verify(mockSponsorDao).removeStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
+    }
+    
+    @Test
+    public void isStudySponsoredBy() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID).build());
+        
+        when(mockSponsorDao.doesOrganizationSponsorStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(true);
+        
+        boolean retValue = service.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID);
+        assertTrue(retValue);
+        
+        verify(mockSponsorDao).doesOrganizationSponsorStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
+    }
+
+    @Test
+    public void isStudySponsoredByStudyBlank() {
+        assertFalse(service.isStudySponsoredBy("", TEST_ORG_ID));
+    }
+
+    @Test
+    public void isStudySponsoredByOrgNull() {
+        assertFalse(service.isStudySponsoredBy(TEST_STUDY_ID, null));
     }
 }

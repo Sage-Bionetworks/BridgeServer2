@@ -6,6 +6,8 @@ import com.google.common.collect.ImmutableSet;
 
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
+
 public class QueryBuilderTest {
 
     @Test
@@ -65,5 +67,24 @@ public class QueryBuilderTest {
         builder.orgMembership("foo");
         assertEquals(builder.getQuery(), "AND acct.orgMembership = :orgId");
         assertEquals(builder.getParameters().get("orgId"), "foo");
+    }
+    
+    @Test
+    public void enrollment() {
+        QueryBuilder builder = new QueryBuilder();
+        builder.enrollment(EnrollmentFilter.ENROLLED);
+        assertEquals(builder.getQuery(), "AND withdrawnOn IS NULL");
+        
+        builder = new QueryBuilder();
+        builder.enrollment(EnrollmentFilter.WITHDRAWN);
+        assertEquals(builder.getQuery(), "AND withdrawnOn IS NOT NULL");
+        
+        builder = new QueryBuilder();
+        builder.enrollment(EnrollmentFilter.ALL);
+        assertEquals(builder.getQuery(), "");
+        
+        builder = new QueryBuilder();
+        builder.enrollment(null);
+        assertEquals(builder.getQuery(), "");
     }
 }

@@ -30,6 +30,7 @@ public class ResourceList<T> {
     public static final String EMAIL_FILTER = "emailFilter";
     public static final String END_DATE = "endDate";
     public static final String END_TIME = "endTime";
+    public static final String ENROLLMENT_FILTER = "enrollmentFilter";
     public static final String GUID = "guid";
     public static final String ID_FILTER = "idFilter";
     public static final String IDENTIFIER = "identifier";
