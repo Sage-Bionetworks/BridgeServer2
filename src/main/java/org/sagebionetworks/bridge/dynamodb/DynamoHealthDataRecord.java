@@ -27,7 +27,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.datatype.joda.deser.LocalDateDeserializer;
 
 /** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.healthdata.HealthDataRecord}. */
-@DynamoThroughput(readCapacity=43, writeCapacity=10)
 @DynamoDBTable(tableName = "HealthDataRecord3")
 @JsonFilter("filter")
 public class DynamoHealthDataRecord implements HealthDataRecord {
