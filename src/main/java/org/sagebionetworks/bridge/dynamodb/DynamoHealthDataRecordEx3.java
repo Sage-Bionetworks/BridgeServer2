@@ -17,7 +17,6 @@ import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 
-@DynamoThroughput(readCapacity=2, writeCapacity=2)
 @DynamoDBTable(tableName = "HealthDataRecordEx3")
 public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     public static final String APPID_CREATEDON_INDEX = "appId-createdOn-index";
