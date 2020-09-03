@@ -20,10 +20,7 @@ public class DynamoParticipantFile implements ParticipantFile {
     private DateTime createdOn;
     private String mimeType;
     private String appId;
-
-    @JsonIgnore
     private String uploadUrl;
-    @JsonIgnore
     private String downloadUrl;
 
     public DynamoParticipantFile() {
