@@ -62,13 +62,10 @@ public class ParticipantFileController extends BaseController {
         String userId = session.getParticipant().getId();
         String appId = session.getAppId();
 
-        ParticipantFile file = parseJson(DynamoParticipantFile.class);
-        file.setUserId(userId);
-        file.setCreatedOn(new DateTime());
+        ParticipantFile file = parseJson(ParticipantFile.class);
         file.setFileId(fileId);
-        file.setAppId(appId);
 
-        return fileService.createParticipantFile(file);
+        return fileService.createParticipantFile(appId, userId, file);
     }
 
     @DeleteMapping("/v3/participants/self/files/{fileId}")

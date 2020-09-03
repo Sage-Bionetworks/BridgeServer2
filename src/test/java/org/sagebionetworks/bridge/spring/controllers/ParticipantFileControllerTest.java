@@ -115,7 +115,7 @@ public class ParticipantFileControllerTest {
         newFile.setAppId("api");
         newFile.setMimeType("dummy-type");
         mockRequestBody(mockRequest, newFile);
-        when(mockFileService.createParticipantFile(any())).thenReturn(persisted);
+        when(mockFileService.createParticipantFile(any(), any(), any())).thenReturn(persisted);
         ParticipantFile result = controller.createParticipantFile("file_id");
 
         assertEquals(result.getFileId(), "file_id");

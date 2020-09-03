@@ -104,15 +104,23 @@ public class ParticipantFileService {
     }
 
     /**
-     * Logs the metadata in the database, and then returns the passed-in ParticipantFile with pre-signed URL
-     * for S3 file upload. If the file or the file metadata already exists, throws EntityAlreadyExistsException.
+     * Sets the appId and the userId of this file, logs the metadata in the database,
+     * and then returns the passed-in ParticipantFile with pre-signed URL for S3 file upload.
+     * If the file or the file metadata already exists, throws EntityAlreadyExistsException.
      *
-     * @param file the file metadata to be upload
+     * @param appId the appId of this file
+     * @param userId the userId of this file
+     * @param file the file metadata to be upload. The file's appId and userId will be set by given parameters.
      * @return the ParticipantFile with pre-signed S3 URL for file upload.
      * @throws org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException
      *         if the file already exists.
      */
-    public ParticipantFile createParticipantFile(ParticipantFile file) {
+    public ParticipantFile createParticipantFile(String appId, String userId, ParticipantFile file) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(userId));
+        file.setUserId(userId);
+        file.setAppId(appId);
+        file.setCreatedOn(DateTime.now());
         Validate.entityThrowingException(INSTANCE, file);
 
         participantFileDao.getParticipantFile(file.getUserId(), file.getFileId()).ifPresent(

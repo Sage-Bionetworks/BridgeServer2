@@ -24,6 +24,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 public class ParticipantFileServiceTest {
 
@@ -113,17 +114,18 @@ public class ParticipantFileServiceTest {
 
         when(mockFileDao.getParticipantFile(any(), any())).thenReturn(Optional.empty());
 
+        // UserId and AppId should not depend on file, it should be manually set by the Service.
         ParticipantFile file = ParticipantFile.create();
         file.setFileId("file_id");
-        file.setUserId("test_user");
+        file.setUserId("wrong_user");
         file.setMimeType("dummy-type");
-        file.setAppId("api");
+        file.setAppId("wrong_api");
         file.setCreatedOn(TestConstants.TIMESTAMP);
-        ParticipantFile result = service.createParticipantFile(file);
+        ParticipantFile result = service.createParticipantFile("api", "test_user", file);
         assertEquals(result.getUserId(), "test_user");
         assertEquals(result.getFileId(), "file_id");
         assertEquals(result.getMimeType(), "dummy-type");
-        assertEquals(result.getCreatedOn(), TestConstants.TIMESTAMP);
+        assertNotNull(result.getCreatedOn());
         assertEquals(result.getUploadUrl(), upload);
         assertEquals(result.getAppId(), "api");
     }
@@ -131,7 +133,7 @@ public class ParticipantFileServiceTest {
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createParticipantFileInvalidFile() {
         ParticipantFile file = ParticipantFile.create();
-        service.createParticipantFile(file);
+        service.createParticipantFile("api", "test_user", file);
     }
 
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
@@ -151,7 +153,7 @@ public class ParticipantFileServiceTest {
         newFile.setCreatedOn(TestConstants.TIMESTAMP);
 
         when(mockFileDao.getParticipantFile(eq("test_user"), eq("file_id"))).thenReturn(Optional.of(file));
-        service.createParticipantFile(newFile);
+        service.createParticipantFile("not_api", "test_user", newFile);
     }
 
     @Test
