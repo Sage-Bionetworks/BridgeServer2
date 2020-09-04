@@ -5,7 +5,6 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import org.apache.commons.validator.Arg;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -28,11 +27,8 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.powermock.api.mockito.PowerMockito.verifyPrivate;
-import static org.powermock.api.support.membermodification.MemberMatcher.method;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
@@ -95,7 +91,7 @@ public class ParticipantFileServiceTest {
     }
 
     @Test
-    public void getParticipantFile() throws Exception {
+    public void getParticipantFile() {
         String downloadUrl = "https://" + UPLOAD_BUCKET + "/test_user/file_id";
         ParticipantFile file = ParticipantFile.create();
         file.setFileId("file_id");
