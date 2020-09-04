@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.files.ParticipantFile;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
@@ -38,7 +39,7 @@ public class DynamoParticipantFileTest {
         String json ="{\"fileId\":\"fileId\",\"userId\":\"userId\",\"createdOn\":\"2015-01-27T00:38:32.486Z\"," +
                 "\"mimeType\":\"image/jpeg\",\"appId\":\"api_test\",\"uploadUrl\":\"dummy.upload\"," +
                 "\"downloadUrl\":\"dummy.download\",\"type\":\"DynamoParticipantFile\"}";
-        DynamoParticipantFile file = MAPPER.readValue(json, DynamoParticipantFile.class);
+        ParticipantFile file = MAPPER.readValue(json, ParticipantFile.class);
 
         assertEquals(file.getFileId(), "fileId");
         assertEquals(file.getUserId(), "userId");
