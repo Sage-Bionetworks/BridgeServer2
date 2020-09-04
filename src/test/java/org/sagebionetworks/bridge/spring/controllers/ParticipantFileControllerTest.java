@@ -104,7 +104,9 @@ public class ParticipantFileControllerTest {
         when(mockFileService.getParticipantFile(eq("test_user"), eq("file_id"))).thenReturn(persisted);
         ParticipantFile result = controller.getParticipantFile("file_id");
         assertSame(result, persisted);
+
         verify(mockFileService).getParticipantFile("test_user", "file_id");
+        verify(mockResponse).setHeader(eq("Location"), eq(result.getDownloadUrl()));
     }
 
     @Test
@@ -112,15 +114,19 @@ public class ParticipantFileControllerTest {
         ParticipantFile newFile = ParticipantFile.create();
         newFile.setUserId("test_user");
         newFile.setFileId("file_id");
-        newFile.setAppId("api");
         newFile.setMimeType("dummy-type");
         mockRequestBody(mockRequest, newFile);
-        when(mockFileService.createParticipantFile(any(), any(), any())).thenReturn(persisted);
+        when(mockFileService.createParticipantFile(any(), any(), any())).thenAnswer(i ->
+        {
+            newFile.setAppId(i.getArgument(0));
+            newFile.setCreatedOn(TestConstants.TIMESTAMP);
+            return newFile;
+        });
         ParticipantFile result = controller.createParticipantFile("file_id");
 
         assertEquals(result.getFileId(), "file_id");
         assertEquals(result.getUserId(), "test_user");
-        assertEquals(result.getAppId(), "api");
+        assertEquals(result.getAppId(), "test-app");
         assertEquals(result.getMimeType(), "dummy-type");
         assertEquals(result.getCreatedOn(), TestConstants.TIMESTAMP);
     }
@@ -135,6 +141,6 @@ public class ParticipantFileControllerTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteParticipantFileNoSuchFile() {
         doThrow(EntityNotFoundException.class).when(mockFileService).deleteParticipantFile(any(), any());
-        StatusMessage message = controller.deleteParticipantFile("file_id");
+        controller.deleteParticipantFile("file_id");
     }
 }

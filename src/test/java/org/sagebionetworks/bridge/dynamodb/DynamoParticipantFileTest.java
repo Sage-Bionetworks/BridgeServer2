@@ -7,6 +7,8 @@ import org.sagebionetworks.bridge.models.files.ParticipantFile;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 
 public class DynamoParticipantFileTest {
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
@@ -31,6 +33,15 @@ public class DynamoParticipantFileTest {
         assertEquals(node.get("downloadUrl").textValue(), "dummy.download");
         assertEquals(node.get("uploadUrl").textValue(), "dummy.upload");
         assertEquals(node.size(), 8);
+
+        ParticipantFile deser = MAPPER.readValue(json, ParticipantFile.class);
+        assertEquals(deser.getUserId(), "userId");
+        assertEquals(deser.getFileId(), "fileId");
+        assertEquals(deser.getCreatedOn(), TestConstants.TIMESTAMP);
+        assertEquals(deser.getMimeType(), "image/jpeg");
+        assertEquals(deser.getAppId(), "api_test");
+        assertEquals(deser.getDownloadUrl(), "dummy.download");
+        assertEquals(deser.getUploadUrl(), "dummy.upload");
     }
 
     @Test

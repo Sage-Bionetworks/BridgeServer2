@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.sun.mail.iap.Argument;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -68,6 +69,9 @@ public class DynamoParticipantFileDaoTest {
     @Captor
     ArgumentCaptor<ParticipantFile> fileCaptor;
 
+    @Captor
+    ArgumentCaptor<DynamoDBQueryExpression<ParticipantFile>> expressionCaptor;
+
     @InjectMocks
     DynamoParticipantFileDao dao;
 
@@ -88,6 +92,11 @@ public class DynamoParticipantFileDaoTest {
         assertEquals(resultList.size(), 1);
         ParticipantFile resultFile = resultList.get(0);
         assertEquals(resultFile, RESULT);
+
+        verify(mapper).query(any(), expressionCaptor.capture());
+        DynamoDBQueryExpression<ParticipantFile> expression = expressionCaptor.getValue();
+        assertEquals(expression.getLimit().intValue(), 5);
+        assertNull(expression.getExclusiveStartKey());
     }
 
     @Test
@@ -105,6 +114,12 @@ public class DynamoParticipantFileDaoTest {
         assertEquals(nextPageOffsetKey, "file4");
         assertNull(params.get(ResourceList.OFFSET_KEY));
         assertEquals(params.get(ResourceList.PAGE_SIZE), 5);
+
+        verify(mapper).query(any(), expressionCaptor.capture());
+        DynamoDBQueryExpression<ParticipantFile> expression = expressionCaptor.getValue();
+        assertTrue(expression.isConsistentRead());
+        assertEquals(expression.getLimit().intValue(), 5);
+        assertNull(expression.getExclusiveStartKey());
 
         // verify everything is correct in this result list.
         List<ParticipantFile> resultList = result.getItems();
@@ -141,6 +156,13 @@ public class DynamoParticipantFileDaoTest {
             assertEquals(file.getMimeType(), "image/jpeg");
             assertEquals(file.getAppId(), "api");
         }
+
+        verify(mapper).query(any(), expressionCaptor.capture());
+        DynamoDBQueryExpression<ParticipantFile> expression = expressionCaptor.getValue();
+        assertTrue(expression.isConsistentRead());
+        assertEquals(expression.getLimit().intValue(), 5);
+        assertEquals(expression.getExclusiveStartKey().get("fileId").getS(),
+                "file3");
     }
 
     private PaginatedQueryList<ParticipantFile> setUpQueryResult(DynamoDBQueryExpression<ParticipantFile> exp) {

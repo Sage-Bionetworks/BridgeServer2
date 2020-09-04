@@ -1,10 +1,17 @@
 package org.sagebionetworks.bridge.services;
 
+import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import org.apache.commons.validator.Arg;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
@@ -21,8 +28,11 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.powermock.api.mockito.PowerMockito.verifyPrivate;
+import static org.powermock.api.support.membermodification.MemberMatcher.method;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
@@ -40,7 +50,11 @@ public class ParticipantFileServiceTest {
     AmazonS3 mockS3Client;
 
     @InjectMocks
+    @Spy
     ParticipantFileService service;
+
+    @Captor
+    ArgumentCaptor<GeneratePresignedUrlRequest> requestCaptor;
 
     @BeforeMethod
     public void beforeMethod() {
@@ -81,7 +95,7 @@ public class ParticipantFileServiceTest {
     }
 
     @Test
-    public void getParticipantFile() {
+    public void getParticipantFile() throws Exception {
         String downloadUrl = "https://" + UPLOAD_BUCKET + "/test_user/file_id";
         ParticipantFile file = ParticipantFile.create();
         file.setFileId("file_id");
@@ -99,6 +113,14 @@ public class ParticipantFileServiceTest {
         assertEquals(result.getMimeType(), "dummy-type");
         assertEquals(result.getDownloadUrl(), downloadUrl);
         assertEquals(result.getAppId(), "api");
+
+        verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
+        GeneratePresignedUrlRequest request = requestCaptor.getValue();
+        assertEquals(request.getMethod(), HttpMethod.GET);
+        assertEquals(request.getContentType(), file.getMimeType());
+        assertEquals(request.getKey(), "test_user/file_id");
+        assertEquals(request.getRequestParameters().get(Headers.SERVER_SIDE_ENCRYPTION),
+                ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -128,6 +150,14 @@ public class ParticipantFileServiceTest {
         assertNotNull(result.getCreatedOn());
         assertEquals(result.getUploadUrl(), upload);
         assertEquals(result.getAppId(), "api");
+
+        verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
+        GeneratePresignedUrlRequest request = requestCaptor.getValue();
+        assertEquals(request.getMethod(), HttpMethod.PUT);
+        assertEquals(request.getContentType(), file.getMimeType());
+        assertEquals(request.getKey(), "test_user/file_id");
+        assertEquals(request.getRequestParameters().get(Headers.SERVER_SIDE_ENCRYPTION),
+                ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
