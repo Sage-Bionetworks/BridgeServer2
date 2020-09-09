@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import com.google.common.collect.ImmutableList;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -25,6 +27,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -54,6 +57,9 @@ public class ParticipantFileControllerTest {
 
     UserSession session;
     ParticipantFile persisted;
+
+    @Captor
+    ArgumentCaptor<ParticipantFile> fileCaptor;
 
     @BeforeMethod
     public void beforeMethod() {
@@ -116,19 +122,16 @@ public class ParticipantFileControllerTest {
         newFile.setFileId("file_id");
         newFile.setMimeType("dummy-type");
         mockRequestBody(mockRequest, newFile);
-        when(mockFileService.createParticipantFile(any(), any(), any())).thenAnswer(i ->
-        {
-            newFile.setAppId(i.getArgument(0));
-            newFile.setCreatedOn(TestConstants.TIMESTAMP);
-            return newFile;
-        });
+        when(mockFileService.createParticipantFile(any(), any(), any())).thenReturn(newFile);
         ParticipantFile result = controller.createParticipantFile("file_id");
 
         assertEquals(result.getFileId(), "file_id");
-        assertEquals(result.getUserId(), "test_user");
-        assertEquals(result.getAppId(), "test-app");
         assertEquals(result.getMimeType(), "dummy-type");
-        assertEquals(result.getCreatedOn(), TestConstants.TIMESTAMP);
+
+        verify(mockFileService).createParticipantFile(eq("test-app"), eq("test_user"), fileCaptor.capture());
+        ParticipantFile captured = fileCaptor.getValue();
+        assertEquals(captured.getFileId(), "file_id");
+        assertEquals(captured.getMimeType(), "dummy-type");
     }
 
     @Test

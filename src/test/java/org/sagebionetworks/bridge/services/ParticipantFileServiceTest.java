@@ -5,6 +5,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -23,6 +24,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.URL;
+import java.util.Date;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -46,7 +48,6 @@ public class ParticipantFileServiceTest {
     AmazonS3 mockS3Client;
 
     @InjectMocks
-    @Spy
     ParticipantFileService service;
 
     @Captor
@@ -112,6 +113,7 @@ public class ParticipantFileServiceTest {
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
+        assertEquals(request.getBucketName(), UPLOAD_BUCKET);
         assertEquals(request.getMethod(), HttpMethod.GET);
         assertEquals(request.getContentType(), file.getMimeType());
         assertEquals(request.getKey(), "test_user/file_id");
@@ -138,7 +140,6 @@ public class ParticipantFileServiceTest {
         file.setUserId("wrong_user");
         file.setMimeType("dummy-type");
         file.setAppId("wrong_api");
-        file.setCreatedOn(TestConstants.TIMESTAMP);
         ParticipantFile result = service.createParticipantFile("api", "test_user", file);
         assertEquals(result.getUserId(), "test_user");
         assertEquals(result.getFileId(), "file_id");

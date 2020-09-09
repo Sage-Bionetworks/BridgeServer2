@@ -96,6 +96,9 @@ public class DynamoParticipantFileDaoTest {
         DynamoDBQueryExpression<ParticipantFile> expression = expressionCaptor.getValue();
         assertEquals(expression.getLimit().intValue(), 5);
         assertNull(expression.getExclusiveStartKey());
+        assertTrue(expression.isConsistentRead());
+        ParticipantFile expFile = expression.getHashKeyValues();
+        assertEquals(expFile.getUserId(), KEY.getUserId());
     }
 
     @Test
@@ -119,6 +122,9 @@ public class DynamoParticipantFileDaoTest {
         assertTrue(expression.isConsistentRead());
         assertEquals(expression.getLimit().intValue(), 5);
         assertNull(expression.getExclusiveStartKey());
+        assertTrue(expression.isConsistentRead());
+        ParticipantFile expFile = expression.getHashKeyValues();
+        assertEquals(expFile.getUserId(), KEY.getUserId());
 
         // verify everything is correct in this result list.
         List<ParticipantFile> resultList = result.getItems();
@@ -162,6 +168,9 @@ public class DynamoParticipantFileDaoTest {
         assertEquals(expression.getLimit().intValue(), 5);
         assertEquals(expression.getExclusiveStartKey().get("fileId").getS(),
                 "file3");
+        assertTrue(expression.isConsistentRead());
+        ParticipantFile expFile = expression.getHashKeyValues();
+        assertEquals(expFile.getUserId(), KEY.getUserId());
     }
 
     private PaginatedQueryList<ParticipantFile> setUpQueryResult(DynamoDBQueryExpression<ParticipantFile> exp) {
