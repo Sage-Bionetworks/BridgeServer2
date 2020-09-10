@@ -7,6 +7,10 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestUtils.assertCreate;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -64,6 +68,14 @@ public class EnrollmentControllerTest extends Mockito {
     }
     
     @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(EnrollmentController.class);
+        assertGet(EnrollmentController.class, "getEnrollmentsForStudy");
+        assertCreate(EnrollmentController.class, "enroll");
+        assertDelete(EnrollmentController.class, "unenroll");
+    }
+    
+    @Test
     public void getEnrollmentsForStudy() {
         Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "user1");
         Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "user2");
@@ -84,6 +96,7 @@ public class EnrollmentControllerTest extends Mockito {
         enrollment.setExternalId("anExternalId");
         enrollment.setAccountId(USER_ID);
         enrollment.setConsentRequired(true);
+        
         TestUtils.mockRequestBody(mockRequest, enrollment);
         
         Enrollment completed = new HibernateEnrollment();
@@ -95,6 +108,8 @@ public class EnrollmentControllerTest extends Mockito {
         verify(mockService).enroll(enrollmentCaptor.capture());
         
         Enrollment value = enrollmentCaptor.getValue();
+        assertEquals(value.getAppId(), TEST_APP_ID);
+        assertEquals(value.getStudyId(), TEST_STUDY_ID);
         assertEquals(value.getEnrolledOn(), CREATED_ON);
         assertEquals(value.getExternalId(), "anExternalId");
         assertEquals(value.getAccountId(), USER_ID);
@@ -120,7 +135,7 @@ public class EnrollmentControllerTest extends Mockito {
         assertEquals(value.getWithdrawnOn(), MODIFIED_ON);
         assertEquals(value.getWithdrawalNote(), "This is a note");
         assertEquals(value.getAppId(), TEST_APP_ID);
-        assertEquals(value.getAccountId(), USER_ID);
         assertEquals(value.getStudyId(), TEST_STUDY_ID);
+        assertEquals(value.getAccountId(), USER_ID);
     }
 }

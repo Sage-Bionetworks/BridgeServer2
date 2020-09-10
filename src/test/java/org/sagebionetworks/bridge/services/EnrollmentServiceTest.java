@@ -20,6 +20,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -43,6 +44,7 @@ import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -170,6 +172,8 @@ public class EnrollmentServiceTest extends Mockito {
         assertNull(retValue.getWithdrawnBy());
         assertNull(retValue.getWithdrawalNote());
         assertFalse(retValue.isConsentRequired());
+        
+        assertTrue(account.getEnrollments().contains(retValue));
     }
     
     @Test
@@ -307,6 +311,14 @@ public class EnrollmentServiceTest extends Mockito {
         service.enroll(enrollment);
     }
     
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void enrollInvalidEnrollment() {
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+        enrollment.setAccountId(null);
+
+        service.enroll(enrollment);
+    }
+    
     @Test
     public void unenrollBySelf() {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
@@ -321,19 +333,42 @@ public class EnrollmentServiceTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
-        enrollment.setWithdrawnOn(MODIFIED_ON);
+        enrollment.setWithdrawnOn(MODIFIED_ON.minusHours(1));
         enrollment.setWithdrawalNote("Withdrawal reason");
         
         Enrollment retValue = service.unenroll(enrollment);
-        assertEquals(retValue.getWithdrawnOn(), MODIFIED_ON);
+        assertEquals(retValue.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(retValue.getWithdrawnBy());
         assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
 
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Enrollment captured = Iterables.getLast(accountCaptor.getValue().getEnrollments(), null);
-        assertEquals(captured.getWithdrawnOn(), MODIFIED_ON);
+        assertEquals(captured.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(captured.getWithdrawnBy());
         assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");        
+    }
+    
+    @Test
+    public void unenrollBySelfDefaultsWithdrawnOn() {
+        BridgeUtils.setRequestContext(new RequestContext.Builder()
+                .withCallerUserId(USER_ID).build());
+                
+        Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+        
+        Account account = Account.create();
+        account.setId(USER_ID);
+        account.setEnrollments(Sets.newHashSet(existing));
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+        enrollment.setWithdrawalNote("Withdrawal reason");
+        
+        Enrollment retValue = service.unenroll(enrollment);
+        assertEquals(retValue.getWithdrawnOn(), MODIFIED_ON);
+
+        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        Enrollment captured = Iterables.getLast(accountCaptor.getValue().getEnrollments(), null);
+        assertEquals(captured.getWithdrawnOn(), MODIFIED_ON);
     }
     
     @Test
@@ -467,5 +502,13 @@ public class EnrollmentServiceTest extends Mockito {
 
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
         service.unenroll(enrollment);
-    }    
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void unenrollInvalidEnrollment() {
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+        enrollment.setAccountId(null);
+
+        service.unenroll(enrollment);
+    }
 }

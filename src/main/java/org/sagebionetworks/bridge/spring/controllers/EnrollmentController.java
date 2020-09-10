@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -58,7 +59,7 @@ public class EnrollmentController extends BaseController {
         return service.enroll(enrollment);
     }
     
-    @PostMapping("/v5/studies/{studyId}/enrollments/{userId}")
+    @DeleteMapping("/v5/studies/{studyId}/enrollments/{userId}")
     public Enrollment unenroll(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER, ADMIN);
         
