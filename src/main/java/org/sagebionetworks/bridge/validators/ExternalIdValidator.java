@@ -31,7 +31,7 @@ public class ExternalIdValidator implements Validator {
         ExternalIdentifier extId = (ExternalIdentifier)object;
 
         String callerAppId = BridgeUtils.getRequestContext().getCallerAppId();
-        Set<String> callerStudies = BridgeUtils.getRequestContext().getCallerStudies();
+        Set<String> callerStudies = BridgeUtils.getRequestContext().getOrgSponsoredStudies();
         
         if (StringUtils.isBlank(extId.getIdentifier())) {
             errors.rejectValue("identifier", "cannot be null or blank");

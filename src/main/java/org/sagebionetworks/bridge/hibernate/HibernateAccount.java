@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
@@ -42,6 +43,7 @@ import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /** MySQL implementation of accounts via Hibernate. */
@@ -470,6 +472,14 @@ public class HibernateAccount implements Account {
             enrollments = new HashSet<>();
         }
         return enrollments;
+    }
+    
+    @Transient
+    @JsonIgnore
+    public Set<Enrollment> getActiveEnrollments() {
+        return getEnrollments().stream()
+                .filter(en -> en.getWithdrawnOn() == null)
+                .collect(Collectors.toSet());
     }
 
     @Override

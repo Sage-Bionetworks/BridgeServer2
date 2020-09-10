@@ -4,10 +4,13 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -23,7 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -132,12 +134,16 @@ public class ConsentServiceMockTest {
     private StudyConsentView studyConsentView;
     @Mock
     private TemplateService templateService;
+    @Mock
+    private EnrollmentService enrollmentService;
     @Captor
     private ArgumentCaptor<BasicEmailProvider> emailCaptor;
     @Captor
     private ArgumentCaptor<SmsMessageProvider> smsProviderCaptor;
     @Captor
     private ArgumentCaptor<Account> accountCaptor;
+    @Captor
+    private ArgumentCaptor<Enrollment> enrollmentCaptor;
 
     private Account account;
 
@@ -159,6 +165,7 @@ public class ConsentServiceMockTest {
         consentService.setNotificationsService(notificationsService);
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
         consentService.setTemplateService(templateService);
+        consentService.setEnrollmentService(enrollmentService);
 
         app = TestUtils.getValidApp(ConsentServiceMockTest.class);
         
@@ -362,7 +369,7 @@ public class ConsentServiceMockTest {
 
     @Test
     public void withdrawConsentRemovesDataGroups() throws Exception {
-        Set<String> dataGroups = Sets.newHashSet(TestConstants.USER_DATA_GROUPS);
+        Set<String> dataGroups = Sets.newHashSet(USER_DATA_GROUPS);
         dataGroups.add("leaveBehind1");
         dataGroups.add("leaveBehind2");
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
@@ -375,7 +382,6 @@ public class ConsentServiceMockTest {
 
         assertEquals(account.getDataGroups(), ImmutableSet.of("leaveBehind1", "leaveBehind2"));
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
-        verify(subpopulation, never()).getStudyIdsAssignedOnConsent();
     }
 
     @Test
@@ -914,8 +920,8 @@ public class ConsentServiceMockTest {
 
     @Test
     public void consentToResearchAssignsDataGroupsAndStudies() throws Exception {
-        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
-        when(subpopulation.getStudyIdsAssignedOnConsent()).thenReturn(TestConstants.USER_STUDY_IDS);
+        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(USER_DATA_GROUPS);
+        when(subpopulation.getStudyIdsAssignedOnConsent()).thenReturn(USER_STUDY_IDS);
 
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);
@@ -923,10 +929,11 @@ public class ConsentServiceMockTest {
         consentService.consentToResearch(app, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
                 SharingScope.NO_SHARING, false);
 
-        assertEquals(account.getDataGroups(), TestConstants.USER_DATA_GROUPS);
-        assertEquals(account.getEnrollments().stream().map(
-                Enrollment::getStudyId).collect(Collectors.toSet()),
-                TestConstants.USER_STUDY_IDS);
+        assertEquals(account.getDataGroups(), USER_DATA_GROUPS);
+        
+        verify(enrollmentService, times(2)).enroll(any(), enrollmentCaptor.capture());
+        assertEquals(enrollmentCaptor.getAllValues().get(0).getStudyId(), "studyA");
+        assertEquals(enrollmentCaptor.getAllValues().get(1).getStudyId(), "studyB");
     }
 
     @Test

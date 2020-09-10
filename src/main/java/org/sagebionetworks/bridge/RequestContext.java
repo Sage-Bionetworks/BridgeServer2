@@ -14,12 +14,13 @@ import org.sagebionetworks.bridge.models.Metrics;
 public class RequestContext {
     
     public static final RequestContext NULL_INSTANCE = new RequestContext(null, null, null, null, ImmutableSet.of(),
-            ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of(), null);
-
+            ImmutableSet.of(), ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of(), null);
+    
     private final String requestId;
     private final String callerAppId;
     private final String callerOrgMembership;
     private final Set<String> callerStudies;
+    private final Set<String> orgSponsoredStudies;
     private final Set<Roles> callerRoles;
     private final String callerUserId;
     private final ClientInfo callerClientInfo;
@@ -28,12 +29,13 @@ public class RequestContext {
     private final String callerIpAddress;
     
     private RequestContext(Metrics metrics, String requestId, String callerAppId, String callerOrgMembership,
-            Set<String> callerStudies, Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo,
-            List<String> callerLanguages, String callerIpAddress) {
+            Set<String> callerStudies, Set<String> orgSponsoredStudies, Set<Roles> callerRoles, String callerUserId,
+            ClientInfo callerClientInfo, List<String> callerLanguages, String callerIpAddress) {
         this.requestId = requestId;
         this.callerAppId = callerAppId;
         this.callerOrgMembership = callerOrgMembership;
         this.callerStudies = callerStudies;
+        this.orgSponsoredStudies = orgSponsoredStudies;
         this.callerRoles = callerRoles;
         this.callerUserId = callerUserId;
         this.callerClientInfo = callerClientInfo;
@@ -56,6 +58,9 @@ public class RequestContext {
     }
     public Set<String> getCallerStudies() {
         return callerStudies;
+    }
+    public Set<String> getOrgSponsoredStudies() {
+        return orgSponsoredStudies;
     }
     // Only accessible to tests to verify
     Set<Roles> getCallerRoles() {
@@ -92,6 +97,7 @@ public class RequestContext {
             .withCallerLanguages(callerLanguages)
             .withCallerRoles(callerRoles)
             .withCallerStudies(callerStudies)
+            .withOrgSponsoredStudies(orgSponsoredStudies)
             .withCallerUserId(callerUserId)
             .withMetrics(metrics)
             .withCallerIpAddress(callerIpAddress);
@@ -102,6 +108,7 @@ public class RequestContext {
         private String callerAppId;
         private String callerOrgMembership;
         private Set<String> callerStudies;
+        private Set<String> orgSponsoredStudies;
         private Set<Roles> callerRoles;
         private String requestId;
         private String callerUserId;
@@ -123,6 +130,10 @@ public class RequestContext {
         }
         public Builder withCallerStudies(Set<String> callerStudies) {
             this.callerStudies = (callerStudies == null) ? null : ImmutableSet.copyOf(callerStudies);
+            return this;
+        }
+        public Builder withOrgSponsoredStudies(Set<String> orgSponsoredStudies){ 
+            this.orgSponsoredStudies = (orgSponsoredStudies == null) ? null : ImmutableSet.copyOf(orgSponsoredStudies);
             return this;
         }
         public Builder withCallerRoles(Set<Roles> roles) {
@@ -157,6 +168,9 @@ public class RequestContext {
             if (callerStudies == null) {
                 callerStudies = ImmutableSet.of();
             }
+            if (orgSponsoredStudies == null) {
+                orgSponsoredStudies = ImmutableSet.of();
+            }
             if (callerRoles == null) {
                 callerRoles = ImmutableSet.of();
             }
@@ -170,15 +184,16 @@ public class RequestContext {
                 metrics = new Metrics(requestId);
             }
             return new RequestContext(metrics, requestId, callerAppId, callerOrgMembership, callerStudies,
-                    callerRoles, callerUserId, callerClientInfo, callerLanguages, callerIpAddress);
+                    orgSponsoredStudies, callerRoles, callerUserId, callerClientInfo, callerLanguages, callerIpAddress);
         }
     }
 
     @Override
     public String toString() {
         return "RequestContext [requestId=" + requestId + ", callerAppId=" + callerAppId + ", callerOrgMembership="
-                + callerOrgMembership + ", callerStudies=" + callerStudies + ", callerRoles=" + callerRoles
-                + ", callerUserId=" + callerUserId + ", callerClientInfo=" + callerClientInfo + ", callerIpAddress="
-                + callerIpAddress + ", callerLanguages=" + callerLanguages + ", metrics=" + metrics + "]";
+                + callerOrgMembership + ", callerStudies=" + callerStudies + ", orgSponsoredStudies="
+                + orgSponsoredStudies + ", callerRoles=" + callerRoles + ", callerUserId=" + callerUserId
+                + ", callerClientInfo=" + callerClientInfo + ", callerIpAddress=" + callerIpAddress
+                + ", callerLanguages=" + callerLanguages + ", metrics=" + metrics + "]";
     }
 }

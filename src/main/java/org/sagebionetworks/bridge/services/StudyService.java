@@ -131,4 +131,10 @@ public class StudyService {
         getStudy(appId, studyId, true);
         studyDao.deleteStudyPermanently(appId, studyId);
     }
+    
+    public void deleteAllStudies(String appId) {
+        checkNotNull(appId);
+        
+        studyDao.deleteAllStudies(appId);
+    }
 }

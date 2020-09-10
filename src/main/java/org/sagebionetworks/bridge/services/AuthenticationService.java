@@ -73,6 +73,7 @@ public class AuthenticationService {
     private ExternalIdService externalIdService;
     private AccountSecretDao accountSecretDao;
     private OAuthProviderService oauthProviderService;
+    private SessionUpdateService sessionUpdateService;
     
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -122,6 +123,10 @@ public class AuthenticationService {
     @Autowired
     final void setOAuthProviderService(OAuthProviderService oauthProviderService) {
         this.oauthProviderService = oauthProviderService;
+    }
+    @Autowired
+    final void setSessionUpdateService(SessionUpdateService sessionUpdateService) { 
+        this.sessionUpdateService = sessionUpdateService;
     }
     
     /**
@@ -491,6 +496,9 @@ public class AuthenticationService {
             accountSecretDao.createSecret(REAUTH, account.getId(), reauthToken);
             session.setReauthToken(reauthToken);
         }
+        
+        sessionUpdateService.updateRequestContext(session);
+        
         return session;
     }
     

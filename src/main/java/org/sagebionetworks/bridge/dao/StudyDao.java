@@ -16,4 +16,5 @@ public interface StudyDao {
     
     void deleteStudyPermanently(String appId, String studyId);
 
+    void deleteAllStudies(String appId);
 }

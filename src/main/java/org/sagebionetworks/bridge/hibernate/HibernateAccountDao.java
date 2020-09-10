@@ -2,10 +2,10 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -162,9 +162,9 @@ public class HibernateAccountDao implements AccountDao {
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
         }
-        Set<String> callerStudies = context.getCallerStudies();
-        if (!callerStudies.isEmpty()) {
-            builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
+        // admins can see all accounts (same with superadmins who are admins)
+        if (!context.isInRole(ADMIN) && context.isAdministrator() && !context.getOrgSponsoredStudies().isEmpty()) {
+            builder.append("AND enrollment.studyId IN (:studies)", "studies", context.getOrgSponsoredStudies());
         }
         if (!isCount) {
             builder.append("GROUP BY acct.id");        

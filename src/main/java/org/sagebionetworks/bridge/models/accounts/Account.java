@@ -225,4 +225,7 @@ public interface Account extends BridgeEntity {
     
     void setEnrollments(Set<Enrollment> enrollments);
     Set<Enrollment> getEnrollments();
+    
+    Set<Enrollment> getActiveEnrollments();
+    
 }

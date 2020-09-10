@@ -11,8 +11,6 @@ import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 
-import com.google.common.collect.ImmutableMap;
-
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -20,7 +18,6 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -99,18 +96,33 @@ public class EnrollmentService {
             // appId and accountId are always going to match, given the way these 
             // records are loaded. We only need to look for the studyId. 
             if (existingEnrollment.getStudyId().equals(enrollment.getStudyId())) {
-                if (existingEnrollment.getWithdrawnOn() != null) {
-                    account.getEnrollments().remove(existingEnrollment);
-                    break;
-                } else {
-                    throw new EntityAlreadyExistsException(Enrollment.class,
-                        ImmutableMap.of("accountId", account.getId(), "studyId", enrollment.getStudyId()));
+                existingEnrollment.setWithdrawnOn(null);
+                existingEnrollment.setWithdrawnBy(null);
+                existingEnrollment.setWithdrawalNote(null);
+                existingEnrollment.setConsentRequired(enrollment.isConsentRequired());
+                // We might want eventually to allow this to be nullified, but right now with two 
+                // systems for enrolling the user, this second call will just undo the first one.
+                // We have to change StudyParticipant so it can be created with an Enrollment object
+                // rather than an externalId that presumes an External ID record.
+                if (enrollment.getExternalId() != null) {
+                    existingEnrollment.setExternalId(enrollment.getExternalId());                    
                 }
+                if (enrollment.getEnrolledOn() != null) {
+                    existingEnrollment.setEnrolledOn(enrollment.getEnrolledOn());    
+                } else {
+                    existingEnrollment.setEnrolledOn(getEnrollmentDateTime());
+                }
+                String callerUserId = BridgeUtils.getRequestContext().getCallerUserId();
+                if (!account.getId().equals(callerUserId)) {
+                    existingEnrollment.setEnrolledBy(callerUserId);
+                }
+                return existingEnrollment;
             }
         }
         enrollment.setWithdrawnOn(null);
         enrollment.setWithdrawnBy(null);
         enrollment.setWithdrawalNote(null);
+        enrollment.setConsentRequired(enrollment.isConsentRequired());
         enrollment.setExternalId(enrollment.getExternalId());
         if (enrollment.getEnrolledOn() == null) {
             enrollment.setEnrolledOn(getEnrollmentDateTime());
@@ -135,7 +147,7 @@ public class EnrollmentService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        enroll(account, enrollment);
+        enrollment = enroll(account, enrollment);
         accountService.updateAccount(account, null);
         return enrollment;
     }
@@ -162,16 +174,10 @@ public class EnrollmentService {
         
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             if (existingEnrollment.getStudyId().equals(enrollment.getStudyId())) {
-                if (existingEnrollment.getWithdrawnOn() != null) {
-                    throw new EntityAlreadyExistsException(Enrollment.class, 
-                            "Participant is already withdrawn from study.", 
-                            ImmutableMap.of("studyId", enrollment.getStudyId()));
-                } else {
-                    existingEnrollment.setWithdrawnOn(enrollment.getWithdrawnOn());
-                    existingEnrollment.setWithdrawnBy(enrollment.getWithdrawnBy());
-                    existingEnrollment.setWithdrawalNote(enrollment.getWithdrawalNote());
-                    return existingEnrollment;
-                }
+                existingEnrollment.setWithdrawnOn(enrollment.getWithdrawnOn());
+                existingEnrollment.setWithdrawnBy(enrollment.getWithdrawnBy());
+                existingEnrollment.setWithdrawalNote(enrollment.getWithdrawalNote());
+                return existingEnrollment;
             }
         }
         throw new EntityNotFoundException(Enrollment.class);

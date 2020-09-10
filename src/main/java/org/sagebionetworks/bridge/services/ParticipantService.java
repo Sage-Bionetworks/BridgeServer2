@@ -40,7 +40,6 @@ import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -120,7 +119,7 @@ public class ParticipantService {
     
     private StudyService studyService;
     
-    private OrganizationDao organizationDao;
+    private OrganizationService organizationService;
 
     @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -194,8 +193,8 @@ public class ParticipantService {
     }
     
     @Autowired
-    final void setOrganizationDao(OrganizationDao organizationDao) {
-        this.organizationDao = organizationDao;
+    final void setOrganizationService(OrganizationService organizationService) {
+        this.organizationService = organizationService;
     }
     
     /**
@@ -260,7 +259,7 @@ public class ParticipantService {
         Account account = getAccountThrowingException(accountId); // already filters for study
         
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(account.getEnrollments());
+        StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(account.getActiveEnrollments());
         copyAccountToParticipant(builder, assoc, account);
         copyConsentStatusToParticipant(builder, account, context);
         if (includeHistory) {
@@ -288,7 +287,7 @@ public class ParticipantService {
         }
 
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        StudyAssociations assoc = studyAssociationsVisibleToCaller(account.getEnrollments());
+        StudyAssociations assoc = studyAssociationsVisibleToCaller(account.getActiveEnrollments());
         copyAccountToParticipant(builder, assoc, account);
 
         if (includeHistory) {
@@ -414,7 +413,7 @@ public class ParticipantService {
         }
         
         StudyParticipantValidator validator = new StudyParticipantValidator(
-                externalIdService, studyService, organizationDao, app, true);
+                externalIdService, studyService, organizationService, app, true);
         Validate.entityThrowingException(validator, participant);
         
         // Set basic params from inputs.
@@ -525,7 +524,7 @@ public class ParticipantService {
         checkNotNull(participant);
 
         StudyParticipantValidator validator = new StudyParticipantValidator(
-                externalIdService, studyService, organizationDao, app, false);
+                externalIdService, studyService, organizationService, app, false);
         Validate.entityThrowingException(validator, participant);
         
         Account account = getAccountThrowingException(app.getIdentifier(), participant.getId());
@@ -587,7 +586,7 @@ public class ParticipantService {
         // for that account if it is signed in, so we MUST destroy the session. 
         if (isNew || getRequestContext().isInRole(ADMIN)) {
             // Copy to prevent concurrent modification exceptions
-            Set<Enrollment> enrollments = ImmutableSet.copyOf(account.getEnrollments());
+            Set<Enrollment> enrollments = ImmutableSet.copyOf(account.getActiveEnrollments());
             
             // Remove study relationship if it's not desired and unassign external ID
             for (Enrollment enrollment : enrollments) {
@@ -601,26 +600,24 @@ public class ParticipantService {
             Set<String> existingStudyIds = BridgeUtils.collectStudyIds(account);
             for (String studyId : participant.getStudyIds()) {
                 if (!existingStudyIds.contains(studyId)) {
-                    Enrollment enrollment = Enrollment.create(
-                            account.getAppId(), studyId, account.getId());
+                    Enrollment enrollment = Enrollment.create(account.getAppId(), studyId, account.getId());
                     account.getEnrollments().add(enrollment);
                     clearCache = true;
                 }
             }
         }
         if (externalId != null) {
-            Enrollment enrollment = Enrollment.create(account.getAppId(), externalId.getStudyId(),
-                    account.getId());
-            
-            // If a study relationship exists without the external ID, remove it because
-            // we're about to create it with an external ID
-            if (account.getEnrollments().contains(enrollment)) {
-                account.getEnrollments().remove(enrollment);
+            for (Enrollment existingEnrollment : account.getEnrollments()) {
+                if (existingEnrollment.getStudyId().equals(externalId.getStudyId())) {
+                    account.getEnrollments().remove(existingEnrollment);
+                }
             }
-            enrollment = Enrollment.create(account.getAppId(), externalId.getStudyId(), account.getId(),
-                    externalId.getIdentifier());
+            Enrollment enrollment = Enrollment.create(
+                    account.getAppId(), externalId.getStudyId(), account.getId(), externalId.getIdentifier());
             account.getEnrollments().add(enrollment);
             clearCache = true;
+            
+            updateRequestContext(account.getId(), externalId);
         }
         // We have to clear the cache if we make changes that can alter the security profile of 
         // the account, otherwise very strange behavior can occur if that user is signed in with 
@@ -643,20 +640,40 @@ public class ParticipantService {
         // If the caller is not in a study, any study tags are allowed. If there 
         // are any studies assigned to the caller, then the participant must be assigned 
         // to one or more of those studies, and only those studies.
-        Set<String> callerStudies = getRequestContext().getCallerStudies();
+        
+        // This check is not possible right now because adding an external ID via the current participant API
+        // does not allow you to specify the study the external ID is in...that's the role of the existing
+        // external ID table which we'd like to avoid. Also, this person might be enrolled in a study after
+        // creation, which is what we'd ideally like to do.
+        
+        // It is currently possible to create an account that is not enrolled in a study. My understanding is
+        // that we might want this, in cases where apps can be utilized before a user opts into the study
+        // portion of the app.
+        
+        Set<String> callerStudies = getRequestContext().getOrgSponsoredStudies();
+        Set<String> studyIds = BridgeUtils.collectStudyIds(account);
         if (!callerStudies.isEmpty()) {
-            Set<String> studyIds = BridgeUtils.collectStudyIds(account);
-            if (studyIds.isEmpty()) {
-                throw new BadRequestException("Participant must be assigned to one or more of these studies: "
-                        + BridgeUtils.COMMA_JOINER.join(callerStudies));
-            } else {
-                for (String studyId : studyIds) {
-                    if (!callerStudies.contains(studyId)) {
-                        throw new BadRequestException(studyId + " is not a study of the caller");
-                    }
+            for (String studyId : studyIds) {
+                if (!callerStudies.contains(studyId)) {
+                    throw new BadRequestException(studyId + " is not a study of the caller");
                 }
             }
         }
+        
+//        Set<String> callerStudies = getRequestContext().getAllStudies();
+//        if (!callerStudies.isEmpty() && account.getRoles().isEmpty()) {
+//            Set<String> studyIds = BridgeUtils.collectStudyIds(account);
+//            if (studyIds.isEmpty()) {
+//                throw new BadRequestException("Participant must be assigned to one or more of these studies: "
+//                        + BridgeUtils.COMMA_JOINER.join(callerStudies));
+//            } else {
+//                for (String studyId : studyIds) {
+//                    if (!callerStudies.contains(studyId)) {
+//                        throw new BadRequestException(studyId + " is not a study of the caller");
+//                    }
+//                }
+//            }
+//        }
     }
     
     public void requestResetPassword(App app, String userId) {
@@ -904,7 +921,7 @@ public class ParticipantService {
                 externalIdService.unassignExternalId(account, externalId.getIdentifier());    
                 throw e;
             }
-            updateRequestContext(externalId);
+            updateRequestContext(account.getId(), externalId);
         } else if (accountUpdated) {
             accountService.updateAccount(account, null);
         }
@@ -950,17 +967,19 @@ public class ParticipantService {
      * we need to allow it in the permission structure of the call, which means we need to update the request 
      * context.
      */
-    private void updateRequestContext(ExternalIdentifier externalId) {
+    private void updateRequestContext(String userId, ExternalIdentifier externalId) {
         if (externalId.getStudyId() != null) {
             RequestContext currentContext = getRequestContext();
-            
-            Set<String> studyIds = new ImmutableSet.Builder<String>()
-                    .addAll(currentContext.getCallerStudies())
-                    .add(externalId.getStudyId()).build();
-            
-            RequestContext.Builder builder = currentContext.toBuilder();
-            builder.withCallerStudies(studyIds);
-            BridgeUtils.setRequestContext(builder.build());
+            String callerUserId = currentContext.getCallerUserId();
+            if (callerUserId != null && callerUserId.equals(userId)) {
+                Set<String> studyIds = new ImmutableSet.Builder<String>()
+                        .addAll(currentContext.getCallerStudies())
+                        .add(externalId.getStudyId()).build();
+                
+                RequestContext.Builder builder = currentContext.toBuilder();
+                builder.withCallerStudies(studyIds);
+                BridgeUtils.setRequestContext(builder.build());
+            }
         }
     }
      

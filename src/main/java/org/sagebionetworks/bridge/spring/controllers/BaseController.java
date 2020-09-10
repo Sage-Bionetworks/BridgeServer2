@@ -181,19 +181,8 @@ public abstract class BaseController {
             throw new NotAuthenticatedException();
         }
         
-        // This request has required the presence of a session, so we add additional information about the user to 
-        // the existing request context (which starts with only the information present in HTTP headers). This will 
-        // be immediately removed from the thread local if an exception is thrown.
-        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
-        // If the user has already persisted languages, we'll use that instead of the Accept-Language header
-        builder.withCallerLanguages(getLanguages(session));
-        builder.withCallerAppId(session.getAppId());
-        builder.withCallerOrgMembership(session.getParticipant().getOrgMembership());
-        builder.withCallerStudies(session.getParticipant().getStudyIds());
-        builder.withCallerRoles(session.getParticipant().getRoles());
-        builder.withCallerUserId(session.getParticipant().getId());
-        RequestContext reqContext = builder.build();
-        BridgeUtils.setRequestContext(reqContext);
+        getLanguages(session);
+        RequestContext reqContext = sessionUpdateService.updateRequestContext(session);
         
         // Sessions are locked to an IP address if (a) it is enabled in the app for unprivileged participant accounts
         // or (b) always for privileged accounts.

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -146,7 +147,9 @@ public class SubpopulationServiceTest {
         subpop.setAppId("junk-you-cannot-set");
         subpop.setGuidString("cannot-set-guid");
         subpop.setDefaultGroup(false);
+        subpop.setStudyIdsAssignedOnConsent(USER_STUDY_IDS);
         
+        when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(USER_STUDY_IDS);
         when(subpopDao.createSubpopulation(any())).thenReturn(subpop);
         
         Subpopulation result = service.createSubpopulation(app, subpop);
@@ -214,8 +217,10 @@ public class SubpopulationServiceTest {
         subpop.setGuidString("guid");
         subpop.setDefaultGroup(false);
         subpop.setDeleted(true);
+        subpop.setStudyIdsAssignedOnConsent(USER_STUDY_IDS);
 
         doReturn(consent).when(studyConsentDao).getConsent(any(), anyLong());
+        when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(USER_STUDY_IDS);
         when(subpopDao.getSubpopulation(any(), any())).thenReturn(subpop);
         
         Subpopulation result = service.updateSubpopulation(app, subpop);
@@ -251,11 +256,13 @@ public class SubpopulationServiceTest {
         Subpopulation subpop = Subpopulation.create();
         subpop.setName("Name");
         subpop.setGuidString("test-guid");
+        subpop.setStudyIdsAssignedOnConsent(USER_STUDY_IDS);
         
         Subpopulation existing = Subpopulation.create();
         existing.setPublishedConsentCreatedOn(1000L);
         existing.setGuidString("guidString");
         when(subpopDao.getSubpopulation(any(), any())).thenReturn(existing);
+        when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(USER_STUDY_IDS);
         
         Subpopulation updated = service.updateSubpopulation(app, subpop);
         assertEquals(updated.getPublishedConsentCreatedOn(), 1000L);

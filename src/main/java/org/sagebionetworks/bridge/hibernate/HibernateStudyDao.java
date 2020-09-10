@@ -79,4 +79,14 @@ public class HibernateStudyDao implements StudyDao {
         StudyId studyId = new StudyId(appId, id);
         hibernateHelper.deleteById(HibernateStudy.class, studyId);
     }
+    
+    @Override
+    public void deleteAllStudies(String appId) {
+        checkNotNull(appId);
+        
+        Map<String,Object> parameters = ImmutableMap.of("appId", appId);
+        String query = "delete from HibernateStudy where appId=:appId";
+        
+        hibernateHelper.queryUpdate(query, parameters);
+    }
 }

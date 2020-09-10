@@ -12,7 +12,6 @@ import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -21,6 +20,7 @@ import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ExternalIdService;
+import org.sagebionetworks.bridge.services.OrganizationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 public class StudyParticipantValidator implements Validator {
@@ -28,15 +28,15 @@ public class StudyParticipantValidator implements Validator {
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
     private final ExternalIdService externalIdService;
     private final StudyService studyService;
-    private final OrganizationDao organizationDao;
+    private final OrganizationService organizationService;
     private final App app;
     private final boolean isNew;
     
     public StudyParticipantValidator(ExternalIdService externalIdService, StudyService studyService,
-            OrganizationDao organizationDao, App app, boolean isNew) {
+            OrganizationService organizationService, App app, boolean isNew) {
         this.externalIdService = externalIdService;
         this.studyService = studyService;
-        this.organizationDao = organizationDao;
+        this.organizationService = organizationService;
         this.app = app;
         this.isNew = isNew;
     }
@@ -66,9 +66,7 @@ public class StudyParticipantValidator implements Validator {
             if (email != null && !EMAIL_VALIDATOR.isValid(email)) {
                 errors.rejectValue("email", "does not appear to be an email address");
             }
-            // External ID is required for non-administrative accounts when it is required on sign-up. Whether you're 
-            // a researcher or not, however, if you add an external ID and we're managing them, we're going to validate
-            // that yours is correct.
+            // External ID is required for non-administrative accounts when it is required on sign-up.
             if (participant.getRoles().isEmpty() && app.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
                 errors.rejectValue("externalId", "is required");
             }
@@ -84,7 +82,7 @@ public class StudyParticipantValidator implements Validator {
             // Instead, use the OrganizationService
             if (isNotBlank(participant.getOrgMembership())) {
                 String orgId = participant.getOrgMembership();
-                Optional<Organization> opt = organizationDao.getOrganization(app.getIdentifier(), orgId);
+                Optional<Organization> opt = organizationService.getOrganizationOpt(app.getIdentifier(), orgId);
                 if (!opt.isPresent()) {
                     errors.rejectValue("orgMembership", "is not a valid organization");
                 } else if (!AuthUtils.checkOrgMembership(orgId)) {

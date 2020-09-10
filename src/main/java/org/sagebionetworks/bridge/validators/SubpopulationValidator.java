@@ -2,6 +2,9 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_EMPTY;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 
 import java.util.Set;
 
@@ -31,13 +34,13 @@ public class SubpopulationValidator implements Validator {
         Subpopulation subpop = (Subpopulation)object;
         
         if (subpop.getAppId() == null) {
-            errors.rejectValue("appId", "is required");
+            errors.rejectValue("appId", CANNOT_BE_NULL);
         }
         if (isBlank(subpop.getName())) {
-            errors.rejectValue("name", "is required");
+            errors.rejectValue("name", CANNOT_BE_BLANK);
         }
         if (isBlank(subpop.getGuidString())) {
-            errors.rejectValue("guid", "is required");
+            errors.rejectValue("guid", CANNOT_BE_BLANK);
         }
         for (String dataGroup : subpop.getDataGroupsAssignedWhileConsented()) {
             if (!dataGroups.contains(dataGroup)) {
@@ -46,13 +49,19 @@ public class SubpopulationValidator implements Validator {
                 errors.rejectValue("dataGroupsAssignedWhileConsented", message);
             }
         }
-        for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
-            if (!studyIds.contains(studyId)) {
-                String listStr = (studyIds.isEmpty()) ? "<empty>" : COMMA_SPACE_JOINER.join(studyIds);
-                String message = String.format("'%s' is not in enumeration: %s", studyId, listStr);
-                errors.rejectValue("studyIdsAssignedOnConsent", message);
+        if (subpop.getStudyIdsAssignedOnConsent().isEmpty()) {
+            errors.rejectValue("studyIdsAssignedOnConsent", CANNOT_BE_EMPTY);
+        } else {
+            for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
+                if (!studyIds.contains(studyId)) {
+                    String listStr = COMMA_SPACE_JOINER.join(studyIds);
+                    String message = String.format("'%s' is not in enumeration: %s", studyId, listStr);
+                    errors.rejectValue("studyIdsAssignedOnConsent", message);
+                }
             }
         }
+        errors.pushNestedPath("criteria");
         CriteriaUtils.validate(subpop.getCriteria(), dataGroups, studyIds, errors);
+        errors.popNestedPath();
     }
 }

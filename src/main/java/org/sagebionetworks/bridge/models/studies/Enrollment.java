@@ -53,7 +53,6 @@ public interface Enrollment extends BridgeEntity {
     String getAppId();
     void setAppId(String appId);
     
-    @JsonIgnore
     String getStudyId();
     void setStudyId(String studyId);
     

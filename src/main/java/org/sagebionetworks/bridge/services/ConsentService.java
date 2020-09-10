@@ -82,6 +82,7 @@ public class ConsentService {
     private S3Helper s3Helper;
     private UrlShortenerService urlShortenerService;
     private TemplateService templateService;
+    private EnrollmentService enrollmentService;
     
     @Value("classpath:conf/app-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -129,6 +130,10 @@ public class ConsentService {
     @Autowired
     final void setTemplateService(TemplateService templateService) {
         this.templateService = templateService;
+    }
+    @Autowired
+    final void setEnrollmentService(EnrollmentService enrollmentService) {
+        this.enrollmentService = enrollmentService;
     }
     
     /**
@@ -202,11 +207,9 @@ public class ConsentService {
         
         account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());    
         for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
-            Enrollment enrollment = Enrollment.create(
-                    app.getIdentifier(), studyId, account.getId());
-            account.getEnrollments().add(enrollment);
+            Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), studyId, account.getId());
+            enrollmentService.enroll(account, newEnrollment);
         }
-        
         accountService.updateAccount(account, null);
         
         // Publish an enrollment event, set sharing scope 
@@ -313,7 +316,17 @@ public class ConsentService {
             account.setSharingScope(SharingScope.NO_SHARING);
         }
         account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
-
+        
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
+            // NOTE: the required check is important, and when creating subpopulations, we should
+            // enforce that one-and-only-one is required.
+            if (subpop.isRequired() && subpop.getStudyIdsAssignedOnConsent().contains(enrollment.getStudyId())) {
+                Enrollment withdrawnEnrollment = Enrollment.create(app.getIdentifier(), enrollment.getStudyId(), account.getId());
+                withdrawnEnrollment.setWithdrawnOn(new DateTime(withdrewOn));
+                withdrawnEnrollment.setWithdrawalNote(withdrawal.getReason());
+                enrollmentService.unenroll(account, withdrawnEnrollment);
+            }
+        }
         accountService.updateAccount(account, null);
         
         sendWithdrawEmail(app, account, withdrawal, withdrewOn);
@@ -356,6 +369,16 @@ public class ConsentService {
         account.setEmailVerified(false);
         account.setPhone(null);
         account.setPhoneVerified(false);
+        
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
+            // It's possible this user is withdrawn from one study in the app, we do not
+            // want to throw an exception here, just skip over that study.
+            Enrollment withdrawnEnrollment = Enrollment.create(
+                    enrollment.getAppId(), enrollment.getStudyId(), enrollment.getAccountId());
+            withdrawnEnrollment.setWithdrawnOn(new DateTime(withdrewOn));
+            withdrawnEnrollment.setWithdrawalNote(withdrawal.getReason());
+            enrollmentService.unenroll(account, withdrawnEnrollment);
+        }
         accountService.updateAccount(account, null);
 
         notificationsService.deleteAllRegistrations(app.getIdentifier(), participant.getHealthCode());

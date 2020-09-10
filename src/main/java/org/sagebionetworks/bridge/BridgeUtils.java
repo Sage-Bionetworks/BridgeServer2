@@ -7,6 +7,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -114,7 +115,7 @@ public class BridgeUtils {
 
     public static Map<String,String> mapStudyMemberships(Account account) {
         ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
-        for (Enrollment enrollment : account.getEnrollments()) {
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
             String value = (enrollment.getExternalId() == null) ? 
                     "<none>" : enrollment.getExternalId();
             builder.put(enrollment.getStudyId(), value);
@@ -140,14 +141,14 @@ public class BridgeUtils {
     }
 
     public static Set<String> collectExternalIds(Account account) {
-        return account.getEnrollments().stream()
+        return account.getActiveEnrollments().stream()
                 .map(Enrollment::getExternalId)
                 .filter(Objects::nonNull)
                 .collect(toImmutableSet());
     }
     
     public static Set<String> collectStudyIds(Account account) {
-        return account.getEnrollments().stream()
+        return account.getActiveEnrollments().stream()
                 .map(Enrollment::getStudyId)
                 .collect(toImmutableSet());
     }
@@ -169,19 +170,18 @@ public class BridgeUtils {
     public static Account filterForStudy(Account account) {
         if (account != null) {
             RequestContext context = getRequestContext();
-            Set<String> callerStudies = context.getCallerStudies();
-            if (BridgeUtils.isEmpty(callerStudies)) {
+            Set<String> callerStudies = context.getOrgSponsoredStudies();
+            
+            if (context.isInRole(ADMIN) || isEmpty(callerStudies) || isEmpty(account.getActiveEnrollments())) {
                 return account;
             }
-            Set<Enrollment> matched = account.getEnrollments().stream()
-                    .filter(as -> callerStudies.isEmpty() || callerStudies.contains(as.getStudyId()))
-                    .collect(toSet());
             
-            if (!matched.isEmpty()) {
-                // Hibernate managed objects use a collection implementation that tracks changes,
-                // and shouldn't be set with a Java library collection. Here it is okay because 
-                // we're filtering an object to return through the API, and it won't be persisted.
-                account.setEnrollments(matched);
+            Set<Enrollment> removals = account.getActiveEnrollments().stream()
+                  .filter(en -> !callerStudies.contains(en.getStudyId()))
+                  .collect(toSet());
+            account.getEnrollments().removeAll(removals);
+
+            if (!account.getActiveEnrollments().isEmpty()) {
                 return account;
             }
         }
@@ -198,9 +198,9 @@ public class BridgeUtils {
         }
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
-        Set<String> callerStudies = getRequestContext().getCallerStudies();
+        Set<String> callerStudies = getRequestContext().getOrgSponsoredStudies();
         for (Enrollment enrollment : enrollments) {
-            if (callerStudies.isEmpty() || callerStudies.contains(enrollment.getStudyId())) {
+            if (callerStudies.isEmpty() || (callerStudies.contains(enrollment.getStudyId()) && enrollment.getWithdrawnOn() == null)) {
                 studyIds.add(enrollment.getStudyId());
                 if (enrollment.getExternalId() != null) {
                     externalIds.put(enrollment.getStudyId(), enrollment.getExternalId());
@@ -213,7 +213,7 @@ public class BridgeUtils {
     public static ExternalIdentifier filterForStudy(ExternalIdentifier externalId) {
         if (externalId != null) {
             RequestContext context = getRequestContext();
-            Set<String> callerStudies = context.getCallerStudies();
+            Set<String> callerStudies = context.getOrgSponsoredStudies();
             if (BridgeUtils.isEmpty(callerStudies)) {
                 return externalId;
             }

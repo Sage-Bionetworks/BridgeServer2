@@ -103,7 +103,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             nextPageOffsetKey = null;
         }
         
-        Set<String> callerStudies = BridgeUtils.getRequestContext().getCallerStudies();
+        Set<String> callerStudies = BridgeUtils.getRequestContext().getOrgSponsoredStudies();
         
         List<ExternalIdentifierInfo> externalIds = Lists.newArrayListWithCapacity(pageSize);
         
@@ -211,9 +211,12 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             mapper.save(identifier);
         }
         if (identifier.getStudyId() != null) {
-            Enrollment enrollment = Enrollment.create(account.getAppId(),
-                    identifier.getStudyId(), account.getId(), identifier.getIdentifier());
-            account.getEnrollments().remove(enrollment);
+            Optional<Enrollment> enrollment = account.getEnrollments().stream()
+                    .filter(en -> identifier.getStudyId().equals(en.getStudyId()))
+                    .findFirst();
+            if (enrollment.isPresent()) {
+                enrollment.get().setExternalId(null);
+            }
         }
     }
     

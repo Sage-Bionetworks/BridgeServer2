@@ -60,7 +60,6 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AppDao;
-import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
@@ -73,6 +72,8 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.organizations.Organization;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
@@ -131,7 +132,8 @@ public class AppService {
     private StudyService studyService;
     private TemplateService templateService;
     private FileService fileService;
-    private OrganizationDao organizationDao;
+    private OrganizationService organizationService;
+    private SponsorService sponsorService;
 
     // Not defaults, if you wish to change these, change in source. Not configurable per app
     private String appEmailVerificationTemplate;
@@ -231,8 +233,12 @@ public class AppService {
         this.fileService = fileService;
     }
     @Autowired
-    final void setOrganizationDao(OrganizationDao organizationDao) {
-        this.organizationDao = organizationDao;
+    final void setOrganizationService(OrganizationService organizationService) {
+        this.organizationService = organizationService;
+    }
+    @Autowired
+    final void setSponsorService(SponsorService sponsorService) {
+        this.sponsorService = sponsorService;
     }
     
     public App getApp(String identifier, boolean includeDeleted) {
@@ -274,7 +280,7 @@ public class AppService {
         
         App app = appAndUsers.getApp();
         StudyParticipantValidator val = new StudyParticipantValidator(externalIdService, studyService,
-                organizationDao, app, true);
+                organizationService, app, true);
         
         Errors errors = Validate.getErrorsFor(appAndUsers);
         
@@ -342,6 +348,20 @@ public class AppService {
         if (appDao.doesIdentifierExist(app.getIdentifier())) {
             throw new EntityAlreadyExistsException(App.class, IDENTIFIER_PROPERTY, app.getIdentifier());
         }
+        
+        Study study = Study.create();
+        study.setAppId(app.getIdentifier());
+        study.setIdentifier(app.getIdentifier() + "-study");
+        study.setName("Initial Study");
+        studyService.createStudy(app.getIdentifier(), study);
+        
+        Organization organization = Organization.create();
+        organization.setAppId(app.getIdentifier());
+        organization.setIdentifier("sage-bionetworks");
+        organization.setName("Sage Bionetworks");
+        organizationService.createOrganization(organization);
+        
+        sponsorService.addStudySponsor(app.getIdentifier(), study.getIdentifier(), organization.getIdentifier());
         
         subpopService.createDefaultSubpopulation(app);
         
@@ -638,8 +658,10 @@ public class AppService {
         } else {
             // actual delete
             appDao.deleteApp(existing);
-
+            
             // delete app data
+            studyService.deleteAllStudies(existing.getIdentifier());
+            organizationService.deleteAllOrganizations(existing.getIdentifier());
             templateService.deleteTemplatesForApp(existing.getIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInApp(
                     existing.getIdentifier());

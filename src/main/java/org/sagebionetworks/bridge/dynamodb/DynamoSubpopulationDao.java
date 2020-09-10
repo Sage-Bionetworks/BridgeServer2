@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 @Component
 public class DynamoSubpopulationDao implements SubpopulationDao {
@@ -126,6 +127,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         subpop.setDefaultGroup(true);
         // The first group is required until the study designers say otherwise
         subpop.setRequired(true);
+        subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of(appId + "-study"));
         
         Criteria criteria = Criteria.create();
         criteria.setKey(getKey(subpop));

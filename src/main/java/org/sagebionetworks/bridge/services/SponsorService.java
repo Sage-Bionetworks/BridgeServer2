@@ -7,13 +7,20 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
+
+import java.util.Set;
+
+import com.google.common.collect.ImmutableSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.SponsorDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -80,6 +87,20 @@ public class SponsorService {
         return sponsorDao.getSponsoredStudies(appId, orgId, offsetBy, pageSize)
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize);
+    }
+    
+    public Set<String> getSponsoredStudyIds(String appId, String orgId) {
+        checkNotNull(appId);
+        
+        RequestContext rc = BridgeUtils.getRequestContext();
+        
+        if (rc.isInRole(ADMIN) || isBlank(orgId)) {
+            return ImmutableSet.of();
+        }
+        organizationService.getOrganization(appId, orgId);
+
+        return sponsorDao.getSponsoredStudies(appId, orgId, null, null).getItems().stream()
+                .map(Study::getIdentifier).collect(toImmutableSet());
     }
 
     public void addStudySponsor(String appId, String studyId, String orgId) {

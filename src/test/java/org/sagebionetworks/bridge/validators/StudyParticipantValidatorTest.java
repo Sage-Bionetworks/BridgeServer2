@@ -22,7 +22,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
-import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -32,6 +31,7 @@ import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.ExternalIdService;
+import org.sagebionetworks.bridge.services.OrganizationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 import com.google.common.collect.ImmutableSet;
@@ -54,7 +54,7 @@ public class StudyParticipantValidatorTest {
     private StudyService studyService;
     
     @Mock
-    private OrganizationDao mockOrganizationDao;
+    private OrganizationService mockOrganizationService;
     
     private Study study;
     
@@ -423,7 +423,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void validateOrganization() {
-        when(mockOrganizationDao.getOrganization(TEST_APP_ID, TEST_ORG_ID)).thenReturn(Optional.empty());
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID)).thenReturn(Optional.empty());
         
         StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
         validator = makeValidator(true);
@@ -431,7 +431,7 @@ public class StudyParticipantValidatorTest {
     }
     @Test
     public void validateOrgIsSameAsCallers() {
-        when(mockOrganizationDao.getOrganization(TEST_APP_ID, TEST_ORG_ID))
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
             .thenReturn(Optional.of(Organization.create()));
         
         StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
@@ -445,7 +445,7 @@ public class StudyParticipantValidatorTest {
                 .withCallerRoles(ImmutableSet.of(Roles.SUPERADMIN))
                 .build());
         
-        when(mockOrganizationDao.getOrganization(TEST_APP_ID, TEST_ORG_ID))
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
             .thenReturn(Optional.of(Organization.create()));
         
         StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
@@ -457,7 +457,7 @@ public class StudyParticipantValidatorTest {
         BridgeUtils.setRequestContext(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
-        when(mockOrganizationDao.getOrganization(TEST_APP_ID, TEST_ORG_ID))
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
             .thenReturn(Optional.of(Organization.create()));
         
         StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
@@ -466,7 +466,7 @@ public class StudyParticipantValidatorTest {
     }
     
     private StudyParticipantValidator makeValidator(boolean isNew) {
-        return new StudyParticipantValidator(externalIdService, studyService, mockOrganizationDao, app, isNew);
+        return new StudyParticipantValidator(externalIdService, studyService, mockOrganizationService, app, isNew);
     }
 
     private StudyParticipant withStudies(String... studyIds) {

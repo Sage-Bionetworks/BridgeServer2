@@ -69,13 +69,13 @@ public class OrganizationService {
      * Get a paged list of partially initialized organizations (containing name, description, 
      * and identifier).
      */
-    public PagedResourceList<Organization> getOrganizations(String appId, int offsetBy, int pageSize) {
+    public PagedResourceList<Organization> getOrganizations(String appId, Integer offsetBy, Integer pageSize) {
         checkArgument(isNotBlank(appId));
         
-        if (offsetBy < 0) {
+        if (offsetBy != null && offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
-        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
+        if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         return orgDao.getOrganizations(appId, offsetBy, pageSize)
@@ -138,6 +138,13 @@ public class OrganizationService {
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
     }
     
+    public Optional<Organization> getOrganizationOpt(String appId, String identifier) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(identifier));
+        
+        return orgDao.getOrganization(appId, identifier);        
+    }
+    
     /**
      * Delete the organization with the given identifier.
      * @throws EntityNotFoundException
@@ -152,6 +159,12 @@ public class OrganizationService {
         orgDao.deleteOrganization(existing);
     }
     
+    public void deleteAllOrganizations(String appId) {
+        checkArgument(isNotBlank(appId));
+        
+        orgDao.deleteAllOrganizations(appId);
+    }
+    
     public PagedResourceList<AccountSummary> getMembers(String appId, String identifier, AccountSummarySearch search) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
@@ -164,6 +177,7 @@ public class OrganizationService {
         
         AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
                 .copyOf(search)
+                .withAdminOnly(true)
                 .withOrgMembership(identifier).build();
         
         return accountDao.getPagedAccountSummaries(appId, scopedSearch);
