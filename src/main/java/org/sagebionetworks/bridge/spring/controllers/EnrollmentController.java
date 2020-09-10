@@ -60,13 +60,12 @@ public class EnrollmentController extends BaseController {
     }
     
     @DeleteMapping("/v5/studies/{studyId}/enrollments/{userId}")
-    public Enrollment unenroll(@PathVariable String studyId, @PathVariable String userId) {
+    public Enrollment unenroll(@PathVariable String studyId, @PathVariable String userId,
+            @RequestParam(required = false) String withdrawalNote) {
         UserSession session = getAuthenticatedSession(RESEARCHER, ADMIN);
         
-        Enrollment enrollment = parseJson(Enrollment.class);
-        enrollment.setAppId(session.getAppId());
-        enrollment.setStudyId(studyId);
-        enrollment.setAccountId(userId);
+        Enrollment enrollment = Enrollment.create(session.getAppId(), studyId, userId);
+        enrollment.setWithdrawalNote(withdrawalNote);
         
         return service.unenroll(enrollment);
     }

@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
-import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
@@ -118,21 +117,15 @@ public class EnrollmentControllerTest extends Mockito {
 
     @Test
     public void unenroll() throws Exception {
-        Enrollment enrollment = new HibernateEnrollment();
-        enrollment.setWithdrawnOn(MODIFIED_ON);
-        enrollment.setWithdrawalNote("This is a note");
-        TestUtils.mockRequestBody(mockRequest, enrollment);
-
         Enrollment completed = new HibernateEnrollment();
         when(mockService.unenroll(any())).thenReturn(completed);
 
-        Enrollment retValue = controller.unenroll(TEST_STUDY_ID, USER_ID);
+        Enrollment retValue = controller.unenroll(TEST_STUDY_ID, USER_ID, "This is a note");
         assertSame(retValue, completed);
         
         verify(mockService).unenroll(enrollmentCaptor.capture());
         
         Enrollment value = enrollmentCaptor.getValue();
-        assertEquals(value.getWithdrawnOn(), MODIFIED_ON);
         assertEquals(value.getWithdrawalNote(), "This is a note");
         assertEquals(value.getAppId(), TEST_APP_ID);
         assertEquals(value.getStudyId(), TEST_STUDY_ID);
