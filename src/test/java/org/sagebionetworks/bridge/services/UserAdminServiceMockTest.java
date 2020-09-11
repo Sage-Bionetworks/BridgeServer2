@@ -325,7 +325,7 @@ public class UserAdminServiceMockTest {
         
         doReturn("userId").when(account).getId();
         doReturn("healthCode").when(account).getHealthCode();
-        doReturn(enrollments).when(account).getEnrollments();
+        doReturn(enrollments).when(account).getActiveEnrollments();
         doReturn(account).when(accountService).getAccount(accountId);
         
         service.deleteUser(app, "userId");

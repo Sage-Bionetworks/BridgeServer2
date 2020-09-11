@@ -114,7 +114,7 @@ public class BridgeUtils {
 
     public static Map<String,String> mapStudyMemberships(Account account) {
         ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
-        for (Enrollment enrollment : account.getEnrollments()) {
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
             String value = (enrollment.getExternalId() == null) ? 
                     "<none>" : enrollment.getExternalId();
             builder.put(enrollment.getStudyId(), value);
@@ -140,14 +140,14 @@ public class BridgeUtils {
     }
 
     public static Set<String> collectExternalIds(Account account) {
-        return account.getEnrollments().stream()
+        return account.getActiveEnrollments().stream()
                 .map(Enrollment::getExternalId)
                 .filter(Objects::nonNull)
                 .collect(toImmutableSet());
     }
     
     public static Set<String> collectStudyIds(Account account) {
-        return account.getEnrollments().stream()
+        return account.getActiveEnrollments().stream()
                 .map(Enrollment::getStudyId)
                 .collect(toImmutableSet());
     }
