@@ -107,11 +107,6 @@ public class BridgeUtils {
     private static final StudyAssociations NO_ASSOCIATIONS = new StudyAssociations(ImmutableSet.of(),
             ImmutableMap.of());
 
-    // ThreadLocals are weird. They are basically a container that allows us to hold "global variables" for each
-    // thread. This can be used, for example, to provide the request ID to any class without having to plumb a
-    // "request context" object into every method of every class.
-    private static final ThreadLocal<RequestContext> REQUEST_CONTEXT_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
-
     public static Map<String,String> mapStudyMemberships(Account account) {
         ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
         for (Enrollment enrollment : account.getEnrollments()) {
@@ -152,23 +147,9 @@ public class BridgeUtils {
                 .collect(toImmutableSet());
     }
     
-    /** Gets the request context for the current thread. See also RequestInterceptor. */
-    public static RequestContext getRequestContext() {
-        RequestContext context = REQUEST_CONTEXT_THREAD_LOCAL.get();
-        if (context == null) {
-            return RequestContext.NULL_INSTANCE; 
-        }
-        return context;
-    }
-
-    /** @see #getRequestContext */
-    public static void setRequestContext(RequestContext context) {
-        REQUEST_CONTEXT_THREAD_LOCAL.set(context);
-    }
-    
     public static Account filterForStudy(Account account) {
         if (account != null) {
-            RequestContext context = getRequestContext();
+            RequestContext context = RequestContext.get();
             Set<String> callerStudies = context.getCallerStudies();
             if (BridgeUtils.isEmpty(callerStudies)) {
                 return account;
@@ -198,7 +179,7 @@ public class BridgeUtils {
         }
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
-        Set<String> callerStudies = getRequestContext().getCallerStudies();
+        Set<String> callerStudies = RequestContext.get().getCallerStudies();
         for (Enrollment enrollment : enrollments) {
             if (callerStudies.isEmpty() || callerStudies.contains(enrollment.getStudyId())) {
                 studyIds.add(enrollment.getStudyId());
@@ -212,7 +193,7 @@ public class BridgeUtils {
     
     public static ExternalIdentifier filterForStudy(ExternalIdentifier externalId) {
         if (externalId != null) {
-            RequestContext context = getRequestContext();
+            RequestContext context = RequestContext.get();
             Set<String> callerStudies = context.getCallerStudies();
             if (BridgeUtils.isEmpty(callerStudies)) {
                 return externalId;

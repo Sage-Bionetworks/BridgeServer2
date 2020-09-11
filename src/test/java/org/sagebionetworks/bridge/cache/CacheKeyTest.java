@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.cache;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -26,6 +27,12 @@ public class CacheKeyTest {
     @Test(expectedExceptions = NullPointerException.class)
     public void nullsRejected() {
         CacheKey.appConfigList(null);
+    }
+    
+    @Test
+    public void orgSponsoredStudies() {
+        assertEquals(CacheKey.orgSponsoredStudies(TEST_APP_ID, TEST_ORG_ID).toString(), 
+                "test-org-id:test-app:OrgSponsoredStudies");
     }
     
     @Test

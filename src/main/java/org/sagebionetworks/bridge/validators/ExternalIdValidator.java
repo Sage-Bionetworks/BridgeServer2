@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.springframework.validation.Errors;
@@ -30,8 +30,8 @@ public class ExternalIdValidator implements Validator {
     public void validate(Object object, Errors errors) {
         ExternalIdentifier extId = (ExternalIdentifier)object;
 
-        String callerAppId = BridgeUtils.getRequestContext().getCallerAppId();
-        Set<String> callerStudies = BridgeUtils.getRequestContext().getCallerStudies();
+        String callerAppId = RequestContext.get().getCallerAppId();
+        Set<String> callerStudies = RequestContext.get().getCallerStudies();
         
         if (StringUtils.isBlank(extId.getIdentifier())) {
             errors.rejectValue("identifier", "cannot be null or blank");

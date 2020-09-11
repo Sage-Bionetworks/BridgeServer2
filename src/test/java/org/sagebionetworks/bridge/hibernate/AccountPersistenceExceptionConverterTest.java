@@ -23,7 +23,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
@@ -45,13 +44,13 @@ public class AccountPersistenceExceptionConverterTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        RequestContext.set(RequestContext.NULL_INSTANCE);
         converter = new AccountPersistenceExceptionConverter(accountDao);
     }
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        RequestContext.set(RequestContext.NULL_INSTANCE);
     }
     
     @Test
@@ -161,7 +160,7 @@ public class AccountPersistenceExceptionConverterTest {
     
     @Test
     public void entityAlreadyExistsForExternalIdWhenThereAreMultipleIgnoringStudies() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("studyB")).build());
         
         HibernateAccount account = new HibernateAccount();
@@ -192,7 +191,7 @@ public class AccountPersistenceExceptionConverterTest {
     
     @Test
     public void entityAlreadyExistsForExternalIdWhenStudyOutsideOfCallerStudy() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("studyB")).build());
         
         HibernateAccount account = new HibernateAccount();

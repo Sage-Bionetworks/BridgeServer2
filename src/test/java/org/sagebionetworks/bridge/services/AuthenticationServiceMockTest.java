@@ -13,7 +13,11 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -37,7 +41,6 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -166,6 +169,8 @@ public class AuthenticationServiceMockTest {
     @Mock
     private OAuthProviderService oauthProviderService;
     @Mock
+    private SponsorService sponsorService;
+    @Mock
     private AccountSecretDao accountSecretDao;
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
@@ -202,11 +207,11 @@ public class AuthenticationServiceMockTest {
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
     }
     
     void setIpAddress(String ipAddress) {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(ipAddress).build());
+        RequestContext.set(new RequestContext.Builder().withCallerIpAddress(ipAddress).build());
     }
     
     @Test // Test some happy path stuff, like the correct initialization of the user session
@@ -1113,7 +1118,7 @@ public class AuthenticationServiceMockTest {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordExternalIdMismatchesCallerStudies() {
-        BridgeUtils.setRequestContext(
+        RequestContext.set(
                 new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyB")).build());
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
@@ -1128,7 +1133,7 @@ public class AuthenticationServiceMockTest {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordAccountMismatchesCallerStudies() {
-        BridgeUtils.setRequestContext(
+        RequestContext.set(
                 new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
@@ -1259,21 +1264,26 @@ public class AuthenticationServiceMockTest {
         app.setReauthenticationEnabled(true);
         
         setIpAddress(IP_ADDRESS);
-
+        
         CriteriaContext context = new CriteriaContext.Builder().withAppId(TEST_APP_ID).build();
 
         Account account = Account.create();
         account.setId(USER_ID);
-
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withOrgMembership(TEST_ORG_ID)
+                .build();
+        
         // Mock pre-reqs.
-        when(participantService.getParticipant(any(), any(Account.class), anyBoolean())).thenReturn(PARTICIPANT);
+        when(participantService.getParticipant(any(), any(Account.class), anyBoolean())).thenReturn(participant);
         when(config.getEnvironment()).thenReturn(Environment.LOCAL);
         when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
         when(service.generateReauthToken()).thenReturn(REAUTH_TOKEN);
+        when(sponsorService.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID)).thenReturn(USER_STUDY_IDS);
         
         // Execute and validate.
         UserSession session = service.getSessionFromAccount(app, context, account);
-        assertSame(session.getParticipant(), PARTICIPANT);
+        assertSame(session.getParticipant(), participant);
         assertNotNull(session.getSessionToken());
         assertNotNull(session.getInternalSessionToken());
         assertTrue(session.isAuthenticated());
@@ -1284,6 +1294,12 @@ public class AuthenticationServiceMockTest {
         assertEquals(session.getConsentStatuses(), CONSENTED_STATUS_MAP);
         
         verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
+        
+        RequestContext retValue = RequestContext.updateFromSession(session, null);
+        assertEquals(retValue.getCallerAppId(), TEST_APP_ID);
+        assertEquals(retValue.getOrgSponsoredStudies(), USER_STUDY_IDS);
+        assertEquals(retValue.getCallerUserId(), USER_ID);
+        assertEquals(retValue.getCallerOrgMembership(), TEST_ORG_ID);
     }
     
     @Test

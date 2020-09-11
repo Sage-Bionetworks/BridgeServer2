@@ -511,7 +511,7 @@ public class CRCController extends BaseController {
 
     private int writeReportAndUpdateState(App app, String userId, JsonNode data, String reportName,
             AccountStates state) {
-        String appId = BridgeUtils.getRequestContext().getCallerAppId();
+        String appId = RequestContext.get().getCallerAppId();
         AccountId accountId = AccountId.forId(appId, userId);
         Account account = accountService.getAccount(accountId);
         if (account == null) {
@@ -535,7 +535,7 @@ public class CRCController extends BaseController {
             throw new BridgeServiceException(e);
         }
 
-        Set<String> callerStudyIds = BridgeUtils.getRequestContext().getCallerStudies();
+        Set<String> callerStudyIds = RequestContext.get().getCallerStudies();
         ReportData report = ReportData.create();
         report.setDate(JAN1.toString());
         report.setData(data);
@@ -553,7 +553,7 @@ public class CRCController extends BaseController {
     }
     
     private int deleteReportAndUpdateState(App app, String userId) {
-        String appId = BridgeUtils.getRequestContext().getCallerAppId();
+        String appId = RequestContext.get().getCallerAppId();
         AccountId accountId = AccountId.forId(appId, userId);
         Account account = accountService.getAccount(accountId);
         if (account == null) {
@@ -620,7 +620,7 @@ public class CRCController extends BaseController {
 
         RequestContext.Builder builder = new RequestContext.Builder().withCallerAppId(appId)
                 .withCallerStudies(studies).withCallerOrgMembership(account.getOrgMembership());
-        BridgeUtils.setRequestContext(builder.build());
+        RequestContext.set(builder.build());
         return app;
     }
     

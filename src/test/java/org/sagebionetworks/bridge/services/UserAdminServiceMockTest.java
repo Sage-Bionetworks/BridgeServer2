@@ -25,7 +25,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -134,7 +133,7 @@ public class UserAdminServiceMockTest {
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        RequestContext.set(RequestContext.NULL_INSTANCE);
     }
     
     private void addConsentStatus(Map<SubpopulationGuid,ConsentStatus> statuses, String guid) {
@@ -146,7 +145,7 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void creatingUserConsentsToAllRequiredConsents() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
         App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
@@ -179,7 +178,7 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void creatingUserWithPhone() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
         App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
@@ -211,7 +210,7 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void creatingUserWithSubpopulationOnlyConsentsToThatSubpopulation() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
                 
         App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
@@ -234,7 +233,7 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void createUserWithoutConsents() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
                 
         App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
@@ -248,7 +247,7 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void createUserWithoutSigningIn() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
         App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
@@ -271,7 +270,7 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void createUserNotConsented() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
         App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);
@@ -288,7 +287,7 @@ public class UserAdminServiceMockTest {
     
     @Test
     public void createUserOnRuntimeExceptionCleansUpUser() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(
                 ImmutableSet.of(Roles.ADMIN)).build());
         
         App app = TestUtils.getValidApp(UserAdminServiceMockTest.class);

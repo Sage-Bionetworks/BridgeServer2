@@ -6,3 +6,4 @@ target
 .project
 test-output/
 dump.rdb
+/bin/

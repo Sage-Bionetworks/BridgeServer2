@@ -18,7 +18,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -54,7 +53,7 @@ public class ExternalIdServiceTest {
     public void before() {
         MockitoAnnotations.initMocks(this);
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID).build());
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
@@ -67,7 +66,7 @@ public class ExternalIdServiceTest {
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     @Test
@@ -148,7 +147,7 @@ public class ExternalIdServiceTest {
             .thenReturn(Study.create());
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.empty());
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerStudies(STUDIES).build());
         
@@ -164,7 +163,7 @@ public class ExternalIdServiceTest {
     public void createExternalIdDoesNotSetStudyIdAmbiguous() {
         extId.setStudyId(null); // not set by caller
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerStudies(ImmutableSet.of(STUDY_ID, "anotherStudy")).build());
         
@@ -204,7 +203,7 @@ public class ExternalIdServiceTest {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteExternalIdPermanentlyOutsideStudiesThrows() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerStudies(STUDIES).build());        
         extId.setStudyId("someOtherId");

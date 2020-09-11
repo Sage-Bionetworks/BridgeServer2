@@ -73,6 +73,7 @@ public class AuthenticationService {
     private ExternalIdService externalIdService;
     private AccountSecretDao accountSecretDao;
     private OAuthProviderService oauthProviderService;
+    private SponsorService sponsorService;
     
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -122,6 +123,10 @@ public class AuthenticationService {
     @Autowired
     final void setOAuthProviderService(OAuthProviderService oauthProviderService) {
         this.oauthProviderService = oauthProviderService;
+    }
+    @Autowired
+    final void setSponsorService(SponsorService sponsorService) {
+        this.sponsorService = sponsorService;
     }
     
     /**
@@ -218,7 +223,7 @@ public class AuthenticationService {
         // This is effectively equivalent to the app submitting an token identification token and a 19-character reauth
         // token, which is still reasonably secure.
         int reauthHashMod = signIn.getReauthToken().hashCode() % 1000;
-        LOG.debug("Reauth token hash-mod " + reauthHashMod + " submitted in request " + BridgeUtils.getRequestContext().getId());
+        LOG.debug("Reauth token hash-mod " + reauthHashMod + " submitted in request " + RequestContext.get().getId());
 
         Account account = accountService.reauthenticate(app, signIn);
         
@@ -469,7 +474,7 @@ public class AuthenticationService {
                     accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
         }
 
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         
         // Create new session.
         UserSession session = new UserSession(participant);
@@ -491,6 +496,9 @@ public class AuthenticationService {
             accountSecretDao.createSecret(REAUTH, account.getId(), reauthToken);
             session.setReauthToken(reauthToken);
         }
+        
+        RequestContext.updateFromSession(session, sponsorService);
+        
         return session;
     }
     

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_VIEW_EXPIRE_IN_SECONDS;
-import static org.sagebionetworks.bridge.BridgeUtils.setRequestContext;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
@@ -43,7 +42,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -163,7 +161,7 @@ public class UserProfileControllerTest extends Mockito {
     
     @AfterMethod
     public void after() {
-        setRequestContext(NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
     }
     
     @Test
@@ -224,7 +222,7 @@ public class UserProfileControllerTest extends Mockito {
     @Test
     @SuppressWarnings("deprecation")
     public void updateUserProfile() throws Exception {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(
                 ImmutableSet.of("studyA")).build());
         
         StudyParticipant participant = new StudyParticipant.Builder()
@@ -271,7 +269,7 @@ public class UserProfileControllerTest extends Mockito {
     @Test
     @SuppressWarnings("deprecation")
     public void validDataGroupsCanBeAdded() throws Exception {
-        setRequestContext(new RequestContext.Builder().withCallerStudies(
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(
                 ImmutableSet.of("studyA")).build());
         
         // We had a bug where this call lost the health code in the user's session, so verify in particular 
@@ -348,7 +346,7 @@ public class UserProfileControllerTest extends Mockito {
     @SuppressWarnings({ "deprecation" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
-        setRequestContext(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
         
         StudyParticipant existing = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)

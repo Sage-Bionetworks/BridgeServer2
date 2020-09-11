@@ -31,7 +31,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -139,7 +138,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void addStudySponsorOkForSuperuser() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         
@@ -151,7 +150,7 @@ public class SponsorControllerTest extends Mockito {
         
     @Test
     public void addStudySponsorOkForAdminInOrg() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
@@ -164,7 +163,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void addStudySponsorOkForAdminNotInOrg() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .withCallerOrgMembership("some-other-org").build());
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
@@ -176,7 +175,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void removeStudySponsorOkForSuperuser() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         
@@ -188,7 +187,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void removeStudySponsorOkForAdminInOrg() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
@@ -201,7 +200,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void removeStudySponsorOkForAdminNotInOrg() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .withCallerOrgMembership("another-org").build());
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);

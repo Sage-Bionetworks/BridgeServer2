@@ -10,16 +10,80 @@ import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.services.SponsorService;
 
 public class RequestContext {
+
+    // ThreadLocals are weird. They are basically a container that allows us to hold "global variables" for each
+    // thread. This can be used, for example, to provide the request ID to any class without having to plumb a
+    // "request context" object into every method of every class.
+    private static final ThreadLocal<RequestContext> REQUEST_CONTEXT_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
     
     public static final RequestContext NULL_INSTANCE = new RequestContext(null, null, null, null, ImmutableSet.of(),
-            ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of(), null);
+            ImmutableSet.of(), ImmutableSet.of(), null, UNKNOWN_CLIENT, ImmutableList.of(), null);
+    
+    /** Gets the request context for the current thread. See also RequestInterceptor. */
+    public static RequestContext get() {
+        RequestContext context = REQUEST_CONTEXT_THREAD_LOCAL.get();
+        if (context == null) {
+            return RequestContext.NULL_INSTANCE; 
+        }
+        return context;
+    }
 
+    /** @see #get */
+    public static void set(RequestContext context) {
+        REQUEST_CONTEXT_THREAD_LOCAL.set(context);
+    }
+
+    public static RequestContext updateFromSession(UserSession session, SponsorService sponsorService) {
+        RequestContext.Builder builder = get().toBuilder();
+        builder.withCallerAppId(session.getAppId());
+
+        if (sponsorService != null) {
+            Set<String> orgSponsoredStudies = sponsorService.getSponsoredStudyIds(
+                    session.getAppId(), session.getParticipant().getOrgMembership());
+            builder.withOrgSponsoredStudies(orgSponsoredStudies);
+        }
+
+        StudyParticipant participant = session.getParticipant();
+        builder.withCallerLanguages(participant.getLanguages());
+        builder.withCallerOrgMembership(participant.getOrgMembership());
+        builder.withCallerStudies(participant.getStudyIds());
+        builder.withCallerRoles(participant.getRoles());
+        builder.withCallerUserId(participant.getId());
+
+        RequestContext reqContext = builder.build();
+        set(reqContext);
+        return reqContext;
+    }
+    
+    /**
+     * To see any new association to a study in the session that we return from the update identifiers call, 
+     * we need to allow it in the permission structure of the call, which means we need to update the request 
+     * context.
+     */
+    public static RequestContext updateFromExternalId(ExternalIdentifier externalId) {
+        RequestContext context = get();
+        RequestContext.Builder builder = context.toBuilder();
+        if (externalId.getStudyId() != null) {
+            builder.withCallerStudies(new ImmutableSet.Builder<String>()
+                .addAll(context.getCallerStudies())
+                .add(externalId.getStudyId()).build());
+        }
+        RequestContext reqContext = builder.build();
+        set(reqContext);
+        return reqContext;
+    }        
+    
     private final String requestId;
     private final String callerAppId;
     private final String callerOrgMembership;
     private final Set<String> callerStudies;
+    private final Set<String> orgSponsoredStudies;
     private final Set<Roles> callerRoles;
     private final String callerUserId;
     private final ClientInfo callerClientInfo;
@@ -28,12 +92,13 @@ public class RequestContext {
     private final String callerIpAddress;
     
     private RequestContext(Metrics metrics, String requestId, String callerAppId, String callerOrgMembership,
-            Set<String> callerStudies, Set<Roles> callerRoles, String callerUserId, ClientInfo callerClientInfo,
-            List<String> callerLanguages, String callerIpAddress) {
+            Set<String> callerStudies, Set<String> orgSponsoredStudies, Set<Roles> callerRoles, String callerUserId,
+            ClientInfo callerClientInfo, List<String> callerLanguages, String callerIpAddress) {
         this.requestId = requestId;
         this.callerAppId = callerAppId;
         this.callerOrgMembership = callerOrgMembership;
         this.callerStudies = callerStudies;
+        this.orgSponsoredStudies = orgSponsoredStudies;
         this.callerRoles = callerRoles;
         this.callerUserId = callerUserId;
         this.callerClientInfo = callerClientInfo;
@@ -56,6 +121,9 @@ public class RequestContext {
     }
     public Set<String> getCallerStudies() {
         return callerStudies;
+    }
+    public Set<String> getOrgSponsoredStudies() {
+        return orgSponsoredStudies;
     }
     // Only accessible to tests to verify
     Set<Roles> getCallerRoles() {
@@ -92,6 +160,7 @@ public class RequestContext {
             .withCallerLanguages(callerLanguages)
             .withCallerRoles(callerRoles)
             .withCallerStudies(callerStudies)
+            .withOrgSponsoredStudies(orgSponsoredStudies)
             .withCallerUserId(callerUserId)
             .withMetrics(metrics)
             .withCallerIpAddress(callerIpAddress);
@@ -102,6 +171,7 @@ public class RequestContext {
         private String callerAppId;
         private String callerOrgMembership;
         private Set<String> callerStudies;
+        private Set<String> orgSponsoredStudies;
         private Set<Roles> callerRoles;
         private String requestId;
         private String callerUserId;
@@ -123,6 +193,10 @@ public class RequestContext {
         }
         public Builder withCallerStudies(Set<String> callerStudies) {
             this.callerStudies = (callerStudies == null) ? null : ImmutableSet.copyOf(callerStudies);
+            return this;
+        }
+        public Builder withOrgSponsoredStudies(Set<String> orgSponsoredStudies){ 
+            this.orgSponsoredStudies = (orgSponsoredStudies == null) ? null : ImmutableSet.copyOf(orgSponsoredStudies);
             return this;
         }
         public Builder withCallerRoles(Set<Roles> roles) {
@@ -157,6 +231,9 @@ public class RequestContext {
             if (callerStudies == null) {
                 callerStudies = ImmutableSet.of();
             }
+            if (orgSponsoredStudies == null) {
+                orgSponsoredStudies = ImmutableSet.of();
+            }
             if (callerRoles == null) {
                 callerRoles = ImmutableSet.of();
             }
@@ -170,15 +247,16 @@ public class RequestContext {
                 metrics = new Metrics(requestId);
             }
             return new RequestContext(metrics, requestId, callerAppId, callerOrgMembership, callerStudies,
-                    callerRoles, callerUserId, callerClientInfo, callerLanguages, callerIpAddress);
+                    orgSponsoredStudies, callerRoles, callerUserId, callerClientInfo, callerLanguages, callerIpAddress);
         }
     }
 
     @Override
     public String toString() {
         return "RequestContext [requestId=" + requestId + ", callerAppId=" + callerAppId + ", callerOrgMembership="
-                + callerOrgMembership + ", callerStudies=" + callerStudies + ", callerRoles=" + callerRoles
-                + ", callerUserId=" + callerUserId + ", callerClientInfo=" + callerClientInfo + ", callerIpAddress="
-                + callerIpAddress + ", callerLanguages=" + callerLanguages + ", metrics=" + metrics + "]";
+                + callerOrgMembership + ", callerStudies=" + callerStudies + ", orgSponsoredStudies=" + orgSponsoredStudies
+                + ", callerRoles=" + callerRoles + ", callerUserId=" + callerUserId + ", callerClientInfo=" 
+                + callerClientInfo + ", callerIpAddress=" + callerIpAddress + ", callerLanguages=" + callerLanguages 
+                + ", metrics=" + metrics + "]";
     }
 }

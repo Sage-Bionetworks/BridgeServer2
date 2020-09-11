@@ -280,13 +280,13 @@ public class ParticipantServiceTest extends Mockito {
             return null;
         }).when(accountService).updateAccount(any(), any());
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
                 .withCallerStudies(CALLER_SUBS).build());
     }
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
     }
     
     private void mockAccountRetrievalWithStudyD() {
@@ -434,7 +434,7 @@ public class ParticipantServiceTest extends Mockito {
         // This is a study caller, so the study relationship needs to be enforced
         // when creating a participant. In this case, the relationship is implied by the 
         // external ID but not provided in the externalIds set. It works anyway.
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
                 .withCallerStudies(ImmutableSet.of("study1")).build());
 
         ExternalIdentifier extId = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
@@ -452,7 +452,7 @@ public class ParticipantServiceTest extends Mockito {
     public void createParticipantWithExternalIdAndStudyCallerThatDontMatch() throws Exception { 
         // This is a study caller assigning an external ID, but the external ID is not in one of the 
         // caller's studies.
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
                 .withCallerStudies(ImmutableSet.of("study1")).build());
 
         ExternalIdentifier extId = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
@@ -469,7 +469,7 @@ public class ParticipantServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = ".*externalId is not a valid external ID.*")
     public void createParticipantWithMissingExternalIdAndStudyCaller() { 
         // This is a study caller supplying an external ID that doesn't exist.
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
                 .withCallerStudies(ImmutableSet.of("study1")).build());
 
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.empty());
@@ -674,7 +674,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp=".*must be assigned to one or more of these studies: studyId.*")
     public void createParticipantMustIncludeCallerStudy() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID)).build());
         
         participantService.createParticipant(APP, PARTICIPANT, false);
@@ -886,7 +886,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void getSelfParticipantWithHistory() throws Exception {
-        BridgeUtils.setRequestContext(
+        RequestContext.set(
                 new RequestContext.Builder().withCallerStudies(TestConstants.USER_STUDY_IDS).build());
         
         // Some data to verify
@@ -924,7 +924,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void getSelfParticipantNoHistory() {
-        BridgeUtils.setRequestContext(
+        RequestContext.set(
                 new RequestContext.Builder().withCallerStudies(TestConstants.USER_STUDY_IDS).build());
         
         // Some data to verify
@@ -1079,7 +1079,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setEnrollments(ImmutableSet.of(en1, en2, en3));
         
         // Now, the caller only sees A and C
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("studyA", "studyC")).build());
         
         StudyParticipant participant = participantService.getParticipant(APP, ID, false);
@@ -1169,7 +1169,7 @@ public class ParticipantServiceTest extends Mockito {
 
     @Test
     public void updateParticipantWithExternalIdValidationAddingId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES).build());
         
         mockHealthCodeAndAccountRetrieval(null, null, null);
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
@@ -1250,7 +1250,7 @@ public class ParticipantServiceTest extends Mockito {
     // participant, because the study IDs don't overlap
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateParticipantMustIncludeCallerStudy() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID)).build());
 
         participantService.updateParticipant(APP, PARTICIPANT);
@@ -1310,7 +1310,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateParticipantDoesNotUpdateImmutableFields() {
         mockHealthCodeAndAccountRetrieval(null, null, null);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder().build());
  
         // There's a long list of fields you cannot update, set them all: 
         StudyParticipant participant = withParticipant()
@@ -1393,7 +1393,7 @@ public class ParticipantServiceTest extends Mockito {
 
     @Test
     public void notSettingStatusDoesntClearStatus() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         mockHealthCodeAndAccountRetrieval();
         account.setStatus(AccountStatus.ENABLED);
@@ -1918,7 +1918,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateIdentifiersCanAddExternalIdInOtherStudy() {
         // caller in question is in studyA
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID)).build());
         
         // account is associated to the EXTERNAL_ID in STUDY_ID
@@ -1938,14 +1938,14 @@ public class ParticipantServiceTest extends Mockito {
         verify(externalIdService).commitAssignExternalId(extId);
         
         assertEquals(accountCaptor.getValue().getEnrollments().size(), 2);
-        RequestContext context = BridgeUtils.getRequestContext();
+        RequestContext context = RequestContext.get();
         assertEquals(context.getCallerStudies(), ImmutableSet.of(STUDY_ID, "anotherStudy"));
     }
     
     @Test
     public void updateIdentifiersAssignsExternalIdEvenWhenAlreadyAssigned() {
         // Fully associated external ID can be changed by an update.
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("studyB")).build());
         mockHealthCodeAndAccountRetrieval();
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, "studyB", ID, EXTERNAL_ID);
@@ -2320,7 +2320,7 @@ public class ParticipantServiceTest extends Mockito {
         identifier.setHealthCode(HEALTH_CODE);
         when(externalIdService.getExternalId(TEST_APP_ID, "oldExternalId")).thenReturn(Optional.of(identifier));
         mockHealthCodeAndAccountRetrieval(EMAIL, null, "oldExternalId");
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
         
         // This record has a different external ID than the mocked account
         StudyParticipant participant = withParticipant().withExternalId("newExternalId").build();
@@ -2375,7 +2375,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void removingExternalIdOnlyWorksForResearcher() {
-        BridgeUtils.setRequestContext(
+        RequestContext.set(
                 new RequestContext.Builder().withCallerRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
         
         mockHealthCodeAndAccountRetrieval(EMAIL, null, EXTERNAL_ID);
@@ -2393,7 +2393,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void createParticipantValidatesUnmanagedExternalId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder().build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         StudyParticipant participant = withParticipant().withExternalId("  ").build();
@@ -2408,7 +2408,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void createParticipantValidatesManagedExternalId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder().build());
         when(externalIdService.getExternalId(any(), any())).thenReturn(Optional.empty());
         try {
             StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
@@ -2420,7 +2420,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void createParticipantNoExternalIdAddedDoesNothing() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder().build());
         when(participantService.getAccount()).thenReturn(account);
         StudyParticipant participant = withParticipant().withExternalId(null).build();
         
@@ -2431,7 +2431,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void createParticipantExternalIdAddedUpdatesExternalId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder().build());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.getAccount()).thenReturn(account);
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
@@ -2444,7 +2444,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void updateParticipantValidatesManagedExternalId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder().build());
         mockHealthCodeAndAccountRetrieval(EMAIL, null, null);
         
         try {
@@ -2457,7 +2457,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void updateParticipantValidatesUnmanagedExternalId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder().build());
         mockHealthCodeAndAccountRetrieval(EMAIL, null, null);
         
         try {
@@ -2470,7 +2470,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void updateParticipantNoExternalIdsNoneAddedDoesNothing() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder().build());
         mockHealthCodeAndAccountRetrieval(EMAIL, null, null);
         
         StudyParticipant participant = withParticipant().withExternalId(null).build();
@@ -2484,7 +2484,7 @@ public class ParticipantServiceTest extends Mockito {
 
     @Test
     public void updateParticipantNoExternalIdsOneAddedUpdates() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder().build());
         mockHealthCodeAndAccountRetrieval(EMAIL, null, null);
         
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
@@ -2498,7 +2498,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void updateParticipantExternalIdsExistNoneAddedDoesNothing() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder().build());
         mockAccountRetrievalWithStudyD();
         
         StudyParticipant participant = withParticipant().withExternalId(null).build();
@@ -2625,7 +2625,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void normalUserCanAddExternalIdOnUpdate() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
         mockHealthCodeAndAccountRetrieval();
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
@@ -2643,7 +2643,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test(expectedExceptions = ConstraintViolationException.class)
     public void normalUserCannotChangeExternalIdOnUpdate() {
         mockHealthCodeAndAccountRetrieval(EMAIL, null, EXTERNAL_ID);
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
         
         extId.setStudyId(STUDY_ID); // same study, which is not allowable
         when(externalIdService.getExternalId(TEST_APP_ID, "differentId")).thenReturn(Optional.of(extId));
@@ -2834,7 +2834,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void adminCanAddStudyIdOnCreate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(participantService.generateGUID()).thenReturn(ID);
         
@@ -2855,7 +2855,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void adminCanAddStudyIdOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -2877,7 +2877,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void adminCanAddExternalIdOnCreate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
@@ -2902,7 +2902,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void adminCanAddExternalIdOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
@@ -2929,7 +2929,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void adminCanRemoveStudyIdOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
@@ -2946,7 +2946,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void researcherCanAddStudyIdOnCreate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(participantService.generateGUID()).thenReturn(ID);
         
@@ -2967,7 +2967,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void researcherCanAddExternalIdOnCreate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         when(participantService.generateGUID()).thenReturn(ID, HEALTH_CODE);
@@ -2992,7 +2992,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void researcherCannotAddStudyIdOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -3008,7 +3008,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void researcherCanAddExternalIdOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         account.setId(ID);
@@ -3034,7 +3034,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void researcherCannotRemoveExternalIdOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
@@ -3048,7 +3048,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void researcherCannotRemoveStudyIdOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
@@ -3065,7 +3065,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void studyResearcherCanAddStudyIdOnCreate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
@@ -3088,7 +3088,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void studyResearcherCanAddExternalIdOnCreate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
@@ -3115,7 +3115,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void studyResearcherCannotAddStudyIdOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID, "secondStudyId"))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
@@ -3136,7 +3136,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void studyResearcherCanAddExternalIdOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
@@ -3160,7 +3160,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void studyResearcherCannotRemoveExternalIdOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
@@ -3175,7 +3175,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     @Test
     public void studyResearcherCannotRemoveStudyIdOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
@@ -3195,7 +3195,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp="someOtherStudy is not a study of the caller")
     public void studyResearcherCannotAddExternalIdOfOtherStudyOnCreate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
@@ -3225,7 +3225,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp="studyId is not a study of the caller")
     public void studyResearcherCannotAddStudyIdOfOtherSstudyOnCreate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("someOtherStudy"))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
@@ -3244,7 +3244,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp="someOtherStudy is not a study of the caller")
     public void studyResearcherCannotAddExternalIdOfOtherStudyOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         extId.setStudyId("someOtherStudy");
@@ -3260,7 +3260,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void studyResearcherCannotAddStudyIdOfOtherStudyOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, "someOtherStudy", false)).thenReturn(Study.create());
@@ -3285,7 +3285,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void studyResearcherCannotAddHaveNoStudyOnUpdate() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
@@ -3307,7 +3307,7 @@ public class ParticipantServiceTest extends Mockito {
     // There's no actual vs expected here because either we don't set it, or we set it and that's what we're verifying,
     // that it has been set. If the setter is not called, the existing status will be sent back to account store.
     private void verifyStatusUpdate(Set<Roles> callerRoles, boolean canSetStatus) {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(callerRoles).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(callerRoles).build());
         
         mockHealthCodeAndAccountRetrieval();
         
@@ -3326,7 +3326,7 @@ public class ParticipantServiceTest extends Mockito {
     }
 
     private void verifyRoleCreate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet) {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(callerRoles).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(callerRoles).build());
         
         mockHealthCodeAndAccountRetrieval();
         
@@ -3346,7 +3346,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     private void verifyRoleUpdate(Set<Roles> callerRoles, Set<Roles> rolesThatAreSet, Set<Roles> expected) {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(callerRoles).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(callerRoles).build());
 
         mockHealthCodeAndAccountRetrieval();
         
@@ -3380,7 +3380,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     private StudyParticipant.Builder mockStudiesInRequest(Set<String> callerStudies, Set<String> participantStudies, Roles... callerRoles) {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(callerStudies)
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies)
                 .withCallerRoles( (callerRoles.length == 0) ? null : ImmutableSet.copyOf(callerRoles)).build());
         
         StudyParticipant.Builder builder = withParticipant().withStudyIds(participantStudies);

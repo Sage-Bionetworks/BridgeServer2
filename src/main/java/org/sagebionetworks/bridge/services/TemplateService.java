@@ -209,7 +209,7 @@ public class TemplateService {
     }
     
     public TemplateRevision getRevisionForUser(App app, TemplateType type) {
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         CriteriaContext context = new CriteriaContext.Builder()
             .withClientInfo(reqContext.getCallerClientInfo())
             .withLanguages(reqContext.getCallerLanguages())
@@ -439,6 +439,6 @@ public class TemplateService {
     }
     
     String getUserId() {
-        return BridgeUtils.getRequestContext().getCallerUserId();
+        return RequestContext.get().getCallerUserId();
     }
 }

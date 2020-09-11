@@ -48,7 +48,6 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
@@ -936,7 +935,7 @@ public class AccountServiceTest extends Mockito {
     
     @Test
     public void editAccountFailsAcrossStudies() throws Exception {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(CALLER_STUDIES).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(CALLER_STUDIES).build());
 
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
         persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
@@ -945,7 +944,7 @@ public class AccountServiceTest extends Mockito {
         service.editAccount(TEST_APP_ID, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
 
         verify(mockAccountDao, never()).updateAccount(any(), eq(null));
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     @Test
@@ -953,13 +952,13 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
         persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_A)).build());
 
         Account account = service.getAccount(ACCOUNT_ID);
         assertEquals(persistedAccount, account);
         
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     @Test
@@ -967,13 +966,13 @@ public class AccountServiceTest extends Mockito {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
         persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_B)).build());
 
         Account account = service.getAccount(ACCOUNT_ID);
         assertNull(account);
         
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }    
 
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {
