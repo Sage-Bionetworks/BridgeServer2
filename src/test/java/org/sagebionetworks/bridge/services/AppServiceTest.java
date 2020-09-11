@@ -67,6 +67,7 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.AppDao;
+import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
@@ -149,6 +150,12 @@ public class AppServiceTest extends Mockito {
     TemplateService mockTemplateService;
     @Mock
     FileService mockFileService;
+    @Mock
+    OrganizationDao mockOrgDao;
+    @Mock
+    OrganizationService mockOrgService;
+    @Mock
+    StudyService mockStudyService;
 
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -709,6 +716,8 @@ public class AppServiceTest extends Mockito {
 
         // verify we called the correct dependent services
         verify(mockAppDao).deleteApp(app);
+        verify(mockStudyService).deleteAllStudies(app.getIdentifier());
+        verify(mockOrgService).deleteAllOrganizations(app.getIdentifier());
         verify(mockCompoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInApp(
                 app.getIdentifier());
         verify(mockSubpopService).deleteAllSubpopulations(app.getIdentifier());

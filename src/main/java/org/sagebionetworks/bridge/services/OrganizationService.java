@@ -210,4 +210,9 @@ public class OrganizationService {
         sessionUpdateService.updateOrgMembership(account.getId(), null);
     }
 
+    public void deleteAllOrganizations(String appId) {
+        checkArgument(isNotBlank(appId));
+
+        orgDao.deleteAllOrganizations(appId);
+    }
 }
