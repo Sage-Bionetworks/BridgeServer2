@@ -639,6 +639,8 @@ public class AppService {
             appDao.deleteApp(existing);
 
             // delete app data
+            studyService.deleteAllStudies(existing.getIdentifier());
+            organizationService.deleteAllOrganizations(existing.getIdentifier());
             templateService.deleteTemplatesForApp(existing.getIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInApp(
                     existing.getIdentifier());

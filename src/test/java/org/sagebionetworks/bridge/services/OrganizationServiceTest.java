@@ -453,4 +453,10 @@ public class OrganizationServiceTest extends Mockito {
 
         service.removeMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
     }
+    
+    @Test
+    public void deleteAllOrganizations() {
+        service.deleteAllOrganizations(TEST_APP_ID);
+        verify(mockOrgDao).deleteAllOrganizations(TEST_APP_ID);
+    }
 }
