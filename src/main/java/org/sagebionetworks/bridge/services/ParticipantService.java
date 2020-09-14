@@ -258,7 +258,7 @@ public class ParticipantService {
         Account account = getAccountThrowingException(accountId); // already filters for study
         
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(account.getEnrollments());
+        StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(account.getActiveEnrollments());
         copyAccountToParticipant(builder, assoc, account);
         copyConsentStatusToParticipant(builder, account, context);
         if (includeHistory) {
@@ -286,7 +286,7 @@ public class ParticipantService {
         }
 
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        StudyAssociations assoc = studyAssociationsVisibleToCaller(account.getEnrollments());
+        StudyAssociations assoc = studyAssociationsVisibleToCaller(account.getActiveEnrollments());
         copyAccountToParticipant(builder, assoc, account);
 
         if (includeHistory) {
@@ -585,7 +585,7 @@ public class ParticipantService {
         // for that account if it is signed in, so we MUST destroy the session. 
         if (isNew || RequestContext.get().isInRole(ADMIN)) {
             // Copy to prevent concurrent modification exceptions
-            Set<Enrollment> enrollments = ImmutableSet.copyOf(account.getEnrollments());
+            Set<Enrollment> enrollments = ImmutableSet.copyOf(account.getActiveEnrollments());
             
             // Remove study relationship if it's not desired and unassign external ID
             for (Enrollment enrollment : enrollments) {
@@ -599,8 +599,7 @@ public class ParticipantService {
             Set<String> existingStudyIds = BridgeUtils.collectStudyIds(account);
             for (String studyId : participant.getStudyIds()) {
                 if (!existingStudyIds.contains(studyId)) {
-                    Enrollment enrollment = Enrollment.create(
-                            account.getAppId(), studyId, account.getId());
+                    Enrollment enrollment = Enrollment.create(account.getAppId(), studyId, account.getId());
                     account.getEnrollments().add(enrollment);
                     clearCache = true;
                 }

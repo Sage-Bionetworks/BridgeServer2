@@ -3,10 +3,12 @@ package org.sagebionetworks.bridge.hibernate;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.testng.Assert.assertEquals;
@@ -24,9 +26,11 @@ import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -295,6 +299,20 @@ public class HibernateAccountTest {
         assertTrue(account.getRoles().isEmpty());
         assertTrue(account.getConsentSignatureHistory(SubpopulationGuid.create("nada")).isEmpty());
         assertTrue(account.getAllConsentSignatureHistories().isEmpty());
+    }
+    
+    @Test
+    public void getActiveEnrollments() {
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID);
+        Enrollment en3 = Enrollment.create(TEST_APP_ID, "studyC", USER_ID);
+        en2.setWithdrawnOn(CREATED_ON);
+        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2, en3);
+        
+        HibernateAccount account = new HibernateAccount();
+        account.setEnrollments(enrollments);
+        
+        assertEquals(account.getActiveEnrollments(), ImmutableSet.of(en1, en3));
     }
     
     private HibernateAccountConsent getHibernateAccountConsent(Long withdrewOn) {
