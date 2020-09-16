@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.services.SponsorService;
 
 public class AuthUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AuthUtils.class);
@@ -87,5 +88,20 @@ public class AuthUtils {
             return;
         }
         throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+    }
+    
+    public static boolean checkSelfAdminOrSponsor(SponsorService sponsorService, String studyId, String userId) {
+        RequestContext context = BridgeUtils.getRequestContext();
+        String callerOrgMembership = context.getCallerOrgMembership();
+        String callerUserId = context.getCallerUserId();
+        return context.isInRole(ADMIN) || 
+                sponsorService.isStudySponsoredBy(studyId, callerOrgMembership) ||
+                (callerUserId != null && callerUserId.equals(userId));
+    }
+    
+    public static void checkSelfAdminOrSponsorAndThrow(SponsorService sponsorService, String studyId, String userId) {
+        if (!checkSelfAdminOrSponsor(sponsorService, studyId, userId)) {
+            throw new UnauthorizedException();
+        }
     }
 }

@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import javax.servlet.FilterChain;
@@ -20,7 +19,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.testng.annotations.AfterMethod;

@@ -7,7 +7,7 @@ import static org.testng.Assert.assertNull;
 import org.testng.annotations.Test;
 
 public class EnrollmentTest {
-
+    
     @Test
     public void createSmall() {
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, "studyId", "accountId");

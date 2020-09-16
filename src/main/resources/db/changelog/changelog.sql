@@ -394,3 +394,15 @@ MODIFY COLUMN `category` enum('CUSTOMIZATION_OPTIONS', 'DATA_REPOSITORY',
     'PUBLICATION', 'RELEASE_NOTE', 'SAMPLE_APP', 'SAMPLE_DATA', 
     'SCREENSHOT', 'VIDEO_PREVIEW', 'SEE_ALSO', 'USED_IN_STUDY', 'WEBSITE', 
     'OTHER') NOT NULL;
+    
+-- changeset bridge:19
+
+ALTER TABLE `AccountsSubstudies`
+ADD COLUMN `consentRequired` tinyint(1) DEFAULT '0',
+ADD COLUMN `enrolledOn` bigint(20),
+ADD COLUMN `withdrawnOn` bigint(20),
+ADD COLUMN `enrolledBy` varchar(255),
+ADD COLUMN `withdrawnBy` varchar(255),
+ADD COLUMN `withdrawalNote` varchar(255),
+ADD CONSTRAINT `fk_enrolledBy` FOREIGN KEY (`enrolledBy`) REFERENCES `Accounts` (`id`),
+ADD CONSTRAINT `fk_withdrawnBy` FOREIGN KEY (`withdrawnBy`) REFERENCES `Accounts` (`id`);
