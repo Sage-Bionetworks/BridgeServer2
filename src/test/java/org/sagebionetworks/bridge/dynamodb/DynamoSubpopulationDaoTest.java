@@ -17,6 +17,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -99,13 +100,14 @@ public class DynamoSubpopulationDaoTest extends Mockito {
     public void createDefaultSubpopulation() {
         when(mockCriteriaDao.createOrUpdateCriteria(any())).thenAnswer(invocation -> invocation.getArgument(0));
         
-        Subpopulation result = dao.createDefaultSubpopulation(TEST_APP_ID);
+        Subpopulation result = dao.createDefaultSubpopulation(TEST_APP_ID, "study-identifier");
         
         verify(mockMapper).save(subpopCaptor.capture());
         Subpopulation subpop = subpopCaptor.getValue();
         assertEquals(subpop.getAppId(), TEST_APP_ID);
         assertEquals(subpop.getGuidString(), TEST_APP_ID);
         assertEquals(subpop.getName(), "Default Consent Group");
+        assertEquals(subpop.getStudyIdsAssignedOnConsent(), ImmutableSet.of("study-identifier"));
         assertTrue(subpop.isDefaultGroup());
         assertTrue(subpop.isRequired());
         assertSame(subpop, result);
@@ -131,7 +133,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
         when(mockQueryList.stream()).thenReturn(subpopList.stream());
         
-        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, false, true);
+        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, true);
         assertEquals(result.size(), 2);
         
         verify(mockMapper).query(eq(DynamoSubpopulation.class), queryCaptor.capture());
@@ -151,49 +153,11 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
         when(mockQueryList.stream()).thenReturn(subpopList.stream());
         
-        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, false, false);
+        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, false);
         assertEquals(result.size(), 1);
         assertFalse(result.get(0).isDeleted());
     }
 
-    @Test
-    public void getSubpopulationsDoesNotCreateDefaultIfThereAreExistingSubpops() {
-        DynamoSubpopulation subpop1 = new DynamoSubpopulation();
-        List<DynamoSubpopulation> subpopList = ImmutableList.of(subpop1);
-        when(mockMapper.query(eq(DynamoSubpopulation.class), any())).thenReturn(mockQueryList);
-        when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
-        when(mockQueryList.stream()).thenReturn(subpopList.stream());
-        
-        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, true, true);
-        assertEquals(result.size(), 1);
-        assertFalse(result.get(0).isDefaultGroup());
-    }
-    
-    @Test
-    public void getSubpopulationsDoesNotCreateDefaultIfFlagIsFalse() {
-        // No subopulation
-        List<DynamoSubpopulation> subpopList = ImmutableList.of();
-        when(mockMapper.query(eq(DynamoSubpopulation.class), any())).thenReturn(mockQueryList);
-        when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
-        when(mockQueryList.stream()).thenReturn(subpopList.stream());
-        
-        // but don't create a default
-        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, false, true);
-        assertTrue(result.isEmpty());
-    }
-    
-    @Test
-    public void getSubpopulationsCreatesDefault() {
-        List<DynamoSubpopulation> subpopList = ImmutableList.of();
-        when(mockMapper.query(eq(DynamoSubpopulation.class), any())).thenReturn(mockQueryList);
-        when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
-        when(mockQueryList.stream()).thenReturn(subpopList.stream());
-        
-        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, true, true);
-        assertEquals(result.size(), 1);
-        assertTrue(result.get(0).isDefaultGroup());
-    }
-    
     @Test
     public void getSubpopulation() {
         Subpopulation saved = Subpopulation.create();

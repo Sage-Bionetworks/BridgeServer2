@@ -31,7 +31,7 @@ public class ExternalIdValidator implements Validator {
         ExternalIdentifier extId = (ExternalIdentifier)object;
 
         String callerAppId = RequestContext.get().getCallerAppId();
-        Set<String> callerStudies = RequestContext.get().getCallerStudies();
+        Set<String> callerStudies = RequestContext.get().getOrgSponsoredStudies();
         
         if (StringUtils.isBlank(extId.getIdentifier())) {
             errors.rejectValue("identifier", "cannot be null or blank");

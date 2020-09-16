@@ -85,7 +85,7 @@ public class ExternalIdService {
         
         // In this one  case, we can default the value for the caller and avoid an error. Any other situation
         // is going to generate a validation error
-        Set<String> callerStudyIds = RequestContext.get().getCallerStudies();
+        Set<String> callerStudyIds = RequestContext.get().getOrgSponsoredStudies();
         if (externalId.getStudyId() == null && callerStudyIds.size() == 1) {
             externalId.setStudyId( Iterables.getFirst(callerStudyIds, null) );
         }

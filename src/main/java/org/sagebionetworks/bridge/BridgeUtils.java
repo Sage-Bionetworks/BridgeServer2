@@ -7,6 +7,7 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -147,22 +149,40 @@ public class BridgeUtils {
                 .collect(toImmutableSet());
     }
     
+    // Do not call this method before updating the account; this method may remove
+    // enrollments from the account that are not visible to the caller so it can be
+    // displayed to the caller without leaking enrollment information.
     public static Account filterForStudy(Account account) {
         if (account != null) {
             RequestContext context = RequestContext.get();
-            Set<String> callerStudies = context.getCallerStudies();
-            if (BridgeUtils.isEmpty(callerStudies)) {
+            Set<String> callerStudies = context.getOrgSponsoredStudies();
+            
+            // If this is a call for one’s own record, or the caller is has no 
+            // study relationships, return the account. Note that we are migrating
+            // away from a system that allows an account to have no specific study
+            // associations, but it remains necessary during the transition
+            String callerUserId = context.getCallerUserId();
+            if (account.getId().equals(callerUserId) || isEmpty(callerStudies)) {
                 return account;
             }
-            Set<Enrollment> matched = account.getEnrollments().stream()
-                    .filter(as -> callerStudies.isEmpty() || callerStudies.contains(as.getStudyId()))
-                    .collect(toSet());
+//            if (account.getId().equals(callerUserId)) {
+//                return account;
+//            }
+//            
+//            // TODO: context.isInRole(ADMIN) should not be necessary, because orgSponsoredStudies
+//            // will be empty due to SponsorService call
+//            if (context.isInRole(ADMIN) || isEmpty(callerStudies)) {
+//                return account;
+//            }
             
-            if (!matched.isEmpty()) {
-                // Hibernate managed objects use a collection implementation that tracks changes,
-                // and shouldn't be set with a Java library collection. Here it is okay because 
-                // we're filtering an object to return through the API, and it won't be persisted.
-                account.setEnrollments(matched);
+            // This both tells us if there is a study the caller can see that this account
+            // is enrolled in, and removes any studies that the caller should not see
+            Set<Enrollment> removals = account.getActiveEnrollments().stream()
+                    .filter(en -> !callerStudies.contains(en.getStudyId()))
+                    .collect(toSet());
+            account.getEnrollments().removeAll(removals);
+
+            if (!account.getEnrollments().isEmpty()) {
                 return account;
             }
         }
@@ -173,15 +193,26 @@ public class BridgeUtils {
      * Callers only see the enrollment records they themselves are assigned to, unless they have no
      * study memberships (then they are global and see everything).
      */
-    public static StudyAssociations studyAssociationsVisibleToCaller(Collection<? extends Enrollment> enrollments) {
+    public static StudyAssociations studyAssociationsVisibleToCaller(Account account) {
+        if (account == null) {
+            return NO_ASSOCIATIONS;
+        }
+        Collection<? extends Enrollment> enrollments = account.getActiveEnrollments();
         if (enrollments == null || enrollments.isEmpty()) {
             return NO_ASSOCIATIONS;
         }
+        String userId = RequestContext.get().getCallerUserId();
+        
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
-        Set<String> callerStudies = RequestContext.get().getCallerStudies();
+        
+        // Right now this is used for admins and participants alike.
+//        Set<String> callerStudies = new HashSet<>();
+//        callerStudies.addAll(RequestContext.get().getCallerStudies());
+//        callerStudies.addAll(RequestContext.get().getOrgSponsoredStudies());
+        Set<String> callerStudies = RequestContext.get().getOrgSponsoredStudies();
         for (Enrollment enrollment : enrollments) {
-            if (callerStudies.isEmpty() || callerStudies.contains(enrollment.getStudyId())) {
+            if (account.getId().equals(userId) || callerStudies.isEmpty() || callerStudies.contains(enrollment.getStudyId())) {
                 studyIds.add(enrollment.getStudyId());
                 if (enrollment.getExternalId() != null) {
                     externalIds.put(enrollment.getStudyId(), enrollment.getExternalId());
@@ -194,13 +225,14 @@ public class BridgeUtils {
     public static ExternalIdentifier filterForStudy(ExternalIdentifier externalId) {
         if (externalId != null) {
             RequestContext context = RequestContext.get();
-            Set<String> callerStudies = context.getCallerStudies();
-            if (BridgeUtils.isEmpty(callerStudies)) {
+            Set<String> callerStudies = context.getOrgSponsoredStudies();
+            if (isEmpty(callerStudies) || callerStudies.contains(externalId.getStudyId())) {
+//            if (context.isInRole(ADMIN) || isEmpty(callerStudies)) {
                 return externalId;
             }
-            if (callerStudies.contains(externalId.getStudyId())) {
-                return externalId;
-            }
+//            if (callerStudies.contains(externalId.getStudyId())) {
+//                return externalId;
+//            }
         }
         return null;
     }

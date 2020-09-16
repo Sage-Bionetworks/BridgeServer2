@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
@@ -281,7 +282,7 @@ public class ParticipantServiceTest extends Mockito {
         }).when(accountService).updateAccount(any(), any());
         
         RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
-                .withCallerStudies(CALLER_SUBS).build());
+                .withOrgSponsoredStudies(CALLER_SUBS).build());
     }
     
     @AfterMethod
@@ -453,7 +454,7 @@ public class ParticipantServiceTest extends Mockito {
         // This is a study caller assigning an external ID, but the external ID is not in one of the 
         // caller's studies.
         RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
-                .withCallerStudies(ImmutableSet.of("study1")).build());
+                .withOrgSponsoredStudies(ImmutableSet.of("study1")).build());
 
         ExternalIdentifier extId = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
         extId.setStudyId("study2");
@@ -671,15 +672,6 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(account.getStatus(), AccountStatus.UNVERIFIED);
     }
     
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp=".*must be assigned to one or more of these studies: studyId.*")
-    public void createParticipantMustIncludeCallerStudy() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID)).build());
-        
-        participantService.createParticipant(APP, PARTICIPANT, false);
-    }
-
     @Test
     public void createSmsNotificationRegistration_PhoneNotVerified() {
         // Mock account w/ email but no phone.
@@ -886,8 +878,8 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void getSelfParticipantWithHistory() throws Exception {
-        RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(TestConstants.USER_STUDY_IDS).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(TestConstants.USER_STUDY_IDS).build());
         
         // Some data to verify
         account.setId(ID);
@@ -924,8 +916,8 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void getSelfParticipantNoHistory() {
-        RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(TestConstants.USER_STUDY_IDS).build());
+        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(USER_STUDY_IDS)
+                .build());
         
         // Some data to verify
         account.setId(ID);
@@ -1076,11 +1068,11 @@ public class ParticipantServiceTest extends Mockito {
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", ID, "externalIdB");
         Enrollment en3 = Enrollment.create(TEST_APP_ID, "studyC", ID);
         // no third external ID, this one is just not in the external IDs map
-        account.setEnrollments(ImmutableSet.of(en1, en2, en3));
+        account.getEnrollments().addAll(ImmutableSet.of(en1, en2, en3));
         
         // Now, the caller only sees A and C
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("studyA", "studyC")).build());
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyC")).build());
         
         StudyParticipant participant = participantService.getParticipant(APP, ID, false);
         assertEquals(participant.getStudyIds(), ImmutableSet.of("studyA", "studyC"));
@@ -3196,7 +3188,7 @@ public class ParticipantServiceTest extends Mockito {
             expectedExceptionsMessageRegExp="someOtherStudy is not a study of the caller")
     public void studyResearcherCannotAddExternalIdOfOtherStudyOnCreate() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID))
+                .withOrgSponsoredStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         extId.setStudyId("someOtherStudy");
@@ -3226,7 +3218,7 @@ public class ParticipantServiceTest extends Mockito {
             expectedExceptionsMessageRegExp="studyId is not a study of the caller")
     public void studyResearcherCannotAddStudyIdOfOtherSstudyOnCreate() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("someOtherStudy"))
+                .withOrgSponsoredStudies(ImmutableSet.of("someOtherStudy"))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         
@@ -3245,7 +3237,7 @@ public class ParticipantServiceTest extends Mockito {
             expectedExceptionsMessageRegExp="someOtherStudy is not a study of the caller")
     public void studyResearcherCannotAddExternalIdOfOtherStudyOnUpdate() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID))
+                .withOrgSponsoredStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         extId.setStudyId("someOtherStudy");
         when(externalIdService.getExternalId(TEST_APP_ID, "otherExternalId")).thenReturn(Optional.of(extId));

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -516,8 +517,8 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void getPagedRemovesStudiesNotInCaller() throws Exception {
-        RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(ImmutableSet.of(STUDY_A)).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(STUDY_A)).build());
         
         Set<Enrollment> set = ImmutableSet.of(
                 Enrollment.create(TEST_APP_ID, STUDY_A, ACCOUNT_ID),
@@ -650,8 +651,8 @@ public class HibernateAccountDaoTest extends Mockito {
                 + "acct.appId = :appId AND enrollment.studyId IN (:studies)";
         Set<String> studyIds = ImmutableSet.of("studyA", "studyB");
         try {
-            RequestContext context = new RequestContext.Builder().withCallerStudies(studyIds).build();
-            RequestContext.set(context);
+            RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER))
+                    .withOrgSponsoredStudies(studyIds).build());
 
             AccountSummarySearch search = new AccountSummarySearch.Builder().build();
             dao.getPagedAccountSummaries(TEST_APP_ID, search);
@@ -785,7 +786,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void unmarshallAccountSummaryFiltersStudies() throws Exception {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("studyB", "studyC")).build());
+                .withOrgSponsoredStudies(ImmutableSet.of("studyB", "studyC")).build());
 
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ACCOUNT_ID, "externalIdA");
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", ACCOUNT_ID, "externalIdB");

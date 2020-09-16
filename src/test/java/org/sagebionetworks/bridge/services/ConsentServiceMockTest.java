@@ -1,12 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.testng.Assert.assertEquals;
@@ -35,7 +28,9 @@ import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -76,7 +71,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 @SuppressWarnings("ConstantConditions")
-public class ConsentServiceMockTest {
+public class ConsentServiceMockTest extends Mockito {
     private static final String SHORT_URL = "https://ws.sagebridge.org/r/XXXXX";
     private static final String LONG_URL = "http://sagebionetworks.org/platforms/";
     private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
@@ -104,10 +99,13 @@ public class ConsentServiceMockTest {
             .withAppId(TEST_APP_ID).build();
 
     @Spy
+    @InjectMocks
     private ConsentService consentService;
 
     private App app;
 
+    @Mock
+    private EnrollmentService mockEnrollmentService;
     @Mock
     private AccountService accountService;
     @Mock
@@ -138,6 +136,8 @@ public class ConsentServiceMockTest {
     private ArgumentCaptor<SmsMessageProvider> smsProviderCaptor;
     @Captor
     private ArgumentCaptor<Account> accountCaptor;
+    @Captor
+    private ArgumentCaptor<Enrollment> enrollmentCaptor;
 
     private Account account;
 
@@ -148,17 +148,7 @@ public class ConsentServiceMockTest {
         String documentString = IOUtils.toString(
                 new FileInputStream(new ClassPathResource("conf/app-defaults/consent-page.xhtml").getFile()));
 
-        consentService.setAccountService(accountService);
-        consentService.setSendMailService(sendMailService);
-        consentService.setActivityEventService(activityEventService);
-        consentService.setSmsService(smsService);
-        consentService.setStudyConsentService(studyConsentService);
-        consentService.setSubpopulationService(subpopService);
-        consentService.setS3Helper(s3Helper);
-        consentService.setUrlShortenerService(urlShortenerService);
-        consentService.setNotificationsService(notificationsService);
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
-        consentService.setTemplateService(templateService);
 
         app = TestUtils.getValidApp(ConsentServiceMockTest.class);
         
@@ -924,9 +914,11 @@ public class ConsentServiceMockTest {
                 SharingScope.NO_SHARING, false);
 
         assertEquals(account.getDataGroups(), TestConstants.USER_DATA_GROUPS);
-        assertEquals(account.getEnrollments().stream().map(
-                Enrollment::getStudyId).collect(Collectors.toSet()),
-                TestConstants.USER_STUDY_IDS);
+        
+        verify(mockEnrollmentService, times(2)).enroll(any(), enrollmentCaptor.capture());
+        assertEquals(enrollmentCaptor.getAllValues().stream()
+            .map(Enrollment::getStudyId)
+            .collect(Collectors.toSet()), TestConstants.USER_STUDY_IDS);
     }
 
     @Test

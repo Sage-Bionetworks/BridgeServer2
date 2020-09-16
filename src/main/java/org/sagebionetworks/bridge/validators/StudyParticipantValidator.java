@@ -12,6 +12,7 @@ import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -98,6 +99,10 @@ public class StudyParticipantValidator implements Validator {
             }
         }
 
+        Set<String> callerStudies = RequestContext.get().getOrgSponsoredStudies();
+        if (!callerStudies.isEmpty() && !callerStudies.containsAll(participant.getStudyIds())) {
+            errors.rejectValue("studyIds", "are not accessible to the caller");
+        }
         for (String studyId : participant.getStudyIds()) {
             Study study = studyService.getStudy(app.getIdentifier(), studyId, false);
             if (study == null) {

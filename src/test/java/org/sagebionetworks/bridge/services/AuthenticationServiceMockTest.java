@@ -13,10 +13,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.testng.Assert.assertEquals;
@@ -1133,8 +1131,8 @@ public class AuthenticationServiceMockTest {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordAccountMismatchesCallerStudies() {
-        RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
         externalIdentifier.setStudyId("studyA");
@@ -1142,7 +1140,7 @@ public class AuthenticationServiceMockTest {
                 .thenReturn(Optional.of(externalIdentifier));
         
         when(accountService.getAccount(any())).thenReturn(account);
-        account.setEnrollments(ImmutableSet.of(Enrollment.create(app.getIdentifier(), "studyB", "id")));
+        account.setEnrollments(Sets.newHashSet(Enrollment.create(app.getIdentifier(), "studyB", "id")));
         
         service.generatePassword(app, EXTERNAL_ID, false);
     }

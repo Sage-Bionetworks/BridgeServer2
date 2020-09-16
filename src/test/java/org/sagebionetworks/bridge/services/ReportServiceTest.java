@@ -774,7 +774,7 @@ public class ReportServiceTest {
             Set<String> callerStudies, Set<String> indexStudies) {
         // These don't match and the call succeeds
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(callerStudies).build());
+                .withOrgSponsoredStudies(callerStudies).build());
         
         ReportIndex index = ReportIndex.create();
         index.setKey(reportKey.getIndexKeyString());

@@ -82,6 +82,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
@@ -1592,8 +1593,10 @@ public class AppServiceTest extends Mockito {
 
         verify(mockCacheProvider).setApp(app);
         
+        ArgumentCaptor<Study> studyCaptor = ArgumentCaptor.forClass(Study.class);
+        
         // A default, active consent should be created for the app.
-        verify(mockSubpopService).createDefaultSubpopulation(app);
+        verify(mockSubpopService).createDefaultSubpopulation(eq(app), studyCaptor.capture());
 
         verify(mockAppDao).createApp(appCaptor.capture());
 
@@ -1616,6 +1619,8 @@ public class AppServiceTest extends Mockito {
         newApp.setConsentNotificationEmailVerified(true);
         newApp.setStrictUploadValidationEnabled(true);
         newApp.setUploadValidationStrictness(WARNING);
+        
+        assertEquals(studyCaptor.getValue().getIdentifier(), app.getIdentifier() + "-study");
         
         when(mockAppDao.getApp(newApp.getIdentifier())).thenReturn(newApp);
         App updatedApp = service.updateApp(newApp, false);

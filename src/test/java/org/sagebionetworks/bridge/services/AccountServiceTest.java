@@ -32,6 +32,7 @@ import java.util.function.Consumer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -935,10 +936,10 @@ public class AccountServiceTest extends Mockito {
     
     @Test
     public void editAccountFailsAcrossStudies() throws Exception {
-        RequestContext.set(new RequestContext.Builder().withCallerStudies(CALLER_STUDIES).build());
+        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(CALLER_STUDIES).build());
 
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
-        persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
+        persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
         when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
 
         service.editAccount(TEST_APP_ID, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
@@ -950,7 +951,7 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void getAccountMatchesStudies() throws Exception {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
-        persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
+        persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
         
         RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of(STUDY_A)).build());
@@ -964,10 +965,10 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void getAccountFiltersStudies() throws Exception {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
-        persistedAccount.setEnrollments(ACCOUNT_ENROLLMENTS);
+        persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
         
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_B)).build());
+                .withOrgSponsoredStudies(ImmutableSet.of(STUDY_B)).build());
 
         Account account = service.getAccount(ACCOUNT_ID);
         assertNull(account);

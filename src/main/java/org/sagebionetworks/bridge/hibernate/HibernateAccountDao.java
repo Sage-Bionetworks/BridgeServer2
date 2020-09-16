@@ -2,6 +2,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import java.util.List;
 import java.util.Optional;
@@ -162,9 +163,13 @@ public class HibernateAccountDao implements AccountDao {
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
         }
-        Set<String> callerStudies = context.getCallerStudies();
-        if (!callerStudies.isEmpty()) {
-            builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
+        
+        // If the caller is a non-admin administrator (researcher, worker, other roles we dream up), then
+        // their organization dictates the accounts they see. We are still making an exception for accounts
+        // with no study associations while we transition to the new permissions system.
+        Set<String> callerStudies = context.getOrgSponsoredStudies();
+        if (context.isAdministrator() && !context.isInRole(ADMIN)) {
+            builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);        
         }
         if (!isCount) {
             builder.append("GROUP BY acct.id");        
@@ -249,7 +254,7 @@ public class HibernateAccountDao implements AccountDao {
         
         StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(null);
         if (acct.getId() != null) {
-            assoc = BridgeUtils.studyAssociationsVisibleToCaller(acct.getEnrollments());
+            assoc = BridgeUtils.studyAssociationsVisibleToCaller(acct);
         }
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
         builder.withStudyIds(assoc.getStudyIdsVisibleToCaller());

@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -95,7 +96,7 @@ public class DynamoSubpopulationDaoMockTest {
     
     @Test
     public void createDefaultSubpopulationWritesCriteria() {
-        Subpopulation subpop = dao.createDefaultSubpopulation(TEST_APP_ID);
+        Subpopulation subpop = dao.createDefaultSubpopulation(TEST_APP_ID, TEST_STUDY_ID);
         
         Criteria criteria = subpop.getCriteria();
         assertEquals(criteria.getMinAppVersion(OperatingSystem.IOS), new Integer(0));
@@ -249,7 +250,7 @@ public class DynamoSubpopulationDaoMockTest {
     public void getSubpopulationsCreatesCriteria() {
         // The test subpopulation in the list that is returned from the mock mapper does not have
         // a criteria object. So it will be created as part of loading.
-        List<Subpopulation> list = dao.getSubpopulations(TEST_APP_ID, false, true);
+        List<Subpopulation> list = dao.getSubpopulations(TEST_APP_ID, true);
         assertEquals(list.get(0).getCriteria(), CRITERIA);
         
         verify(criteriaDao).getCriteria(list.get(0).getCriteria().getKey());
@@ -259,7 +260,7 @@ public class DynamoSubpopulationDaoMockTest {
     public void getSubpopulationsRetrievesCriteria() {
         // The test subpopulation in the list that is returned from the mock mapper does not have
         // a criteria object. So it will be created as part of loading.
-        List<Subpopulation> list = dao.getSubpopulations(TEST_APP_ID, false, true);
+        List<Subpopulation> list = dao.getSubpopulations(TEST_APP_ID, true);
         assertEquals(list.get(0).getCriteria(), CRITERIA);
         
         // In this case it actually returns a criteria object.
@@ -281,7 +282,7 @@ public class DynamoSubpopulationDaoMockTest {
         reset(criteriaDao);
         doReturn(CRITERIA).when(criteriaDao).getCriteria(any());
         
-        List<Subpopulation> subpops = dao.getSubpopulations(TEST_APP_ID, false, true);
+        List<Subpopulation> subpops = dao.getSubpopulations(TEST_APP_ID, true);
         Criteria retrievedCriteria = subpops.get(0).getCriteria();
         assertEquals(retrievedCriteria, CRITERIA);
     }

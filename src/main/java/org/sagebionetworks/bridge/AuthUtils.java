@@ -62,7 +62,7 @@ public class AuthUtils {
     
     /**
      * The same rules apply as checkOwnership, however you are examining the caller against a compound
-     * value stored in the assessment's originId. The call succeeds if you're a superadmin (ther are 
+     * value stored in the assessment's originId. The call succeeds if you're a superadmin (there are 
      * no shared app admins), or if the caller is in the app and organization that owns the shared 
      * assessment. 
      */
