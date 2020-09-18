@@ -307,26 +307,6 @@ public class SponsorServiceTest extends Mockito {
         
         verify(mockCacheProvider).setObject(CACHE_KEY, retValue);
     }
-
-    @Test
-    public void getSponsoredStudyIdsForAdmin() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        
-        // This will fail the test if the admin check doesn't work.
-        when(mockOrgService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
-                .thenReturn(Optional.of(Organization.create()));
-        mockGetSponsoredStudies();
-        
-        Set<String> retValue = service.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID);
-        assertEquals(retValue, ImmutableSet.of());
-    }
-
-    @Test
-    public void getSponsoredStudyIdsNoOrgId() {
-        Set<String> retValue = service.getSponsoredStudyIds(TEST_APP_ID, null);
-        assertEquals(retValue, ImmutableSet.of());
-    }
     
     @Test
     public void getSponsoredStudyIdsOrgNotFound() {

@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
@@ -67,11 +66,8 @@ public class SponsorService {
 
     public Set<String> getSponsoredStudyIds(String appId, String orgId) {
         checkNotNull(appId);
+        checkNotNull(orgId);
 
-        RequestContext rc = RequestContext.get();
-        if (rc.isInRole(ADMIN) || isBlank(orgId)) {
-            return ImmutableSet.of();
-        }
         // It's a pain to cache, but this will be accessed for every request.
         CacheKey cacheKey = CacheKey.orgSponsoredStudies(appId, orgId);
 

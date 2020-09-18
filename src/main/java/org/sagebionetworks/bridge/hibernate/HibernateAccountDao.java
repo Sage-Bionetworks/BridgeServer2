@@ -166,9 +166,9 @@ public class HibernateAccountDao implements AccountDao {
         
         // If the caller is a non-admin administrator (researcher, worker, other roles we dream up), then
         // their organization dictates the accounts they see. We are still making an exception for accounts
-        // with no study associations while we transition to the new permissions system.
+        // with no study associations, while we transition to the new permissions system.
         Set<String> callerStudies = context.getOrgSponsoredStudies();
-        if (context.isAdministrator() && !context.isInRole(ADMIN)) {
+        if (context.isAdministrator() && !context.isInRole(ADMIN) && !callerStudies.isEmpty()) {
             builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);        
         }
         if (!isCount) {

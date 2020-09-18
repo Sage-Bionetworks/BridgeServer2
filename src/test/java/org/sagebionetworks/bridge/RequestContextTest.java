@@ -238,7 +238,7 @@ public class RequestContextTest extends Mockito {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
         
-        RequestContext retValue = RequestContext.updateFromSession(session, null);
+        RequestContext retValue = RequestContext.updateFromSession(session, mockSponsorService);
         assertEquals(retValue.getId(), REQUEST_ID);
         assertEquals(retValue.getCallerAppId(), TEST_APP_ID);
         assertEquals(retValue.getCallerStudies(), USER_STUDY_IDS);

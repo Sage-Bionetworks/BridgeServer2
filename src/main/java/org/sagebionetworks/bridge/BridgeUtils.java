@@ -7,7 +7,6 @@ import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -20,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -149,39 +147,34 @@ public class BridgeUtils {
                 .collect(toImmutableSet());
     }
     
-    // Do not call this method before updating the account; this method may remove
-    // enrollments from the account that are not visible to the caller so it can be
-    // displayed to the caller without leaking enrollment information.
+    /**
+     * Return the account if the caller has access to it; false otherwise. Currently, 
+     * the account must be 1) the caller's account; 2) enrolled in a study that the 
+     * caller has access to; or 3) the caller is associated to no studies at all 
+     * (this last part is transitional as we migrate to a multi-study security model). 
+     * Do not call this method before updating the account; this method may remove
+     * enrollments from the account that are not visible to the caller so it can be
+     * displayed to the caller without leaking enrollment information.
+     */
     public static Account filterForStudy(Account account) {
         if (account != null) {
             RequestContext context = RequestContext.get();
             Set<String> callerStudies = context.getOrgSponsoredStudies();
+            String callerUserId = context.getCallerUserId();
             
             // If this is a call for one’s own record, or the caller is has no 
             // study relationships, return the account. Note that we are migrating
             // away from a system that allows an account to have no specific study
             // associations, but it remains necessary during the transition
-            String callerUserId = context.getCallerUserId();
-            if (account.getId().equals(callerUserId) || isEmpty(callerStudies)) {
+            if (isEmpty(callerStudies) || account.getId().equals(callerUserId)) {
                 return account;
             }
-//            if (account.getId().equals(callerUserId)) {
-//                return account;
-//            }
-//            
-//            // TODO: context.isInRole(ADMIN) should not be necessary, because orgSponsoredStudies
-//            // will be empty due to SponsorService call
-//            if (context.isInRole(ADMIN) || isEmpty(callerStudies)) {
-//                return account;
-//            }
-            
             // This both tells us if there is a study the caller can see that this account
             // is enrolled in, and removes any studies that the caller should not see
             Set<Enrollment> removals = account.getActiveEnrollments().stream()
                     .filter(en -> !callerStudies.contains(en.getStudyId()))
                     .collect(toSet());
             account.getEnrollments().removeAll(removals);
-
             if (!account.getEnrollments().isEmpty()) {
                 return account;
             }
@@ -194,25 +187,15 @@ public class BridgeUtils {
      * study memberships (then they are global and see everything).
      */
     public static StudyAssociations studyAssociationsVisibleToCaller(Account account) {
-        if (account == null) {
+        if (account == null || account.getActiveEnrollments().isEmpty()) {
             return NO_ASSOCIATIONS;
         }
-        Collection<? extends Enrollment> enrollments = account.getActiveEnrollments();
-        if (enrollments == null || enrollments.isEmpty()) {
-            return NO_ASSOCIATIONS;
-        }
-        String userId = RequestContext.get().getCallerUserId();
+        Set<String> callerStudies = RequestContext.get().getOrgSponsoredStudies();
         
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
-        
-        // Right now this is used for admins and participants alike.
-//        Set<String> callerStudies = new HashSet<>();
-//        callerStudies.addAll(RequestContext.get().getCallerStudies());
-//        callerStudies.addAll(RequestContext.get().getOrgSponsoredStudies());
-        Set<String> callerStudies = RequestContext.get().getOrgSponsoredStudies();
-        for (Enrollment enrollment : enrollments) {
-            if (account.getId().equals(userId) || callerStudies.isEmpty() || callerStudies.contains(enrollment.getStudyId())) {
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
+            if (callerStudies.isEmpty() || callerStudies.contains(enrollment.getStudyId())) {
                 studyIds.add(enrollment.getStudyId());
                 if (enrollment.getExternalId() != null) {
                     externalIds.put(enrollment.getStudyId(), enrollment.getExternalId());
@@ -227,12 +210,8 @@ public class BridgeUtils {
             RequestContext context = RequestContext.get();
             Set<String> callerStudies = context.getOrgSponsoredStudies();
             if (isEmpty(callerStudies) || callerStudies.contains(externalId.getStudyId())) {
-//            if (context.isInRole(ADMIN) || isEmpty(callerStudies)) {
                 return externalId;
             }
-//            if (callerStudies.contains(externalId.getStudyId())) {
-//                return externalId;
-//            }
         }
         return null;
     }

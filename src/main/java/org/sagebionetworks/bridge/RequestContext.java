@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 
 import java.util.List;
@@ -43,13 +44,12 @@ public class RequestContext {
         RequestContext.Builder builder = get().toBuilder();
         builder.withCallerAppId(session.getAppId());
 
-        if (sponsorService != null) {
+        StudyParticipant participant = session.getParticipant();
+        if (participant.getOrgMembership() != null && !BridgeUtils.isInRole(participant.getRoles(), ADMIN)) {
             Set<String> orgSponsoredStudies = sponsorService.getSponsoredStudyIds(
-                    session.getAppId(), session.getParticipant().getOrgMembership());
+                    session.getAppId(), participant.getOrgMembership());
             builder.withOrgSponsoredStudies(orgSponsoredStudies);
         }
-
-        StudyParticipant participant = session.getParticipant();
         builder.withCallerLanguages(participant.getLanguages());
         builder.withCallerOrgMembership(participant.getOrgMembership());
         builder.withCallerStudies(participant.getStudyIds());

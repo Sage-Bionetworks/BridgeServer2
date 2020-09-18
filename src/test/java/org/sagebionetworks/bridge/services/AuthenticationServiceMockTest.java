@@ -1293,7 +1293,7 @@ public class AuthenticationServiceMockTest {
         
         verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
         
-        RequestContext retValue = RequestContext.updateFromSession(session, null);
+        RequestContext retValue = RequestContext.updateFromSession(session, sponsorService);
         assertEquals(retValue.getCallerAppId(), TEST_APP_ID);
         assertEquals(retValue.getOrgSponsoredStudies(), USER_STUDY_IDS);
         assertEquals(retValue.getCallerUserId(), USER_ID);

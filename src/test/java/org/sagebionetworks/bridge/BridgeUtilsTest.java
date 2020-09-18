@@ -197,6 +197,7 @@ public class BridgeUtilsTest {
         Enrollment enC = Enrollment.create(TEST_APP_ID, "studyC", "id", "extC");
         
         Account account = Account.create();
+        account.setId("id");
         account.setEnrollments(ImmutableSet.of(enA, enB, enC));
 
         Map<String, String> visibles = BridgeUtils.studyAssociationsVisibleToCaller(account)
@@ -364,6 +365,7 @@ public class BridgeUtilsTest {
     
     private Account getAccountWithStudy(String... studyIds) {
         Account account = Account.create();
+        account.setId("id");
         Set<Enrollment> enrollments = Arrays.asList(studyIds)
                 .stream()
                 .map(id -> Enrollment.create(TEST_APP_ID, id, "accountId"))
