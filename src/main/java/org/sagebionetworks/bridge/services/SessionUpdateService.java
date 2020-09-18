@@ -1,11 +1,13 @@
 package org.sagebionetworks.bridge.services;
 
 import java.util.Map;
+import java.util.Set;
 
 import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -26,6 +28,7 @@ public class SessionUpdateService {
     private CacheProvider cacheProvider;
     private ConsentService consentService;
     private NotificationTopicService notificationTopicService;
+    private SponsorService sponsorService;
     
     @Autowired
     public final void setCacheProvider(CacheProvider cacheProvider) {
@@ -40,6 +43,11 @@ public class SessionUpdateService {
     @Autowired
     public final void setNotificationTopicService(NotificationTopicService notificationTopicService) {
         this.notificationTopicService = notificationTopicService;
+    }
+    
+    @Autowired
+    public final void setSponsorService(SponsorService sponsorService) { 
+        this.sponsorService = sponsorService;
     }
 
     public void updateTimeZone(UserSession session, DateTimeZone timeZone) {
@@ -101,6 +109,22 @@ public class SessionUpdateService {
                     session.getParticipant()).withOrgMembership(newOrgId).build());
             cacheProvider.setUserSession(session);
         }
+    }
+    
+    public RequestContext updateRequestContext(UserSession session) {
+        Set<String> studyIds = sponsorService.getSponsoredStudyIds(session.getAppId(), session.getParticipant().getOrgMembership());
+
+        RequestContext.Builder builder = RequestContext.get().toBuilder();
+        builder.withCallerLanguages(session.getParticipant().getLanguages());
+        builder.withCallerAppId(session.getAppId());
+        builder.withCallerOrgMembership(session.getParticipant().getOrgMembership());
+        builder.withCallerStudies(session.getParticipant().getStudyIds());
+        builder.withOrgSponsoredStudies(studyIds);
+        builder.withCallerRoles(session.getParticipant().getRoles());
+        builder.withCallerUserId(session.getParticipant().getId());
+        RequestContext reqContext = builder.build();
+        RequestContext.set(reqContext);
+        return reqContext;
     }
 
     private StudyParticipant.Builder builder(UserSession session) {

@@ -57,8 +57,8 @@ public class RequestContextTest extends Mockito {
         // empty and useless, request context. It's expected this will be augmented by other
         // code that executes.
         RequestContext nullContext = new RequestContext.Builder().withRequestId(null).withCallerAppId(null)
-                .withCallerStudies(null).withCallerRoles(null).withCallerUserId(null).withCallerLanguages(null)
-                .withCallerClientInfo(null).withCallerOrgMembership(null).build();
+                .withOrgSponsoredStudies(null).withCallerStudies(null).withCallerRoles(null).withCallerUserId(null)
+                .withCallerLanguages(null).withCallerClientInfo(null).withCallerOrgMembership(null).build();
         
         assertNotNull(nullContext.getId());
         assertTrue(nullContext.getCallerStudies().isEmpty());
@@ -69,6 +69,7 @@ public class RequestContextTest extends Mockito {
         assertTrue(nullContext.getCallerLanguages().isEmpty());
         assertEquals(nullContext.getCallerClientInfo(), UNKNOWN_CLIENT);
         assertNull(nullContext.getCallerOrgMembership());
+        assertTrue(nullContext.getOrgSponsoredStudies().isEmpty());
         
         ObjectNode node = nullContext.getMetrics().getJson();
         assertTrue(node.has("request_id"));
@@ -89,6 +90,7 @@ public class RequestContextTest extends Mockito {
         assertNull(NULL_INSTANCE.getMetrics());
         assertTrue(NULL_INSTANCE.getCallerLanguages().isEmpty());
         assertNull(NULL_INSTANCE.getCallerOrgMembership());
+        assertTrue(NULL_INSTANCE.getOrgSponsoredStudies().isEmpty());
         assertEquals(NULL_INSTANCE.getCallerClientInfo(), UNKNOWN_CLIENT);
     }
 
@@ -100,9 +102,9 @@ public class RequestContextTest extends Mockito {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerStudies(STUDIES)
-                .withCallerAppId(TEST_APP_ID).withMetrics(metrics).withCallerRoles(ROLES)
-                .withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo)
-                .withCallerOrgMembership(TEST_ORG_ID).build();
+                .withCallerAppId(TEST_APP_ID).withMetrics(metrics).withCallerRoles(ROLES).withCallerUserId(USER_ID)
+                .withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).withCallerOrgMembership(TEST_ORG_ID)
+                .withOrgSponsoredStudies(USER_STUDY_IDS).build();
 
         assertEquals(context.getId(), REQUEST_ID);
         assertEquals(context.getCallerAppId(), TEST_APP_ID);
@@ -113,6 +115,7 @@ public class RequestContextTest extends Mockito {
         assertEquals(context.getCallerClientInfo(), clientInfo);
         assertEquals(context.getMetrics(), metrics);
         assertEquals(context.getCallerOrgMembership(), TEST_ORG_ID);
+        assertEquals(context.getOrgSponsoredStudies(), USER_STUDY_IDS);
     }
     
     @Test
@@ -122,10 +125,10 @@ public class RequestContextTest extends Mockito {
         
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
-        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID)
-                .withCallerAppId(TEST_APP_ID).withCallerStudies(STUDIES).withMetrics(metrics)
-                .withCallerRoles(ROLES).withCallerUserId(USER_ID).withCallerLanguages(LANGUAGES)
-                .withCallerClientInfo(clientInfo).withCallerOrgMembership(TEST_ORG_ID).build();
+        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerAppId(TEST_APP_ID)
+                .withCallerStudies(STUDIES).withMetrics(metrics).withCallerRoles(ROLES).withCallerUserId(USER_ID)
+                .withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).withCallerOrgMembership(TEST_ORG_ID)
+                .withOrgSponsoredStudies(USER_STUDY_IDS).build();
         
         RequestContext copy = context.toBuilder().withRequestId("did-change-this").build();
         
@@ -138,6 +141,7 @@ public class RequestContextTest extends Mockito {
         assertEquals(copy.getCallerClientInfo(), clientInfo);
         assertEquals(copy.getMetrics(), metrics);
         assertEquals(copy.getCallerOrgMembership(), TEST_ORG_ID);
+        assertEquals(copy.getOrgSponsoredStudies(), USER_STUDY_IDS);
     }
     
     @Test

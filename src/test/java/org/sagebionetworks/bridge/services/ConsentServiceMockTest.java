@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -352,7 +354,7 @@ public class ConsentServiceMockTest extends Mockito {
 
     @Test
     public void withdrawConsentRemovesDataGroups() throws Exception {
-        Set<String> dataGroups = Sets.newHashSet(TestConstants.USER_DATA_GROUPS);
+        Set<String> dataGroups = Sets.newHashSet(USER_DATA_GROUPS);
         dataGroups.add("leaveBehind1");
         dataGroups.add("leaveBehind2");
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
@@ -365,7 +367,6 @@ public class ConsentServiceMockTest extends Mockito {
 
         assertEquals(account.getDataGroups(), ImmutableSet.of("leaveBehind1", "leaveBehind2"));
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
-        verify(subpopulation, never()).getStudyIdsAssignedOnConsent();
     }
 
     @Test
@@ -904,8 +905,8 @@ public class ConsentServiceMockTest extends Mockito {
 
     @Test
     public void consentToResearchAssignsDataGroupsAndStudies() throws Exception {
-        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
-        when(subpopulation.getStudyIdsAssignedOnConsent()).thenReturn(TestConstants.USER_STUDY_IDS);
+        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(USER_DATA_GROUPS);
+        when(subpopulation.getStudyIdsAssignedOnConsent()).thenReturn(USER_STUDY_IDS);
 
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);

@@ -68,7 +68,7 @@ public class SponsorService {
         checkNotNull(appId);
         checkNotNull(orgId);
 
-        // It's a pain to cache, but this will be accessed for every request.
+        // Cached because this will be accessed for every request.
         CacheKey cacheKey = CacheKey.orgSponsoredStudies(appId, orgId);
 
         Set<String> cached = cacheProvider.getObject(cacheKey, STRING_SET_TYPE_REF);
@@ -120,7 +120,7 @@ public class SponsorService {
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize);
     }
-
+    
     public void addStudySponsor(String appId, String studyId, String orgId) {
         checkNotNull(appId);
         checkNotNull(studyId);

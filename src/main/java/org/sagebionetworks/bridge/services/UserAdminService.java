@@ -132,8 +132,6 @@ public class UserAdminService {
         
         IdentifierHolder identifier = null;
         try {
-            // This used to hard-code the admin role to allow assignment of roles; now it must actually be called by an 
-            // admin user (previously this was only checked in the related controller method).
             identifier = participantService.createParticipant(app, participant, false);
             StudyParticipant updatedParticipant = participantService.getParticipant(app, identifier.getIdentifier(), false);
             

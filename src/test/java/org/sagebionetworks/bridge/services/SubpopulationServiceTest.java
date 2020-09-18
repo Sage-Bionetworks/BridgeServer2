@@ -143,6 +143,7 @@ public class SubpopulationServiceTest extends Mockito {
         subpop.setDefaultGroup(false);
         subpop.setStudyIdsAssignedOnConsent(USER_STUDY_IDS);
         
+        when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(USER_STUDY_IDS);
         when(subpopDao.createSubpopulation(any())).thenReturn(subpop);
         
         Subpopulation result = service.createSubpopulation(app, subpop);
@@ -219,6 +220,7 @@ public class SubpopulationServiceTest extends Mockito {
         subpop.setStudyIdsAssignedOnConsent(USER_STUDY_IDS);
 
         doReturn(consent).when(studyConsentDao).getConsent(any(), anyLong());
+        when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(USER_STUDY_IDS);
         when(subpopDao.getSubpopulation(any(), any())).thenReturn(subpop);
         
         Subpopulation result = service.updateSubpopulation(app, subpop);
@@ -260,6 +262,7 @@ public class SubpopulationServiceTest extends Mockito {
         existing.setPublishedConsentCreatedOn(1000L);
         existing.setGuidString("guidString");
         when(subpopDao.getSubpopulation(any(), any())).thenReturn(existing);
+        when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(USER_STUDY_IDS);
         
         Subpopulation updated = service.updateSubpopulation(app, subpop);
         assertEquals(updated.getPublishedConsentCreatedOn(), 1000L);

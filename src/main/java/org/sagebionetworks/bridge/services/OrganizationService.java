@@ -72,13 +72,13 @@ public class OrganizationService {
      * Get a paged list of partially initialized organizations (containing name, description, 
      * and identifier).
      */
-    public PagedResourceList<Organization> getOrganizations(String appId, int offsetBy, int pageSize) {
+    public PagedResourceList<Organization> getOrganizations(String appId, Integer offsetBy, Integer pageSize) {
         checkArgument(isNotBlank(appId));
         
-        if (offsetBy < 0) {
+        if (offsetBy != null && offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
-        if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
+        if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         return orgDao.getOrganizations(appId, offsetBy, pageSize)

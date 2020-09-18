@@ -541,7 +541,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifyParticipant(capturedReport.getData());
-        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
+        assertEquals(capturedReport.getStudyIds(), ImmutableSet.of("columbia"));
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
@@ -749,7 +749,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
-        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
+        assertEquals(capturedReport.getStudyIds(), ImmutableSet.of("columbia"));
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
@@ -815,7 +815,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
-        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
+        assertEquals(capturedReport.getStudyIds(), ImmutableSet.of("columbia"));
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
@@ -857,7 +857,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
-        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
+        assertEquals(capturedReport.getStudyIds(), ImmutableSet.of("columbia"));
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
@@ -899,7 +899,7 @@ public class CRCControllerTest extends Mockito {
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
-        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
+        assertEquals(capturedReport.getStudyIds(), ImmutableSet.of("columbia"));
         
         verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();

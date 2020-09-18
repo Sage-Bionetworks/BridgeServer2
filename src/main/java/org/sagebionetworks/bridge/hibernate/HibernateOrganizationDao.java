@@ -38,7 +38,7 @@ public class HibernateOrganizationDao implements OrganizationDao {
     }
 
     @Override
-    public PagedResourceList<Organization> getOrganizations(String appId, int offsetBy, int pageSize) {
+    public PagedResourceList<Organization> getOrganizations(String appId, Integer offsetBy, Integer pageSize) {
         checkNotNull(appId);
         
         Map<String, Object> params = ImmutableMap.of("appId", appId);
@@ -93,7 +93,7 @@ public class HibernateOrganizationDao implements OrganizationDao {
         
         Map<String,Object> parameters = ImmutableMap.of("appId", appId);
         String query = "delete from HibernateOrganization where appId=:appId";
-
+        
         hibernateHelper.queryUpdate(query, parameters);
     }
 }

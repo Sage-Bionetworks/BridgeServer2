@@ -205,12 +205,11 @@ public class ConsentService {
         account.setConsentSignatureHistory(subpopGuid, consentListCopy);
         account.setSharingScope(sharingScope);
         
-        account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());    
+        account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());
         for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
             Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), studyId, account.getId());
             enrollmentService.enroll(account, newEnrollment);
         }
-        
         accountService.updateAccount(account, null);
         
         // Publish an enrollment event, set sharing scope 
@@ -379,7 +378,6 @@ public class ConsentService {
             withdrawnEnrollment.setWithdrawalNote(withdrawal.getReason());
             enrollmentService.unenroll(account, withdrawnEnrollment);
         }
-        
         accountService.updateAccount(account, null);
 
         notificationsService.deleteAllRegistrations(app.getIdentifier(), participant.getHealthCode());

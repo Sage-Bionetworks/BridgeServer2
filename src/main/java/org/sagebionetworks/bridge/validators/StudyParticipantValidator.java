@@ -12,7 +12,6 @@ import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -67,9 +66,7 @@ public class StudyParticipantValidator implements Validator {
             if (email != null && !EMAIL_VALIDATOR.isValid(email)) {
                 errors.rejectValue("email", "does not appear to be an email address");
             }
-            // External ID is required for non-administrative accounts when it is required on sign-up. Whether you're 
-            // a researcher or not, however, if you add an external ID and we're managing them, we're going to validate
-            // that yours is correct.
+            // External ID is required for non-administrative accounts when it is required on sign-up.
             if (participant.getRoles().isEmpty() && app.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
                 errors.rejectValue("externalId", "is required");
             }

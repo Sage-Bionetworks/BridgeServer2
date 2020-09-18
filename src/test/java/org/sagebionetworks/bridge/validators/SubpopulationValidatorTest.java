@@ -11,7 +11,6 @@ import static org.testng.Assert.fail;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Criteria;
@@ -28,8 +27,7 @@ public class SubpopulationValidatorTest {
         validator = new SubpopulationValidator(USER_DATA_GROUPS, USER_STUDY_IDS);
     }
     
-    @Test
-    public void testEntirelyValid() {
+    Subpopulation getSubpopulation() { 
         Subpopulation subpop = Subpopulation.create();
         subpop.setName("Name");
         subpop.setDescription("Description");
@@ -38,15 +36,14 @@ public class SubpopulationValidatorTest {
         subpop.setAppId(TEST_APP_ID);
         subpop.setVersion(3L);
         subpop.setGuidString("AAA");
-        subpop.setDataGroupsAssignedWhileConsented(TestConstants.USER_DATA_GROUPS);
+        subpop.setDataGroupsAssignedWhileConsented(USER_DATA_GROUPS);
         subpop.setStudyIdsAssignedOnConsent(USER_STUDY_IDS);
         
         Criteria criteria = TestUtils.createCriteria(2, 4, ImmutableSet.of("group1"), ImmutableSet.of("group2"));
         criteria.setAllOfStudyIds(ImmutableSet.of("studyA"));
         criteria.setNoneOfStudyIds(ImmutableSet.of("studyB"));
         subpop.setCriteria(criteria);
-        
-        Validate.entityThrowingException(validator, subpop);
+        return subpop;
     }
     
     @Test
