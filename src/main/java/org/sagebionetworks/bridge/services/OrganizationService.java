@@ -211,7 +211,7 @@ public class OrganizationService {
     }
 
     public void deleteAllOrganizations(String appId) {
-        checkArgument(isNotBlank(appId));
+        checkNotNull(appId);
 
         orgDao.deleteAllOrganizations(appId);
     }
