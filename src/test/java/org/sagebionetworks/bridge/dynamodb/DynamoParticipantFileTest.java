@@ -25,6 +25,7 @@ public class DynamoParticipantFileTest {
         String json = MAPPER.writeValueAsString(pFile);
         JsonNode node = MAPPER.readTree(json);
 
+        assertEquals(node.get("type").textValue(), "ParticipantFile");
         assertEquals(node.get("userId").textValue(), "userId");
         assertEquals(node.get("fileId").textValue(), "fileId");
         assertEquals(node.get("createdOn").textValue(), TestConstants.TIMESTAMP.toString());

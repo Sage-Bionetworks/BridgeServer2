@@ -5,7 +5,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.joda.time.DateTime;
@@ -63,6 +63,7 @@ public class DynamoParticipantFile implements ParticipantFile {
      */
     @Override
     @DynamoDBAttribute(attributeName = "createdOn")
+    @DynamoDBTypeConverted(converter = DateTimeMarshaller.class)
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getCreatedOn() {
         return this.createdOn;

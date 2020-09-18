@@ -5,13 +5,12 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.mockito.Spy;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
@@ -20,15 +19,16 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.net.URL;
-import java.util.Date;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -65,6 +65,13 @@ public class ParticipantFileServiceTest {
             String filePath = request.getKey();
             return new URL("https://" + UPLOAD_BUCKET + "/" + filePath);
         });
+
+        DateTimeUtils.setCurrentMillisFixed(TestConstants.TIMESTAMP.getMillis());
+    }
+
+    @AfterClass
+    public void afterClass() {
+        DateTimeUtils.setCurrentMillisSystem();
     }
 
     @Test
@@ -147,6 +154,7 @@ public class ParticipantFileServiceTest {
         assertNotNull(result.getCreatedOn());
         assertEquals(result.getUploadUrl(), upload);
         assertEquals(result.getAppId(), "api");
+        assertEquals(TestConstants.TIMESTAMP.compareTo(result.getCreatedOn()), 0);
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
@@ -155,6 +163,10 @@ public class ParticipantFileServiceTest {
         assertEquals(request.getKey(), "test_user/file_id");
         assertEquals(request.getRequestParameters().get(Headers.SERVER_SIDE_ENCRYPTION),
                 ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+
+        verify(mockFileDao).getParticipantFile(any(), any());
+        verify(mockFileDao).uploadParticipantFile(any());
+
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -181,6 +193,8 @@ public class ParticipantFileServiceTest {
 
         when(mockFileDao.getParticipantFile(eq("test_user"), eq("file_id"))).thenReturn(Optional.of(file));
         service.createParticipantFile("not_api", "test_user", newFile);
+
+        verify(mockFileDao, never()).uploadParticipantFile(any());
     }
 
     @Test

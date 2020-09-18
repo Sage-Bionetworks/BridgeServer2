@@ -12,7 +12,10 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -31,9 +34,11 @@ public class DynamoParticipantFileDao implements ParticipantFileDao {
     public ForwardCursorPagedResourceList<ParticipantFile> getParticipantFiles(String userId, String offsetKey, int pageSize) {
         checkArgument(isNotBlank(userId));
 
-        ParticipantFile key = new DynamoParticipantFile(userId, null);
-        DynamoDBQueryExpression<ParticipantFile> queryExpression = new DynamoDBQueryExpression<>();
-        queryExpression.withHashKeyValues(key)
+        Map<String, AttributeValue> keyCondition = new HashMap<>();
+        keyCondition.put(":val1", new AttributeValue().withS(userId));
+        DynamoDBQueryExpression<DynamoParticipantFile> queryExpression = new DynamoDBQueryExpression<>();
+        queryExpression.withKeyConditionExpression("userId = :val1")
+                .withExpressionAttributeValues(keyCondition)
                 .withLimit(pageSize)
                 .setConsistentRead(true);
         if (offsetKey != null) {
@@ -42,11 +47,12 @@ public class DynamoParticipantFileDao implements ParticipantFileDao {
             queryExpression.withExclusiveStartKey(startKey);
         }
 
-        PaginatedQueryList<ParticipantFile> results = mapper.query(ParticipantFile.class, queryExpression);
+        PaginatedQueryList<DynamoParticipantFile> results = mapper.query(DynamoParticipantFile.class, queryExpression);
         // No lazy fetching; results.size() method will force the mapper to query all results up to pageSize.
         String nextPageOffsetKey = results.size() < pageSize ? null : results.get(pageSize - 1).getFileId();
 
-        return new ForwardCursorPagedResourceList<>(results, nextPageOffsetKey)
+        List<ParticipantFile> fileResults = results.stream().map(i -> (ParticipantFile) i).collect(Collectors.toList());
+        return new ForwardCursorPagedResourceList<>(fileResults, nextPageOffsetKey)
                 .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
     }

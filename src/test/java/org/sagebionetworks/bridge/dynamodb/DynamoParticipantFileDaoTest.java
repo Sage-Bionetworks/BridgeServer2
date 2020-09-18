@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
@@ -35,13 +36,15 @@ import static org.testng.Assert.assertTrue;
 public class DynamoParticipantFileDaoTest {
     private static final DynamoParticipantFile RESULT;
 
-    private static final List<ParticipantFile> RESULT_LIST;
+    private static final List<DynamoParticipantFile> RESULT_LIST;
 
     private static final ParticipantFile KEY =
             new DynamoParticipantFile("test_user", "test_file");
 
     static {
-        RESULT = new DynamoParticipantFile("test_user", "test_file");
+        RESULT = new DynamoParticipantFile();
+        RESULT.setUserId("test_user");
+        RESULT.setFileId("test_file");
         RESULT.setCreatedOn(TestConstants.TIMESTAMP);
         RESULT.setAppId("api");
         RESULT.setMimeType("dummy-type");
@@ -49,7 +52,7 @@ public class DynamoParticipantFileDaoTest {
 
         RESULT_LIST = new ArrayList<>(10);
         for (int i = 0; i < 10; i++) {
-            ParticipantFile file = new DynamoParticipantFile();
+            DynamoParticipantFile file = new DynamoParticipantFile();
             file.setFileId("file" + i);
             file.setUserId("same_user");
             file.setAppId("api");
@@ -63,7 +66,7 @@ public class DynamoParticipantFileDaoTest {
     DynamoDBMapper mapper;
 
     @Mock
-    PaginatedQueryList<ParticipantFile> paginatedQueryList;
+    PaginatedQueryList<DynamoParticipantFile> paginatedQueryList;
 
     @Captor
     ArgumentCaptor<ParticipantFile> fileCaptor;
@@ -83,7 +86,8 @@ public class DynamoParticipantFileDaoTest {
     public void getParticipantFiles() {
         when(paginatedQueryList.size()).thenReturn(1);
         when(paginatedQueryList.get(0)).thenReturn(RESULT);
-        when(mapper.query(eq(ParticipantFile.class), any())).thenReturn(paginatedQueryList);
+        when(paginatedQueryList.stream()).thenReturn(Stream.of(RESULT));
+        when(mapper.query(eq(DynamoParticipantFile.class), any())).thenReturn(paginatedQueryList);
 
         ForwardCursorPagedResourceList<ParticipantFile> result = dao.getParticipantFiles(KEY.getUserId(), null, 5);
         assertNotNull(result);
@@ -97,15 +101,15 @@ public class DynamoParticipantFileDaoTest {
         assertEquals(expression.getLimit().intValue(), 5);
         assertNull(expression.getExclusiveStartKey());
         assertTrue(expression.isConsistentRead());
-        ParticipantFile expFile = expression.getHashKeyValues();
-        assertEquals(expFile.getUserId(), KEY.getUserId());
+        assertEquals(expression.getKeyConditionExpression(), "userId = :val1");
+        assertEquals(expression.getExpressionAttributeValues().get(":val1").getS(), KEY.getUserId());
     }
 
     @Test
     public void getParticipantFilesPageSize() {
         when(paginatedQueryList.size()).thenReturn(RESULT_LIST.size());
         when(paginatedQueryList.get(anyInt())).thenAnswer(i -> RESULT_LIST.get(i.getArgument(0)));
-        when(mapper.query(eq(ParticipantFile.class), any())).thenReturn(paginatedQueryList);
+        when(mapper.query(eq(DynamoParticipantFile.class), any())).thenReturn(paginatedQueryList);
 
         ForwardCursorPagedResourceList<ParticipantFile> result =
                 dao.getParticipantFiles(KEY.getUserId(), null, 5);
@@ -123,8 +127,8 @@ public class DynamoParticipantFileDaoTest {
         assertEquals(expression.getLimit().intValue(), 5);
         assertNull(expression.getExclusiveStartKey());
         assertTrue(expression.isConsistentRead());
-        ParticipantFile expFile = expression.getHashKeyValues();
-        assertEquals(expFile.getUserId(), KEY.getUserId());
+        assertEquals(expression.getKeyConditionExpression(), "userId = :val1");
+        assertEquals(expression.getExpressionAttributeValues().get(":val1").getS(), KEY.getUserId());
 
         // verify everything is correct in this result list.
         List<ParticipantFile> resultList = result.getItems();
@@ -139,16 +143,16 @@ public class DynamoParticipantFileDaoTest {
 
     @Test
     public void getParticipantFilesOffsetKey() {
-        when(mapper.query(eq(ParticipantFile.class), any())).thenAnswer(
+        when(mapper.query(eq(DynamoParticipantFile.class), any())).thenAnswer(
                 i -> setUpQueryResult(i.getArgument(1)));
 
         ForwardCursorPagedResourceList<ParticipantFile> result =
                 dao.getParticipantFiles(KEY.getUserId(), "file3", 5);
         assertNotNull(result);
-        String nextPageoffsetKey = result.getNextPageOffsetKey();
+        String nextPageOffsetKey = result.getNextPageOffsetKey();
         Map<String, Object> params = result.getRequestParams();
 
-        assertEquals(nextPageoffsetKey, "file8");
+        assertEquals(nextPageOffsetKey, "file8");
         assertEquals(params.get(ResourceList.OFFSET_KEY), "file3");
         assertEquals(params.get(ResourceList.PAGE_SIZE), 5);
 
@@ -169,11 +173,11 @@ public class DynamoParticipantFileDaoTest {
         assertEquals(expression.getExclusiveStartKey().get("fileId").getS(),
                 "file3");
         assertTrue(expression.isConsistentRead());
-        ParticipantFile expFile = expression.getHashKeyValues();
-        assertEquals(expFile.getUserId(), KEY.getUserId());
+        assertEquals(expression.getKeyConditionExpression(), "userId = :val1");
+        assertEquals(expression.getExpressionAttributeValues().get(":val1").getS(), KEY.getUserId());
     }
 
-    private PaginatedQueryList<ParticipantFile> setUpQueryResult(DynamoDBQueryExpression<ParticipantFile> exp) {
+    private PaginatedQueryList<DynamoParticipantFile> setUpQueryResult(DynamoDBQueryExpression<ParticipantFile> exp) {
         String exclusiveStartKey = exp.getExclusiveStartKey().get("fileId").getS();
         int indexOfStart = -1;
         for (int i = 0; i < RESULT_LIST.size(); i++) {
@@ -181,10 +185,11 @@ public class DynamoParticipantFileDaoTest {
                 indexOfStart = i;
             }
         }
-        List<ParticipantFile> prunedList = RESULT_LIST.subList(
+        List<DynamoParticipantFile> prunedList = RESULT_LIST.subList(
                 indexOfStart+1, indexOfStart+exp.getLimit()+1);
         when(paginatedQueryList.size()).thenReturn(prunedList.size());
         when(paginatedQueryList.get(anyInt())).thenAnswer(i -> prunedList.get(i.getArgument(0)));
+        when(paginatedQueryList.stream()).thenReturn(prunedList.stream());
         return paginatedQueryList;
     }
 

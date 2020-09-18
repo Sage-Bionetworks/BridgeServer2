@@ -130,6 +130,7 @@ public class ParticipantFileService {
                     throw new EntityAlreadyExistsException(ParticipantFile.class, entityKey);
                 }
         );
+        participantFileDao.uploadParticipantFile(file);
 
         file.setUploadUrl(generatePresignedRequest(file, PUT).toExternalForm());
         return file;

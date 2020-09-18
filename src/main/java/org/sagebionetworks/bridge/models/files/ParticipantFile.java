@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.files;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantFile;
