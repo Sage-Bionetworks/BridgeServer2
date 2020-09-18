@@ -535,10 +535,11 @@ public class CRCController extends BaseController {
             throw new BridgeServiceException(e);
         }
 
+        Set<String> callerStudyIds = RequestContext.get().getOrgSponsoredStudies();
         ReportData report = ReportData.create();
         report.setDate(JAN1.toString());
         report.setData(data);
-        report.setStudyIds(ImmutableSet.of("columbia"));
+        report.setStudyIds(callerStudyIds);
 
         DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(appId, reportName,
                 account.getHealthCode(), JAN1, JAN2);
