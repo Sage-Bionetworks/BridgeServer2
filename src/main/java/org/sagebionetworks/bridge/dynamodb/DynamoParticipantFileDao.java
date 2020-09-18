@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -43,15 +44,20 @@ public class DynamoParticipantFileDao implements ParticipantFileDao {
                 .setConsistentRead(true);
         if (offsetKey != null) {
             HashMap<String, AttributeValue> startKey = new HashMap<>();
+            startKey.put("userId", new AttributeValue().withS(userId));
             startKey.put("fileId", new AttributeValue().withS(offsetKey));
             queryExpression.withExclusiveStartKey(startKey);
         }
 
-        PaginatedQueryList<DynamoParticipantFile> results = mapper.query(DynamoParticipantFile.class, queryExpression);
-        // No lazy fetching; results.size() method will force the mapper to query all results up to pageSize.
-        String nextPageOffsetKey = results.size() < pageSize ? null : results.get(pageSize - 1).getFileId();
+        QueryResultPage<DynamoParticipantFile> results = mapper.queryPage(DynamoParticipantFile.class, queryExpression);
+        Map<String, AttributeValue> nextKey = results.getLastEvaluatedKey();
+        String nextPageOffsetKey = null;
+        if (nextKey != null) {
+            nextPageOffsetKey = nextKey.get("fileId").getS();
+        }
 
-        List<ParticipantFile> fileResults = results.stream().map(i -> (ParticipantFile) i).collect(Collectors.toList());
+        List<ParticipantFile> fileResults = results.getResults().stream()
+                .map(i -> (ParticipantFile) i).collect(Collectors.toList());
         return new ForwardCursorPagedResourceList<>(fileResults, nextPageOffsetKey)
                 .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize);

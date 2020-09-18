@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.dynamodb;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -16,13 +18,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -66,7 +67,7 @@ public class DynamoParticipantFileDaoTest {
     DynamoDBMapper mapper;
 
     @Mock
-    PaginatedQueryList<DynamoParticipantFile> paginatedQueryList;
+    QueryResultPage<DynamoParticipantFile> resultPage;
 
     @Captor
     ArgumentCaptor<ParticipantFile> fileCaptor;
@@ -84,10 +85,9 @@ public class DynamoParticipantFileDaoTest {
 
     @Test
     public void getParticipantFiles() {
-        when(paginatedQueryList.size()).thenReturn(1);
-        when(paginatedQueryList.get(0)).thenReturn(RESULT);
-        when(paginatedQueryList.stream()).thenReturn(Stream.of(RESULT));
-        when(mapper.query(eq(DynamoParticipantFile.class), any())).thenReturn(paginatedQueryList);
+        when(resultPage.getLastEvaluatedKey()).thenReturn(null);
+        when(resultPage.getResults()).thenReturn(Collections.singletonList(RESULT));
+        when(mapper.queryPage(eq(DynamoParticipantFile.class), any())).thenReturn(resultPage);
 
         ForwardCursorPagedResourceList<ParticipantFile> result = dao.getParticipantFiles(KEY.getUserId(), null, 5);
         assertNotNull(result);
@@ -96,7 +96,7 @@ public class DynamoParticipantFileDaoTest {
         ParticipantFile resultFile = resultList.get(0);
         assertEquals(resultFile, RESULT);
 
-        verify(mapper).query(any(), expressionCaptor.capture());
+        verify(mapper).queryPage(any(), expressionCaptor.capture());
         DynamoDBQueryExpression<ParticipantFile> expression = expressionCaptor.getValue();
         assertEquals(expression.getLimit().intValue(), 5);
         assertNull(expression.getExclusiveStartKey());
@@ -107,9 +107,10 @@ public class DynamoParticipantFileDaoTest {
 
     @Test
     public void getParticipantFilesPageSize() {
-        when(paginatedQueryList.size()).thenReturn(RESULT_LIST.size());
-        when(paginatedQueryList.get(anyInt())).thenAnswer(i -> RESULT_LIST.get(i.getArgument(0)));
-        when(mapper.query(eq(DynamoParticipantFile.class), any())).thenReturn(paginatedQueryList);
+        when(resultPage.getLastEvaluatedKey())
+                .thenReturn(Collections.singletonMap("fileId", new AttributeValue("file4")));
+        when(resultPage.getResults()).thenReturn(RESULT_LIST);
+        when(mapper.queryPage(eq(DynamoParticipantFile.class), any())).thenReturn(resultPage);
 
         ForwardCursorPagedResourceList<ParticipantFile> result =
                 dao.getParticipantFiles(KEY.getUserId(), null, 5);
@@ -121,7 +122,7 @@ public class DynamoParticipantFileDaoTest {
         assertNull(params.get(ResourceList.OFFSET_KEY));
         assertEquals(params.get(ResourceList.PAGE_SIZE), 5);
 
-        verify(mapper).query(any(), expressionCaptor.capture());
+        verify(mapper).queryPage(any(), expressionCaptor.capture());
         DynamoDBQueryExpression<ParticipantFile> expression = expressionCaptor.getValue();
         assertTrue(expression.isConsistentRead());
         assertEquals(expression.getLimit().intValue(), 5);
@@ -143,7 +144,7 @@ public class DynamoParticipantFileDaoTest {
 
     @Test
     public void getParticipantFilesOffsetKey() {
-        when(mapper.query(eq(DynamoParticipantFile.class), any())).thenAnswer(
+        when(mapper.queryPage(eq(DynamoParticipantFile.class), any())).thenAnswer(
                 i -> setUpQueryResult(i.getArgument(1)));
 
         ForwardCursorPagedResourceList<ParticipantFile> result =
@@ -166,7 +167,7 @@ public class DynamoParticipantFileDaoTest {
             assertEquals(file.getAppId(), "api");
         }
 
-        verify(mapper).query(any(), expressionCaptor.capture());
+        verify(mapper).queryPage(any(), expressionCaptor.capture());
         DynamoDBQueryExpression<ParticipantFile> expression = expressionCaptor.getValue();
         assertTrue(expression.isConsistentRead());
         assertEquals(expression.getLimit().intValue(), 5);
@@ -177,7 +178,7 @@ public class DynamoParticipantFileDaoTest {
         assertEquals(expression.getExpressionAttributeValues().get(":val1").getS(), KEY.getUserId());
     }
 
-    private PaginatedQueryList<DynamoParticipantFile> setUpQueryResult(DynamoDBQueryExpression<ParticipantFile> exp) {
+    private QueryResultPage<DynamoParticipantFile> setUpQueryResult(DynamoDBQueryExpression<ParticipantFile> exp) {
         String exclusiveStartKey = exp.getExclusiveStartKey().get("fileId").getS();
         int indexOfStart = -1;
         for (int i = 0; i < RESULT_LIST.size(); i++) {
@@ -187,10 +188,11 @@ public class DynamoParticipantFileDaoTest {
         }
         List<DynamoParticipantFile> prunedList = RESULT_LIST.subList(
                 indexOfStart+1, indexOfStart+exp.getLimit()+1);
-        when(paginatedQueryList.size()).thenReturn(prunedList.size());
-        when(paginatedQueryList.get(anyInt())).thenAnswer(i -> prunedList.get(i.getArgument(0)));
-        when(paginatedQueryList.stream()).thenReturn(prunedList.stream());
-        return paginatedQueryList;
+        String nextKey = RESULT_LIST.get(indexOfStart+exp.getLimit()).getFileId();
+        when(resultPage.getResults()).thenReturn(prunedList);
+        when(resultPage.getLastEvaluatedKey())
+                .thenReturn(Collections.singletonMap("fileId", new AttributeValue(nextKey)));
+        return resultPage;
     }
 
     @Test
