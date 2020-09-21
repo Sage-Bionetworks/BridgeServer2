@@ -69,7 +69,7 @@ public class BridgeUtilsTest {
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        RequestContext.set(RequestContext.NULL_INSTANCE);
     }
     
     @Test
@@ -133,7 +133,7 @@ public class BridgeUtilsTest {
     @Test
     public void studyIdsVisibleToCallerFilters() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies).build());
 
         Enrollment enA = Enrollment.create(TEST_APP_ID, "studyA", "id");
         Enrollment enB = Enrollment.create(TEST_APP_ID, "studyB", "id");
@@ -162,7 +162,7 @@ public class BridgeUtilsTest {
     @Test
     public void studyIdsVisibleToCallerEmpty() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies).build());
         
         Set<String> visibles = BridgeUtils.studyAssociationsVisibleToCaller(ImmutableSet.of())
                 .getStudyIdsVisibleToCaller();
@@ -173,7 +173,7 @@ public class BridgeUtilsTest {
     @Test
     public void studyIdsVisibleToCallerNull() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies).build());
         
         Set<String> visibles = BridgeUtils.studyAssociationsVisibleToCaller(null)
                 .getStudyIdsVisibleToCaller();
@@ -184,7 +184,7 @@ public class BridgeUtilsTest {
     @Test
     public void externalIdsVisibleToCaller() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies).build());
 
         Enrollment enA = Enrollment.create(TEST_APP_ID, "studyA", "id", "extA");
         Enrollment enB = Enrollment.create(TEST_APP_ID, "studyB", "id", "extB");
@@ -213,7 +213,7 @@ public class BridgeUtilsTest {
     @Test
     public void externalIdsVisibleToCallerEmpty() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies).build());
         
         Map<String, String> visibles = BridgeUtils.studyAssociationsVisibleToCaller(ImmutableSet.of())
                 .getExternalIdsVisibleToCaller();
@@ -224,7 +224,7 @@ public class BridgeUtilsTest {
     @Test
     public void externalIdsVisibleToCallerNull() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies).build());
         
         Map<String, String> visibles = BridgeUtils.studyAssociationsVisibleToCaller(null)
                 .getExternalIdsVisibleToCaller();
@@ -271,14 +271,14 @@ public class BridgeUtilsTest {
     @Test
     public void filterForStudyAccountRemovesUnsharedStudyIds() {
         Set<String> studies = ImmutableSet.of("studyA");
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(studies).build());
         
         Account account = BridgeUtils.filterForStudy(getAccountWithStudy("studyB", "studyA"));
         assertEquals(account.getEnrollments().size(), 1);
         assertEquals(Iterables.getFirst(account.getEnrollments(), null).getStudyId(), "studyA");
         
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     @Test
@@ -304,20 +304,20 @@ public class BridgeUtilsTest {
     
     @Test
     public void filterForStudyAccountWithStudiesHidesNormalAccount() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
 
     @Test
     public void filterForStudyAccountWithMatchingStudiesReturnsStudyAccount() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
         assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
     
     @Test
     public void filterForStudyAccountWithMismatchedStudiesHidesStudyAccount() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("notStudyA")).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("notStudyA")).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
 
@@ -333,20 +333,20 @@ public class BridgeUtilsTest {
     
     @Test
     public void filterForStudyExtIdWithStudiesHidesNormalExtId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
         assertNull(BridgeUtils.filterForStudy(getExternalIdentifierWithStudy(null)));
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
 
     @Test
     public void filterForStudyExtIdWithMatchingStudiesReturnsExtId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
         assertNotNull(BridgeUtils.filterForStudy(getExternalIdentifierWithStudy("studyA")));
     }
     
     @Test
     public void filterForStudyExtIdWithMismatchedStudiesHidesExtId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
         assertNull(BridgeUtils.filterForStudy(getExternalIdentifierWithStudy("studyB")));
     }
     
@@ -384,25 +384,25 @@ public class BridgeUtilsTest {
         RequestContext context = new RequestContext.Builder().withRequestId("main request ID").build();
         RequestContext otherContext = new RequestContext.Builder().withRequestId("other request ID").build();
         
-        BridgeUtils.setRequestContext(context);
-        assertEquals(BridgeUtils.getRequestContext().getId(), "main request ID");
+        RequestContext.set(context);
+        assertEquals(RequestContext.get().getId(), "main request ID");
 
         // Request ID is thread local, so a separate thread should see a different request ID.
         Runnable runnable = () -> {
-            assertEquals(BridgeUtils.getRequestContext(), RequestContext.NULL_INSTANCE);
-            BridgeUtils.setRequestContext(otherContext);
-            assertEquals(BridgeUtils.getRequestContext().getId(), "other request ID");
+            assertEquals(RequestContext.get(), RequestContext.NULL_INSTANCE);
+            RequestContext.set(otherContext);
+            assertEquals(RequestContext.get().getId(), "other request ID");
         };
         Thread otherThread = new Thread(runnable);
         otherThread.start();
         otherThread.join();
 
         // Other thread doesn't affect this thread.
-        assertEquals(BridgeUtils.getRequestContext().getId(), "main request ID");
+        assertEquals(RequestContext.get().getId(), "main request ID");
 
         // Setting request ID to null is fine.
-        BridgeUtils.setRequestContext(null);
-        assertEquals(BridgeUtils.getRequestContext(), RequestContext.NULL_INSTANCE);
+        RequestContext.set(null);
+        assertEquals(RequestContext.get(), RequestContext.NULL_INSTANCE);
     }
 
     @Test

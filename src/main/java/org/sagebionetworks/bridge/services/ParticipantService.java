@@ -5,7 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeUtils.getRequestContext;
 import static org.sagebionetworks.bridge.BridgeUtils.studyAssociationsVisibleToCaller;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
@@ -40,7 +39,6 @@ import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -120,7 +118,7 @@ public class ParticipantService {
     
     private StudyService studyService;
     
-    private OrganizationDao organizationDao;
+    private OrganizationService organizationService;
 
     @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -194,8 +192,8 @@ public class ParticipantService {
     }
     
     @Autowired
-    final void setOrganizationDao(OrganizationDao organizationDao) {
-        this.organizationDao = organizationDao;
+    final void setOrganizationService(OrganizationService organizationService) {
+        this.organizationService = organizationService;
     }
     
     /**
@@ -414,7 +412,7 @@ public class ParticipantService {
         }
         
         StudyParticipantValidator validator = new StudyParticipantValidator(
-                externalIdService, studyService, organizationDao, app, true);
+                externalIdService, studyService, organizationService, app, true);
         Validate.entityThrowingException(validator, participant);
         
         // Set basic params from inputs.
@@ -525,7 +523,7 @@ public class ParticipantService {
         checkNotNull(participant);
 
         StudyParticipantValidator validator = new StudyParticipantValidator(
-                externalIdService, studyService, organizationDao, app, false);
+                externalIdService, studyService, organizationService, app, false);
         Validate.entityThrowingException(validator, participant);
         
         Account account = getAccountThrowingException(app.getIdentifier(), participant.getId());
@@ -535,7 +533,7 @@ public class ParticipantService {
         
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
         if (participant.getStatus() != null) {
-            if (getRequestContext().isInRole(ImmutableSet.of(ADMIN, WORKER))) {
+            if (RequestContext.get().isInRole(ImmutableSet.of(ADMIN, WORKER))) {
                 account.setStatus(participant.getStatus());
             }
         }
@@ -585,7 +583,7 @@ public class ParticipantService {
         // Only allow the setting of studies on new accounts. Note that while administrators can change this 
         // after the account is created, for admin accounts, it can create some very strange security behavior 
         // for that account if it is signed in, so we MUST destroy the session. 
-        if (isNew || getRequestContext().isInRole(ADMIN)) {
+        if (isNew || RequestContext.get().isInRole(ADMIN)) {
             // Copy to prevent concurrent modification exceptions
             Set<Enrollment> enrollments = ImmutableSet.copyOf(account.getEnrollments());
             
@@ -635,7 +633,7 @@ public class ParticipantService {
             String value = participant.getAttributes().get(attribute);
             account.getAttributes().put(attribute, value);
         }
-        RequestContext requestContext = getRequestContext();
+        RequestContext requestContext = RequestContext.get();
         if (requestContext.isAdministrator()) {
             updateRoles(requestContext, participant, account);
         }
@@ -643,7 +641,7 @@ public class ParticipantService {
         // If the caller is not in a study, any study tags are allowed. If there 
         // are any studies assigned to the caller, then the participant must be assigned 
         // to one or more of those studies, and only those studies.
-        Set<String> callerStudies = getRequestContext().getCallerStudies();
+        Set<String> callerStudies = RequestContext.get().getCallerStudies();
         if (!callerStudies.isEmpty()) {
             Set<String> studyIds = BridgeUtils.collectStudyIds(account);
             if (studyIds.isEmpty()) {
@@ -904,7 +902,7 @@ public class ParticipantService {
                 externalIdService.unassignExternalId(account, externalId.getIdentifier());    
                 throw e;
             }
-            updateRequestContext(externalId);
+            RequestContext.updateFromExternalId(externalId);
         } else if (accountUpdated) {
             accountService.updateAccount(account, null);
         }
@@ -935,7 +933,7 @@ public class ParticipantService {
             throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier()); 
         }
         Set<String> studyIds = BridgeUtils.collectStudyIds(account);
-        if (!getRequestContext().isAdministrator() && studyIds.contains(identifier.getStudyId())) {
+        if (!RequestContext.get().isAdministrator() && studyIds.contains(identifier.getStudyId())) {
             throw new ConstraintViolationException.Builder()
                 .withMessage("Account already associated to study.")
                 .withEntityKey("studyId", identifier.getStudyId()).build();
@@ -943,27 +941,6 @@ public class ParticipantService {
         identifier.setHealthCode(account.getHealthCode());
         return identifier;
     }
-
-
-    /**
-     * To see any new association to a study in the session that we return from the update identifiers call, 
-     * we need to allow it in the permission structure of the call, which means we need to update the request 
-     * context.
-     */
-    private void updateRequestContext(ExternalIdentifier externalId) {
-        if (externalId.getStudyId() != null) {
-            RequestContext currentContext = getRequestContext();
-            
-            Set<String> studyIds = new ImmutableSet.Builder<String>()
-                    .addAll(currentContext.getCallerStudies())
-                    .add(externalId.getStudyId()).build();
-            
-            RequestContext.Builder builder = currentContext.toBuilder();
-            builder.withCallerStudies(studyIds);
-            BridgeUtils.setRequestContext(builder.build());
-        }
-    }
-     
     
     private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {
         RequestInfo info = requestInfoService.getRequestInfo(participant.getId());

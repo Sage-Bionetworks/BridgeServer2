@@ -10,7 +10,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -36,12 +35,12 @@ public class ExternalIdValidatorTest {
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     @Test
     public void validates() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("study-id"))
                 .withCallerAppId(TEST_APP_ID).build());
         
@@ -54,7 +53,7 @@ public class ExternalIdValidatorTest {
     
     @Test
     public void validatesV3() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID).build());
         
         ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "one-id");
@@ -118,7 +117,7 @@ public class ExternalIdValidatorTest {
     
     @Test
     public void studyIdCanBeAnythingForAdmins() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(Roles.ADMIN))
                 .withCallerAppId(TEST_APP_ID).build());
         
@@ -131,7 +130,7 @@ public class ExternalIdValidatorTest {
     
     @Test
     public void studyIdMustMatchCallersStudies() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("studyB"))
                 .withCallerAppId(TEST_APP_ID).build());
         

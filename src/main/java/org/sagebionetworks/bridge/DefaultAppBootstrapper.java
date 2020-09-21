@@ -70,7 +70,7 @@ public class DefaultAppBootstrapper  implements ApplicationListener<ContextRefre
 
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerAppId(API_APP_ID)
+        RequestContext.set(new RequestContext.Builder().withCallerAppId(API_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN, SUPERADMIN, DEVELOPER, RESEARCHER))
                 .withCallerUserId("DefaultStudyBootstrapper").build());
 

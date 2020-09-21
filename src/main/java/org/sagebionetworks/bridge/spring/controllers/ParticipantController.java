@@ -138,7 +138,7 @@ public class ParticipantController extends BaseController {
         // such as study associations. Load a completely updated participant record. Do get history 
         // for consent and session.
         StudyParticipant updatedParticipant = participantService.getParticipant(app, session.getId(), true);
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(session.getParticipant().getLanguages())

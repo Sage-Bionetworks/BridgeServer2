@@ -48,6 +48,7 @@ import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
+import org.sagebionetworks.bridge.services.SponsorService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.time.DateUtils;
 
@@ -79,6 +80,8 @@ public abstract class BaseController {
     SessionUpdateService sessionUpdateService;
     
     RequestInfoService requestInfoService;
+    
+    SponsorService sponsorService;
     
     @Autowired
     final void setBridgeConfig(BridgeConfig bridgeConfig) {
@@ -113,6 +116,11 @@ public abstract class BaseController {
     @Autowired
     final void setRequestInfoService(RequestInfoService requestInfoService) {
         this.requestInfoService = requestInfoService;
+    }
+    
+    @Autowired
+    final void setSponsorService(SponsorService sponsorService) {
+        this.sponsorService = sponsorService;
     }
     
     protected HttpServletRequest request() {
@@ -181,19 +189,8 @@ public abstract class BaseController {
             throw new NotAuthenticatedException();
         }
         
-        // This request has required the presence of a session, so we add additional information about the user to 
-        // the existing request context (which starts with only the information present in HTTP headers). This will 
-        // be immediately removed from the thread local if an exception is thrown.
-        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
-        // If the user has already persisted languages, we'll use that instead of the Accept-Language header
-        builder.withCallerLanguages(getLanguages(session));
-        builder.withCallerAppId(session.getAppId());
-        builder.withCallerOrgMembership(session.getParticipant().getOrgMembership());
-        builder.withCallerStudies(session.getParticipant().getStudyIds());
-        builder.withCallerRoles(session.getParticipant().getRoles());
-        builder.withCallerUserId(session.getParticipant().getId());
-        RequestContext reqContext = builder.build();
-        BridgeUtils.setRequestContext(reqContext);
+        getLanguages(session);
+        RequestContext reqContext = RequestContext.updateFromSession(session, sponsorService);
         
         // Sessions are locked to an IP address if (a) it is enabled in the app for unprivileged participant accounts
         // or (b) always for privileged accounts.
@@ -256,7 +253,7 @@ public abstract class BaseController {
     }
     
     void verifySupportedVersionOrThrowException(App app) throws UnsupportedVersionException {
-        ClientInfo clientInfo = BridgeUtils.getRequestContext().getCallerClientInfo();
+        ClientInfo clientInfo = RequestContext.get().getCallerClientInfo();
         String osName = clientInfo.getOsName();
         Integer minVersionForOs = app.getMinSupportedAppVersions().get(osName);
         
@@ -277,7 +274,7 @@ public abstract class BaseController {
         if (!participant.getLanguages().isEmpty()) {
             return participant.getLanguages();
         }
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         List<String> languages = reqContext.getCallerLanguages();
         if (!languages.isEmpty()) {
             accountService.editAccount(session.getAppId(), session.getHealthCode(),
@@ -299,7 +296,7 @@ public abstract class BaseController {
     }
 
     CriteriaContext getCriteriaContext(String appId) {
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         return new CriteriaContext.Builder()
             .withAppId(appId)
             .withLanguages(reqContext.getCallerLanguages())
@@ -310,7 +307,7 @@ public abstract class BaseController {
     CriteriaContext getCriteriaContext(UserSession session) {
         checkNotNull(session);
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         return new CriteriaContext.Builder()
             .withLanguages(getLanguages(session))
             .withClientInfo(reqContext.getCallerClientInfo())
@@ -346,7 +343,7 @@ public abstract class BaseController {
      * Retrieves the metrics object from the cache. Can be null if the metrics is not in the cache.
      */
     Metrics getMetrics() {
-        return BridgeUtils.getRequestContext().getMetrics();
+        return RequestContext.get().getMetrics();
     }
 
     /**
@@ -369,7 +366,7 @@ public abstract class BaseController {
     protected RequestInfo.Builder getRequestInfoBuilder(UserSession session) {
         checkNotNull(session);
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         
         RequestInfo.Builder builder = new RequestInfo.Builder();
         // If any timestamps exist, retrieve and preserve them in the returned requestInfo

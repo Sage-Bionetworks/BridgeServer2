@@ -345,7 +345,7 @@ public class CRCControllerTest extends Mockito {
     
     @AfterMethod
     public void afterMethod() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        RequestContext.set(RequestContext.NULL_INSTANCE);
     }
 
     @Test
@@ -380,7 +380,7 @@ public class CRCControllerTest extends Mockito {
         // verify(controller, never()).createLabOrder(account);
 
         assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.SELECTED, "group1"));
-        assertFalse(BridgeUtils.getRequestContext().getCallerStudies().isEmpty());
+        assertFalse(RequestContext.get().getCallerStudies().isEmpty());
     }
     
     
@@ -996,7 +996,7 @@ public class CRCControllerTest extends Mockito {
         
         controller.httpBasicAuthentication();
         
-        RequestContext context = BridgeUtils.getRequestContext();
+        RequestContext context = RequestContext.get();
         assertEquals(context.getCallerAppId(), APP_ID);
         assertEquals(context.getCallerOrgMembership(), TEST_ORG_ID);
         assertEquals(context.getCallerStudies(), USER_STUDY_IDS);

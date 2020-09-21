@@ -20,6 +20,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.AuthUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -37,24 +39,25 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class OrganizationService {
 
     private OrganizationDao orgDao;
-    
     private AccountDao accountDao;
-    
     private SessionUpdateService sessionUpdateService;
+    private CacheProvider cacheProvider;
     
     @Autowired
     final void setOrganizationDao(OrganizationDao orgDao) {
         this.orgDao = orgDao;
     }
-    
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
     }
-    
     @Autowired
     final void setSessionUpdateService(SessionUpdateService sessionUpdateService) {
         this.sessionUpdateService = sessionUpdateService;
+    }
+    @Autowired
+    final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
     }
     
     DateTime getCreatedOn() {
@@ -139,6 +142,17 @@ public class OrganizationService {
     }
     
     /**
+     * Get an optional that will contain an organization object if the supplied 
+     * identifier is valid.
+     */
+    public Optional<Organization> getOrganizationOpt(String appId, String identifier) {
+        checkArgument(isNotBlank(appId));
+        checkArgument(isNotBlank(identifier));
+
+        return orgDao.getOrganization(appId, identifier);        
+    }
+    
+    /**
      * Delete the organization with the given identifier.
      * @throws EntityNotFoundException
      */
@@ -150,6 +164,9 @@ public class OrganizationService {
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
 
         orgDao.deleteOrganization(existing);
+        
+        CacheKey cacheKey = CacheKey.orgSponsoredStudies(appId, identifier);
+        cacheProvider.removeObject(cacheKey);
     }
     
     public PagedResourceList<AccountSummary> getMembers(String appId, String identifier, AccountSummarySearch search) {

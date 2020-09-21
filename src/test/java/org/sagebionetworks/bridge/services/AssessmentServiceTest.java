@@ -47,7 +47,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.dao.AssessmentResourceDao;
@@ -104,13 +103,13 @@ public class AssessmentServiceTest extends Mockito {
         
         // The default assumption is that you are in the correct organization (or else
         // you are an administrator). 
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(OWNER_ID).build());
     }
     
     @AfterMethod
     public void afterMethod() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
     }
     
     @Test
@@ -193,7 +192,7 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void createAssessmentUnauthorized() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         
         when(mockDao.getAssessmentRevisions(TEST_APP_ID, IDENTIFIER, 0, 1, true))
@@ -282,7 +281,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void createAssessmentRevisionUnauthorized() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("studyD")).build());
         
         when(mockOrganizationService.getOrganization(TEST_APP_ID, OWNER_ID))
@@ -496,7 +495,7 @@ public class AssessmentServiceTest extends Mockito {
    
     @Test
     public void updateSharedAssessment() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
         
@@ -524,7 +523,7 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void updateSharedAssessmentAdjustsOsNameAlias() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
         
@@ -548,7 +547,7 @@ public class AssessmentServiceTest extends Mockito {
     public void updateSharedAssessmentSomeFieldsImmutable() {
         String ownerIdInShared = TEST_APP_ID + ":" + OWNER_ID;
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
         
@@ -589,7 +588,7 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateSharedAssessmentUnauthorizedApp() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
         
@@ -605,7 +604,7 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateSharedAssessmentUnauthorizedOrg() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
         
@@ -621,7 +620,7 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void updateSharedAssessmentForAdmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN))
                 .withCallerAppId(TEST_APP_ID).build());
         when(mockOrganizationService.getOrganization(
@@ -943,7 +942,7 @@ public class AssessmentServiceTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockDao.getAssessment(TEST_APP_ID, GUID)).thenReturn(Optional.of(assessment));
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("notTheOwnerId").build());
         
         service.publishAssessment(TEST_APP_ID, null, GUID);
@@ -1050,7 +1049,7 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void importAssessmentWithAdmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         Assessment sharedAssessment = AssessmentTest.createAssessment();
@@ -1066,7 +1065,7 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void importAssessmentWithSuperadmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
         
         Assessment sharedAssessment = AssessmentTest.createAssessment();
@@ -1084,7 +1083,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Organization not found.")
     public void importAssessmentWithAdminOrgNotFound() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
         
         Assessment sharedAssessment = AssessmentTest.createAssessment();
@@ -1105,7 +1104,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = "ownerId parameter is required")
     public void importAssessmentFailsWithNoOrgMembership() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(null).build());
         
         service.importAssessment(TEST_APP_ID, null, null, GUID);
@@ -1119,7 +1118,7 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void importAssessmentCallerUnauthorized() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("notTheOwnerId").build());
 
         service.importAssessment(TEST_APP_ID, OWNER_ID, null, GUID);
@@ -1223,7 +1222,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void createAssessmentChecksOwnership() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         
         when(mockOrganizationService.getOrganization(TEST_APP_ID, OWNER_ID))
@@ -1240,7 +1239,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void createAssessmentRevisionChecksOwnership() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         
         when(mockOrganizationService.getOrganization(TEST_APP_ID, OWNER_ID))
@@ -1257,7 +1256,7 @@ public class AssessmentServiceTest extends Mockito {
         expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void updateAssessmentChecksOwnership() {
         Assessment assessment = AssessmentTest.createAssessment();
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(assessment.getOwnerId()).build());
         
         Assessment existing = AssessmentTest.createAssessment();
@@ -1271,7 +1270,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void publishAssessmentChecksOwnership() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         Assessment existing = AssessmentTest.createAssessment();
         existing.setDeleted(false);
@@ -1283,7 +1282,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void importAssessmentChecksOwnership() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         service.importAssessment(TEST_APP_ID, OWNER_ID, null, GUID);
     }
@@ -1291,7 +1290,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
     public void deleteAssessmentChecksOwnership() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         Assessment existing = AssessmentTest.createAssessment();
         existing.setDeleted(false);

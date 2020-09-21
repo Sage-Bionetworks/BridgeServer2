@@ -7,13 +7,23 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
+
+import java.util.Optional;
+import java.util.Set;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.SponsorDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -23,6 +33,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 @Component
 public class SponsorService {
     
+    static final TypeReference<Set<String>> STRING_SET_TYPE_REF = new TypeReference<Set<String>>() {};
+    
     static final String NOT_A_SPONSOR_MSG = "Organization '%s' is not a sponsor of study '%s'";
 
     private OrganizationService organizationService;
@@ -30,6 +42,8 @@ public class SponsorService {
     private StudyService studyService;
     
     private SponsorDao sponsorDao;
+    
+    private CacheProvider cacheProvider;
     
     @Autowired
     final void setOrganizationService(OrganizationService organizationService) {
@@ -44,6 +58,35 @@ public class SponsorService {
     @Autowired
     final void setSponsorDao(SponsorDao sponsorDao) {
         this.sponsorDao = sponsorDao;
+    }
+    
+    @Autowired
+    final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
+    }
+
+    public Set<String> getSponsoredStudyIds(String appId, String orgId) {
+        checkNotNull(appId);
+
+        RequestContext rc = RequestContext.get();
+        if (rc.isInRole(ADMIN) || isBlank(orgId)) {
+            return ImmutableSet.of();
+        }
+        // It's a pain to cache, but this will be accessed for every request.
+        CacheKey cacheKey = CacheKey.orgSponsoredStudies(appId, orgId);
+
+        Set<String> cached = cacheProvider.getObject(cacheKey, STRING_SET_TYPE_REF);
+        if (cached != null) {
+            return cached;
+        }
+        Optional<Organization> opt = organizationService.getOrganizationOpt(appId, orgId);
+        if (!opt.isPresent()) {
+            return ImmutableSet.of();
+        }
+        cached = sponsorDao.getSponsoredStudies(appId, orgId, null, null).getItems().stream()
+                .map(Study::getIdentifier).collect(toImmutableSet());
+        cacheProvider.setObject(cacheKey, cached);
+        return cached;
     }
     
     public PagedResourceList<Organization> getStudySponsors(String appId, String studyId, Integer offsetBy, Integer pageSize) {
@@ -93,7 +136,8 @@ public class SponsorService {
         // if either the organization or the study do not exist, or if the org already
         // sponsors the study, that is also caught as a constraint violation.
         
-        sponsorDao.addStudySponsor(appId, studyId, orgId);    
+        sponsorDao.addStudySponsor(appId, studyId, orgId);
+        cacheProvider.removeObject( CacheKey.orgSponsoredStudies(appId, orgId) );
     }
 
     public void removeStudySponsor(String appId, String studyId, String orgId) {
@@ -107,6 +151,7 @@ public class SponsorService {
             // Currently we allow you to remove the last sponsor from a study. There is no 
             // database constraint that prevents this.
             sponsorDao.removeStudySponsor(appId, studyId, orgId);
+            cacheProvider.removeObject( CacheKey.orgSponsoredStudies(appId, orgId) );
         } else {
             // Either one of the two entities is missing, or if they both exist, the org
             // does not sponsor this study. So one way or another, an exception must be 
@@ -123,7 +168,7 @@ public class SponsorService {
         if (isBlank(studyId) || isBlank(orgId)) {
             return false;
         }
-        String appId = BridgeUtils.getRequestContext().getCallerAppId();
+        String appId = RequestContext.get().getCallerAppId();
         return sponsorDao.doesOrganizationSponsorStudy(appId, studyId, orgId);
     }
 }

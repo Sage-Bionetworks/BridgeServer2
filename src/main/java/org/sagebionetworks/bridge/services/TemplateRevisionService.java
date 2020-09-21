@@ -8,7 +8,7 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.TemplateDao;
 import org.sagebionetworks.bridge.dao.TemplateRevisionDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -116,7 +116,7 @@ public class TemplateRevisionService {
     }
     
     protected String getUserId() {
-        return BridgeUtils.getRequestContext().getCallerUserId();
+        return RequestContext.get().getCallerUserId();
     }
     
     protected DateTime getDateTime() {

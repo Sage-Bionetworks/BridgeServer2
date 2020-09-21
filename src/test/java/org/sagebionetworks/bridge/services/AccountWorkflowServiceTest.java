@@ -46,6 +46,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -214,7 +215,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     
     @AfterMethod
     public void afterMethod() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
     }
     
     private void mockRevision(TemplateType templateType, String subject, String body, MimeType type) {

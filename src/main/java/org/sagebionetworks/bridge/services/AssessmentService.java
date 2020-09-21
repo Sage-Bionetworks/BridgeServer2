@@ -39,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -324,7 +325,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(guid));
 
         if (ownerId == null) {
-            ownerId = BridgeUtils.getRequestContext().getCallerOrgMembership();
+            ownerId = RequestContext.get().getCallerOrgMembership();
         }
         if (isBlank(ownerId)) {
             throw new BadRequestException("ownerId parameter is required");

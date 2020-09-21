@@ -10,28 +10,46 @@ import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.Set;
 
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.services.SponsorService;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableSet;
 
-public class RequestContextTest {
+public class RequestContextTest extends Mockito {
 
     private static final String REQUEST_ID = "requestId";
     private static final Set<String> STUDIES = ImmutableSet.of("testA", "testB");
     private static final Set<Roles> ROLES = ImmutableSet.of(DEVELOPER, WORKER);
+    
+    @Mock
+    SponsorService mockSponsorService;
+    
+    @BeforeMethod
+    public void beforeMethod() {
+        MockitoAnnotations.initMocks(this);
+    }
 
     @Test
     public void builderIsNullSafe() { 
@@ -171,5 +189,92 @@ public class RequestContextTest {
         assertTrue(context.isInRole(ImmutableSet.of(ADMIN)));
         assertFalse(context.isInRole(ImmutableSet.of(WORKER)));
         assertTrue(context.isInRole(ImmutableSet.of(DEVELOPER, ADMIN)));
+    }
+    
+    @Test
+    public void updateFromSession() {
+        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).build();
+        assertNotNull(context.getId());
+        assertNull(context.getCallerAppId());
+        assertEquals(ImmutableSet.of(), context.getCallerStudies());
+        assertFalse(context.isAdministrator());
+        RequestContext.set(context);
+        
+        when(mockSponsorService.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID)).thenReturn(USER_STUDY_IDS);
+        
+        UserSession session = new UserSession(new StudyParticipant.Builder().withStudyIds(USER_STUDY_IDS)
+                .withRoles(ImmutableSet.of(DEVELOPER)).withId(USER_ID).withOrgMembership(TEST_ORG_ID)
+                .withLanguages(LANGUAGES).build());
+        session.setAuthenticated(true);
+        session.setAppId(TEST_APP_ID);
+        
+        RequestContext retValue = RequestContext.updateFromSession(session, mockSponsorService);
+        assertEquals(retValue.getId(), REQUEST_ID);
+        assertEquals(retValue.getCallerAppId(), TEST_APP_ID);
+        assertEquals(retValue.getCallerStudies(), USER_STUDY_IDS);
+        assertEquals(retValue.getOrgSponsoredStudies(), USER_STUDY_IDS);
+        assertTrue(retValue.isAdministrator());
+        assertTrue(retValue.isInRole(DEVELOPER));
+        assertEquals(retValue.getCallerUserId(), USER_ID);
+        assertEquals(retValue.getCallerOrgMembership(), TEST_ORG_ID);
+        assertEquals(retValue.getCallerLanguages(), LANGUAGES);
+        
+        RequestContext threadValue = RequestContext.get();
+        assertSame(retValue, threadValue);
+    }
+    
+    @Test
+    public void updateFromSessionNullSponsorService() {
+        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).build();
+        assertNotNull(context.getId());
+        assertNull(context.getCallerAppId());
+        assertEquals(ImmutableSet.of(), context.getCallerStudies());
+        assertFalse(context.isAdministrator());
+        RequestContext.set(context);
+        
+        UserSession session = new UserSession(new StudyParticipant.Builder().withStudyIds(USER_STUDY_IDS)
+                .withRoles(ImmutableSet.of(DEVELOPER)).withId(USER_ID).withOrgMembership(TEST_ORG_ID)
+                .withLanguages(LANGUAGES).build());
+        session.setAuthenticated(true);
+        session.setAppId(TEST_APP_ID);
+        
+        RequestContext retValue = RequestContext.updateFromSession(session, null);
+        assertEquals(retValue.getId(), REQUEST_ID);
+        assertEquals(retValue.getCallerAppId(), TEST_APP_ID);
+        assertEquals(retValue.getCallerStudies(), USER_STUDY_IDS);
+        assertEquals(retValue.getOrgSponsoredStudies(), ImmutableSet.of());
+        assertTrue(retValue.isAdministrator());
+        assertTrue(retValue.isInRole(DEVELOPER));
+        assertEquals(retValue.getCallerUserId(), USER_ID);
+        assertEquals(retValue.getCallerOrgMembership(), TEST_ORG_ID);
+        assertEquals(retValue.getCallerLanguages(), LANGUAGES);
+        
+        RequestContext threadValue = RequestContext.get();
+        assertSame(retValue, threadValue);
+    }
+    
+    @Test
+    public void updateFromExternalId() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerStudies(ImmutableSet.of("study1")).build());
+        
+        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, "anIdentifier");
+        externalId.setStudyId("study2");
+        
+        RequestContext.updateFromExternalId(externalId);
+        
+        assertEquals(RequestContext.get().getCallerStudies(), ImmutableSet.of("study1", "study2"));
+    }
+
+    @Test
+    public void updateFromExternalIdSkipsNull() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerStudies(ImmutableSet.of("study1")).build());
+        
+        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, "anIdentifier");
+        
+        RequestContext.updateFromExternalId(externalId);
+        
+        assertEquals(RequestContext.get().getCallerStudies(), ImmutableSet.of("study1"));
     }
 }

@@ -1559,7 +1559,7 @@ public class AppServiceTest extends Mockito {
         when(mockTemplateService.getTemplatesForType(any(), any(), anyInt(), anyInt(), anyBoolean()))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
         // developer
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
         app = TestUtils.getValidApp(AppServiceTest.class);
         // verify this can be null, that's okay, and the flags are reset correctly on create

@@ -60,7 +60,6 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.AppDao;
-import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
@@ -131,8 +130,6 @@ public class AppService {
     private StudyService studyService;
     private TemplateService templateService;
     private FileService fileService;
-    // This is being removed in a separate checkin.
-    private OrganizationDao organizationDao;
     private OrganizationService organizationService;
 
     // Not defaults, if you wish to change these, change in source. Not configurable per app
@@ -233,10 +230,6 @@ public class AppService {
         this.fileService = fileService;
     }
     @Autowired
-    final void setOrganizationDao(OrganizationDao organizationDao) {
-        this.organizationDao = organizationDao;
-    }
-    @Autowired
     final void setOrganizationService(OrganizationService organizationService) {
         this.organizationService = organizationService;
     }
@@ -280,7 +273,7 @@ public class AppService {
         
         App app = appAndUsers.getApp();
         StudyParticipantValidator val = new StudyParticipantValidator(externalIdService, studyService,
-                organizationDao, app, true);
+                organizationService, app, true);
         
         Errors errors = Validate.getErrorsFor(appAndUsers);
         

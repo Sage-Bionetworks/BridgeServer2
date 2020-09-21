@@ -114,7 +114,7 @@ public class HibernateAccountDao implements AccountDao {
     }
     
     QueryBuilder makeQuery(String prefix, String appId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
-        RequestContext context = BridgeUtils.getRequestContext();
+        RequestContext context = RequestContext.get();
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(prefix);

@@ -8,10 +8,14 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.services.SponsorService.STRING_SET_TYPE_REF;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
+
+import java.util.Optional;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -24,8 +28,9 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.SponsorDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -36,6 +41,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 
 public class SponsorServiceTest extends Mockito {
     
+    static final CacheKey CACHE_KEY = CacheKey.orgSponsoredStudies(TEST_APP_ID, TEST_ORG_ID);
+    
     @Mock
     OrganizationService mockOrgService;
     
@@ -44,6 +51,9 @@ public class SponsorServiceTest extends Mockito {
     
     @Mock
     SponsorDao mockSponsorDao;
+    
+    @Mock
+    CacheProvider mockCacheProvider;
     
     @InjectMocks
     SponsorService service;
@@ -55,7 +65,7 @@ public class SponsorServiceTest extends Mockito {
     
     @AfterMethod
     public void afterMethod() {
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     @Test
@@ -141,22 +151,24 @@ public class SponsorServiceTest extends Mockito {
 
     @Test
     public void addStudySponsorAsAdmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         service.addStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
         
         verify(mockSponsorDao).addStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
+        verify(mockCacheProvider).removeObject(CACHE_KEY);
     }
 
     @Test
     public void addStudySponsorAsOrgMember() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
         service.addStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
         
         verify(mockSponsorDao).addStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
+        verify(mockCacheProvider).removeObject(CACHE_KEY);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -168,7 +180,7 @@ public class SponsorServiceTest extends Mockito {
     
     @Test
     public void removeStudySponsorAsAdmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
         when(mockSponsorDao.doesOrganizationSponsorStudy(
@@ -177,11 +189,12 @@ public class SponsorServiceTest extends Mockito {
         service.removeStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
         
         verify(mockSponsorDao).removeStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
+        verify(mockCacheProvider).removeObject(CACHE_KEY);
     }
     
     @Test
     public void removeStudySponsorAsOrgMember() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID).build());
 
         when(mockSponsorDao.doesOrganizationSponsorStudy(
@@ -190,6 +203,7 @@ public class SponsorServiceTest extends Mockito {
         service.removeStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
         
         verify(mockSponsorDao).removeStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
+        verify(mockCacheProvider).removeObject(CACHE_KEY);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -205,7 +219,7 @@ public class SponsorServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Study not found.")
     public void removeStudyNoStudy() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
@@ -220,7 +234,7 @@ public class SponsorServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Organization not found.")
     public void removeStudyNoOrganization() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(Study.create());
@@ -235,7 +249,7 @@ public class SponsorServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Organization '"
             + TEST_ORG_ID + "' is not a sponsor of study '" + TEST_STUDY_ID + "'")
     public void removeStudyNoAssociation() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(Study.create());
@@ -248,7 +262,7 @@ public class SponsorServiceTest extends Mockito {
     
     @Test
     public void isStudySponsoredBy() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID).build());
         
         when(mockSponsorDao.doesOrganizationSponsorStudy(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(true);
@@ -267,5 +281,70 @@ public class SponsorServiceTest extends Mockito {
     @Test
     public void isStudySponsoredByOrgNull() {
         assertFalse(service.isStudySponsoredBy(TEST_STUDY_ID, null));
+    }
+    
+    private void mockGetSponsoredStudies() {
+        Study study1 = Study.create();
+        study1.setIdentifier("study1");
+        
+        Study study2 = Study.create();
+        study2.setIdentifier("study2");
+        
+        PagedResourceList<Study> page = new PagedResourceList<>(ImmutableList.of(study1, study2), 2); 
+        when(mockSponsorDao.getSponsoredStudies(TEST_APP_ID, TEST_ORG_ID, null, null))
+            .thenReturn(page);
+    }
+    
+    @Test
+    public void getSponsoredStudyIds() {
+        when(mockOrgService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
+            .thenReturn(Optional.of(Organization.create()));
+        
+        mockGetSponsoredStudies();
+        
+        Set<String> retValue = service.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID);
+        assertEquals(retValue, ImmutableSet.of("study1", "study2"));
+        
+        verify(mockCacheProvider).setObject(CACHE_KEY, retValue);
+    }
+
+    @Test
+    public void getSponsoredStudyIdsForAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        // This will fail the test if the admin check doesn't work.
+        when(mockOrgService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
+                .thenReturn(Optional.of(Organization.create()));
+        mockGetSponsoredStudies();
+        
+        Set<String> retValue = service.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID);
+        assertEquals(retValue, ImmutableSet.of());
+    }
+
+    @Test
+    public void getSponsoredStudyIdsNoOrgId() {
+        Set<String> retValue = service.getSponsoredStudyIds(TEST_APP_ID, null);
+        assertEquals(retValue, ImmutableSet.of());
+    }
+    
+    @Test
+    public void getSponsoredStudyIdsOrgNotFound() {
+        when(mockOrgService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
+            .thenReturn(Optional.empty());
+        
+        Set<String> retValue = service.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID);
+        assertEquals(retValue, ImmutableSet.of());
+    }
+
+    @Test
+    public void getSponsoredStudyIdsCached() {
+        Set<String> set = ImmutableSet.of("study1", "study2");
+        when(mockCacheProvider.getObject(CACHE_KEY, STRING_SET_TYPE_REF)).thenReturn(set);
+
+        Set<String> retValue = service.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID);
+        assertEquals(retValue, ImmutableSet.of("study1", "study2"));
+
+        verify(mockSponsorDao, never()).getSponsoredStudies(any(), any(), any(), any());
     }
 }
