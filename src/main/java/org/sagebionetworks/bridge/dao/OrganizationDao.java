@@ -31,4 +31,9 @@ public interface OrganizationDao {
      * Delete this organization object from the database.
      */
     void deleteOrganization(Organization organization);
+    
+    /**
+     * Cleanup after tests.
+     */
+    void deleteAllOrganizations(String appId);
 }

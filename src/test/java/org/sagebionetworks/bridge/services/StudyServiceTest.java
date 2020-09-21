@@ -272,5 +272,11 @@ public class StudyServiceTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteStudyPermanentlyNotFound() {
         service.deleteStudyPermanently(TEST_APP_ID, "id");
-    }    
+    }
+    
+    @Test
+    public void deleteAllStudies() {
+        service.deleteAllStudies(TEST_APP_ID);
+        verify(studyDao).deleteAllStudies(TEST_APP_ID);
+    }
 }

@@ -29,6 +29,9 @@ public class HibernateOrganizationDaoTest extends Mockito {
     HibernateHelper mockHelper;
     
     @Captor
+    ArgumentCaptor<String> queryCaptor;
+    
+    @Captor
     ArgumentCaptor<Map<String, Object>> paramsCaptor;
     
     @Captor
@@ -98,5 +101,14 @@ public class HibernateOrganizationDaoTest extends Mockito {
         verify(mockHelper).deleteById(eq(HibernateOrganization.class), idCaptor.capture());
         assertEquals(idCaptor.getValue().getAppId(), TEST_APP_ID);
         assertEquals(idCaptor.getValue().getIdentifier(), "anIdentifier");
+    }
+    
+    @Test
+    public void deleteAllOrganizations() {
+        dao.deleteAllOrganizations(TEST_APP_ID);
+        
+        verify(mockHelper).queryUpdate(queryCaptor.capture(), paramsCaptor.capture());
+        assertEquals(queryCaptor.getValue(), "delete from HibernateOrganization where appId=:appId");
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
     }
 }

@@ -227,4 +227,9 @@ public class OrganizationService {
         sessionUpdateService.updateOrgMembership(account.getId(), null);
     }
 
+    public void deleteAllOrganizations(String appId) {
+        checkNotNull(appId);
+
+        orgDao.deleteAllOrganizations(appId);
+    }
 }
