@@ -28,7 +28,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ReportDataDao;
@@ -129,7 +128,7 @@ public class ReportServiceTest {
         indices = new ReportTypeResourceList<>(Lists.newArrayList(index))
                 .withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder().build());
     }
     
     private static ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {
@@ -172,7 +171,7 @@ public class ReportServiceTest {
     public void canAccessIfCallerHasMatchingStudy() {
         ReportIndex index = ReportIndex.create();
         index.setStudyIds(TestConstants.USER_STUDY_IDS);
-        BridgeUtils.setRequestContext(
+        RequestContext.set(
                 new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyB", "studyC")).build());
         assertTrue(service.canAccess(index));
     }
@@ -182,7 +181,7 @@ public class ReportServiceTest {
     public void canAccessFailsIfCallerDoesNotMatchStudies() {
         ReportIndex index = ReportIndex.create();
         index.setStudyIds(TestConstants.USER_STUDY_IDS);
-        BridgeUtils.setRequestContext(
+        RequestContext.set(
                 new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyC")).build());
         assertFalse(service.canAccess(index));        
     }
@@ -195,7 +194,7 @@ public class ReportServiceTest {
         index.setStudyIds(ImmutableSet.of("studyC"));
         index.setPublic(true);
         
-        BridgeUtils.setRequestContext(
+        RequestContext.set(
                 new RequestContext.Builder().withCallerStudies(TestConstants.USER_STUDY_IDS).build());
         assertTrue(service.canAccess(index));        
     }
@@ -759,7 +758,7 @@ public class ReportServiceTest {
     @Test
     public void getReportIndexDoesNotAuthorize() {
         // These don't match, but the call succeeds
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("studyC")).build());
         
         ReportIndex index = ReportIndex.create();
@@ -774,7 +773,7 @@ public class ReportServiceTest {
     private ReportIndex setupMismatchedStudies(ReportDataKey reportKey, 
             Set<String> callerStudies, Set<String> indexStudies) {
         // These don't match and the call succeeds
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(callerStudies).build());
         
         ReportIndex index = ReportIndex.create();

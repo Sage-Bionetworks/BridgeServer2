@@ -49,7 +49,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
@@ -199,14 +198,14 @@ public class AuthenticationControllerTest extends Mockito {
         doReturn(mockResponse).when(controller).response();
         
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache(USER_AGENT_STRING);
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerClientInfo(clientInfo).build());
     }
     
     @AfterMethod
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
 
     @Test
@@ -763,8 +762,6 @@ public class AuthenticationControllerTest extends Mockito {
         
         // execute and validate
         controller.signIn();
-
-        ArgumentCaptor<Cookie> cookieCaptor = ArgumentCaptor.forClass(Cookie.class);
     }
     
     @Test

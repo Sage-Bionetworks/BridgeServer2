@@ -8,6 +8,7 @@ import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -72,19 +73,19 @@ public class ExternalIdService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
 
-        String appId = BridgeUtils.getRequestContext().getCallerAppId();
+        String appId = RequestContext.get().getCallerAppId();
         return externalIdDao.getExternalIds(appId, offsetKey, pageSize, idFilter, assignmentFilter);
     }
     
     public void createExternalId(ExternalIdentifier externalId, boolean isV3) {
         checkNotNull(externalId);
         
-        String appId = BridgeUtils.getRequestContext().getCallerAppId();
+        String appId = RequestContext.get().getCallerAppId();
         externalId.setAppId(appId);
         
         // In this one  case, we can default the value for the caller and avoid an error. Any other situation
         // is going to generate a validation error
-        Set<String> callerStudyIds = BridgeUtils.getRequestContext().getCallerStudies();
+        Set<String> callerStudyIds = RequestContext.get().getCallerStudies();
         if (externalId.getStudyId() == null && callerStudyIds.size() == 1) {
             externalId.setStudyId( Iterables.getFirst(callerStudyIds, null) );
         }

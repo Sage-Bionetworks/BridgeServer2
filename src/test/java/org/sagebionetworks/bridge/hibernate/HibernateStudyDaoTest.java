@@ -148,5 +148,14 @@ public class HibernateStudyDaoTest extends Mockito {
         doThrow(new PersistenceException()).when(hibernateHelper).deleteById(eq(HibernateStudy.class), any());
             
         dao.deleteStudyPermanently(TEST_APP_ID, "oneId");
-    }    
+    }
+    
+    @Test
+    public void deleteAllStudies() {
+        dao.deleteAllStudies(TEST_APP_ID);
+        
+        verify(hibernateHelper).queryUpdate(queryCaptor.capture(), paramsCaptor.capture());
+        assertEquals(queryCaptor.getValue(), "delete from HibernateStudy where appId=:appId");
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
+    }
 }

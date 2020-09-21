@@ -30,6 +30,9 @@ public final class CacheKey {
         return false;
     }
     
+    public static final CacheKey orgSponsoredStudies(String appId, String orgId) {
+        return new CacheKey(orgId, appId, "OrgSponsoredStudies");
+    }
     public static final CacheKey tagList() {
         return new CacheKey("TagList");
     }

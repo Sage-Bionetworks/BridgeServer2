@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.springframework.http.HttpStatus.CREATED;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.SponsorService;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -30,13 +28,6 @@ public class SponsorController extends BaseController {
     
     static final String REMOVE_SPONSOR_MSG = "Organization '%s' removed as a sponsor of study '%s'.";
     static final String ADD_SPONSOR_MSG = "Organization '%s' added as a sponsor of study '%s'.";
-    
-    private SponsorService sponsorService;
-    
-    @Autowired
-    final void setSponsorService(SponsorService sponsorService) {
-        this.sponsorService = sponsorService;
-    }
 
     @GetMapping("/v5/studies/{studyId}/sponsors")
     public PagedResourceList<Organization> getStudySponsors(@PathVariable String studyId, 

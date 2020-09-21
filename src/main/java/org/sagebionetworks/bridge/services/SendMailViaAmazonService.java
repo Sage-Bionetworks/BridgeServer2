@@ -14,7 +14,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.internet.MimeMessage;
 import javax.mail.internet.MimeMultipart;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
@@ -107,7 +107,7 @@ public class SendMailViaAmazonService implements SendMailService {
         SendRawEmailResult result = emailClient.sendRawEmail(req);
 
         logger.info("Sent email to SES with messageID " + result.getMessageId() + " with type " +
-                        email.getType() + " for app " + appId + " and request " + BridgeUtils.getRequestContext().getId());
+                        email.getType() + " for app " + appId + " and request " + RequestContext.get().getId());
     }
     
 }

@@ -39,7 +39,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -137,7 +136,7 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
 
     @Test
@@ -517,7 +516,7 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void getPagedRemovesStudiesNotInCaller() throws Exception {
-        BridgeUtils.setRequestContext(
+        RequestContext.set(
                 new RequestContext.Builder().withCallerStudies(ImmutableSet.of(STUDY_A)).build());
         
         Set<Enrollment> set = ImmutableSet.of(
@@ -652,7 +651,7 @@ public class HibernateAccountDaoTest extends Mockito {
         Set<String> studyIds = ImmutableSet.of("studyA", "studyB");
         try {
             RequestContext context = new RequestContext.Builder().withCallerStudies(studyIds).build();
-            BridgeUtils.setRequestContext(context);
+            RequestContext.set(context);
 
             AccountSummarySearch search = new AccountSummarySearch.Builder().build();
             dao.getPagedAccountSummaries(TEST_APP_ID, search);
@@ -662,7 +661,7 @@ public class HibernateAccountDaoTest extends Mockito {
             assertEquals(params.get("studies"), studyIds);
             assertEquals(params.get("appId"), TEST_APP_ID);
         } finally {
-            BridgeUtils.setRequestContext(null);
+            RequestContext.set(null);
         }
     }
 
@@ -785,7 +784,7 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void unmarshallAccountSummaryFiltersStudies() throws Exception {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("studyB", "studyC")).build());
 
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ACCOUNT_ID, "externalIdA");
@@ -806,7 +805,7 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void unmarshallAccountSummaryStillReturnsOldExternalId() throws Exception {
-        BridgeUtils.setRequestContext(
+        RequestContext.set(
                 new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyB", "studyC")).build());
 
         // Create HibernateAccount. Only fill in values needed for AccountSummary.

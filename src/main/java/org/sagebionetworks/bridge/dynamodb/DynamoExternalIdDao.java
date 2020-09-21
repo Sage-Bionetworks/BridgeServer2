@@ -22,7 +22,7 @@ import com.google.common.util.concurrent.RateLimiter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -103,7 +103,7 @@ public class DynamoExternalIdDao implements ExternalIdDao {
             nextPageOffsetKey = null;
         }
         
-        Set<String> callerStudies = BridgeUtils.getRequestContext().getCallerStudies();
+        Set<String> callerStudies = RequestContext.get().getCallerStudies();
         
         List<ExternalIdentifierInfo> externalIds = Lists.newArrayListWithCapacity(pageSize);
         

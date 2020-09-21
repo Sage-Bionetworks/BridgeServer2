@@ -132,7 +132,7 @@ public class RequestFilter implements Filter {
     
     // Isolated for testing
     protected void setRequestContext(RequestContext context) {
-        BridgeUtils.setRequestContext(context);
+        RequestContext.set(context);
     }
 
     @Override

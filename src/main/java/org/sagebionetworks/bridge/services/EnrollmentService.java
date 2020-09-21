@@ -17,7 +17,7 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -115,7 +115,7 @@ public class EnrollmentService {
         if (enrollment.getEnrolledOn() == null) {
             enrollment.setEnrolledOn(getEnrollmentDateTime());
         }
-        String callerUserId = BridgeUtils.getRequestContext().getCallerUserId();
+        String callerUserId = RequestContext.get().getCallerUserId();
         if (!account.getId().equals(callerUserId)) {
             enrollment.setEnrolledBy(callerUserId);
         }
@@ -156,7 +156,7 @@ public class EnrollmentService {
         if (enrollment.getWithdrawnOn() == null) {
             enrollment.setWithdrawnOn(getWithdrawalDateTime());
         }
-        String callerUserId = BridgeUtils.getRequestContext().getCallerUserId();
+        String callerUserId = RequestContext.get().getCallerUserId();
         String withdrawnBy = (!account.getId().equals(callerUserId)) ? callerUserId : null;
         enrollment.setWithdrawnBy(withdrawnBy);
         

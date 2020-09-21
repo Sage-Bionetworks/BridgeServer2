@@ -18,7 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.ReportDataDao;
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -388,7 +388,7 @@ public class ReportService {
         // We could allow users to add/remove the studies they have membership in, but in practice that's
         // only one study and not likely to be very useful. It requires about 5 lines of set-based checks 
         // and a lot of tests, so skipping it for now.
-        Set<String> callerRoles = BridgeUtils.getRequestContext().getCallerStudies();
+        Set<String> callerRoles = RequestContext.get().getCallerStudies();
         if (!callerRoles.isEmpty()) {
             index.setStudyIds(existingIndex.getStudyIds());
         }
@@ -399,7 +399,7 @@ public class ReportService {
         if (index == null || index.getStudyIds() == null || index.getStudyIds().isEmpty() || index.isPublic()) {
             return true;
         }
-        Set<String> callerRoles = BridgeUtils.getRequestContext().getCallerStudies();
+        Set<String> callerRoles = RequestContext.get().getCallerStudies();
         if (callerRoles.isEmpty()) {
             return true;
         }

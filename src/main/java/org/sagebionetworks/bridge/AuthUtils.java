@@ -18,7 +18,7 @@ public class AuthUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AuthUtils.class);
     
     public static boolean checkSelfOrResearcher(String targetUserId) {
-        RequestContext context = BridgeUtils.getRequestContext();
+        RequestContext context = RequestContext.get();
         String callerUserId = context.getCallerUserId();
         
         return context.isInRole(RESEARCHER) || targetUserId.equals(callerUserId);
@@ -31,7 +31,7 @@ public class AuthUtils {
     }
     
     public static boolean checkOrgMembership(String targetOrgId) {
-        RequestContext context = BridgeUtils.getRequestContext();
+        RequestContext context = RequestContext.get();
         String callerOrgMembership = context.getCallerOrgMembership();
         
         return context.isInRole(ADMIN) || targetOrgId.equals(callerOrgMembership);
@@ -52,7 +52,7 @@ public class AuthUtils {
         checkNotNull(appId);
         checkNotNull(ownerId);
         
-        RequestContext rc = BridgeUtils.getRequestContext();
+        RequestContext rc = RequestContext.get();
         String callerOrgMembership = rc.getCallerOrgMembership();
         if (rc.isInRole(ImmutableSet.of(SUPERADMIN, ADMIN)) || ownerId.equals(callerOrgMembership)) {
             return;
@@ -71,7 +71,7 @@ public class AuthUtils {
         checkNotNull(guid);
         checkNotNull(ownerId);
 
-        RequestContext rc = BridgeUtils.getRequestContext();
+        RequestContext rc = RequestContext.get();
         if (rc.isInRole(ImmutableSet.of(ADMIN))) {
             return;
         }
@@ -91,7 +91,7 @@ public class AuthUtils {
     }
     
     public static boolean checkSelfAdminOrSponsor(SponsorService sponsorService, String studyId, String userId) {
-        RequestContext context = BridgeUtils.getRequestContext();
+        RequestContext context = RequestContext.get();
         String callerOrgMembership = context.getCallerOrgMembership();
         String callerUserId = context.getCallerUserId();
         return context.isInRole(ADMIN) || 

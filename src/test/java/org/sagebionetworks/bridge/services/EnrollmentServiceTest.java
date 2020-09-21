@@ -38,7 +38,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -78,7 +77,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void getEnrollmentsForStudy() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         PagedResourceList<Enrollment> page = new PagedResourceList<>(ImmutableList.of(), 10);
@@ -95,7 +94,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void getEnrollmentsForStudyWithDefaults() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         PagedResourceList<Enrollment> page = new PagedResourceList<>(ImmutableList.of(), 10);
@@ -109,7 +108,7 @@ public class EnrollmentServiceTest extends Mockito {
         
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getEnrollmentsForStudyNotAuthorized() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(false);
@@ -119,7 +118,7 @@ public class EnrollmentServiceTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
     public void getEnrollmentsForStudyOffsetNegative() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
         service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, -1, 50);
@@ -127,7 +126,7 @@ public class EnrollmentServiceTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
     public void getEnrollmentsForStudyUnderMin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
         service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, 0, 0);
@@ -135,7 +134,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
     public void getEnrollmentsForStudyOverMax() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
         service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, 0, 1000);
@@ -143,7 +142,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void enrollBySelf() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(USER_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
@@ -178,7 +177,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void enrollByThirdPartyAdmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
@@ -195,7 +194,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void enrollByThirdPartyResearcher() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
@@ -215,7 +214,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
     public void enrollAlreadyExists() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(USER_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
@@ -235,7 +234,7 @@ public class EnrollmentServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
     public void enrollAccountNotFound() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(USER_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
@@ -247,7 +246,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void enrollAlreadyExistsButIsWithdrawn() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(USER_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
@@ -281,7 +280,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void enrollNotAuthorizedAsAdmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
@@ -296,7 +295,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void enrollNotAuthorizedAsStudyResearcher() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
@@ -321,7 +320,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void unenrollBySelf() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(USER_ID).build());
                 
         Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
@@ -350,7 +349,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void unenrollBySelfDefaultsWithdrawnOn() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(USER_ID).build());
                 
         Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
@@ -373,7 +372,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void unenrollByThirdPartyAdmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
                 
@@ -402,7 +401,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void unenrollByThirdPartyResearcher() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
@@ -434,7 +433,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void unenrollDoesNotExists() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         Account account = Account.create();
@@ -448,7 +447,7 @@ public class EnrollmentServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
     public void unenrollAccountNotFound() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
@@ -458,7 +457,7 @@ public class EnrollmentServiceTest extends Mockito {
     @Test(expectedExceptions = EntityAlreadyExistsException.class, 
             expectedExceptionsMessageRegExp = "Participant is already withdrawn from study.")
     public void unenrollAlreadyExistsButIsWithdrawn() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
@@ -475,7 +474,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void unenrollNotAuthorizedAsAdmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
@@ -489,7 +488,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void unenrollNotAuthorizedAsStudyResearcher() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());

@@ -43,7 +43,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
@@ -311,7 +310,7 @@ public class ParticipantReportControllerTest extends Mockito {
 
     @Test
     public void getParticipantReportDataAsDeveloperForSelf() throws Exception {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
                 .withCallerUserId(OTHER_PARTICIPANT_ID).build());
         
@@ -533,7 +532,7 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp=".*Account not found.*")
     public void getParticipantReportAccountNotFound() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
@@ -576,7 +575,7 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp=".*Account not found.*")
     public void getParticipantReportV4AccountNotFound() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);

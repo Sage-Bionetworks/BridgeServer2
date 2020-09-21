@@ -75,7 +75,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
@@ -123,6 +122,7 @@ import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
+import org.sagebionetworks.bridge.services.SponsorService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -188,6 +188,9 @@ public class ParticipantControllerTest extends Mockito {
     
     @Mock
     RequestInfoService mockRequestInfoService;
+    
+    @Mock
+    SponsorService mockSponsorSerice;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -263,7 +266,6 @@ public class ParticipantControllerTest extends Mockito {
         sessionUpdateService.setCacheProvider(mockCacheProvider);
         sessionUpdateService.setConsentService(mockConsentService);
         sessionUpdateService.setNotificationTopicService(mock(NotificationTopicService.class));
-
         controller.setSessionUpdateService(sessionUpdateService);
 
         doReturn(mockRequest).when(controller).request();
@@ -272,7 +274,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     @Test
@@ -773,7 +775,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test
     public void updateSelfParticipant() throws Exception {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS)
+        RequestContext.set(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS)
                 .withCallerStudies(ImmutableSet.of("studyA", "studyB")).build());
 
         // All values should be copied over here, also add a healthCode to verify it is not unset.

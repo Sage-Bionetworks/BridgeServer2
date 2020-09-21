@@ -224,7 +224,7 @@ public class ScheduledActivityController extends BaseController {
     private ScheduleContext getScheduledActivitiesInternal(UserSession session, DateTimeZone requestTimeZone,
             DateTime startsOn, DateTime endsOn, int minPerSchedule) {
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         
         ScheduleContext.Builder builder = new ScheduleContext.Builder();
         

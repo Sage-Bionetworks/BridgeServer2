@@ -197,12 +197,12 @@ public class ScheduledActivityControllerTest extends Mockito {
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerClientInfo(CLIENT_INFO).build());
+        RequestContext.set(new RequestContext.Builder().withCallerClientInfo(CLIENT_INFO).build());
     }
     
     @AfterMethod
     public void afterMethod( ) {
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     @Test
