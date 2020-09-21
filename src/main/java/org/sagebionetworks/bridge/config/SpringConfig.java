@@ -76,6 +76,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecordEx3;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoMasterSchedulerConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoMasterSchedulerStatus;
@@ -108,6 +109,8 @@ import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.hibernate.HibernateStudy;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplateRevision;
+import org.sagebionetworks.bridge.hibernate.OrganizationPersistenceExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.SponsorPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.StudyPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.TagEventListener;
 import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
@@ -399,6 +402,12 @@ public class SpringConfig {
     @Autowired
     public DynamoDBMapper healthDataDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoHealthDataRecord.class);
+    }
+
+    @Bean(name = "healthDataEx3DdbMapper")
+    @Autowired
+    public DynamoDBMapper healthDataEx3DdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoHealthDataRecordEx3.class);
     }
 
     @Bean(name = "activityEventDdbMapper")
@@ -718,6 +727,20 @@ public class SpringConfig {
     @Autowired
     public HibernateHelper accountHibernateHelper(SessionFactory sessionFactory,
             AccountPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+    @Bean(name = "sponsorHibernateHelper")
+    @Autowired
+    public HibernateHelper sponsorHibernateHelper(SessionFactory sessionFactory,
+            SponsorPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+    @Bean(name = "organizationHibernateHelper")
+    @Autowired
+    public HibernateHelper organizationHibernateHelper(SessionFactory sessionFactory,
+            OrganizationPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     

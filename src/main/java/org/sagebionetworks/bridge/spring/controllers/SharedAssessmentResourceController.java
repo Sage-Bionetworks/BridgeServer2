@@ -102,6 +102,6 @@ public class SharedAssessmentResourceController extends BaseController {
         Set<String> resourceGuids = parseJson(STRING_SET_TYPEREF);
         
         List<AssessmentResource> resources = service.importAssessmentResources(appId, assessmentId, resourceGuids);
-        return new ResourceList<AssessmentResource>(resources);
+        return new ResourceList<AssessmentResource>(resources, true);
     }
 }

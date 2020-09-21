@@ -21,6 +21,7 @@ import com.google.common.collect.MultimapBuilder;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -65,6 +66,12 @@ public class MetricsFilter implements Filter {
             chain.doFilter(req, res);
             metrics.setStatus(response.getStatus());
         } finally {
+            // Log session info when a session is present
+            UserSession session = (UserSession) request.getAttribute("CreatedUserSession");
+            if (session != null) {
+                // Record UserSession to Metrics.
+                writeSessionInfoToMetrics(metrics, session);
+            }
             if (response.getHeader(X_PASSTHROUGH) == null) {
                 metrics.end();
                 LOG.info(metrics.toJsonString());
@@ -75,6 +82,18 @@ public class MetricsFilter implements Filter {
     private String header(HttpServletRequest request, String name, String defaultVal) {
         final String value = request.getHeader(name);
         return (value != null) ? value : defaultVal;
+    }
+
+    /**
+     * Writes the user's account ID, internal session ID, and app ID to the metrics.
+     * If either metrics or session is null, then this method does nothing.
+     */
+    private static void writeSessionInfoToMetrics(Metrics metrics, UserSession session) {
+        if (metrics != null && session != null) {
+            metrics.setSessionId(session.getInternalSessionToken());
+            metrics.setUserId(session.getId());
+            metrics.setAppId(session.getAppId());
+        }
     }
 
     @Override

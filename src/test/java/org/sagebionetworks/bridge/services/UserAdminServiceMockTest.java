@@ -77,7 +77,10 @@ public class UserAdminServiceMockTest {
     
     @Mock
     private HealthDataService healthDataService;
-    
+
+    @Mock
+    private HealthDataEx3Service healthDataEx3Service;
+
     @Mock
     private CacheProvider cacheProvider;
     
@@ -331,6 +334,7 @@ public class UserAdminServiceMockTest {
         verify(cacheProvider).removeSessionByUserId("userId");
         verify(requestInfoService).removeRequestInfo("userId");
         verify(healthDataService).deleteRecordsForHealthCode("healthCode");
+        verify(healthDataEx3Service).deleteRecordsForHealthCode("healthCode");
         verify(notificationsService).deleteAllRegistrations(app.getIdentifier(), "healthCode");
         verify(uploadService).deleteUploadsForHealthCode("healthCode");
         verify(scheduledActivityService).deleteActivitiesForUser("healthCode");

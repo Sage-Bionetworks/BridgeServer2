@@ -26,12 +26,13 @@ public class DateRangeResourceListTest {
                 .withRequestParam(END_DATE, LocalDate.parse("2016-02-23"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
-        assertEquals(node.get("startDate").asText(), "2016-02-03");
-        assertEquals(node.get("endDate").asText(), "2016-02-23");
-        assertEquals(node.get("requestParams").get("startDate").asText(), "2016-02-03");
-        assertEquals(node.get("requestParams").get("endDate").asText(), "2016-02-23");
-        assertEquals(node.get("requestParams").get(ResourceList.TYPE).asText(), ResourceList.REQUEST_PARAMS);
-        assertEquals(node.get("type").asText(), "DateRangeResourceList");
+        assertEquals(node.get("startDate").textValue(), "2016-02-03");
+        assertEquals(node.get("endDate").textValue(), "2016-02-23");
+        assertEquals(node.get("total").intValue(), 3);
+        assertEquals(node.get("requestParams").get("startDate").textValue(), "2016-02-03");
+        assertEquals(node.get("requestParams").get("endDate").textValue(), "2016-02-23");
+        assertEquals(node.get("requestParams").get(ResourceList.TYPE).textValue(), ResourceList.REQUEST_PARAMS);
+        assertEquals(node.get("type").textValue(), "DateRangeResourceList");
         assertEquals(node.get("items").size(), 3);
         assertEquals(node.get("items").get(0).asText(), "1");
         assertEquals(node.get("items").get(1).asText(), "2");
@@ -49,6 +50,19 @@ public class DateRangeResourceListTest {
         assertEquals(list.getRequestParams().get("startDate"), "2016-02-03");
         assertEquals(list.getRequestParams().get("endDate"), "2016-02-23");
         assertEquals(list.getRequestParams().get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
+    }
+    
+    @Test
+    public void canSerializeWithoutDeprecated() {
+        DateRangeResourceList<String> list = new DateRangeResourceList<>(
+                Lists.newArrayList("1", "2", "3"), true)
+                .withRequestParam(START_DATE, LocalDate.parse("2016-02-03"))
+                .withRequestParam(END_DATE, LocalDate.parse("2016-02-23"));
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(list);
+        assertNull(node.get("startDate"));
+        assertNull(node.get("endDate"));
+        assertNull(node.get("total"));
     }
     
     @SuppressWarnings("deprecation")

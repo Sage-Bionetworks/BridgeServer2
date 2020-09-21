@@ -374,3 +374,35 @@ ADD COLUMN `orgMembership` varchar(255),
 ADD CONSTRAINT FOREIGN KEY (`studyId`, `orgMembership`) REFERENCES `Organizations` (`appId`, `identifier`);
 
 CREATE INDEX `Accounts-OrgMembership` ON `Accounts` (`studyId`, `orgMembership`);
+
+-- changeset bridge:18
+
+-- Sponsors. Named consistent with other associative tables.
+CREATE TABLE IF NOT EXISTS `OrganizationsStudies` (
+  `appId` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `orgId` varchar(255) NOT NULL,
+  PRIMARY KEY (`appId`,`studyId`,`orgId`),
+  CONSTRAINT `fk_os_organization` FOREIGN KEY (`appId`, `orgId`) REFERENCES `Organizations` (`appId`, `identifier`) ON DELETE CASCADE,
+  CONSTRAINT `fk_os_study` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- Fix this (one value is missing).
+ALTER TABLE `ExternalResources`
+MODIFY COLUMN `category` enum('CUSTOMIZATION_OPTIONS', 'DATA_REPOSITORY', 
+    'SCIENCE_DOCUMENTATION', 'DEVELOPER_DOCUMENTATION', 'LICENSE', 
+    'PUBLICATION', 'RELEASE_NOTE', 'SAMPLE_APP', 'SAMPLE_DATA', 
+    'SCREENSHOT', 'VIDEO_PREVIEW', 'SEE_ALSO', 'USED_IN_STUDY', 'WEBSITE', 
+    'OTHER') NOT NULL;
+    
+-- changeset bridge:19
+
+ALTER TABLE `AccountsSubstudies`
+ADD COLUMN `consentRequired` tinyint(1) DEFAULT '0',
+ADD COLUMN `enrolledOn` bigint(20),
+ADD COLUMN `withdrawnOn` bigint(20),
+ADD COLUMN `enrolledBy` varchar(255),
+ADD COLUMN `withdrawnBy` varchar(255),
+ADD COLUMN `withdrawalNote` varchar(255),
+ADD CONSTRAINT `fk_enrolledBy` FOREIGN KEY (`enrolledBy`) REFERENCES `Accounts` (`id`),
+ADD CONSTRAINT `fk_withdrawnBy` FOREIGN KEY (`withdrawnBy`) REFERENCES `Accounts` (`id`);

@@ -131,7 +131,9 @@ public class AppService {
     private StudyService studyService;
     private TemplateService templateService;
     private FileService fileService;
+    // This is being removed in a separate checkin.
     private OrganizationDao organizationDao;
+    private OrganizationService organizationService;
 
     // Not defaults, if you wish to change these, change in source. Not configurable per app
     private String appEmailVerificationTemplate;
@@ -233,6 +235,10 @@ public class AppService {
     @Autowired
     final void setOrganizationDao(OrganizationDao organizationDao) {
         this.organizationDao = organizationDao;
+    }
+    @Autowired
+    final void setOrganizationService(OrganizationService organizationService) {
+        this.organizationService = organizationService;
     }
     
     public App getApp(String identifier, boolean includeDeleted) {
@@ -640,6 +646,8 @@ public class AppService {
             appDao.deleteApp(existing);
 
             // delete app data
+            studyService.deleteAllStudies(existing.getIdentifier());
+            organizationService.deleteAllOrganizations(existing.getIdentifier());
             templateService.deleteTemplatesForApp(existing.getIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInApp(
                     existing.getIdentifier());

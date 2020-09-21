@@ -4,7 +4,7 @@ import org.mockito.Mock;
 
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
@@ -252,7 +252,7 @@ public class OrganizationServiceTest extends Mockito {
     
     @Test
     public void getMembersAsSuperadmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
         
@@ -280,7 +280,7 @@ public class OrganizationServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Organization not found.")
     public void getMembersOrganizationNotFound() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.empty());
         
@@ -309,7 +309,7 @@ public class OrganizationServiceTest extends Mockito {
     
     @Test
     public void addMemberAsSuperadmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(Account.create()));
@@ -332,7 +332,7 @@ public class OrganizationServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Organization not found.")
     public void addMemberOrganizationNotFound() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.empty());
         
@@ -342,7 +342,7 @@ public class OrganizationServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
     public void addMemberAccountNotFound() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
@@ -370,7 +370,7 @@ public class OrganizationServiceTest extends Mockito {
     
     @Test
     public void removeMemberAsSuperadmin() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
         Account account = Account.create();
@@ -386,7 +386,7 @@ public class OrganizationServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = ".*Account is not a member of organization.*")
     public void removeMemberNotAMember() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
         Account account = Account.create();
@@ -399,7 +399,7 @@ public class OrganizationServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = ".*Account is not a member of organization.*")
     public void removeMemberNoMembership() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(Account.create()));
@@ -420,7 +420,7 @@ public class OrganizationServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
     public void removeMemberAccountNotFound() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
@@ -437,5 +437,11 @@ public class OrganizationServiceTest extends Mockito {
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         service.removeMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
+    }
+    
+    @Test
+    public void deleteAllOrganizations() {
+        service.deleteAllOrganizations(TEST_APP_ID);
+        verify(mockOrgDao).deleteAllOrganizations(TEST_APP_ID);
     }
 }

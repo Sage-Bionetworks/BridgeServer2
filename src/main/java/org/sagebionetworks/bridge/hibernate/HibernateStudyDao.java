@@ -8,6 +8,7 @@ import java.util.Map;
 import javax.annotation.Resource;
 
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyId;
@@ -27,7 +28,8 @@ public class HibernateStudyDao implements StudyDao {
     }
 
     @Override
-    public List<Study> getStudies(String appId, boolean includeDeleted) {
+    public PagedResourceList<Study> getStudies(String appId, Integer offsetBy, Integer pageSize,
+            boolean includeDeleted) {
         checkNotNull(appId);
         
         Map<String,Object> parameters = ImmutableMap.of("appId", appId);
@@ -35,8 +37,13 @@ public class HibernateStudyDao implements StudyDao {
         if (!includeDeleted) {
             query += " and deleted != 1";
         }
-        return ImmutableList.copyOf(hibernateHelper.queryGet(query, parameters, 
-                null, null, HibernateStudy.class));
+        int total = hibernateHelper.queryCount("select count(*) " + query, parameters);
+
+        List<HibernateStudy> hibStudies = hibernateHelper.queryGet(query, parameters, 
+                offsetBy, pageSize, HibernateStudy.class);
+        List<Study> studies = ImmutableList.copyOf(hibStudies);
+        
+        return new PagedResourceList<>(studies, total);
     }
 
     @Override
@@ -71,5 +78,15 @@ public class HibernateStudyDao implements StudyDao {
         
         StudyId studyId = new StudyId(appId, id);
         hibernateHelper.deleteById(HibernateStudy.class, studyId);
+    }
+    
+    @Override
+    public void deleteAllStudies(String appId) {
+        checkNotNull(appId);
+
+        Map<String,Object> parameters = ImmutableMap.of("appId", appId);
+        String query = "delete from HibernateStudy where appId=:appId";
+
+        hibernateHelper.queryUpdate(query, parameters);
     }
 }

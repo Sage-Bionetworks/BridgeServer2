@@ -16,7 +16,6 @@ import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.getStudyParticipant;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -284,7 +283,7 @@ public class AuthenticationControllerTest extends Mockito {
         assertTrue(node.get("authenticated").booleanValue());
      
         verify(mockAuthService).emailSignIn(any(CriteriaContext.class), signInCaptor.capture());
-        
+
         SignIn captured = signInCaptor.getValue();
         assertEquals(captured.getEmail(), TEST_EMAIL);
         assertEquals(captured.getAppId(), TEST_APP_ID);
@@ -405,7 +404,7 @@ public class AuthenticationControllerTest extends Mockito {
         // execute and validate
         UserSession retVal = controller.getSessionIfItExists();
         assertSame(userSession, retVal);
-        verifyMetrics();
+        verify(mockRequest).setAttribute(eq("CreatedUserSession"), any(UserSession.class));
     }
 
     @Test(expectedExceptions = NotAuthenticatedException.class)
@@ -464,7 +463,7 @@ public class AuthenticationControllerTest extends Mockito {
         // execute and validate
         UserSession retVal = controller.getAuthenticatedSession();
         assertSame(session, retVal);
-        verifyMetrics();
+        verify(mockRequest).setAttribute(eq("CreatedUserSession"), any(UserSession.class));
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
@@ -632,7 +631,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         verify(mockAuthService).signOut(session);
         verify(mockResponse).addCookie(cookieCaptor.capture());
-        verifyMetrics();
+        verify(mockRequest).setAttribute(eq("CreatedUserSession"), any(UserSession.class));
         
         Cookie cookie = cookieCaptor.getValue();
         assertEquals(cookie.getValue(), "");
@@ -657,7 +656,7 @@ public class AuthenticationControllerTest extends Mockito {
         verify(mockAuthService).signOut(session);
         verify(mockResponse).addCookie(cookieCaptor.capture());
         verify(mockResponse).setHeader(BridgeConstants.CLEAR_SITE_DATA_HEADER, BridgeConstants.CLEAR_SITE_DATA_VALUE);
-        verifyMetrics();
+        verify(mockRequest).setAttribute(eq("CreatedUserSession"), any(UserSession.class));
         
         Cookie cookie = cookieCaptor.getValue();
         assertEquals(cookie.getValue(), "");
@@ -766,17 +765,6 @@ public class AuthenticationControllerTest extends Mockito {
         controller.signIn();
 
         ArgumentCaptor<Cookie> cookieCaptor = ArgumentCaptor.forClass(Cookie.class);
-        
-        verify(mockResponse).addCookie(cookieCaptor.capture());
-        
-        Cookie cookie = cookieCaptor.getValue();
-        assertEquals(cookie.getName(), BridgeConstants.SESSION_TOKEN_HEADER);
-        assertEquals(cookie.getValue(), TEST_SESSION_TOKEN);
-        assertEquals(cookie.getMaxAge(), BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-        assertEquals(cookie.getPath(), "/");
-        assertEquals(cookie.getDomain(), DOMAIN);
-        assertFalse(cookie.isHttpOnly());
-        assertFalse(cookie.getSecure());
     }
     
     @Test
@@ -792,19 +780,6 @@ public class AuthenticationControllerTest extends Mockito {
         when(mockAuthService.signIn(any(), any(), any())).thenReturn(session);
         
         controller.signIn();
-        
-        ArgumentCaptor<Cookie> cookieCaptor = ArgumentCaptor.forClass(Cookie.class);
-        
-        verify(mockResponse).addCookie(cookieCaptor.capture());
-        
-        Cookie cookie = cookieCaptor.getValue();
-        assertEquals(cookie.getName(), BridgeConstants.SESSION_TOKEN_HEADER);
-        assertEquals(cookie.getValue(), TEST_SESSION_TOKEN);
-        assertEquals(cookie.getMaxAge(), BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-        assertEquals(cookie.getPath(), "/");
-        assertEquals(cookie.getDomain(), DOMAIN);
-        assertFalse(cookie.isHttpOnly());
-        assertFalse(cookie.getSecure());
     }
     
     @Test(expectedExceptions = UnsupportedVersionException.class)
@@ -1413,16 +1388,9 @@ public class AuthenticationControllerTest extends Mockito {
         when(mockRequest.getInputStream()).thenReturn(is);
     }
     
-    private void verifyMetrics() {
-        verify(controller, atLeastOnce()).getMetrics();
-        
-        verify(metrics, atLeastOnce()).setSessionId(TEST_INTERNAL_SESSION_ID);
-        verify(metrics, atLeastOnce()).setUserId(TEST_ACCOUNT_ID);
-        verify(metrics, atLeastOnce()).setAppId(TEST_APP_ID);
-    }
-    
     private void verifyCommonLoggingForSignIns() throws Exception {
-        verifyMetrics();
+        verify(controller).updateRequestInfoFromSession(any(UserSession.class));
+        verify(mockRequest).setAttribute(eq("CreatedUserSession"), any(UserSession.class));
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         verify(mockResponse, never()).addCookie(any());        
         RequestInfo info = requestInfoCaptor.getValue();

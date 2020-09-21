@@ -199,14 +199,20 @@ public class OrganizationService {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         AuthUtils.checkOrgMembershipAndThrow(identifier);
-
+        
         // Indicate if caller is trying to remove someone from an org they don't belong to
         if (account.getOrgMembership() == null || !account.getOrgMembership().equals(identifier)) {
             throw new BadRequestException("Account is not a member of organization " + identifier);
         }
+        
         account.setOrgMembership(null);
         accountDao.updateAccount(account, null);
         sessionUpdateService.updateOrgMembership(account.getId(), null);
     }
 
+    public void deleteAllOrganizations(String appId) {
+        checkNotNull(appId);
+
+        orgDao.deleteAllOrganizations(appId);
+    }
 }

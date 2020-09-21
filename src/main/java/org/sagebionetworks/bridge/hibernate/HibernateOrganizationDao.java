@@ -32,7 +32,7 @@ public class HibernateOrganizationDao implements OrganizationDao {
     
     private HibernateHelper hibernateHelper;
     
-    @Resource(name = "basicHibernateHelper")
+    @Resource(name = "organizationHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }
@@ -85,5 +85,15 @@ public class HibernateOrganizationDao implements OrganizationDao {
         
         OrganizationId id = new OrganizationId(organization.getAppId(), organization.getIdentifier());
         hibernateHelper.deleteById(HibernateOrganization.class, id);
+    }
+    
+    @Override
+    public void deleteAllOrganizations(String appId) {
+        checkNotNull(appId);
+        
+        Map<String,Object> parameters = ImmutableMap.of("appId", appId);
+        String query = "delete from HibernateOrganization where appId=:appId";
+
+        hibernateHelper.queryUpdate(query, parameters);
     }
 }

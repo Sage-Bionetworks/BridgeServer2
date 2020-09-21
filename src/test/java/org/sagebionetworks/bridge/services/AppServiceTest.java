@@ -149,6 +149,10 @@ public class AppServiceTest extends Mockito {
     TemplateService mockTemplateService;
     @Mock
     FileService mockFileService;
+    @Mock
+    OrganizationService mockOrgService;
+    @Mock
+    StudyService mockStudyService;
 
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -709,6 +713,8 @@ public class AppServiceTest extends Mockito {
 
         // verify we called the correct dependent services
         verify(mockAppDao).deleteApp(app);
+        verify(mockStudyService).deleteAllStudies(app.getIdentifier());
+        verify(mockOrgService).deleteAllOrganizations(app.getIdentifier());
         verify(mockCompoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInApp(
                 app.getIdentifier());
         verify(mockSubpopService).deleteAllSubpopulations(app.getIdentifier());

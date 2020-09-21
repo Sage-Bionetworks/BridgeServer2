@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.services.SponsorService;
 
 public class AuthUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AuthUtils.class);
@@ -29,14 +30,11 @@ public class AuthUtils {
         }
     }
     
-    /**
-     * Unless you are a superadmin, you can only list the members of your own organization.
-     */
     public static boolean checkOrgMembership(String targetOrgId) {
         RequestContext context = BridgeUtils.getRequestContext();
         String callerOrgMembership = context.getCallerOrgMembership();
         
-        return context.isInRole(SUPERADMIN) || targetOrgId.equals(callerOrgMembership);
+        return context.isInRole(ADMIN) || targetOrgId.equals(callerOrgMembership);
     }
     
     public static void checkOrgMembershipAndThrow(String targetOrgId) {
@@ -74,7 +72,7 @@ public class AuthUtils {
         checkNotNull(ownerId);
 
         RequestContext rc = BridgeUtils.getRequestContext();
-        if (rc.isInRole(ImmutableSet.of(SUPERADMIN))) {
+        if (rc.isInRole(ImmutableSet.of(ADMIN))) {
             return;
         }
         String[] parts = ownerId.split(":", 2);
@@ -90,5 +88,20 @@ public class AuthUtils {
             return;
         }
         throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+    }
+    
+    public static boolean checkSelfAdminOrSponsor(SponsorService sponsorService, String studyId, String userId) {
+        RequestContext context = BridgeUtils.getRequestContext();
+        String callerOrgMembership = context.getCallerOrgMembership();
+        String callerUserId = context.getCallerUserId();
+        return context.isInRole(ADMIN) || 
+                sponsorService.isStudySponsoredBy(studyId, callerOrgMembership) ||
+                (callerUserId != null && callerUserId.equals(userId));
+    }
+    
+    public static void checkSelfAdminOrSponsorAndThrow(SponsorService sponsorService, String studyId, String userId) {
+        if (!checkSelfAdminOrSponsor(sponsorService, studyId, userId)) {
+            throw new UnauthorizedException();
+        }
     }
 }

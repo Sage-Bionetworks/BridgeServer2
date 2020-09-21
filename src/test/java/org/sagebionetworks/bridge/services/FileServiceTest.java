@@ -422,10 +422,23 @@ public class FileServiceTest extends Mockito {
     @Test
     public void getFileRevision() { 
         FileRevision revision = new FileRevision();
+        revision.setFileGuid(GUID);
+        revision.setCreatedOn(TIMESTAMP);
         when(mockFileRevisionDao.getFileRevision(GUID, TIMESTAMP)).thenReturn(Optional.of(revision));
         
         Optional<FileRevision> returned = service.getFileRevision(GUID, TIMESTAMP);
         assertSame(returned.get(), revision);
+        assertTrue(returned.get().getDownloadURL().contains("/" + GUID + "." + TIMESTAMP.getMillis()));
+        
+        verify(mockFileRevisionDao).getFileRevision(GUID, TIMESTAMP);
+    }
+    
+    @Test
+    public void getFileRevisionNotFound() { 
+        when(mockFileRevisionDao.getFileRevision(GUID, TIMESTAMP)).thenReturn(Optional.empty());
+        
+        Optional<FileRevision> returned = service.getFileRevision(GUID, TIMESTAMP);
+        assertFalse(returned.isPresent());
         
         verify(mockFileRevisionDao).getFileRevision(GUID, TIMESTAMP);
     }

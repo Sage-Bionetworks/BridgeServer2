@@ -4,9 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.DefaultAppBootstrapper.API_SUBPOP;
 import static org.sagebionetworks.bridge.DefaultAppBootstrapper.SHARED_SUBPOP;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -123,7 +121,7 @@ public class DefaultStudyBootstrapperTest extends Mockito {
         assertEquals(SHARED_SUBPOP, subpopCaptor.getAllValues().get(2));
         
         StudyParticipant admin = participantCaptor.getAllValues().get(0);
-        assertEquals(admin.getRoles(), ImmutableSet.of(ADMIN, RESEARCHER));
+        assertEquals(admin.getRoles(), ImmutableSet.of(SUPERADMIN));
         assertEquals(admin.getEmail(), config.get("admin.email"));
         assertEquals(admin.getPassword(), config.get("admin.password"));
         

@@ -1,17 +1,26 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toSet;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
+import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
+import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 
-import java.util.List;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+
 import org.sagebionetworks.bridge.dao.StudyDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,14 +55,25 @@ public class StudyService {
      * so we can provide a cache for these infrequently changing identifiers.
      */
     public Set<String> getStudyIds(String appId) {
-        return getStudies(appId, false).stream()
-                .map(Study::getId).collect(BridgeCollectors.toImmutableSet());
+        return getStudies(appId, null, null, false)
+                .getItems().stream()
+                .map(Study::getIdentifier)
+                .collect(toSet());
     }
     
-    public List<Study> getStudies(String appId, boolean includeDeleted) {
+    public PagedResourceList<Study> getStudies(String appId, Integer offsetBy, Integer pageSize, boolean includeDeleted) {
         checkNotNull(appId);
         
-        return studyDao.getStudies(appId, includeDeleted);
+        if (offsetBy != null && offsetBy < 0) {
+            throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
+        }
+        if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
+            throw new BadRequestException(PAGE_SIZE_ERROR);
+        }
+        return studyDao.getStudies(appId, offsetBy, pageSize, includeDeleted)
+                .withRequestParam(OFFSET_BY, offsetBy)
+                .withRequestParam(PAGE_SIZE, pageSize)
+                .withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
     
     public VersionHolder createStudy(String appId, Study study) {
@@ -69,10 +89,9 @@ public class StudyService {
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
         
-        Study existing = studyDao.getStudy(appId, study.getId());
+        Study existing = studyDao.getStudy(appId, study.getIdentifier());
         if (existing != null) {
-            throw new EntityAlreadyExistsException(Study.class,
-                    ImmutableMap.of("id", existing.getId()));
+            throw new EntityAlreadyExistsException(Study.class, ImmutableMap.of("id", existing.getIdentifier()));
         }
         return studyDao.createStudy(study);
     }
@@ -84,7 +103,7 @@ public class StudyService {
         study.setAppId(appId);
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
-        Study existing = getStudy(appId, study.getId(), true);
+        Study existing = getStudy(appId, study.getIdentifier(), true);
         if (study.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(Study.class);
         }
@@ -111,5 +130,11 @@ public class StudyService {
         // Throws exception if the element does not exist.
         getStudy(appId, studyId, true);
         studyDao.deleteStudyPermanently(appId, studyId);
+    }
+    
+    public void deleteAllStudies(String appId) {
+        checkNotNull(appId);
+
+        studyDao.deleteAllStudies(appId);
     }
 }

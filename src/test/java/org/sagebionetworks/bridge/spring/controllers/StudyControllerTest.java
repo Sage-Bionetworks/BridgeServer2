@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -12,10 +12,6 @@ import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertTrue;
-
-import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,6 +29,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
@@ -43,8 +40,8 @@ import org.sagebionetworks.bridge.services.StudyService;
 
 public class StudyControllerTest extends Mockito {
 
-    private static final String INCLUDE_DELETED_PARAM = "includeDeleted";
-    private static final List<Study> STUDIES = ImmutableList.of(Study.create(), Study.create());
+    private static final PagedResourceList<Study> STUDIES = new PagedResourceList<>(
+            ImmutableList.of(Study.create(), Study.create()), 2);
     private static final VersionHolder VERSION_HOLDER = new VersionHolder(1L);
 
     @Mock
@@ -74,7 +71,7 @@ public class StudyControllerTest extends Mockito {
 
         controller.setStudyService(service);
 
-        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
 
         doReturn(mockRequest).when(controller).request();
@@ -92,27 +89,36 @@ public class StudyControllerTest extends Mockito {
     }
 
     @Test
-    public void getStudiesExcludeDeleted() throws Exception {
-        when(service.getStudies(TEST_APP_ID, false)).thenReturn(STUDIES);
+    public void getStudiesWithDefaults() throws Exception {
+        when(service.getStudies(TEST_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false)).thenReturn(STUDIES);
 
-        ResourceList<Study> result = controller.getStudies(false);
+        ResourceList<Study> result = controller.getStudies(null, null, false);
 
         assertEquals(result.getItems().size(), 2);
-        assertFalse((boolean) result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(service).getStudies(TEST_APP_ID, false);
+        verify(service).getStudies(TEST_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false);
+    }
+    
+    @Test
+    public void getStudiesExcludeDeleted() throws Exception {
+        when(service.getStudies(TEST_APP_ID, 0, 50, false)).thenReturn(STUDIES);
+
+        ResourceList<Study> result = controller.getStudies("0", "50", false);
+
+        assertEquals(result.getItems().size(), 2);
+
+        verify(service).getStudies(TEST_APP_ID, 0, 50, false);
     }
 
     @Test
     public void getStudiesIncludeDeleted() throws Exception {
-        when(service.getStudies(TEST_APP_ID, true)).thenReturn(STUDIES);
+        when(service.getStudies(TEST_APP_ID, 0, 50, true)).thenReturn(STUDIES);
 
-        ResourceList<Study> result = controller.getStudies(true);
+        ResourceList<Study> result = controller.getStudies("0", "50", true);
 
         assertEquals(result.getItems().size(), 2);
-        assertTrue((boolean) result.getRequestParams().get(INCLUDE_DELETED_PARAM));
 
-        verify(service).getStudies(TEST_APP_ID, true);
+        verify(service).getStudies(TEST_APP_ID, 0, 50, true);
     }
 
     @Test
@@ -120,7 +126,7 @@ public class StudyControllerTest extends Mockito {
         when(service.createStudy(any(), any())).thenReturn(VERSION_HOLDER);
 
         Study study = Study.create();
-        study.setId("oneId");
+        study.setIdentifier("oneId");
         study.setName("oneName");
         mockRequestBody(mockRequest, study);
 
@@ -130,21 +136,21 @@ public class StudyControllerTest extends Mockito {
         verify(service).createStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
         Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getId(), "oneId");
+        assertEquals(persisted.getIdentifier(), "oneId");
         assertEquals(persisted.getName(), "oneName");
     }
 
     @Test
     public void getStudy() throws Exception {
         Study study = Study.create();
-        study.setId("oneId");
+        study.setIdentifier("oneId");
         study.setName("oneName");
         when(service.getStudy(TEST_APP_ID, "id", true)).thenReturn(study);
 
         Study result = controller.getStudy("id");
         assertEquals(result, study);
 
-        assertEquals(result.getId(), "oneId");
+        assertEquals(result.getIdentifier(), "oneId");
         assertEquals(result.getName(), "oneName");
 
         verify(service).getStudy(TEST_APP_ID, "id", true);
@@ -153,7 +159,7 @@ public class StudyControllerTest extends Mockito {
     @Test
     public void updateStudy() throws Exception {
         Study study = Study.create();
-        study.setId("oneId");
+        study.setIdentifier("oneId");
         study.setName("oneName");
         mockRequestBody(mockRequest, study);
 
@@ -166,7 +172,7 @@ public class StudyControllerTest extends Mockito {
         verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
         Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getId(), "oneId");
+        assertEquals(persisted.getIdentifier(), "oneId");
         assertEquals(persisted.getName(), "oneName");
     }
 

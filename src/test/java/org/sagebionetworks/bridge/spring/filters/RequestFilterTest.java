@@ -1,14 +1,19 @@
 package org.sagebionetworks.bridge.spring.filters;
 
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_API_STATUS_HEADER;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
+import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.X_FORWARDED_FOR_HEADER;
 import static org.sagebionetworks.bridge.TestConstants.IP_ADDRESS;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_TOKEN;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
@@ -19,6 +24,7 @@ import java.util.List;
 import java.util.Vector;
 
 import javax.servlet.FilterChain;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -31,6 +37,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -39,6 +48,9 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.ClientInfo;
 
 public class RequestFilterTest extends Mockito {
+
+    @Mock
+    private BridgeConfig mockBridgeConfig;
 
     @Mock
     private HttpServletRequest mockRequest;
@@ -54,6 +66,9 @@ public class RequestFilterTest extends Mockito {
     
     @Captor
     private ArgumentCaptor<RequestContext> contextCaptor;
+
+    @Captor
+    private ArgumentCaptor<Cookie> cookieCaptor;
     
     @InjectMocks
     @Spy
@@ -358,5 +373,39 @@ public class RequestFilterTest extends Mockito {
         when(mockRequest.getRemoteAddr()).thenReturn(IP_ADDRESS);
         
         assertEquals(IP_ADDRESS, RequestFilter.getRemoteAddress(mockRequest));
+    }
+
+    @Test
+    public void setLocalCookie() throws Exception {
+        UserSession session = new UserSession();
+        session.setSessionToken(SESSION_TOKEN);
+        session.setAppId(TEST_APP_ID);
+        when(mockRequest.getAttribute("CreatedUserSession")).thenReturn(session);
+        when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
+
+        filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+
+        verify(mockResponse).addCookie(cookieCaptor.capture());
+
+        Cookie cookie = cookieCaptor.getValue();
+        assertEquals(cookie.getValue(), SESSION_TOKEN);
+        assertEquals(cookie.getName(), SESSION_TOKEN_HEADER);
+        assertEquals(cookie.getMaxAge(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+        assertEquals(cookie.getPath(), "/");
+        assertFalse(cookie.isHttpOnly());
+        assertFalse(cookie.getSecure());
+        assertEquals(cookie.getDomain(), "localhost");
+    }
+
+    @Test
+    public void noCookieOutsideLocal() throws Exception {
+        UserSession session = new UserSession();
+        session.setSessionToken(SESSION_TOKEN);
+        session.setAppId(TEST_APP_ID);
+        when(mockRequest.getAttribute("CreatedUserSession")).thenReturn(session);
+        when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
+
+        filter.doFilter(mockRequest, mockResponse, mockFilterChain);
+        verify(mockResponse, never()).addCookie(any());
     }
 }
