@@ -98,11 +98,8 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         DynamoDBQueryExpression<DynamoSubpopulation> query = 
                 new DynamoDBQueryExpression<DynamoSubpopulation>().withHashKeyValues(hashKey);
         
-        // Get all the records because we only create a default if there are no physical records, 
-        // regardless of the deletion status. This was a bootstrapping step and at this point, 
-        // no new apps will be created without a default subpopulation.
         List<DynamoSubpopulation> subpops = mapper.query(DynamoSubpopulation.class, query);
-        // Now filter out deleted subpopulations, if requested
+        // Filter out deleted subpopulations, if requested
         List<Subpopulation> subpopulations = subpops.stream()
                 .filter(subpop -> includeDeleted || !subpop.isDeleted())
                 .collect(toImmutableList());

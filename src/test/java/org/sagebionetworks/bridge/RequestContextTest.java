@@ -24,6 +24,7 @@ import java.util.Set;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -49,6 +50,11 @@ public class RequestContextTest extends Mockito {
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        RequestContext.set(NULL_INSTANCE);
     }
 
     @Test
@@ -225,6 +231,48 @@ public class RequestContextTest extends Mockito {
         
         RequestContext threadValue = RequestContext.get();
         assertSame(retValue, threadValue);
+    }
+    
+    // Non-admins who have an organizational relationship are given a specific set of studies
+    // that they will have to match in some security checks. Verify this is skipped for accounts
+    // with no organizational membership.
+    @Test
+    public void updateFromSessionNoOrgMembership() { 
+        when(mockSponsorService.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID)).thenReturn(USER_STUDY_IDS);
+        
+        UserSession session = new UserSession(new StudyParticipant.Builder().withStudyIds(USER_STUDY_IDS)
+                .withRoles(ImmutableSet.of(DEVELOPER)).withId(USER_ID).withLanguages(LANGUAGES).build());
+        session.setAuthenticated(true);
+        session.setAppId(TEST_APP_ID);
+        
+        RequestContext retValue = RequestContext.updateFromSession(session, mockSponsorService);
+        assertEquals(retValue.getOrgSponsoredStudies(), ImmutableSet.of());
+        
+        RequestContext threadValue = RequestContext.get();
+        assertEquals(threadValue.getOrgSponsoredStudies(), ImmutableSet.of());
+        
+        verify(mockSponsorService, never()).getSponsoredStudyIds(any(), any());
+    }
+    
+    // Non-admins who have an organizational relationship are given a specific set of studies
+    // that they will have to match in some security checks. Verify this is skipped for admins.
+    @Test
+    public void updateFromSessionForAdmin() { 
+        when(mockSponsorService.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID)).thenReturn(USER_STUDY_IDS);
+        
+        UserSession session = new UserSession(new StudyParticipant.Builder().withStudyIds(USER_STUDY_IDS)
+                .withRoles(ImmutableSet.of(ADMIN)).withOrgMembership(TEST_ORG_ID).withId(USER_ID)
+                .withLanguages(LANGUAGES).build());
+        session.setAuthenticated(true);
+        session.setAppId(TEST_APP_ID);
+        
+        RequestContext retValue = RequestContext.updateFromSession(session, mockSponsorService);
+        assertEquals(retValue.getOrgSponsoredStudies(), ImmutableSet.of());
+        
+        RequestContext threadValue = RequestContext.get();
+        assertEquals(threadValue.getOrgSponsoredStudies(), ImmutableSet.of());
+        
+        verify(mockSponsorService, never()).getSponsoredStudyIds(any(), any());
     }
     
     @Test

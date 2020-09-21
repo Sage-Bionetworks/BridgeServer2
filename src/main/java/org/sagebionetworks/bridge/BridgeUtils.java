@@ -169,8 +169,9 @@ public class BridgeUtils {
             if (isEmpty(callerStudies) || account.getId().equals(callerUserId)) {
                 return account;
             }
-            // This both tells us if there is a study the caller can see that this account
-            // is enrolled in, and removes any studies that the caller should not see
+            // If after removing all enrollments that are not visible to the caller, 
+            // there are no remaining active enrollments, then we do not return the 
+            // account to the caller.
             Set<Enrollment> removals = account.getActiveEnrollments().stream()
                     .filter(en -> !callerStudies.contains(en.getStudyId()))
                     .collect(toSet());

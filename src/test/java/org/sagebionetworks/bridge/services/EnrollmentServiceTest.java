@@ -298,6 +298,7 @@ public class EnrollmentServiceTest extends Mockito {
     public void enrollNotAuthorizedAsStudyResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
+                .withOrgSponsoredStudies(ImmutableSet.of("another-study"))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
         // the call to sponsorService returns null
@@ -493,6 +494,7 @@ public class EnrollmentServiceTest extends Mockito {
     public void unenrollNotAuthorizedAsStudyResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
+                .withOrgSponsoredStudies(ImmutableSet.of("another-study"))
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         

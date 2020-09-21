@@ -399,6 +399,26 @@ public class DynamoExternalIdDaoMockTest {
 
         assertNull(Iterables.getFirst(account.getEnrollments(), null).getExternalId());
     }
+    
+    @Test
+    public void unassignExternalIdNoEnrollmentDoesNothing() {
+        externalId.setHealthCode(HEALTH_CODE);
+        externalId.setStudyId(STUDY_ID);
+        when(mapper.load(any())).thenReturn(externalId);
+
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", USER_ID, ID);
+
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setHealthCode(HEALTH_CODE);
+        account.setId(USER_ID);
+        account.getEnrollments().add(enrollment);
+
+        dao.unassignExternalId(account, ID);
+        
+        assertEquals(account.getEnrollments().size(), 1);
+        assertEquals(Iterables.getFirst(account.getEnrollments(), null), enrollment);
+    }
 
     // Or, the wrong ID does not remove the existing ID
     @Test

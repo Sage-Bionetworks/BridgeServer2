@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
@@ -91,7 +92,10 @@ public class BridgeUtilsTest {
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", "accountId", "extB");
         Enrollment en3 = Enrollment.create(TEST_APP_ID, "studyC", "accountId", "extC");
         Enrollment en4 = Enrollment.create(TEST_APP_ID, "studyD", "accountId");
-        account.setEnrollments(ImmutableSet.of(en1, en2, en3, en4));
+        Enrollment en5 = Enrollment.create(TEST_APP_ID, "studyE", "accountId", "extD");
+        // withdraw en5 so we verify it is not in the map
+        en5.setWithdrawnOn(MODIFIED_ON);
+        account.setEnrollments(ImmutableSet.of(en1, en2, en3, en4, en5));
         
         Map<String, String> results = BridgeUtils.mapStudyMemberships(account);
         assertEquals(results.size(), 4);
@@ -251,7 +255,10 @@ public class BridgeUtilsTest {
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", "userId", "subAextId");
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", "userId", "subBextId");
         Enrollment en3 = Enrollment.create(TEST_APP_ID, "studyC", "userId");
-        account.setEnrollments(ImmutableSet.of(en1, en2, en3));
+        // Create one withdrawn enrollment that is ignored
+        Enrollment en4 = Enrollment.create(TEST_APP_ID, "studyD", "userId", "subEextId");
+        en4.setWithdrawnOn(MODIFIED_ON);
+        account.setEnrollments(ImmutableSet.of(en1, en2, en3, en4));
         
         Set<String> externalIds = BridgeUtils.collectExternalIds(account);
         assertEquals(externalIds, ImmutableSet.of("subAextId","subBextId"));
@@ -269,7 +276,10 @@ public class BridgeUtilsTest {
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", "userId");
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", "userId");
         Enrollment en3 = Enrollment.create(TEST_APP_ID, "studyC", "userId");
-        account.setEnrollments(ImmutableSet.of(en1, en2, en3));
+        Enrollment en4 = Enrollment.create(TEST_APP_ID, "studyD", "userId");
+        // create one withdrawn enrollment that is ignored
+        en4.setWithdrawnOn(MODIFIED_ON);
+        account.setEnrollments(ImmutableSet.of(en1, en2, en3, en4));
         
         Set<String> externalIds = BridgeUtils.collectStudyIds(account);
         assertEquals(externalIds, ImmutableSet.of("studyA","studyB", "studyC"));

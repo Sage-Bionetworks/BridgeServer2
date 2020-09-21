@@ -88,9 +88,9 @@ public interface Subpopulation extends BridgeEntity, HasCriteria {
     
     /**
      * Assign the participant to these studies when they consent to be a member of this 
-     * subpopulation. If the user is withdrawn from this subpopulation, the user will NOT 
-     * be withdrawn from these studies, which is an important difference from the 
-     * assignment of data groups. 
+     * subpopulation. Only required consents should set this property (and every study should
+     * have one required consent, or another means of enrolling users in the study). If the 
+     * user is withdrawn from this subpopulation, the user’s enrollment will be withdrawn.
      */
     void setStudyIdsAssignedOnConsent(Set<String> studyIds);
     Set<String> getStudyIdsAssignedOnConsent();

@@ -21,7 +21,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.services.SponsorService;
 
 public class AuthUtilsTest extends Mockito {
     private static final String SHARED_OWNER_ID = TEST_APP_ID + ":" + OWNER_ID;
@@ -81,14 +80,14 @@ public class AuthUtilsTest extends Mockito {
     public void checkOwnershipAdminUser() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(Roles.ADMIN)).build());
-        AuthUtils.checkAssessmentOwnership(TEST_APP_ID, OWNER_ID);
+        AuthUtils.checkAssessmentOwnershipAndThrow(TEST_APP_ID, OWNER_ID);
     }
     
     @Test
     public void checkOwnershipUserInOrg() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(OWNER_ID).build());
-        AuthUtils.checkAssessmentOwnership(TEST_APP_ID, OWNER_ID);
+        AuthUtils.checkAssessmentOwnershipAndThrow(TEST_APP_ID, OWNER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class,
@@ -96,7 +95,7 @@ public class AuthUtilsTest extends Mockito {
     public void checkOwnershipScopedUserOrgIdIsMissing() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("notValidOwner").build());
-        AuthUtils.checkAssessmentOwnership(TEST_APP_ID, OWNER_ID);
+        AuthUtils.checkAssessmentOwnershipAndThrow(TEST_APP_ID, OWNER_ID);
     }
     
     @Test
@@ -150,7 +149,7 @@ public class AuthUtilsTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(USER_ID).build());
         
-        assertTrue(AuthUtils.checkSelfOrResearcher(USER_ID));
+        assertTrue(AuthUtils.checkSelfResearcherOrAdmin(TEST_STUDY_ID, USER_ID));
     }
     
     @Test
@@ -159,7 +158,7 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(RESEARCHER))
                 .withCallerUserId("notUserId").build());
         
-        assertTrue(AuthUtils.checkSelfOrResearcher(USER_ID));
+        assertTrue(AuthUtils.checkSelfResearcherOrAdmin(TEST_STUDY_ID, USER_ID));
     }
     
     @Test
@@ -168,7 +167,7 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
                 .withCallerUserId("notUserId").build());
         
-        assertFalse(AuthUtils.checkSelfOrResearcher(USER_ID));
+        assertFalse(AuthUtils.checkSelfResearcherOrAdmin(TEST_STUDY_ID, USER_ID));
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -177,93 +176,6 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
                 .withCallerUserId("notUserId").build());
         
-        AuthUtils.checkSelfOrResearcherAndThrow(USER_ID);
-    }
-    
-    @Test
-    public void checkSelfAdminOrSponsorFails() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("adminUser")
-                .withCallerRoles(ImmutableSet.of(DEVELOPER))
-                .withCallerOrgMembership(TEST_ORG_ID).build());
-        
-        SponsorService mockSponsorService = mock(SponsorService.class);
-        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.FALSE);
-
-        assertFalse(AuthUtils.checkSelfAdminOrSponsor(mockSponsorService, TEST_STUDY_ID, null));
-    }
-    
-    @Test
-    public void checkSelfAdminOrSponsorForAdminSucceeds() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN))
-                .withCallerOrgMembership(TEST_ORG_ID).build());
-        
-        SponsorService mockSponsorService = mock(SponsorService.class);
-        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.FALSE);
-
-        assertTrue(AuthUtils.checkSelfAdminOrSponsor(mockSponsorService, TEST_STUDY_ID, null));
-    }
-    
-    @Test
-    public void checkSelfAdminOrSponsorForSponsorSucceeds() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(DEVELOPER))
-                .withCallerOrgMembership(TEST_ORG_ID).build());
-        
-        SponsorService mockSponsorService = mock(SponsorService.class);
-        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.TRUE);
-
-        assertTrue(AuthUtils.checkSelfAdminOrSponsor(mockSponsorService, TEST_STUDY_ID, null));
-    }
-    
-    @Test
-    public void checkSelfAdminOrSponsorForSponsorFails() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(DEVELOPER))
-                .withCallerOrgMembership(TEST_ORG_ID).build());
-        
-        SponsorService mockSponsorService = mock(SponsorService.class);
-        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.FALSE);
-
-        assertFalse(AuthUtils.checkSelfAdminOrSponsor(mockSponsorService, TEST_STUDY_ID, null));
-    }
-    
-    
-    @Test
-    public void checkSelfAdminOrSponsorForSelfSucceeds() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(USER_ID).build());
-        
-        SponsorService mockSponsorService = mock(SponsorService.class);
-        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.TRUE);
-
-        assertTrue(AuthUtils.checkSelfAdminOrSponsor(mockSponsorService, TEST_STUDY_ID, USER_ID));
-    }
-
-    @Test
-    public void checkSelfAdminOrSponsorAndThrow() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("adminUser")
-                .withCallerRoles(ImmutableSet.of(DEVELOPER))
-                .withCallerOrgMembership(TEST_ORG_ID).build());
-        
-        SponsorService mockSponsorService = mock(SponsorService.class);
-        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.TRUE);
-
-        AuthUtils.checkSelfAdminOrSponsorAndThrow(mockSponsorService, TEST_STUDY_ID, null);
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkSelfAdminOrSponsorAndThrowFails() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("adminUser")
-                .withCallerRoles(ImmutableSet.of(DEVELOPER))
-                .withCallerOrgMembership(TEST_ORG_ID).build());
-        
-        SponsorService mockSponsorService = mock(SponsorService.class);
-        when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.FALSE);
-
-        AuthUtils.checkSelfAdminOrSponsorAndThrow(mockSponsorService, TEST_STUDY_ID, null);
+        AuthUtils.checkSelfResearcherOrAdminAndThrow(TEST_STUDY_ID, USER_ID);
     }
 }

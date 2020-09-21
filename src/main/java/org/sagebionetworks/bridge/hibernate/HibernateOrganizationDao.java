@@ -38,7 +38,7 @@ public class HibernateOrganizationDao implements OrganizationDao {
     }
 
     @Override
-    public PagedResourceList<Organization> getOrganizations(String appId, Integer offsetBy, Integer pageSize) {
+    public PagedResourceList<Organization> getOrganizations(String appId, int offsetBy, int pageSize) {
         checkNotNull(appId);
         
         Map<String, Object> params = ImmutableMap.of("appId", appId);

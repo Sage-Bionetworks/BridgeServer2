@@ -318,8 +318,6 @@ public class ConsentService {
         account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
 
         for (Enrollment enrollment : account.getActiveEnrollments()) {
-            // TODO: the required check is important, and when creating subpopulations, we should
-            // enforce that one-and-only-one subpopulation is required.
             if (subpop.isRequired() && subpop.getStudyIdsAssignedOnConsent().contains(enrollment.getStudyId())) {
                 Enrollment withdrawnEnrollment = Enrollment.create(app.getIdentifier(), enrollment.getStudyId(), account.getId());
                 withdrawnEnrollment.setWithdrawnOn(new DateTime(withdrewOn));

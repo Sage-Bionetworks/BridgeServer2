@@ -1936,12 +1936,15 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void updateIdentifiersAssignsExternalIdEvenWhenAlreadyAssigned() {
-        // Fully associated external ID can be changed by an update.
-        RequestContext.set(new RequestContext.Builder()
+        // Fully associated external ID can be changed by an update. This needs to be called
+        // by an administrator to force an update of an existing study relationship.
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN))
                 .withCallerStudies(ImmutableSet.of("studyB")).build());
         mockHealthCodeAndAccountRetrieval();
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "studyB", ID, EXTERNAL_ID);
-        account.setEnrollments(Sets.newHashSet(enrollment)); // must be mutable set
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyB", ID, EXTERNAL_ID);
+        // Also add an enrollment without an external ID, this is correctly replaced
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyA", ID);
+        account.setEnrollments(Sets.newHashSet(en1, en2)); // must be mutable set
         account.setId(ID);
         
         when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);

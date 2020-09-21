@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
@@ -309,11 +310,18 @@ public class ConsentServiceMockTest extends Mockito {
 
     @Test
     public void withdrawConsentWithParticipant() throws Exception {
+        when(subpopulation.getStudyIdsAssignedOnConsent()).thenReturn(ImmutableSet.of(TEST_STUDY_ID));
+        when(subpopulation.isRequired()).thenReturn(true);
+        
         account.setEmail(EMAIL);
         account.setHealthCode(PARTICIPANT.getHealthCode());
 
         // Add two consents to the account, one withdrawn, one active. This tests to make sure we're not accidentally
         // dropping withdrawn consents from the history.
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "otherStudy", ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, ID);
+        account.setEnrollments(ImmutableSet.of(en1, en2));
+        
         account.setConsentSignatureHistory(SUBPOP_GUID,
                 ImmutableList.of(WITHDRAWN_CONSENT_SIGNATURE, CONSENT_SIGNATURE));
 
@@ -350,6 +358,14 @@ public class ConsentServiceMockTest extends Mockito {
         assertEquals(email.getSubject(), "Notification of consent withdrawal for Test App [ConsentServiceMockTest]");
         assertEquals(email.getMessageParts().get(0).getContent(), "<p>User   &lt;" + EMAIL
                 + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>");
+        
+        verify(mockEnrollmentService, times(1)).unenroll(eq(account), enrollmentCaptor.capture());
+        Enrollment withdrawalEnrollment = enrollmentCaptor.getValue();
+        assertEquals(withdrawalEnrollment.getWithdrawalNote(), WITHDRAWAL.getReason());
+        assertEquals(withdrawalEnrollment.getWithdrawnOn().getMillis(), SIGNED_ON + 10000);
+        assertEquals(withdrawalEnrollment.getAppId(), app.getIdentifier());
+        assertEquals(withdrawalEnrollment.getStudyId(), TEST_STUDY_ID);
+        assertEquals(withdrawalEnrollment.getAccountId(), ID);
     }
 
     @Test

@@ -880,14 +880,14 @@ public class ParticipantService {
         }
         ExternalIdentifier externalId = beginAssignExternalId(account, update.getExternalIdUpdate());
         if (externalId != null) {
-            Enrollment enrollment = Enrollment.create(account.getAppId(),
-                    externalId.getStudyId(), account.getId());
             // Highly unlikely this was an admin account, but just in case
-            if (account.getEnrollments().contains(enrollment)) {
-                account.getEnrollments().remove(enrollment);
+            for (Enrollment existingEnrollment : account.getEnrollments()) {
+                if (existingEnrollment.getStudyId().equals(externalId.getStudyId())) {
+                    account.getEnrollments().remove(existingEnrollment);
+                }
             }
-            enrollment = Enrollment.create(account.getAppId(), externalId.getStudyId(), account.getId(),
-                    externalId.getIdentifier());
+            Enrollment enrollment = Enrollment.create(account.getAppId(), 
+                    externalId.getStudyId(), account.getId(), externalId.getIdentifier());
             account.getEnrollments().add(enrollment);
             try {
                 accountService.updateAccount(account,

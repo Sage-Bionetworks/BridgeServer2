@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -95,13 +96,20 @@ public class DynamoSubpopulationDaoMockTest {
     }
     
     @Test
-    public void createDefaultSubpopulationWritesCriteria() {
+    public void createDefaultSubpopulation() {
         Subpopulation subpop = dao.createDefaultSubpopulation(TEST_APP_ID, TEST_STUDY_ID);
+        assertEquals(subpop.getStudyIdsAssignedOnConsent(), ImmutableSet.of(TEST_STUDY_ID));
+        assertEquals(subpop.getAppId(), TEST_APP_ID);
+        assertEquals(subpop.getGuidString(), TEST_APP_ID);
+        assertEquals(subpop.getName(), "Default Consent Group");
+        assertTrue(subpop.isDefaultGroup());
+        assertTrue(subpop.isRequired());
         
         Criteria criteria = subpop.getCriteria();
         assertEquals(criteria.getMinAppVersion(OperatingSystem.IOS), new Integer(0));
         assertEquals(criteria.getMinAppVersion(OperatingSystem.ANDROID), new Integer(0));
         
+        verify(mapper).save(subpop);
         verify(criteriaDao).createOrUpdateCriteria(criteria);
     }
     
