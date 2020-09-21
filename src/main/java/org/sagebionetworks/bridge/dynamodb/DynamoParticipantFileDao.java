@@ -38,26 +38,22 @@ public class DynamoParticipantFileDao implements ParticipantFileDao {
         Map<String, AttributeValue> keyCondition = new HashMap<>();
         keyCondition.put(":val1", new AttributeValue().withS(userId));
         DynamoDBQueryExpression<DynamoParticipantFile> queryExpression = new DynamoDBQueryExpression<>();
-        queryExpression.withKeyConditionExpression("userId = :val1")
-                .withExpressionAttributeValues(keyCondition)
-                .withLimit(pageSize)
-                .setConsistentRead(true);
         if (offsetKey != null) {
-            HashMap<String, AttributeValue> startKey = new HashMap<>();
-            startKey.put("userId", new AttributeValue().withS(userId));
-            startKey.put("fileId", new AttributeValue().withS(offsetKey));
-            queryExpression.withExclusiveStartKey(startKey);
+            keyCondition.put(":val2", new AttributeValue().withS(offsetKey));
+            queryExpression.withKeyConditionExpression("userId = :val1 and fileId > :val2");
+        } else {
+            queryExpression.withKeyConditionExpression("userId = :val1");
         }
+        queryExpression.withLimit(pageSize).withExpressionAttributeValues(keyCondition).withConsistentRead(true);
 
-        QueryResultPage<DynamoParticipantFile> results = mapper.queryPage(DynamoParticipantFile.class, queryExpression);
-        Map<String, AttributeValue> nextKey = results.getLastEvaluatedKey();
+        PaginatedQueryList<DynamoParticipantFile> results = mapper.query(DynamoParticipantFile.class, queryExpression);
+        List<ParticipantFile> fileResults = results.stream()
+                .limit(pageSize).map(i -> (ParticipantFile) i).collect(Collectors.toList());
         String nextPageOffsetKey = null;
-        if (nextKey != null) {
-            nextPageOffsetKey = nextKey.get("fileId").getS();
+        if (fileResults.size() == pageSize) {
+            nextPageOffsetKey = fileResults.get(fileResults.size() - 1).getFileId();
         }
 
-        List<ParticipantFile> fileResults = results.getResults().stream()
-                .map(i -> (ParticipantFile) i).collect(Collectors.toList());
         return new ForwardCursorPagedResourceList<>(fileResults, nextPageOffsetKey)
                 .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
