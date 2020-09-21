@@ -118,14 +118,13 @@ public class ParticipantFileControllerTest {
     @Test
     public void createParticipantFile() throws Exception {
         ParticipantFile newFile = ParticipantFile.create();
-        newFile.setUserId("test_user");
-        newFile.setFileId("file_id");
+        newFile.setUserId("bad_test_user");
+        newFile.setFileId("bad_file_id");
         newFile.setMimeType("dummy-type");
         mockRequestBody(mockRequest, newFile);
         when(mockFileService.createParticipantFile(any(), any(), any())).thenReturn(newFile);
         ParticipantFile result = controller.createParticipantFile("file_id");
 
-        assertEquals(result.getFileId(), "file_id");
         assertEquals(result.getMimeType(), "dummy-type");
 
         verify(mockFileService).createParticipantFile(eq("test-app"), eq("test_user"), fileCaptor.capture());

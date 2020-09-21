@@ -126,6 +126,7 @@ public class ParticipantFileServiceTest {
         assertEquals(request.getKey(), "test_user/file_id");
         assertEquals(request.getRequestParameters().get(Headers.SERVER_SIDE_ENCRYPTION),
                 ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        assertEquals(request.getExpiration(), TestConstants.TIMESTAMP.plusDays(1).toDate());
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -158,14 +159,16 @@ public class ParticipantFileServiceTest {
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
+        assertEquals(request.getBucketName(), UPLOAD_BUCKET);
         assertEquals(request.getMethod(), HttpMethod.PUT);
         assertEquals(request.getContentType(), file.getMimeType());
         assertEquals(request.getKey(), "test_user/file_id");
         assertEquals(request.getRequestParameters().get(Headers.SERVER_SIDE_ENCRYPTION),
                 ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        assertEquals(request.getExpiration(), TestConstants.TIMESTAMP.plusDays(1).toDate());
 
-        verify(mockFileDao).getParticipantFile(any(), any());
-        verify(mockFileDao).uploadParticipantFile(any());
+        verify(mockFileDao).getParticipantFile(eq("test_user"), eq("file_id"));
+        verify(mockFileDao).uploadParticipantFile(eq(file));
 
     }
 
