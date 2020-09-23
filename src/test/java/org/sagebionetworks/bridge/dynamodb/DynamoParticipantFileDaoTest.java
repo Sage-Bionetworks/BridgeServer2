@@ -106,10 +106,6 @@ public class DynamoParticipantFileDaoTest {
     public void getParticipantFilesPageSize() {
         when(resultPage.stream()).thenReturn(RESULT_LIST.stream());
         when(mapper.query(eq(DynamoParticipantFile.class), any())).thenReturn(resultPage);
-//        when(resultPage.getLastEvaluatedKey())
-//                .thenReturn(Collections.singletonMap("fileId", new AttributeValue("file4")));
-//        when(resultPage.getResults()).thenReturn(RESULT_LIST);
-//        when(mapper.queryPage(eq(DynamoParticipantFile.class), any())).thenReturn(resultPage);
 
         ForwardCursorPagedResourceList<ParticipantFile> result =
                 dao.getParticipantFiles(KEY.getUserId(), null, 5);
