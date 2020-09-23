@@ -41,6 +41,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.hibernate.HibernateEnrollment;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -176,6 +177,20 @@ public class EnrollmentControllerTest extends Mockito {
                 ImmutableSet.of(TEST_STUDY_ID, "anotherStudy"));
     }
     
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getUserEnrollmentsAccountNotFound() throws Exception {
+        UserSession session = new UserSession();
+        session.setAppId(TEST_APP_ID);
+        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
+        
+        AccountService mockAccountService = mock(AccountService.class);
+        controller.setAccountService(mockAccountService);
+        
+        when(mockAccountService.getAccount(any())).thenReturn(null);
+        
+        controller.getUserEnrollments(USER_ID);
+    }
+    
     @Test
     public void updateUserEnrollments() throws Exception {
         UserSession session = new UserSession();
@@ -185,7 +200,7 @@ public class EnrollmentControllerTest extends Mockito {
         Enrollment newEnrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", USER_ID);
         mockRequestBody(mockRequest, ImmutableSet.of(EnrollmentMigration.create(newEnrollment)));
         
-        AccountId accountId = AccountId.forId(TEST_APP_ID, USER_ID);
+        AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, USER_ID);
         
         AccountService mockAccountService = mock(AccountService.class);
         controller.setAccountService(mockAccountService);
@@ -198,11 +213,28 @@ public class EnrollmentControllerTest extends Mockito {
         
         mockEditAccount(mockAccountService, mockAccount);
         
-        StatusMessage message = controller.updateUserEnrollments(USER_ID);
+        StatusMessage message = controller.updateUserEnrollments("healthcode:"+USER_ID);
         assertEquals(message.getMessage(), "Enrollments updated.");
         
         verify(mockAccount, times(2)).getEnrollments();
         assertEquals(enrollments.size(), 1);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void updateUserEnrollmentsAccountNotFound() throws Exception {
+        UserSession session = new UserSession();
+        session.setAppId(TEST_APP_ID);
+        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
+
+        Enrollment newEnrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", USER_ID);
+        mockRequestBody(mockRequest, ImmutableSet.of(EnrollmentMigration.create(newEnrollment)));
+        
+        AccountService mockAccountService = mock(AccountService.class);
+        controller.setAccountService(mockAccountService);
+        
+        when(mockAccountService.getAccount(any())).thenReturn(null);
+        
+        controller.updateUserEnrollments(USER_ID);
     }
     
     @Test
@@ -213,7 +245,7 @@ public class EnrollmentControllerTest extends Mockito {
 
         mockRequestBody(mockRequest, ImmutableSet.of());
         
-        AccountId accountId = AccountId.forId(TEST_APP_ID, USER_ID);
+        AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, USER_ID);
         
         AccountService mockAccountService = mock(AccountService.class);
         controller.setAccountService(mockAccountService);
@@ -226,7 +258,7 @@ public class EnrollmentControllerTest extends Mockito {
         
         mockEditAccount(mockAccountService, mockAccount);
         
-        controller.updateUserEnrollments(USER_ID);
+        controller.updateUserEnrollments("healthcode:"+USER_ID);
         
         verify(mockAccount, times(2)).getEnrollments();
         assertTrue(enrollments.isEmpty());

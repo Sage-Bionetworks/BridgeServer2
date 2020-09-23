@@ -8,8 +8,6 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
 import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
@@ -88,7 +86,7 @@ public class EnrollmentController extends BaseController {
     public List<EnrollmentMigration> getUserEnrollments(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
         
-        AccountId accountId = AccountId.forId(session.getAppId(), userId);
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
         
         Account account = accountService.getAccount(accountId);
         if (account == null) {
@@ -104,7 +102,7 @@ public class EnrollmentController extends BaseController {
         
         List<EnrollmentMigration> migrations = parseJson(new TypeReference<List<EnrollmentMigration>>() {});
         
-        AccountId accountId = AccountId.forId(session.getAppId(), userId);
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
         Account acct = accountService.getAccount(accountId);
         if (acct == null) {
             throw new EntityNotFoundException(Account.class);
