@@ -48,6 +48,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 
 public class EnrollmentServiceTest extends Mockito {
@@ -80,10 +81,10 @@ public class EnrollmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
-        PagedResourceList<Enrollment> page = new PagedResourceList<>(ImmutableList.of(), 10);
+        PagedResourceList<EnrollmentDetail> page = new PagedResourceList<>(ImmutableList.of(), 10);
         when(mockEnrollmentDao.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, 10, 50)).thenReturn(page);
         
-        PagedResourceList<Enrollment> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, 10, 50);
+        PagedResourceList<EnrollmentDetail> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, 10, 50);
         assertSame(retValue, page);
         assertEquals(retValue.getRequestParams().get(OFFSET_BY), Integer.valueOf(10));
         assertEquals(retValue.getRequestParams().get(PAGE_SIZE), Integer.valueOf(50));
@@ -97,10 +98,10 @@ public class EnrollmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
-        PagedResourceList<Enrollment> page = new PagedResourceList<>(ImmutableList.of(), 10);
+        PagedResourceList<EnrollmentDetail> page = new PagedResourceList<>(ImmutableList.of(), 10);
         when(mockEnrollmentDao.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, null, null)).thenReturn(page);
         
-        PagedResourceList<Enrollment> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, null, null);
+        PagedResourceList<EnrollmentDetail> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, null, null);
         assertSame(retValue, page);
         
         verify(mockEnrollmentDao).getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, null, null);
