@@ -86,7 +86,7 @@ public class TranscribeConsentHandlerTest {
         
         when(mockAccount.getSharingScope()).thenReturn(SharingScope.SPONSORS_AND_PARTNERS);
         when(mockAccount.getDataGroups()).thenReturn(TEST_USER_GROUPS);
-        when(mockAccount.getEnrollments()).thenReturn(ImmutableSet.of(en1, en2));
+        when(mockAccount.getActiveEnrollments()).thenReturn(ImmutableSet.of(en1, en2));
 
         handler.handle(context);
         HealthDataRecord outputRecord = context.getHealthDataRecord();
