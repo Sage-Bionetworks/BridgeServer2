@@ -17,7 +17,8 @@ public class EnrollmentDetail {
     private final AccountRef enrolledBy;
     private final AccountRef withdrawnBy;
     
-    public EnrollmentDetail(Enrollment enrollment, AccountRef participant, AccountRef enrolledBy, AccountRef withdrawnBy) {
+    public EnrollmentDetail(Enrollment enrollment, AccountRef participant, AccountRef enrolledBy,
+            AccountRef withdrawnBy) {
         this.enrollment = enrollment;
         this.participant = participant;
         this.enrolledBy = enrolledBy;

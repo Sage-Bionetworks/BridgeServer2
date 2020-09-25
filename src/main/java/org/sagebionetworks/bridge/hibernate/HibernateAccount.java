@@ -84,6 +84,21 @@ public class HibernateAccount implements Account {
     /**
      * No args constructor, required and used by Hibernate for full object initialization.
      */
+    public HibernateAccount(String firstName, String lastName, String email, Phone phone, String synapseUserId,
+            String orgMembership, String id) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.phone = phone;
+        this.synapseUserId = synapseUserId;
+        this.orgMembership = orgMembership;
+        this.id = id;
+    }
+    
+    /**
+     * Constructor to load information for the AccountRef object. This avoids loading any of the 
+     * ancillary tables.
+     */
     public HibernateAccount() {}
     
     /**

@@ -6,33 +6,28 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import com.google.common.collect.ImmutableMap;
+
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 
 @Component
 public class HibernateEnrollmentDao implements EnrollmentDao {
+    
+    static final String REF_QUERY = "SELECT new org.sagebionetworks.bridge.hibernate.HibernateAccount("
+            + "a.firstName, a.lastName, a.email, a.phone, a.synapseUserId, a.orgMembership, a.id) FROM "
+            + "org.sagebionetworks.bridge.hibernate.HibernateAccount a WHERE a.appId = :appId AND a.id = :id";
 
     private HibernateHelper hibernateHelper;
-    
-    private AccountDao accountDao;
     
     @Resource(name = "basicHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
-    }
-    
-    @Autowired
-    final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
     }
     
     @Override
@@ -61,11 +56,11 @@ public class HibernateEnrollmentDao implements EnrollmentDao {
         if (id == null) {
             return null;
         }
-        AccountId accountId = AccountId.forId(appId, id);
-        Account account = accountDao.getAccount(accountId).orElse(null);
-        if (account == null) {
+        List<HibernateAccount> accounts = hibernateHelper.queryGet(REF_QUERY, 
+                ImmutableMap.of("appId", appId, "id", id), null, 1, HibernateAccount.class);
+        if (accounts.isEmpty()) {
             return null;
         }
-        return new AccountRef(account);
+        return new AccountRef(accounts.get(0));
     }
 }
