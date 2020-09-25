@@ -1486,7 +1486,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteTestUserNotAResearcher() {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(Roles.ADMIN))
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(Roles.DEVELOPER))
                 .withId("notUserId").build();
         session.setParticipant(participant);
 

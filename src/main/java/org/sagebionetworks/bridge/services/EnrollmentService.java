@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.AuthUtils.checkSelfAdminOrSponsorAndThrow;
+import static org.sagebionetworks.bridge.AuthUtils.checkSelfStudyResearcherOrAdmin;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -34,18 +34,11 @@ public class EnrollmentService {
     
     private AccountService accountService;
     
-    private SponsorService sponsorService;
-    
     private EnrollmentDao enrollmentDao;
     
     @Autowired
     public final void setAccountService(AccountService accountService) {
         this.accountService = accountService;
-    }
-    
-    @Autowired
-    public final void setSponsorService(SponsorService sponsorService) {
-        this.sponsorService = sponsorService;
     }
     
     @Autowired
@@ -70,7 +63,7 @@ public class EnrollmentService {
         checkNotNull(appId);
         checkNotNull(studyId);
         
-        checkSelfAdminOrSponsorAndThrow(sponsorService, studyId, null);
+        checkSelfStudyResearcherOrAdmin(null, studyId);
 
         if (offsetBy != null && offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
@@ -93,7 +86,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, enrollment);
         
-        checkSelfAdminOrSponsorAndThrow(sponsorService, enrollment.getStudyId(), enrollment.getAccountId());
+        checkSelfStudyResearcherOrAdmin(account.getId(), enrollment.getStudyId());
 
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             // appId and accountId are always going to match, given the way these 
@@ -149,7 +142,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, enrollment);
         
-        checkSelfAdminOrSponsorAndThrow(sponsorService, enrollment.getStudyId(), enrollment.getAccountId());
+        checkSelfStudyResearcherOrAdmin(account.getId(), enrollment.getStudyId());
         
         // If supplied, this value should be the same timestamp as the withdrewOn
         // value in the signature. Otherwise just set it here. 

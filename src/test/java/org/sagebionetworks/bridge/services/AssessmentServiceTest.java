@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.NONPOSITIVE_REVISION_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
@@ -278,8 +277,7 @@ public class AssessmentServiceTest extends Mockito {
         assertNotNull(config.getConfig());
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void createAssessmentRevisionUnauthorized() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerStudies(ImmutableSet.of("studyD")).build());
@@ -1217,10 +1215,9 @@ public class AssessmentServiceTest extends Mockito {
     }
         
     // OWNERSHIP VERIFICATION
-    // These are failure cases to verify we are calling SecurityUtils.checkOwnership(...)
+    // These are failure cases to verify we are calling AuthUtils.checkOwnership(...)
     
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void createAssessmentChecksOwnership() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
@@ -1236,8 +1233,7 @@ public class AssessmentServiceTest extends Mockito {
         service.createAssessment(TEST_APP_ID, assessment);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void createAssessmentRevisionChecksOwnership() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
@@ -1252,8 +1248,7 @@ public class AssessmentServiceTest extends Mockito {
         service.createAssessmentRevision(TEST_APP_ID, GUID, assessment);
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class,
-        expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void updateAssessmentChecksOwnership() {
         Assessment assessment = AssessmentTest.createAssessment();
         RequestContext.set(new RequestContext.Builder()
@@ -1267,8 +1262,7 @@ public class AssessmentServiceTest extends Mockito {
         service.updateAssessment(TEST_APP_ID, assessment);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void publishAssessmentChecksOwnership() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
@@ -1279,16 +1273,14 @@ public class AssessmentServiceTest extends Mockito {
         service.publishAssessment(TEST_APP_ID, null, GUID);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void importAssessmentChecksOwnership() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         service.importAssessment(TEST_APP_ID, OWNER_ID, null, GUID);
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteAssessmentChecksOwnership() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
