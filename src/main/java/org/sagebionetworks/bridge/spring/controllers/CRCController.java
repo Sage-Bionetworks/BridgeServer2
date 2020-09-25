@@ -518,6 +518,9 @@ public class CRCController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
 
+        updateState(account, state);
+        accountService.updateAccount(account, null);
+
         try {
             ObjectNode metadata = JsonNodeFactory.instance.objectNode();
             metadata.put("type", reportName);
@@ -546,9 +549,6 @@ public class CRCController extends BaseController {
         int status = (results.getItems().isEmpty()) ? 201 : 200;
 
         reportService.saveParticipantReport(appId, reportName, account.getHealthCode(), report);
-
-        updateState(account, state);
-        accountService.updateAccount(account, null);
         return status;
     }
     
