@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockEditAccount;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
@@ -88,6 +89,8 @@ public class EnrollmentControllerTest extends Mockito {
         assertGet(EnrollmentController.class, "getEnrollmentsForStudy");
         assertCreate(EnrollmentController.class, "enroll");
         assertDelete(EnrollmentController.class, "unenroll");
+        assertGet(EnrollmentController.class, "getUserEnrollments");
+        assertPost(EnrollmentController.class, "updateUserEnrollments");
     }
     
     @Test

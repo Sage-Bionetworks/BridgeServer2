@@ -82,7 +82,7 @@ public class EnrollmentController extends BaseController {
         return service.unenroll(enrollment);
     }
     
-    @GetMapping("/v3/participants/{userId}/enrollments")
+    @GetMapping("/v1/migration/participants/{userId}/enrollments")
     public List<EnrollmentMigration> getUserEnrollments(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
         
@@ -96,7 +96,7 @@ public class EnrollmentController extends BaseController {
                 .map(EnrollmentMigration::create).collect(toList());
     }
     
-    @PostMapping("/v3/participants/{userId}/enrollments")
+    @PostMapping("/v1/migration/participants/{userId}/enrollments")
     public StatusMessage updateUserEnrollments(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
         
