@@ -95,8 +95,8 @@ public class AuthUtils {
         String callerOrgMembership = context.getCallerOrgMembership();
         String callerUserId = context.getCallerUserId();
         return context.isInRole(ADMIN) || 
-                sponsorService.isStudySponsoredBy(studyId, callerOrgMembership) ||
-                (callerUserId != null && callerUserId.equals(userId));
+            (callerUserId != null && callerUserId.equals(userId) ||
+            sponsorService.isStudySponsoredBy(studyId, callerOrgMembership));
     }
     
     public static void checkSelfAdminOrSponsorAndThrow(SponsorService sponsorService, String studyId, String userId) {

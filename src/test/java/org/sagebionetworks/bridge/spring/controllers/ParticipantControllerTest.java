@@ -42,6 +42,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.HashMap;
@@ -77,6 +78,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
@@ -113,11 +115,13 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.ConsentService;
+import org.sagebionetworks.bridge.services.EnrollmentService;
 import org.sagebionetworks.bridge.services.NotificationTopicService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
@@ -191,6 +195,9 @@ public class ParticipantControllerTest extends Mockito {
     
     @Mock
     SponsorService mockSponsorSerice;
+    
+    @Mock
+    EnrollmentService mockEnrollmentService;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -1555,6 +1562,17 @@ public class ParticipantControllerTest extends Mockito {
 
         AccountSummarySearch search = searchCaptor.getValue();
         assertEquals(search, payload);
+    }
+    
+    @Test
+    public void getEnrollments() {
+        doReturn(session).when(controller).getAuthenticatedSession(false, RESEARCHER);
+        
+        List<EnrollmentDetail> list = ImmutableList.of();
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, USER_ID)).thenReturn(list);
+        
+        List<EnrollmentDetail> retValue = controller.getEnrollments(USER_ID);
+        assertSame(retValue, list);
     }
 
     private AccountSummarySearch setAccountSummarySearch() throws Exception {

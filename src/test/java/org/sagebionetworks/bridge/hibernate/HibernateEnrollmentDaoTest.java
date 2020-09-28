@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.hibernate.HibernateEnrollmentDao.REF_QUERY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -86,4 +87,41 @@ public class HibernateEnrollmentDaoTest extends Mockito {
         assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
         assertEquals(paramsCaptor.getValue().get("studyId"), TEST_STUDY_ID);
     }
+    
+    @SuppressWarnings("unchecked")
+    @Test
+    public void getEnrollmentsForUser() {
+        HibernateEnrollment en1 = new HibernateEnrollment();
+        en1.setAccountId("id1");
+        en1.setEnrolledBy("id2");
+        en1.setWithdrawnBy("id3");
+        HibernateEnrollment en2 = new HibernateEnrollment();
+        List<HibernateEnrollment> page = ImmutableList.of(en1, en2);
+        
+        when(mockHelper.queryGet(any(), any(), isNull(), isNull(), eq(HibernateEnrollment.class))).thenReturn(page);
+        
+        HibernateAccount account1 = new HibernateAccount();
+        account1.setLastName("account1");
+        HibernateAccount account2 = new HibernateAccount();
+        account2.setLastName("account2");
+        HibernateAccount account3 = new HibernateAccount();
+        account3.setLastName("account3");
+        
+        when(mockHelper.queryGet(eq(REF_QUERY), any(), isNull(), eq(1), eq(HibernateAccount.class)))
+            .thenReturn(ImmutableList.of(account1), ImmutableList.of(account2), ImmutableList.of(account3));
+        
+        List<EnrollmentDetail> retValue = dao.getEnrollmentsForUser(TEST_APP_ID, USER_ID);
+        EnrollmentDetail detail1 = retValue.get(0);
+        assertEquals(detail1.getParticipant().getLastName(), "account1");
+        assertEquals(detail1.getEnrolledBy().getLastName(), "account2");
+        assertEquals(detail1.getWithdrawnBy().getLastName(), "account3");
+
+        verify(mockHelper).queryGet(queryCaptor.capture(),
+                paramsCaptor.capture(), isNull(), isNull(), eq(HibernateEnrollment.class));
+        
+        assertEquals(queryCaptor.getValue(), "FROM HibernateEnrollment WHERE appId = :appId AND accountId = :userId");
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
+        assertEquals(paramsCaptor.getValue().get("userId"), USER_ID);
+    }
+
 }

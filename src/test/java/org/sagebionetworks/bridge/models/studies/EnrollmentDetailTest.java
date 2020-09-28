@@ -42,9 +42,10 @@ public class EnrollmentDetailTest {
         assertEquals(detail.getWithdrawnBy().getEmail(), "email3@email.com");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(detail);
-        assertEquals(node.size(), 6);
+        assertEquals(node.size(), 7);
         
         // Note that other than email and type properties, there's nothing else exposed about account
+        assertEquals(node.get("studyId").textValue(), TEST_STUDY_ID);
         assertEquals(node.get("participant").size(), 2);
         assertEquals(node.get("enrolledBy").size(), 2);
         assertEquals(node.get("withdrawnBy").size(), 2);

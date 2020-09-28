@@ -11,6 +11,8 @@ import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 
+import java.util.List;
+
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
@@ -83,6 +85,20 @@ public class EnrollmentService {
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize)
                 .withRequestParam(ENROLLMENT_FILTER, filter);
+    }
+    
+    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String userId) {
+        checkNotNull(appId);
+        checkNotNull(userId);
+        
+        AccountId accountId = AccountId.forId(appId, userId);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        checkSelfAdminOrSponsorAndThrow(sponsorService, null, userId);
+
+        return enrollmentDao.getEnrollmentsForUser(appId, userId);
     }
     
     /**

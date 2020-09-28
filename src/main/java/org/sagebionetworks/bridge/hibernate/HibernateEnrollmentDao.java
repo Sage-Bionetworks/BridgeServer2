@@ -52,6 +52,22 @@ public class HibernateEnrollmentDao implements EnrollmentDao {
         return new PagedResourceList<>(dtos, total, true);
     }
     
+    @Override
+    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String userId) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("FROM HibernateEnrollment WHERE");
+        builder.append("appId = :appId AND accountId = :userId", "appId", appId, "userId", userId);
+        
+        List<HibernateEnrollment> enrollments = hibernateHelper.queryGet(builder.getQuery(),
+                builder.getParameters(), null, null, HibernateEnrollment.class);
+        return enrollments.stream().map(enrollment -> {
+            AccountRef participantRef = nullSafeAccountRef(appId, enrollment.getAccountId());
+            AccountRef enrolledByRef = nullSafeAccountRef(appId, enrollment.getEnrolledBy());
+            AccountRef withdrawnByRef = nullSafeAccountRef(appId, enrollment.getWithdrawnBy());
+            return new EnrollmentDetail(enrollment, participantRef, enrolledByRef, withdrawnByRef);
+        }).collect(toList());
+    }
+    
     private AccountRef nullSafeAccountRef(String appId, String id) {
         if (id == null) {
             return null;

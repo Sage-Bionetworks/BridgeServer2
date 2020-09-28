@@ -25,6 +25,9 @@ public class EnrollmentDetail {
         this.withdrawnBy = withdrawnBy;
     }
 
+    public String getStudyId() {
+        return enrollment.getStudyId();
+    }
     public String getExternalId() {
         return enrollment.getExternalId();
     }
