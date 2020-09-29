@@ -61,6 +61,7 @@ import org.hl7.fhir.dstu3.model.Reference;
 import org.joda.time.LocalDate;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -730,6 +731,8 @@ public class CRCControllerTest extends Mockito {
         String json = makeProcedureRequest();
         mockRequestBody(mockRequest, json);
         
+        InOrder inorder = inOrder(mockAccountService, mockHealthDataService, mockReportService);
+        
         DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
                 APP_ID, PROCEDURE_REPORT, HEALTH_CODE, JAN1, JAN2);
@@ -744,24 +747,24 @@ public class CRCControllerTest extends Mockito {
         assertEquals(capturedSignIn.getExternalId(), CUIMC_USERNAME);
         assertEquals(capturedSignIn.getPassword(), "dummy-password");
         
-        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(PROCEDURE_REPORT), eq(HEALTH_CODE),
-                reportCaptor.capture());
-        ReportData capturedReport = reportCaptor.getValue();
-        assertEquals(capturedReport.getDate(), "1970-01-01");
-        verifySubject(capturedReport.getData());
-        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
-        
-        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        inorder.verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
         Account capturedAcct = accountCaptor.getValue();
         assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_COLLECTED, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
-        
-        verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
+
+        inorder.verify(mockHealthDataService).submitHealthData(eq(APP_ID), participantCaptor.capture(), dataCaptor.capture());
         HealthDataSubmission healthData = dataCaptor.getValue();
         assertEquals(healthData.getAppVersion(), "v1");
         assertEquals(healthData.getCreatedOn(), TIMESTAMP);
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+PROCEDURE_REPORT+"\"}");
         assertEquals(healthData.getData().toString(), json);
+
+        inorder.verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(PROCEDURE_REPORT), eq(HEALTH_CODE),
+                reportCaptor.capture());
+        ReportData capturedReport = reportCaptor.getValue();
+        assertEquals(capturedReport.getDate(), "1970-01-01");
+        verifySubject(capturedReport.getData());
+        assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
     }
     
     @Test

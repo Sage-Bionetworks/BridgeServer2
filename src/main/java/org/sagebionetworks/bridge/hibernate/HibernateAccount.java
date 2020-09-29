@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -42,6 +43,7 @@ import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /** MySQL implementation of accounts via Hibernate. */
@@ -475,5 +477,13 @@ public class HibernateAccount implements Account {
     @Override
     public void setEnrollments(Set<Enrollment> enrollments) {
         this.enrollments = enrollments;
+    }
+    
+    @Transient
+    @JsonIgnore
+    public Set<Enrollment> getActiveEnrollments() {
+        return getEnrollments().stream()
+                .filter(en -> en.getWithdrawnOn() == null)
+                .collect(toImmutableSet());
     }
 }

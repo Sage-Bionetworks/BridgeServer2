@@ -225,4 +225,7 @@ public interface Account extends BridgeEntity {
     
     void setEnrollments(Set<Enrollment> enrollments);
     Set<Enrollment> getEnrollments();
+    
+    /** Get all enrollments that have not been withdrawn. */
+    Set<Enrollment> getActiveEnrollments();
 }
