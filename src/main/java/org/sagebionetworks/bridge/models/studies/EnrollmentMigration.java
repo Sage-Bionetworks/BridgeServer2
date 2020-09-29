@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.models.studies;
 import org.joda.time.DateTime;
 
 /**
- * A (temporary?) model object so supeadmins can migrate user enrollments. 
+ * A (temporary?) model object so superadmins can migrate user enrollments. 
  */
 public class EnrollmentMigration {
     
