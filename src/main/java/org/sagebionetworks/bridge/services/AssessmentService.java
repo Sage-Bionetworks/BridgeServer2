@@ -6,7 +6,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.jsoup.safety.Whitelist.none;
 import static org.jsoup.safety.Whitelist.simpleText;
-import static org.sagebionetworks.bridge.AuthUtils.checkAssessmentOwnershipAndThrow;
+import static org.sagebionetworks.bridge.AuthUtils.checkOrgMembership;
 import static org.sagebionetworks.bridge.AuthUtils.checkSharedAssessmentOwnership;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
@@ -159,7 +159,7 @@ public class AssessmentService {
         if (existing.isDeleted() && assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-        checkAssessmentOwnershipAndThrow(appId, existing.getOwnerId());
+        checkOrgMembership(existing.getOwnerId());
         
         return updateAssessmentInternal(appId, assessment, existing);
     }
@@ -275,7 +275,7 @@ public class AssessmentService {
         AssessmentConfig configToPublish =  configService.getAssessmentConfig(appId, guid);
         Assessment original = Assessment.copy(assessmentToPublish);
         
-        checkAssessmentOwnershipAndThrow(appId, assessmentToPublish.getOwnerId());
+        checkOrgMembership(assessmentToPublish.getOwnerId());
         
         if (StringUtils.isNotBlank(newIdentifier)) {
             assessmentToPublish.setIdentifier(newIdentifier);
@@ -330,7 +330,7 @@ public class AssessmentService {
         if (isBlank(ownerId)) {
             throw new BadRequestException("ownerId parameter is required");
         }
-        checkAssessmentOwnershipAndThrow(appId, ownerId);
+        checkOrgMembership(ownerId);
 
         Assessment sharedAssessment = getAssessmentByGuid(SHARED_APP_ID, guid);
         AssessmentConfig sharedConfig = configService.getSharedAssessmentConfig(SHARED_APP_ID, guid);
@@ -360,7 +360,7 @@ public class AssessmentService {
         if (assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-        checkAssessmentOwnershipAndThrow(appId, assessment.getOwnerId());
+        checkOrgMembership(assessment.getOwnerId());
         
         assessment.setDeleted(true);
         assessment.setModifiedOn(getModifiedOn());
@@ -396,7 +396,7 @@ public class AssessmentService {
         AssessmentValidator validator = new AssessmentValidator(appId, organizationService);
         Validate.entityThrowingException(validator, assessment);
         
-        checkAssessmentOwnershipAndThrow(appId, assessment.getOwnerId());
+        checkOrgMembership(assessment.getOwnerId());
 
         AssessmentConfig config = new AssessmentConfig();
         config.setCreatedOn(timestamp);

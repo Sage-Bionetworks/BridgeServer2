@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models.studies;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-    import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 import org.joda.time.DateTime;

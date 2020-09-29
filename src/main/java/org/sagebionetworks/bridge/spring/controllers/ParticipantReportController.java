@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.AuthUtils.checkSelfResearcherOrAdminAndThrow;
+import static org.sagebionetworks.bridge.AuthUtils.checkSelfResearcherOrAdmin;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
@@ -129,7 +129,7 @@ public class ParticipantReportController extends BaseController {
             @PathVariable String identifier, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
-        checkSelfResearcherOrAdminAndThrow(null, userId);
+        checkSelfResearcherOrAdmin(userId);
         
         return getParticipantReportInternal(session.getAppId(), userId, identifier, startDate, endDate);
     }
@@ -163,7 +163,7 @@ public class ParticipantReportController extends BaseController {
             @RequestParam(required = false) String endTime, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
-        checkSelfResearcherOrAdminAndThrow(null, userId);
+        checkSelfResearcherOrAdmin(userId);
         
         return getParticipantReportInternalV4(session.getAppId(), userId, identifier, 
                 startTime, endTime, offsetKey, pageSize);

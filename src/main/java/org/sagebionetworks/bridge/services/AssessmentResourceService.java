@@ -5,7 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.jsoup.safety.Whitelist.simpleText;
-import static org.sagebionetworks.bridge.AuthUtils.checkAssessmentOwnershipAndThrow;
+import static org.sagebionetworks.bridge.AuthUtils.checkOrgMembership;
 import static org.sagebionetworks.bridge.AuthUtils.checkSharedAssessmentOwnership;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
@@ -107,7 +107,7 @@ public class AssessmentResourceService {
         checkNotNull(resource);
         
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
-        checkAssessmentOwnershipAndThrow(appId, assessment.getOwnerId());
+        checkOrgMembership(assessment.getOwnerId());
         
         DateTime timestamp = getCreatedOn();
         resource.setGuid(generateGuid());
@@ -132,7 +132,7 @@ public class AssessmentResourceService {
         
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
         
-        checkAssessmentOwnershipAndThrow(appId, assessment.getOwnerId());
+        checkOrgMembership(assessment.getOwnerId());
         
         return updateResourceInternal(appId, assessmentId, assessment, resource);
     }
@@ -178,7 +178,7 @@ public class AssessmentResourceService {
         
         // Verify access to this.
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
-        checkAssessmentOwnershipAndThrow(appId, assessment.getOwnerId());
+        checkOrgMembership(assessment.getOwnerId());
         
         AssessmentResource resource = dao.getResource(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
@@ -207,7 +207,7 @@ public class AssessmentResourceService {
         // Must have imported the assessment already before you move resources
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
         // Cannot import a resource unless you are member of the org that owns the assessment
-        checkAssessmentOwnershipAndThrow(appId, assessment.getOwnerId());
+        checkOrgMembership(assessment.getOwnerId());
         return copyResources(SHARED_APP_ID, appId, assessment, guids);
     }
     

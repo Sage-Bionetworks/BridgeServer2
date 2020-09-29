@@ -1,8 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.AuthUtils.checkResearcherOrAdminAndThrow;
-import static org.sagebionetworks.bridge.AuthUtils.checkSelfResearcherOrAdminAndThrow;
+import static org.sagebionetworks.bridge.AuthUtils.checkSelfStudyResearcherOrAdmin;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -11,6 +10,8 @@ import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT_FILTER;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
+
+import java.util.List;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +25,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -56,12 +58,12 @@ public class EnrollmentService {
      * Get enrollments in a study. This API will be expanded to retrieve and sort the data for 
      * common reporting requirements (e.g. how many people have withdrawn from the study).
      */
-    public PagedResourceList<Enrollment> getEnrollmentsForStudy(String appId, String studyId, 
+    public PagedResourceList<EnrollmentDetail> getEnrollmentsForStudy(String appId, String studyId, 
             EnrollmentFilter filter, Integer offsetBy, Integer pageSize) {
         checkNotNull(appId);
         checkNotNull(studyId);
         
-        checkResearcherOrAdminAndThrow(studyId);
+        checkSelfStudyResearcherOrAdmin(null, studyId);
 
         if (offsetBy != null && offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
@@ -75,12 +77,26 @@ public class EnrollmentService {
                 .withRequestParam(ENROLLMENT_FILTER, filter);
     }
     
+    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String userId) {
+        checkNotNull(appId);
+        checkNotNull(userId);
+        
+        AccountId accountId = AccountId.forId(appId, userId);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        checkSelfStudyResearcherOrAdmin(account.getId(), userId);
+
+        return enrollmentDao.getEnrollmentsForUser(appId, userId);
+    }
+    
     public Enrollment enroll(Enrollment enrollment) {
         checkNotNull(enrollment);
-        
+
         // verify this has appId and accountId
         Validate.entityThrowingException(INSTANCE, enrollment);
-        
+
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
         Account account = accountService.getAccount(accountId);
         if (account == null) {
@@ -100,7 +116,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, newEnrollment);
         
-        checkSelfResearcherOrAdminAndThrow(newEnrollment.getStudyId(), account.getId());
+        checkSelfStudyResearcherOrAdmin(account.getId(), newEnrollment.getStudyId());
 
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             if (existingEnrollment.getStudyId().equals(newEnrollment.getStudyId())) {
@@ -160,7 +176,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, enrollment);
         
-        checkSelfResearcherOrAdminAndThrow(enrollment.getStudyId(), account.getId());
+        checkSelfStudyResearcherOrAdmin(account.getId(), enrollment.getStudyId());
         
         // If supplied, this value should be the same timestamp as the withdrewOn
         // value in the signature. Otherwise just set it here. 

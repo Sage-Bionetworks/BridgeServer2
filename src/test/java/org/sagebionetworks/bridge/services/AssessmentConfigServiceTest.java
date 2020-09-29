@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.ID_FIELD_NAME;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TYPE_FIELD_NAME;
@@ -342,8 +341,7 @@ public class AssessmentConfigServiceTest extends Mockito {
         service.getAssessmentConfig(TEST_APP_ID, GUID);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void updateAssessmentConfigCheckOwnership() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID).build());
@@ -357,8 +355,7 @@ public class AssessmentConfigServiceTest extends Mockito {
         service.updateAssessmentConfig(TEST_APP_ID, GUID, config);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = CALLER_NOT_MEMBER_ERROR)
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void customizeAssessmentConfigCheckOwnership() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID).build());
