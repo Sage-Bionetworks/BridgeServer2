@@ -4,7 +4,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+
+import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -12,57 +13,45 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-import org.sagebionetworks.bridge.services.SponsorService;
 
 public class AuthUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AuthUtils.class);
-    
-    public static boolean checkSelfOrResearcher(String targetUserId) {
-        RequestContext context = RequestContext.get();
-        String callerUserId = context.getCallerUserId();
-        
-        return context.isInRole(RESEARCHER) || targetUserId.equals(callerUserId);
-    }
-    
-    public static void checkSelfOrResearcherAndThrow(String targetUserId) {
-        if (!checkSelfOrResearcher(targetUserId)) {
+
+    public static void checkSelfStudyResearcherOrAdmin(String userId, String studyId) {
+        if (!(isSelf(userId) || isInRoles(studyId, ADMIN, RESEARCHER))) {
             throw new UnauthorizedException();
         }
     }
     
-    public static boolean checkOrgMembership(String targetOrgId) {
-        RequestContext context = RequestContext.get();
-        String callerOrgMembership = context.getCallerOrgMembership();
-        
-        return context.isInRole(ADMIN) || targetOrgId.equals(callerOrgMembership);
-    }
-    
-    public static void checkOrgMembershipAndThrow(String targetOrgId) {
-        if (!checkOrgMembership(targetOrgId)) {
-            throw new UnauthorizedException("Caller is not a member of " + targetOrgId);    
+    /**
+     * This check does not verify that the caller is in a specific study, so the
+     * caller may still not have access rights to a particular object. The 
+     * participants APIs, for example, only check the accessibility of accounts
+     * at a deeper level during the query, but are otherwise globally available
+     * to all administrative accounts. 
+     */
+    public static void checkSelfResearcherOrAdmin(String targetUserId) {
+        if (!(isSelf(targetUserId) || isInRoles(null, ADMIN, RESEARCHER))) {
+            throw new UnauthorizedException();
         }
     }
     
     /**
-     * If the caller is an app admin or superadmin, they can set any organization. Otherwise, the 
-     * organization must match the caller's organization. We do not need to validate the org ID since 
-     * it was validated when it was set as an organizational relationship on the account. 
+     * Check that the caller is a member of this organization. Note that this does not verify
+     * the organization is in the caller's app...this can only be done by trying to load the 
+     * organization with this ID, which includes the appId as part of the organization's 
+     * primary key. (Passing in appId to this method is tautological since it comes from the 
+     * caller's session, which is also where the appId in the RequestContext comes from. 
      */
-    public static void checkAssessmentOwnership(String appId, String ownerId) {
-        checkNotNull(appId);
-        checkNotNull(ownerId);
-        
-        RequestContext rc = RequestContext.get();
-        String callerOrgMembership = rc.getCallerOrgMembership();
-        if (rc.isInRole(ImmutableSet.of(SUPERADMIN, ADMIN)) || ownerId.equals(callerOrgMembership)) {
-            return;
+    public static void checkOrgMembership(String orgId) {
+        if (!isInOrganization(orgId)) {
+            throw new UnauthorizedException("Caller is not a member of " + orgId);    
         }
-        throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
     }
     
     /**
      * The same rules apply as checkOwnership, however you are examining the caller against a compound
-     * value stored in the assessment's originId. The call succeeds if you're a superadmin (ther are 
+     * value stored in the assessment's originId. The call succeeds if you're a superadmin (there are 
      * no shared app admins), or if the caller is in the app and organization that owns the shared 
      * assessment. 
      */
@@ -71,37 +60,48 @@ public class AuthUtils {
         checkNotNull(guid);
         checkNotNull(ownerId);
 
-        RequestContext rc = RequestContext.get();
-        if (rc.isInRole(ImmutableSet.of(ADMIN))) {
+        RequestContext context = RequestContext.get();
+        if (context.isInRole(ImmutableSet.of(ADMIN))) {
             return;
         }
         String[] parts = ownerId.split(":", 2);
         // This happens in tests, we expect it to never happens in production. So log if it does.
         if (parts.length != 2) {
             LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);
-            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+            throw new UnauthorizedException();
         }
         String originAppId = parts[0];
         String originOrgId = parts[1];
-        String callerOrgMembership = rc.getCallerOrgMembership();
+        String callerOrgMembership = context.getCallerOrgMembership();
         if (originAppId.equals(callerAppId) && originOrgId.equals(callerOrgMembership)) {
             return;
         }
         throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
     }
     
-    public static boolean checkSelfAdminOrSponsor(SponsorService sponsorService, String studyId, String userId) {
+    /**
+     * If the user is an admin or a superadmin, this returns true. For other roles, the 
+     * caller must be in one of the roles, and they must be a member of an organization 
+     * that gives them access to the study.
+     */
+    private static final boolean isInRoles(String studyId, Roles... roles) {
+        Set<Roles> roleSet = ImmutableSet.copyOf(roles);
         RequestContext context = RequestContext.get();
-        String callerOrgMembership = context.getCallerOrgMembership();
-        String callerUserId = context.getCallerUserId();
-        return context.isInRole(ADMIN) || 
-            (callerUserId != null && callerUserId.equals(userId) ||
-            sponsorService.isStudySponsoredBy(studyId, callerOrgMembership));
+        if (roleSet.contains(ADMIN) && context.isInRole(ADMIN)) {
+            return true;
+        }
+        Set<String> sponsoredStudies = context.getOrgSponsoredStudies();
+        boolean canAccessStudy = sponsoredStudies.isEmpty() || studyId == null 
+                || sponsoredStudies.contains(studyId);
+        return (canAccessStudy && context.isInRole(roleSet));
     }
     
-    public static void checkSelfAdminOrSponsorAndThrow(SponsorService sponsorService, String studyId, String userId) {
-        if (!checkSelfAdminOrSponsor(sponsorService, studyId, userId)) {
-            throw new UnauthorizedException();
-        }
+    public static final boolean isInOrganization(String orgId) {
+        RequestContext context = RequestContext.get();
+        return context.isInRole(ADMIN) || orgId.equals(context.getCallerOrgMembership());
+    }
+    
+    private static final boolean isSelf(String userId) {
+        return userId != null && userId.equals(RequestContext.get().getCallerUserId());
     }
 }
