@@ -67,11 +67,13 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.services.EnrollmentService;
 
 @CrossOrigin
 @RestController
@@ -83,6 +85,8 @@ public class ParticipantController extends BaseController {
     
     private UserAdminService userAdminService;
     
+    private EnrollmentService enrollmentService;
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -91,6 +95,11 @@ public class ParticipantController extends BaseController {
     @Autowired
     final void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
+    }
+    
+    @Autowired
+    final void setEnrollmentService(EnrollmentService enrollmentService) {
+        this.enrollmentService = enrollmentService;
     }
 
     /** Researcher API to allow backfill of SMS notification registrations. */
@@ -153,6 +162,14 @@ public class ParticipantController extends BaseController {
         sessionUpdateService.updateParticipant(session, context, updatedParticipant);
         
         return UserSessionInfo.toJSON(session);
+    }
+
+    
+    @GetMapping("/v3/participants/{userId}/enrollments")
+    public List<EnrollmentDetail> getEnrollments(@PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(false, RESEARCHER);
+        
+        return enrollmentService.getEnrollmentsForUser(session.getAppId(), userId);
     }
     
     @DeleteMapping("/v3/participants/{userId}")

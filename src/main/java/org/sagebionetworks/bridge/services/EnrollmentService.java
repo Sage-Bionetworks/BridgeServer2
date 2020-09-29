@@ -11,6 +11,8 @@ import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 
+import java.util.List;
+
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
@@ -26,6 +28,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -65,7 +68,7 @@ public class EnrollmentService {
      * Get enrollments in a study. This API will be expanded to retrieve and sort the data for 
      * common reporting requirements (e.g. how many people have withdrawn from the study).
      */
-    public PagedResourceList<Enrollment> getEnrollmentsForStudy(String appId, String studyId, 
+    public PagedResourceList<EnrollmentDetail> getEnrollmentsForStudy(String appId, String studyId, 
             EnrollmentFilter filter, Integer offsetBy, Integer pageSize) {
         checkNotNull(appId);
         checkNotNull(studyId);
@@ -82,6 +85,20 @@ public class EnrollmentService {
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize)
                 .withRequestParam(ENROLLMENT_FILTER, filter);
+    }
+    
+    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String userId) {
+        checkNotNull(appId);
+        checkNotNull(userId);
+        
+        AccountId accountId = AccountId.forId(appId, userId);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        checkSelfAdminOrSponsorAndThrow(sponsorService, null, userId);
+
+        return enrollmentDao.getEnrollmentsForUser(appId, userId);
     }
     
     /**

@@ -30,6 +30,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 import org.sagebionetworks.bridge.models.studies.EnrollmentMigration;
 import org.sagebionetworks.bridge.services.EnrollmentService;
@@ -46,7 +47,7 @@ public class EnrollmentController extends BaseController {
     }
     
     @GetMapping("/v5/studies/{studyId}/enrollments")
-    public PagedResourceList<Enrollment> getEnrollmentsForStudy(@PathVariable String studyId,
+    public PagedResourceList<EnrollmentDetail> getEnrollmentsForStudy(@PathVariable String studyId,
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize,
             @RequestParam(required = false) String enrollmentFilter) {
