@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.models.studies;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -52,7 +51,6 @@ public interface Enrollment extends BridgeEntity {
     String getAppId();
     void setAppId(String appId);
     
-    @JsonIgnore
     String getStudyId();
     void setStudyId(String studyId);
     

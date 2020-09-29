@@ -22,6 +22,8 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+import java.util.List;
+
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -47,7 +49,9 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 
 public class EnrollmentServiceTest extends Mockito {
@@ -80,10 +84,10 @@ public class EnrollmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
-        PagedResourceList<Enrollment> page = new PagedResourceList<>(ImmutableList.of(), 10);
+        PagedResourceList<EnrollmentDetail> page = new PagedResourceList<>(ImmutableList.of(), 10);
         when(mockEnrollmentDao.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, 10, 50)).thenReturn(page);
         
-        PagedResourceList<Enrollment> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, 10, 50);
+        PagedResourceList<EnrollmentDetail> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, 10, 50);
         assertSame(retValue, page);
         assertEquals(retValue.getRequestParams().get(OFFSET_BY), Integer.valueOf(10));
         assertEquals(retValue.getRequestParams().get(PAGE_SIZE), Integer.valueOf(50));
@@ -97,10 +101,10 @@ public class EnrollmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
-        PagedResourceList<Enrollment> page = new PagedResourceList<>(ImmutableList.of(), 10);
+        PagedResourceList<EnrollmentDetail> page = new PagedResourceList<>(ImmutableList.of(), 10);
         when(mockEnrollmentDao.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, null, null)).thenReturn(page);
         
-        PagedResourceList<Enrollment> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, null, null);
+        PagedResourceList<EnrollmentDetail> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, null, null);
         assertSame(retValue, page);
         
         verify(mockEnrollmentDao).getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, null, null);
@@ -138,6 +142,25 @@ public class EnrollmentServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
         service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, 0, 1000);
+    }
+    
+    @Test
+    public void getEnrollmentsForUser() {
+        AccountId accountId = AccountId.forId(TEST_APP_ID, USER_ID);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
+        
+        List<EnrollmentDetail> details = ImmutableList.of();
+        when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, USER_ID)).thenReturn(details);
+        
+        List<EnrollmentDetail> retValue = service.getEnrollmentsForUser(TEST_APP_ID, USER_ID);
+        assertSame(retValue, details);
+        
+        verify(mockEnrollmentDao).getEnrollmentsForUser(TEST_APP_ID, USER_ID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getEnrollmentsForUserNotFound() {
+        service.getEnrollmentsForUser(TEST_APP_ID, USER_ID);
     }
     
     @Test
