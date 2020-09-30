@@ -93,7 +93,7 @@ public class HibernateOrganizationDao implements OrganizationDao {
         
         Map<String,Object> parameters = ImmutableMap.of("appId", appId);
         String query = "delete from HibernateOrganization where appId=:appId";
-        
+
         hibernateHelper.queryUpdate(query, parameters);
     }
 }

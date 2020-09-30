@@ -654,7 +654,7 @@ public class AppService {
         } else {
             // actual delete
             appDao.deleteApp(existing);
-            
+
             // delete app data
             studyService.deleteAllStudies(existing.getIdentifier());
             organizationService.deleteAllOrganizations(existing.getIdentifier());

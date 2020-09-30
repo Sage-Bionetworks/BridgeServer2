@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.services;
+    package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -120,7 +120,7 @@ public class SponsorService {
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize);
     }
-    
+
     public void addStudySponsor(String appId, String studyId, String orgId) {
         checkNotNull(appId);
         checkNotNull(studyId);

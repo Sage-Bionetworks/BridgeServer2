@@ -48,7 +48,7 @@ public class AuthUtils {
             throw new UnauthorizedException("Caller is not a member of " + orgId);    
         }
     }
-
+    
     /**
      * The same rules apply as checkOwnership, however you are examining the caller against a compound
      * value stored in the assessment's originId. The call succeeds if you're a superadmin (there are 

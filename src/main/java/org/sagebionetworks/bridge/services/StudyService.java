@@ -134,7 +134,7 @@ public class StudyService {
     
     public void deleteAllStudies(String appId) {
         checkNotNull(appId);
-        
+
         studyDao.deleteAllStudies(appId);
     }
 }

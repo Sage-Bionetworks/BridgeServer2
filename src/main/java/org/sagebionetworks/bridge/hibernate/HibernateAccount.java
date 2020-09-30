@@ -487,7 +487,7 @@ public class HibernateAccount implements Account {
         }
         return enrollments;
     }
-    
+
     @Override
     public void setEnrollments(Set<Enrollment> enrollments) {
         this.enrollments = enrollments;

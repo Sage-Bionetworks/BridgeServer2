@@ -403,7 +403,7 @@ public class ParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
         checkSelfResearcherOrAdmin(userId);
         App app = appService.getApp(session.getAppId());
-        
+
         participantService.signUserOut(app, userId, deleteReauthToken);
 
         return new StatusMessage("User signed out.");

@@ -41,7 +41,7 @@ public class SessionUpdateService {
     public final void setNotificationTopicService(NotificationTopicService notificationTopicService) {
         this.notificationTopicService = notificationTopicService;
     }
-    
+
     public void updateTimeZone(UserSession session, DateTimeZone timeZone) {
         session.setParticipant(builder(session).withTimeZone(timeZone).build());
         cacheProvider.setUserSession(session);
