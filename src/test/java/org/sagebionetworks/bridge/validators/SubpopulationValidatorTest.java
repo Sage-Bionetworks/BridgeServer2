@@ -27,7 +27,8 @@ public class SubpopulationValidatorTest {
         validator = new SubpopulationValidator(USER_DATA_GROUPS, USER_STUDY_IDS);
     }
     
-    Subpopulation getSubpopulation() { 
+    @Test
+    public void testEntirelyValid() { 
         Subpopulation subpop = Subpopulation.create();
         subpop.setName("Name");
         subpop.setDescription("Description");
@@ -43,7 +44,8 @@ public class SubpopulationValidatorTest {
         criteria.setAllOfStudyIds(ImmutableSet.of("studyA"));
         criteria.setNoneOfStudyIds(ImmutableSet.of("studyB"));
         subpop.setCriteria(criteria);
-        return subpop;
+        
+        Validate.entityThrowingException(validator, subpop);
     }
     
     @Test
@@ -72,6 +74,17 @@ public class SubpopulationValidatorTest {
             assertValidatorMessage(validator, subpop, "dataGroupsAssignedWhileConsented", " 'dataGroup3' is not in enumeration: group1, group2");
             assertValidatorMessage(validator, subpop, "studyIdsAssignedOnConsent", " 'studyC' is not in enumeration: studyA, studyB");
         }
+    }
+    
+    @Test
+    public void testStudyIdsAssignedOnConsentEmpty() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setName("Name");
+        subpop.setAppId(TEST_APP_ID);
+        subpop.setGuidString("AAA");
+        subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of());
+        
+        assertValidatorMessage(validator, subpop, "studyIdsAssignedOnConsent", "cannot be empty");
     }
     
     @Test

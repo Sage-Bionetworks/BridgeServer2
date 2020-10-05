@@ -263,6 +263,7 @@ public class OrganizationServiceTest extends Mockito {
         verify(mockAccountDao).getPagedAccountSummaries(eq(TEST_APP_ID), searchCaptor.capture());
         assertEquals(searchCaptor.getValue().getLanguage(), "en");
         assertEquals(searchCaptor.getValue().getOrgMembership(), IDENTIFIER);
+        assertTrue(searchCaptor.getValue().isAdminOnly());
     }
     
     @Test

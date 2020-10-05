@@ -84,7 +84,7 @@ public class AuthUtils {
      * caller must be in one of the roles, and they must be a member of an organization 
      * that gives them access to the study.
      */
-    private static final boolean isInRoles(String studyId, Roles... roles) {
+    public static final boolean isInRoles(String studyId, Roles... roles) {
         Set<Roles> roleSet = ImmutableSet.copyOf(roles);
         RequestContext context = RequestContext.get();
         if (roleSet.contains(ADMIN) && context.isInRole(ADMIN)) {

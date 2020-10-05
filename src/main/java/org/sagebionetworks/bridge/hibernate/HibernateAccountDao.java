@@ -164,15 +164,14 @@ public class HibernateAccountDao implements AccountDao {
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
         }
         
-        // If the caller is a non-admin administrator (researcher, worker, other roles we dream up), then
-        // their organization dictates the accounts they see. We are still making an exception for accounts
-        // with no study associations, while we transition to the new permissions system.
+        // If the caller is a member of an organization, then they can only see accounts in the studies 
+        // sponsored by that organization. ADMIN accounts are exempt from this requirement.
         Set<String> callerStudies = context.getOrgSponsoredStudies();
-        if (context.isAdministrator() && !context.isInRole(ADMIN) && !callerStudies.isEmpty()) {
-            builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);        
+        if (!context.isInRole(ADMIN) && !callerStudies.isEmpty()) {
+            builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
         }
         if (!isCount) {
-            builder.append("GROUP BY acct.id");        
+            builder.append("GROUP BY acct.id");
         }
         return builder;
     }

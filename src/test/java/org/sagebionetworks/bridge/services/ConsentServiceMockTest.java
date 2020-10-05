@@ -80,6 +80,7 @@ public class ConsentServiceMockTest extends Mockito {
     private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
     private static final String EXTERNAL_ID = "external-id";
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
+    private static final SubpopulationGuid SUBPOP_GUID_2 = SubpopulationGuid.create("GUID2");
     private static final long SIGNED_ON = 1446044925219L;
     private static final long WITHDREW_ON = SIGNED_ON + 10000;
     private static final long CONSENT_CREATED_ON = 1446044814108L;
@@ -88,6 +89,8 @@ public class ConsentServiceMockTest extends Mockito {
     private static final String EMAIL = "email@email.com";
     private static final SubpopulationGuid SECOND_SUBPOP = SubpopulationGuid.create("anotherSubpop");
     private static final ConsentSignature CONSENT_SIGNATURE = new ConsentSignature.Builder().withName("Test User")
+            .withBirthdate("1980-01-01").withSignedOn(SIGNED_ON).build();
+    private static final ConsentSignature CONSENT_SIGNATURE_2 = new ConsentSignature.Builder().withName("Test User")
             .withBirthdate("1980-01-01").withSignedOn(SIGNED_ON).build();
     private static final ConsentSignature WITHDRAWN_CONSENT_SIGNATURE = new ConsentSignature.Builder()
             .withConsentSignature(CONSENT_SIGNATURE).withSignedOn(SIGNED_ON - 20000).withWithdrewOn(SIGNED_ON - 10000)
@@ -481,6 +484,52 @@ public class ConsentServiceMockTest extends Mockito {
         verify(subpopulation, never()).getStudyIdsAssignedOnConsent();
     }
 
+    @Test
+    public void withdrawFromAppRemovesFromMultipleStudies() {
+        account.setEmail(EMAIL);
+        account.setHealthCode(PARTICIPANT.getHealthCode());
+        // Signatures for the two studies...
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
+        account.setConsentSignatureHistory(SUBPOP_GUID_2, ImmutableList.of(CONSENT_SIGNATURE_2));
+        
+        Subpopulation subpop1 = Subpopulation.create();
+        subpop1.setStudyIdsAssignedOnConsent(ImmutableSet.of("otherStudy"));
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpop1);
+        
+        Subpopulation subpop2 = Subpopulation.create();
+        subpop2.setStudyIdsAssignedOnConsent(ImmutableSet.of(TEST_STUDY_ID));
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID_2)).thenReturn(subpop2);
+
+        // Add two consents to the account, one withdrawn, one active. This tests to make sure we're not accidentally
+        // dropping withdrawn consents from the history.
+        Enrollment en1 = Enrollment.create(app.getIdentifier(), "otherStudy", ID);
+        Enrollment en2 = Enrollment.create(app.getIdentifier(), TEST_STUDY_ID, ID);
+        account.setEnrollments(ImmutableSet.of(en1, en2));
+        
+        consentService.withdrawFromApp(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON + 10000);
+
+        verify(mockEnrollmentService, times(2)).unenroll(eq(account), enrollmentCaptor.capture());
+        
+        Enrollment withdrawnEnrollment1 = enrollmentCaptor.getAllValues().get(0);
+        assertEquals(withdrawnEnrollment1.getWithdrawalNote(), WITHDRAWAL.getReason());
+        assertEquals(withdrawnEnrollment1.getWithdrawnOn().getMillis(), SIGNED_ON + 10000);
+        assertEquals(withdrawnEnrollment1.getAppId(), app.getIdentifier());
+        assertEquals(withdrawnEnrollment1.getStudyId(), "otherStudy");
+        assertEquals(withdrawnEnrollment1.getAccountId(), ID);
+        
+        Enrollment withdrawnEnrollment2 = enrollmentCaptor.getAllValues().get(1);
+        assertEquals(withdrawnEnrollment2.getWithdrawalNote(), WITHDRAWAL.getReason());
+        assertEquals(withdrawnEnrollment2.getWithdrawnOn().getMillis(), SIGNED_ON + 10000);
+        assertEquals(withdrawnEnrollment2.getAppId(), app.getIdentifier());
+        assertEquals(withdrawnEnrollment2.getStudyId(), TEST_STUDY_ID);
+        assertEquals(withdrawnEnrollment2.getAccountId(), ID);
+        
+        assertEquals(account.getAllConsentSignatureHistories().get(SUBPOP_GUID).get(0).getWithdrewOn(),
+                Long.valueOf(SIGNED_ON + 10000L));
+        assertEquals(account.getAllConsentSignatureHistories().get(SUBPOP_GUID_2).get(0).getWithdrewOn(),
+                Long.valueOf(SIGNED_ON + 10000L));
+    }
+    
     @Test
     public void accountFailureConsistent() {
         when(accountService.getAccount(any())).thenThrow(new BridgeServiceException("Something bad happend", 500));

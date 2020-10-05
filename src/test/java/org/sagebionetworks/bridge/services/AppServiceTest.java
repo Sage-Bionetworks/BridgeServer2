@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.AdditionalMatchers.not;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.SAGE_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.SAGE_NAME;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -81,6 +83,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
@@ -163,6 +166,10 @@ public class AppServiceTest extends Mockito {
     ArgumentCaptor<App> appCaptor;
     @Captor
     ArgumentCaptor<Template> templateCaptor;
+    @Captor
+    ArgumentCaptor<Study> studyCaptor;
+    @Captor
+    ArgumentCaptor<Organization> orgCaptor;
 
     @Spy
     @InjectMocks
@@ -1015,7 +1022,7 @@ public class AppServiceTest extends Mockito {
     
     @Test(expectedExceptions = InvalidEntityException.class, 
             expectedExceptionsMessageRegExp = ".*users\\[0\\].roles can only have roles developer and/or researcher.*")
-    public void createAPpAndUsersUserWithSuperadminRole() throws SynapseException {
+    public void createAppAndUsersUserWithSuperadminRole() throws SynapseException {
         createAppAndUserInWrongRole(ImmutableSet.of(SUPERADMIN));
     }
     
@@ -1594,6 +1601,20 @@ public class AppServiceTest extends Mockito {
         
         // A default, active consent should be created for the app.
         verify(mockSubpopService).createDefaultSubpopulation(eq(app), studyCaptor.capture());
+        
+        verify(mockStudyService).createStudy(eq(app.getIdentifier()), studyCaptor.capture());
+        Study defaultStudy = studyCaptor.getValue();
+        assertEquals(defaultStudy.getAppId(), app.getIdentifier());
+        assertEquals(defaultStudy.getIdentifier(), app.getIdentifier() + "-study");
+        assertEquals(defaultStudy.getName(), "Test App [AppServiceTest] Study");
+
+        verify(mockSubpopService).createDefaultSubpopulation(app, defaultStudy);
+        
+        verify(mockOrgService).createOrganization(orgCaptor.capture());
+        Organization sageOrg = orgCaptor.getValue();
+        assertEquals(sageOrg.getAppId(), app.getIdentifier());
+        assertEquals(sageOrg.getIdentifier(), SAGE_ID);
+        assertEquals(sageOrg.getName(), SAGE_NAME);
 
         verify(mockAppDao).createApp(appCaptor.capture());
 

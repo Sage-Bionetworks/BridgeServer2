@@ -637,9 +637,9 @@ public class ParticipantService {
             updateRoles(requestContext, participant, account);
         }
         
-        // If the caller is not in a study, any study tags are allowed. If the caller is
-        // assigned to any studies, and also adding studies to the account, then the studies
-        // must all be associated to the caller or it is a security violation.
+        // While the direct association of users to studies is being migrated, a caller cannot
+        // place an account in a study they don't have access to. This means they can't update
+        // an account that is in a study they don't have access to, until this code is removed.
         Set<String> callerStudies = RequestContext.get().getOrgSponsoredStudies();
         if (!callerStudies.isEmpty()) {
             Set<String> studyIds = BridgeUtils.collectStudyIds(account);

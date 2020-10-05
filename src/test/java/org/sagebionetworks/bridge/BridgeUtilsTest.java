@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
@@ -343,7 +344,29 @@ public class BridgeUtilsTest {
         RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(ImmutableSet.of("notStudyA")).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
+    
+    @Test
+    public void filterForStudyAccountReturnsSelfAccount() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of("A")).build());
+        
+        Account account = Account.create();
+        account.setId(USER_ID);
+        
+        assertNotNull(BridgeUtils.filterForStudy(account));
+    }
 
+    @Test
+    public void filterForStudyAccountNotSelfReturnsNull() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of("A")).build());
+        
+        Account account = Account.create();
+        account.setId("notTheSameUser");
+        
+        assertNull(BridgeUtils.filterForStudy(account));
+    }
+    
     @Test
     public void filterForStudyExtIdNullReturnsNull() {
         assertNull(BridgeUtils.filterForStudy((ExternalIdentifier)null));

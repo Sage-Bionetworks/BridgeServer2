@@ -671,6 +671,22 @@ public class ParticipantServiceTest extends Mockito {
         
         assertEquals(account.getStatus(), AccountStatus.UNVERIFIED);
     }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp=".*is not a study of the caller.*")
+    public void createParticipantMustIncludeCallerStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(STUDY_ID)).build());
+        
+        when(studyService.getStudy(TEST_APP_ID, "inaccessible-study-to-caller", false)).thenReturn(Study.create());
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
+        
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withStudyIds(ImmutableSet.of(STUDY_ID, "inaccessible-study-to-caller"))
+                .withRoles(null).build();
+
+        participantService.createParticipant(APP, participant, false);
+    }
     
     @Test
     public void createSmsNotificationRegistration_PhoneNotVerified() {

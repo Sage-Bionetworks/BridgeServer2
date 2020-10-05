@@ -141,6 +141,24 @@ public class ExternalIdServiceTest {
         verify(externalIdDao).createExternalId(extId);        
     }
     
+    @Test
+    public void createExternalIdSetsStudyIdIfMissingAndUnambiguous() {
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false))
+            .thenReturn(Study.create());
+        when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.empty());
+
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withOrgSponsoredStudies(STUDIES).build());
+
+        ExternalIdentifier newExtId = ExternalIdentifier.create(TEST_APP_ID,
+                extId.getIdentifier());
+        externalIdService.createExternalId(newExtId, false);
+
+        // still matches and verifies
+        verify(externalIdDao).createExternalId(extId);
+    }
+    
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createExternalIdDoesNotSetStudyIdAmbiguous() {
         extId.setStudyId(null); // not set by caller

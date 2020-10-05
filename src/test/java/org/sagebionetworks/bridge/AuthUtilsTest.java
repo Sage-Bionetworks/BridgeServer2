@@ -9,7 +9,10 @@ import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableSet;
 
@@ -27,6 +30,52 @@ public class AuthUtilsTest extends Mockito {
         RequestContext.set(RequestContext.NULL_INSTANCE);
     }
     
+    @Test
+    public void checkSelfStudyResearcherOrAdminSucceedsForSelf() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(USER_ID).build());
+        
+        AuthUtils.checkSelfStudyResearcherOrAdmin(USER_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void checkSelfStudyResearcherOrAdminSucceedsForStudyResearcher() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        
+        AuthUtils.checkSelfStudyResearcherOrAdmin(USER_ID, TEST_STUDY_ID);
+    }
+
+    @Test
+    public void checkSelfStudyResearcherOrAdminSucceedsForAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+        
+        AuthUtils.checkSelfStudyResearcherOrAdmin(USER_ID, TEST_STUDY_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkSelfStudyResearcherOrAdminFailsForNonStudyResearcher() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .withOrgSponsoredStudies(ImmutableSet.of("someOtherStudy"))
+                .build());
+        
+        AuthUtils.checkSelfStudyResearcherOrAdmin(USER_ID, TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkSelfStudyResearcherOrAdminFailsForDev() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        
+        AuthUtils.checkSelfStudyResearcherOrAdmin(USER_ID, TEST_STUDY_ID);
+    }
+
     @Test
     public void checkOrgMembershipSucceedsForAdmin() {
         RequestContext.set(new RequestContext.Builder()
@@ -151,5 +200,48 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerUserId("notUserId").build());
         
         AuthUtils.checkSelfResearcherOrAdmin(USER_ID);
+    }
+    
+    @Test
+    public void isInRoleNullStudyIdAndAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        assertTrue(AuthUtils.isInRoles(null, ADMIN));
+    }
+    
+    @Test
+    public void isInRoleEmptyStudyIds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of())
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        assertTrue(AuthUtils.isInRoles(TEST_STUDY_ID, DEVELOPER));
+    }
+    
+    @Test
+    public void isInRoleMatchingStudyId() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("A", TEST_STUDY_ID, "B"))
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        assertTrue(AuthUtils.isInRoles(TEST_STUDY_ID, DEVELOPER));
+    }
+    
+    @Test
+    public void isInRoleExcludedStudyId() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("A", "B"))
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        assertFalse(AuthUtils.isInRoles(TEST_STUDY_ID, DEVELOPER));
+    }
+
+    @Test
+    public void isInRoleExcludedWrongRole() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        assertFalse(AuthUtils.isInRoles(null, ADMIN));
     }
 }

@@ -349,7 +349,7 @@ public class AppService {
         Study study = Study.create();
         study.setAppId(app.getIdentifier());
         study.setIdentifier(app.getIdentifier() + "-study");
-        study.setName("Initial Study");
+        study.setName(app.getName() + " Study");
         studyService.createStudy(app.getIdentifier(), study);
         subpopService.createDefaultSubpopulation(app, study);
         
