@@ -84,7 +84,7 @@ class HibernateAssessmentDao implements AssessmentDao {
                 offsetBy, pageSize, HibernateAssessment.class);
         
         List<Assessment> dtos = assessments.stream().map(Assessment::create).collect(toList());
-        return new PagedResourceList<Assessment>(dtos, count);
+        return new PagedResourceList<Assessment>(dtos, count, true);
     }
     
     public PagedResourceList<Assessment> getAssessmentRevisions(String appId, String identifier, 
@@ -103,7 +103,7 @@ class HibernateAssessmentDao implements AssessmentDao {
                 builder.getQuery(), builder.getParameters(), offsetBy, pageSize, HibernateAssessment.class);
         
         List<Assessment> dtos = assessments.stream().map(Assessment::create).collect(toList());
-        return new PagedResourceList<Assessment>(dtos, count);
+        return new PagedResourceList<Assessment>(dtos, count, true);
     }
     
     @Override
