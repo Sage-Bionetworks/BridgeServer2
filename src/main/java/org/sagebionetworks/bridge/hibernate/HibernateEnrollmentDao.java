@@ -1,12 +1,14 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static java.util.stream.Collectors.toList;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 
 import java.util.List;
 
 import javax.annotation.Resource;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 
 import org.springframework.stereotype.Component;
 
@@ -32,15 +34,20 @@ public class HibernateEnrollmentDao implements EnrollmentDao {
     
     @Override
     public PagedResourceList<EnrollmentDetail> getEnrollmentsForStudy(String appId, String studyId, 
-            EnrollmentFilter filter, Integer offsetBy, Integer pageSize) {
+            EnrollmentFilter filter, boolean includeTesters, Integer offsetBy, Integer pageSize) {
         QueryBuilder builder = new QueryBuilder();
-        builder.append("FROM HibernateEnrollment WHERE");
-        builder.append("appId = :appId AND studyId = :studyId", "appId", appId, "studyId", studyId);
+        builder.append("FROM HibernateEnrollment AS h");
+        if (!includeTesters) {
+            builder.append("INNER JOIN org.sagebionetworks.bridge.hibernate.HibernateAccount AS acct ON acct.id = h.accountId");    
+        }
+        builder.append("WHERE h.appId = :appId AND h.studyId = :studyId", "appId", appId, "studyId", studyId);
         builder.enrollment(filter);
-        
+        if (!includeTesters) {
+            builder.dataGroups(ImmutableSet.of(TEST_USER_GROUP), "NOT IN");
+        }
         int total = hibernateHelper.queryCount("SELECT COUNT(*) " + builder.getQuery(), builder.getParameters());
         
-        List<HibernateEnrollment> enrollments = hibernateHelper.queryGet(builder.getQuery(),
+        List<HibernateEnrollment> enrollments = hibernateHelper.queryGet("SELECT h " + builder.getQuery(),
                 builder.getParameters(), offsetBy, pageSize, HibernateEnrollment.class);
         
         List<EnrollmentDetail> dtos = enrollments.stream().map(enrollment -> {

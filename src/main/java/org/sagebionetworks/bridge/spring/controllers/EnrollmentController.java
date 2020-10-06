@@ -50,14 +50,16 @@ public class EnrollmentController extends BaseController {
     public PagedResourceList<EnrollmentDetail> getEnrollmentsForStudy(@PathVariable String studyId,
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize,
-            @RequestParam(required = false) String enrollmentFilter) {
+            @RequestParam(required = false) String enrollmentFilter,
+            @RequestParam(required = false) String includeTesters) {
         UserSession session = getAuthenticatedSession(RESEARCHER, ADMIN);
         
         EnrollmentFilter filter = BridgeUtils.getEnumOrDefault(enrollmentFilter, EnrollmentFilter.class, null);
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
+        boolean includeTestersBool = Boolean.valueOf(includeTesters);
 
-        return service.getEnrollmentsForStudy(session.getAppId(), studyId, filter, offsetByInt, pageSizeInt);        
+        return service.getEnrollmentsForStudy(session.getAppId(), studyId, filter, includeTestersBool, offsetByInt, pageSizeInt);        
     }
     
     @PostMapping("/v5/studies/{studyId}/enrollments")
