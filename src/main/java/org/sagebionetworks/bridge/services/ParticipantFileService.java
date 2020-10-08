@@ -167,8 +167,10 @@ public class ParticipantFileService {
         Date expiration = new DateTime().plusMinutes(EXPIRATION_IN_MINUTES).toDate();
         GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, getFilePath(file), method);
         request.setExpiration(expiration);
-        request.setContentType(file.getMimeType());
-        request.addRequestParameter(Headers.SERVER_SIDE_ENCRYPTION, ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        if (PUT.equals(method)) {
+            request.setContentType(file.getMimeType());
+            request.addRequestParameter(Headers.SERVER_SIDE_ENCRYPTION, ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        }
 
         return s3Client.generatePresignedUrl(request);
     }

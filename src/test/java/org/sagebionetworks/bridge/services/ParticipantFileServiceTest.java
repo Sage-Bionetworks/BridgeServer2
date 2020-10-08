@@ -122,10 +122,7 @@ public class ParticipantFileServiceTest {
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
         assertEquals(request.getBucketName(), UPLOAD_BUCKET);
         assertEquals(request.getMethod(), HttpMethod.GET);
-        assertEquals(request.getContentType(), file.getMimeType());
         assertEquals(request.getKey(), "test_user/file_id");
-        assertEquals(request.getRequestParameters().get(Headers.SERVER_SIDE_ENCRYPTION),
-                ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
         assertEquals(request.getExpiration(), TestConstants.TIMESTAMP.plusDays(1).toDate());
     }
 
