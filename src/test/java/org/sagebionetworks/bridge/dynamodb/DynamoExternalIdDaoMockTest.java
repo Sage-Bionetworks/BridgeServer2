@@ -35,6 +35,7 @@ import com.amazonaws.services.dynamodbv2.model.ConsumedCapacity;
 import com.amazonaws.services.dynamodbv2.model.ReturnConsumedCapacity;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.RateLimiter;
@@ -213,7 +214,7 @@ public class DynamoExternalIdDaoMockTest {
     @Test
     public void getExternalIdsFiltersStudyInExternalIdentifierInfo() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("studyA", "studyB")).build());
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyB")).build());
         
         // Verify here that prior to migration, a lack of association doesn't break anything
         DynamoExternalIdentifier extId1 = new DynamoExternalIdentifier(TEST_APP_ID, "extId1");
@@ -396,7 +397,27 @@ public class DynamoExternalIdDaoMockTest {
 
         dao.unassignExternalId(account, ID);
 
-        assertTrue(account.getEnrollments().isEmpty());
+        assertNull(Iterables.getFirst(account.getEnrollments(), null).getExternalId());
+    }
+    
+    @Test
+    public void unassignExternalIdNoEnrollmentDoesNothing() {
+        externalId.setHealthCode(HEALTH_CODE);
+        externalId.setStudyId(STUDY_ID);
+        when(mapper.load(any())).thenReturn(externalId);
+
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", USER_ID, ID);
+
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setHealthCode(HEALTH_CODE);
+        account.setId(USER_ID);
+        account.getEnrollments().add(enrollment);
+
+        dao.unassignExternalId(account, ID);
+        
+        assertEquals(account.getEnrollments().size(), 1);
+        assertEquals(Iterables.getFirst(account.getEnrollments(), null), enrollment);
     }
 
     // Or, the wrong ID does not remove the existing ID
@@ -429,11 +450,10 @@ public class DynamoExternalIdDaoMockTest {
         account.setHealthCode(HEALTH_CODE);
         account.setId(USER_ID);
         account.getEnrollments().add(enrollment);
-
         dao.unassignExternalId(account, ID);
 
         verify(mapper, never()).save(any());
-        assertTrue(account.getEnrollments().isEmpty());
+        assertNull(Iterables.getFirst(account.getEnrollments(), null).getExternalId());
     }
     
     @Test

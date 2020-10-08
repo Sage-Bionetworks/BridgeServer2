@@ -538,7 +538,7 @@ public class CRCController extends BaseController {
             throw new BridgeServiceException(e);
         }
 
-        Set<String> callerStudyIds = RequestContext.get().getCallerStudies();
+        Set<String> callerStudyIds = RequestContext.get().getOrgSponsoredStudies();
         ReportData report = ReportData.create();
         report.setDate(JAN1.toString());
         report.setData(data);
@@ -619,7 +619,8 @@ public class CRCController extends BaseController {
         Set<String> studies = BridgeUtils.collectStudyIds(account);
 
         RequestContext.Builder builder = new RequestContext.Builder().withCallerAppId(appId)
-                .withCallerStudies(studies).withCallerOrgMembership(account.getOrgMembership());
+                .withOrgSponsoredStudies(studies)
+                .withCallerOrgMembership(account.getOrgMembership());
         RequestContext.set(builder.build());
         return app;
     }

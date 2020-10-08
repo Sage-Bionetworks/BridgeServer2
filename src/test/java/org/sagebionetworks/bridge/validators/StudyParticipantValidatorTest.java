@@ -395,7 +395,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void subsetOfStudiesOK() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("studyA", "studyB", "studyC")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("studyA", "studyB", "studyC")).build());
         try {
             // The user (in three studies) can create a participant in only one of those studies
             StudyParticipant participant = withStudies("studyB");
@@ -411,7 +411,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void nonexistentStudyIds() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("studyA", "studyC")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("studyA", "studyC")).build());
         try {
             StudyParticipant participant = withStudies("studyA");
             

@@ -222,7 +222,7 @@ public class UserProfileControllerTest extends Mockito {
     @Test
     @SuppressWarnings("deprecation")
     public void updateUserProfile() throws Exception {
-        RequestContext.set(new RequestContext.Builder().withCallerStudies(
+        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(
                 ImmutableSet.of("studyA")).build());
         
         StudyParticipant participant = new StudyParticipant.Builder()
@@ -269,7 +269,7 @@ public class UserProfileControllerTest extends Mockito {
     @Test
     @SuppressWarnings("deprecation")
     public void validDataGroupsCanBeAdded() throws Exception {
-        RequestContext.set(new RequestContext.Builder().withCallerStudies(
+        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(
                 ImmutableSet.of("studyA")).build());
         
         // We had a bug where this call lost the health code in the user's session, so verify in particular 
@@ -346,7 +346,7 @@ public class UserProfileControllerTest extends Mockito {
     @SuppressWarnings({ "deprecation" })
     @Test
     public void evenEmptyJsonActsOK() throws Exception {
-        RequestContext.set(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyA")).build());
         
         StudyParticipant existing = new StudyParticipant.Builder()
                 .withHealthCode(HEALTH_CODE)

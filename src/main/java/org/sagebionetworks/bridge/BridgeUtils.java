@@ -147,22 +147,37 @@ public class BridgeUtils {
                 .collect(toImmutableSet());
     }
     
+    /**
+     * Return the account if the caller has access to it; false otherwise. Currently, 
+     * the account must be 1) the caller's account; 2) enrolled in a study that the 
+     * caller has access to; or 3) the caller is associated to no studies at all 
+     * (this last part is transitional as we migrate to a multi-study security model). 
+     * Do not call this method before updating the account; this method may remove
+     * enrollments from the account that are not visible to the caller so it can be
+     * displayed to the caller without leaking enrollment information.
+     */
     public static Account filterForStudy(Account account) {
         if (account != null) {
             RequestContext context = RequestContext.get();
-            Set<String> callerStudies = context.getCallerStudies();
-            if (BridgeUtils.isEmpty(callerStudies)) {
+            Set<String> callerStudies = context.getOrgSponsoredStudies();
+            String callerUserId = context.getCallerUserId();
+            
+            // If this is a call for one’s own record, or the caller is has no 
+            // study relationships, return the account. Note that we are migrating
+            // away from a system that allows an account to have no specific study
+            // associations, but it remains necessary during the transition
+            if (isEmpty(callerStudies) || account.getId().equals(callerUserId)) {
                 return account;
             }
-            Set<Enrollment> matched = account.getEnrollments().stream()
-                    .filter(as -> callerStudies.isEmpty() || callerStudies.contains(as.getStudyId()))
+            // If after removing all enrollments that are not visible to the caller, 
+            // there are no remaining enrollments, then we do not return the 
+            // account to the caller.
+            Set<Enrollment> removals = account.getEnrollments().stream()
+            // Set<Enrollment> removals = account.getActiveEnrollments().stream()
+                    .filter(en -> !callerStudies.contains(en.getStudyId()))
                     .collect(toSet());
-            
-            if (!matched.isEmpty()) {
-                // Hibernate managed objects use a collection implementation that tracks changes,
-                // and shouldn't be set with a Java library collection. Here it is okay because 
-                // we're filtering an object to return through the API, and it won't be persisted.
-                account.setEnrollments(matched);
+            account.getEnrollments().removeAll(removals);
+            if (!account.getEnrollments().isEmpty()) {
                 return account;
             }
         }
@@ -173,14 +188,15 @@ public class BridgeUtils {
      * Callers only see the enrollment records they themselves are assigned to, unless they have no
      * study memberships (then they are global and see everything).
      */
-    public static StudyAssociations studyAssociationsVisibleToCaller(Collection<? extends Enrollment> enrollments) {
-        if (enrollments == null || enrollments.isEmpty()) {
+    public static StudyAssociations studyAssociationsVisibleToCaller(Account account) {
+        if (account == null || account.getActiveEnrollments().isEmpty()) {
             return NO_ASSOCIATIONS;
         }
+        Set<String> callerStudies = RequestContext.get().getOrgSponsoredStudies();
+        
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
-        Set<String> callerStudies = RequestContext.get().getCallerStudies();
-        for (Enrollment enrollment : enrollments) {
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
             if (callerStudies.isEmpty() || callerStudies.contains(enrollment.getStudyId())) {
                 studyIds.add(enrollment.getStudyId());
                 if (enrollment.getExternalId() != null) {
@@ -194,11 +210,8 @@ public class BridgeUtils {
     public static ExternalIdentifier filterForStudy(ExternalIdentifier externalId) {
         if (externalId != null) {
             RequestContext context = RequestContext.get();
-            Set<String> callerStudies = context.getCallerStudies();
-            if (BridgeUtils.isEmpty(callerStudies)) {
-                return externalId;
-            }
-            if (callerStudies.contains(externalId.getStudyId())) {
+            Set<String> callerStudies = context.getOrgSponsoredStudies();
+            if (isEmpty(callerStudies) || callerStudies.contains(externalId.getStudyId())) {
                 return externalId;
             }
         }

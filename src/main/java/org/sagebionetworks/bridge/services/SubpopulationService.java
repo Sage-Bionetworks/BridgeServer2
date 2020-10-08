@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -106,9 +107,9 @@ public class SubpopulationService {
      * @param app
      * @return
      */
-    public Subpopulation createDefaultSubpopulation(App app) {
+    public Subpopulation createDefaultSubpopulation(App app, Study study) {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(app.getIdentifier());
-        Subpopulation created = subpopDao.createDefaultSubpopulation(app.getIdentifier());
+        Subpopulation created = subpopDao.createDefaultSubpopulation(app.getIdentifier(), study.getIdentifier());
         
         // It should no longer be necessary to check that there are no consents yet, but not harmful to keep doing it.
         if (studyConsentService.getAllConsents(subpopGuid).isEmpty()) {
@@ -167,12 +168,12 @@ public class SubpopulationService {
         // If retrieving all subpopulations, which is unusual, do not use the cache. Cache is always
         // of the undeleted subpopulations only.
         if (includeDeleted) {
-            return subpopDao.getSubpopulations(appId, true, includeDeleted);
+            return subpopDao.getSubpopulations(appId, includeDeleted);
         }
         CacheKey subpopListKey = CacheKey.subpopList(appId);
         List<Subpopulation> subpops = cacheProvider.getObject(subpopListKey, SURVEY_LIST_REF);
         if (subpops == null) {
-            subpops = subpopDao.getSubpopulations(appId, true, includeDeleted);
+            subpops = subpopDao.getSubpopulations(appId, includeDeleted);
             cacheProvider.setObject(subpopListKey, subpops);
         }
         return subpops;

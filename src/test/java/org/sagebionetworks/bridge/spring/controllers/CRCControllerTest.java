@@ -342,6 +342,8 @@ public class CRCControllerTest extends Mockito {
         Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         root.addAppender(mockAppender);
         root.setLevel(Level.DEBUG);
+        
+        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(USER_STUDY_IDS).build());
     }
     
     @AfterMethod
@@ -381,7 +383,7 @@ public class CRCControllerTest extends Mockito {
         // verify(controller, never()).createLabOrder(account);
 
         assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.SELECTED, "group1"));
-        assertFalse(RequestContext.get().getCallerStudies().isEmpty());
+        assertFalse(RequestContext.get().getOrgSponsoredStudies().isEmpty());
     }
     
     
@@ -1002,7 +1004,7 @@ public class CRCControllerTest extends Mockito {
         RequestContext context = RequestContext.get();
         assertEquals(context.getCallerAppId(), APP_ID);
         assertEquals(context.getCallerOrgMembership(), TEST_ORG_ID);
-        assertEquals(context.getCallerStudies(), USER_STUDY_IDS);
+        assertEquals(context.getOrgSponsoredStudies(), USER_STUDY_IDS);
     }
     
     @Test(expectedExceptions = NotAuthenticatedException.class)

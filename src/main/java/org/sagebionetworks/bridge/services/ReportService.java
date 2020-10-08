@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -388,7 +389,7 @@ public class ReportService {
         // We could allow users to add/remove the studies they have membership in, but in practice that's
         // only one study and not likely to be very useful. It requires about 5 lines of set-based checks 
         // and a lot of tests, so skipping it for now.
-        Set<String> callerRoles = RequestContext.get().getCallerStudies();
+        Set<String> callerRoles = RequestContext.get().getOrgSponsoredStudies();
         if (!callerRoles.isEmpty()) {
             index.setStudyIds(existingIndex.getStudyIds());
         }
@@ -399,11 +400,15 @@ public class ReportService {
         if (index == null || index.getStudyIds() == null || index.getStudyIds().isEmpty() || index.isPublic()) {
             return true;
         }
-        Set<String> callerRoles = RequestContext.get().getCallerStudies();
-        if (callerRoles.isEmpty()) {
+        // Either a consented user or an administrative user might want to access a report index, so both
+        // collections are compared to the index.
+        Set<String> allStudyIds = new HashSet<>();
+        allStudyIds.addAll(RequestContext.get().getCallerEnrolledStudies());
+        allStudyIds.addAll(RequestContext.get().getOrgSponsoredStudies());
+        if (allStudyIds.isEmpty()) {
             return true;
         }
-        return !Sets.intersection(callerRoles, index.getStudyIds()).isEmpty();
+        return !Sets.intersection(allStudyIds, index.getStudyIds()).isEmpty();
     }
 
     private void addToIndex(ReportDataKey key, Set<String> studies) {

@@ -33,7 +33,7 @@ public interface OrganizationDao {
     void deleteOrganization(Organization organization);
     
     /**
-     * Cleanup after tests.
+     * Delete all the organizations in this app (as part of test cleanup).
      */
     void deleteAllOrganizations(String appId);
 }

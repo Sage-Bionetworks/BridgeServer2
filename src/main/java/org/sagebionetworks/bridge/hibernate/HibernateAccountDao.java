@@ -2,6 +2,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import java.util.List;
 import java.util.Optional;
@@ -162,12 +163,15 @@ public class HibernateAccountDao implements AccountDao {
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
         }
-        Set<String> callerStudies = context.getCallerStudies();
-        if (!callerStudies.isEmpty()) {
+        
+        // If the caller is a member of an organization, then they can only see accounts in the studies 
+        // sponsored by that organization. ADMIN accounts are exempt from this requirement.
+        Set<String> callerStudies = context.getOrgSponsoredStudies();
+        if (!context.isInRole(ADMIN) && !callerStudies.isEmpty()) {
             builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
         }
         if (!isCount) {
-            builder.append("GROUP BY acct.id");        
+            builder.append("GROUP BY acct.id");
         }
         return builder;
     }
@@ -249,7 +253,7 @@ public class HibernateAccountDao implements AccountDao {
         
         StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(null);
         if (acct.getId() != null) {
-            assoc = BridgeUtils.studyAssociationsVisibleToCaller(acct.getEnrollments());
+            assoc = BridgeUtils.studyAssociationsVisibleToCaller(acct);
         }
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
         builder.withStudyIds(assoc.getStudyIdsVisibleToCaller());

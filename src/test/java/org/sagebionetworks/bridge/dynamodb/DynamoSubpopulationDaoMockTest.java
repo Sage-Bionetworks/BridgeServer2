@@ -10,6 +10,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -36,6 +37,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -94,13 +96,20 @@ public class DynamoSubpopulationDaoMockTest {
     }
     
     @Test
-    public void createDefaultSubpopulationWritesCriteria() {
-        Subpopulation subpop = dao.createDefaultSubpopulation(TEST_APP_ID);
+    public void createDefaultSubpopulation() {
+        Subpopulation subpop = dao.createDefaultSubpopulation(TEST_APP_ID, TEST_STUDY_ID);
+        assertEquals(subpop.getStudyIdsAssignedOnConsent(), ImmutableSet.of(TEST_STUDY_ID));
+        assertEquals(subpop.getAppId(), TEST_APP_ID);
+        assertEquals(subpop.getGuidString(), TEST_APP_ID);
+        assertEquals(subpop.getName(), "Default Consent Group");
+        assertTrue(subpop.isDefaultGroup());
+        assertTrue(subpop.isRequired());
         
         Criteria criteria = subpop.getCriteria();
         assertEquals(criteria.getMinAppVersion(OperatingSystem.IOS), new Integer(0));
         assertEquals(criteria.getMinAppVersion(OperatingSystem.ANDROID), new Integer(0));
         
+        verify(mapper).save(subpop);
         verify(criteriaDao).createOrUpdateCriteria(criteria);
     }
     
@@ -249,7 +258,7 @@ public class DynamoSubpopulationDaoMockTest {
     public void getSubpopulationsCreatesCriteria() {
         // The test subpopulation in the list that is returned from the mock mapper does not have
         // a criteria object. So it will be created as part of loading.
-        List<Subpopulation> list = dao.getSubpopulations(TEST_APP_ID, false, true);
+        List<Subpopulation> list = dao.getSubpopulations(TEST_APP_ID, true);
         assertEquals(list.get(0).getCriteria(), CRITERIA);
         
         verify(criteriaDao).getCriteria(list.get(0).getCriteria().getKey());
@@ -259,7 +268,7 @@ public class DynamoSubpopulationDaoMockTest {
     public void getSubpopulationsRetrievesCriteria() {
         // The test subpopulation in the list that is returned from the mock mapper does not have
         // a criteria object. So it will be created as part of loading.
-        List<Subpopulation> list = dao.getSubpopulations(TEST_APP_ID, false, true);
+        List<Subpopulation> list = dao.getSubpopulations(TEST_APP_ID, true);
         assertEquals(list.get(0).getCriteria(), CRITERIA);
         
         // In this case it actually returns a criteria object.
@@ -281,7 +290,7 @@ public class DynamoSubpopulationDaoMockTest {
         reset(criteriaDao);
         doReturn(CRITERIA).when(criteriaDao).getCriteria(any());
         
-        List<Subpopulation> subpops = dao.getSubpopulations(TEST_APP_ID, false, true);
+        List<Subpopulation> subpops = dao.getSubpopulations(TEST_APP_ID, true);
         Criteria retrievedCriteria = subpops.get(0).getCriteria();
         assertEquals(retrievedCriteria, CRITERIA);
     }

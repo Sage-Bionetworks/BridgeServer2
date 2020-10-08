@@ -1,13 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -35,7 +31,9 @@ import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -76,12 +74,13 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 @SuppressWarnings("ConstantConditions")
-public class ConsentServiceMockTest {
+public class ConsentServiceMockTest extends Mockito {
     private static final String SHORT_URL = "https://ws.sagebridge.org/r/XXXXX";
     private static final String LONG_URL = "http://sagebionetworks.org/platforms/";
     private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
     private static final String EXTERNAL_ID = "external-id";
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create("GUID");
+    private static final SubpopulationGuid SUBPOP_GUID_2 = SubpopulationGuid.create("GUID2");
     private static final long SIGNED_ON = 1446044925219L;
     private static final long WITHDREW_ON = SIGNED_ON + 10000;
     private static final long CONSENT_CREATED_ON = 1446044814108L;
@@ -90,6 +89,8 @@ public class ConsentServiceMockTest {
     private static final String EMAIL = "email@email.com";
     private static final SubpopulationGuid SECOND_SUBPOP = SubpopulationGuid.create("anotherSubpop");
     private static final ConsentSignature CONSENT_SIGNATURE = new ConsentSignature.Builder().withName("Test User")
+            .withBirthdate("1980-01-01").withSignedOn(SIGNED_ON).build();
+    private static final ConsentSignature CONSENT_SIGNATURE_2 = new ConsentSignature.Builder().withName("Test User")
             .withBirthdate("1980-01-01").withSignedOn(SIGNED_ON).build();
     private static final ConsentSignature WITHDRAWN_CONSENT_SIGNATURE = new ConsentSignature.Builder()
             .withConsentSignature(CONSENT_SIGNATURE).withSignedOn(SIGNED_ON - 20000).withWithdrewOn(SIGNED_ON - 10000)
@@ -104,10 +105,13 @@ public class ConsentServiceMockTest {
             .withAppId(TEST_APP_ID).build();
 
     @Spy
+    @InjectMocks
     private ConsentService consentService;
 
     private App app;
 
+    @Mock
+    private EnrollmentService mockEnrollmentService;
     @Mock
     private AccountService accountService;
     @Mock
@@ -138,6 +142,8 @@ public class ConsentServiceMockTest {
     private ArgumentCaptor<SmsMessageProvider> smsProviderCaptor;
     @Captor
     private ArgumentCaptor<Account> accountCaptor;
+    @Captor
+    private ArgumentCaptor<Enrollment> enrollmentCaptor;
 
     private Account account;
 
@@ -148,17 +154,7 @@ public class ConsentServiceMockTest {
         String documentString = IOUtils.toString(
                 new FileInputStream(new ClassPathResource("conf/app-defaults/consent-page.xhtml").getFile()));
 
-        consentService.setAccountService(accountService);
-        consentService.setSendMailService(sendMailService);
-        consentService.setActivityEventService(activityEventService);
-        consentService.setSmsService(smsService);
-        consentService.setStudyConsentService(studyConsentService);
-        consentService.setSubpopulationService(subpopService);
-        consentService.setS3Helper(s3Helper);
-        consentService.setUrlShortenerService(urlShortenerService);
-        consentService.setNotificationsService(notificationsService);
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
-        consentService.setTemplateService(templateService);
 
         app = TestUtils.getValidApp(ConsentServiceMockTest.class);
         
@@ -317,11 +313,18 @@ public class ConsentServiceMockTest {
 
     @Test
     public void withdrawConsentWithParticipant() throws Exception {
+        when(subpopulation.getStudyIdsAssignedOnConsent()).thenReturn(ImmutableSet.of(TEST_STUDY_ID));
+        when(subpopulation.isRequired()).thenReturn(true);
+        
         account.setEmail(EMAIL);
         account.setHealthCode(PARTICIPANT.getHealthCode());
 
         // Add two consents to the account, one withdrawn, one active. This tests to make sure we're not accidentally
         // dropping withdrawn consents from the history.
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "otherStudy", ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, ID);
+        account.setEnrollments(ImmutableSet.of(en1, en2));
+        
         account.setConsentSignatureHistory(SUBPOP_GUID,
                 ImmutableList.of(WITHDRAWN_CONSENT_SIGNATURE, CONSENT_SIGNATURE));
 
@@ -358,11 +361,19 @@ public class ConsentServiceMockTest {
         assertEquals(email.getSubject(), "Notification of consent withdrawal for Test App [ConsentServiceMockTest]");
         assertEquals(email.getMessageParts().get(0).getContent(), "<p>User   &lt;" + EMAIL
                 + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>");
+        
+        verify(mockEnrollmentService, times(1)).unenroll(eq(account), enrollmentCaptor.capture());
+        Enrollment withdrawalEnrollment = enrollmentCaptor.getValue();
+        assertEquals(withdrawalEnrollment.getWithdrawalNote(), WITHDRAWAL.getReason());
+        assertEquals(withdrawalEnrollment.getWithdrawnOn().getMillis(), SIGNED_ON + 10000);
+        assertEquals(withdrawalEnrollment.getAppId(), app.getIdentifier());
+        assertEquals(withdrawalEnrollment.getStudyId(), TEST_STUDY_ID);
+        assertEquals(withdrawalEnrollment.getAccountId(), ID);
     }
 
     @Test
     public void withdrawConsentRemovesDataGroups() throws Exception {
-        Set<String> dataGroups = Sets.newHashSet(TestConstants.USER_DATA_GROUPS);
+        Set<String> dataGroups = Sets.newHashSet(USER_DATA_GROUPS);
         dataGroups.add("leaveBehind1");
         dataGroups.add("leaveBehind2");
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
@@ -375,7 +386,6 @@ public class ConsentServiceMockTest {
 
         assertEquals(account.getDataGroups(), ImmutableSet.of("leaveBehind1", "leaveBehind2"));
         verify(subpopulation).getDataGroupsAssignedWhileConsented();
-        verify(subpopulation, never()).getStudyIdsAssignedOnConsent();
     }
 
     @Test
@@ -474,6 +484,52 @@ public class ConsentServiceMockTest {
         verify(subpopulation, never()).getStudyIdsAssignedOnConsent();
     }
 
+    @Test
+    public void withdrawFromAppRemovesFromMultipleStudies() {
+        account.setEmail(EMAIL);
+        account.setHealthCode(PARTICIPANT.getHealthCode());
+        // Signatures for the two studies...
+        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
+        account.setConsentSignatureHistory(SUBPOP_GUID_2, ImmutableList.of(CONSENT_SIGNATURE_2));
+        
+        Subpopulation subpop1 = Subpopulation.create();
+        subpop1.setStudyIdsAssignedOnConsent(ImmutableSet.of("otherStudy"));
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpop1);
+        
+        Subpopulation subpop2 = Subpopulation.create();
+        subpop2.setStudyIdsAssignedOnConsent(ImmutableSet.of(TEST_STUDY_ID));
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID_2)).thenReturn(subpop2);
+
+        // Add two consents to the account, one withdrawn, one active. This tests to make sure we're not accidentally
+        // dropping withdrawn consents from the history.
+        Enrollment en1 = Enrollment.create(app.getIdentifier(), "otherStudy", ID);
+        Enrollment en2 = Enrollment.create(app.getIdentifier(), TEST_STUDY_ID, ID);
+        account.setEnrollments(ImmutableSet.of(en1, en2));
+        
+        consentService.withdrawFromApp(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON + 10000);
+
+        verify(mockEnrollmentService, times(2)).unenroll(eq(account), enrollmentCaptor.capture());
+        
+        Enrollment withdrawnEnrollment1 = enrollmentCaptor.getAllValues().get(0);
+        assertEquals(withdrawnEnrollment1.getWithdrawalNote(), WITHDRAWAL.getReason());
+        assertEquals(withdrawnEnrollment1.getWithdrawnOn().getMillis(), SIGNED_ON + 10000);
+        assertEquals(withdrawnEnrollment1.getAppId(), app.getIdentifier());
+        assertEquals(withdrawnEnrollment1.getStudyId(), "otherStudy");
+        assertEquals(withdrawnEnrollment1.getAccountId(), ID);
+        
+        Enrollment withdrawnEnrollment2 = enrollmentCaptor.getAllValues().get(1);
+        assertEquals(withdrawnEnrollment2.getWithdrawalNote(), WITHDRAWAL.getReason());
+        assertEquals(withdrawnEnrollment2.getWithdrawnOn().getMillis(), SIGNED_ON + 10000);
+        assertEquals(withdrawnEnrollment2.getAppId(), app.getIdentifier());
+        assertEquals(withdrawnEnrollment2.getStudyId(), TEST_STUDY_ID);
+        assertEquals(withdrawnEnrollment2.getAccountId(), ID);
+        
+        assertEquals(account.getAllConsentSignatureHistories().get(SUBPOP_GUID).get(0).getWithdrewOn(),
+                Long.valueOf(SIGNED_ON + 10000L));
+        assertEquals(account.getAllConsentSignatureHistories().get(SUBPOP_GUID_2).get(0).getWithdrewOn(),
+                Long.valueOf(SIGNED_ON + 10000L));
+    }
+    
     @Test
     public void accountFailureConsistent() {
         when(accountService.getAccount(any())).thenThrow(new BridgeServiceException("Something bad happend", 500));
@@ -914,8 +970,8 @@ public class ConsentServiceMockTest {
 
     @Test
     public void consentToResearchAssignsDataGroupsAndStudies() throws Exception {
-        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
-        when(subpopulation.getStudyIdsAssignedOnConsent()).thenReturn(TestConstants.USER_STUDY_IDS);
+        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(USER_DATA_GROUPS);
+        when(subpopulation.getStudyIdsAssignedOnConsent()).thenReturn(USER_STUDY_IDS);
 
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);
@@ -924,9 +980,11 @@ public class ConsentServiceMockTest {
                 SharingScope.NO_SHARING, false);
 
         assertEquals(account.getDataGroups(), TestConstants.USER_DATA_GROUPS);
-        assertEquals(account.getEnrollments().stream().map(
-                Enrollment::getStudyId).collect(Collectors.toSet()),
-                TestConstants.USER_STUDY_IDS);
+        
+        verify(mockEnrollmentService, times(2)).enroll(any(), enrollmentCaptor.capture());
+        assertEquals(enrollmentCaptor.getAllValues().stream()
+            .map(Enrollment::getStudyId)
+            .collect(Collectors.toSet()), TestConstants.USER_STUDY_IDS);
     }
 
     @Test

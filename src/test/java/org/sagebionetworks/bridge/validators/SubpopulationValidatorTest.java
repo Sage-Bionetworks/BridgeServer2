@@ -1,16 +1,16 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-
-import java.util.List;
-import java.util.Map;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Criteria;
@@ -24,11 +24,11 @@ public class SubpopulationValidatorTest {
     
     @BeforeMethod
     public void before() {
-        validator = new SubpopulationValidator(TestConstants.USER_DATA_GROUPS, TestConstants.USER_STUDY_IDS);
+        validator = new SubpopulationValidator(USER_DATA_GROUPS, USER_STUDY_IDS);
     }
     
     @Test
-    public void testEntirelyValid() {
+    public void testEntirelyValid() { 
         Subpopulation subpop = Subpopulation.create();
         subpop.setName("Name");
         subpop.setDescription("Description");
@@ -37,8 +37,8 @@ public class SubpopulationValidatorTest {
         subpop.setAppId(TEST_APP_ID);
         subpop.setVersion(3L);
         subpop.setGuidString("AAA");
-        subpop.setDataGroupsAssignedWhileConsented(TestConstants.USER_DATA_GROUPS);
-        subpop.setStudyIdsAssignedOnConsent(TestConstants.USER_STUDY_IDS);
+        subpop.setDataGroupsAssignedWhileConsented(USER_DATA_GROUPS);
+        subpop.setStudyIdsAssignedOnConsent(USER_STUDY_IDS);
         
         Criteria criteria = TestUtils.createCriteria(2, 4, ImmutableSet.of("group1"), ImmutableSet.of("group2"));
         criteria.setAllOfStudyIds(ImmutableSet.of("studyA"));
@@ -58,22 +58,33 @@ public class SubpopulationValidatorTest {
         subpop.setCriteria(criteria);
         
         subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of("group1", "dataGroup3"));
-        subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of("studyA", "studyC"));
+        subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of("studyC"));
         try {
             Validate.entityThrowingException(validator, subpop);
             fail("Should have thrown an exception");
         } catch(InvalidEntityException e) {
-            assertMessage(e, "minAppVersions.iphone_os", " cannot be negative");
-            assertMessage(e, "maxAppVersions.iphone_os", " cannot be negative");
-            assertMessage(e, "appId", " is required");
-            assertMessage(e, "name", " is required");
-            assertMessage(e, "guid", " is required");
-            assertMessage(e, "noneOfGroups", " 'wrongGroup' is not in enumeration");
-            assertMessage(e, "allOfStudyIds", " 'studyC' is not in enumeration");
-            assertMessage(e, "noneOfStudyIds", " 'studyD' is not in enumeration");
-            assertMessage(e, "dataGroupsAssignedWhileConsented", " 'dataGroup3' is not in enumeration: group1, group2");
-            assertMessage(e, "studyIdsAssignedOnConsent", " 'studyC' is not in enumeration: studyA, studyB");
+            assertValidatorMessage(validator, subpop, "criteria.minAppVersions.iphone_os", " cannot be negative");
+            assertValidatorMessage(validator, subpop, "criteria.maxAppVersions.iphone_os", " cannot be negative");
+            assertValidatorMessage(validator, subpop, "appId", CANNOT_BE_NULL);
+            assertValidatorMessage(validator, subpop, "name", CANNOT_BE_NULL);
+            assertValidatorMessage(validator, subpop, "guid", CANNOT_BE_NULL);
+            assertValidatorMessage(validator, subpop, "criteria.noneOfGroups", " 'wrongGroup' is not in enumeration: group1, group2");
+            assertValidatorMessage(validator, subpop, "criteria.allOfStudyIds", " 'studyC' is not in enumeration: studyA, studyB");
+            assertValidatorMessage(validator, subpop, "criteria.noneOfStudyIds", " 'studyD' is not in enumeration: studyA, studyB");
+            assertValidatorMessage(validator, subpop, "dataGroupsAssignedWhileConsented", " 'dataGroup3' is not in enumeration: group1, group2");
+            assertValidatorMessage(validator, subpop, "studyIdsAssignedOnConsent", " 'studyC' is not in enumeration: studyA, studyB");
         }
+    }
+    
+    @Test
+    public void testStudyIdsAssignedOnConsentEmpty() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setName("Name");
+        subpop.setAppId(TEST_APP_ID);
+        subpop.setGuidString("AAA");
+        subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of());
+        
+        assertValidatorMessage(validator, subpop, "studyIdsAssignedOnConsent", "cannot be empty");
     }
     
     @Test
@@ -83,11 +94,10 @@ public class SubpopulationValidatorTest {
         subpop.setGuidString("AAA");
         subpop.setName("Name");
         subpop.setDataGroupsAssignedWhileConsented(ImmutableSet.of());
-        subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of());
+        subpop.setStudyIdsAssignedOnConsent(USER_STUDY_IDS);
         
         Validate.entityThrowingException(validator, subpop);
         assertTrue(subpop.getDataGroupsAssignedWhileConsented().isEmpty());
-        assertTrue(subpop.getStudyIdsAssignedOnConsent().isEmpty());
     }
     
     @Test
@@ -97,16 +107,17 @@ public class SubpopulationValidatorTest {
         subpop.setGuidString("AAA");
         subpop.setName("Name");
         subpop.setDataGroupsAssignedWhileConsented(null);
-        subpop.setStudyIdsAssignedOnConsent(null);
+        subpop.setStudyIdsAssignedOnConsent(USER_STUDY_IDS);
         
         Validate.entityThrowingException(validator, subpop);
         assertTrue(subpop.getDataGroupsAssignedWhileConsented().isEmpty());
-        assertTrue(subpop.getStudyIdsAssignedOnConsent().isEmpty());
     }
     
-    private void assertMessage(InvalidEntityException e, String propName, String error) {
-        Map<String,List<String>> errors = e.getErrors();
-        List<String> messages = errors.get(propName);
-        assertTrue(messages.get(0).contains(propName + error));
+    @Test
+    public void test() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setAppId(TEST_APP_ID);
+        subpop.setGuidString("AAA");
+        subpop.setName("Name");
     }
 }

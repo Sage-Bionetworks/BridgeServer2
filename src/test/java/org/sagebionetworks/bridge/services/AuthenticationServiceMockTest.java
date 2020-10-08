@@ -1117,7 +1117,7 @@ public class AuthenticationServiceMockTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordExternalIdMismatchesCallerStudies() {
         RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyB")).build());
+                new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyB")).build());
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
         externalIdentifier.setStudyId("studyA");
@@ -1131,8 +1131,8 @@ public class AuthenticationServiceMockTest {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordAccountMismatchesCallerStudies() {
-        RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
         externalIdentifier.setStudyId("studyA");
@@ -1140,7 +1140,7 @@ public class AuthenticationServiceMockTest {
                 .thenReturn(Optional.of(externalIdentifier));
         
         when(accountService.getAccount(any())).thenReturn(account);
-        account.setEnrollments(ImmutableSet.of(Enrollment.create(app.getIdentifier(), "studyB", "id")));
+        account.setEnrollments(Sets.newHashSet(Enrollment.create(app.getIdentifier(), "studyB", "id")));
         
         service.generatePassword(app, EXTERNAL_ID, false);
     }
@@ -1293,7 +1293,7 @@ public class AuthenticationServiceMockTest {
         
         verify(accountSecretDao).createSecret(AccountSecretType.REAUTH, USER_ID, REAUTH_TOKEN);
         
-        RequestContext retValue = RequestContext.updateFromSession(session, null);
+        RequestContext retValue = RequestContext.updateFromSession(session, sponsorService);
         assertEquals(retValue.getCallerAppId(), TEST_APP_ID);
         assertEquals(retValue.getOrgSponsoredStudies(), USER_STUDY_IDS);
         assertEquals(retValue.getCallerUserId(), USER_ID);

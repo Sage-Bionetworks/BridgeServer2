@@ -258,7 +258,7 @@ public class ParticipantService {
         Account account = getAccountThrowingException(accountId); // already filters for study
         
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(account.getActiveEnrollments());
+        StudyAssociations assoc = studyAssociationsVisibleToCaller(account);
         copyAccountToParticipant(builder, assoc, account);
         copyConsentStatusToParticipant(builder, account, context);
         if (includeHistory) {
@@ -286,7 +286,7 @@ public class ParticipantService {
         }
 
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
-        StudyAssociations assoc = studyAssociationsVisibleToCaller(account.getActiveEnrollments());
+        StudyAssociations assoc = studyAssociationsVisibleToCaller(account);
         copyAccountToParticipant(builder, assoc, account);
 
         if (includeHistory) {
@@ -606,18 +606,18 @@ public class ParticipantService {
             }
         }
         if (externalId != null) {
-            Enrollment enrollment = Enrollment.create(account.getAppId(), externalId.getStudyId(),
-                    account.getId());
-            
-            // If a study relationship exists without the external ID, remove it because
-            // we're about to create it with an external ID
-            if (account.getEnrollments().contains(enrollment)) {
-                account.getEnrollments().remove(enrollment);
+            // Remove an existing enrollment as we might be adding information to the record
+            for (Enrollment existingEnrollment : account.getEnrollments()) {
+                if (existingEnrollment.getStudyId().equals(externalId.getStudyId())) {
+                    account.getEnrollments().remove(existingEnrollment);
+                }
             }
-            enrollment = Enrollment.create(account.getAppId(), externalId.getStudyId(), account.getId(),
+            Enrollment enrollment = Enrollment.create(account.getAppId(), externalId.getStudyId(), account.getId(),
                     externalId.getIdentifier());
             account.getEnrollments().add(enrollment);
             clearCache = true;
+            
+            RequestContext.updateFromExternalId(externalId);
         }
         // We have to clear the cache if we make changes that can alter the security profile of 
         // the account, otherwise very strange behavior can occur if that user is signed in with 
@@ -637,20 +637,15 @@ public class ParticipantService {
             updateRoles(requestContext, participant, account);
         }
         
-        // If the caller is not in a study, any study tags are allowed. If there 
-        // are any studies assigned to the caller, then the participant must be assigned 
-        // to one or more of those studies, and only those studies.
-        Set<String> callerStudies = RequestContext.get().getCallerStudies();
+        // While the direct association of users to studies is being migrated, a caller cannot
+        // place an account in a study they don't have access to. This means they can't update
+        // an account that is in a study they don't have access to, until this code is removed.
+        Set<String> callerStudies = RequestContext.get().getOrgSponsoredStudies();
         if (!callerStudies.isEmpty()) {
             Set<String> studyIds = BridgeUtils.collectStudyIds(account);
-            if (studyIds.isEmpty()) {
-                throw new BadRequestException("Participant must be assigned to one or more of these studies: "
-                        + BridgeUtils.COMMA_JOINER.join(callerStudies));
-            } else {
-                for (String studyId : studyIds) {
-                    if (!callerStudies.contains(studyId)) {
-                        throw new BadRequestException(studyId + " is not a study of the caller");
-                    }
+            for (String studyId : studyIds) {
+                if (!callerStudies.contains(studyId)) {
+                    throw new BadRequestException(studyId + " is not a study of the caller");
                 }
             }
         }
@@ -885,14 +880,14 @@ public class ParticipantService {
         }
         ExternalIdentifier externalId = beginAssignExternalId(account, update.getExternalIdUpdate());
         if (externalId != null) {
-            Enrollment enrollment = Enrollment.create(account.getAppId(),
-                    externalId.getStudyId(), account.getId());
             // Highly unlikely this was an admin account, but just in case
-            if (account.getEnrollments().contains(enrollment)) {
-                account.getEnrollments().remove(enrollment);
+            for (Enrollment existingEnrollment : account.getEnrollments()) {
+                if (existingEnrollment.getStudyId().equals(externalId.getStudyId())) {
+                    account.getEnrollments().remove(existingEnrollment);
+                }
             }
-            enrollment = Enrollment.create(account.getAppId(), externalId.getStudyId(), account.getId(),
-                    externalId.getIdentifier());
+            Enrollment enrollment = Enrollment.create(account.getAppId(), 
+                    externalId.getStudyId(), account.getId(), externalId.getIdentifier());
             account.getEnrollments().add(enrollment);
             try {
                 accountService.updateAccount(account,

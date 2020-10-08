@@ -78,7 +78,6 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
@@ -783,7 +782,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void updateSelfParticipant() throws Exception {
         RequestContext.set(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS)
-                .withCallerStudies(ImmutableSet.of("studyA", "studyB")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("studyA", "studyB")).build());
 
         // All values should be copied over here, also add a healthCode to verify it is not unset.
         StudyParticipant participant = new StudyParticipant.Builder()

@@ -172,7 +172,7 @@ public class ReportServiceTest {
         ReportIndex index = ReportIndex.create();
         index.setStudyIds(TestConstants.USER_STUDY_IDS);
         RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyB", "studyC")).build());
+                new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyB", "studyC")).build());
         assertTrue(service.canAccess(index));
     }
 
@@ -182,7 +182,7 @@ public class ReportServiceTest {
         ReportIndex index = ReportIndex.create();
         index.setStudyIds(TestConstants.USER_STUDY_IDS);
         RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyC")).build());
+                new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyC")).build());
         assertFalse(service.canAccess(index));        
     }
     
@@ -195,7 +195,7 @@ public class ReportServiceTest {
         index.setPublic(true);
         
         RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(TestConstants.USER_STUDY_IDS).build());
+                new RequestContext.Builder().withCallerEnrolledStudies(TestConstants.USER_STUDY_IDS).build());
         assertTrue(service.canAccess(index));        
     }
     
@@ -759,7 +759,7 @@ public class ReportServiceTest {
     public void getReportIndexDoesNotAuthorize() {
         // These don't match, but the call succeeds
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("studyC")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("studyC")).build());
         
         ReportIndex index = ReportIndex.create();
         index.setStudyIds(TestConstants.USER_STUDY_IDS);
@@ -774,7 +774,7 @@ public class ReportServiceTest {
             Set<String> callerStudies, Set<String> indexStudies) {
         // These don't match and the call succeeds
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(callerStudies).build());
+                .withOrgSponsoredStudies(callerStudies).build());
         
         ReportIndex index = ReportIndex.create();
         index.setKey(reportKey.getIndexKeyString());

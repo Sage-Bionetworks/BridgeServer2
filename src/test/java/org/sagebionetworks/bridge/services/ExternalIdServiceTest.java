@@ -146,15 +146,15 @@ public class ExternalIdServiceTest {
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false))
             .thenReturn(Study.create());
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.empty());
-        
+
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerStudies(STUDIES).build());
-        
+                .withOrgSponsoredStudies(STUDIES).build());
+
         ExternalIdentifier newExtId = ExternalIdentifier.create(TEST_APP_ID,
                 extId.getIdentifier());
         externalIdService.createExternalId(newExtId, false);
-        
+
         // still matches and verifies
         verify(externalIdDao).createExternalId(extId);
     }
@@ -165,7 +165,7 @@ public class ExternalIdServiceTest {
         
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerStudies(ImmutableSet.of(STUDY_ID, "anotherStudy")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID, "anotherStudy")).build());
         
         externalIdService.createExternalId(extId, false);
     }
@@ -205,7 +205,7 @@ public class ExternalIdServiceTest {
     public void deleteExternalIdPermanentlyOutsideStudiesThrows() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerStudies(STUDIES).build());        
+                .withOrgSponsoredStudies(STUDIES).build());        
         extId.setStudyId("someOtherId");
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.of(extId));
         

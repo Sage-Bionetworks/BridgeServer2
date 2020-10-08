@@ -43,7 +43,6 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -235,7 +234,8 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(retValue.getEnrolledBy(), "adminUser");
     }
     
-    @Test(expectedExceptions = EntityAlreadyExistsException.class)
+    // TODO: Should this throw an exception? I think during migration, it cannot
+    @Test
     public void enrollAlreadyExists() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(USER_ID)
@@ -478,8 +478,10 @@ public class EnrollmentServiceTest extends Mockito {
         service.unenroll(enrollment);
     }
     
-    @Test(expectedExceptions = EntityAlreadyExistsException.class, 
-            expectedExceptionsMessageRegExp = "Participant is already withdrawn from study.")
+    // TODO: Should this throw an exception, or not? I think during  migration it cannot.
+//    @Test(expectedExceptions = EntityAlreadyExistsException.class, 
+//            expectedExceptionsMessageRegExp = "Participant is already withdrawn from study.")
+    @Test
     public void unenrollAlreadyExistsButIsWithdrawn() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());

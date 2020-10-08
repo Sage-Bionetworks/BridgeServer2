@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -516,8 +518,8 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void getPagedRemovesStudiesNotInCaller() throws Exception {
-        RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(ImmutableSet.of(STUDY_A)).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(STUDY_A)).build());
         
         Set<Enrollment> set = ImmutableSet.of(
                 Enrollment.create(TEST_APP_ID, STUDY_A, ACCOUNT_ID),
@@ -650,8 +652,8 @@ public class HibernateAccountDaoTest extends Mockito {
                 + "acct.appId = :appId AND enrollment.studyId IN (:studies)";
         Set<String> studyIds = ImmutableSet.of("studyA", "studyB");
         try {
-            RequestContext context = new RequestContext.Builder().withCallerStudies(studyIds).build();
-            RequestContext.set(context);
+            RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER))
+                    .withOrgSponsoredStudies(studyIds).build());
 
             AccountSummarySearch search = new AccountSummarySearch.Builder().build();
             dao.getPagedAccountSummaries(TEST_APP_ID, search);
@@ -740,7 +742,42 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(capturedParams.get("endTime"), endDate);
         assertEquals(capturedParams.get("language"), "de");
     }
+    
+    @Test
+    public void getPagedScopedToOrgStudies() {
+        String queryExpr = "SELECT acct.id FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
+                + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
+                + "enrollment.studyId IN (:studies) GROUP BY acct.id";
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("A", "B")).build());
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder().build();
+        dao.getPagedAccountSummaries(TEST_APP_ID, search);
 
+        verify(mockHibernateHelper).queryGet(eq(queryExpr), paramCaptor.capture(), eq(0), eq(50), eq(String.class));
+        assertEquals(paramCaptor.getValue().get("appId"), TEST_APP_ID);
+        assertEquals(paramCaptor.getValue().get("studies"), ImmutableSet.of("A", "B"));
+    }
+
+    @Test
+    public void getPagedNotScopedToOrgStudiesForAdmin() {
+        String queryExpr = "SELECT acct.id FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
+                + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId "
+                + "GROUP BY acct.id";
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withOrgSponsoredStudies(ImmutableSet.of("A", "B")).build());
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder().build();
+        dao.getPagedAccountSummaries(TEST_APP_ID, search);
+
+        verify(mockHibernateHelper).queryGet(eq(queryExpr), paramCaptor.capture(), eq(0), eq(50), eq(String.class));
+        assertEquals(paramCaptor.getValue().get("appId"), TEST_APP_ID);
+        assertNull(paramCaptor.getValue().get("studies"));
+    }
+    
     @Test
     public void unmarshallAccountSummarySuccess() {
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ACCOUNT_ID, "externalIdA");
@@ -785,7 +822,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void unmarshallAccountSummaryFiltersStudies() throws Exception {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("studyB", "studyC")).build());
+                .withOrgSponsoredStudies(ImmutableSet.of("studyB", "studyC")).build());
 
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ACCOUNT_ID, "externalIdA");
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", ACCOUNT_ID, "externalIdB");
@@ -806,7 +843,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void unmarshallAccountSummaryStillReturnsOldExternalId() throws Exception {
         RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyB", "studyC")).build());
+                new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyB", "studyC")).build());
 
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();

@@ -82,6 +82,7 @@ public class ConsentService {
     private S3Helper s3Helper;
     private UrlShortenerService urlShortenerService;
     private TemplateService templateService;
+    private EnrollmentService enrollmentService;
     
     @Value("classpath:conf/app-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -129,6 +130,10 @@ public class ConsentService {
     @Autowired
     final void setTemplateService(TemplateService templateService) {
         this.templateService = templateService;
+    }
+    @Autowired
+    final void setEnrollmentService(EnrollmentService enrollmentService) {
+        this.enrollmentService = enrollmentService;
     }
     
     /**
@@ -200,13 +205,11 @@ public class ConsentService {
         account.setConsentSignatureHistory(subpopGuid, consentListCopy);
         account.setSharingScope(sharingScope);
         
-        account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());    
+        account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());
         for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
-            Enrollment enrollment = Enrollment.create(
-                    app.getIdentifier(), studyId, account.getId());
-            account.getEnrollments().add(enrollment);
+            Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), studyId, account.getId());
+            enrollmentService.enroll(account, newEnrollment);
         }
-        
         accountService.updateAccount(account, null);
         
         // Publish an enrollment event, set sharing scope 
@@ -314,6 +317,15 @@ public class ConsentService {
         }
         account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
 
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
+            if (subpop.isRequired() && subpop.getStudyIdsAssignedOnConsent().contains(enrollment.getStudyId())) {
+                Enrollment withdrawnEnrollment = Enrollment.create(app.getIdentifier(), enrollment.getStudyId(), account.getId());
+                withdrawnEnrollment.setWithdrawnOn(new DateTime(withdrewOn));
+                withdrawnEnrollment.setWithdrawalNote(withdrawal.getReason());
+                enrollmentService.unenroll(account, withdrawnEnrollment);
+            }
+        }
+        
         accountService.updateAccount(account, null);
         
         sendWithdrawEmail(app, account, withdrawal, withdrewOn);
@@ -346,7 +358,7 @@ public class ConsentService {
         
         // Forget this person. If the user registers again at a later date, it is as if they have 
         // created a new account. But we hold on to this record so we can still retrieve the consent 
-        // records for a given healthCode. We also don't delete external ID/study releationships
+        // records for a given healthCode. We also don't delete external ID/study relationships
         // so studies can continue to view withdrawals by health code.
         account.setSharingScope(SharingScope.NO_SHARING);
         account.setFirstName(null);
@@ -356,6 +368,14 @@ public class ConsentService {
         account.setEmailVerified(false);
         account.setPhone(null);
         account.setPhoneVerified(false);
+        
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
+            Enrollment withdrawnEnrollment = Enrollment.create(enrollment.getAppId(), enrollment.getStudyId(),
+                    enrollment.getAccountId());
+            withdrawnEnrollment.setWithdrawnOn(new DateTime(withdrewOn));
+            withdrawnEnrollment.setWithdrawalNote(withdrawal.getReason());
+            enrollmentService.unenroll(account, withdrawnEnrollment);
+        }
         accountService.updateAccount(account, null);
 
         notificationsService.deleteAllRegistrations(app.getIdentifier(), participant.getHealthCode());

@@ -72,6 +72,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
@@ -342,7 +343,12 @@ public class AppService {
             throw new EntityAlreadyExistsException(App.class, IDENTIFIER_PROPERTY, app.getIdentifier());
         }
         
-        subpopService.createDefaultSubpopulation(app);
+        Study study = Study.create();
+        study.setAppId(app.getIdentifier());
+        study.setIdentifier(app.getIdentifier() + "-study");
+        study.setName(app.getName() + " Study");
+        studyService.createStudy(app.getIdentifier(), study);
+        subpopService.createDefaultSubpopulation(app, study);
         
         Map<String,String> map = new HashMap<>();
         for (TemplateType type: TemplateType.values()) {
