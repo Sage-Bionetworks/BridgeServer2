@@ -403,7 +403,7 @@ public class ReportService {
         // Either a consented user or an administrative user might want to access a report index, so both
         // collections are compared to the index.
         Set<String> allStudyIds = new HashSet<>();
-        allStudyIds.addAll(RequestContext.get().getCallerStudies());
+        allStudyIds.addAll(RequestContext.get().getCallerEnrolledStudies());
         allStudyIds.addAll(RequestContext.get().getOrgSponsoredStudies());
         if (allStudyIds.isEmpty()) {
             return true;

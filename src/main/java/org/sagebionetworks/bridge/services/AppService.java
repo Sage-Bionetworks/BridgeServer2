@@ -5,8 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.SAGE_ID;
-import static org.sagebionetworks.bridge.BridgeConstants.SAGE_NAME;
 import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 
 import java.io.IOException;
@@ -74,7 +72,6 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
-import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
@@ -352,14 +349,6 @@ public class AppService {
         study.setName(app.getName() + " Study");
         studyService.createStudy(app.getIdentifier(), study);
         subpopService.createDefaultSubpopulation(app, study);
-        
-        // So far, we've always had Sage users in every app so we create it. (Organizations are
-        // easy to delete if not needed).
-        Organization sage = Organization.create();
-        sage.setAppId(app.getIdentifier());
-        sage.setIdentifier(SAGE_ID);
-        sage.setName(SAGE_NAME);
-        organizationService.createOrganization(sage);
         
         Map<String,String> map = new HashMap<>();
         for (TemplateType type: TemplateType.values()) {

@@ -782,7 +782,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void updateSelfParticipant() throws Exception {
         RequestContext.set(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS)
-                .withCallerStudies(ImmutableSet.of("studyA", "studyB")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("studyA", "studyB")).build());
 
         // All values should be copied over here, also add a healthCode to verify it is not unset.
         StudyParticipant participant = new StudyParticipant.Builder()

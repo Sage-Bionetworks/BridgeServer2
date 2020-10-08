@@ -436,7 +436,7 @@ public class ParticipantServiceTest extends Mockito {
         // when creating a participant. In this case, the relationship is implied by the 
         // external ID but not provided in the externalIds set. It works anyway.
         RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
-                .withCallerStudies(ImmutableSet.of("study1")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("study1")).build());
 
         ExternalIdentifier extId = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
         extId.setStudyId("study1");
@@ -471,7 +471,7 @@ public class ParticipantServiceTest extends Mockito {
     public void createParticipantWithMissingExternalIdAndStudyCaller() { 
         // This is a study caller supplying an external ID that doesn't exist.
         RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
-                .withCallerStudies(ImmutableSet.of("study1")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("study1")).build());
 
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.empty());
         
@@ -1259,7 +1259,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateParticipantMustIncludeCallerStudy() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID)).build());
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID)).build());
 
         participantService.updateParticipant(APP, PARTICIPANT);
     }
@@ -1927,7 +1927,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateIdentifiersCanAddExternalIdInOtherStudy() {
         // caller in question is in studyA
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID)).build());
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID)).build());
         
         // account is associated to the EXTERNAL_ID in STUDY_ID
         mockHealthCodeAndAccountRetrieval(EMAIL, null, EXTERNAL_ID);
@@ -1947,7 +1947,7 @@ public class ParticipantServiceTest extends Mockito {
         
         assertEquals(accountCaptor.getValue().getEnrollments().size(), 2);
         RequestContext context = RequestContext.get();
-        assertEquals(context.getCallerStudies(), ImmutableSet.of(STUDY_ID, "anotherStudy"));
+        assertEquals(context.getCallerEnrolledStudies(), ImmutableSet.of(STUDY_ID, "anotherStudy"));
     }
     
     @Test
@@ -1955,7 +1955,7 @@ public class ParticipantServiceTest extends Mockito {
         // Fully associated external ID can be changed by an update. This needs to be called
         // by an administrator to force an update of an existing study relationship.
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN))
-                .withCallerStudies(ImmutableSet.of("studyB")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("studyB")).build());
         mockHealthCodeAndAccountRetrieval();
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyB", ID, EXTERNAL_ID);
         // Also add an enrollment without an external ID, this is correctly replaced
@@ -3077,7 +3077,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void studyResearcherCanAddStudyIdOnCreate() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID))
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(participantService.generateGUID()).thenReturn(ID);
@@ -3100,7 +3100,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void studyResearcherCanAddExternalIdOnCreate() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID))
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
@@ -3127,7 +3127,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void studyResearcherCannotAddStudyIdOnUpdate() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID, "secondStudyId"))
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID, "secondStudyId"))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         when(studyService.getStudy(TEST_APP_ID, "secondStudyId", false)).thenReturn(Study.create());
@@ -3148,7 +3148,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void studyResearcherCanAddExternalIdOnUpdate() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID))
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(externalIdService.getExternalId(TEST_APP_ID, EXTERNAL_ID)).thenReturn(Optional.of(extId));
         
@@ -3172,7 +3172,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void studyResearcherCannotRemoveExternalIdOnUpdate() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID))
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -3187,7 +3187,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void studyResearcherCannotRemoveStudyIdOnUpdate() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID))
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
@@ -3272,7 +3272,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void studyResearcherCannotAddStudyIdOfOtherStudyOnUpdate() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID))
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, "someOtherStudy", false)).thenReturn(Study.create());
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
@@ -3297,7 +3297,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void studyResearcherCannotAddHaveNoStudyOnUpdate() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_ID))
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -3391,7 +3391,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     private StudyParticipant.Builder mockStudiesInRequest(Set<String> callerStudies, Set<String> participantStudies, Roles... callerRoles) {
-        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies)
+        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(callerStudies)
                 .withCallerRoles( (callerRoles.length == 0) ? null : ImmutableSet.copyOf(callerRoles)).build());
         
         StudyParticipant.Builder builder = withParticipant().withStudyIds(participantStudies);

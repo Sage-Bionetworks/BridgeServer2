@@ -41,7 +41,7 @@ public class ExternalIdValidatorTest {
     @Test
     public void validates() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("study-id"))
+                .withCallerEnrolledStudies(ImmutableSet.of("study-id"))
                 .withCallerAppId(TEST_APP_ID).build());
         
         when(studyService.getStudy(TEST_APP_ID, "study-id", false)).thenReturn(Study.create());

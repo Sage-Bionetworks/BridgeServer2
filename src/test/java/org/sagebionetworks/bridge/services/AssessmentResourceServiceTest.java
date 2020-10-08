@@ -670,7 +670,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void publishAssessmentResourcesCallerWrongAppContext() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(OWNER_ID)).build());
+                .withCallerEnrolledStudies(ImmutableSet.of(OWNER_ID)).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID+":"+OWNER_ID);

@@ -794,7 +794,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(context.getId(), REQUEST_ID);
         assertEquals(context.getCallerAppId(), TEST_APP_ID);
         assertEquals(context.getCallerOrgMembership(), TEST_ORG_ID);
-        assertEquals(context.getCallerStudies(), USER_STUDY_IDS);
+        assertEquals(context.getCallerEnrolledStudies(), USER_STUDY_IDS);
         assertEquals(context.getOrgSponsoredStudies(), orgStudies);
         assertTrue(context.isAdministrator()); 
         assertEquals(context.getCallerUserId(), USER_ID); 

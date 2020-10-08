@@ -954,7 +954,7 @@ public class AccountServiceTest extends Mockito {
         persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
         
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of(STUDY_A)).build());
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_A)).build());
 
         Account account = service.getAccount(ACCOUNT_ID);
         assertEquals(persistedAccount, account);

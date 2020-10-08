@@ -1610,12 +1610,6 @@ public class AppServiceTest extends Mockito {
 
         verify(mockSubpopService).createDefaultSubpopulation(app, defaultStudy);
         
-        verify(mockOrgService).createOrganization(orgCaptor.capture());
-        Organization sageOrg = orgCaptor.getValue();
-        assertEquals(sageOrg.getAppId(), app.getIdentifier());
-        assertEquals(sageOrg.getIdentifier(), SAGE_ID);
-        assertEquals(sageOrg.getName(), SAGE_NAME);
-
         verify(mockAppDao).createApp(appCaptor.capture());
 
         App newApp = appCaptor.getValue();
