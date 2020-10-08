@@ -843,7 +843,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void unmarshallAccountSummaryStillReturnsOldExternalId() throws Exception {
         RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyB", "studyC")).build());
+                new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyB", "studyC")).build());
 
         // Create HibernateAccount. Only fill in values needed for AccountSummary.
         HibernateAccount hibernateAccount = new HibernateAccount();

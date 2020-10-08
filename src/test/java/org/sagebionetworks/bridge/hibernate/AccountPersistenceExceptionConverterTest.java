@@ -161,7 +161,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsForExternalIdWhenThereAreMultipleIgnoringStudies() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("studyB")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("studyB")).build());
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
@@ -192,7 +192,7 @@ public class AccountPersistenceExceptionConverterTest {
     @Test
     public void entityAlreadyExistsForExternalIdWhenStudyOutsideOfCallerStudy() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("studyB")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("studyB")).build());
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);

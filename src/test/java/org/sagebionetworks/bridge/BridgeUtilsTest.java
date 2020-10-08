@@ -171,7 +171,7 @@ public class BridgeUtilsTest {
     @Test
     public void studyIdsVisibleToCallerEmpty() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(callerStudies).build());
         
         Account account = Account.create();
         account.setEnrollments(ImmutableSet.of());
@@ -184,7 +184,7 @@ public class BridgeUtilsTest {
     @Test
     public void studyIdsVisibleToCallerNull() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(callerStudies).build());
         
         Set<String> visibles = BridgeUtils.studyAssociationsVisibleToCaller(null)
                 .getStudyIdsVisibleToCaller();
@@ -229,7 +229,7 @@ public class BridgeUtilsTest {
     @Test
     public void externalIdsVisibleToCallerEmpty() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(callerStudies).build());
 
         Account account = Account.create();
         
@@ -242,7 +242,7 @@ public class BridgeUtilsTest {
     @Test
     public void externalIdsVisibleToCallerNull() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        RequestContext.set(new RequestContext.Builder().withCallerStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(callerStudies).build());
         
         Map<String, String> visibles = BridgeUtils.studyAssociationsVisibleToCaller(null)
                 .getExternalIdsVisibleToCaller();
@@ -335,7 +335,7 @@ public class BridgeUtilsTest {
 
     @Test
     public void filterForStudyAccountWithMatchingStudiesReturnsStudyAccount() {
-        RequestContext.set(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyA")).build());
         assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
     
@@ -386,7 +386,7 @@ public class BridgeUtilsTest {
 
     @Test
     public void filterForStudyExtIdWithMatchingStudiesReturnsExtId() {
-        RequestContext.set(new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyA")).build());
         assertNotNull(BridgeUtils.filterForStudy(getExternalIdentifierWithStudy("studyA")));
     }
     

@@ -280,7 +280,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void createAssessmentRevisionUnauthorized() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("studyD")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("studyD")).build());
         
         when(mockOrganizationService.getOrganization(TEST_APP_ID, OWNER_ID))
             .thenReturn(mockOrganization);

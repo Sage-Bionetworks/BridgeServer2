@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.AdditionalMatchers.not;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
-import static org.sagebionetworks.bridge.BridgeConstants.SAGE_ID;
-import static org.sagebionetworks.bridge.BridgeConstants.SAGE_NAME;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -1610,12 +1608,6 @@ public class AppServiceTest extends Mockito {
 
         verify(mockSubpopService).createDefaultSubpopulation(app, defaultStudy);
         
-        verify(mockOrgService).createOrganization(orgCaptor.capture());
-        Organization sageOrg = orgCaptor.getValue();
-        assertEquals(sageOrg.getAppId(), app.getIdentifier());
-        assertEquals(sageOrg.getIdentifier(), SAGE_ID);
-        assertEquals(sageOrg.getName(), SAGE_NAME);
-
         verify(mockAppDao).createApp(appCaptor.capture());
 
         App newApp = appCaptor.getValue();

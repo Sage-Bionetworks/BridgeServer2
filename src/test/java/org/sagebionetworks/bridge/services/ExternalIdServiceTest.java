@@ -165,7 +165,7 @@ public class ExternalIdServiceTest {
         
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerStudies(ImmutableSet.of(STUDY_ID, "anotherStudy")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID, "anotherStudy")).build());
         
         externalIdService.createExternalId(extId, false);
     }

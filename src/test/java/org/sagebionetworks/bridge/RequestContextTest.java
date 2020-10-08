@@ -63,11 +63,11 @@ public class RequestContextTest extends Mockito {
         // empty and useless, request context. It's expected this will be augmented by other
         // code that executes.
         RequestContext nullContext = new RequestContext.Builder().withRequestId(null).withCallerAppId(null)
-                .withOrgSponsoredStudies(null).withCallerStudies(null).withCallerRoles(null).withCallerUserId(null)
+                .withOrgSponsoredStudies(null).withCallerEnrolledStudies(null).withCallerRoles(null).withCallerUserId(null)
                 .withCallerLanguages(null).withCallerClientInfo(null).withCallerOrgMembership(null).build();
         
         assertNotNull(nullContext.getId());
-        assertTrue(nullContext.getCallerStudies().isEmpty());
+        assertTrue(nullContext.getCallerEnrolledStudies().isEmpty());
         assertTrue(nullContext.getCallerRoles().isEmpty());
         assertNull(nullContext.getCallerAppId());
         assertNull(nullContext.getCallerUserId());
@@ -89,7 +89,7 @@ public class RequestContextTest extends Mockito {
         // clear the ThreadLocal variable in a way that prevents making logs of null-pointer checks
         // in the code).
         assertNull(NULL_INSTANCE.getId());
-        assertTrue(NULL_INSTANCE.getCallerStudies().isEmpty());
+        assertTrue(NULL_INSTANCE.getCallerEnrolledStudies().isEmpty());
         assertTrue(NULL_INSTANCE.getCallerRoles().isEmpty());
         assertNull(NULL_INSTANCE.getCallerAppId());
         assertNull(NULL_INSTANCE.getCallerUserId());
@@ -107,14 +107,14 @@ public class RequestContextTest extends Mockito {
         
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
-        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerStudies(STUDIES)
+        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerEnrolledStudies(STUDIES)
                 .withCallerAppId(TEST_APP_ID).withMetrics(metrics).withCallerRoles(ROLES).withCallerUserId(USER_ID)
                 .withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).withCallerOrgMembership(TEST_ORG_ID)
                 .withOrgSponsoredStudies(USER_STUDY_IDS).build();
 
         assertEquals(context.getId(), REQUEST_ID);
         assertEquals(context.getCallerAppId(), TEST_APP_ID);
-        assertEquals(context.getCallerStudies(), STUDIES);
+        assertEquals(context.getCallerEnrolledStudies(), STUDIES);
         assertEquals(context.getCallerRoles(), ROLES);
         assertEquals(context.getCallerUserId(), USER_ID);
         assertEquals(context.getCallerLanguages(), LANGUAGES);
@@ -132,7 +132,7 @@ public class RequestContextTest extends Mockito {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache("Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4");
         
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).withCallerAppId(TEST_APP_ID)
-                .withCallerStudies(STUDIES).withMetrics(metrics).withCallerRoles(ROLES).withCallerUserId(USER_ID)
+                .withCallerEnrolledStudies(STUDIES).withMetrics(metrics).withCallerRoles(ROLES).withCallerUserId(USER_ID)
                 .withCallerLanguages(LANGUAGES).withCallerClientInfo(clientInfo).withCallerOrgMembership(TEST_ORG_ID)
                 .withOrgSponsoredStudies(USER_STUDY_IDS).build();
         
@@ -140,7 +140,7 @@ public class RequestContextTest extends Mockito {
         
         assertEquals(copy.getId(), "did-change-this");
         assertEquals(copy.getCallerAppId(), TEST_APP_ID);
-        assertEquals(copy.getCallerStudies(), STUDIES);
+        assertEquals(copy.getCallerEnrolledStudies(), STUDIES);
         assertEquals(copy.getCallerRoles(), ROLES);
         assertEquals(copy.getCallerUserId(), USER_ID);
         assertEquals(copy.getCallerLanguages(), LANGUAGES);
@@ -206,7 +206,7 @@ public class RequestContextTest extends Mockito {
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).build();
         assertNotNull(context.getId());
         assertNull(context.getCallerAppId());
-        assertEquals(ImmutableSet.of(), context.getCallerStudies());
+        assertEquals(ImmutableSet.of(), context.getCallerEnrolledStudies());
         assertFalse(context.isAdministrator());
         RequestContext.set(context);
         
@@ -221,7 +221,7 @@ public class RequestContextTest extends Mockito {
         RequestContext retValue = RequestContext.updateFromSession(session, mockSponsorService);
         assertEquals(retValue.getId(), REQUEST_ID);
         assertEquals(retValue.getCallerAppId(), TEST_APP_ID);
-        assertEquals(retValue.getCallerStudies(), USER_STUDY_IDS);
+        assertEquals(retValue.getCallerEnrolledStudies(), USER_STUDY_IDS);
         assertEquals(retValue.getOrgSponsoredStudies(), USER_STUDY_IDS);
         assertTrue(retValue.isAdministrator());
         assertTrue(retValue.isInRole(DEVELOPER));
@@ -280,7 +280,7 @@ public class RequestContextTest extends Mockito {
         RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).build();
         assertNotNull(context.getId());
         assertNull(context.getCallerAppId());
-        assertEquals(ImmutableSet.of(), context.getCallerStudies());
+        assertEquals(ImmutableSet.of(), context.getCallerEnrolledStudies());
         assertFalse(context.isAdministrator());
         RequestContext.set(context);
         
@@ -293,7 +293,7 @@ public class RequestContextTest extends Mockito {
         RequestContext retValue = RequestContext.updateFromSession(session, mockSponsorService);
         assertEquals(retValue.getId(), REQUEST_ID);
         assertEquals(retValue.getCallerAppId(), TEST_APP_ID);
-        assertEquals(retValue.getCallerStudies(), USER_STUDY_IDS);
+        assertEquals(retValue.getCallerEnrolledStudies(), USER_STUDY_IDS);
         assertEquals(retValue.getOrgSponsoredStudies(), ImmutableSet.of());
         assertTrue(retValue.isAdministrator());
         assertTrue(retValue.isInRole(DEVELOPER));
@@ -308,25 +308,25 @@ public class RequestContextTest extends Mockito {
     @Test
     public void updateFromExternalId() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("study1")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("study1")).build());
         
         ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, "anIdentifier");
         externalId.setStudyId("study2");
         
         RequestContext.updateFromExternalId(externalId);
         
-        assertEquals(RequestContext.get().getCallerStudies(), ImmutableSet.of("study1", "study2"));
+        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of("study1", "study2"));
     }
 
     @Test
     public void updateFromExternalIdSkipsNull() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(ImmutableSet.of("study1")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("study1")).build());
         
         ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, "anIdentifier");
         
         RequestContext.updateFromExternalId(externalId);
         
-        assertEquals(RequestContext.get().getCallerStudies(), ImmutableSet.of("study1"));
+        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of("study1"));
     }
 }

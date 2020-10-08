@@ -1117,7 +1117,7 @@ public class AuthenticationServiceMockTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordExternalIdMismatchesCallerStudies() {
         RequestContext.set(
-                new RequestContext.Builder().withCallerStudies(ImmutableSet.of("studyB")).build());
+                new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyB")).build());
         
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
         externalIdentifier.setStudyId("studyA");

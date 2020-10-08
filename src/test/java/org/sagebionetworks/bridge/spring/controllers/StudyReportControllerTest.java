@@ -145,7 +145,7 @@ public class StudyReportControllerTest extends Mockito {
         
         // There are some tests that need to clear this for the call to work correctly.
         RequestContext.set(new RequestContext.Builder()
-                .withCallerStudies(USER_STUDY_IDS).build());
+                .withCallerEnrolledStudies(USER_STUDY_IDS).build());
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();

@@ -52,7 +52,7 @@ public class RequestContext {
         }
         builder.withCallerLanguages(participant.getLanguages());
         builder.withCallerOrgMembership(participant.getOrgMembership());
-        builder.withCallerStudies(participant.getStudyIds());
+        builder.withCallerEnrolledStudies(participant.getStudyIds());
         builder.withCallerRoles(participant.getRoles());
         builder.withCallerUserId(participant.getId());
 
@@ -70,8 +70,8 @@ public class RequestContext {
         RequestContext context = get();
         RequestContext.Builder builder = context.toBuilder();
         if (externalId.getStudyId() != null) {
-            builder.withCallerStudies(new ImmutableSet.Builder<String>()
-                .addAll(context.getCallerStudies())
+            builder.withCallerEnrolledStudies(new ImmutableSet.Builder<String>()
+                .addAll(context.getCallerEnrolledStudies())
                 .add(externalId.getStudyId()).build());
         }
         RequestContext reqContext = builder.build();
@@ -82,7 +82,7 @@ public class RequestContext {
     private final String requestId;
     private final String callerAppId;
     private final String callerOrgMembership;
-    private final Set<String> callerStudies;
+    private final Set<String> callerEnrolledStudies;
     private final Set<String> orgSponsoredStudies;
     private final Set<Roles> callerRoles;
     private final String callerUserId;
@@ -92,12 +92,12 @@ public class RequestContext {
     private final String callerIpAddress;
     
     private RequestContext(Metrics metrics, String requestId, String callerAppId, String callerOrgMembership,
-            Set<String> callerStudies, Set<String> orgSponsoredStudies, Set<Roles> callerRoles, String callerUserId,
-            ClientInfo callerClientInfo, List<String> callerLanguages, String callerIpAddress) {
+            Set<String> callerEnrolledStudies, Set<String> orgSponsoredStudies, Set<Roles> callerRoles,
+            String callerUserId, ClientInfo callerClientInfo, List<String> callerLanguages, String callerIpAddress) {
         this.requestId = requestId;
         this.callerAppId = callerAppId;
         this.callerOrgMembership = callerOrgMembership;
-        this.callerStudies = callerStudies;
+        this.callerEnrolledStudies = callerEnrolledStudies;
         this.orgSponsoredStudies = orgSponsoredStudies;
         this.callerRoles = callerRoles;
         this.callerUserId = callerUserId;
@@ -119,8 +119,8 @@ public class RequestContext {
     public String getCallerOrgMembership() {
         return callerOrgMembership;
     }
-    public Set<String> getCallerStudies() {
-        return callerStudies;
+    public Set<String> getCallerEnrolledStudies() {
+        return callerEnrolledStudies;
     }
     public Set<String> getOrgSponsoredStudies() {
         return orgSponsoredStudies;
@@ -159,7 +159,7 @@ public class RequestContext {
             .withCallerOrgMembership(callerOrgMembership)
             .withCallerLanguages(callerLanguages)
             .withCallerRoles(callerRoles)
-            .withCallerStudies(callerStudies)
+            .withCallerEnrolledStudies(callerEnrolledStudies)
             .withOrgSponsoredStudies(orgSponsoredStudies)
             .withCallerUserId(callerUserId)
             .withMetrics(metrics)
@@ -170,7 +170,7 @@ public class RequestContext {
         private Metrics metrics;
         private String callerAppId;
         private String callerOrgMembership;
-        private Set<String> callerStudies;
+        private Set<String> callerEnrolledStudies;
         private Set<String> orgSponsoredStudies;
         private Set<Roles> callerRoles;
         private String requestId;
@@ -191,12 +191,14 @@ public class RequestContext {
             this.callerOrgMembership = orgId;
             return this;
         }
-        public Builder withCallerStudies(Set<String> callerStudies) {
-            this.callerStudies = (callerStudies == null) ? null : ImmutableSet.copyOf(callerStudies);
+        public Builder withCallerEnrolledStudies(Set<String> callerEnrolledStudies) {
+            this.callerEnrolledStudies = (callerEnrolledStudies == null) ? 
+                    null : ImmutableSet.copyOf(callerEnrolledStudies);
             return this;
         }
         public Builder withOrgSponsoredStudies(Set<String> orgSponsoredStudies){ 
-            this.orgSponsoredStudies = (orgSponsoredStudies == null) ? null : ImmutableSet.copyOf(orgSponsoredStudies);
+            this.orgSponsoredStudies = (orgSponsoredStudies == null) ? 
+                    null : ImmutableSet.copyOf(orgSponsoredStudies);
             return this;
         }
         public Builder withCallerRoles(Set<Roles> roles) {
@@ -228,8 +230,8 @@ public class RequestContext {
             if (requestId == null) {
                 requestId = BridgeUtils.generateGuid();
             }
-            if (callerStudies == null) {
-                callerStudies = ImmutableSet.of();
+            if (callerEnrolledStudies == null) {
+                callerEnrolledStudies = ImmutableSet.of();
             }
             if (orgSponsoredStudies == null) {
                 orgSponsoredStudies = ImmutableSet.of();
@@ -246,7 +248,7 @@ public class RequestContext {
             if (metrics == null) {
                 metrics = new Metrics(requestId);
             }
-            return new RequestContext(metrics, requestId, callerAppId, callerOrgMembership, callerStudies,
+            return new RequestContext(metrics, requestId, callerAppId, callerOrgMembership, callerEnrolledStudies,
                     orgSponsoredStudies, callerRoles, callerUserId, callerClientInfo, callerLanguages, callerIpAddress);
         }
     }
@@ -254,9 +256,9 @@ public class RequestContext {
     @Override
     public String toString() {
         return "RequestContext [requestId=" + requestId + ", callerAppId=" + callerAppId + ", callerOrgMembership="
-                + callerOrgMembership + ", callerStudies=" + callerStudies + ", orgSponsoredStudies=" + orgSponsoredStudies
-                + ", callerRoles=" + callerRoles + ", callerUserId=" + callerUserId + ", callerClientInfo=" 
-                + callerClientInfo + ", callerIpAddress=" + callerIpAddress + ", callerLanguages=" + callerLanguages 
-                + ", metrics=" + metrics + "]";
+                + callerOrgMembership + ", callerEnrolledStudies=" + callerEnrolledStudies + ", orgSponsoredStudies="
+                + orgSponsoredStudies + ", callerRoles=" + callerRoles + ", callerUserId=" + callerUserId
+                + ", callerClientInfo=" + callerClientInfo + ", callerIpAddress=" + callerIpAddress
+                + ", callerLanguages=" + callerLanguages + ", metrics=" + metrics + "]";
     }
 }
