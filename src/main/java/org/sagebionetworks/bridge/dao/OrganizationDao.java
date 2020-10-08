@@ -10,7 +10,7 @@ public interface OrganizationDao {
      * Return a list of partially initialized organization objects (containing the name, description and 
      * identifier of each record).  
      */
-    PagedResourceList<Organization> getOrganizations(String appId, int offsetBy, int pageSize);
+    PagedResourceList<Organization> getOrganizations(String appId, Integer offsetBy, Integer pageSize);
 
     /**
      * Create an organization.

@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.AdditionalMatchers.not;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
-import static org.sagebionetworks.bridge.BridgeConstants.SAGE_ID;
-import static org.sagebionetworks.bridge.BridgeConstants.SAGE_NAME;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
