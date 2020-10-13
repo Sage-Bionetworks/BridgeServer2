@@ -11,7 +11,7 @@ public interface EnrollmentDao {
      * Get accounts that have been enrolled in the study (past and present).
      */
     PagedResourceList<EnrollmentDetail> getEnrollmentsForStudy(String appId, String studyId, 
-            EnrollmentFilter filter, Integer offsetBy, Integer pageSize);
+            EnrollmentFilter filter, boolean includeTesters, Integer offsetBy, Integer pageSize);
     
     /**
      * Get enrollments for a specific account.

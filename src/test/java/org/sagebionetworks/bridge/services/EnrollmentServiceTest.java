@@ -84,15 +84,15 @@ public class EnrollmentServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         PagedResourceList<EnrollmentDetail> page = new PagedResourceList<>(ImmutableList.of(), 10);
-        when(mockEnrollmentDao.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, 10, 50)).thenReturn(page);
+        when(mockEnrollmentDao.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, true, 10, 50)).thenReturn(page);
         
-        PagedResourceList<EnrollmentDetail> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, 10, 50);
+        PagedResourceList<EnrollmentDetail> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, true, 10, 50);
         assertSame(retValue, page);
         assertEquals(retValue.getRequestParams().get(OFFSET_BY), Integer.valueOf(10));
         assertEquals(retValue.getRequestParams().get(PAGE_SIZE), Integer.valueOf(50));
         assertEquals(retValue.getRequestParams().get(ENROLLMENT_FILTER), EnrollmentFilter.ENROLLED);
         
-        verify(mockEnrollmentDao).getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, 10, 50);
+        verify(mockEnrollmentDao).getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, true, 10, 50);
     }
     
     @Test
@@ -101,12 +101,12 @@ public class EnrollmentServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         PagedResourceList<EnrollmentDetail> page = new PagedResourceList<>(ImmutableList.of(), 10);
-        when(mockEnrollmentDao.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, null, null)).thenReturn(page);
+        when(mockEnrollmentDao.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, false, null, null)).thenReturn(page);
         
-        PagedResourceList<EnrollmentDetail> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, null, null);
+        PagedResourceList<EnrollmentDetail> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, false, null, null);
         assertSame(retValue, page);
         
-        verify(mockEnrollmentDao).getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, null, null);
+        verify(mockEnrollmentDao).getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, false, null, null);
     }
         
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -116,7 +116,7 @@ public class EnrollmentServiceTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(false);
         
-        service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, 10, 50);
+        service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, true, 10, 50);
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
@@ -124,7 +124,7 @@ public class EnrollmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
-        service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, -1, 50);
+        service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, true, -1, 50);
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
@@ -132,7 +132,7 @@ public class EnrollmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
-        service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, 0, 0);
+        service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, true, 0, 0);
     }
     
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
@@ -140,7 +140,7 @@ public class EnrollmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
-        service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, 0, 1000);
+        service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, true, 0, 1000);
     }
     
     @Test

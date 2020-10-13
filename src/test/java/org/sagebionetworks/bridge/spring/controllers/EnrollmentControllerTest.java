@@ -99,13 +99,27 @@ public class EnrollmentControllerTest extends Mockito {
         EnrollmentDetail en1 = new EnrollmentDetail(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "user1"), null, null, null);
         EnrollmentDetail en2 = new EnrollmentDetail(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "user2"), null, null, null);
         PagedResourceList<EnrollmentDetail> page = new PagedResourceList<>(ImmutableList.of(en1, en2), 10);
-        when(mockService.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, 5, 40)).thenReturn(page);
+        when(mockService.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, true, 5, 40)).thenReturn(page);
         
         PagedResourceList<EnrollmentDetail> retValue = controller.getEnrollmentsForStudy(
-                TEST_STUDY_ID, "5", "40", "enrolled");
+                TEST_STUDY_ID, "5", "40", "enrolled", "true");
         assertSame(retValue, page);
         
-        verify(mockService).getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, 5, 40);
+        verify(mockService).getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, true, 5, 40);
+    }
+    
+    @Test
+    public void getEnrollmentsForStudyWithDefaults() {
+        EnrollmentDetail en1 = new EnrollmentDetail(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "user1"), null, null, null);
+        EnrollmentDetail en2 = new EnrollmentDetail(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "user2"), null, null, null);
+        PagedResourceList<EnrollmentDetail> page = new PagedResourceList<>(ImmutableList.of(en1, en2), 10);
+        when(mockService.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, false, 0, 50)).thenReturn(page);
+        
+        PagedResourceList<EnrollmentDetail> retValue = controller.getEnrollmentsForStudy(
+                TEST_STUDY_ID, null, null, null, null);
+        assertSame(retValue, page);
+        
+        verify(mockService).getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, false, 0, 50);
     }
     
     @Test

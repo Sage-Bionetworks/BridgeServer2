@@ -59,7 +59,7 @@ public class EnrollmentService {
      * common reporting requirements (e.g. how many people have withdrawn from the study).
      */
     public PagedResourceList<EnrollmentDetail> getEnrollmentsForStudy(String appId, String studyId, 
-            EnrollmentFilter filter, Integer offsetBy, Integer pageSize) {
+            EnrollmentFilter filter, boolean includeTesters, Integer offsetBy, Integer pageSize) {
         checkNotNull(appId);
         checkNotNull(studyId);
         
@@ -71,7 +71,7 @@ public class EnrollmentService {
         if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return enrollmentDao.getEnrollmentsForStudy(appId, studyId, filter, offsetBy, pageSize)
+        return enrollmentDao.getEnrollmentsForStudy(appId, studyId, filter, includeTesters, offsetBy, pageSize)
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize)
                 .withRequestParam(ENROLLMENT_FILTER, filter);
