@@ -2,7 +2,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,6 +19,7 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
@@ -166,8 +166,8 @@ public class HibernateAccountDao implements AccountDao {
         
         // If the caller is a member of an organization, then they can only see accounts in the studies 
         // sponsored by that organization. ADMIN accounts are exempt from this requirement.
-        Set<String> callerStudies = context.getOrgSponsoredStudies();
-        if (!context.isInRole(ADMIN) && !callerStudies.isEmpty()) {
+        if (!AuthUtils.isStudyScopedToCaller(null)) {
+            Set<String> callerStudies = context.getOrgSponsoredStudies();
             builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
         }
         if (!isCount) {

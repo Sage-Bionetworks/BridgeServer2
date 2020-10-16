@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -243,5 +244,55 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
         assertFalse(AuthUtils.isInRoles(null, ADMIN));
+    }
+    
+    @Test
+    public void isStudyScopedToCallerFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
+        
+        assertFalse( AuthUtils.isStudyScopedToCaller(TEST_STUDY_ID) );
+    }
+    
+    @Test
+    public void isStudyScopedToCallerFailsWithNullStudyId() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
+        
+        assertFalse( AuthUtils.isStudyScopedToCaller(null) );
+    }
+    
+    @Test
+    public void isStudyScopedToCallerSucceedsForWorker() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(WORKER))
+                .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
+        
+        assertTrue( AuthUtils.isStudyScopedToCaller(TEST_STUDY_ID) );
+    }
+
+    @Test
+    public void isStudyScopedToCallerSucceedsForAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
+        
+        assertTrue( AuthUtils.isStudyScopedToCaller(TEST_STUDY_ID) );
+    }
+    
+    @Test
+    public void isStudyScopedToCallerSucceedsForGlobalUser() {
+        RequestContext.set(new RequestContext.Builder().build());
+        
+        assertTrue( AuthUtils.isStudyScopedToCaller(TEST_STUDY_ID) );
+    }
+
+    @Test
+    public void isStudyScopedToCallerSucceedsForOrgSponsoredStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
+        
+        assertTrue( AuthUtils.isStudyScopedToCaller("study2") );
     }
 }

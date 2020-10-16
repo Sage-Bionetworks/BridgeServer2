@@ -533,7 +533,7 @@ public class ParticipantService {
         
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
         if (participant.getStatus() != null) {
-            if (RequestContext.get().isInRole(ImmutableSet.of(ADMIN, WORKER))) {
+            if (RequestContext.get().isInRole(ADMIN, WORKER)) {
                 account.setStatus(participant.getStatus());
             }
         }
