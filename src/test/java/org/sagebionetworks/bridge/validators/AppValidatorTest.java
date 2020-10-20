@@ -184,6 +184,9 @@ public class AppValidatorTest {
         
         app.setSupportEmail(null);
         assertValidatorMessage(INSTANCE, app, "supportEmail", "is required");
+        
+        app.setSupportEmail("alx@keywise.tech");
+        Validate.entityThrowingException(INSTANCE, app);
     }
     
     @Test
