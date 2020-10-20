@@ -290,7 +290,6 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void isStudyScopedToCallerSucceedsForOrgSponsoredStudy() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN))
                 .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
         
         assertTrue( AuthUtils.isStudyScopedToCaller("study2") );
