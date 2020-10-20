@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge;
 
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 
 import java.util.List;
@@ -8,6 +7,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
@@ -45,7 +45,7 @@ public class RequestContext {
         builder.withCallerAppId(session.getAppId());
 
         StudyParticipant participant = session.getParticipant();
-        if (participant.getOrgMembership() != null && !BridgeUtils.isInRole(participant.getRoles(), ADMIN)) {
+        if (participant.getOrgMembership() != null) {
             Set<String> orgSponsoredStudies = sponsorService.getSponsoredStudyIds(
                     session.getAppId(), participant.getOrgMembership());
             builder.withOrgSponsoredStudies(orgSponsoredStudies);
@@ -132,8 +132,8 @@ public class RequestContext {
     public boolean isAdministrator() { 
         return callerRoles != null && !callerRoles.isEmpty();
     }
-    public boolean isInRole(Roles role) {
-        return BridgeUtils.isInRole(callerRoles, role);
+    public boolean isInRole(Roles... roles) {
+        return BridgeUtils.isInRole(callerRoles, Sets.newHashSet(roles));
     }
     public boolean isInRole(Set<Roles> roleSet) {
         return BridgeUtils.isInRole(callerRoles, roleSet);
