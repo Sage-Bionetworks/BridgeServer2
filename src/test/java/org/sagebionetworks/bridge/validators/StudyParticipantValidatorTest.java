@@ -171,6 +171,14 @@ public class StudyParticipantValidatorTest {
         validator = makeValidator(true);
         assertValidatorMessage(validator, withEmail("a"), "email", "does not appear to be an email address");
     }
+
+    @Test
+    public void emailCanIncludeWordTest() {
+        validator = makeValidator(true);
+        
+        String email = "bridge-testing+jenkins-dev-ScheduledActivityAutoResolutionTest-zstm@sagebase.org";
+        Validate.entityThrowingException(validator, withEmail(email));
+    }
     
     @Test
     public void externalIdOnlyOK() {
