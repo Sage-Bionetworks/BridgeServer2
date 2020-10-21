@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_VENDOR_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.ArrayList;
@@ -413,6 +414,14 @@ public class AppValidatorTest {
     public void oauthProviderRequired() {
         app.getOAuthProviders().put("vendor", null);
         assertValidatorMessage(INSTANCE, app, "oauthProviders[vendor]", "is required");
+    }
+    
+    @Test
+    public void oauthProviderCannotBeCalledSynapse() {
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint",
+                CALLBACK_URL, "http://example.com/introspect");
+        app.getOAuthProviders().put("synapse", provider);
+        assertValidatorMessage(INSTANCE, app, "oauthProviders[synapse]", "is a reserved vendor ID");
     }
     
     @Test
