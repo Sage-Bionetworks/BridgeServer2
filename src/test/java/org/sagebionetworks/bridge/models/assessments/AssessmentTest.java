@@ -134,6 +134,7 @@ public class AssessmentTest {
         dto.setOriginGuid("originGuid");
         dto.setValidationStatus("validationStatus");
         dto.setNormingStatus("normingStatus");
+        dto.setMinutesToComplete(10);
         dto.setTags(STRING_TAGS);
         dto.setCustomizationFields(CUSTOMIZATION_FIELDS);
         dto.setCreatedOn(CREATED_ON);

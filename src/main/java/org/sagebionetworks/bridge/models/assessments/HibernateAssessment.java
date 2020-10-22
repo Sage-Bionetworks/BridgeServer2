@@ -42,6 +42,7 @@ public class HibernateAssessment {
         assessment.setSummary(dto.getSummary());
         assessment.setValidationStatus(dto.getValidationStatus());
         assessment.setNormingStatus(dto.getNormingStatus());
+        assessment.setMinutesToComplete(dto.getMinutesToComplete());
         assessment.setOsName(dto.getOsName());
         assessment.setOriginGuid(dto.getOriginGuid());
         assessment.setOwnerId(dto.getOwnerId());
@@ -63,6 +64,7 @@ public class HibernateAssessment {
     private String summary;
     private String validationStatus;
     private String normingStatus;
+    private Integer minutesToComplete;
     // same constants used in BridgeServer2
     private String osName;
     
@@ -138,7 +140,13 @@ public class HibernateAssessment {
     }
     public void setNormingStatus(String normingStatus) {
         this.normingStatus = normingStatus;
-    }    
+    }
+    public Integer getMinutesToComplete() {
+        return this.minutesToComplete;
+    }
+    public void setMinutesToComplete(Integer minutesToComplete) {
+        this.minutesToComplete = minutesToComplete;
+    }
     public String getOsName() {
         return osName;
     }
