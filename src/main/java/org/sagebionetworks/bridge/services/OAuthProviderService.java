@@ -5,6 +5,7 @@ import static java.nio.charset.Charset.defaultCharset;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_CLIENT_SECRET;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_URL;
+import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_VENDOR_ID;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -38,6 +39,7 @@ import org.apache.http.message.BasicNameValuePair;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -47,6 +49,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.OAuthProvider;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
@@ -93,7 +96,6 @@ class OAuthProviderService {
     private static final Pattern SCOPE_PAIR_SPLIT_PATTERN = Pattern.compile("\\s*[{},]\\s*");
     private static final String SCOPE_PROP_NAME = "scope";
     private static final String SERVICE_ERROR_MSG = "Error retrieving access token";
-    private static final String SYNAPSE_VENDOR_ID = "synapse";
     static final String TOKEN_PROP_NAME = "token";
     private static final String PROVIDER_USER_ID = "user_id";
     private static final Set<String> INVALID_OR_EXPIRED_ERRORS = ImmutableSet.of("invalid_token", "expired_token", "invalid_grant");
@@ -113,12 +115,18 @@ class OAuthProviderService {
     private String synapseOauthURL;
     private String synapseClientID;
     private String synapseClientSecret;
+    private AppService appService;
 
     @Autowired
     final void setBridgeConfig(BridgeConfig config) {
         this.synapseOauthURL = config.get(SYNAPSE_OAUTH_URL);
         this.synapseClientID = config.get(SYNAPSE_OAUTH_CLIENT_ID);
         this.synapseClientSecret = config.get(SYNAPSE_OAUTH_CLIENT_SECRET);
+    }
+    
+    @Autowired
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     /**
@@ -199,8 +207,6 @@ class OAuthProviderService {
         
         if (authToken.getVendorId() == null) {
             throw new BadRequestException("Vendor ID required");
-        } else if (!SYNAPSE_VENDOR_ID.equals(authToken.getVendorId())) {
-            throw new BadRequestException("Vendor not supported: " + authToken.getVendorId());
         }
         if (authToken.getAppId() == null) {
             throw new BadRequestException("App ID required");
@@ -208,10 +214,20 @@ class OAuthProviderService {
         if (authToken.getAuthToken() == null) {
             throw new BadRequestException("Authorization token required");
         }
+        OAuthProvider provider = null;
+        if (SYNAPSE_OAUTH_VENDOR_ID.equals(authToken.getVendorId())) {
+            // Synapse configuration is globally available and not stored in providers table.
+            provider = new OAuthProvider(this.synapseClientID, this.synapseClientSecret, 
+                    this.synapseOauthURL, authToken.getCallbackUrl(), null);
+        } else {
+            // Is this vendor ID mapped to another provider for this app?
+            App app = appService.getApp(authToken.getAppId());
+            provider = app.getOAuthProviders().get(authToken.getVendorId());
+        }
+        if (provider == null) {
+            throw new BadRequestException("Vendor not supported: " + authToken.getVendorId());
+        }
         
-        // Synapse configuration, not stored in the table that's accessible to end users.
-        OAuthProvider provider = new OAuthProvider(this.synapseClientID, this.synapseClientSecret, 
-                this.synapseOauthURL, authToken.getCallbackUrl(), null);
         HttpPost client = createOAuthProviderPost(provider, provider.getEndpoint());
         
         List<NameValuePair> pairs = new ArrayList<>();
