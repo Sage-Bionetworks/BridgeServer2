@@ -406,3 +406,9 @@ ADD COLUMN `withdrawnBy` varchar(255),
 ADD COLUMN `withdrawalNote` varchar(255),
 ADD CONSTRAINT `fk_enrolledBy` FOREIGN KEY (`enrolledBy`) REFERENCES `Accounts` (`id`),
 ADD CONSTRAINT `fk_withdrawnBy` FOREIGN KEY (`withdrawnBy`) REFERENCES `Accounts` (`id`);
+
+-- changeset bridge:20
+
+ALTER TABLE `Assessments`
+ADD COLUMN `minutesToComplete` int(10) DEFAULT NULL;
+

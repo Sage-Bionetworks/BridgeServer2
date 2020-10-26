@@ -254,8 +254,8 @@ public class RequestContextTest extends Mockito {
         verify(mockSponsorService, never()).getSponsoredStudyIds(any(), any());
     }
     
-    // Non-admins who have an organizational relationship are given a specific set of studies
-    // that they will have to match in some security checks. Verify this is skipped for admins.
+    // The role no longer changes the studies that are stored in RequestContext...instead we look at the 
+    // roles to determine access.
     @Test
     public void updateFromSessionForAdmin() { 
         when(mockSponsorService.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID)).thenReturn(USER_STUDY_IDS);
@@ -267,12 +267,10 @@ public class RequestContextTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         
         RequestContext retValue = RequestContext.updateFromSession(session, mockSponsorService);
-        assertEquals(retValue.getOrgSponsoredStudies(), ImmutableSet.of());
+        assertEquals(retValue.getOrgSponsoredStudies(), USER_STUDY_IDS);
         
         RequestContext threadValue = RequestContext.get();
-        assertEquals(threadValue.getOrgSponsoredStudies(), ImmutableSet.of());
-        
-        verify(mockSponsorService, never()).getSponsoredStudyIds(any(), any());
+        assertEquals(threadValue.getOrgSponsoredStudies(), USER_STUDY_IDS);
     }
     
     @Test

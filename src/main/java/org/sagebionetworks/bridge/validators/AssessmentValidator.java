@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 
 import java.util.Map;
 import java.util.Set;
@@ -94,6 +95,9 @@ public class AssessmentValidator implements Validator {
             if (organizationService.getOrganization(ownerAppId, ownerOrgId) == null) {
                 errors.rejectValue("ownerId", "is not a valid organization ID");
             }
+        }
+        if (assessment.getMinutesToComplete() != null && assessment.getMinutesToComplete() < 0) {
+            errors.rejectValue("minutesToComplete", CANNOT_BE_NEGATIVE);
         }
     }
 }

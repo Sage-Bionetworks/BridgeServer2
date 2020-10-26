@@ -21,6 +21,7 @@ public class Assessment implements BridgeEntity {
         dto.setSummary(assessment.getSummary());
         dto.setValidationStatus(assessment.getValidationStatus());
         dto.setNormingStatus(assessment.getNormingStatus());
+        dto.setMinutesToComplete(assessment.getMinutesToComplete());
         dto.setOsName(assessment.getOsName());
         dto.setOriginGuid(assessment.getOriginGuid());
         dto.setOwnerId(assessment.getOwnerId());
@@ -47,6 +48,7 @@ public class Assessment implements BridgeEntity {
     private String originGuid;
     private String validationStatus;
     private String normingStatus;
+    private Integer minutesToComplete;
     private Set<String> tags;
     private Map<String, Set<PropertyInfo>> customizationFields;
     private DateTime createdOn;
@@ -113,7 +115,13 @@ public class Assessment implements BridgeEntity {
     }
     public void setNormingStatus(String normingStatus) {
         this.normingStatus = normingStatus;
-    }    
+    }
+    public Integer getMinutesToComplete() { 
+        return minutesToComplete;
+    }
+    public void setMinutesToComplete(Integer minutesToComplete) {
+        this.minutesToComplete = minutesToComplete;
+    }
     public Set<String> getTags() {
         return tags;
     }

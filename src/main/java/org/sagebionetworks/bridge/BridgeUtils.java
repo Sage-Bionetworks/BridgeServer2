@@ -6,6 +6,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.AuthUtils.isStudyScopedToCaller;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
@@ -162,11 +163,11 @@ public class BridgeUtils {
             Set<String> callerStudies = context.getOrgSponsoredStudies();
             String callerUserId = context.getCallerUserId();
             
-            // If this is a call for one’s own record, or the caller is has no 
-            // study relationships, return the account. Note that we are migrating
-            // away from a system that allows an account to have no specific study
-            // associations, but it remains necessary during the transition
-            if (isEmpty(callerStudies) || account.getId().equals(callerUserId)) {
+            // If this is a call for one’s own record, or the caller is an admin or 
+            // worker, return the account. Callers that are not associated to an 
+            // organization also gain access, but only while we migrate away from 
+            // this kind of global account.
+            if (isStudyScopedToCaller(null) || account.getId().equals(callerUserId)) {
                 return account;
             }
             // If after removing all enrollments that are not visible to the caller, 
@@ -192,12 +193,10 @@ public class BridgeUtils {
         if (account == null || account.getActiveEnrollments().isEmpty()) {
             return NO_ASSOCIATIONS;
         }
-        Set<String> callerStudies = RequestContext.get().getOrgSponsoredStudies();
-        
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
         for (Enrollment enrollment : account.getActiveEnrollments()) {
-            if (callerStudies.isEmpty() || callerStudies.contains(enrollment.getStudyId())) {
+            if (isStudyScopedToCaller(enrollment.getStudyId())) {
                 studyIds.add(enrollment.getStudyId());
                 if (enrollment.getExternalId() != null) {
                     externalIds.put(enrollment.getStudyId(), enrollment.getExternalId());
@@ -208,12 +207,8 @@ public class BridgeUtils {
     }
     
     public static ExternalIdentifier filterForStudy(ExternalIdentifier externalId) {
-        if (externalId != null) {
-            RequestContext context = RequestContext.get();
-            Set<String> callerStudies = context.getOrgSponsoredStudies();
-            if (isEmpty(callerStudies) || callerStudies.contains(externalId.getStudyId())) {
-                return externalId;
-            }
+        if (externalId != null && isStudyScopedToCaller(externalId.getStudyId())) {
+            return externalId;
         }
         return null;
     }

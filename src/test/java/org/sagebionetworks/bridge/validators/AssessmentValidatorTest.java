@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -91,6 +92,11 @@ public class AssessmentValidatorTest extends Mockito {
     public void titleEmpty() {
         assessment.setTitle("");
         assertValidatorMessage(validator, assessment, "title", CANNOT_BE_BLANK);
+    }
+    @Test
+    public void minutesToCompleteNegative() {
+        assessment.setMinutesToComplete(-1);
+        assertValidatorMessage(validator, assessment, "minutesToComplete", CANNOT_BE_NEGATIVE);
     }
     @Test
     public void osNameNull() {

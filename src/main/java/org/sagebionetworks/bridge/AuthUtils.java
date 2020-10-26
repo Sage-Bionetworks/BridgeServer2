@@ -2,8 +2,10 @@ package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
+import static org.sagebionetworks.bridge.BridgeUtils.isEmpty;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.Set;
 
@@ -61,7 +63,7 @@ public class AuthUtils {
         checkNotNull(ownerId);
 
         RequestContext context = RequestContext.get();
-        if (context.isInRole(ImmutableSet.of(ADMIN))) {
+        if (context.isInRole(ADMIN)) {
             return;
         }
         String[] parts = ownerId.split(":", 2);
@@ -77,6 +79,13 @@ public class AuthUtils {
             return;
         }
         throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
+    }
+    
+    public static final boolean isStudyScopedToCaller(String studyId) {
+        RequestContext context = RequestContext.get();
+        Set<String> callerStudies = context.getOrgSponsoredStudies();
+        
+        return context.isInRole(ADMIN, WORKER) || isEmpty(callerStudies) || callerStudies.contains(studyId);
     }
     
     /**
