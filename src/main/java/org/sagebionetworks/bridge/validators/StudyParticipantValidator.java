@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -11,14 +12,12 @@ import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.sagebionetworks.bridge.services.OrganizationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -26,15 +25,13 @@ public class StudyParticipantValidator implements Validator {
 
     // see https://owasp.org/www-community/OWASP_Validation_Regex_Repository
     private static final String OWASP_REGEXP_VALID_EMAIL = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
-    private final ExternalIdService externalIdService;
     private final StudyService studyService;
     private final OrganizationService organizationService;
     private final App app;
     private final boolean isNew;
     
-    public StudyParticipantValidator(ExternalIdService externalIdService, StudyService studyService,
-            OrganizationService organizationService, App app, boolean isNew) {
-        this.externalIdService = externalIdService;
+    public StudyParticipantValidator(StudyService studyService, OrganizationService organizationService, App app,
+            boolean isNew) {
         this.studyService = studyService;
         this.organizationService = organizationService;
         this.app = app;
@@ -70,7 +67,7 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("email", "does not appear to be an email address");
             }
             // External ID is required for non-administrative accounts when it is required on sign-up.
-            if (participant.getRoles().isEmpty() && app.isExternalIdRequiredOnSignup() && isBlank(participant.getExternalId())) {
+            if (participant.getRoles().isEmpty() && app.isExternalIdRequiredOnSignup() && participant.getExternalIds().isEmpty()) {
                 errors.rejectValue("externalId", "is required");
             }
             // Password is optional, but validation is applied if supplied, any time it is 
@@ -99,25 +96,24 @@ public class StudyParticipantValidator implements Validator {
             }
         }
 
-        for (String studyId : participant.getStudyIds()) {
-            Study study = studyService.getStudy(app.getIdentifier(), studyId, false);
-            if (study == null) {
-                errors.rejectValue("studyIds["+studyId+"]", "is not a study");
-            }
-        }
-        
-        // External ID can be updated during creation or on update. If it's already assigned to another user, 
+        // External IDs can be updated during creation or on update. If it's already assigned to another user, 
         // the database constraints will prevent this record's persistence.
         if (isNotBlank(participant.getExternalId())) {
-            Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(app.getIdentifier(),
-                    participant.getExternalId());
-            if (!optionalId.isPresent()) {
-                errors.rejectValue("externalId", "is not a valid external ID");
-            }
+            errors.rejectValue("externalId", "must now be supplied in the externalIds property that maps a study ID to the new external ID");
         }
-        // Never okay to have a blank external ID. It can produce errors later when querying for ext IDs
-        if (participant.getExternalId() != null && isBlank(participant.getExternalId())) {
-            errors.rejectValue("externalId", "cannot be blank");
+        
+        if (participant.getExternalIds() != null) {
+            for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
+                String studyId = entry.getKey();
+                String externalId = entry.getValue();
+                Study study = studyService.getStudy(app.getIdentifier(), studyId, false);
+                if (study == null) {
+                    errors.rejectValue("externalIds["+studyId+"]", "is not a study");
+                }
+                if (isBlank(externalId)) {
+                    errors.rejectValue("externalIds["+studyId+"].externalId", "cannot be blank");
+                }
+            }
         }
         
         if (participant.getSynapseUserId() != null && isBlank(participant.getSynapseUserId())) {
