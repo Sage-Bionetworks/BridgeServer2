@@ -338,11 +338,9 @@ public class UserAdminServiceMockTest {
         verify(uploadService).deleteUploadsForHealthCode("healthCode");
         verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
         verify(activityEventService).deleteActivityEvents("healthCode");
-        verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("subAextId"));
-        verify(externalIdService).unassignExternalId(accountCaptor.capture(), eq("subBextId"));
         verify(accountService).deleteAccount(accountId);
         
-        assertEquals(accountCaptor.getValue().getHealthCode(), "healthCode");
+        assertEquals(account.getHealthCode(), "healthCode");
     }
     
     @Test
@@ -359,7 +357,6 @@ public class UserAdminServiceMockTest {
         verify(uploadService, never()).deleteUploadsForHealthCode(any());
         verify(scheduledActivityService, never()).deleteActivitiesForUser(any());
         verify(activityEventService, never()).deleteActivityEvents(any());
-        verify(externalIdService, never()).unassignExternalId(any(), any());
         verify(accountService, never()).deleteAccount(any());
     }
 }

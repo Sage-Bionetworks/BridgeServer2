@@ -7,6 +7,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.collect.Iterables;
+
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -50,9 +52,10 @@ public class StudyParticipantValidator implements Validator {
         if (isNew) {
             Phone phone = participant.getPhone();
             String email = participant.getEmail();
-            String externalId = participant.getExternalId();
+            String anyExternalId = participant.getExternalIds().isEmpty() ? null : 
+                Iterables.getFirst(participant.getExternalIds().entrySet(), null).getValue();
             String synapseUserId = participant.getSynapseUserId();
-            if (email == null && isBlank(externalId) && phone == null && isBlank(synapseUserId)) {
+            if (email == null && isBlank(anyExternalId) && phone == null && isBlank(synapseUserId)) {
                 errors.reject("email, phone, synapseUserId or externalId is required");
             }
             // If provided, phone must be valid
@@ -89,33 +92,30 @@ public class StudyParticipantValidator implements Validator {
                     errors.rejectValue("orgMembership", "cannot be set by caller");
                 }
             }
-            
+            // External IDs can be updated during creation or on update. If it's already assigned to another user, 
+            // the database constraints will prevent this record's persistence.
+            if (isNotBlank(participant.getExternalId()) && participant.getExternalIds().isEmpty()) {
+                errors.rejectValue("externalId", "must now be supplied in the externalIds property that maps a study ID to the new external ID");
+            }
+            if (participant.getExternalIds() != null) {
+                for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
+                    String studyId = entry.getKey();
+                    String externalId = entry.getValue();
+                    Study study = studyService.getStudy(app.getIdentifier(), studyId, false);
+                    if (study == null) {
+                        errors.rejectValue("externalIds["+studyId+"]", "is not a study");
+                    }
+                    if (isBlank(externalId)) {
+                        errors.rejectValue("externalIds["+studyId+"].externalId", "cannot be blank");
+                    }
+                }
+            }
         } else {
             if (isBlank(participant.getId())) {
                 errors.rejectValue("id", "is required");
             }
         }
 
-        // External IDs can be updated during creation or on update. If it's already assigned to another user, 
-        // the database constraints will prevent this record's persistence.
-        if (isNotBlank(participant.getExternalId())) {
-            errors.rejectValue("externalId", "must now be supplied in the externalIds property that maps a study ID to the new external ID");
-        }
-        
-        if (participant.getExternalIds() != null) {
-            for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
-                String studyId = entry.getKey();
-                String externalId = entry.getValue();
-                Study study = studyService.getStudy(app.getIdentifier(), studyId, false);
-                if (study == null) {
-                    errors.rejectValue("externalIds["+studyId+"]", "is not a study");
-                }
-                if (isBlank(externalId)) {
-                    errors.rejectValue("externalIds["+studyId+"].externalId", "cannot be blank");
-                }
-            }
-        }
-        
         if (participant.getSynapseUserId() != null && isBlank(participant.getSynapseUserId())) {
             errors.rejectValue("synapseUserId", "cannot be blank");
         }

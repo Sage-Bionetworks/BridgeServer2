@@ -2,29 +2,18 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
-import java.util.Optional;
-
 import org.apache.commons.validator.routines.EmailValidator;
 
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.services.ExternalIdService;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class IdentifierUpdateValidator implements Validator {
 
+    public static final IdentifierUpdateValidator INSTANCE = new IdentifierUpdateValidator();
     private static final EmailValidator EMAIL_VALIDATOR = EmailValidator.getInstance();
-    private App app;
-    private ExternalIdService externalIdService;
-    
-    public IdentifierUpdateValidator(App app, ExternalIdService externalIdService) {
-        this.app = app;
-        this.externalIdService = externalIdService;
-    }
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -59,19 +48,6 @@ public class IdentifierUpdateValidator implements Validator {
             updateFields++;
             if (!EMAIL_VALIDATOR.isValid(update.getEmailUpdate())) {
                 errors.rejectValue("emailUpdate", "does not appear to be an email address");
-            }
-        }
-        if (update.getExternalIdUpdate() != null) {
-            updateFields++;
-            if (isBlank(update.getExternalIdUpdate())) {
-                errors.rejectValue("externalIdUpdate", "cannot be blank");
-            } else {
-                // the same validation we perform when adding a participant where external ID is required on sign up.
-                Optional<ExternalIdentifier> optionalId = externalIdService.getExternalId(app.getIdentifier(),
-                        update.getExternalIdUpdate());
-                if (!optionalId.isPresent()) {
-                    errors.rejectValue("externalIdUpdate", "is not a valid external ID");
-                }
             }
         }
         if (update.getSynapseUserIdUpdate() != null) {

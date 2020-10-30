@@ -1,13 +1,14 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertSame;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -17,18 +18,16 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.studies.Study;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 public class ExternalIdServiceTest {
@@ -36,7 +35,6 @@ public class ExternalIdServiceTest {
     private static final String ID = "AAA";
     private static final String STUDY_ID = "studyId";
     private static final Set<String> STUDIES = ImmutableSet.of(STUDY_ID);
-    private static final String HEALTH_CODE = "healthCode";
     
     private App app;
     private ExternalIdentifier extId;
@@ -61,7 +59,6 @@ public class ExternalIdServiceTest {
         extId.setStudyId(STUDY_ID);
         externalIdService = new ExternalIdService();
         externalIdService.setExternalIdDao(externalIdDao);
-        externalIdService.setStudyService(studyService);
     }
     
     @AfterMethod
@@ -93,96 +90,48 @@ public class ExternalIdServiceTest {
     
     @Test
     public void getExternalIds() {
-        externalIdService.getExternalIds("offsetKey", 10, "idFilter", true);
+        List<ExternalIdentifierInfo> list = ImmutableList.of(new ExternalIdentifierInfo(null, null, true),
+                new ExternalIdentifierInfo(null, null, true));
+        PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<>(list, 100);
         
-        verify(externalIdDao).getExternalIds(TEST_APP_ID, "offsetKey", 10, "idFilter", true);
+        when(externalIdDao.getPagedExternalIds(TEST_APP_ID, STUDY_ID, "idFilter", 10, 50))
+            .thenReturn(page);
+        
+        PagedResourceList<ExternalIdentifierInfo> retValue = externalIdService.getPagedExternalIds(TEST_APP_ID, STUDY_ID, "idFilter", 10, 50);
+        assertSame(retValue, page);
+        
+        verify(externalIdDao).getPagedExternalIds(TEST_APP_ID, STUDY_ID, "idFilter", 10, 50);
     }
     
     @Test
-    public void getExternalIdsDefaultsPageSize() {
-        externalIdService.getExternalIds(null, null, null, null);
+    public void getExternalIdsNullParams() {
+        List<ExternalIdentifierInfo> list = ImmutableList.of(new ExternalIdentifierInfo(null, null, true),
+                new ExternalIdentifierInfo(null, null, true));
+        PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<>(list, 100);
         
-        verify(externalIdDao).getExternalIds(TEST_APP_ID, null, BridgeConstants.API_DEFAULT_PAGE_SIZE,
-                null, null);
+        when(externalIdDao.getPagedExternalIds(TEST_APP_ID, STUDY_ID, null, null, null)).thenReturn(page);
+        
+        PagedResourceList<ExternalIdentifierInfo> retValue = externalIdService.getPagedExternalIds(TEST_APP_ID, STUDY_ID, null, null, null);
+        assertSame(retValue, page);
+        
+        verify(externalIdDao).getPagedExternalIds(TEST_APP_ID, STUDY_ID, null, null, null);
     }
     
-    @Test(expectedExceptions = BadRequestException.class)
-    public void getExternalIdsUnderMinPageSizeThrows() {
-        externalIdService.getExternalIds(null, 0, null, null);
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
+    public void getPagedExternalIdsNegativeOffset() {
+        externalIdService.getPagedExternalIds(TEST_APP_ID, STUDY_ID, null, -5, null);
     }
     
-    @Test(expectedExceptions = BadRequestException.class)
-    public void getExternalIdsOverMaxPageSizeThrows() {
-        externalIdService.getExternalIds(null, 10000, null, null);
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = ExternalIdService.PAGE_SIZE_ERROR)
+    public void getPagedExternalIdsPageTooSmall() {
+        externalIdService.getPagedExternalIds(TEST_APP_ID, STUDY_ID, null, null, 0);
     }
     
-    @Test
-    public void createExternalId() {
-        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false))
-            .thenReturn(Study.create());
-        when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.empty());
-        
-        externalIdService.createExternalId(extId, false);
-        
-        verify(externalIdDao).createExternalId(extId);
-    }
-    
-    @Test
-    public void createExternalIdEnforcesAppId() {
-        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false))
-            .thenReturn(Study.create());
-        when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.empty());
-        
-        ExternalIdentifier newExtId = ExternalIdentifier.create("some-dumb-id", ID);
-        newExtId.setStudyId(STUDY_ID);
-        externalIdService.createExternalId(newExtId, false);
-        
-        // still matches and verifies
-        verify(externalIdDao).createExternalId(extId);        
-    }
-    
-    @Test
-    public void createExternalIdSetsStudyIdIfMissingAndUnambiguous() {
-        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false))
-            .thenReturn(Study.create());
-        when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.empty());
-
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
-                .withOrgSponsoredStudies(STUDIES).build());
-
-        ExternalIdentifier newExtId = ExternalIdentifier.create(TEST_APP_ID,
-                extId.getIdentifier());
-        externalIdService.createExternalId(newExtId, false);
-
-        // still matches and verifies
-        verify(externalIdDao).createExternalId(extId);
-    }
-    
-    @Test(expectedExceptions = InvalidEntityException.class)
-    public void createExternalIdDoesNotSetStudyIdAmbiguous() {
-        extId.setStudyId(null); // not set by caller
-        
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
-                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID, "anotherStudy")).build());
-        
-        externalIdService.createExternalId(extId, false);
-    }
-
-    @Test(expectedExceptions = InvalidEntityException.class)
-    public void createExternalIdValidates() {
-        externalIdService.createExternalId(ExternalIdentifier.create("nonsense", "nonsense"), false);
-    }
-    
-    @Test(expectedExceptions = EntityAlreadyExistsException.class)
-    public void createExternalIdAlreadyExistsThrows() {
-        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false))
-            .thenReturn(Study.create());
-        when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.of(extId));
-        extId.setStudyId(STUDY_ID);
-        
-        externalIdService.createExternalId(extId, false);
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = ExternalIdService.PAGE_SIZE_ERROR)
+    public void getPagedExternalIdsPageTooLarge() {
+        externalIdService.getPagedExternalIds(TEST_APP_ID, STUDY_ID, null, null, 10000);
     }
     
     @Test
@@ -210,43 +159,5 @@ public class ExternalIdServiceTest {
         when(externalIdDao.getExternalId(TEST_APP_ID, ID)).thenReturn(Optional.of(extId));
         
         externalIdService.deleteExternalIdPermanently(app, extId);
-    }
-    
-    @Test
-    public void commitAssignExternalId() {
-        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, ID);
-        
-        externalIdService.commitAssignExternalId(externalId);
-        
-        verify(externalIdDao).commitAssignExternalId(externalId);
-    }
-
-    @Test
-    public void commitAssignExternalIdNullId() {
-        externalIdService.commitAssignExternalId(null);
-        
-        verify(externalIdDao, never()).commitAssignExternalId(any());
-    }
-
-    @Test
-    public void unassignExternalId() {
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setHealthCode(HEALTH_CODE);
-        
-        externalIdService.unassignExternalId(account, ID);
-        
-        verify(externalIdDao).unassignExternalId(account, ID);
-    }
-
-    @Test
-    public void unassignExternalIdNullDoesNothing() {
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setHealthCode(HEALTH_CODE);
-        
-        externalIdService.unassignExternalId(account, null);
-        
-        verify(externalIdDao, never()).unassignExternalId(account, ID);
     }
 }
