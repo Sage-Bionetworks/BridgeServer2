@@ -84,7 +84,6 @@ class HibernateAssessmentDao implements AssessmentDao {
                 offsetBy, pageSize, HibernateAssessment.class);
         
         List<Assessment> dtos = assessments.stream().map(Assessment::create).collect(toList());
-        System.out.println(dtos);
         return new PagedResourceList<Assessment>(dtos, count, true);
     }
     
