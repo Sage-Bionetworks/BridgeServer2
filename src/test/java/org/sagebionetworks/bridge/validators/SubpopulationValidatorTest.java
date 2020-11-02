@@ -79,12 +79,25 @@ public class SubpopulationValidatorTest {
     @Test
     public void testStudyIdsAssignedOnConsentEmpty() {
         Subpopulation subpop = Subpopulation.create();
+        subpop.setRequired(true);
         subpop.setName("Name");
         subpop.setAppId(TEST_APP_ID);
         subpop.setGuidString("AAA");
         subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of());
         
         assertValidatorMessage(validator, subpop, "studyIdsAssignedOnConsent", "cannot be empty");
+    }
+    
+    @Test
+    public void testStudyIdsAssignedOnConsentEmptyOKIfNotRequired() {
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setRequired(false);
+        subpop.setName("Name");
+        subpop.setAppId(TEST_APP_ID);
+        subpop.setGuidString("AAA");
+        subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of());
+        
+        Validate.entityThrowingException(validator, subpop);
     }
     
     @Test
