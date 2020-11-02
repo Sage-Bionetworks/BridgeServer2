@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.dao;
 
-import java.util.Optional;
-
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
@@ -12,12 +10,6 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
  * or re-assigned to another user if assigned.
  */
 public interface ExternalIdDao {
-    /**
-     * Get a single external ID record. Returns null if there is no record or it doesn't match the caller's
-     * study membership.
-     */
-    Optional<ExternalIdentifier> getExternalId(String appId, String externalId);
-
     /**
      * Get a page of external IDs associated to the indicated study.  
      */

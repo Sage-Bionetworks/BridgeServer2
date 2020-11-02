@@ -10,15 +10,17 @@ import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import java.util.Optional;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.apps.App;
 
-import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,19 +36,17 @@ public class ExternalIdService {
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
     
     private ExternalIdDao externalIdDao;
+    
+    private AccountDao accountDao;
 
     @Autowired
     public final void setExternalIdDao(ExternalIdDao externalIdDao) {
         this.externalIdDao = externalIdDao;
     }
     
-    public Optional<ExternalIdentifier> getExternalId(String appId, String externalId) {
-        checkNotNull(appId);
-        
-        if (StringUtils.isBlank(externalId)) {
-            return Optional.empty();
-        }
-        return externalIdDao.getExternalId(appId, externalId);
+    @Autowired
+    public final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
     
     public PagedResourceList<ExternalIdentifierInfo> getPagedExternalIds(String appId, String studyId, String idFilter,
@@ -67,9 +67,9 @@ public class ExternalIdService {
         checkNotNull(app);
         checkNotNull(externalId);
         
-        ExternalIdentifier existing = externalIdDao.getExternalId(app.getIdentifier(), externalId.getIdentifier())
-                .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
-        if (BridgeUtils.filterForStudy(existing) == null) {
+        AccountId accountId = AccountId.forExternalId(app.getIdentifier(), externalId.getIdentifier());
+        Optional<Account> opt = accountDao.getAccount(accountId);
+        if (!opt.isPresent() || BridgeUtils.filterForStudy(opt.get()) == null) {
             throw new EntityNotFoundException(ExternalIdentifier.class);
         }
         externalIdDao.deleteExternalId(externalId);

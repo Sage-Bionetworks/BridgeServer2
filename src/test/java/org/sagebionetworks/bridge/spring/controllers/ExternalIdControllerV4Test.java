@@ -135,7 +135,7 @@ public class ExternalIdControllerV4Test extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         StatusMessage result = controller.deleteExternalIdentifier("externalId");
-        assertEquals(result.getMessage(), "External identifier deleted.");
+        assertEquals(result.getMessage(), "External identifier deleted from account.");
 
         verify(mockService).deleteExternalIdPermanently(eq(app), externalIdCaptor.capture());
         assertEquals(externalIdCaptor.getValue().getIdentifier(), "externalId");

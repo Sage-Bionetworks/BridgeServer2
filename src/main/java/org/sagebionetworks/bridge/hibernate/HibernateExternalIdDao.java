@@ -12,6 +12,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -42,28 +43,6 @@ public class HibernateExternalIdDao implements ExternalIdDao {
     @Autowired
     final void setAccountDao(AccountDao accountDao) {
         this.accountDao = accountDao;
-    }
-
-    @Override
-    public Optional<ExternalIdentifier> getExternalId(String appId, String externalId) {
-        checkNotNull(appId);
-        checkNotNull(externalId);
-
-        AccountId accountId = AccountId.forExternalId(appId, externalId);
-        Optional<Account> opt = accountDao.getAccount(accountId);
-        
-        if (opt.isPresent()) {
-            Account account = opt.get();
-            for (Enrollment en : account.getEnrollments()) {
-                if (externalId.equals(en.getExternalId())) {
-                    ExternalIdentifier ei = new ExternalIdentifier.Builder().withAppId(appId)
-                            .withIdentifier(externalId).withStudyId(en.getStudyId())
-                            .withHealthCode(account.getHealthCode()).build();
-                    return Optional.of(ei);
-                }
-            }
-        }
-        return Optional.empty();
     }
 
     @Override
@@ -102,14 +81,15 @@ public class HibernateExternalIdDao implements ExternalIdDao {
         
         if (opt.isPresent()) {
             Account account = opt.get();
-            
-            Optional<Enrollment> enOpt = account.getEnrollments().stream()
-                    .filter(en -> en.getStudyId().equals(extId.getStudyId()))
-                    .findFirst();
-            if (enOpt.isPresent()) {
-                Enrollment enrollment = enOpt.get();
-                enrollment.setExternalId(null);
-                accountDao.updateAccount(account, null);
+            if (BridgeUtils.filterForStudy(account) != null) {
+                Optional<Enrollment> enOpt = account.getEnrollments().stream()
+                        .filter(en -> extId.getIdentifier().equals(en.getExternalId()))
+                        .findFirst();
+                if (enOpt.isPresent()) {
+                    Enrollment enrollment = enOpt.get();
+                    enrollment.setExternalId(null);
+                    accountDao.updateAccount(account, null);
+                }
             }
         }
     }

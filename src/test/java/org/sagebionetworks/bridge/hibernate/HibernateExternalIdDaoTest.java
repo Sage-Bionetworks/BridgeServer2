@@ -1,11 +1,9 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
@@ -66,50 +64,6 @@ public class HibernateExternalIdDaoTest extends Mockito {
         MockitoAnnotations.initMocks(this);
     }
 
-    @Test
-    public void getExternalId() {
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
-        enrollment.setExternalId(EXTERNAL_ID);
-        
-        Account account = Account.create();
-        account.setEnrollments(ImmutableSet.of(enrollment));
-        account.setHealthCode(HEALTH_CODE);
-        AccountId accountId = AccountId.forExternalId(TEST_APP_ID, EXTERNAL_ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
-        
-        Optional<ExternalIdentifier> retValue = dao.getExternalId(TEST_APP_ID, EXTERNAL_ID);
-        
-        ExternalIdentifier extId = retValue.get();
-        assertEquals(extId.getAppId(), TEST_APP_ID);
-        assertEquals(extId.getStudyId(), TEST_STUDY_ID);
-        assertEquals(extId.getIdentifier(), EXTERNAL_ID);
-        assertEquals(extId.getHealthCode(), HEALTH_CODE);
-    }
-    
-    @Test
-    public void getExternalIdAccountNotFound() {
-        when(mockAccountDao.getAccount(any())).thenReturn(Optional.empty());
-        
-        Optional<ExternalIdentifier> retValue = dao.getExternalId(TEST_APP_ID, EXTERNAL_ID);
-        assertFalse(retValue.isPresent());
-    }
-
-    // this should not happen, but if it does, it doesn't break
-    @Test
-    public void getExternalIdEnrollmentDoesNotMatch() {
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
-        // do NOT set the external ID
-        
-        Account account = Account.create();
-        account.setEnrollments(ImmutableSet.of(enrollment));
-        account.setHealthCode(HEALTH_CODE);
-        AccountId accountId = AccountId.forExternalId(TEST_APP_ID, EXTERNAL_ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
-        
-        Optional<ExternalIdentifier> retValue = dao.getExternalId(TEST_APP_ID, EXTERNAL_ID);
-        assertFalse(retValue.isPresent());
-    }
-    
     @Test
     public void getPagedExternalIds() {
         HibernateEnrollment en1 = new HibernateEnrollment();

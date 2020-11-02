@@ -83,7 +83,7 @@ public class ExternalIdControllerV4 extends BaseController {
         ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), externalId);
         externalIdService.deleteExternalIdPermanently(app, externalIdentifier);
         
-        return new StatusMessage("External identifier deleted.");
+        return new StatusMessage("External identifier deleted from account.");
     }
     
     @PostMapping(path = {"/v3/externalids/{externalId}/password", "/v3/externalIds/{externalId}/password"})

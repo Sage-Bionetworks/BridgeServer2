@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.mockito.Mockito.verify;
@@ -262,6 +263,27 @@ public class AccountPersistenceExceptionConverterTest {
         RuntimeException result = converter.convert(pe, account);
         assertEquals(result.getClass(), EntityAlreadyExistsException.class);
         assertEquals(result.getMessage(), "Synapse User ID has already been used by another account.");
+    }
+    
+    @Test
+    public void entityAlreadyExistsForDuplicateExternalIdInApp() {
+        Account account = Account.create();
+        account.setId(USER_ID);
+        account.setAppId(TEST_APP_ID);
+        
+        when(accountDao.getAccount(AccountId.forExternalId(TEST_APP_ID, "CCC")))
+                .thenReturn(Optional.of(account));
+        
+        org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
+                "Duplicate entry 'api-CCC' for key 'unique_extId'", null, null);
+        PersistenceException pe = new PersistenceException(cve);
+        
+        RuntimeException result = converter.convert(pe, account);
+        assertEquals(result.getClass(), EntityAlreadyExistsException.class);
+        assertEquals(result.getMessage(), "External ID has already been used by another account.");
+        Map<String,Object> keys = ((EntityAlreadyExistsException)result).getEntityKeys();
+        assertEquals(keys.get("userId"), "userId");
+        assertEquals(keys.size(), 1);
     }
     
     @Test
