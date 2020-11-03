@@ -119,7 +119,7 @@ public class HibernateAccountDaoTest extends Mockito {
     public void before() {
         MockitoAnnotations.initMocks(this);
         // Mock successful update.
-        when(mockHibernateHelper.update(any(), eq(null))).thenAnswer(invocation -> {
+        when(mockHibernateHelper.update(any())).thenAnswer(invocation -> {
             HibernateAccount account = invocation.getArgument(0);
             if (account != null) {
                 account.setVersion(account.getVersion() + 1);
@@ -157,19 +157,18 @@ public class HibernateAccountDaoTest extends Mockito {
         Account account = makeValidGenericAccount();
 
         // execute - We generate a new account ID.
-        dao.createAccount(app, account, null);
+        dao.createAccount(app, account);
         
-        verify(mockHibernateHelper).create(eq(account), any());
+        verify(mockHibernateHelper).create(account);
     }
 
     @Test
     public void updateSuccess() {
         Account account = Account.create();
-        Consumer<Account> consumer = (oneAccount) -> {};
         
-        dao.updateAccount(account, consumer);
+        dao.updateAccount(account);
         
-        verify(mockHibernateHelper).update(account, consumer);
+        verify(mockHibernateHelper).update(account);
     }
 
     @Test
@@ -198,12 +197,12 @@ public class HibernateAccountDaoTest extends Mockito {
         account.setPhoneVerified(Boolean.FALSE);
 
         // Identifiers ARE allowed to change here.
-        dao.updateAccount(account, null);
+        dao.updateAccount(account);
 
         // Capture the update
         ArgumentCaptor<HibernateAccount> updatedHibernateAccountCaptor = ArgumentCaptor
                 .forClass(HibernateAccount.class);
-        verify(mockHibernateHelper).update(updatedHibernateAccountCaptor.capture(), eq(null));
+        verify(mockHibernateHelper).update(updatedHibernateAccountCaptor.capture());
 
         HibernateAccount updatedHibernateAccount = updatedHibernateAccountCaptor.getValue();
 
@@ -226,7 +225,7 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(account.getAppId(), TEST_APP_ID);
         assertEquals(account.getEmail(), EMAIL);
         assertEquals(account.getHealthCode(), "original-" + HEALTH_CODE);
-        verify(mockHibernateHelper, never()).update(any(), eq(null));
+        verify(mockHibernateHelper, never()).update(any());
     }
 
     @Test
@@ -238,7 +237,7 @@ public class HibernateAccountDaoTest extends Mockito {
         // Clear these fields to verify that they are created
         hibernateAccount.setHealthCode(null);
         when(mockHibernateHelper.getById(eq(HibernateAccount.class), eq(ACCOUNT_ID))).thenReturn(hibernateAccount);
-        when(mockHibernateHelper.update(any(), isNull())).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.update(any())).thenReturn(hibernateAccount);
         
         // execute and validate - just validate ID, app, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_ID).get();
@@ -300,7 +299,7 @@ public class HibernateAccountDaoTest extends Mockito {
                 eq(HibernateAccount.class));
 
         // We don't create a new health code mapping nor update the account.
-        verify(mockHibernateHelper, never()).update(any(), eq(null));
+        verify(mockHibernateHelper, never()).update(any());
     }
 
     @Test
@@ -318,7 +317,7 @@ public class HibernateAccountDaoTest extends Mockito {
         when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
                 .thenReturn(ImmutableList.of(hibernateAccount));
 
-        when(mockHibernateHelper.update(any(), isNull())).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.update(any())).thenReturn(hibernateAccount);
         
         // execute and validate - just validate ID, app, and email, and health code mapping
         Account account = dao.getAccount(ACCOUNT_ID_WITH_EMAIL).get();
@@ -1045,7 +1044,7 @@ public class HibernateAccountDaoTest extends Mockito {
 
     private void verifyCreatedHealthCode() {
         ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
-        verify(mockHibernateHelper).update(updatedAccountCaptor.capture(), eq(null));
+        verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
 
         HibernateAccount updatedAccount = updatedAccountCaptor.getValue();
         assertEquals(updatedAccount.getId(), ACCOUNT_ID);

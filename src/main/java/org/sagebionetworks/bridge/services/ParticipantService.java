@@ -468,8 +468,7 @@ public class ParticipantService {
         // within an account transaction, and roll back the account if the external ID save fails. If the 
         // account save fails, catch the exception and rollback the external ID save. 
         try {
-            accountService.createAccount(app, account,
-                    (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
+            accountService.createAccount(app, account);
         } catch(Exception e) {
             if (externalId != null) {
                 externalIdService.unassignExternalId(account, externalId.getIdentifier());    
@@ -540,7 +539,7 @@ public class ParticipantService {
         
         // Simple case, not trying to assign an external ID
         if (externalId == null) {
-            accountService.updateAccount(account, null);
+            accountService.updateAccount(account);
             return;
         }
         
@@ -549,8 +548,7 @@ public class ParticipantService {
         // the account if the external ID save fails. If the account save fails, catch the exception and 
         // rollback the external ID save. 
         try {
-            accountService.updateAccount(account,
-                    (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
+            accountService.updateAccount(account);
         } catch (Exception e) {
             externalIdService.unassignExternalId(account, externalId.getIdentifier());
             throw e;
@@ -890,15 +888,14 @@ public class ParticipantService {
                     externalId.getStudyId(), account.getId(), externalId.getIdentifier());
             account.getEnrollments().add(enrollment);
             try {
-                accountService.updateAccount(account,
-                        (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
+                accountService.updateAccount(account);
             } catch(Exception e) {
                 externalIdService.unassignExternalId(account, externalId.getIdentifier());    
                 throw e;
             }
             RequestContext.updateFromExternalId(externalId);
         } else if (accountUpdated) {
-            accountService.updateAccount(account, null);
+            accountService.updateAccount(account);
         }
         if (sendEmailVerification && 
             app.isEmailVerificationEnabled() && 

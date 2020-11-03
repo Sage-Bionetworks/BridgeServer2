@@ -113,7 +113,7 @@ public class HibernateStudyDaoTest extends Mockito {
         VersionHolder holder = dao.createStudy(study);
         assertEquals(holder.getVersion(), new Long(2));
         
-        verify(hibernateHelper).create(studyCaptor.capture(), eq(null));
+        verify(hibernateHelper).create(studyCaptor.capture());
         
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getVersion(), new Long(2));
@@ -127,7 +127,7 @@ public class HibernateStudyDaoTest extends Mockito {
         VersionHolder holder = dao.updateStudy(study);
         assertEquals(holder.getVersion(), new Long(2));
         
-        verify(hibernateHelper).update(studyCaptor.capture(), eq(null));
+        verify(hibernateHelper).update(studyCaptor.capture());
         
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getVersion(), new Long(2));

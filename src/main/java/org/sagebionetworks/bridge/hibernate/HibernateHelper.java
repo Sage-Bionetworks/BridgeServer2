@@ -4,7 +4,6 @@ import java.io.Serializable;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.persistence.PersistenceException;
@@ -32,12 +31,9 @@ public class HibernateHelper {
      * that will receive the object in the context of a database transaction; if the consumer throws a runtime error, 
      * the transaction will be aborted.
      */
-    public <T> void create(T obj, Consumer<T> consumer) {
+    public <T> void create(T obj) {
         executeWithExceptionHandling(obj, session -> {
             session.save(obj);
-            if (consumer != null) {
-                consumer.accept(obj); // if this throws, changes to account are abandoned    
-            }
             return obj;
         });
     }
@@ -188,12 +184,9 @@ public class HibernateHelper {
     }
 
     /** Updates a single object. */
-    public <T> T update(T obj, Consumer<T> afterPersistConsumer) {
+    public <T> T update(T obj) {
         return executeWithExceptionHandling(obj, session -> {
             session.update(obj);
-            if (afterPersistConsumer != null) {
-                afterPersistConsumer.accept(obj); // if this throws, changes to account are abandoned    
-            }
             return obj;
         });
     }

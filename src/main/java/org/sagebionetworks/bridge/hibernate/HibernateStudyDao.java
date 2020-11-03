@@ -59,7 +59,7 @@ public class HibernateStudyDao implements StudyDao {
     public VersionHolder createStudy(Study study) {
         checkNotNull(study);
         
-        hibernateHelper.create(study, null);
+        hibernateHelper.create(study);
         return new VersionHolder(study.getVersion());
     }
 
@@ -67,7 +67,7 @@ public class HibernateStudyDao implements StudyDao {
     public VersionHolder updateStudy(Study study) {
         checkNotNull(study);
         
-        hibernateHelper.update(study, null);
+        hibernateHelper.update(study);
         return new VersionHolder(study.getVersion());
     }
 

@@ -317,7 +317,7 @@ public class OrganizationServiceTest extends Mockito {
         
         service.addMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
         
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
         assertEquals(accountCaptor.getValue().getOrgMembership(), IDENTIFIER);
         
         verify(mockSessionUpdateService).updateOrgMembership(USER_ID, IDENTIFIER);
@@ -332,7 +332,7 @@ public class OrganizationServiceTest extends Mockito {
         
         service.addMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
         
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
         
         assertEquals(accountCaptor.getValue().getOrgMembership(), IDENTIFIER);
     }
@@ -378,7 +378,7 @@ public class OrganizationServiceTest extends Mockito {
 
         service.removeMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
         
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
         assertNull(accountCaptor.getValue().getOrgMembership());
         
         verify(mockSessionUpdateService).updateOrgMembership(USER_ID, null);
@@ -395,7 +395,7 @@ public class OrganizationServiceTest extends Mockito {
 
         service.removeMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
         
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
         assertNull(accountCaptor.getValue().getOrgMembership());
     }
 

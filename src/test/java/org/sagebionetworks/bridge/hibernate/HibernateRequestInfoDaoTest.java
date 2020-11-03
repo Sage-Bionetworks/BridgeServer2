@@ -38,7 +38,7 @@ public class HibernateRequestInfoDaoTest extends Mockito {
         
         dao.updateRequestInfo(newInfo);
 
-        verify(mockHelper).create(newInfo, null);
+        verify(mockHelper).create(newInfo);
     }
     
     @Test
@@ -51,7 +51,7 @@ public class HibernateRequestInfoDaoTest extends Mockito {
         
         dao.updateRequestInfo(newInfo);
 
-        verify(mockHelper).update(requestInfoCaptor.capture(), isNull());
+        verify(mockHelper).update(requestInfoCaptor.capture());
         
         RequestInfo captured = requestInfoCaptor.getValue();
         assertNotNull(captured.getActivitiesAccessedOn());
