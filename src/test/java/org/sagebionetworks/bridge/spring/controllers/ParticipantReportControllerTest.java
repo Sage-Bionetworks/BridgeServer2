@@ -535,7 +535,7 @@ public class ParticipantReportControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        doReturn(session).when(controller).getAdminSession();
         reset(mockAccountService);
         controller.getParticipantReport(USER_ID, REPORT_ID, null, null);
     }
@@ -578,7 +578,7 @@ public class ParticipantReportControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        doReturn(session).when(controller).getAdminSession();
         reset(mockAccountService);
         controller.getParticipantReportV4(USER_ID, REPORT_ID, null, null, null, null);
     }

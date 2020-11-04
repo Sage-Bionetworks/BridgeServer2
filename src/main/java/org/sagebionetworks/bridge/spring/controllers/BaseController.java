@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 
 import java.util.List;
@@ -54,6 +55,8 @@ import org.sagebionetworks.bridge.time.DateUtils;
 
 public abstract class BaseController {
 
+    private static final Roles[] ADMIN_ROLE_ARRAY = ADMINISTRATIVE_ROLES.toArray(new Roles[] {});
+    
     /**
      * The attribute key in request() for Filters to catch UserSession if it
      * exists.
@@ -150,6 +153,14 @@ public abstract class BaseController {
         return session;
     }
 
+    /**
+     * Retrieve a user's session using the Bridge-Session header, throwing an exception if the session does
+     * not have an administrative role (a role that is assigned to users).
+     */
+    UserSession getAdminSession() throws NotAuthenticatedException, ConsentRequiredException, UnsupportedVersionException {
+        return getAuthenticatedSession(false, ADMIN_ROLE_ARRAY);
+    }
+    
     /**
      * Retrieve user's session using the Bridge-Session header, throwing an exception if the session doesn't
      * exist (user not authorized), consent has not been given or the client app version is not supported.

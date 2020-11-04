@@ -4,7 +4,6 @@ import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeConstants.APP_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.apps.App.APP_LIST_WRITER;
@@ -104,7 +103,7 @@ public class AppController extends BaseController {
 
     @GetMapping(path = {"/v1/apps/self", "/v3/studies/self"})
     public App getCurrentApp() {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        UserSession session = getAdminSession();
         
         return appService.getApp(session.getAppId());
     }

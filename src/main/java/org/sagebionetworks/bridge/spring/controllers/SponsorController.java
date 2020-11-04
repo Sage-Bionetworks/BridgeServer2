@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.springframework.http.HttpStatus.CREATED;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -34,7 +32,7 @@ public class SponsorController extends BaseController {
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize) {
         // Anyone can see the sponsoring organizations of a study.
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        UserSession session = getAdminSession();
         
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
@@ -48,7 +46,7 @@ public class SponsorController extends BaseController {
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize) {
         // Anyone can see the sponsored studies of an organization.
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        UserSession session = getAdminSession();
 
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);

@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_VENDOR_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 
 import java.util.ArrayList;
