@@ -161,7 +161,8 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void verifyChannel() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);
-
+        account.setEmailVerified(false);
+        
         service.verifyChannel(ChannelType.EMAIL, account);
         verify(mockAccountDao).updateAccount(account, null);
     }
@@ -218,7 +219,6 @@ public class AccountServiceTest extends Mockito {
         account.setId(USER_ID);
         account.setEmail(EMAIL);
         account.setStatus(UNVERIFIED);
-        account.setStatus(ENABLED);
         account.setAppId("wrong-app");
         Consumer<Account> consumer = (oneAccount) -> {};
 
@@ -231,7 +231,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getCreatedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(createdAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(createdAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertEquals(createdAccount.getStatus(), ENABLED);
+        assertEquals(createdAccount.getStatus(), UNVERIFIED);
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
     }
 
@@ -338,6 +338,7 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
+        account.setEmail(EMAIL);
         account.setStatus(UNVERIFIED);
         account.setEmailVerified(FALSE);
 
@@ -380,6 +381,7 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
+        account.setPhone(PHONE);
         account.setStatus(UNVERIFIED);
         account.setPhoneVerified(FALSE);
 
@@ -422,6 +424,7 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
+        account.setEmail(EMAIL);
         account.setStatus(UNVERIFIED);
 
         // execute and verify
@@ -447,6 +450,7 @@ public class AccountServiceTest extends Mockito {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
+        account.setPhone(PHONE);
         account.setStatus(UNVERIFIED);
 
         // execute and verify
@@ -459,14 +463,18 @@ public class AccountServiceTest extends Mockito {
         assertTrue(updatedAccount.getPhoneVerified());
         assertEquals(updatedAccount.getStatus(), ENABLED);
     }
-
+    
     @Test
     public void changePasswordForExternalId() {
+        Enrollment en = Enrollment.create(TEST_APP_ID, STUDY_A, USER_ID);
+        en.setExternalId("anExternalId");
+        
         // Set up test account
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
         account.setStatus(UNVERIFIED);
+        account.getEnrollments().add(en);
 
         // execute and verify
         service.changePassword(account, null, DUMMY_PASSWORD);
@@ -525,9 +533,10 @@ public class AccountServiceTest extends Mockito {
     public void authenticateAccountUnverified() throws Exception {
         // mock hibernate
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
-        persistedAccount.setStatus(UNVERIFIED);
+        persistedAccount.setEmailVerified(false);
 
         App app = App.create();
+        app.setEmailVerificationEnabled(true);
 
         service.authenticate(app, PASSWORD_SIGNIN);
     }
@@ -642,7 +651,7 @@ public class AccountServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void reauthenticateAccountUnverified() throws Exception {
         Account persistedAccount = mockGetAccountById(REAUTH_SIGNIN.getAccountId(), false);
-        persistedAccount.setStatus(UNVERIFIED);
+        persistedAccount.setEmailVerified(false);
 
         AccountSecret secret = AccountSecret.create();
         when(mockAccountSecretDao.verifySecret(REAUTH, USER_ID, REAUTH_TOKEN, ROTATIONS))
@@ -650,6 +659,7 @@ public class AccountServiceTest extends Mockito {
 
         App app = App.create();
         app.setReauthenticationEnabled(true);
+        app.setEmailVerificationEnabled(true);
 
         service.reauthenticate(app, REAUTH_SIGNIN);
     }
@@ -981,6 +991,7 @@ public class AccountServiceTest extends Mockito {
         account.setAppId(TEST_APP_ID);
         account.setId(USER_ID);
         account.setEmail(EMAIL);
+        account.setEmailVerified(TRUE);
         account.setHealthCode(HEALTH_CODE);
         account.setVersion(1);
         if (generatePasswordHash) {

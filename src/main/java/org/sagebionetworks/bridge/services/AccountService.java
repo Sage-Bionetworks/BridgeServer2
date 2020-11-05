@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.BridgeUtils.filterForStudy;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
-import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
@@ -93,20 +92,18 @@ public class AccountService {
             return;
         }
         
-        // Avoid updating on every sign in by examining object state first.
+        // Avoid updating on every sign in by examining object state first. We do update the status 
+        // flag so we can see the value in the database, but it is now derived in memory from other fields 
+        // of the account.
         boolean shouldUpdateEmailVerified = (channelType == EMAIL && !TRUE.equals(account.getEmailVerified()));
         boolean shouldUpdatePhoneVerified = (channelType == PHONE && !TRUE.equals(account.getPhoneVerified()));
-        boolean shouldUpdateStatus = (account.getStatus() == UNVERIFIED);
         
-        if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified || shouldUpdateStatus) {
+        if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified) {
             if (shouldUpdateEmailVerified) {
                 account.setEmailVerified(TRUE);
             }
             if (shouldUpdatePhoneVerified) {
                 account.setPhoneVerified(TRUE);
-            }
-            if (shouldUpdateStatus) {
-                account.setStatus(ENABLED);
             }
             account.setModifiedOn(DateUtils.getCurrentDateTime());
             accountDao.updateAccount(account, null);    
@@ -133,16 +130,9 @@ public class AccountService {
         account.setPasswordModifiedOn(modifiedOn);
         // One of these (the channel used to reset the password) is also verified by resetting the password.
         if (channelType == EMAIL) {
-            account.setStatus(ENABLED);
             account.setEmailVerified(true);    
         } else if (channelType == PHONE) {
-            account.setStatus(ENABLED);
             account.setPhoneVerified(true);    
-        } else if (channelType == null) {
-            // If there's no channel type, we're assuming a password-based sign-in using
-            // external ID (the third identifying credential that can be used), so here
-            // we will enable the account.
-            account.setStatus(ENABLED);
         }
         accountDao.updateAccount(account, null);
     }
@@ -275,6 +265,17 @@ public class AccountService {
     }
     
     /**
+     * This is used when enrolling a user, since the account itself is not yet in a study
+     * that is visible to the caller. There may be similar cases where study access 
+     * permissions need to be bypassed.
+     */
+    public Optional<Account> getAccountNoPermissionCheck(AccountId accountId) {
+        checkNotNull(accountId);
+        
+        return accountDao.getAccount(accountId);
+    }
+    
+    /**
      * Delete an account along with the authentication credentials.
      */
     public void deleteAccount(AccountId accountId) {
@@ -320,7 +321,7 @@ public class AccountService {
         // Auth successful, you can now leak further information about the account through other exceptions.
         // For email/phone sign ins, the specific credential must have been verified (unless we've disabled
         // email verification for older apps that didn't have full external ID support).
-        if (account.getStatus() == UNVERIFIED) {
+        if (account.getStatus() == UNVERIFIED && app.isEmailVerificationEnabled()) {
             throw new UnauthorizedException("Email or phone number have not been verified");
         } else if (account.getStatus() == DISABLED) {
             throw new AccountDisabledException();

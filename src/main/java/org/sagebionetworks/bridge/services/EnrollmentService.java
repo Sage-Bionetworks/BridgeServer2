@@ -17,6 +17,7 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -96,12 +97,17 @@ public class EnrollmentService {
 
         // verify this has appId and accountId
         Validate.entityThrowingException(INSTANCE, enrollment);
+        
+        // Verify that the caller has access to this study
+        AuthUtils.checkStudyScopedToCaller(enrollment.getStudyId());
 
+        // Because this is an enrollment, we don't want to check the caller's access to the 
+        // account based on study, because the caller has not been put in the study yet.
+        // The check would fail for researchers.
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoPermissionCheck(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
         enrollment = enroll(account, enrollment);
         accountService.updateAccount(account, null);
         return enrollment;

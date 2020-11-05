@@ -294,4 +294,20 @@ public class AuthUtilsTest extends Mockito {
         
         assertTrue( AuthUtils.isStudyScopedToCaller("study2") );
     }
+    
+    @Test
+    public void checkStudyScopedToCallerSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
+        
+        AuthUtils.checkStudyScopedToCaller("study2");
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkStudyScopedToCallerFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
+        
+        AuthUtils.checkStudyScopedToCaller("study3");
+    }
 }

@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.testng.Assert.assertEquals;
@@ -26,6 +27,7 @@ import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -151,7 +153,7 @@ public class HibernateAccountTest {
         assertEquals(account.getEmail(), "email");
         assertEquals(account.getPhone(), PHONE);
         assertEquals(account.getId(), "id");
-        assertEquals(account.getStatus(), UNVERIFIED);
+        assertEquals(account.getStatus(), ENABLED); // thanks to synapseUserId
         assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
     }
     
