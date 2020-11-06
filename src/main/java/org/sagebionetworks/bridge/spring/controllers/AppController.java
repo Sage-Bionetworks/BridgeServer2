@@ -103,7 +103,7 @@ public class AppController extends BaseController {
 
     @GetMapping(path = {"/v1/apps/self", "/v3/studies/self"})
     public App getCurrentApp() {
-        UserSession session = getAdminSession();
+        UserSession session = getAdministrativeSession();
         
         return appService.getApp(session.getAppId());
     }

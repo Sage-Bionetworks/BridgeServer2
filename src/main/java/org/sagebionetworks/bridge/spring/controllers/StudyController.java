@@ -39,7 +39,7 @@ public class StudyController extends BaseController {
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize,            
             @RequestParam(defaultValue = "false") boolean includeDeleted) {
-        UserSession session = getAdminSession();
+        UserSession session = getAdministrativeSession();
 
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);

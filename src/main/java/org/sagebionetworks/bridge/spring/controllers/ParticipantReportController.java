@@ -127,7 +127,7 @@ public class ParticipantReportController extends BaseController {
     public DateRangeResourceList<? extends ReportData> getParticipantReport(@PathVariable String userId,
             @PathVariable String identifier, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
-        UserSession session = getAdminSession();
+        UserSession session = getAdministrativeSession();
         checkSelfResearcherOrAdmin(userId);
         
         return getParticipantReportInternal(session.getAppId(), userId, identifier, startDate, endDate);
@@ -161,7 +161,7 @@ public class ParticipantReportController extends BaseController {
             @PathVariable String identifier, @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) {
-        UserSession session = getAdminSession();
+        UserSession session = getAdministrativeSession();
         checkSelfResearcherOrAdmin(userId);
         
         return getParticipantReportInternalV4(session.getAppId(), userId, identifier, 

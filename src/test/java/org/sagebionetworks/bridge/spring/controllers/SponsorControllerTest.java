@@ -79,7 +79,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void getStudySponsors() {
-        doReturn(session).when(controller).getAdminSession();
+        doReturn(session).when(controller).getAdministrativeSession();
         
         PagedResourceList<Organization> page = new PagedResourceList<>(
                 ImmutableList.of(Organization.create(), Organization.create()), 100);
@@ -93,7 +93,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void getStudySponsorsUsesDefaults() {
-        doReturn(session).when(controller).getAdminSession();
+        doReturn(session).when(controller).getAdministrativeSession();
         
         PagedResourceList<Organization> page = new PagedResourceList<>(
                 ImmutableList.of(Organization.create(), Organization.create()), 100);
@@ -107,7 +107,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void getSponsoredStudies() {
-        doReturn(session).when(controller).getAdminSession();
+        doReturn(session).when(controller).getAdministrativeSession();
         
         PagedResourceList<Study> page = new PagedResourceList<>(
                 ImmutableList.of(Study.create(), Study.create()), 100);
@@ -121,7 +121,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void getSponsoredStudiesUsesDefaults() {
-        doReturn(session).when(controller).getAdminSession();
+        doReturn(session).when(controller).getAdministrativeSession();
         
         PagedResourceList<Study> page = new PagedResourceList<>(
                 ImmutableList.of(Study.create(), Study.create()), 100);

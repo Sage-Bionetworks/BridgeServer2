@@ -157,7 +157,7 @@ public abstract class BaseController {
      * Retrieve a user's session using the Bridge-Session header, throwing an exception if the session does
      * not have an administrative role (a role that is assigned to users).
      */
-    UserSession getAdminSession() throws NotAuthenticatedException, ConsentRequiredException, UnsupportedVersionException {
+    UserSession getAdministrativeSession() throws NotAuthenticatedException, ConsentRequiredException, UnsupportedVersionException {
         return getAuthenticatedSession(false, ADMIN_ROLE_ARRAY);
     }
     

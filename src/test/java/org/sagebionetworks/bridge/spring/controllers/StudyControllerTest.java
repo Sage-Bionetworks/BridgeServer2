@@ -70,7 +70,7 @@ public class StudyControllerTest extends Mockito {
         controller.setStudyService(service);
 
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        doReturn(session).when(controller).getAdminSession();
+        doReturn(session).when(controller).getAdministrativeSession();
 
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();

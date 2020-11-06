@@ -32,7 +32,7 @@ public class SponsorController extends BaseController {
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize) {
         // Anyone can see the sponsoring organizations of a study.
-        UserSession session = getAdminSession();
+        UserSession session = getAdministrativeSession();
         
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
@@ -46,7 +46,7 @@ public class SponsorController extends BaseController {
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize) {
         // Anyone can see the sponsored studies of an organization.
-        UserSession session = getAdminSession();
+        UserSession session = getAdministrativeSession();
 
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);

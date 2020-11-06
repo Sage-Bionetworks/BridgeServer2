@@ -49,7 +49,7 @@ public class OrganizationController extends BaseController {
     public PagedResourceList<Organization> getOrganizations(
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize) {
-        UserSession session = getAdminSession();
+        UserSession session = getAdministrativeSession();
         
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
@@ -99,7 +99,7 @@ public class OrganizationController extends BaseController {
     
     @PostMapping("/v1/organizations/{orgId}/members")
     public PagedResourceList<AccountSummary> getMembers(@PathVariable String orgId) {
-        UserSession session = getAdminSession();
+        UserSession session = getAdministrativeSession();
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         return service.getMembers(session.getAppId(), orgId, search);
@@ -133,7 +133,7 @@ public class OrganizationController extends BaseController {
      */
     @PostMapping("/v1/organizations/nonmembers")
     public PagedResourceList<AccountSummary> getUnassignedAdmins() {
-        UserSession session = getAdminSession();
+        UserSession session = getAdministrativeSession();
         
         AccountSummarySearch initial = parseJson(AccountSummarySearch.class);
         AccountSummarySearch search = new AccountSummarySearch.Builder()
