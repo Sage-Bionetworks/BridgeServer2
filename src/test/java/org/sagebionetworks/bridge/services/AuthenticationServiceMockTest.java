@@ -26,6 +26,7 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -165,8 +166,6 @@ public class AuthenticationServiceMockTest {
     private OAuthProviderService oauthProviderService;
     @Mock
     private SponsorService sponsorService;
-    @Mock
-    private ExternalIdService externalIdService;
     @Mock
     private AccountSecretDao accountSecretDao;
     @Captor
@@ -1016,7 +1015,23 @@ public class AuthenticationServiceMockTest {
     }
     
     @Test
-    public void generatePasswordWhenExternalIdMissing() {
+    public void generatePasswordAccountNotFound() {
+        try {
+            service.generatePassword(app, EXTERNAL_ID);
+            fail("Should have thrown an exception");
+        } catch(EntityNotFoundException e) {
+            // expected exception
+        }
+        verify(participantService, never()).createParticipant(any(), any(), anyBoolean());
+        verify(accountService, never()).changePassword(any(), any(), any());
+    }
+
+    @Test
+    public void generatePasswordExternalIdNotFound() {
+        Account account = Account.create();
+        account.setEnrollments(new HashSet<>());
+        when(accountService.getAccount(any())).thenReturn(account);
+        
         try {
             service.generatePassword(app, EXTERNAL_ID);
             fail("Should have thrown an exception");
@@ -1066,17 +1081,32 @@ public class AuthenticationServiceMockTest {
         service.generatePassword(app, EXTERNAL_ID);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void generatePasswordAccountMismatchesCallerStudies() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         
         when(accountService.getAccount(any())).thenReturn(account);
-        account.setEnrollments(Sets.newHashSet(Enrollment.create(app.getIdentifier(), "studyB", "id")));
+        Enrollment en = Enrollment.create(app.getIdentifier(), "studyB", "id", EXTERNAL_ID);
+        account.setEnrollments(Sets.newHashSet(en));
         
         service.generatePassword(app, EXTERNAL_ID);
     }
 
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void generatePasswordExternalIdInStudyNotAccessibleToCaller() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
+        
+        // The account is returned but filtering has been applied such that the
+        // external ID is not there, despite using it to retrieve the account.
+        when(accountService.getAccount(any())).thenReturn(account);
+        Enrollment en = Enrollment.create(app.getIdentifier(), "studyB", "id");
+        account.setEnrollments(Sets.newHashSet(en));
+        
+        service.generatePassword(app, EXTERNAL_ID);
+    }
+    
     @Test
     public void creatingExternalIdOnlyAccountSucceedsIfIdsManaged() {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)

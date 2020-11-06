@@ -552,10 +552,6 @@ public class ParticipantService {
        
         RequestContext requestContext = RequestContext.get();
         
-        // Sign out the user if you make alterations that will change the security state of 
-        // the account. Otherwise very strange bugs can results.
-        boolean clearCache = false;
-        
         // You can no longer enroll users or add them to studies through the enrollments table just
         // by updating the participant account. There are separate APIs for this. HOWEVER we have one 
         // important exception: accounts that are identifiable only by an external ID. Since an external
@@ -568,15 +564,7 @@ public class ParticipantService {
                 
                 Enrollment enrollment = Enrollment.create(account.getAppId(), studyId, account.getId(), externalId);
                 enrollmentService.enroll(account, enrollment);
-                clearCache = true;
             }
-        }
-
-        // We have to clear the cache if we make changes that can alter the security profile of 
-        // the account, otherwise very strange behavior can occur if that user is signed in with 
-        // a stale session.
-        if (!isNew && clearCache) {
-            cacheProvider.removeSessionByUserId(account.getId());    
         }
         
         // Do not copy timezone (external ID field exists only to submit the value on create).

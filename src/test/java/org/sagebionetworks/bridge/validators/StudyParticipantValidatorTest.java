@@ -51,13 +51,9 @@ public class StudyParticipantValidatorTest {
     @Mock
     private OrganizationService mockOrganizationService;
     
-    private Study study;
-    
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        
-        study = Study.create();
         
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
@@ -176,7 +172,17 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
-    public void externalIdOnlyOK() {
+    public void externalIdFieldInvalid() {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withExternalId("external-id").build();
+        
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, participant, "externalId", 
+                "must now be supplied in the externalIds property that maps a study ID to the new external ID");
+    }
+    
+    @Test
+    public void externalIdsOK() {
         when(studyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(Study.create());
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withExternalIds(ImmutableMap.of(TEST_STUDY_ID, "external-id")).build();
@@ -352,32 +358,19 @@ public class StudyParticipantValidatorTest {
         assertValidatorMessage(validator, participant, "synapseUserId", "cannot be blank");
     }
     @Test
-    public void studyAllowedIfCallerHasNoStudies() {
-        // In other words, you can "taint" a user with studies, putting them in a limited security role.
-        StudyParticipant participant = withStudies("studyA", "studyB");
-        
-        when(studyService.getStudy(app.getIdentifier(), "studyA", false)).thenReturn(study);
-        when(studyService.getStudy(app.getIdentifier(), "studyB", false)).thenReturn(study);
-        
-        validator = makeValidator(true);
-        Validate.entityThrowingException(validator, participant);
-    }
-    @Test
-    public void subsetOfStudiesOK() {
+    public void validateStudyIdInvalid() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerEnrolledStudies(ImmutableSet.of("studyA", "studyB", "studyC")).build());
+                .withCallerEnrolledStudies(ImmutableSet.of("studyA", "studyC")).build());
         try {
-            // The user (in three studies) can create a participant in only one of those studies
-            StudyParticipant participant = withStudies("studyB");
-            
-            when(studyService.getStudy(app.getIdentifier(), "studyB", false)).thenReturn(study);
-            
+            StudyParticipant participant = new StudyParticipant.Builder()
+                    .withExternalIds(ImmutableMap.of("studyA", "extIdA")).build();
+
             validator = makeValidator(true);
-            Validate.entityThrowingException(validator, participant);
+            assertValidatorMessage(validator, participant, "externalIds[studyA]", "is not a study");
         } finally {
             RequestContext.set(RequestContext.NULL_INSTANCE);
         }
-    }
+    }    
     @Test
     public void validateOrganization() {
         when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID)).thenReturn(Optional.empty());
@@ -426,9 +419,6 @@ public class StudyParticipantValidatorTest {
         return new StudyParticipantValidator(studyService, mockOrganizationService, app, isNew);
     }
 
-    private StudyParticipant withStudies(String... studyIds) {
-        return new StudyParticipant.Builder().withEmail("email@email.com").withStudyIds(ImmutableSet.copyOf(studyIds)).build();
-    }
     private StudyParticipant withMemberOrganization(String orgId) {
         return new StudyParticipant.Builder().withEmail("email@email.com").withOrgMembership(orgId).build();
     }

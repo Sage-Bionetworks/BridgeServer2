@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.hibernate;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -15,6 +14,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.ExternalIdDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -77,20 +77,20 @@ public class HibernateExternalIdDao implements ExternalIdDao {
         checkNotNull(extId);
 
         AccountId accountId = AccountId.forExternalId(extId.getAppId(), extId.getIdentifier());
-        Optional<Account> opt = accountDao.getAccount(accountId);
+        Account account = accountDao.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
-        if (opt.isPresent()) {
-            Account account = opt.get();
-            if (BridgeUtils.filterForStudy(account) != null) {
-                Optional<Enrollment> enOpt = account.getEnrollments().stream()
-                        .filter(en -> extId.getIdentifier().equals(en.getExternalId()))
-                        .findFirst();
-                if (enOpt.isPresent()) {
-                    Enrollment enrollment = enOpt.get();
-                    enrollment.setExternalId(null);
-                    accountDao.updateAccount(account, null);
-                }
-            }
+        if (BridgeUtils.filterForStudy(account) == null) {
+            throw new EntityNotFoundException(Account.class);
         }
+        // If the caller used an external ID in a study the caller doesn't have access to,
+        // the account retrieval would succeed but the filterForStudy call would then remove
+        // the external Id. Externally we report this as an account not found exception.
+        Enrollment enrollment = account.getEnrollments().stream()
+                .filter(en -> extId.getIdentifier().equals(en.getExternalId()))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        enrollment.setExternalId(null);
+        accountDao.updateAccount(account, null);
     }
 }

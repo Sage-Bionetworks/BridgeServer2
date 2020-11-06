@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -35,6 +37,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
@@ -103,6 +106,7 @@ public class ExternalIdControllerV4Test extends Mockito {
         assertCreate(ExternalIdControllerV4.class, "createExternalIdentifier");
         assertDelete(ExternalIdControllerV4.class, "deleteExternalIdentifier");
         assertPost(ExternalIdControllerV4.class, "generatePassword");
+        assertGet(ExternalIdControllerV4.class, "getExternalIdentifiersForStudy");
     }
     
     @Test
@@ -161,5 +165,31 @@ public class ExternalIdControllerV4Test extends Mockito {
         assertEquals(result.getUserId(), "user-id");
 
         verify(mockAuthService).generatePassword(app, "extid");
+    }
+    
+    @Test
+    public void getExternalIdentifiersForStudy() {
+        PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<>(ImmutableList.of(), 1000, true);
+        when(mockService.getPagedExternalIds(TEST_APP_ID, TEST_STUDY_ID, "idFilter", 1000, 50))
+            .thenReturn(page);
+        
+        PagedResourceList<ExternalIdentifierInfo> retValue = controller.getExternalIdentifiersForStudy(
+                TEST_STUDY_ID, "1000", "50", "idFilter");
+        assertEquals(retValue, page);
+        
+        verify(mockService).getPagedExternalIds(TEST_APP_ID, TEST_STUDY_ID, "idFilter", 1000, 50);
+    }
+
+    @Test
+    public void getExternalIdentifiersForNoParameters() {
+        PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<>(ImmutableList.of(), 1000, true);
+        when(mockService.getPagedExternalIds(TEST_APP_ID, TEST_STUDY_ID, null, 0, API_DEFAULT_PAGE_SIZE))
+            .thenReturn(page);
+        
+        PagedResourceList<ExternalIdentifierInfo> retValue = controller.getExternalIdentifiersForStudy(
+                TEST_STUDY_ID, null, null, null);
+        assertEquals(retValue, page);
+        
+        verify(mockService).getPagedExternalIds(TEST_APP_ID, TEST_STUDY_ID, null, 0, API_DEFAULT_PAGE_SIZE);        
     }
 }

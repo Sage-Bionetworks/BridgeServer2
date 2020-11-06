@@ -1145,26 +1145,6 @@ public class ParticipantServiceTest extends Mockito {
         verify(enrollmentService, never()).enroll(any(), any());
     }
     
-    public void updateParticipantTransfersStudyIdsForSuperadmins() {
-        Set<String> studies = ImmutableSet.of("studyA", "studyB");
-        StudyParticipant participant = mockStudiesInRequest(studies, studies, SUPERADMIN).build();
-        
-        mockHealthCodeAndAccountRetrieval();
-        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "studyC", ID));
-        account.getEnrollments().add(Enrollment.create(APP.getIdentifier(), "studyA", ID));
-        
-        participantService.updateParticipant(APP, participant);
-        
-        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
-        
-        Set<Enrollment> enrollments = accountCaptor.getValue().getEnrollments();
-        assertEquals(enrollments.size(), 2);
-        
-        // get() throws exception if enrollment not found
-        enrollments.stream().filter((as) -> as.getStudyId().equals("studyA")).findAny().get();
-        enrollments.stream().filter((as) -> as.getStudyId().equals("studyB")).findAny().get();
-    }    
-    
     // The exception here results from the fact that the caller can't see the existance of the 
     // participant, because the study IDs don't overlap
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1175,14 +1155,18 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateParticipant(APP, PARTICIPANT);
     }
     
-    @Test
-    public void enrollingAccountClearsCache() {
-        
-    }
-    
-    @Test
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = "studyB is not a study of the caller")
     public void enrollingAccountIntoInaccessibleStudies() { 
+        // Researcher has studyA and studyB access
+        Set<String> studies = ImmutableSet.of("studyA", "studyC");
+        mockStudiesInRequest(studies, ImmutableSet.of("studyB"), RESEARCHER).build();
         
+        // Participant creation tries to enroll in study C
+        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
+                .withExternalIds(ImmutableMap.of("studyB", "extIdB")).build();
+
+        participantService.createParticipant(APP, participant, false);
     }
     
     @Test

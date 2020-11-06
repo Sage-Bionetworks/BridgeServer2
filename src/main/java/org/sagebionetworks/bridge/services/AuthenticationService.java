@@ -341,13 +341,12 @@ public class AuthenticationService {
             throw new EntityNotFoundException(Account.class);
         }
         
-        Optional<Enrollment> opt = account.getEnrollments().stream()
-                .filter(enrollment -> externalId.equals(enrollment.getExternalId())).findAny();
-        if (!opt.isPresent()) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        
-        AuthUtils.isStudyScopedToCaller(opt.get().getStudyId());
+        Enrollment en = account.getEnrollments().stream()
+                .filter(enrollment -> externalId.equals(enrollment.getExternalId()))
+                .findAny()
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        AuthUtils.checkStudyScopedToCaller(en.getStudyId());
 
         String password = generatePassword(app.getPasswordPolicy().getMinLength());
         accountService.changePassword(account, null, password);

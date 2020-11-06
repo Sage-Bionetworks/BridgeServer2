@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 import java.util.List;
 import java.util.Map;
@@ -14,6 +15,7 @@ import java.util.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -23,8 +25,12 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.testng.collections.Lists;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -171,8 +177,11 @@ public class HibernateExternalIdDaoTest extends Mockito {
         ExternalIdentifier extId = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
         extId.setStudyId(TEST_STUDY_ID);
         
-        dao.deleteExternalId(extId);
-        
+        try {
+            dao.deleteExternalId(extId);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
         verify(mockAccountDao, never()).updateAccount(any(), any());
     }
 
@@ -183,14 +192,47 @@ public class HibernateExternalIdDaoTest extends Mockito {
         Account account = Account.create();
         account.setEnrollments(ImmutableSet.of(en));
         
+        // The fact that this would succeed, but there would be no enrollment record
+        // in the account with the same externalId at all, should not be possible. 
+        // Additional test below demonstrates what happens if the enrollment record 
+        // is filtered out by BridgeUtils.filterForStudy.
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, EXTERNAL_ID);
         when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
         
         ExternalIdentifier extId = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
         extId.setStudyId(TEST_STUDY_ID);
         
-        dao.deleteExternalId(extId);
+        try {
+            dao.deleteExternalId(extId);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
+        verify(mockAccountDao, never()).updateAccount(any(), any());
+    }
+    
+    @Test
+    public void deletedExternalIdNotAssociatedtoStudyAccessibleToCaller() {
+        // User is associated to study 
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         
+        // The enrollment has the external ID the caller is looking for, but it's not in study A
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID, EXTERNAL_ID);
+        
+        Account account = Account.create();
+        account.setId(USER_ID);
+        account.setEnrollments(Sets.newHashSet(en));
+        
+        AccountId accountId = AccountId.forExternalId(TEST_APP_ID, EXTERNAL_ID);
+        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+        
+        ExternalIdentifier extId = ExternalIdentifier.create(TEST_APP_ID, EXTERNAL_ID);
+        
+        try {
+            dao.deleteExternalId(extId);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
         verify(mockAccountDao, never()).updateAccount(any(), any());
     }
 }
