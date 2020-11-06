@@ -102,8 +102,8 @@ public class EnrollmentService {
         AuthUtils.checkStudyScopedToCaller(enrollment.getStudyId());
 
         // Because this is an enrollment, we don't want to check the caller's access to the 
-        // account based on study, because the caller has not been put in the study yet.
-        // The check would fail for researchers.
+        // account based on study, because the account has not been put in a study accessible
+        // to the caller. The check would fail for researchers.
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
         Account account = accountService.getAccountNoPermissionCheck(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
