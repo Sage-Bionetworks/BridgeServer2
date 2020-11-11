@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.dynamodb.DynamoExternalIdDao.PAGE_SIZE_ERROR;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -56,6 +55,8 @@ import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
 @Component
 public class DynamoUploadDao implements UploadDao {
+    static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
+
     private DynamoDBMapper mapper;
     private DynamoIndexHelper healthCodeRequestedOnIndex;
     private HealthCodeDao healthCodeDao;

@@ -412,3 +412,11 @@ ADD CONSTRAINT `fk_withdrawnBy` FOREIGN KEY (`withdrawnBy`) REFERENCES `Accounts
 ALTER TABLE `Assessments`
 ADD COLUMN `minutesToComplete` int(10) DEFAULT NULL;
 
+-- changeset bridge:21
+
+-- This constraint was enforced in DynamoDB table, and is now enforced in associative table
+-- an externalId must be unique in the context of an app.
+ALTER TABLE AccountsSubstudies
+ADD CONSTRAINT `unique_extId` UNIQUE (studyId, externalId);
+
+

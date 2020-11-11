@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.BridgeUtils;
+
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -41,7 +41,6 @@ public class UserAdminService {
     private ScheduledActivityService scheduledActivityService;
     private ActivityEventService activityEventService;
     private CacheProvider cacheProvider;
-    private ExternalIdService externalIdService;
     private UploadService uploadService;
     private RequestInfoService requestInfoService;
 
@@ -87,10 +86,6 @@ public class UserAdminService {
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
         this.cacheProvider = cache;
-    }
-    @Autowired
-    final void setExternalIdService(ExternalIdService externalIdService) {
-        this.externalIdService = externalIdService;
     }
     @Autowired
     final void setUploadService(UploadService uploadService) {
@@ -209,9 +204,6 @@ public class UserAdminService {
             uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(healthCode);
-            for (String externalId : BridgeUtils.collectExternalIds(account)) {
-                externalIdService.unassignExternalId(account, externalId);
-            }
             // AccountSecret records and Enrollment records are are deleted on a 
             // cascading delete from Account
             accountService.deleteAccount(accountId);

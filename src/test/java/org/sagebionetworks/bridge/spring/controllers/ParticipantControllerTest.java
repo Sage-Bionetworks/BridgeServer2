@@ -159,13 +159,11 @@ public class ParticipantControllerTest extends Mockito {
             .withAppId(TEST_APP_ID).withPhone(PHONE)
             .withPassword(PASSWORD).build();
     private static final IdentifierUpdate PHONE_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
-            PHONE, null, null);
+            PHONE, null);
     private static final IdentifierUpdate EMAIL_UPDATE = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN_REQUEST,
-            EMAIL, null, null, null);
-    private static final IdentifierUpdate EXTID_UPDATE = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN_REQUEST, null,
-            null, "some-new-extid", null);
+            EMAIL, null, null);
     private static final IdentifierUpdate SYNAPSE_ID_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
-            null, null, SYNAPSE_USER_ID);
+            null, SYNAPSE_USER_ID);
 
     @InjectMocks
     @Spy
@@ -1332,26 +1330,6 @@ public class ParticipantControllerTest extends Mockito {
     }
 
     @Test
-    public void updateIdentifiersWithExternalId() throws Exception {
-        mockRequestBody(mockRequest, EXTID_UPDATE);
-
-        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
-
-        JsonNode result = controller.updateIdentifiers();
-
-        assertEquals(result.get("id").textValue(), USER_ID);
-
-        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
-                identifierUpdateCaptor.capture());
-
-        IdentifierUpdate update = identifierUpdateCaptor.getValue();
-        assertEquals(update.getSignIn().getPhone(), PHONE_PASSWORD_SIGN_IN_REQUEST.getPhone());
-        assertEquals(update.getSignIn().getPassword(), PHONE_PASSWORD_SIGN_IN_REQUEST.getPassword());
-        assertEquals(update.getExternalIdUpdate(), "some-new-extid");
-        assertNull(update.getPhoneUpdate());
-    }
-    
-    @Test
     public void updateIdentifiersWithSynapseUserId() throws Exception {
         mockRequestBody(mockRequest, SYNAPSE_ID_UPDATE);
 
@@ -1368,7 +1346,6 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(update.getSignIn().getEmail(), EMAIL_PASSWORD_SIGN_IN_REQUEST.getEmail());
         assertEquals(update.getSignIn().getPassword(), EMAIL_PASSWORD_SIGN_IN_REQUEST.getPassword());
         assertEquals(update.getSynapseUserIdUpdate(), SYNAPSE_USER_ID);
-        assertNull(update.getExternalIdUpdate());
         assertNull(update.getPhoneUpdate());
     }
 

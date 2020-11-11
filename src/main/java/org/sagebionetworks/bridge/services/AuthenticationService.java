@@ -6,8 +6,11 @@ import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUT
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 
+import java.util.Optional;
+
 import org.apache.commons.lang3.StringUtils;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.PasswordGenerator;
 import org.sagebionetworks.bridge.RequestContext;
@@ -28,10 +31,10 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Verification;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
@@ -70,7 +73,6 @@ public class AuthenticationService {
     private PasswordResetValidator passwordResetValidator;
     private AccountWorkflowService accountWorkflowService;
     private IntentService intentService;
-    private ExternalIdService externalIdService;
     private AccountSecretDao accountSecretDao;
     private OAuthProviderService oauthProviderService;
     private SponsorService sponsorService;
@@ -111,10 +113,6 @@ public class AuthenticationService {
     @Autowired
     final void setIntentToParticipateService(IntentService intentService) {
         this.intentService = intentService;
-    }
-    @Autowired
-    final void setExternalIdService(ExternalIdService externalIdService) {
-        this.externalIdService = externalIdService;
     }
     @Autowired
     final void setAccountSecretDao(AccountSecretDao accountSecretDao) {
@@ -330,50 +328,31 @@ public class AuthenticationService {
         accountWorkflowService.resetPassword(passwordReset);
     }
     
-    public GeneratedPassword generatePassword(App app, String externalId, boolean createAccount) {
+    public GeneratedPassword generatePassword(App app, String externalId) {
         checkNotNull(app);
         
         if (StringUtils.isBlank(externalId)) {
             throw new BadRequestException("External ID is required");
         }
-        ExternalIdentifier externalIdObj = externalIdService.getExternalId(app.getIdentifier(), externalId)
-                .orElseThrow(() -> new EntityNotFoundException(ExternalIdentifier.class));
-        
-        // The *caller* must be associated to the external IDs study, if any
-        if (BridgeUtils.filterForStudy(externalIdObj) == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
 
         AccountId accountId = AccountId.forExternalId(app.getIdentifier(), externalId);
         Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         
-        // The *target* must be associated to the study, if any
-        boolean existsButWrongStudy = account != null && BridgeUtils.filterForStudy(account) == null;
-        if (existsButWrongStudy) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        // No account and user doesn't want to create it, treat as a 404
-        if (account == null && !createAccount) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Enrollment en = account.getEnrollments().stream()
+                .filter(enrollment -> externalId.equals(enrollment.getExternalId()))
+                .findAny()
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        AuthUtils.checkStudyScopedToCaller(en.getStudyId());
 
         String password = generatePassword(app.getPasswordPolicy().getMinLength());
-        String userId;
-        if (account == null) {
-            // Create an account with password and external ID assigned. If the external ID has been 
-            // assigned to another account, this creation will fail (external ID is a unique column).
-            // Currently this user cannot be assigned to a study, but the external ID will eventually 
-            // establish such a relationship.
-            StudyParticipant participant = new StudyParticipant.Builder()
-                    .withExternalId(externalId).withPassword(password).build();
-            userId = participantService.createParticipant(app, participant, false).getIdentifier();
-        } else {
-            // Account exists, so rotate the password
-            accountService.changePassword(account, null, password);
-            userId = account.getId();
-        }
+        accountService.changePassword(account, null, password);
+
         // Return the password and the user ID in case the account was just created.
-        return new GeneratedPassword(externalId, userId, password);
+        return new GeneratedPassword(externalId, account.getId(), password);
     }
     
     public String generatePassword(int policyLength) {
