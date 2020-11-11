@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
@@ -81,7 +79,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void getStudySponsors() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        doReturn(session).when(controller).getAdministrativeSession();
         
         PagedResourceList<Organization> page = new PagedResourceList<>(
                 ImmutableList.of(Organization.create(), Organization.create()), 100);
@@ -95,7 +93,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void getStudySponsorsUsesDefaults() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        doReturn(session).when(controller).getAdministrativeSession();
         
         PagedResourceList<Organization> page = new PagedResourceList<>(
                 ImmutableList.of(Organization.create(), Organization.create()), 100);
@@ -109,7 +107,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void getSponsoredStudies() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        doReturn(session).when(controller).getAdministrativeSession();
         
         PagedResourceList<Study> page = new PagedResourceList<>(
                 ImmutableList.of(Study.create(), Study.create()), 100);
@@ -123,7 +121,7 @@ public class SponsorControllerTest extends Mockito {
     
     @Test
     public void getSponsoredStudiesUsesDefaults() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        doReturn(session).when(controller).getAdministrativeSession();
         
         PagedResourceList<Study> page = new PagedResourceList<>(
                 ImmutableList.of(Study.create(), Study.create()), 100);
