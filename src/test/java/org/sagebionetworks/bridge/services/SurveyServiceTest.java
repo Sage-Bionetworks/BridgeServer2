@@ -66,7 +66,7 @@ import org.sagebionetworks.bridge.models.surveys.TestSurvey;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
 import org.sagebionetworks.bridge.validators.SurveyPublishValidator;
 
-public class SurveyServiceMockTest {
+public class SurveyServiceTest {
 
     private static final String OTHER_APP = "other-app";
     private static final String SCHEDULE_PLAN_GUID = "schedulePlanGuid";
@@ -110,7 +110,7 @@ public class SurveyServiceMockTest {
     public void before() {
         MockitoAnnotations.initMocks(this);
         // Mock dependencies.
-        app = TestUtils.getValidApp(SurveyServiceMockTest.class);
+        app = TestUtils.getValidApp(SurveyServiceTest.class);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         when(mockSurveyDao.createSurvey(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -918,7 +918,7 @@ public class SurveyServiceMockTest {
     private Survey makeSurveyWithElements() {
         // Set app ID and identifier. Clear guid and createdOn. (Guid is set by the service. CreatedOn is set by the
         // dao.)
-        Survey survey = new TestSurvey(SurveyServiceMockTest.class, true);
+        Survey survey = new TestSurvey(SurveyServiceTest.class, true);
         survey.setAppId(TEST_APP_ID);
         survey.setIdentifier(SURVEY_ID);
         survey.setGuid(null);

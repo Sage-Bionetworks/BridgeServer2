@@ -32,7 +32,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 
 @SuppressWarnings({ "ConstantConditions", "rawtypes", "RedundantCast", "unchecked" })
-public class DynamoUploadSchemaDaoMockTest {
+public class DynamoUploadSchemaDaoTest {
     private static final String SCHEMA_ID = "test-schema";
     private static final int SCHEMA_REV = 3;
 

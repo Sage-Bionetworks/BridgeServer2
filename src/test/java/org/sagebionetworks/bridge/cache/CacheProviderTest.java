@@ -57,7 +57,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-public class CacheProviderMockTest {
+public class CacheProviderTest {
     private static final CacheKey CACHE_KEY = CacheKey.app("key");
     private static final Encryptor ENCRYPTOR = new AesGcmEncryptor(BridgeConfigFactory.getConfig().getProperty("bridge.healthcode.redis.key"));
     private static final String REQUEST_INFO_KEY = "userId:request-info";
@@ -84,7 +84,7 @@ public class CacheProviderMockTest {
         final CacheProvider simpleCacheProvider = new CacheProvider();
         simpleCacheProvider.setJedisOps(getJedisOps());
 
-        final App app = TestUtils.getValidApp(CacheProviderMockTest.class);
+        final App app = TestUtils.getValidApp(CacheProviderTest.class);
         app.setIdentifier("test");
         app.setName("This is a test app");
         String json = BridgeObjectMapper.get().writeValueAsString(app);

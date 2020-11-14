@@ -35,7 +35,7 @@ import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.validators.UploadValidator;
 
-public class UploadServiceCreateUploadMockTest {
+public class UploadServiceCreateUploadTest {
     private static final String TEST_BUCKET = "test-bucket";
     private static final String TEST_CONTENT_TYPE = "text/plain";
     private static final String TEST_HEALTH_CODE = "test-healthcode";

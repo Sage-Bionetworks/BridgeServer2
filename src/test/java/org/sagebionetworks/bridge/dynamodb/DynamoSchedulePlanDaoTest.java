@@ -46,7 +46,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
-public class DynamoSchedulePlanDaoMockTest extends Mockito {
+public class DynamoSchedulePlanDaoTest extends Mockito {
     
     static final Set<String> ALL_OF_GROUPS = ImmutableSet.of("a","b");
     static final Set<String> NONE_OF_GROUPS = ImmutableSet.of("c","d");

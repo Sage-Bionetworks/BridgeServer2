@@ -28,7 +28,7 @@ import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
-public class UploadServiceUploadCompleteMockTest {
+public class UploadServiceUploadCompleteTest {
     private static final String DUPE_UPLOAD_ID = "original-upload-id";
     private static final String TEST_BUCKET = "test-bucket";
     private static final String TEST_UPLOAD_ID = "test-upload";
