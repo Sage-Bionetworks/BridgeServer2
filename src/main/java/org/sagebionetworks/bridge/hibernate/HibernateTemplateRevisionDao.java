@@ -103,7 +103,7 @@ public class HibernateTemplateRevisionDao implements TemplateRevisionDao {
         } catch(IOException ioe) {
             throw new BridgeServiceException("Error persisting template revision document", ioe);
         }
-        hibernateHelper.create(revision, null);
+        hibernateHelper.create(revision);
     }
 
     private String getStoragePath(String templateGuid, DateTime createdOn) {

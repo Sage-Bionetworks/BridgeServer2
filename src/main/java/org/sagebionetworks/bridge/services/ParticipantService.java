@@ -461,7 +461,7 @@ public class ParticipantService {
         }
         account.setSynapseUserId(participant.getSynapseUserId());
         
-        accountService.createAccount(app, account, null);
+        accountService.createAccount(app, account);
         
         // send verify email
         if (sendEmailVerification && !app.isAutoVerificationEmailSuppressed()) {
@@ -523,7 +523,7 @@ public class ParticipantService {
             }
         }
         
-        accountService.updateAccount(account, null);
+        accountService.updateAccount(account);
     }
 
     private void throwExceptionIfLimitMetOrExceeded(App app) {
@@ -805,7 +805,7 @@ public class ParticipantService {
             accountUpdated = true;
         }
         if (accountUpdated) {
-            accountService.updateAccount(account, null);
+            accountService.updateAccount(account);
         }
         if (sendEmailVerification && 
             app.isEmailVerificationEnabled() && 

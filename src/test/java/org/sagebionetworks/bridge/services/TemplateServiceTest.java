@@ -389,7 +389,7 @@ public class TemplateServiceTest extends Mockito {
             Template captured = answer.getArgument(0);
             captured.setVersion(10);
             return null;
-        }).when(mockTemplateDao).createTemplate(any(), any());
+        }).when(mockTemplateDao).createTemplate(any());
         
         Criteria criteria = Criteria.create();
         criteria.setAllOfGroups(ImmutableSet.of("group1", "group2"));
@@ -416,7 +416,7 @@ public class TemplateServiceTest extends Mockito {
         
         verify(mockTemplateRevisionDao).createTemplateRevision(revisionCaptor.capture());
         verify(mockCriteriaDao).createOrUpdateCriteria(criteria);
-        verify(mockTemplateDao).createTemplate(eq(template), any());
+        verify(mockTemplateDao).createTemplate(template);
         
         TemplateRevision revision = revisionCaptor.getValue();
         assertEquals(revision.getCreatedBy(), USER_ID);

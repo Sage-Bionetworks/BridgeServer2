@@ -163,7 +163,7 @@ public class AccountServiceTest extends Mockito {
         Account account = mockGetAccountById(ACCOUNT_ID, false);
 
         service.verifyChannel(ChannelType.EMAIL, account);
-        verify(mockAccountDao).updateAccount(account, null);
+        verify(mockAccountDao).updateAccount(account);
     }
 
     @Test
@@ -172,7 +172,7 @@ public class AccountServiceTest extends Mockito {
         account.setStatus(UNVERIFIED);
         
         service.changePassword(account, ChannelType.PHONE, "asdf");
-        verify(mockAccountDao).updateAccount(account, null);
+        verify(mockAccountDao).updateAccount(account);
     }
 
     @Test
@@ -220,10 +220,9 @@ public class AccountServiceTest extends Mockito {
         account.setStatus(UNVERIFIED);
         account.setStatus(ENABLED);
         account.setAppId("wrong-app");
-        Consumer<Account> consumer = (oneAccount) -> {};
 
-        service.createAccount(app, account, consumer);
-        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture(), eq(consumer));
+        service.createAccount(app, account);
+        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
         
         Account createdAccount = accountCaptor.getValue();
         assertEquals(createdAccount.getId(), USER_ID);
@@ -238,11 +237,10 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void updateAccount() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);
-        Consumer<Account> consumer = (oneAccount) -> {};
 
-        service.updateAccount(account, consumer);
+        service.updateAccount(account);
         
-        verify(mockAccountDao).updateAccount(account, consumer);
+        verify(mockAccountDao).updateAccount(account);
     }
     
     @Test
@@ -255,7 +253,7 @@ public class AccountServiceTest extends Mockito {
         
         // execute
         try {
-            service.updateAccount(account, null);
+            service.updateAccount(account);
             fail("expected exception");
         } catch (EntityNotFoundException ex) {
             assertEquals(ex.getMessage(), "Account not found.");
@@ -271,7 +269,7 @@ public class AccountServiceTest extends Mockito {
 
         InOrder inOrder = inOrder(mockConsumer, mockAccountDao);
         inOrder.verify(mockConsumer).accept(account);
-        inOrder.verify(mockAccountDao).updateAccount(account, null);
+        inOrder.verify(mockAccountDao).updateAccount(account);
     }
 
     @Test
@@ -279,7 +277,7 @@ public class AccountServiceTest extends Mockito {
         service.editAccount(TEST_APP_ID, "bad-health-code", mockConsumer);
 
         verify(mockConsumer, never()).accept(any());
-        verify(mockAccountDao, never()).updateAccount(any(), eq(null));
+        verify(mockAccountDao, never()).updateAccount(any());
     }
 
     @Test
@@ -343,7 +341,7 @@ public class AccountServiceTest extends Mockito {
 
         service.verifyChannel(ChannelType.EMAIL, account);
 
-        verify(mockAccountDao).updateAccount(account, null);
+        verify(mockAccountDao).updateAccount(account);
         assertEquals(account.getStatus(), ENABLED);
         assertEquals(account.getEmailVerified(), TRUE);
         // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
@@ -361,7 +359,7 @@ public class AccountServiceTest extends Mockito {
 
         service.verifyChannel(ChannelType.EMAIL, account);
         
-        verify(mockAccountDao, never()).updateAccount(any(), any());
+        verify(mockAccountDao, never()).updateAccount(any());
     }
 
     @Test
@@ -371,7 +369,7 @@ public class AccountServiceTest extends Mockito {
 
         service.verifyChannel(ChannelType.EMAIL, account);
         
-        verify(mockAccountDao, never()).updateAccount(any(), any());
+        verify(mockAccountDao, never()).updateAccount(any());
         assertEquals(account.getStatus(), DISABLED);
     }
 
@@ -385,14 +383,14 @@ public class AccountServiceTest extends Mockito {
 
         service.verifyChannel(ChannelType.PHONE, account);
 
-        verify(mockAccountDao).updateAccount(account, null);
+        verify(mockAccountDao).updateAccount(account);
         assertEquals(account.getStatus(), ENABLED);
         assertEquals(account.getPhoneVerified(), TRUE);
         // modifiedOn is stored as a long, which loses the time zone of the original time stamp.
         assertEquals(account.getModifiedOn().toString(), MOCK_DATETIME.withZone(UTC).toString());
         assertEquals(account.getStatus(), ENABLED);
         assertEquals(account.getPhoneVerified(), TRUE);
-        verify(mockAccountDao).updateAccount(account, null);
+        verify(mockAccountDao).updateAccount(account);
     }
 
     @Test
@@ -403,7 +401,7 @@ public class AccountServiceTest extends Mockito {
         account.setPhoneVerified(TRUE);
 
         service.verifyChannel(ChannelType.PHONE, account);
-        verify(mockAccountDao, never()).updateAccount(any(), any());
+        verify(mockAccountDao, never()).updateAccount(any());
     }
 
     @Test
@@ -412,7 +410,7 @@ public class AccountServiceTest extends Mockito {
         account.setStatus(DISABLED);
 
         service.verifyChannel(ChannelType.PHONE, account);
-        verify(mockAccountDao, never()).updateAccount(any(), eq(null));
+        verify(mockAccountDao, never()).updateAccount(any());
         assertEquals(account.getStatus(), DISABLED);
     }
 
@@ -426,7 +424,7 @@ public class AccountServiceTest extends Mockito {
 
         // execute and verify
         service.changePassword(account, ChannelType.EMAIL, DUMMY_PASSWORD);
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
 
         Account updatedAccount = accountCaptor.getValue();
         assertEquals(updatedAccount.getId(), USER_ID);
@@ -451,7 +449,7 @@ public class AccountServiceTest extends Mockito {
 
         // execute and verify
         service.changePassword(account, ChannelType.PHONE, DUMMY_PASSWORD);
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
 
         // Simpler than changePasswordSuccess() test as we're only verifying phone is verified
         Account updatedAccount = accountCaptor.getValue();
@@ -470,7 +468,7 @@ public class AccountServiceTest extends Mockito {
 
         // execute and verify
         service.changePassword(account, null, DUMMY_PASSWORD);
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
 
         // Simpler than changePasswordSuccess() test as we're only verifying phone is verified
         Account updatedAccount = accountCaptor.getValue();
@@ -508,7 +506,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(account.getVersion(), 1);
 
         // No reauthentication token rotation occurs
-        verify(mockAccountDao, never()).updateAccount(any(), eq(null));
+        verify(mockAccountDao, never()).updateAccount(any());
         assertNull(account.getReauthToken());
     }
 
@@ -591,8 +589,8 @@ public class AccountServiceTest extends Mockito {
         assertEquals(account.getVersion(), 1);
 
         verify(mockAccountDao).getAccount(ACCOUNT_ID_WITH_EMAIL);
-        verify(mockAccountDao, never()).createAccount(any(), any(), any());
-        verify(mockAccountDao, never()).updateAccount(any(), any());
+        verify(mockAccountDao, never()).createAccount(any(), any());
+        verify(mockAccountDao, never()).updateAccount(any());
 
         // verify token verification
         verify(mockAccountSecretDao).verifySecret(REAUTH, USER_ID, REAUTH_TOKEN, 3);
@@ -610,7 +608,7 @@ public class AccountServiceTest extends Mockito {
             // expected exception
         }
         verify(mockAccountDao, never()).getAccount(any());
-        verify(mockAccountDao, never()).updateAccount(any(), eq(null));
+        verify(mockAccountDao, never()).updateAccount(any());
     }
 
     // branch coverage
@@ -626,7 +624,7 @@ public class AccountServiceTest extends Mockito {
             // expected exception
         }
         verify(mockAccountDao, never()).getAccount(any());
-        verify(mockAccountDao, never()).updateAccount(any(), eq(null));
+        verify(mockAccountDao, never()).updateAccount(any());
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -732,7 +730,7 @@ public class AccountServiceTest extends Mockito {
 
         // Just quietly succeeds without doing any account update.
         service.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
-        verify(mockAccountDao, never()).updateAccount(any(), eq(null));
+        verify(mockAccountDao, never()).updateAccount(any());
 
         // But we do always call this.
         verify(mockAccountSecretDao).removeSecrets(REAUTH, USER_ID);
@@ -743,7 +741,7 @@ public class AccountServiceTest extends Mockito {
         // Just quietly succeeds without doing any work.
         service.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
 
-        verify(mockAccountDao, never()).updateAccount(any(), eq(null));
+        verify(mockAccountDao, never()).updateAccount(any());
         verify(mockAccountSecretDao, never()).removeSecrets(AccountSecretType.REAUTH, USER_ID);
     }
 
@@ -757,9 +755,9 @@ public class AccountServiceTest extends Mockito {
         App app = App.create();
         app.setIdentifier(TEST_APP_ID);
 
-        service.createAccount(app, account, null);
+        service.createAccount(app, account);
 
-        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture(), eq(null));
+        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
 
         Account createdAccount = accountCaptor.getValue();
         assertEquals(createdAccount.getId(), USER_ID);
@@ -809,9 +807,9 @@ public class AccountServiceTest extends Mockito {
         account.setModifiedOn(MOCK_DATETIME.plusDays(4));        
 
         // Execute. Identifiers not allows to change.
-        service.updateAccount(account, null);
+        service.updateAccount(account);
 
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
         Account updatedAccount = accountCaptor.getValue();
         assertEquals(updatedAccount.getAppId(), TEST_APP_ID);
         assertEquals(updatedAccount.getId(), USER_ID);
@@ -837,9 +835,9 @@ public class AccountServiceTest extends Mockito {
         account.setPasswordHash("bad password hash");
         account.setPasswordModifiedOn(MOCK_DATETIME);
 
-        service.updateAccount(account, null);
+        service.updateAccount(account);
 
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
 
         // These values were loaded, have not been changed, and were persisted as is.
         Account captured = accountCaptor.getValue();
@@ -858,9 +856,9 @@ public class AccountServiceTest extends Mockito {
         account.setId(USER_ID);
         account.setOrgMembership("some other nonsense");
 
-        service.updateAccount(account, null);
+        service.updateAccount(account);
 
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
 
         // These values were loaded, have not been changed, and were persisted as is.
         Account captured = accountCaptor.getValue();
@@ -944,7 +942,7 @@ public class AccountServiceTest extends Mockito {
 
         service.editAccount(TEST_APP_ID, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
 
-        verify(mockAccountDao, never()).updateAccount(any(), eq(null));
+        verify(mockAccountDao, never()).updateAccount(any());
         RequestContext.set(null);
     }
     

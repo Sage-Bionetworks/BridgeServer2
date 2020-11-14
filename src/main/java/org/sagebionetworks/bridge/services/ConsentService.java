@@ -210,7 +210,7 @@ public class ConsentService {
             Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), studyId, account.getId());
             enrollmentService.enroll(account, newEnrollment);
         }
-        accountService.updateAccount(account, null);
+        accountService.updateAccount(account);
         
         // Publish an enrollment event, set sharing scope 
         activityEventService.publishEnrollmentEvent(app, participant.getHealthCode(), withConsentCreatedOnSignature);
@@ -326,7 +326,7 @@ public class ConsentService {
             }
         }
         
-        accountService.updateAccount(account, null);
+        accountService.updateAccount(account);
         
         sendWithdrawEmail(app, account, withdrawal, withdrewOn);
 
@@ -376,7 +376,7 @@ public class ConsentService {
             withdrawnEnrollment.setWithdrawalNote(withdrawal.getReason());
             enrollmentService.unenroll(account, withdrawnEnrollment);
         }
-        accountService.updateAccount(account, null);
+        accountService.updateAccount(account);
 
         notificationsService.deleteAllRegistrations(app.getIdentifier(), participant.getHealthCode());
     }

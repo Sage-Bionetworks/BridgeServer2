@@ -172,7 +172,7 @@ public class HibernateTemplateRevisionDaoTest extends Mockito {
         verify(mockS3Helper).writeBytesToS3(eq(PUB_BUCKET), eq(STORAGE_PATH), eq(DOCUMENT_CONTENT.getBytes()), metadataCaptor.capture());
         assertEquals(metadataCaptor.getValue().getSSEAlgorithm(), AES_256_SERVER_SIDE_ENCRYPTION);
         
-        verify(mockHelper).create(revisionCaptor.capture(), isNull());
+        verify(mockHelper).create(revisionCaptor.capture());
         assertSame(revisionCaptor.getValue(), revision);
     }
 }

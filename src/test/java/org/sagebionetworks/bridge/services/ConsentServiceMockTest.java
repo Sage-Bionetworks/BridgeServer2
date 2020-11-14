@@ -221,7 +221,7 @@ public class ConsentServiceMockTest extends Mockito {
                 true);
 
         // verify consents were set on account properly
-        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture());
 
         Account updatedAccount = accountCaptor.getValue();
         List<ConsentSignature> updatedConsentList = updatedAccount.getConsentSignatureHistory(SUBPOP_GUID);
@@ -332,7 +332,7 @@ public class ConsentServiceMockTest extends Mockito {
         consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON + 10000);
 
         verify(accountService).getAccount(CONTEXT.getAccountId());
-        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture());
         verify(sendMailService).sendEmail(emailCaptor.capture());
 
         Account account = accountCaptor.getValue();
@@ -393,7 +393,7 @@ public class ConsentServiceMockTest extends Mockito {
         setupWithdrawTest();
         consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountService).updateAccount(account, null);
+        verify(accountService).updateAccount(account);
         verify(sendMailService).sendEmail(any(WithdrawConsentEmailProvider.class));
 
         // Contents of call are tested in prior test where participant is used
@@ -405,7 +405,7 @@ public class ConsentServiceMockTest extends Mockito {
 
         consentService.withdrawFromApp(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture());
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
 
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
@@ -450,7 +450,7 @@ public class ConsentServiceMockTest extends Mockito {
 
         consentService.withdrawFromApp(app, PHONE_PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture());
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
         verify(sendMailService, never()).sendEmail(any(MimeTypeEmailProvider.class));
 

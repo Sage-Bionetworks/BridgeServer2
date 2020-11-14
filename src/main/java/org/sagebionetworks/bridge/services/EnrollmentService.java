@@ -103,7 +103,7 @@ public class EnrollmentService {
             throw new EntityNotFoundException(Account.class);
         }
         enrollment = enroll(account, enrollment);
-        accountService.updateAccount(account, null);
+        accountService.updateAccount(account);
         return enrollment;
     }
     
@@ -163,7 +163,7 @@ public class EnrollmentService {
             throw new EntityNotFoundException(Account.class);
         }
         enrollment = unenroll(account, enrollment);
-        accountService.updateAccount(account, null);
+        accountService.updateAccount(account);
         return enrollment;
     }
 

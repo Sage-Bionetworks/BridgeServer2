@@ -72,7 +72,7 @@ public class HibernateAccountSecretDaoTest {
     public void createSecret() {
         dao.createSecret(AccountSecretType.REAUTH, ACCOUNT_ID, TOKEN);
         
-        verify(helper).create(secretCaptor.capture(), eq(null));
+        verify(helper).create(secretCaptor.capture());
         
         AccountSecret secret = secretCaptor.getValue();
         assertEquals(secret.getAccountId(), ACCOUNT_ID);
