@@ -56,7 +56,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-public class DynamoScheduledActivityDaoMockTest {
+public class DynamoScheduledActivityDaoTest {
 
     private static final DateTime NOW = DateTime.parse("2015-04-12T14:20:56.123-07:00");
 

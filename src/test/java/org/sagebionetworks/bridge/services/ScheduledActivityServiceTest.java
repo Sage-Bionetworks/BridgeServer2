@@ -75,7 +75,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-public class ScheduledActivityServiceMockTest {
+public class ScheduledActivityServiceTest {
 
     private static final String TIME_PORTION = ":2017-02-23T10:00:00.000";
 

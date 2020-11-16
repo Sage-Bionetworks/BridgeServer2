@@ -36,7 +36,7 @@ import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.amazonaws.services.dynamodbv2.model.ExpectedAttributeValue;
 import com.google.common.collect.ImmutableList;
 
-public class DynamoReportIndexDaoMockTest {
+public class DynamoReportIndexDaoTest {
 
     DynamoReportIndexDao dao;
     

@@ -93,7 +93,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-public class AuthenticationServiceMockTest {
+public class AuthenticationServiceTest {
     private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("group1", "group2");
     private static final String IP_ADDRESS = "ip-address";
     private static final List<String> LANGUAGES = ImmutableList.of("es","de");

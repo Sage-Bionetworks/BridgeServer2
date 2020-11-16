@@ -58,7 +58,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-public class DynamoUploadDaoMockTest {
+public class DynamoUploadDaoTest {
 
     private static String UPLOAD_ID = "uploadId";
     private static String UPLOAD_ID_2 = "uploadId2";
