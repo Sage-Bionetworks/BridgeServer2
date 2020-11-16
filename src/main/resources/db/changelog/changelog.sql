@@ -418,5 +418,3 @@ ADD COLUMN `minutesToComplete` int(10) DEFAULT NULL;
 -- an externalId must be unique in the context of an app.
 ALTER TABLE AccountsSubstudies
 ADD CONSTRAINT `unique_extId` UNIQUE (studyId, externalId);
-
-

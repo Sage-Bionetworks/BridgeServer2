@@ -91,6 +91,6 @@ public class HibernateExternalIdDao implements ExternalIdDao {
                 .findFirst()
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         enrollment.setExternalId(null);
-        accountDao.updateAccount(account, null);
+        accountDao.updateAccount(account);
     }
 }

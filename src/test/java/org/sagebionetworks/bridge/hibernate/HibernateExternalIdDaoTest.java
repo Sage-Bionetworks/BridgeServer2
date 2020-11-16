@@ -25,9 +25,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.testng.collections.Lists;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -163,7 +161,7 @@ public class HibernateExternalIdDaoTest extends Mockito {
         
         dao.deleteExternalId(extId);
         
-        verify(mockAccountDao).updateAccount(accountCaptor.capture(), eq(null));
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
         
         Account captured = accountCaptor.getValue();
         assertNull(Iterables.getFirst(captured.getEnrollments(), null).getExternalId());
@@ -182,7 +180,7 @@ public class HibernateExternalIdDaoTest extends Mockito {
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }
-        verify(mockAccountDao, never()).updateAccount(any(), any());
+        verify(mockAccountDao, never()).updateAccount(any());
     }
 
     @Test
@@ -207,7 +205,7 @@ public class HibernateExternalIdDaoTest extends Mockito {
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }
-        verify(mockAccountDao, never()).updateAccount(any(), any());
+        verify(mockAccountDao, never()).updateAccount(any());
     }
     
     @Test
@@ -233,6 +231,6 @@ public class HibernateExternalIdDaoTest extends Mockito {
             fail("Should have thrown exception");
         } catch(EntityNotFoundException e) {
         }
-        verify(mockAccountDao, never()).updateAccount(any(), any());
+        verify(mockAccountDao, never()).updateAccount(any());
     }
 }

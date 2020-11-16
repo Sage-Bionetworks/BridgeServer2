@@ -6,8 +6,6 @@ import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUT
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 
-import java.util.Optional;
-
 import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.AuthUtils;

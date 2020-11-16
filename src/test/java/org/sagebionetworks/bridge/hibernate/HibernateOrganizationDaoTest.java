@@ -61,14 +61,14 @@ public class HibernateOrganizationDaoTest extends Mockito {
     public void createOrganization() {
         Organization org = Organization.create();
         dao.createOrganization(org);
-        verify(mockHelper).create(org, null);
+        verify(mockHelper).create(org);
     }
 
     @Test
     public void updateOrganization() {
         Organization org = Organization.create();
         dao.updateOrganization(org);
-        verify(mockHelper).update(org, null);
+        verify(mockHelper).update(org);
     }
 
     @Test

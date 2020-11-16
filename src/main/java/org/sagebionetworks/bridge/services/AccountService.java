@@ -109,7 +109,7 @@ public class AccountService {
                 account.setStatus(ENABLED);
             }
             account.setModifiedOn(DateUtils.getCurrentDateTime());
-            accountDao.updateAccount(account, null);    
+            accountDao.updateAccount(account);    
         }        
     }
     
@@ -144,7 +144,7 @@ public class AccountService {
             // we will enable the account.
             account.setStatus(ENABLED);
         }
-        accountDao.updateAccount(account, null);
+        accountDao.updateAccount(account);
     }
     
     /**
@@ -197,7 +197,7 @@ public class AccountService {
      * exception, the account will not be persisted (the consumer is executed after the persist 
      * is executed in a transaction, however).
      */
-    public void createAccount(App app, Account account, Consumer<Account> afterPersistConsumer) {
+    public void createAccount(App app, Account account) {
         checkNotNull(app);
         checkNotNull(account);
         
@@ -209,7 +209,7 @@ public class AccountService {
         account.setMigrationVersion(MIGRATION_VERSION);
 
         // Create account. We don't verify studies because this is handled by validation
-        accountDao.createAccount(app, account, afterPersistConsumer);
+        accountDao.createAccount(app, account);
     }
     
     /**
@@ -218,7 +218,7 @@ public class AccountService {
      * it throws an exception, the account will not be persisted (the consumer is executed after 
      * the persist is executed in a transaction, however).
      */
-    public void updateAccount(Account account, Consumer<Account> afterPersistConsumer) {
+    public void updateAccount(Account account) {
         checkNotNull(account);
         
         AccountId accountId = AccountId.forId(account.getAppId(),  account.getId());
@@ -238,7 +238,7 @@ public class AccountService {
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
         // Update. We don't verify studies because this is handled by validation
-        accountDao.updateAccount(account, afterPersistConsumer);         
+        accountDao.updateAccount(account);         
     }
     
     /**
@@ -253,7 +253,7 @@ public class AccountService {
         Account account = getAccount(accountId);
         if (account != null) {
             accountEdits.accept(account);
-            accountDao.updateAccount(account, null);
+            accountDao.updateAccount(account);
         }        
     }
     
