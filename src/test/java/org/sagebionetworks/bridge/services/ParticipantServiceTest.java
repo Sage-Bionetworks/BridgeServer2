@@ -339,7 +339,32 @@ public class ParticipantServiceTest extends Mockito {
         // don't update cache
         Mockito.verifyNoMoreInteractions(cacheProvider);
     }
+    
+    @Test
+    public void createParticipantAlreadyExistsWithExternalId() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        AccountId accountId = AccountId.forExternalId(TEST_APP_ID, EXTERNAL_ID);
+        when(accountService.getAccount(accountId)).thenReturn(account);
+        
+        StudyParticipant participant = withParticipant()
+                .withExternalId(EXTERNAL_ID).build();
+        IdentifierHolder idHolder = participantService.createParticipant(APP, participant, true);
+        assertEquals(idHolder.getIdentifier(), ID);
+    }
 
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void createParticipantDoesNotAlreadyExistThrowsInvalidEntity() {
+        mockHealthCodeAndAccountRetrieval();
+        
+        AccountId accountId = AccountId.forExternalId(TEST_APP_ID, EXTERNAL_ID);
+        when(accountService.getAccount(accountId)).thenReturn(null);
+        
+        StudyParticipant participant = withParticipant().withExternalId(EXTERNAL_ID).build();
+        
+        participantService.createParticipant(APP, participant, true);
+    }
+    
     @Test
     public void createParticipantWithEnrollment() {
         mockHealthCodeAndAccountRetrieval();
