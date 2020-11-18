@@ -175,7 +175,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(USER_ID);
         account.setEnrollments(Sets.newHashSet(otherStudy));
-        when(mockAccountService.getAccountNoPermissionCheck(ACCOUNT_ID))
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
             .thenReturn(Optional.of(account));
         
         DateTime timestamp = DateTime.now();
@@ -207,7 +207,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(USER_ID);
-        when(mockAccountService.getAccountNoPermissionCheck(ACCOUNT_ID))
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
             .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
@@ -228,7 +228,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(USER_ID);
-        when(mockAccountService.getAccountNoPermissionCheck(ACCOUNT_ID))
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
             .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
@@ -252,7 +252,7 @@ public class EnrollmentServiceTest extends Mockito {
         Enrollment otherStudy = Enrollment.create(TEST_APP_ID, "otherStudy", USER_ID);
         account.setEnrollments(ImmutableSet.of(existing, otherStudy));
         
-        when(mockAccountService.getAccountNoPermissionCheck(ACCOUNT_ID))
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
             .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
@@ -288,7 +288,7 @@ public class EnrollmentServiceTest extends Mockito {
         existing.setWithdrawnOn(MODIFIED_ON);
         account.setEnrollments(Sets.newHashSet(unrelatedEnrollment, existing));
         
-        when(mockAccountService.getAccountNoPermissionCheck(ACCOUNT_ID))
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
             .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
@@ -315,7 +315,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(USER_ID);
-        when(mockAccountService.getAccountNoPermissionCheck(ACCOUNT_ID))
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
             .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);

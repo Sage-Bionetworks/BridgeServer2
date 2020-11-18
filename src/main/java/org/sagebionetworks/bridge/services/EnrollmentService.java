@@ -105,7 +105,7 @@ public class EnrollmentService {
         // account based on study, because the account has not been put in a study accessible
         // to the caller. The check would fail for researchers.
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
-        Account account = accountService.getAccountNoPermissionCheck(accountId)
+        Account account = accountService.getAccountNoFilter(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         enrollment = enroll(account, enrollment);

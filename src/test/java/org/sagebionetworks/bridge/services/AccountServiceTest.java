@@ -540,6 +540,18 @@ public class AccountServiceTest extends Mockito {
 
         service.authenticate(app, PASSWORD_SIGNIN);
     }
+    
+    @Test
+    public void authenticateAccountUnverifiedNoEmailVerification() throws Exception {
+        // mock hibernate
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, true);
+        persistedAccount.setEmailVerified(false);
+
+        App app = App.create();
+        app.setEmailVerificationEnabled(false);
+
+        service.authenticate(app, PASSWORD_SIGNIN);
+    }
 
     @Test(expectedExceptions = AccountDisabledException.class)
     public void authenticateAccountDisabled() throws Exception {
@@ -660,6 +672,22 @@ public class AccountServiceTest extends Mockito {
         App app = App.create();
         app.setReauthenticationEnabled(true);
         app.setEmailVerificationEnabled(true);
+
+        service.reauthenticate(app, REAUTH_SIGNIN);
+    }
+    
+    @Test
+    public void reauthenticateAccountUnverifiedNoEmailVerification() throws Exception {
+        Account persistedAccount = mockGetAccountById(REAUTH_SIGNIN.getAccountId(), false);
+        persistedAccount.setEmailVerified(false);
+
+        AccountSecret secret = AccountSecret.create();
+        when(mockAccountSecretDao.verifySecret(REAUTH, USER_ID, REAUTH_TOKEN, ROTATIONS))
+                .thenReturn(Optional.of(secret));
+
+        App app = App.create();
+        app.setReauthenticationEnabled(true);
+        app.setEmailVerificationEnabled(false);
 
         service.reauthenticate(app, REAUTH_SIGNIN);
     }
@@ -984,7 +1012,21 @@ public class AccountServiceTest extends Mockito {
         assertNull(account);
         
         RequestContext.set(null);
-    }    
+    }
+    
+    @Test
+    public void getAccountNoFilter() throws Exception {
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
+        persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(STUDY_B)).build());
+
+        Optional<Account> account = service.getAccountNoFilter(ACCOUNT_ID);
+        assertTrue(account.isPresent());
+        
+        RequestContext.set(null);
+    }
 
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {
         Account account = Account.create();

@@ -269,7 +269,7 @@ public class AccountService {
      * that is visible to the caller. There may be similar cases where study access 
      * permissions need to be bypassed.
      */
-    public Optional<Account> getAccountNoPermissionCheck(AccountId accountId) {
+    public Optional<Account> getAccountNoFilter(AccountId accountId) {
         checkNotNull(accountId);
         
         return accountDao.getAccount(accountId);
