@@ -444,8 +444,7 @@ public class OrganizationServiceTest extends Mockito {
         service.removeMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = "Caller is not a member of.*")
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void removeMemberNotAuthorized() {
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
         Account account = Account.create();
