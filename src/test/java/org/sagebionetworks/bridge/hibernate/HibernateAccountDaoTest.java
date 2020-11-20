@@ -105,19 +105,9 @@ public class HibernateAccountDaoTest extends Mockito {
     private HibernateAccountDao dao;
 
     @BeforeMethod
-    public void beforeMethod() {
-        MockitoAnnotations.initMocks(this);
-        DateTimeUtils.setCurrentMillisFixed(MOCK_DATETIME.getMillis());
-    }
-
-    @AfterMethod
-    public static void afterMethod() {
-        DateTimeUtils.setCurrentMillisSystem();
-    }
-
-    @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
+        DateTimeUtils.setCurrentMillisFixed(MOCK_DATETIME.getMillis());
         // Mock successful update.
         when(mockHibernateHelper.update(any())).thenAnswer(invocation -> {
             HibernateAccount account = invocation.getArgument(0);
@@ -139,6 +129,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @AfterMethod
     public void after() {
         RequestContext.set(null);
+        DateTimeUtils.setCurrentMillisSystem();
     }
 
     @Test
@@ -518,6 +509,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void getPagedRemovesStudiesNotInCaller() throws Exception {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_A)).build());
         
         Set<Enrollment> set = ImmutableSet.of(
@@ -749,6 +741,7 @@ public class HibernateAccountDaoTest extends Mockito {
                 + "enrollment.studyId IN (:studies) GROUP BY acct.id";
         
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
                 .withOrgSponsoredStudies(ImmutableSet.of("A", "B")).build());
         
         AccountSummarySearch search = new AccountSummarySearch.Builder().build();
@@ -821,6 +814,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void unmarshallAccountSummaryFiltersStudies() throws Exception {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
                 .withOrgSponsoredStudies(ImmutableSet.of("studyB", "studyC")).build());
 
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ACCOUNT_ID, "externalIdA");

@@ -103,6 +103,7 @@ public class AssessmentServiceTest extends Mockito {
         // The default assumption is that you are in the correct organization (or else
         // you are an administrator). 
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
     }
     

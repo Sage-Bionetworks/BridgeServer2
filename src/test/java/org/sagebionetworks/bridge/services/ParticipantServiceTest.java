@@ -255,8 +255,8 @@ public class ParticipantServiceTest extends Mockito {
         account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
         
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
-                .withOrgSponsoredStudies(CALLER_SUBS).build());
+        RequestContext.set(new RequestContext.Builder().withCallerAppId(TEST_APP_ID)
+                .withCallerRoles(RESEARCH_CALLER_ROLES).withOrgSponsoredStudies(CALLER_SUBS).build());
     }
     
     @AfterMethod
