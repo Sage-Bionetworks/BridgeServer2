@@ -24,6 +24,9 @@ public class AuthUtils {
     private static final AuthEvaluator ORG_MEMBER = new AuthEvaluator().isInOrg().or()
             .hasAnyRole(ADMIN);
     
+    private static final AuthEvaluator ORG_ADMIN = new AuthEvaluator().isInOrg().hasAnyRole(ORG_ADMIN).or()
+            .hasAnyRole(ADMIN);
+    
     private static final AuthEvaluator STUDY_TEAM_MEMBER_OR_WORKER = new AuthEvaluator().canAccessStudy().or()
             .hasAnyRole(WORKER, ADMIN).or()
             .callerConsideredGlobal();
@@ -86,6 +89,13 @@ public class AuthUtils {
      */
     public static void checkOrgMember(String orgId) {
         ORG_MEMBER.checkAndThrow("orgId", orgId);
+    }
+    
+    /**
+     * Is the account an organization admin in the target organization?
+     */
+    public static void checkOrgAdmin(String orgId) {
+        ORG_ADMIN.checkAndThrow("orgId", orgId);    
     }
     
     /**

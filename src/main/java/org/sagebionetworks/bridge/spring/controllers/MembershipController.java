@@ -1,8 +1,14 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthUtils.checkSelfOrResearcher;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.springframework.http.HttpStatus.CREATED;
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -10,6 +16,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,6 +25,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -159,5 +167,52 @@ public class MembershipController extends BaseController {
         
         App app = appService.getApp(session.getAppId());
         return participantService.getPagedAccountSummaries(app, search);
+    }
+    
+    @GetMapping(path = { "/v1/organizations/{orgId}/members/{userId}/requestInfo" }, 
+            produces = { APPLICATION_JSON_UTF8_VALUE })
+    public String getRequestInfoForWorker(@PathVariable String orgId, @PathVariable String userId) 
+            throws JsonProcessingException {
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+
+        AuthUtils.checkOrgAdmin(orgId);
+        
+        // TODO: Can we verify the user is in the organization?
+        
+        // Verify it's in the same app as the researcher.
+        RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
+        if (requestInfo == null) {
+            requestInfo = new RequestInfo.Builder().build();
+        } else if (!session.getAppId().equals(requestInfo.getAppId())) {
+            throw new EntityNotFoundException(StudyParticipant.class);
+        }
+        return REQUEST_INFO_WRITER.writeValueAsString(requestInfo);
+    }
+    
+    @PostMapping("/v3/organizations/{orgId}/members/{userId}/requestResetPassword")
+    public StatusMessage requestResetPassword(@PathVariable String orgId, @PathVariable String userId) {
+        UserSession session = getAdministrativeSession();
+        App app = appService.getApp(session.getAppId());
+        
+        AuthUtils.checkOrgAdmin(orgId);
+
+        // TODO: Can we verify the user is in the organization?
+
+        participantService.requestResetPassword(app, userId);
+        
+        return new StatusMessage("Request to reset password sent to user.");
+    }
+    
+    @PostMapping("/v3/organizations/{orgId}/members/{userId}/signOut")
+    public StatusMessage signOut(@PathVariable String orgId, @PathVariable String userId,
+            @RequestParam(required = false) boolean deleteReauthToken) {
+        UserSession session = getAdministrativeSession();
+        App app = appService.getApp(session.getAppId());
+        
+        AuthUtils.checkOrgAdmin(orgId);
+
+        participantService.signUserOut(app, userId, deleteReauthToken);
+
+        return new StatusMessage("User signed out.");
     }
 }
