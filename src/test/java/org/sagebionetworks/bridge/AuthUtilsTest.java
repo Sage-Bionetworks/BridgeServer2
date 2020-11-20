@@ -34,14 +34,14 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void checkSelfStudyResearcherOrAdminSucceedsForSelf() {
+    public void checkSelfOrStudyResearcherSucceedsForSelf() {
         RequestContext.set(new RequestContext.Builder().withCallerUserId(USER_ID).build());
         
         AuthUtils.checkSelfOrStudyResearcher(USER_ID, TEST_STUDY_ID);
     }
     
     @Test
-    public void checkSelfStudyResearcherOrAdminSucceedsForStudyResearcher() {
+    public void checkSelfOrStudyResearcherSucceedsForStudyResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER))
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
@@ -51,7 +51,7 @@ public class AuthUtilsTest extends Mockito {
     }
 
     @Test
-    public void checkSelfStudyResearcherOrAdminSucceedsForAdmin() {
+    public void checkSelfOrStudyResearcherSucceedsForAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());
@@ -60,7 +60,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkSelfStudyResearcherOrAdminFailsForNonStudyResearcher() {
+    public void checkSelfOrStudyResearcherFailsForNonStudyResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER))
                 .withOrgSponsoredStudies(ImmutableSet.of("someOtherStudy"))
@@ -70,7 +70,7 @@ public class AuthUtilsTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkSelfStudyResearcherOrAdminFailsForDev() {
+    public void checkSelfOrStudyResearcherFailsForDev() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
@@ -80,7 +80,7 @@ public class AuthUtilsTest extends Mockito {
     }
 
     @Test
-    public void checkOrgMembershipSucceedsForMatchingOrgId() {
+    public void checkOrgMemberSucceedsForMatchingOrgId() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
@@ -88,7 +88,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkOrgMembershipFailsOnMismatch() {
+    public void checkOrgMemberFailsOnMismatch() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("another-organization").build());
         
@@ -96,14 +96,14 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkOrgMembershipFailsOnNullOrg() {
+    public void checkOrgMemberFailsOnNullOrg() {
         RequestContext.set(new RequestContext.Builder().build());
         
         AuthUtils.checkOrgMember(TEST_ORG_ID);
     }
     
     @Test
-    public void checkOrgMembershipAndThrowSucceeds() {
+    public void checkOrgMemberSucceeds() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
@@ -111,27 +111,27 @@ public class AuthUtilsTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkOrgMembershipAndThrowFails() {
+    public void checkOrgMembershipFails() {
         RequestContext.set(new RequestContext.Builder().build());
         
         AuthUtils.checkOrgMember(TEST_ORG_ID);
     }
     
     @Test
-    public void checkSharedOwnershipAdminUser() {
+    public void checkOrgMemberOfSharedAssessmentOwnerSucceedsForAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         AuthUtils.checkOrgMemberOfSharedAssessmentOwner(TEST_APP_ID, GUID, SHARED_OWNER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkSharedOwnershipAgainstNonGlobalOwnerId() {
+    public void checkOrgMemberOfSharedAssessmentOwnerFailsForGlobalOwnerId() {
         RequestContext.set(NULL_INSTANCE);
         AuthUtils.checkOrgMemberOfSharedAssessmentOwner(TEST_APP_ID, GUID, OWNER_ID);
     }
     
     @Test
-    public void sharedOwnershipUserInOrder() {
+    public void checkOrgMemberOfSharedAssessmentOwnerSucceedsForOwner() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
@@ -139,21 +139,21 @@ public class AuthUtilsTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkSharedOwnershipScopedUserOrgIdIsMissing() {
+    public void checkOrgMemberOfSharedAssessmentOwnerFailsWrongOrgId() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("notValidOwner").build());
         AuthUtils.checkOrgMemberOfSharedAssessmentOwner(TEST_APP_ID, GUID, SHARED_OWNER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkSharedOwnershipWrongAppId() { 
+    public void checkOrgMemberOfSharedAssessmentOwnerFailsWrongAppId() { 
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_APP_ID).build());
         AuthUtils.checkOrgMemberOfSharedAssessmentOwner(TEST_APP_ID, GUID, "other:"+OWNER_ID);        
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkSharedOwnershipGlobalUserWrongAppId() { 
+    public void checkOrgMemberOfSharedAssessmentOwnerFailsUserWrongAppId() { 
         RequestContext.set(NULL_INSTANCE);
         // still doesn't pass because the appId must always match (global users must call 
         // this API after associating to the right app context):
@@ -161,7 +161,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void checkSelfOrResearcherSucceedsBecauseSelf() {
+    public void checkSelfOrResearcherSucceedsForSelf() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(USER_ID).build());
         
@@ -169,7 +169,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void checkSelfOrResearcherSucceedsBecauseResearcher() {
+    public void checkSelfOrResearcherSucceedsForResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER))
                 .withCallerUserId("notUserId").build());
@@ -187,16 +187,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkSelfOrResearcherAndThrow() { 
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(DEVELOPER))
-                .withCallerUserId("notUserId").build());
-        
-        AuthUtils.checkSelfOrResearcher(USER_ID);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkStudyScopedToCaller() { 
+    public void checkStudyTeamMemberOrWorkerFailsOnStudyAccess() { 
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyB")).build());
         
@@ -204,7 +195,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void isStudyScopedToCallerFails() {
+    public void isStudyTeamMemberOrWorkerFails() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
         
@@ -212,7 +203,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void isStudyScopedToCallerFailsWithNullStudyId() {
+    public void isStudyTeamMemberOrWorkerFailsOnNullStudy() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
         
@@ -220,7 +211,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void isStudyScopedToCallerSucceedsForWorker() {
+    public void isStudyTeamMemberOrWorkerSucceedsForWorker() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(WORKER))
                 .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
@@ -229,7 +220,7 @@ public class AuthUtilsTest extends Mockito {
     }
 
     @Test
-    public void isStudyScopedToCallerSucceedsForAdmin() {
+    public void isStudyTeamMemberOrWorkerSucceedsForAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
@@ -238,7 +229,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void isStudyScopedToCallerSucceedsForOrgSponsoredStudy() {
+    public void isStudyTeamMemberOrWorkerSucceedsForOrgSponsoredStudy() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
         
@@ -276,5 +267,19 @@ public class AuthUtilsTest extends Mockito {
         assertFalse(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(WORKER)));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, ADMIN)));
     }
+ 
+    @Test
+    public void checkOrgMembershipSucceedsForAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+
+        AuthUtils.checkOrgMember(TEST_ORG_ID);
+    }
     
+    @Test
+    public void isStudyScopedToCallerSucceedsForGlobalUser() {
+        RequestContext.set(new RequestContext.Builder().build());
+        
+        AuthUtils.checkStudyTeamMemberOrWorker(TEST_STUDY_ID);
+    }
 }
