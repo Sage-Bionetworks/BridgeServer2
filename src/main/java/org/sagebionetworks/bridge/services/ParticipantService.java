@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIE
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
+import static org.sagebionetworks.bridge.validators.IdentifierUpdateValidator.INSTANCE;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -23,7 +24,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -33,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
@@ -42,8 +44,6 @@ import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ScheduledActivityDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -56,7 +56,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
@@ -82,7 +81,6 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.AccountSummarySearchValidator;
-import org.sagebionetworks.bridge.validators.IdentifierUpdateValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -98,8 +96,6 @@ public class ParticipantService {
 
     private ConsentService consentService;
 
-    private ExternalIdService externalIdService;
-    
     private CacheProvider cacheProvider;
     
     private RequestInfoService requestInfoService;
@@ -119,6 +115,8 @@ public class ParticipantService {
     private StudyService studyService;
     
     private OrganizationService organizationService;
+    
+    private EnrollmentService enrollmentService;
 
     @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -146,11 +144,6 @@ public class ParticipantService {
         this.consentService = consentService;
     }
 
-    @Autowired
-    final void setExternalIdService(ExternalIdService externalIdService) {
-        this.externalIdService = externalIdService;
-    }
-    
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
         this.cacheProvider = cacheProvider;
@@ -194,6 +187,11 @@ public class ParticipantService {
     @Autowired
     final void setOrganizationService(OrganizationService organizationService) {
         this.organizationService = organizationService;
+    }
+    
+    @Autowired
+    final void setEnrollmentService(EnrollmentService enrollmentService) {
+        this.enrollmentService = enrollmentService;
     }
     
     /**
@@ -411,8 +409,19 @@ public class ParticipantService {
             throwExceptionIfLimitMetOrExceeded(app);
         }
         
-        StudyParticipantValidator validator = new StudyParticipantValidator(
-                externalIdService, studyService, organizationService, app, true);
+        // Fix for studies that call sign up with an external ID: in these cases, tools are creating the participant
+        // before the sign up call (through the Bridge Study Manager). Check and if the account with an external ID
+        // exists, return quietly. Otherwise proceed as before.
+        if (participant.getExternalId() != null) {
+            AccountId accountId = AccountId.forExternalId(app.getIdentifier(), participant.getExternalId());
+            Account account = accountService.getAccount(accountId); 
+            if (account != null) {
+                return new IdentifierHolder(account.getId());
+            }
+        }
+        
+        StudyParticipantValidator validator = new StudyParticipantValidator(studyService, organizationService, app,
+                true);
         Validate.entityThrowingException(validator, participant);
         
         // Set basic params from inputs.
@@ -438,8 +447,7 @@ public class ParticipantService {
             }
         }
         
-        final ExternalIdentifier externalId = beginAssignExternalId(account, participant.getExternalId());
-        updateAccountAndRoles(app, account, participant, externalId, true);
+        updateAccountAndRoles(app, account, participant, true);
 
         // enabled unless we need any kind of verification
         boolean sendEmailVerification = shouldSendVerification && app.isEmailVerificationEnabled();
@@ -464,18 +472,7 @@ public class ParticipantService {
         }
         account.setSynapseUserId(participant.getSynapseUserId());
         
-        // Set up the external ID object and the changes to the account, attempt to save the external ID 
-        // within an account transaction, and roll back the account if the external ID save fails. If the 
-        // account save fails, catch the exception and rollback the external ID save. 
-        try {
-            accountService.createAccount(app, account,
-                    (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
-        } catch(Exception e) {
-            if (externalId != null) {
-                externalIdService.unassignExternalId(account, externalId.getIdentifier());    
-            }
-            throw e;
-        }
+        accountService.createAccount(app, account);
         
         // send verify email
         if (sendEmailVerification && !app.isAutoVerificationEmailSuppressed()) {
@@ -510,7 +507,7 @@ public class ParticipantService {
     
     private boolean shouldEnableCompleteExternalIdAccount(StudyParticipant participant) {
         return participant.getEmail() == null && participant.getPhone() == null && 
-            participant.getExternalId() != null && participant.getPassword() != null;
+            !participant.getExternalIds().isEmpty() && participant.getPassword() != null;
     }
     
     private boolean shouldEnableCompleteSynapseUserIdAccount(StudyParticipant participant) {
@@ -522,14 +519,13 @@ public class ParticipantService {
         checkNotNull(app);
         checkNotNull(participant);
 
-        StudyParticipantValidator validator = new StudyParticipantValidator(
-                externalIdService, studyService, organizationService, app, false);
+        StudyParticipantValidator validator = new StudyParticipantValidator(studyService, organizationService, app,
+                false);
         Validate.entityThrowingException(validator, participant);
         
         Account account = getAccountThrowingException(app.getIdentifier(), participant.getId());
         
-        final ExternalIdentifier externalId = beginAssignExternalId(account, participant.getExternalId());
-        updateAccountAndRoles(app, account, participant, externalId, false);
+        updateAccountAndRoles(app, account, participant, false);
         
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
         if (participant.getStatus() != null) {
@@ -538,23 +534,7 @@ public class ParticipantService {
             }
         }
         
-        // Simple case, not trying to assign an external ID
-        if (externalId == null) {
-            accountService.updateAccount(account, null);
-            return;
-        }
-        
-        // Complex case: you are assigning an external ID. Set up the external ID object and the changes
-        // to the account, attempt to save the external ID within an account transaction, and roll back 
-        // the account if the external ID save fails. If the account save fails, catch the exception and 
-        // rollback the external ID save. 
-        try {
-            accountService.updateAccount(account,
-                    (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
-        } catch (Exception e) {
-            externalIdService.unassignExternalId(account, externalId.getIdentifier());
-            throw e;
-        }
+        accountService.updateAccount(account);
     }
 
     private void throwExceptionIfLimitMetOrExceeded(App app) {
@@ -565,8 +545,13 @@ public class ParticipantService {
         }
     }
     
-    private void updateAccountAndRoles(App app, Account account, StudyParticipant participant,
-            ExternalIdentifier externalId, boolean isNew) {
+    private void updateAccountAndRoles(App app, Account account, StudyParticipant participant, boolean isNew) {
+        // Do this much earlier in the call and avoid some expensive operations like password hashing.
+        for (String studyId : participant.getExternalIds().keySet()) {
+            if (!AuthUtils.isStudyScopedToCaller(studyId)) {
+                throw new BadRequestException(studyId + " is not a study of the caller");
+            }
+        }
         account.setFirstName(participant.getFirstName());
         account.setLastName(participant.getLastName());
         account.setClientData(participant.getClientData());
@@ -576,78 +561,30 @@ public class ParticipantService {
         account.setLanguages(participant.getLanguages());
         account.setMigrationVersion(MIGRATION_VERSION);
        
-        // Sign out the user if you make alterations that will change the security state of 
-        // the account. Otherwise very strange bugs can results.
-        boolean clearCache = false;
+        RequestContext requestContext = RequestContext.get();
         
-        // Only allow the setting of studies on new accounts. Note that while administrators can change this 
-        // after the account is created, for admin accounts, it can create some very strange security behavior 
-        // for that account if it is signed in, so we MUST destroy the session. 
-        if (isNew || RequestContext.get().isInRole(ADMIN)) {
-            // Copy to prevent concurrent modification exceptions
-            Set<Enrollment> enrollments = ImmutableSet.copyOf(account.getActiveEnrollments());
-            
-            // Remove study relationship if it's not desired and unassign external ID
-            for (Enrollment enrollment : enrollments) {
-                if (!participant.getStudyIds().contains(enrollment.getStudyId())) {
-                    externalIdService.unassignExternalId(account, enrollment.getExternalId());
-                    account.getEnrollments().remove(enrollment);
-                    clearCache = true;
-                }
+        // You can no longer enroll users or add them to studies through the enrollments table just
+        // by updating the participant account. There are separate APIs for this. HOWEVER we have one 
+        // important exception: accounts that are identifiable only by an external ID. Since an external
+        // ID enrolls you in a study, administrative callers can supply study:externalId mappings 
+        // to enroll such an account at account creation.
+        if (isNew && requestContext.isAdministrator()) {
+            for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
+                String studyId = entry.getKey();
+                String externalId = entry.getValue();
+                
+                Enrollment enrollment = Enrollment.create(account.getAppId(), studyId, account.getId(), externalId);
+                enrollmentService.enroll(account, enrollment);
             }
-            // Add study relationship
-            Set<String> existingStudyIds = BridgeUtils.collectStudyIds(account);
-            for (String studyId : participant.getStudyIds()) {
-                if (!existingStudyIds.contains(studyId)) {
-                    Enrollment enrollment = Enrollment.create(account.getAppId(), studyId, account.getId());
-                    account.getEnrollments().add(enrollment);
-                    clearCache = true;
-                }
-            }
-        }
-        if (externalId != null) {
-            // Remove an existing enrollment as we might be adding information to the record
-            for (Enrollment existingEnrollment : account.getEnrollments()) {
-                if (existingEnrollment.getStudyId().equals(externalId.getStudyId())) {
-                    account.getEnrollments().remove(existingEnrollment);
-                }
-            }
-            Enrollment enrollment = Enrollment.create(account.getAppId(), externalId.getStudyId(), account.getId(),
-                    externalId.getIdentifier());
-            account.getEnrollments().add(enrollment);
-            clearCache = true;
-            
-            RequestContext.updateFromExternalId(externalId);
-        }
-        // We have to clear the cache if we make changes that can alter the security profile of 
-        // the account, otherwise very strange behavior can occur if that user is signed in with 
-        // a stale session.
-        if (!isNew && clearCache) {
-            cacheProvider.removeSessionByUserId(account.getId());    
         }
         
         // Do not copy timezone (external ID field exists only to submit the value on create).
-        
         for (String attribute : app.getUserProfileAttributes()) {
             String value = participant.getAttributes().get(attribute);
             account.getAttributes().put(attribute, value);
         }
-        RequestContext requestContext = RequestContext.get();
         if (requestContext.isAdministrator()) {
             updateRoles(requestContext, participant, account);
-        }
-        
-        // While the direct association of users to studies is being migrated, a caller cannot
-        // place an account in a study they don't have access to. This means they can't update
-        // an account that is in a study they don't have access to, until this code is removed.
-        Set<String> callerStudies = RequestContext.get().getOrgSponsoredStudies();
-        if (!callerStudies.isEmpty()) {
-            Set<String> studyIds = BridgeUtils.collectStudyIds(account);
-            for (String studyId : studyIds) {
-                if (!callerStudies.contains(studyId)) {
-                    throw new BadRequestException(studyId + " is not a study of the caller");
-                }
-            }
         }
     }
     
@@ -845,7 +782,7 @@ public class ParticipantService {
         checkNotNull(update);
         
         // Validate
-        Validate.entityThrowingException(new IdentifierUpdateValidator(app, externalIdService), update);
+        Validate.entityThrowingException(INSTANCE, update);
         
         // Sign in
         Account account;
@@ -878,27 +815,8 @@ public class ParticipantService {
             account.setSynapseUserId(update.getSynapseUserIdUpdate());
             accountUpdated = true;
         }
-        ExternalIdentifier externalId = beginAssignExternalId(account, update.getExternalIdUpdate());
-        if (externalId != null) {
-            // Highly unlikely this was an admin account, but just in case
-            for (Enrollment existingEnrollment : account.getEnrollments()) {
-                if (existingEnrollment.getStudyId().equals(externalId.getStudyId())) {
-                    account.getEnrollments().remove(existingEnrollment);
-                }
-            }
-            Enrollment enrollment = Enrollment.create(account.getAppId(), 
-                    externalId.getStudyId(), account.getId(), externalId.getIdentifier());
-            account.getEnrollments().add(enrollment);
-            try {
-                accountService.updateAccount(account,
-                        (modifiedAccount) -> externalIdService.commitAssignExternalId(externalId));
-            } catch(Exception e) {
-                externalIdService.unassignExternalId(account, externalId.getIdentifier());    
-                throw e;
-            }
-            RequestContext.updateFromExternalId(externalId);
-        } else if (accountUpdated) {
-            accountService.updateAccount(account, null);
+        if (accountUpdated) {
+            accountService.updateAccount(account);
         }
         if (sendEmailVerification && 
             app.isEmailVerificationEnabled() && 
@@ -907,33 +825,6 @@ public class ParticipantService {
         }
         // return updated StudyParticipant to update and return session
         return getParticipant(app, account.getId(), false);
-    }
-    
-    protected ExternalIdentifier beginAssignExternalId(Account account, String externalId) {
-        checkNotNull(account);
-        checkNotNull(account.getAppId());
-        checkNotNull(account.getHealthCode());
-        
-        Set<String> allExternalIds = BridgeUtils.collectExternalIds(account);
-        if (externalId == null || allExternalIds.contains(externalId)) {
-            return null;
-        }
-        
-        ExternalIdentifier identifier = externalIdService.getExternalId(account.getAppId(), externalId).orElse(null);
-        if (identifier == null) {
-            return null;
-        }
-        if (identifier.getHealthCode() != null && !account.getHealthCode().equals(identifier.getHealthCode())) {
-            throw new EntityAlreadyExistsException(ExternalIdentifier.class, "identifier", identifier.getIdentifier()); 
-        }
-        Set<String> studyIds = BridgeUtils.collectStudyIds(account);
-        if (!RequestContext.get().isAdministrator() && studyIds.contains(identifier.getStudyId())) {
-            throw new ConstraintViolationException.Builder()
-                .withMessage("Account already associated to study.")
-                .withEntityKey("studyId", identifier.getStudyId()).build();
-        }
-        identifier.setHealthCode(account.getHealthCode());
-        return identifier;
     }
     
     private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {

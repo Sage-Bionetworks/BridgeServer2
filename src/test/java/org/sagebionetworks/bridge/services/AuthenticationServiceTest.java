@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.testng.Assert.assertEquals;
@@ -25,9 +26,9 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 
 import org.mockito.ArgumentCaptor;
@@ -72,7 +73,6 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
-import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -93,7 +93,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-public class AuthenticationServiceMockTest {
+public class AuthenticationServiceTest {
     private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("group1", "group2");
     private static final String IP_ADDRESS = "ip-address";
     private static final List<String> LANGUAGES = ImmutableList.of("es","de");
@@ -160,8 +160,6 @@ public class AuthenticationServiceMockTest {
     private PasswordResetValidator passwordResetValidator;
     @Mock
     private AccountWorkflowService accountWorkflowService;
-    @Mock
-    private ExternalIdService externalIdService;
     @Mock
     private IntentService intentService;
     @Mock
@@ -1008,95 +1006,54 @@ public class AuthenticationServiceMockTest {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void generatePasswordExternalIdNotSubmitted() {
-        service.generatePassword(app, null, true);
-    }
-    
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void generatePasswordExternalIdRecordMissing() {
-        when(externalIdService.getExternalId(app.getIdentifier(), EXTERNAL_ID)).thenReturn(Optional.empty());
-        service.generatePassword(app, EXTERNAL_ID, false);
+        service.generatePassword(app, null);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordNoAccountDoNotCreateAccount() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
-        when(externalIdService.getExternalId(app.getIdentifier(), EXTERNAL_ID))
-                .thenReturn(Optional.of(externalIdentifier));
-        
-        service.generatePassword(app, EXTERNAL_ID, false);
+        service.generatePassword(app, EXTERNAL_ID);
     }
     
     @Test
-    public void generatePasswordAndAccountOK() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
-        doReturn(PASSWORD).when(service).generatePassword(anyInt());
-        when(externalIdService.getExternalId(app.getIdentifier(), EXTERNAL_ID))
-                .thenReturn(Optional.of(externalIdentifier));
-        
-        IdentifierHolder idHolder = new IdentifierHolder("userId");
-        when(participantService.createParticipant(eq(app), participantCaptor.capture(), eq(false))).thenReturn(idHolder);
-        
-        GeneratedPassword password = service.generatePassword(app, EXTERNAL_ID, true);
-        assertEquals(password.getExternalId(), EXTERNAL_ID);
-        assertEquals(password.getPassword(), PASSWORD);
-        
-        StudyParticipant participant = participantCaptor.getValue();
-        assertEquals(participant.getExternalId(), EXTERNAL_ID);
-        assertEquals(participant.getPassword(), PASSWORD);
-    }
-    
-    @Test
-    public void generatePasswordAndAccountWhenExternalIdTaken() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
-        externalIdentifier.setHealthCode("someoneElsesHealthCode");
-        when(externalIdService.getExternalId(app.getIdentifier(), EXTERNAL_ID))
-                .thenReturn(Optional.of(externalIdentifier));
-        
-        when(participantService.createParticipant(eq(app), participantCaptor.capture(), eq(false)))
-                        .thenThrow(new EntityAlreadyExistsException(Account.class, "id", "asdf"));
-        
+    public void generatePasswordAccountNotFound() {
         try {
-            service.generatePassword(app, EXTERNAL_ID, true);
-            fail("Should have thrown an exception");
-        } catch(EntityAlreadyExistsException e) {
-            // expected exception
-        }
-        verify(accountService).getAccount(AccountId.forExternalId(TEST_APP_ID, EXTERNAL_ID));
-        verify(participantService).createParticipant(eq(app), any(), eq(false));
-        verifyNoMoreInteractions(accountService);
-        verifyNoMoreInteractions(participantService);
-    }
-    
-    
-    @Test
-    public void generatePasswordAndAccountWhenExternalIdMissing() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
-        externalIdentifier.setHealthCode("someoneElsesHealthCode");
-        when(externalIdService.getExternalId(app.getIdentifier(), EXTERNAL_ID))
-            .thenReturn(Optional.empty());
-        
-        try {
-            service.generatePassword(app, EXTERNAL_ID, true);
+            service.generatePassword(app, EXTERNAL_ID);
             fail("Should have thrown an exception");
         } catch(EntityNotFoundException e) {
             // expected exception
         }
-        verify(accountService, never()).getAccount(any());
+        verify(participantService, never()).createParticipant(any(), any(), anyBoolean());
+        verify(accountService, never()).changePassword(any(), any(), any());
+    }
+
+    @Test
+    public void generatePasswordExternalIdNotFound() {
+        Account account = Account.create();
+        account.setEnrollments(new HashSet<>());
+        when(accountService.getAccount(any())).thenReturn(account);
+        
+        try {
+            service.generatePassword(app, EXTERNAL_ID);
+            fail("Should have thrown an exception");
+        } catch(EntityNotFoundException e) {
+            // expected exception
+        }
         verify(participantService, never()).createParticipant(any(), any(), anyBoolean());
         verify(accountService, never()).changePassword(any(), any(), any());
     }
     
     @Test
     public void generatePasswordOK() {
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
-        when(externalIdService.getExternalId(app.getIdentifier(), EXTERNAL_ID))
-                .thenReturn(Optional.of(externalIdentifier));
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
+        
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "account");
+        enrollment.setExternalId(EXTERNAL_ID);
+        account.setEnrollments(ImmutableSet.of(enrollment));
         
         when(accountService.getAccount(any())).thenReturn(account);
         account.setHealthCode(HEALTH_CODE);
         
-        GeneratedPassword password = service.generatePassword(app, EXTERNAL_ID, true);
+        GeneratedPassword password = service.generatePassword(app, EXTERNAL_ID);
         assertEquals(password.getExternalId(), EXTERNAL_ID);
         assertEquals(password.getPassword(), PASSWORD);
         
@@ -1116,35 +1073,40 @@ public class AuthenticationServiceMockTest {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void generatePasswordExternalIdMismatchesCallerStudies() {
-        RequestContext.set(
-                new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyB")).build());
-        
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
-        externalIdentifier.setStudyId("studyA");
-        when(externalIdService.getExternalId(app.getIdentifier(), EXTERNAL_ID))
-                .thenReturn(Optional.of(externalIdentifier));
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of("studyB")).build());
         
         account.setEnrollments(ImmutableSet.of(Enrollment.create(app.getIdentifier(), "studyA", "id")));
         
-        service.generatePassword(app, EXTERNAL_ID, false);
+        service.generatePassword(app, EXTERNAL_ID);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void generatePasswordAccountMismatchesCallerStudies() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         
-        ExternalIdentifier externalIdentifier = ExternalIdentifier.create(app.getIdentifier(), EXTERNAL_ID);
-        externalIdentifier.setStudyId("studyA");
-        when(externalIdService.getExternalId(app.getIdentifier(), EXTERNAL_ID))
-                .thenReturn(Optional.of(externalIdentifier));
-        
         when(accountService.getAccount(any())).thenReturn(account);
-        account.setEnrollments(Sets.newHashSet(Enrollment.create(app.getIdentifier(), "studyB", "id")));
+        Enrollment en = Enrollment.create(app.getIdentifier(), "studyB", "id", EXTERNAL_ID);
+        account.setEnrollments(Sets.newHashSet(en));
         
-        service.generatePassword(app, EXTERNAL_ID, false);
+        service.generatePassword(app, EXTERNAL_ID);
     }
 
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void generatePasswordExternalIdInStudyNotAccessibleToCaller() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
+        
+        // The account is returned but filtering has been applied such that the
+        // external ID is not there, despite using it to retrieve the account.
+        when(accountService.getAccount(any())).thenReturn(account);
+        Enrollment en = Enrollment.create(app.getIdentifier(), "studyB", "id");
+        account.setEnrollments(Sets.newHashSet(en));
+        
+        service.generatePassword(app, EXTERNAL_ID);
+    }
+    
     @Test
     public void creatingExternalIdOnlyAccountSucceedsIfIdsManaged() {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)

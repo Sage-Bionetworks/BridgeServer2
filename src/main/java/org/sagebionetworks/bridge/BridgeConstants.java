@@ -17,6 +17,8 @@ public class BridgeConstants {
 
     public static final String SAGE_ID = "sage-bionetworks";
     public static final String SAGE_NAME = "Sage Bionetworks";
+    
+    public static final String SYNAPSE_OAUTH_VENDOR_ID = "synapse";
 
     public static final String ID_FIELD_NAME = "identifier";
     public static final String TYPE_FIELD_NAME = "type";

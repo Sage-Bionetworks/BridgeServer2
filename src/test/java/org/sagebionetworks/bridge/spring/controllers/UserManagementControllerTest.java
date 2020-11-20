@@ -184,6 +184,7 @@ public class UserManagementControllerTest extends Mockito {
         verify(mockAuthService).signOut(session);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void changeStudyForAdmin() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
@@ -203,6 +204,7 @@ public class UserManagementControllerTest extends Mockito {
         verify(mockCacheProvider).setUserSession(session);
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expectedExceptions = UnauthorizedException.class)
     public void changeStudyRejectsStudyAdmin() throws Exception {
         doReturn(session).when(controller).getSessionIfItExists();

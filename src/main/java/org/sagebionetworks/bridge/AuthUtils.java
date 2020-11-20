@@ -81,6 +81,12 @@ public class AuthUtils {
         throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
     }
     
+    public static void checkStudyScopedToCaller(String studyId) {
+        if (!isStudyScopedToCaller(studyId)) {
+            throw new UnauthorizedException();
+        }
+    }
+    
     public static final boolean isStudyScopedToCaller(String studyId) {
         RequestContext context = RequestContext.get();
         Set<String> callerStudies = context.getOrgSponsoredStudies();

@@ -66,14 +66,14 @@ public class HibernateFileRevisionDao implements FileRevisionDao {
     public void createFileRevision(FileRevision revision) {
         checkNotNull(revision);
         
-        hibernateHelper.create(revision, null);
+        hibernateHelper.create(revision);
     }
 
     @Override
     public void updateFileRevision(FileRevision revision) {
         checkNotNull(revision);
         
-        hibernateHelper.update(revision, null);
+        hibernateHelper.update(revision);
     }
     
     @Override

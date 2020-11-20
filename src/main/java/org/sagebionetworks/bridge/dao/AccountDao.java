@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.dao;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -29,17 +28,15 @@ public interface AccountDao {
     
     /**
      * Create an account. If the optional consumer is passed to this method and it throws an 
-     * exception, the account will not be persisted (the consumer is executed after the persist 
-     * is executed in a transaction, however).
+     * exception, the account will not be persisted.
      */
-    void createAccount(App app, Account account, Consumer<Account> afterPersistConsumer);
+    void createAccount(App app, Account account);
     
     /**
      * Save account changes. If the optional consumer is passed to this method and 
-     * it throws an exception, the account will not be persisted (the consumer is executed after 
-     * the persist is executed in a transaction, however).
+     * it throws an exception, the account will not be persisted.
      */
-    void updateAccount(Account account, Consumer<Account> afterPersistConsumer);
+    void updateAccount(Account account);
     
     /**
      * Get an account in the context of an app by the user's ID, email address, health code,

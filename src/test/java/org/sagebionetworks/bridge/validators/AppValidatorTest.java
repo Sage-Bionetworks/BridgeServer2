@@ -416,6 +416,14 @@ public class AppValidatorTest {
     }
     
     @Test
+    public void oauthProviderCannotBeCalledSynapse() {
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint",
+                CALLBACK_URL, "http://example.com/introspect");
+        app.getOAuthProviders().put("synapse", provider);
+        assertValidatorMessage(INSTANCE, app, "oauthProviders[synapse]", "is a reserved vendor ID");
+    }
+    
+    @Test
     public void appleAppLinkAppIdCannotBeNull() {
         app.getAppleAppLinks().add(null);
         assertValidatorMessage(INSTANCE, app, "appleAppLinks[0]","cannot be null");

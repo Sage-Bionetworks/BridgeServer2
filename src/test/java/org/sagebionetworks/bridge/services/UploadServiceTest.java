@@ -67,7 +67,7 @@ import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.validators.UploadValidator;
 
 @SuppressWarnings("ConstantConditions")
-public class UploadServiceMockTest {
+public class UploadServiceTest {
     
     private static final DateTime START_TIME = DateTime.parse("2016-04-02T10:00:00.000Z");
     private static final DateTime END_TIME = DateTime.parse("2016-04-03T10:00:00.000Z");

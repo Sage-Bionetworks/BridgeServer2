@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.springframework.http.HttpStatus.CREATED;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,7 +49,7 @@ public class OrganizationController extends BaseController {
     public PagedResourceList<Organization> getOrganizations(
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize) {
-        UserSession session = getAuthenticatedSession(ADMIN, RESEARCHER, DEVELOPER);
+        UserSession session = getAdministrativeSession();
         
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
@@ -101,7 +99,7 @@ public class OrganizationController extends BaseController {
     
     @PostMapping("/v1/organizations/{orgId}/members")
     public PagedResourceList<AccountSummary> getMembers(@PathVariable String orgId) {
-        UserSession session = getAuthenticatedSession(ADMIN, DEVELOPER, RESEARCHER);
+        UserSession session = getAdministrativeSession();
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         return service.getMembers(session.getAppId(), orgId, search);
@@ -135,7 +133,7 @@ public class OrganizationController extends BaseController {
      */
     @PostMapping("/v1/organizations/nonmembers")
     public PagedResourceList<AccountSummary> getUnassignedAdmins() {
-        UserSession session = getAuthenticatedSession(ADMIN, DEVELOPER, RESEARCHER);
+        UserSession session = getAdministrativeSession();
         
         AccountSummarySearch initial = parseJson(AccountSummarySearch.class);
         AccountSummarySearch search = new AccountSummarySearch.Builder()

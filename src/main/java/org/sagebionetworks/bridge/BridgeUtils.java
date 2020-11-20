@@ -174,7 +174,6 @@ public class BridgeUtils {
             // there are no remaining enrollments, then we do not return the 
             // account to the caller.
             Set<Enrollment> removals = account.getEnrollments().stream()
-            // Set<Enrollment> removals = account.getActiveEnrollments().stream()
                     .filter(en -> !callerStudies.contains(en.getStudyId()))
                     .collect(toSet());
             account.getEnrollments().removeAll(removals);

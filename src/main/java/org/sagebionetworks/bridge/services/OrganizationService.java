@@ -214,7 +214,7 @@ public class OrganizationService {
         checkOrgMembership(identifier);
 
         account.setOrgMembership(identifier);
-        accountDao.updateAccount(account, null);
+        accountDao.updateAccount(account);
         sessionUpdateService.updateOrgMembership(account.getId(), identifier);
     }
     
@@ -237,7 +237,7 @@ public class OrganizationService {
         }
         
         account.setOrgMembership(null);
-        accountDao.updateAccount(account, null);
+        accountDao.updateAccount(account);
         sessionUpdateService.updateOrgMembership(account.getId(), null);
     }
 

@@ -18,11 +18,10 @@ public class IdentifierUpdateTest {
         SignIn signIn = new SignIn.Builder().withEmail(EMAIL).withPassword(PASSWORD).build();
         
         // You wouldn't normally send two updates, but for the sake of verifying serialization...
-        IdentifierUpdate update = new IdentifierUpdate(signIn, "updated@email.com", PHONE, "updatedExternalId", "updatedSynapseUserId");
+        IdentifierUpdate update = new IdentifierUpdate(signIn, "updated@email.com", PHONE, "updatedSynapseUserId");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(update);
         assertEquals(node.get("emailUpdate").textValue(), "updated@email.com");
-        assertEquals(node.get("externalIdUpdate").textValue(), "updatedExternalId");
         assertEquals(node.get("synapseUserIdUpdate").textValue(), "updatedSynapseUserId");
         assertEquals(node.get("type").textValue(), "IdentifierUpdate");
         
@@ -35,7 +34,6 @@ public class IdentifierUpdateTest {
         
         IdentifierUpdate deser = BridgeObjectMapper.get().readValue(node.toString(), IdentifierUpdate.class);
         assertEquals(deser.getEmailUpdate(), "updated@email.com");
-        assertEquals(deser.getExternalIdUpdate(), "updatedExternalId");
         assertEquals(deser.getPhoneUpdate(), PHONE);
         assertEquals(deser.getSynapseUserIdUpdate(), "updatedSynapseUserId");
         assertEquals(deser.getSignIn().getEmail(), EMAIL);

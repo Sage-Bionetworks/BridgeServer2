@@ -56,7 +56,7 @@ public class HibernateOrganizationDao implements OrganizationDao {
     public Organization createOrganization(Organization organization) {
         checkNotNull(organization);
         
-        hibernateHelper.create(organization, null);
+        hibernateHelper.create(organization);
         return organization;
     }
 
@@ -64,7 +64,7 @@ public class HibernateOrganizationDao implements OrganizationDao {
     public Organization updateOrganization(Organization organization) {
         checkNotNull(organization);
         
-        hibernateHelper.update(organization, null);
+        hibernateHelper.update(organization);
         return organization;
     }
     

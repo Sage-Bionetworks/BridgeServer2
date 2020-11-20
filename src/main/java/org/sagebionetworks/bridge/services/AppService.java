@@ -127,7 +127,6 @@ public class AppService {
     private SynapseClient synapseClient;
     private String synapseTrackingViewId;
     private ParticipantService participantService;
-    private ExternalIdService externalIdService;
     private StudyService studyService;
     private TemplateService templateService;
     private FileService fileService;
@@ -210,10 +209,6 @@ public class AppService {
         this.participantService = participantService;
     }
     @Autowired
-    final void setExternalIdService(ExternalIdService externalIdService) {
-        this.externalIdService = externalIdService;
-    }
-    @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
@@ -273,8 +268,7 @@ public class AppService {
         checkNotNull(appAndUsers, Validate.CANNOT_BE_NULL, "app and users");
         
         App app = appAndUsers.getApp();
-        StudyParticipantValidator val = new StudyParticipantValidator(externalIdService, studyService,
-                organizationService, app, true);
+        StudyParticipantValidator val = new StudyParticipantValidator(studyService, organizationService, app, true);
         
         Errors errors = Validate.getErrorsFor(appAndUsers);
         

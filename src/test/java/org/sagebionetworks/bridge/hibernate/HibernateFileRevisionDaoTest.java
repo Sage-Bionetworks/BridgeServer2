@@ -94,7 +94,7 @@ public class HibernateFileRevisionDaoTest extends Mockito {
                 
         dao.createFileRevision(revision);
         
-        verify(mockHelper).create(revision, null);
+        verify(mockHelper).create(revision);
     }
     
     @Test
@@ -103,7 +103,7 @@ public class HibernateFileRevisionDaoTest extends Mockito {
         
         dao.updateFileRevision(revision);
         
-        verify(mockHelper).update(revision, null);
+        verify(mockHelper).update(revision);
     }
     
     @Test

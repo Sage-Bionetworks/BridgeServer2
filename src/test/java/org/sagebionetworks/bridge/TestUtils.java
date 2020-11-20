@@ -95,7 +95,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 public class TestUtils {
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
-
+    
     public static class CustomServletInputStream extends ServletInputStream {
         private ByteArrayInputStream buffer;
         public CustomServletInputStream(String content) {

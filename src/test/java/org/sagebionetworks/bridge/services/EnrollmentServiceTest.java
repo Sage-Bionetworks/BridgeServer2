@@ -364,7 +364,7 @@ public class EnrollmentServiceTest extends Mockito {
         assertNull(retValue.getWithdrawnBy());
         assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
 
-        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
         Enrollment captured = Iterables.getLast(accountCaptor.getValue().getEnrollments(), null);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(captured.getWithdrawnBy());
@@ -389,7 +389,7 @@ public class EnrollmentServiceTest extends Mockito {
         Enrollment retValue = service.unenroll(enrollment);
         assertEquals(retValue.getWithdrawnOn(), MODIFIED_ON);
 
-        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
         Enrollment captured = Iterables.getLast(accountCaptor.getValue().getEnrollments(), null);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON);
     }
@@ -416,7 +416,7 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(retValue.getWithdrawnBy(), "adminUser");
         assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
 
-        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
         Enrollment captured = Iterables.getFirst(accountCaptor.getValue().getEnrollments(), null);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON);
         assertEquals(captured.getWithdrawnBy(), "adminUser");
@@ -448,7 +448,7 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(retValue.getWithdrawnBy(), "adminUser");
         assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
 
-        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
         Enrollment captured = Iterables.getFirst(accountCaptor.getValue().getEnrollments(), null);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON);
         assertEquals(captured.getWithdrawnBy(), "adminUser");

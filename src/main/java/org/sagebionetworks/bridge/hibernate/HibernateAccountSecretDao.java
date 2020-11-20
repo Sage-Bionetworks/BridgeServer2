@@ -62,7 +62,7 @@ public class HibernateAccountSecretDao implements AccountSecretDao {
         secret.setType(type);
         secret.setCreatedOn(DateUtils.getCurrentDateTime());
 
-        hibernateHelper.create(secret, null); 
+        hibernateHelper.create(secret); 
     }
 
     @Override

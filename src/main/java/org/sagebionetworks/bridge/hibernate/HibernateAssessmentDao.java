@@ -63,7 +63,7 @@ class HibernateAssessmentDao implements AssessmentDao {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM (");
         builder.append("SELECT DISTINCT identifier as id, MAX(revision) AS rev FROM Assessments");
-        builder.append("GROUP BY identifier) AS latest_assessments");
+        builder.append("WHERE appId = :appId GROUP BY identifier) AS latest_assessments");
         builder.append("INNER JOIN Assessments AS a ON a.identifier = latest_assessments.id AND");
         builder.append("a.revision = latest_assessments.rev");
         

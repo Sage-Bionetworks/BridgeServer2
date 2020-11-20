@@ -48,7 +48,7 @@ public class SubpopulationValidator implements Validator {
                 errors.rejectValue("dataGroupsAssignedWhileConsented", message);
             }
         }
-        if (subpop.getStudyIdsAssignedOnConsent().isEmpty()) {
+        if (subpop.isRequired() && subpop.getStudyIdsAssignedOnConsent().isEmpty()) {
             errors.rejectValue("studyIdsAssignedOnConsent", CANNOT_BE_EMPTY);
         } else {
             for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
