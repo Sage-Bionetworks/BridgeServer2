@@ -69,7 +69,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
             +"appId = :appId AND identifier = :identifier ORDER BY revision DESC";
 
     private static final String QUERY_COUNT_FROM_ORG = "SELECT COUNT(*) FROM HibernateAssessment WHERE " +
-            "(appId = :appid AND ownerId = :ownerId)";
+            "(appId = :appId AND ownerId = :ownerId)";
     
     private static final String APP_ID_VALUE = "appId";
     private static final String ID_VALUE = "identifier";

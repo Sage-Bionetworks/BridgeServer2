@@ -39,7 +39,7 @@ class HibernateAssessmentDao implements AssessmentDao {
     static final String GET_BY_IDENTIFIER = "FROM HibernateAssessment WHERE appId=:appId "+
             "AND identifier=:identifier AND revision=:revision";
     static final String GET_BY_GUID = "FROM HibernateAssessment WHERE appId=:appId AND guid=:guid";
-    static final String GET_FROM_ORG = "FROM HibernateAssessment WHERE (appId = :appid AND ownerId = :ownerId)";
+    static final String GET_FROM_ORG = "FROM HibernateAssessment WHERE (appId = :appId AND ownerId = :ownerId)";
 
     static final String GET_REVISIONS = "FROM HibernateAssessment WHERE appId = :appId AND "
             +"identifier = :identifier";
