@@ -171,7 +171,7 @@ public class OrganizationService {
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
         if (assessmentDao.hasAssessmentFromOrg(appId, identifier)) {
             throw new ConstraintViolationException.Builder().withMessage(
-                    "Cannot delete organization: it is reference by an assessment that is still accessible")
+                    "Cannot delete organization: it is referenced by an assessment that is still accessible")
                     .withEntityKey("appId", appId)
                     .withEntityKey("organization", identifier).build();
         }
