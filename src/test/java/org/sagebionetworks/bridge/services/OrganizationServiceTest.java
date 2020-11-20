@@ -156,6 +156,8 @@ public class OrganizationServiceTest extends Mockito {
     
     @Test
     public void updateOrganization() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(IDENTIFIER).build());
         Organization org = Organization.create();
         org.setAppId(TEST_APP_ID);
         org.setIdentifier(IDENTIFIER);
@@ -180,6 +182,8 @@ public class OrganizationServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Organization not found.")
     public void updateOrganizationNotFound() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(IDENTIFIER).build());
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.empty());
         
         Organization org = Organization.create();
@@ -192,7 +196,9 @@ public class OrganizationServiceTest extends Mockito {
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateOrganizationNotValid() {
+        RequestContext.set(new RequestContext.Builder().withCallerOrgMembership(IDENTIFIER).build());
         Organization org = Organization.create();
+        org.setIdentifier(IDENTIFIER);
         
         service.updateOrganization(org);
     }
@@ -229,6 +235,8 @@ public class OrganizationServiceTest extends Mockito {
     
     @Test
     public void deleteOrganization() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(IDENTIFIER).build());
         Organization org = Organization.create();
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(org));
         
@@ -238,12 +246,17 @@ public class OrganizationServiceTest extends Mockito {
         verify(mockCacheProvider).removeObject(CacheKey.orgSponsoredStudies(TEST_APP_ID, IDENTIFIER));
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class, 
-            expectedExceptionsMessageRegExp = "Organization not found.")
-    public void deleteOrganizationNotFound() {
-        when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.empty());
+    @Test
+    public void deleteOrganizationAsAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        Organization org = Organization.create();
+        when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(org));
         
         service.deleteOrganization(TEST_APP_ID, IDENTIFIER);
+        
+        verify(mockOrgDao).deleteOrganization(org);
+        verify(mockCacheProvider).removeObject(CacheKey.orgSponsoredStudies(TEST_APP_ID, IDENTIFIER));
     }
     
     @Test
@@ -292,18 +305,6 @@ public class OrganizationServiceTest extends Mockito {
         
         service.getMembers(TEST_APP_ID, IDENTIFIER, search);
     }
-
-    @Test(expectedExceptions = EntityNotFoundException.class, 
-            expectedExceptionsMessageRegExp = "Organization not found.")
-    public void getMembersOrganizationNotFound() {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        
-        when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.empty());
-        
-        AccountSummarySearch search = new AccountSummarySearch.Builder().withLanguage("en").build();        
-        
-        service.getMembers(TEST_APP_ID, IDENTIFIER, search);
-    }
     
     @Test
     public void addMember() {
@@ -339,22 +340,14 @@ public class OrganizationServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void addMemberUnauthorized() {
-        when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership("not-org-id").build());
+        
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(Account.create()));
         
         service.addMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class, 
-            expectedExceptionsMessageRegExp = "Organization not found.")
-    public void addMemberOrganizationNotFound() {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        
-        when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.empty());
-        
-        service.addMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
-    }
-    
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
     public void addMemberAccountNotFound() {
@@ -423,16 +416,6 @@ public class OrganizationServiceTest extends Mockito {
         service.removeMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class, 
-            expectedExceptionsMessageRegExp = "Organization not found.")
-    public void removeMemberOrganizationNotFound() {
-        RequestContext.set(new RequestContext.Builder().withCallerOrgMembership(IDENTIFIER).build());
-        
-        when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.empty());
-
-        service.removeMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
-    }
-
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
     public void removeMemberAccountNotFound() {
