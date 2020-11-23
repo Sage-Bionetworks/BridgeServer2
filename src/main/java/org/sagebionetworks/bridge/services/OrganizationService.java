@@ -189,7 +189,7 @@ public class OrganizationService {
     }
     
     /**
-     * Note that we currently allow organization admins to “steal” people from 
+     * Note that we currently allow organization admins to re-assign people from 
      * other organizations, which we might want to change.
      */
     public void addMember(String appId, String identifier, AccountId accountId) {

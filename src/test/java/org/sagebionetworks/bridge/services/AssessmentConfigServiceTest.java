@@ -146,7 +146,6 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void updateAssessmentConfig() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
@@ -182,7 +181,6 @@ public class AssessmentConfigServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = ".*config is required.*")
     public void updateAssessmentConfigInvalid() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOriginGuid(GUID);
@@ -203,7 +201,6 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void customizeAssessmentConfig() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
@@ -245,7 +242,6 @@ public class AssessmentConfigServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = ".*identifier is missing.*")
     public void customizeAssessmentConfigInvalid() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
         
         AssessmentConfigValidator val = new AssessmentConfigValidator.Builder()
@@ -287,7 +283,6 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void customizeAssessmentConfigUnchanged() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();

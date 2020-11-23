@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.collectExternalIds;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -29,6 +30,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -84,6 +86,7 @@ import org.sagebionetworks.bridge.models.apps.SmsTemplate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -220,6 +223,9 @@ public class ParticipantServiceTest extends Mockito {
     @Mock
     private ActivityEventService activityEventService;
     
+    @Mock
+    private OrganizationService organizationService;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -338,6 +344,41 @@ public class ParticipantServiceTest extends Mockito {
         
         // don't update cache
         Mockito.verifyNoMoreInteractions(cacheProvider);
+    }
+    
+    @Test
+    public void createParticipantSetsOrgMembershipWhenCallerOrgAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        when(participantService.generateGUID()).thenReturn(ID);
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
+        when(organizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
+            .thenReturn(Optional.of(Organization.create()));
+
+        StudyParticipant participant = withParticipant()
+                .withOrgMembership(TEST_ORG_ID)
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
+        participantService.createParticipant(APP, participant, true);
+        
+        verify(accountService).createAccount(eq(APP), accountCaptor.capture());
+        
+        Account account = accountCaptor.getValue();
+        assertEquals(account.getOrgMembership(), TEST_ORG_ID);
+    }
+    
+    @Test
+    public void createParticipantSettingOrgMembershipFailsOnWrongRole() {
+        when(organizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
+            .thenReturn(Optional.of(Organization.create()));
+
+        StudyParticipant participant = withParticipant().withOrgMembership(TEST_ORG_ID).build();
+        
+        try {
+            participantService.createParticipant(APP, participant, true);    
+        } catch(InvalidEntityException e) {
+            assertEquals(e.getErrors().get("orgMembership").get(0), "orgMembership cannot be set by caller");
+        }
     }
     
     @Test

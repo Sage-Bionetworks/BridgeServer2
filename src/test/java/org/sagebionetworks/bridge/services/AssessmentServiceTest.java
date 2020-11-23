@@ -1049,7 +1049,6 @@ public class AssessmentServiceTest extends Mockito {
     @Test
     public void importAssessmentWithAdmin() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         Assessment sharedAssessment = AssessmentTest.createAssessment();
@@ -1066,7 +1065,6 @@ public class AssessmentServiceTest extends Mockito {
     @Test
     public void importAssessmentWithSuperadmin() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
         
         Assessment sharedAssessment = AssessmentTest.createAssessment();
@@ -1085,7 +1083,6 @@ public class AssessmentServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = "Organization not found.")
     public void importAssessmentWithAdminOrgNotFound() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
         
         Assessment sharedAssessment = AssessmentTest.createAssessment();
