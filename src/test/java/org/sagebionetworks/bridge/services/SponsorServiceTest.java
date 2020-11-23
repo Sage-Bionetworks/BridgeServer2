@@ -152,6 +152,7 @@ public class SponsorServiceTest extends Mockito {
     @Test
     public void addStudySponsorAsAdmin() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         service.addStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
@@ -163,6 +164,7 @@ public class SponsorServiceTest extends Mockito {
     @Test
     public void addStudySponsorAsOrgMember() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
         service.addStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
@@ -181,6 +183,7 @@ public class SponsorServiceTest extends Mockito {
     @Test
     public void removeStudySponsorAsAdmin() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
         when(mockSponsorDao.doesOrganizationSponsorStudy(
@@ -195,6 +198,7 @@ public class SponsorServiceTest extends Mockito {
     @Test
     public void removeStudySponsorAsOrgMember() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(TEST_ORG_ID).build());
 
         when(mockSponsorDao.doesOrganizationSponsorStudy(
@@ -220,6 +224,7 @@ public class SponsorServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = "Study not found.")
     public void removeStudyNoStudy() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
@@ -235,6 +240,7 @@ public class SponsorServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = "Organization not found.")
     public void removeStudyNoOrganization() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(Study.create());
@@ -250,6 +256,7 @@ public class SponsorServiceTest extends Mockito {
             + TEST_ORG_ID + "' is not a sponsor of study '" + TEST_STUDY_ID + "'")
     public void removeStudyNoAssociation() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(Study.create());

@@ -391,6 +391,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void validateOrgCanBeDifferentFromSuperadmin() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership("someOtherOrgId")
                 .withCallerRoles(ImmutableSet.of(Roles.SUPERADMIN))
                 .build());
@@ -405,6 +406,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void organizationOK() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
         when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))

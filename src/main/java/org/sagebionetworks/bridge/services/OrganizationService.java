@@ -118,7 +118,7 @@ public class OrganizationService {
     public Organization updateOrganization(Organization organization) {
         checkNotNull(organization);
 
-        AuthUtils.checkOrgMember(organization.getIdentifier());
+        AuthUtils.checkOrgMember(organization.getAppId(), organization.getIdentifier());
         
         Validate.entityThrowingException(INSTANCE, organization);
         
@@ -162,7 +162,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
-        AuthUtils.checkOrgMember(identifier); // or admin
+        AuthUtils.checkOrgMember(appId, identifier); // or admin
         
         Organization existing = orgDao.getOrganization(appId, identifier)
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
@@ -178,7 +178,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(search);
         
-        AuthUtils.checkOrgMember(identifier);
+        AuthUtils.checkOrgMember(appId, identifier);
         
         AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
                 .copyOf(search)
@@ -188,12 +188,16 @@ public class OrganizationService {
         return accountDao.getPagedAccountSummaries(appId, scopedSearch);
     }
     
+    /**
+     * Note that we currently allow organization admins to “steal” people from 
+     * other organizations, which we might want to change.
+     */
     public void addMember(String appId, String identifier, AccountId accountId) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        AuthUtils.checkOrgMember(identifier);
+        AuthUtils.checkOrgMember(appId, identifier);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
@@ -208,7 +212,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        AuthUtils.checkOrgMember(identifier);
+        AuthUtils.checkOrgMember(appId, identifier);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));

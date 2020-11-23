@@ -82,39 +82,51 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void checkOrgMemberSucceedsForMatchingOrgId() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
-        AuthUtils.checkOrgMember(TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkOrgMemberFailsOnMismatch() {
+    public void checkOrgMemberFailsWrongAppId() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId("another-app-id")
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkOrgMemberFailsWrongOrganization() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership("another-organization").build());
         
-        AuthUtils.checkOrgMember(TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void checkOrgMemberFailsOnNullOrg() {
         RequestContext.set(new RequestContext.Builder().build());
         
-        AuthUtils.checkOrgMember(TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
     }
     
     @Test
     public void checkOrgMemberSucceeds() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
-        AuthUtils.checkOrgMember(TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void checkOrgMembershipFails() {
         RequestContext.set(new RequestContext.Builder().build());
         
-        AuthUtils.checkOrgMember(TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
     }
     
     @Test
@@ -271,9 +283,10 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void checkOrgMembershipSucceedsForAdmin() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
-        AuthUtils.checkOrgMember(TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
     }
     
     @Test

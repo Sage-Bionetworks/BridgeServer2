@@ -1,9 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.AuthUtils.checkSelfOrResearcher;
+import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
-import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
@@ -37,6 +36,7 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.OrganizationService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 @CrossOrigin
 @RestController
@@ -65,7 +65,10 @@ public class MembershipController extends BaseController {
     
     @PostMapping("/v1/organizations/{orgId}/members/search")
     public PagedResourceList<AccountSummary> getMembers(@PathVariable String orgId) {
+        // should this just be scoped to any administrative user?
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        
+        AuthUtils.checkOrgMember(session.getAppId(), orgId);
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         return organizationService.getMembers(session.getAppId(), orgId, search);
@@ -74,43 +77,44 @@ public class MembershipController extends BaseController {
     @PostMapping("/v1/organizations/{orgId}/members")
     public IdentifierHolder createMember(@PathVariable String orgId) {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
-        App app = appService.getApp(session.getAppId());
+        
+        AuthUtils.checkOrgMember(session.getAppId(), orgId);
         
         StudyParticipant participant = parseJson(StudyParticipant.class);
-        participant = new StudyParticipant.Builder().withOrgMembership(orgId).build();
+        participant = new StudyParticipant.Builder().copyOf(participant)
+                .withOrgMembership(orgId).build();
         
+        App app = appService.getApp(session.getAppId());
         return participantService.createParticipant(app, participant, true);
     }
     
     @GetMapping("/v1/organizations/{orgId}/members/{userId}")
     public StudyParticipant getMember(@PathVariable String orgId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
-        App app = appService.getApp(session.getAppId());
         
-        AuthUtils.checkOrgMember(orgId);
-        StudyParticipant participant = participantService.getParticipant(app, userId, false);
-        if (!participant.getOrgMembership().equals(orgId)) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
+        
+        App app = appService.getApp(session.getAppId());
+        StudyParticipant participant = participantService.getParticipant(app, account, false);
+
         return participant;
     }
     
     @PostMapping("/v1/organizations/members/{userId}")
     public StatusMessage updateMember(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
-        App app = appService.getApp(session.getAppId());
 
-        StudyParticipant existing = participantService.getParticipant(app, userId, false);
-        AuthUtils.checkOrgMember(existing.getOrgMembership());
+        Account account = verifyOrgAdminIsActingOnOrgMember(session.getAppId(),
+                session.getParticipant().getOrgMembership(), userId);
+        App app = appService.getApp(session.getAppId());
+        StudyParticipant existing = participantService.getParticipant(app, account, false);
 
         // Force userId of the URL
         StudyParticipant participant = parseJson(StudyParticipant.class);
-
         participant = new StudyParticipant.Builder()
                 .copyOf(participant)
                 .withId(userId)
                 .withOrgMembership(existing.getOrgMembership()).build();
-        
         participantService.updateParticipant(app, participant);
 
         return new StatusMessage("Member updated.");
@@ -119,10 +123,11 @@ public class MembershipController extends BaseController {
     @DeleteMapping("/v1/organizations/members/{userId}")
     public StatusMessage deleteMember(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
-        App app = appService.getApp(session.getAppId());
             
+        App app = appService.getApp(session.getAppId());
         StudyParticipant existing = participantService.getParticipant(app, userId, false);
-        AuthUtils.checkOrgMember(existing.getOrgMembership());
+        
+        verifyOrgAdminIsActingOnOrgMember(session.getAppId(), existing.getOrgMembership(), userId);
         
         userAdminService.deleteUser(app, userId);
         
@@ -134,6 +139,8 @@ public class MembershipController extends BaseController {
     public StatusMessage addMember(@PathVariable String orgId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
+        // organization membership checked in service
+        
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
         organizationService.addMember(session.getAppId(), orgId, accountId);
         
@@ -143,6 +150,8 @@ public class MembershipController extends BaseController {
     @DeleteMapping("/v1/organizations/{orgId}/members/{userId}")
     public StatusMessage removeMember(@PathVariable String orgId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+
+        // organization membership checked in service
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
         organizationService.removeMember(session.getAppId(), orgId, accountId);
@@ -151,9 +160,8 @@ public class MembershipController extends BaseController {
     }
     
     /**
-     * This search allows non-researchers to see the unassigned admin roles in the system.
-     * They should also be able to see everyone in their own organization, given the membership
-     * APIs.
+     * This search allows administrators to see the unassigned admin roles in the system,
+     * in order to assign them to their own organization.
      */
     @PostMapping("/v1/organizations/nonmembers")
     public PagedResourceList<AccountSummary> getUnassignedAdmins() {
@@ -171,48 +179,83 @@ public class MembershipController extends BaseController {
     
     @GetMapping(path = { "/v1/organizations/{orgId}/members/{userId}/requestInfo" }, 
             produces = { APPLICATION_JSON_UTF8_VALUE })
-    public String getRequestInfoForWorker(@PathVariable String orgId, @PathVariable String userId) 
+    public String getRequestInfo(@PathVariable String orgId, @PathVariable String userId) 
             throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
 
-        AuthUtils.checkOrgAdmin(orgId);
+        verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
         
-        // TODO: Can we verify the user is in the organization?
-        
-        // Verify it's in the same app as the researcher.
+        // RequestInfo is accessible because the user is accessible, no reason to 
+        // test again.
         RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
-        } else if (!session.getAppId().equals(requestInfo.getAppId())) {
-            throw new EntityNotFoundException(StudyParticipant.class);
         }
         return REQUEST_INFO_WRITER.writeValueAsString(requestInfo);
     }
     
-    @PostMapping("/v3/organizations/{orgId}/members/{userId}/requestResetPassword")
+    @PostMapping("/v1/organizations/{orgId}/members/{userId}/requestResetPassword")
     public StatusMessage requestResetPassword(@PathVariable String orgId, @PathVariable String userId) {
-        UserSession session = getAdministrativeSession();
-        App app = appService.getApp(session.getAppId());
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
-        AuthUtils.checkOrgAdmin(orgId);
+        verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
 
-        // TODO: Can we verify the user is in the organization?
-
+        App app = appService.getApp(session.getAppId());
         participantService.requestResetPassword(app, userId);
         
         return new StatusMessage("Request to reset password sent to user.");
     }
     
-    @PostMapping("/v3/organizations/{orgId}/members/{userId}/signOut")
+    @PostMapping("/v1/organizations/{orgId}/members/{userId}/resendEmailVerification")
+    public StatusMessage resendEmailVerification(@PathVariable String orgId, @PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+
+        verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
+
+        App app = appService.getApp(session.getAppId());
+        participantService.resendVerification(app, ChannelType.EMAIL, userId);
+        
+        return new StatusMessage("Email verification request has been resent to user.");
+    }
+
+    @PostMapping("/v1/organizations/{orgId}/members/{userId}/resendPhoneVerification")
+    public StatusMessage resendPhoneVerification(@PathVariable String orgId, @PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+
+        verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
+
+        App app = appService.getApp(session.getAppId());
+        participantService.resendVerification(app, ChannelType.PHONE, userId);
+        
+        return new StatusMessage("Phone verification request has been resent to user.");
+    }
+      
+    @PostMapping("/v1/organizations/{orgId}/members/{userId}/signOut")
     public StatusMessage signOut(@PathVariable String orgId, @PathVariable String userId,
             @RequestParam(required = false) boolean deleteReauthToken) {
-        UserSession session = getAdministrativeSession();
-        App app = appService.getApp(session.getAppId());
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
-        AuthUtils.checkOrgAdmin(orgId);
+        verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
 
+        App app = appService.getApp(session.getAppId());
         participantService.signUserOut(app, userId, deleteReauthToken);
 
         return new StatusMessage("User signed out.");
+    }
+
+    protected Account verifyOrgAdminIsActingOnOrgMember(String appId, String orgId, String userId) {
+        // The caller needs to be an administrator of this organization
+        AuthUtils.checkOrgAdmin(appId, orgId);
+        
+        // The account (if it exists) must be in the organization. Return account for 
+        // methods that need to load a StudyParticipant (don't load account twice).
+        Account account = accountService.getAccount( parseAccountId(appId, userId) );
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        if (!orgId.equals(account.getOrgMembership())) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        return account;
     }
 }

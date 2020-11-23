@@ -21,11 +21,14 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 public class AuthUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AuthUtils.class);
     
-    private static final AuthEvaluator ORG_MEMBER = new AuthEvaluator().isInOrg().or()
-            .hasAnyRole(ADMIN);
+    private static final AuthEvaluator ORG_MEMBER = new AuthEvaluator().isInApp().isInOrg().or()
+            .isInApp().hasAnyRole(ADMIN);
     
-    private static final AuthEvaluator ORG_ADMIN = new AuthEvaluator().isInOrg().hasAnyRole(ORG_ADMIN).or()
-            .hasAnyRole(ADMIN);
+    private static final AuthEvaluator ORG_ADMINISTRATOR = new AuthEvaluator().isInApp().hasAnyRole(ADMIN).or()
+            .isInApp().isInOrg().hasAnyRole(ORG_ADMIN);
+    
+    // Note that these tests do not include a check for appId, and so there may be security holes where consumers
+    // are picking their own IDs. These need to be updated as well. 
     
     private static final AuthEvaluator STUDY_TEAM_MEMBER_OR_WORKER = new AuthEvaluator().canAccessStudy().or()
             .hasAnyRole(WORKER, ADMIN).or()
@@ -87,15 +90,17 @@ public class AuthUtils {
      * 
      * @throws UnauthorizedException
      */
-    public static void checkOrgMember(String orgId) {
-        ORG_MEMBER.checkAndThrow("orgId", orgId);
+    public static void checkOrgMember(String appId, String orgId) {
+        ORG_MEMBER.checkAndThrow("appId", appId, "orgId", orgId);
     }
     
     /**
      * Is the account an organization admin in the target organization?
+     * 
+     * @throws UnauthorizedException
      */
-    public static void checkOrgAdmin(String orgId) {
-        ORG_ADMIN.checkAndThrow("orgId", orgId);    
+    public static void checkOrgAdmin(String appId, String orgId) {
+        ORG_ADMINISTRATOR.checkAndThrow("appId", appId, "orgId", orgId);    
     }
     
     /**
@@ -136,8 +141,15 @@ public class AuthUtils {
      * the organization is in the caller's app...this can only be done by trying to load the 
      * organization with this ID. 
      */
-    public static final boolean isOrgMember(String orgId) {
-        return ORG_MEMBER.check("orgId", orgId);
+    public static final boolean isOrgMember(String appId, String orgId) {
+        return ORG_MEMBER.check("appId", appId, "orgId", orgId);
+    }
+    
+    /**
+     * Is the account an organization admin in the target organization?
+     */
+    public static boolean isOrgAdmin(String orgId) {
+        return ORG_ADMINISTRATOR.check("orgId", orgId);    
     }
     
     /**

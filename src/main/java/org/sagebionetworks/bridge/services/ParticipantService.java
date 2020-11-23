@@ -434,6 +434,9 @@ public class ParticipantService {
         account.setPhoneVerified(FALSE);
         account.setHealthCode(generateGUID());
         account.setStatus(UNVERIFIED);
+        if (AuthUtils.isOrgAdmin(participant.getOrgMembership())) {
+            account.setOrgMembership(participant.getOrgMembership());
+        }
 
         // Hash password if it has been supplied.
         if (participant.getPassword() != null) {

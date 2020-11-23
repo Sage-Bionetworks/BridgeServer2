@@ -1049,6 +1049,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test
     public void importAssessmentWithAdmin() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         Assessment sharedAssessment = AssessmentTest.createAssessment();
@@ -1065,6 +1066,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test
     public void importAssessmentWithSuperadmin() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
         
         Assessment sharedAssessment = AssessmentTest.createAssessment();
@@ -1083,6 +1085,7 @@ public class AssessmentServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = "Organization not found.")
     public void importAssessmentWithAdminOrgNotFound() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
         
         Assessment sharedAssessment = AssessmentTest.createAssessment();
@@ -1099,6 +1102,25 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(assessmentCaptor.getValue().getOwnerId(), "new-owner-id");
     }
     
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void importAssessmentWithAdminWrongAppId() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId("some-other-app-id")
+                .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
+        
+        Assessment sharedAssessment = AssessmentTest.createAssessment();
+        when(mockDao.getAssessment(SHARED_APP_ID, GUID)).thenReturn(Optional.of(sharedAssessment));
+
+        when(mockDao.getAssessmentRevisions(TEST_APP_ID, IDENTIFIER, 0, 1, true))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, "new-owner-id"))
+            .thenThrow(new EntityNotFoundException(Organization.class));
+        
+        service.importAssessment(TEST_APP_ID, "new-owner-id", null, GUID);
+        
+        verify(mockDao).importAssessment(eq(TEST_APP_ID), assessmentCaptor.capture(), any());
+        assertEquals(assessmentCaptor.getValue().getOwnerId(), "new-owner-id");
+    }
 
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = "ownerId parameter is required")

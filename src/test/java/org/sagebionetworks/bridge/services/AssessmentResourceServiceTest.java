@@ -588,6 +588,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void importAssessmentResourcesCallerCorrectOrg() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
 
         Assessment assessment = AssessmentTest.createAssessment();
