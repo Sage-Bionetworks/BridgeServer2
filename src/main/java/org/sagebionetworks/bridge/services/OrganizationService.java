@@ -118,7 +118,7 @@ public class OrganizationService {
     public Organization updateOrganization(Organization organization) {
         checkNotNull(organization);
 
-        AuthUtils.checkOrgMember(organization.getAppId(), organization.getIdentifier());
+        AuthUtils.checkOrgMember(organization.getIdentifier());
         
         Validate.entityThrowingException(INSTANCE, organization);
         
@@ -162,7 +162,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
-        AuthUtils.checkOrgMember(appId, identifier); // or admin
+        AuthUtils.checkOrgMember(identifier); // or admin
         
         Organization existing = orgDao.getOrganization(appId, identifier)
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
@@ -178,7 +178,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(search);
         
-        AuthUtils.checkOrgMember(appId, identifier);
+        AuthUtils.checkOrgMember(identifier);
         
         AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
                 .copyOf(search)
@@ -197,7 +197,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        AuthUtils.checkOrgMember(appId, identifier);
+        AuthUtils.checkOrgMember(identifier);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
@@ -212,7 +212,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        AuthUtils.checkOrgMember(appId, identifier);
+        AuthUtils.checkOrgMember(identifier);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));

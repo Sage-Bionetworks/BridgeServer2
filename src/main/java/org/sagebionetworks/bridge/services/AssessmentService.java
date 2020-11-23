@@ -159,7 +159,7 @@ public class AssessmentService {
         if (existing.isDeleted() && assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-        checkOrgMember(appId, existing.getOwnerId());
+        checkOrgMember(existing.getOwnerId());
         
         return updateAssessmentInternal(appId, assessment, existing);
     }
@@ -275,7 +275,7 @@ public class AssessmentService {
         AssessmentConfig configToPublish =  configService.getAssessmentConfig(appId, guid);
         Assessment original = Assessment.copy(assessmentToPublish);
         
-        checkOrgMember(appId, assessmentToPublish.getOwnerId());
+        checkOrgMember(assessmentToPublish.getOwnerId());
         
         if (StringUtils.isNotBlank(newIdentifier)) {
             assessmentToPublish.setIdentifier(newIdentifier);
@@ -330,7 +330,7 @@ public class AssessmentService {
         if (isBlank(ownerId)) {
             throw new BadRequestException("ownerId parameter is required");
         }
-        checkOrgMember(appId, ownerId);
+        checkOrgMember(ownerId);
 
         Assessment sharedAssessment = getAssessmentByGuid(SHARED_APP_ID, guid);
         AssessmentConfig sharedConfig = configService.getSharedAssessmentConfig(SHARED_APP_ID, guid);
@@ -360,7 +360,7 @@ public class AssessmentService {
         if (assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-        checkOrgMember(appId, assessment.getOwnerId());
+        checkOrgMember(assessment.getOwnerId());
         
         assessment.setDeleted(true);
         assessment.setModifiedOn(getModifiedOn());
@@ -396,7 +396,7 @@ public class AssessmentService {
         AssessmentValidator validator = new AssessmentValidator(appId, organizationService);
         Validate.entityThrowingException(validator, assessment);
         
-        checkOrgMember(appId, assessment.getOwnerId());
+        checkOrgMember(assessment.getOwnerId());
 
         AssessmentConfig config = new AssessmentConfig();
         config.setCreatedOn(timestamp);

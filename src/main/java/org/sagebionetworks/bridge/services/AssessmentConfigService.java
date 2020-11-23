@@ -74,7 +74,7 @@ public class AssessmentConfigService {
         checkNotNull(config);
         
         Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
-        checkOrgMember(appId, assessment.getOwnerId());
+        checkOrgMember(assessment.getOwnerId());
         
         AssessmentConfig existing = dao.getAssessmentConfig(guid)
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
@@ -97,7 +97,7 @@ public class AssessmentConfigService {
             throw new BadRequestException("Updates to configuration are missing");
         }
         Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
-        checkOrgMember(appId, assessment.getOwnerId());
+        checkOrgMember(assessment.getOwnerId());
         
         Map<String, Set<PropertyInfo>> fields = assessment.getCustomizationFields();
         

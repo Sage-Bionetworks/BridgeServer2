@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -82,51 +83,39 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void checkOrgMemberSucceedsForMatchingOrgId() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
-        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkOrgMemberFailsWrongAppId() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId("another-app-id")
-                .withCallerOrgMembership(TEST_ORG_ID).build());
-        
-        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_ORG_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void checkOrgMemberFailsWrongOrganization() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership("another-organization").build());
         
-        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_ORG_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void checkOrgMemberFailsOnNullOrg() {
         RequestContext.set(new RequestContext.Builder().build());
         
-        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_ORG_ID);
     }
     
     @Test
     public void checkOrgMemberSucceeds() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
-        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_ORG_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void checkOrgMembershipFails() {
         RequestContext.set(new RequestContext.Builder().build());
         
-        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_ORG_ID);
     }
     
     @Test
@@ -283,10 +272,9 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void checkOrgMembershipSucceedsForAdmin() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
-        AuthUtils.checkOrgMember(TEST_APP_ID, TEST_ORG_ID);
+        AuthUtils.checkOrgMember(TEST_ORG_ID);
     }
     
     @Test
@@ -294,5 +282,166 @@ public class AuthUtilsTest extends Mockito {
         RequestContext.set(new RequestContext.Builder().build());
         
         AuthUtils.checkStudyTeamMemberOrWorker(TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void checkStudyResearcherSuccedsForResearcher() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .build());
+        
+        AuthUtils.checkStudyResearcher(TEST_STUDY_ID);
+    }
+
+    @Test
+    public void checkStudyResearcherSuccedsForAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+        
+        AuthUtils.checkStudyResearcher(TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkStudyResearcherFailsWrongStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("wrong-study"))
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .build());
+        
+        AuthUtils.checkStudyResearcher(TEST_STUDY_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkStudyResearcherFailsWrongRole() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .build());
+        
+        AuthUtils.checkStudyResearcher(TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void checkOrgAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .build());
+        
+        AuthUtils.checkOrgAdmin(TEST_ORG_ID);
+    }
+
+    @Test
+    public void checkOrgAdminSucceedsForAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+        
+        AuthUtils.checkOrgAdmin(TEST_ORG_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkOrgAdminWrongOrgId() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership("wrong-org-id")
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .build());
+        
+        AuthUtils.checkOrgAdmin(TEST_ORG_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkOrgAdminWrongRole() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .build());
+        
+        AuthUtils.checkOrgAdmin(TEST_ORG_ID);
+    }
+    
+    @Test
+    public void isOrgMember() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .build());
+        
+        assertTrue( AuthUtils.isOrgMember(TEST_ORG_ID) );
+    }
+
+    @Test
+    public void isOrgMemberForAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+        
+        assertTrue( AuthUtils.isOrgMember(TEST_ORG_ID) );
+    }
+    
+    @Test
+    public void isOrgMemberWrongOrg() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership("wrong-org")
+                .build());
+        
+        assertFalse( AuthUtils.isOrgMember(TEST_ORG_ID) );
+    }
+    
+    @Test
+    public void isOrgAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .build());
+        
+        assertTrue( AuthUtils.isOrgAdmin(TEST_ORG_ID) );
+    }
+
+    @Test
+    public void isOrgAdminWrongOrgMembership() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .build());
+        
+        assertFalse( AuthUtils.isOrgAdmin(TEST_ORG_ID) );
+    }
+
+    @Test
+    public void isOrgAdminWrongRole() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .build());
+        
+        assertFalse( AuthUtils.isOrgAdmin(TEST_ORG_ID) );
+    }
+
+    @Test
+    public void isSelfOrStudyTeamMemberOrWorkerForSelf() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(USER_ID)
+                .build());
+        
+        AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID);
+    }
+
+    @Test
+    public void isSelfOrStudyTeamMemberOrWorkerForStudyTeamMember() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(USER_ID)
+                .build());
+        
+        AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID);
+    }
+
+    @Test
+    public void isSelfOrStudyTeamMemberOrWorkerForWorker() {
+        AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID);
+    }
+    
+    @Test
+    public void isSelfWorkerOrOrgAdmin() {
     }
 }

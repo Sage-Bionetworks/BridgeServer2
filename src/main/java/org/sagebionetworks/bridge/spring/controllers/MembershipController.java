@@ -68,7 +68,7 @@ public class MembershipController extends BaseController {
         // should this just be scoped to any administrative user?
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
-        AuthUtils.checkOrgMember(session.getAppId(), orgId);
+        AuthUtils.checkOrgMember(orgId);
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         return organizationService.getMembers(session.getAppId(), orgId, search);
@@ -78,7 +78,7 @@ public class MembershipController extends BaseController {
     public IdentifierHolder createMember(@PathVariable String orgId) {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
-        AuthUtils.checkOrgMember(session.getAppId(), orgId);
+        AuthUtils.checkOrgMember(orgId);
         
         StudyParticipant participant = parseJson(StudyParticipant.class);
         participant = new StudyParticipant.Builder().copyOf(participant)
@@ -245,7 +245,7 @@ public class MembershipController extends BaseController {
 
     protected Account verifyOrgAdminIsActingOnOrgMember(String appId, String orgId, String userId) {
         // The caller needs to be an administrator of this organization
-        AuthUtils.checkOrgAdmin(appId, orgId);
+        AuthUtils.checkOrgAdmin(orgId);
         
         // The account (if it exists) must be in the organization. Return account for 
         // methods that need to load a StudyParticipant (don't load account twice).
