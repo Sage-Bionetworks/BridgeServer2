@@ -9,8 +9,10 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.organizations.Organization;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -89,6 +91,9 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
                     key = key.substring(key.indexOf("-")+1);
                     eae = createEntityAlreadyExistsException("External ID", 
                             AccountId.forExternalId(account.getAppId(), key));
+                } else if (message.matches(".*a foreign key constraint fails.*REFERENCES `Organizations`.*")) {
+                    // This happens when the orgMembership key is not a real organization
+                    return new EntityNotFoundException(Organization.class);
                 }
                 if (eae != null) {
                     return eae;

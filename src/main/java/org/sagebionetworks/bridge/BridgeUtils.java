@@ -375,16 +375,6 @@ public class BridgeUtils {
         return (coll == null || coll.isEmpty());
     }
     
-    public static <S,T> Map<S,T> asMap(List<T> list, Function<T,S> function) {
-        Map<S,T> map = Maps.newHashMap();
-        if (list != null && function != null) {
-            for (T item : list) {
-                map.put(function.apply(item), item);
-            }
-        }
-        return map;
-    }
-    
     public static Long parseLong(String value) {
         try {
             return Long.parseLong(value);

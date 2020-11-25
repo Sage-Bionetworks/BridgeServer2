@@ -419,12 +419,24 @@ public class AuthUtilsTest extends Mockito {
     }
 
     @Test
+    public void isSelfOrStudyTeamMemberOrWorkerFails() {
+        RequestContext.set(new RequestContext.Builder()
+                // we have to set this because we still make an exception for accounts
+                // associated to no studies (ie not in an org or in an org that isn't
+                // sponsoring any studies).
+                .withOrgSponsoredStudies(ImmutableSet.of("study1"))
+                .build());
+        
+        assertFalse( AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID) );
+    }
+    
+    @Test
     public void isSelfOrStudyTeamMemberOrWorkerForSelf() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(USER_ID)
                 .build());
         
-        AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID);
+        assertTrue( AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID) );
     }
 
     @Test
@@ -433,15 +445,55 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerUserId(USER_ID)
                 .build());
         
-        AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID);
+        assertTrue( AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID) );
     }
 
     @Test
     public void isSelfOrStudyTeamMemberOrWorkerForWorker() {
-        AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(WORKER))
+                .build());
+        
+        assertTrue( AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID) );
     }
-    
+
     @Test
-    public void isSelfWorkerOrOrgAdmin() {
+    public void isSelfWorkerOrOrgAdminFails() {
+        RequestContext.set(new RequestContext.Builder()
+                // we have to set this because we still make an exception for accounts
+                // associated to no studies (ie not in an org or in an org that isn't
+                // sponsoring any studies).
+                .withOrgSponsoredStudies(ImmutableSet.of("study1"))
+                .build());
+        
+        assertFalse( AuthUtils.isSelfWorkerOrOrgAdmin(TEST_ORG_ID, USER_ID) );
+    }
+
+    @Test
+    public void isSelfWorkerOrOrgAdminForSelf() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(USER_ID)
+                .build());
+        
+        assertTrue( AuthUtils.isSelfWorkerOrOrgAdmin(TEST_ORG_ID, USER_ID) );
+    }
+
+    @Test
+    public void isSelfWorkerOrOrgAdminForWorker() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(WORKER))
+                .build());
+        
+        assertTrue( AuthUtils.isSelfWorkerOrOrgAdmin(TEST_ORG_ID, USER_ID) );
+    }
+
+    @Test
+    public void isSelfWorkerOrOrgAdminForOrgAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .build());
+        
+        assertTrue( AuthUtils.isSelfWorkerOrOrgAdmin(TEST_ORG_ID, USER_ID) );
     }
 }

@@ -1,0 +1,407 @@
+package org.sagebionetworks.bridge.spring.controllers;
+
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestUtils.assertCreate;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
+import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
+import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertSame;
+
+import javax.servlet.http.HttpServletRequest;
+
+import com.google.common.collect.ImmutableSet;
+
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.AccountSummarySearch;
+import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.services.AccountService;
+import org.sagebionetworks.bridge.services.AppService;
+import org.sagebionetworks.bridge.services.OrganizationService;
+import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.RequestInfoService;
+import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+
+public class AccountsControllerTest extends Mockito {
+    
+    private static final IdentifierHolder ID = new IdentifierHolder(USER_ID);
+    private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, USER_ID);
+    
+    @Mock
+    OrganizationService mockOrganizationService;
+    
+    @Mock
+    ParticipantService mockParticipantService;
+    
+    @Mock
+    UserAdminService mockUserAdminService;
+    
+    @Mock
+    AccountService mockAccountService;
+    
+    @Mock
+    AppService mockAppService;
+    
+    @Mock
+    RequestInfoService mockRequestInfoService;
+    
+    @Mock
+    HttpServletRequest mockRequest;
+    
+    @Captor
+    ArgumentCaptor<AccountSummarySearch> searchCaptor;
+    
+    @Captor
+    ArgumentCaptor<StudyParticipant> participantCaptor;
+    
+    @Captor
+    ArgumentCaptor<AccountId> accountIdCaptor;
+
+    @InjectMocks
+    @Spy
+    AccountsController controller;
+    
+    Account account;
+    
+    UserSession session;
+    
+    App app;
+    
+    @BeforeMethod
+    public void beforeMethod() {
+        MockitoAnnotations.initMocks(this);
+        
+        doReturn(mockRequest).when(controller).request();
+        
+        app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);     
+        
+        account = Account.create();
+
+        session = new UserSession();
+        session.setAppId(TEST_APP_ID);
+        session.setParticipant(new StudyParticipant.Builder().withOrgMembership(TEST_ORG_ID).build());
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        RequestContext.set(NULL_INSTANCE);
+    }
+    
+    @Test
+    public void verifyAnnotations() throws Exception { 
+        assertCreate(AccountsController.class, "createAccount");
+        assertGet(AccountsController.class, "getAccount");
+        assertPost(AccountsController.class, "updateAccount");
+        assertDelete(AccountsController.class, "deleteAccount");
+        assertGet(AccountsController.class, "getRequestInfo");
+        assertPost(AccountsController.class, "requestResetPassword");
+        assertPost(AccountsController.class, "resendEmailVerification");
+        assertPost(AccountsController.class, "resendPhoneVerification");
+        assertPost(AccountsController.class, "signOut");
+    }
+    
+    @Test
+    public void createAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(ID);
+        
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withFirstName("firstName")
+                .withOrgMembership("wrong-membership").build();
+        mockRequestBody(mockRequest, participant);
+        
+        IdentifierHolder retValue = controller.createAccount();
+        assertEquals(retValue.getIdentifier(), USER_ID);
+        
+        verify(mockParticipantService)
+            .createParticipant(eq(app), participantCaptor.capture(), eq(true));
+        
+        StudyParticipant submitted = participantCaptor.getValue();
+        assertEquals(submitted.getOrgMembership(), TEST_ORG_ID);
+        assertEquals(submitted.getFirstName(), "firstName");
+    }
+    
+    @Test
+    public void getAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        
+        account.setOrgMembership(TEST_ORG_ID);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+
+        Account retValue = controller.getAccount(USER_ID);
+        assertSame(retValue, account);
+    }
+    
+    @Test
+    public void updateAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        
+        session.setParticipant(new StudyParticipant.Builder().withOrgMembership(TEST_ORG_ID).build());
+        
+        account.setOrgMembership(TEST_ORG_ID);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        StudyParticipant submitted = new StudyParticipant.Builder()
+                .withOrgMembership("bad-membership")
+                .withId("bad-id").build();
+        mockRequestBody(mockRequest, submitted);
+
+        StudyParticipant persisted = new StudyParticipant.Builder()
+                .withOrgMembership(TEST_ORG_ID).build();
+        when(mockParticipantService.getParticipant(app, account, false)).thenReturn(persisted);
+        
+        StatusMessage retValue = controller.updateAccount(USER_ID);
+        assertEquals(retValue.getMessage(), "Member updated.");
+        
+        verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
+        assertEquals(participantCaptor.getValue().getId(), USER_ID);
+        assertEquals(participantCaptor.getValue().getOrgMembership(), TEST_ORG_ID);
+    }
+    
+    @Test
+    public void deleteAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        
+        account.setOrgMembership(TEST_ORG_ID);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        StudyParticipant existing = new StudyParticipant.Builder()
+                .withOrgMembership(TEST_ORG_ID)
+                .build();
+        when(mockParticipantService.getParticipant(app, USER_ID, false)).thenReturn(existing);
+
+        StatusMessage retValue = controller.deleteAccount(USER_ID);
+        assertEquals(retValue.getMessage(), "Member account deleted.");
+        
+        verify(mockUserAdminService).deleteUser(app, USER_ID);
+    }
+    
+    @Test
+    public void getRequestInfo() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        
+        account.setOrgMembership(TEST_ORG_ID);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        RequestInfo requestInfo = new RequestInfo.Builder().withAppId(TEST_APP_ID).build();
+        when(mockRequestInfoService.getRequestInfo(USER_ID)).thenReturn(requestInfo);
+        
+        String retValue = controller.getRequestInfo(USER_ID);
+        assertEquals(retValue, RequestInfo.REQUEST_INFO_WRITER.writeValueAsString(requestInfo));
+    }
+    
+    @Test
+    public void getRequestInfoIsNull() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        
+        account.setOrgMembership(TEST_ORG_ID);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        when(mockRequestInfoService.getRequestInfo(USER_ID)).thenReturn(null);
+        
+        String retValue = controller.getRequestInfo(USER_ID);
+        assertEquals(retValue, RequestInfo.REQUEST_INFO_WRITER
+                .writeValueAsString(new RequestInfo.Builder().build()));
+    }
+    
+    @Test
+    public void requestResetPassword() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        
+        account.setOrgMembership(TEST_ORG_ID);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+
+        StatusMessage retValue = controller.requestResetPassword(USER_ID);
+        assertEquals(retValue.getMessage(), "Request to reset password sent to user.");
+        
+        verify(mockParticipantService).requestResetPassword(app, USER_ID);
+    }
+    
+    @Test
+    public void resendEmailVerification() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        
+        account.setOrgMembership(TEST_ORG_ID);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        controller.resendEmailVerification(USER_ID);
+        
+        verify(mockParticipantService).resendVerification(app, ChannelType.EMAIL, USER_ID);
+    }
+    
+    @Test
+    public void resendPhoneVerification() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        
+        account.setOrgMembership(TEST_ORG_ID);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        controller.resendPhoneVerification(USER_ID);
+        
+        verify(mockParticipantService).resendVerification(app, ChannelType.PHONE, USER_ID);        
+    }
+    
+    @Test
+    public void signOut() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        
+        account.setOrgMembership(TEST_ORG_ID);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        controller.signOut(USER_ID, true);
+        
+        verify(mockParticipantService).signUserOut(app, USER_ID, true);
+    }
+    
+    @Test
+    public void verifyOrgAdminIsActingOnOrgMemberSucceeds() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        Account account = Account.create();
+        account.setOrgMembership(TEST_ORG_ID);
+        
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        Account retValue = controller.verifyOrgAdminIsActingOnOrgMember(
+                TEST_APP_ID, TEST_ORG_ID, USER_ID);
+        assertSame(retValue, account);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void verifyOrgAdminIsActingOnOrgMemberFailsAccountNotFound() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        AccountService mockAccountService = mock(AccountService.class);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(null);
+        
+        controller.verifyOrgAdminIsActingOnOrgMember(
+                TEST_APP_ID, TEST_ORG_ID, USER_ID);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void verifyOrgAdminIsActingOnOrgMemberFailsWrongOrg() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        Account account = Account.create();
+        account.setOrgMembership("wrong-organization-id");
+        
+        AccountService mockAccountService = mock(AccountService.class);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        Account retValue = controller.verifyOrgAdminIsActingOnOrgMember(
+                TEST_APP_ID, TEST_ORG_ID, USER_ID);
+       
+        assertSame(retValue, account);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void verifyOrgAdminIsActingOnOrgMemberFailsNotOrgAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        Account account = Account.create();
+        account.setOrgMembership(TEST_ORG_ID);
+        
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        Account retValue = controller.verifyOrgAdminIsActingOnOrgMember(
+                TEST_APP_ID, TEST_ORG_ID, USER_ID);
+        assertSame(retValue, account);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void verifyOrgAdminIsActingOnOrgMemberFailsNotSameOrg() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        Account account = Account.create();
+        account.setOrgMembership("different-organization");
+        
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        Account retValue = controller.verifyOrgAdminIsActingOnOrgMember(
+                TEST_APP_ID, TEST_ORG_ID, USER_ID);
+        assertSame(retValue, account);
+    }
+}

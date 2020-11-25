@@ -4,11 +4,15 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.testng.Assert.assertEquals;
@@ -18,24 +22,94 @@ import static org.testng.Assert.assertTrue;
 
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class HibernateAccountTest {
+    
+    // We're only concerned with serializing this model...the StudyParticipant can
+    // be used to deserialize an Account model sent from our SDK (it's a superset
+    // of an account record).
+    @Test
+    public void canSerialize() throws Exception {
+        Account account = new HibernateAccount();
+        account.setId("id");
+        account.setOrgMembership("orgId");
+        account.setEmail("email");
+        account.setSynapseUserId("synapseUserId");
+        account.setPhone(PHONE);
+        account.setEmailVerified(true);
+        account.setPhoneVerified(true);
+        account.setAttributes(ImmutableMap.of("a", "b", "c", "d"));
+        account.setCreatedOn(CREATED_ON);
+        account.setModifiedOn(MODIFIED_ON);
+        account.setFirstName("firstName");
+        account.setLastName("lastName");
+        account.setRoles(ImmutableSet.of(DEVELOPER, RESEARCHER));
+        account.setStatus(ENABLED);
+        account.setClientData(TestUtils.getClientData());
+        account.setVersion(1);
+        account.setTimeZone(DateTimeZone.UTC);
+        account.setDataGroups(USER_DATA_GROUPS);
+        account.setLanguages(LANGUAGES);
+        account.setReauthToken("reauthToken");
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(account);
+        assertEquals(node.get("type").textValue(), "Account");
+        assertEquals(node.size(), 21);
+        assertEquals(node.get("id").textValue(), "id");
+        assertEquals(node.get("orgMembership").textValue(), "orgId");
+        assertEquals(node.get("email").textValue(), "email");
+        assertEquals(node.get("synapseUserId").textValue(), "synapseUserId");
+        assertEquals(node.get("phone").get("nationalFormat").textValue(), PHONE.getNationalFormat());
+        assertEquals(node.get("phone").get("regionCode").textValue(), PHONE.getRegionCode());
+        assertTrue(node.get("emailVerified").booleanValue());
+        assertTrue(node.get("phoneVerified").booleanValue());
+        assertEquals(node.get("attributes").get("a").textValue(), "b");
+        assertEquals(node.get("attributes").get("c").textValue(), "d");
+        assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
+        assertEquals(node.get("modifiedOn").textValue(), MODIFIED_ON.toString());
+        assertEquals(node.get("firstName").textValue(), "firstName");
+        assertEquals(node.get("lastName").textValue(), "lastName");
+        assertEquals(toSet(node, "roles"), ImmutableSet.of("developer", "researcher"));
+        assertEquals(node.get("status").textValue(), "enabled");
+        account.setClientData(TestUtils.getClientData());
+        assertEquals(node.get("version").intValue(), 1);
+        assertEquals(node.get("timeZone").textValue(), "UTC");
+        assertEquals(toSet(node, "dataGroups"), ImmutableSet.of("group1", "group2"));
+        assertEquals(toSet(node, "languages"), ImmutableSet.of("en", "fr"));
+        assertEquals(node.get("reauthToken").textValue(), "reauthToken");
+    }
+    
+    private Set<String> toSet(JsonNode node, String field) {
+        Set<String> set = new HashSet<>();
+        for (int i=0; i < node.get(field).size(); i++) {
+            set.add(node.get(field).get(i).textValue());
+        }
+        return set;
+    }
+    
     @Test
     public void attributes() {
         HibernateAccount account = new HibernateAccount();

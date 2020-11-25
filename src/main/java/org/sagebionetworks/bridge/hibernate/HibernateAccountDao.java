@@ -17,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
 import org.sagebionetworks.bridge.AuthUtils;
@@ -116,8 +115,6 @@ public class HibernateAccountDao implements AccountDao {
     }
     
     QueryBuilder makeQuery(String prefix, String appId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
-        Preconditions.checkArgument(search != null || accountId != null);
-        
         RequestContext context = RequestContext.get();
         
         QueryBuilder builder = new QueryBuilder();
@@ -169,7 +166,7 @@ public class HibernateAccountDao implements AccountDao {
             // If the caller is a member of an organization, then they can only see accounts in the studies 
             // sponsored by that organization. Note that this only applies now to enrollments, so admin 
             // accounts are exempt.
-            if (search.isAdminOnly() != TRUE && !AuthUtils.isStudyTeamMemberOrWorker(null)) {
+            if (!TRUE.equals(search.isAdminOnly()) && !AuthUtils.isStudyTeamMemberOrWorker(null)) {
                 Set<String> callerStudies = context.getOrgSponsoredStudies();
                 builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
             }

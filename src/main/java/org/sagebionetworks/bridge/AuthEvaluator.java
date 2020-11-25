@@ -15,7 +15,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
  * Utility for creating rules that can evaluate authorization for a caller. Currently referenced
  * by the AuthUtils class, but could be used elsewhere.
  */
-public class AuthEvaluator {
+class AuthEvaluator {
     private final Set<Predicate<Map<String,String>>> predicates;
     
     public AuthEvaluator() {

@@ -188,6 +188,18 @@ public class OrganizationService {
         return accountDao.getPagedAccountSummaries(appId, scopedSearch);
     }
     
+    public PagedResourceList<AccountSummary> getUnassignedAdmins(String appId, AccountSummarySearch search) {
+        checkArgument(isNotBlank(appId));
+        checkNotNull(search);
+
+        AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
+            .copyOf(search)
+            .withAdminOnly(true)
+            .withOrgMembership("<none>").build();
+
+        return accountDao.getPagedAccountSummaries(appId, scopedSearch);
+    }
+    
     /**
      * Note that we currently allow organization admins to re-assign people from 
      * other organizations, which we might want to change.
@@ -197,7 +209,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        AuthUtils.checkOrgMember(identifier);
+        AuthUtils.checkOrgAdmin(identifier);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));

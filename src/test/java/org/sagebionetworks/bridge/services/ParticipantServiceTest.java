@@ -100,6 +100,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class ParticipantServiceTest extends Mockito {
     private static final DateTime ACTIVITIES_RETRIEVED_DATETIME = DateTime.parse("2019-08-01T18:32:36.487-0700");
@@ -874,6 +875,25 @@ public class ParticipantServiceTest extends Mockito {
         participantService.getParticipant(APP, "externalId:some-junk", false);
     }
     
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getParticiantAccountFilteredOutByStudyAssocation() {
+        when(participantService.getAccount()).thenReturn(account);
+        when(participantService.generateGUID()).thenReturn(ID);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+
+        // Account is in studyA
+        account.setAppId(APP.getIdentifier());
+        account.setId(ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ID, "externalIdA");
+        account.setEnrollments(Sets.newHashSet(en1));
+        
+        // The caller is not in studyA
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("studyB")).build());
+        
+        participantService.getParticipant(APP, ID, true);
+    }
+    
     @Test
     public void getSelfParticipantWithHistory() throws Exception {
         RequestContext.set(new RequestContext.Builder()
@@ -945,7 +965,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void getStudyParticipant() {
+    public void getParticipant() {
         when(participantService.getAccount()).thenReturn(account);
         when(participantService.generateGUID()).thenReturn(ID);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -1058,7 +1078,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void getStudyParticipantFilteringStudiesAndExternalIds() {
+    public void getParticipantFilteringStudiesAndExternalIds() {
         // There is a partial overlap of study memberships between caller and user, the studies that are 
         // not in the intersection, and the external IDs, should be removed from the participant
         mockHealthCodeAndAccountRetrieval(EMAIL, PHONE, null);
@@ -1592,7 +1612,7 @@ public class ParticipantServiceTest extends Mockito {
     }
 
     @Test
-    public void getStudyParticipantWithAccount() throws Exception {
+    public void getParticipantWithAccount() throws Exception {
         mockHealthCodeAndAccountRetrieval();
         account.setClientData(TestUtils.getClientData());
         
@@ -1609,7 +1629,7 @@ public class ParticipantServiceTest extends Mockito {
     // Contrived test case for a case that never happens, but somehow does.
     // See https://sagebionetworks.jira.com/browse/BRIDGE-1463
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getStudyParticipantWithoutAccountThrows404() {
+    public void getParticipantWithoutAccountThrows404() {
         participantService.getParticipant(APP, (Account) null, false);
     }
 
