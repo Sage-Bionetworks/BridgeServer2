@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableSet;
 
 import static org.springframework.http.HttpStatus.ACCEPTED;
@@ -26,12 +27,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.UserAdminService;
@@ -50,7 +54,7 @@ public class AccountsController extends BaseController  {
     private static final Set<String> ACCOUNT_FIELDS = ImmutableSet.of("firstName", 
             "lastName", "synapseUserId", "email", "phone", "attributes", "status", 
             "roles", "dataGroups", "clientData", "languages", "orgMembership", 
-            "timeZone");
+            "timeZone", "password");
     
     private ParticipantService participantService;
     
@@ -73,7 +77,8 @@ public class AccountsController extends BaseController  {
         String orgId = session.getParticipant().getOrgMembership();
         
         // We can deserialize this as a participant record, because StudyParticipant
-        // is a superset of Account.
+        // is a superset of Account. That includes password, which we want to expose
+        // in the SDK version of Account.
         StudyParticipant participant = parseJson(StudyParticipant.class);
         participant = new StudyParticipant.Builder().copyOf(participant)
                 .withOrgMembership(orgId).build();
@@ -189,7 +194,22 @@ public class AccountsController extends BaseController  {
         
         return new StatusMessage("Phone verification request has been resent to user.");
     }
-      
+    
+    @PostMapping("/v1/accounts/self/identifiers")
+    public JsonNode updateIdentifiers() {
+        UserSession session = getAuthenticatedSession();
+        
+        IdentifierUpdate update = parseJson(IdentifierUpdate.class);
+        App app = appService.getApp(session.getAppId());
+
+        CriteriaContext context = getCriteriaContext(session);
+        
+        StudyParticipant participant = participantService.updateIdentifiers(app, context, update);
+        sessionUpdateService.updateParticipant(session, context, participant);
+        
+        return UserSessionInfo.toJSON(session);
+    }
+
     @PostMapping("/v1/accounts/{userId}/signOut")
     public StatusMessage signOut(@PathVariable String userId,
             @RequestParam(required = false) boolean deleteReauthToken) {

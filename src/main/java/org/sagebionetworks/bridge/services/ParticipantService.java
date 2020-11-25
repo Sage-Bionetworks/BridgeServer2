@@ -802,7 +802,6 @@ public class ParticipantService {
             throw new EntityNotFoundException(Account.class);
         }
         
-        // reload account, or you will get an optimistic lock exception
         boolean sendEmailVerification = false;
         boolean accountUpdated = false;
         if (update.getPhoneUpdate() != null && account.getPhone() == null) {

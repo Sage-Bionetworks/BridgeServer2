@@ -14,11 +14,8 @@ import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.IP_ADDRESS;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.NOTIFICATION_MESSAGE;
-import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
-import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
 import static org.sagebionetworks.bridge.TestConstants.SUMMARY1;
-import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.UNENCRYPTED_HEALTH_CODE;
@@ -86,7 +83,6 @@ import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -100,9 +96,7 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
-import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
-import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -152,19 +146,6 @@ public class ParticipantControllerTest extends Mockito {
 
     private static final Set<String> EMPTY_SET = ImmutableSet.of();
 
-    private static final SignIn EMAIL_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()
-            .withAppId(TEST_APP_ID).withEmail(EMAIL)
-            .withPassword(PASSWORD).build();
-    private static final SignIn PHONE_PASSWORD_SIGN_IN_REQUEST = new SignIn.Builder()
-            .withAppId(TEST_APP_ID).withPhone(PHONE)
-            .withPassword(PASSWORD).build();
-    private static final IdentifierUpdate PHONE_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
-            PHONE, null);
-    private static final IdentifierUpdate EMAIL_UPDATE = new IdentifierUpdate(PHONE_PASSWORD_SIGN_IN_REQUEST,
-            EMAIL, null, null);
-    private static final IdentifierUpdate SYNAPSE_ID_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
-            null, SYNAPSE_USER_ID);
-
     @InjectMocks
     @Spy
     ParticipantController controller;
@@ -206,9 +187,6 @@ public class ParticipantControllerTest extends Mockito {
     ArgumentCaptor<StudyParticipant> participantCaptor;
 
     @Captor
-    ArgumentCaptor<UserSession> sessionCaptor;
-
-    @Captor
     ArgumentCaptor<DateTime> startTimeCaptor;
 
     @Captor
@@ -225,9 +203,6 @@ public class ParticipantControllerTest extends Mockito {
 
     @Captor
     ArgumentCaptor<CriteriaContext> contextCaptor;
-
-    @Captor
-    ArgumentCaptor<IdentifierUpdate> identifierUpdateCaptor;
 
     @Captor
     ArgumentCaptor<AccountSummarySearch> searchCaptor;
@@ -1285,77 +1260,6 @@ public class ParticipantControllerTest extends Mockito {
                 eq(BridgeConstants.API_DEFAULT_PAGE_SIZE));
         assertNull(startTimeCaptor.getValue());
         assertNull(endTimeCaptor.getValue());
-    }
-
-    @Test
-    public void updateIdentifiersWithPhone() throws Exception {
-        mockRequestBody(mockRequest, PHONE_UPDATE);
-
-        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
-
-        JsonNode result = controller.updateIdentifiers();
-
-        assertEquals(result.get("id").textValue(), USER_ID);
-
-        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
-                identifierUpdateCaptor.capture());
-        verify(mockCacheProvider).setUserSession(sessionCaptor.capture());
-        assertEquals(sessionCaptor.getValue().getId(), participant.getId());
-
-        IdentifierUpdate update = identifierUpdateCaptor.getValue();
-        assertEquals(update.getSignIn().getEmail(), EMAIL_PASSWORD_SIGN_IN_REQUEST.getEmail());
-        assertEquals(update.getSignIn().getPassword(), EMAIL_PASSWORD_SIGN_IN_REQUEST.getPassword());
-        assertEquals(update.getPhoneUpdate(), PHONE);
-        assertNull(update.getEmailUpdate());
-    }
-
-    @Test
-    public void updateIdentifiersWithEmail() throws Exception {
-        mockRequestBody(mockRequest, EMAIL_UPDATE);
-
-        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
-
-        JsonNode result = controller.updateIdentifiers();
-
-        assertEquals(result.get("id").textValue(), USER_ID);
-
-        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
-                identifierUpdateCaptor.capture());
-
-        IdentifierUpdate update = identifierUpdateCaptor.getValue();
-        assertEquals(update.getSignIn().getPhone(), PHONE_PASSWORD_SIGN_IN_REQUEST.getPhone());
-        assertEquals(update.getSignIn().getPassword(), PHONE_PASSWORD_SIGN_IN_REQUEST.getPassword());
-        assertEquals(update.getEmailUpdate(), EMAIL);
-        assertNull(update.getPhoneUpdate());
-    }
-
-    @Test
-    public void updateIdentifiersWithSynapseUserId() throws Exception {
-        mockRequestBody(mockRequest, SYNAPSE_ID_UPDATE);
-
-        when(mockParticipantService.updateIdentifiers(eq(app), any(), any())).thenReturn(participant);
-
-        JsonNode result = controller.updateIdentifiers();
-
-        assertEquals(result.get("id").textValue(), USER_ID);
-
-        verify(mockParticipantService).updateIdentifiers(eq(app), contextCaptor.capture(),
-                identifierUpdateCaptor.capture());
-
-        IdentifierUpdate update = identifierUpdateCaptor.getValue();
-        assertEquals(update.getSignIn().getEmail(), EMAIL_PASSWORD_SIGN_IN_REQUEST.getEmail());
-        assertEquals(update.getSignIn().getPassword(), EMAIL_PASSWORD_SIGN_IN_REQUEST.getPassword());
-        assertEquals(update.getSynapseUserIdUpdate(), SYNAPSE_USER_ID);
-        assertNull(update.getPhoneUpdate());
-    }
-
-    @Test(expectedExceptions = NotAuthenticatedException.class)
-    public void updateIdentifierRequiresAuthentication() throws Exception {
-        doReturn(null).when(controller).getSessionIfItExists();
-
-        mockRequestBody(mockRequest, PHONE_UPDATE);
-
-        controller.updateIdentifiers();
     }
 
     @Test
