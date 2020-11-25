@@ -667,7 +667,7 @@ public class ParticipantServiceTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalIds(ImmutableMap.of("inaccessible-study-to-caller", EXTERNAL_ID))
                 .withRoles(null).build();
-
+        
         participantService.createParticipant(APP, participant, false);
     }
     

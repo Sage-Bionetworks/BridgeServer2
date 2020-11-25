@@ -15,7 +15,6 @@ public class OrganizationPersistenceExceptionConverter implements PersistenceExc
     
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {
-        exception.printStackTrace();
         Throwable throwable = PersistenceExceptionConverter.getConstraintViolation(exception);
         if (throwable != null) {
             String message = Throwables.getRootCause(throwable).getMessage();

@@ -38,10 +38,10 @@ import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 /**
- * A set of endpoints for creating administrative users (only). Such a user must be 
- * created before it can be associated to an organization. We do not attempt to put 
- * these accounts into the right organizations: if they are not created with the 
- * correct orgMembership given the caller, the caller receives an error.
+ * A set of endpoints for creating administrative users (only). If the 
+ * account is created with an organizational association, and that 
+ * association is not allowed, the caller receives an error. If it is not,
+ * then the account can be associated to an organization through the APIs.
  */
 @CrossOrigin
 @RestController
@@ -72,8 +72,8 @@ public class AccountsController extends BaseController  {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
-        // We can deserialize this as a participant record, because it includes
-        // everything you can set in an account.
+        // We can deserialize this as a participant record, because StudyParticipant
+        // is a superset of Account.
         StudyParticipant participant = parseJson(StudyParticipant.class);
         participant = new StudyParticipant.Builder().copyOf(participant)
                 .withOrgMembership(orgId).build();
@@ -95,19 +95,19 @@ public class AccountsController extends BaseController  {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
-        Account account = verifyOrgAdminIsActingOnOrgMember(session.getAppId(),
-                orgId, userId);
+        Account account = verifyOrgAdminIsActingOnOrgMember(
+                session.getAppId(), orgId, userId);
         App app = appService.getApp(session.getAppId());
         StudyParticipant existing = participantService.getParticipant(app, account, false);
 
-        // Only copy some fields to the existing object. This is further filtered in the
-        // service.
-        StudyParticipant participant = parseJson(StudyParticipant.class);
+        // Only copy some fields to the existing object. We do it this way in case the 
+        // account is also being used as a participant—this way none of those fields will 
+        // be erased by an update through this API.
+        StudyParticipant updates = parseJson(StudyParticipant.class);
         
-        participant = new StudyParticipant.Builder()
+        StudyParticipant participant = new StudyParticipant.Builder()
                 .copyOf(existing)
-                .copyFieldsOf(participant, ACCOUNT_FIELDS)
-                .withId(userId)
+                .copyFieldsOf(updates, ACCOUNT_FIELDS)
                 .withOrgMembership(existing.getOrgMembership()).build();
         participantService.updateParticipant(app, participant);
 

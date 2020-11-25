@@ -434,8 +434,8 @@ public class ParticipantService {
         account.setPhoneVerified(FALSE);
         account.setHealthCode(generateGUID());
         account.setStatus(UNVERIFIED);
-        // Organizational admins can only create accounts in their organization.
-        // Others silently fail to set this. 
+        // Organizational admins create accounts in their organization.
+        // Otherwise this field is ignored on create.
         if (AuthUtils.isOrgAdmin(participant.getOrgMembership())) {
             account.setOrgMembership(participant.getOrgMembership());
         }
