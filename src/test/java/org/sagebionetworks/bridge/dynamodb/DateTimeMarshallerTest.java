@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDateTime;
 import org.testng.annotations.Test;
 
+import static org.joda.time.DateTimeZone.UTC;
 import static org.testng.Assert.assertEquals;
 
 public class DateTimeMarshallerTest {
@@ -11,7 +13,8 @@ public class DateTimeMarshallerTest {
 
     @Test
     public void testMarshall() {
-        assertEquals(MARSHALLER.convert(new DateTime(2014, 12, 25, 10, 12, 37, 22)), "2014-12-25T10:12:37.022-08:00");
+        assertEquals(MARSHALLER.convert(new DateTime(2014, 12, 25, 10, 12, 37, 22)
+                .withZoneRetainFields(DateTimeZone.forOffsetHours(-8))), "2014-12-25T10:12:37.022-08:00");
     }
 
     @Test
