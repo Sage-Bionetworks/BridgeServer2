@@ -13,7 +13,8 @@ public class DateTimeMarshallerTest {
 
     @Test
     public void testMarshall() {
-        assertEquals(MARSHALLER.convert(new DateTime(2014, 12, 25, 10, 12, 37, 22).withZoneRetainFields(UTC)), "2014-12-25T10:12:37.022Z");
+        assertEquals(MARSHALLER.convert(new DateTime(2014, 12, 25, 10, 12, 37, 22)
+                .withZoneRetainFields(DateTimeZone.forOffsetHours(-8))), "2014-12-25T10:12:37.022-08:00");
     }
 
     @Test
