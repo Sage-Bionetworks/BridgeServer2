@@ -17,6 +17,8 @@ import java.util.Optional;
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.dao.AssessmentDao;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +43,7 @@ public class OrganizationService {
     private OrganizationDao orgDao;
     private AccountDao accountDao;
     private SessionUpdateService sessionUpdateService;
+    private AssessmentDao assessmentDao;
     private CacheProvider cacheProvider;
     
     @Autowired
@@ -54,6 +57,10 @@ public class OrganizationService {
     @Autowired
     final void setSessionUpdateService(SessionUpdateService sessionUpdateService) {
         this.sessionUpdateService = sessionUpdateService;
+    }
+    @Autowired
+    final void setAssessmentDao(AssessmentDao assessmentDao) {
+        this.assessmentDao = assessmentDao;
     }
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
@@ -162,6 +169,12 @@ public class OrganizationService {
         
         Organization existing = orgDao.getOrganization(appId, identifier)
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
+        if (assessmentDao.hasAssessmentFromOrg(appId, identifier)) {
+            throw new ConstraintViolationException.Builder().withMessage(
+                    "Cannot delete organization (it still owns one or more assessments).")
+                    .withEntityKey("appId", appId)
+                    .withEntityKey("orgId", identifier).build();
+        }
 
         orgDao.deleteOrganization(existing);
         
