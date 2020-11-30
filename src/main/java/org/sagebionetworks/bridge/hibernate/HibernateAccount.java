@@ -403,6 +403,7 @@ public class HibernateAccount implements Account {
     /** The time zone initially captured from this user's requests, used to correctly calculate 
      * schedules for the user. Should not be updated once set. */
     @Convert(converter = DateTimeZoneAttributeConverter.class)
+    @JsonIgnore
     public DateTimeZone getTimeZone() {
         return timeZone;
     }

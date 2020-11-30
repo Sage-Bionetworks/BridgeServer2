@@ -77,7 +77,7 @@ public class HibernateAccountTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(account);
         assertEquals(node.get("type").textValue(), "Account");
-        assertEquals(node.size(), 21);
+        assertEquals(node.size(), 20);
         assertEquals(node.get("id").textValue(), "id");
         assertEquals(node.get("orgMembership").textValue(), "orgId");
         assertEquals(node.get("email").textValue(), "email");
@@ -96,7 +96,6 @@ public class HibernateAccountTest {
         assertEquals(node.get("status").textValue(), "enabled");
         account.setClientData(TestUtils.getClientData());
         assertEquals(node.get("version").intValue(), 1);
-        assertEquals(node.get("timeZone").textValue(), "UTC");
         assertEquals(toSet(node, "dataGroups"), ImmutableSet.of("group1", "group2"));
         assertEquals(toSet(node, "languages"), ImmutableSet.of("en", "fr"));
         assertEquals(node.get("reauthToken").textValue(), "reauthToken");
