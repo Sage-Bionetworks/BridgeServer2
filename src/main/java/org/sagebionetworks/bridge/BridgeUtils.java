@@ -6,9 +6,10 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.AuthUtils.isStudyScopedToCaller;
+import static org.sagebionetworks.bridge.AuthUtils.isSelfOrWorker;
+import static org.sagebionetworks.bridge.AuthUtils.isSelfOrStudyTeamMemberOrWorker;
+import static org.sagebionetworks.bridge.AuthUtils.isStudyTeamMemberOrWorker;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
@@ -161,13 +162,12 @@ public class BridgeUtils {
         if (account != null) {
             RequestContext context = RequestContext.get();
             Set<String> callerStudies = context.getOrgSponsoredStudies();
-            String callerUserId = context.getCallerUserId();
             
             // If this is a call for one’s own record, or the caller is an admin or 
             // worker, return the account. Callers that are not associated to an 
             // organization also gain access, but only while we migrate away from 
             // this kind of global account.
-            if (isStudyScopedToCaller(null) || account.getId().equals(callerUserId)) {
+            if (isSelfOrWorker(account.getId())) {
                 return account;
             }
             // If after removing all enrollments that are not visible to the caller, 
@@ -195,7 +195,7 @@ public class BridgeUtils {
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
         for (Enrollment enrollment : account.getActiveEnrollments()) {
-            if (isStudyScopedToCaller(enrollment.getStudyId())) {
+            if (isSelfOrStudyTeamMemberOrWorker(enrollment.getStudyId(), account.getId())) {
                 studyIds.add(enrollment.getStudyId());
                 if (enrollment.getExternalId() != null) {
                     externalIds.put(enrollment.getStudyId(), enrollment.getExternalId());
@@ -206,7 +206,7 @@ public class BridgeUtils {
     }
     
     public static ExternalIdentifier filterForStudy(ExternalIdentifier externalId) {
-        if (externalId != null && isStudyScopedToCaller(externalId.getStudyId())) {
+        if (externalId != null && isStudyTeamMemberOrWorker(externalId.getStudyId())) {
             return externalId;
         }
         return null;
@@ -659,16 +659,6 @@ public class BridgeUtils {
         clean.outputSettings().escapeMode(EscapeMode.xhtml)
             .syntax(Syntax.xml).indentAmount(0).prettyPrint(false).charset("UTF-8");
         return clean.body().html();
-    }
-    
-    public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
-        return (callerRoles != null && requiredRole != null && 
-                (callerRoles.contains(SUPERADMIN) || callerRoles.contains(requiredRole)));
-    }
-    
-    public static boolean isInRole(Set<Roles> callerRoles, Set<Roles> requiredRoles) {
-        return callerRoles != null && requiredRoles != null && 
-                requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
     }
     
     public static <T extends Enum<T>> T getEnumOrDefault(String value, Class<T> enumType, T defaultValue) {

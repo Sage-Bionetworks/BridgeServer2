@@ -165,7 +165,7 @@ public class HibernateAccountDao implements AccountDao {
         
         // If the caller is a member of an organization, then they can only see accounts in the studies 
         // sponsored by that organization. ADMIN accounts are exempt from this requirement.
-        if (!AuthUtils.isStudyScopedToCaller(null)) {
+        if (!AuthUtils.isStudyTeamMemberOrWorker(null)) {
             Set<String> callerStudies = context.getOrgSponsoredStudies();
             builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
         }

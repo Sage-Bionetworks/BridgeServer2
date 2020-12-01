@@ -548,7 +548,7 @@ public class ParticipantService {
     private void updateAccountAndRoles(App app, Account account, StudyParticipant participant, boolean isNew) {
         // Do this much earlier in the call and avoid some expensive operations like password hashing.
         for (String studyId : participant.getExternalIds().keySet()) {
-            if (!AuthUtils.isStudyScopedToCaller(studyId)) {
+            if (!AuthUtils.isStudyTeamMemberOrWorker(studyId)) {
                 throw new BadRequestException(studyId + " is not a study of the caller");
             }
         }

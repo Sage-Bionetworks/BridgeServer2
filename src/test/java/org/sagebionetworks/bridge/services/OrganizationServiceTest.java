@@ -26,6 +26,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.dao.AssessmentDao;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -56,6 +58,9 @@ public class OrganizationServiceTest extends Mockito {
     
     @Mock
     AccountDao mockAccountDao;
+
+    @Mock
+    AssessmentDao mockAssessmentDao;
     
     @Mock
     CacheProvider mockCacheProvider;
@@ -238,7 +243,15 @@ public class OrganizationServiceTest extends Mockito {
         verify(mockCacheProvider).removeObject(CacheKey.orgSponsoredStudies(TEST_APP_ID, IDENTIFIER));
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class, 
+    @Test(expectedExceptions = ConstraintViolationException.class)
+    public void deleteOrganizationWhileHasAssessments() {
+        Organization org = Organization.create();
+        when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(org));
+        when(mockAssessmentDao.hasAssessmentFromOrg(eq(TEST_APP_ID), eq(IDENTIFIER))).thenReturn(true);
+        service.deleteOrganization(TEST_APP_ID, IDENTIFIER);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Organization not found.")
     public void deleteOrganizationNotFound() {
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.empty());
@@ -444,8 +457,7 @@ public class OrganizationServiceTest extends Mockito {
         service.removeMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class, 
-            expectedExceptionsMessageRegExp = "Caller is not a member of.*")
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void removeMemberNotAuthorized() {
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
         Account account = Account.create();

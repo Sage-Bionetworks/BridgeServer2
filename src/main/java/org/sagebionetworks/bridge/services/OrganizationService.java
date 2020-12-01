@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.AuthUtils.checkOrgMembership;
+import static org.sagebionetworks.bridge.AuthUtils.checkOrgMember;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -17,6 +17,8 @@ import java.util.Optional;
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.dao.AssessmentDao;
+import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +43,7 @@ public class OrganizationService {
     private OrganizationDao orgDao;
     private AccountDao accountDao;
     private SessionUpdateService sessionUpdateService;
+    private AssessmentDao assessmentDao;
     private CacheProvider cacheProvider;
     
     @Autowired
@@ -54,6 +57,10 @@ public class OrganizationService {
     @Autowired
     final void setSessionUpdateService(SessionUpdateService sessionUpdateService) {
         this.sessionUpdateService = sessionUpdateService;
+    }
+    @Autowired
+    final void setAssessmentDao(AssessmentDao assessmentDao) {
+        this.assessmentDao = assessmentDao;
     }
     @Autowired
     final void setCacheProvider(CacheProvider cacheProvider) {
@@ -162,6 +169,12 @@ public class OrganizationService {
         
         Organization existing = orgDao.getOrganization(appId, identifier)
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
+        if (assessmentDao.hasAssessmentFromOrg(appId, identifier)) {
+            throw new ConstraintViolationException.Builder().withMessage(
+                    "Cannot delete organization (it still owns one or more assessments).")
+                    .withEntityKey("appId", appId)
+                    .withEntityKey("orgId", identifier).build();
+        }
 
         orgDao.deleteOrganization(existing);
         
@@ -177,7 +190,7 @@ public class OrganizationService {
         // Throws if organization does not exist.
         getOrganization(appId, identifier);
         
-        checkOrgMembership(identifier);
+        checkOrgMember(identifier);
         
         AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
                 .copyOf(search)
@@ -198,7 +211,7 @@ public class OrganizationService {
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
-        checkOrgMembership(identifier);
+        checkOrgMember(identifier);
 
         account.setOrgMembership(identifier);
         accountDao.updateAccount(account);
@@ -216,7 +229,7 @@ public class OrganizationService {
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
-        checkOrgMembership(identifier);
+        checkOrgMember(identifier);
         
         // Indicate if caller is trying to remove someone from an org they don't belong to
         if (account.getOrgMembership() == null || !account.getOrgMembership().equals(identifier)) {

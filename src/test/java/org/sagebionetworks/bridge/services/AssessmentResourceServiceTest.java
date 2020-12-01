@@ -88,6 +88,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         when(service.generateGuid()).thenReturn(GUID);
         
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
     }
     
@@ -636,6 +637,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void publishAssessmentResourcesOwnerInOrg() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();

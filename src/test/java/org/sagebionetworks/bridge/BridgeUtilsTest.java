@@ -1,11 +1,6 @@
 package org.sagebionetworks.bridge;
 
 import static java.util.stream.Collectors.toSet;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
-import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
@@ -925,38 +920,6 @@ public class BridgeUtilsTest {
         String content = "<p id=remove-me>Test<script>This should be removed</script><img onerror=''>";
         String result = BridgeUtils.sanitizeHTML(Whitelist.none(), content);
         assertEquals(result, "Test");
-    }
-
-    @Test
-    public void isInRoleMethodsAreNullSafe() {
-        assertFalse(BridgeUtils.isInRole(null, (Roles)null));
-        assertFalse(BridgeUtils.isInRole(null, (Set<Roles>)null));
-    }
-    
-    @Test
-    public void isInRoleForSuperadminMatchesEverything() {
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), DEVELOPER));
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), RESEARCHER));
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ADMIN));
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), WORKER));
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(DEVELOPER)));
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(RESEARCHER)));
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(ADMIN)));
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(WORKER)));
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(DEVELOPER, ADMIN)));
-    }
-    
-    @Test
-    public void isInRole() {
-        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), DEVELOPER));
-        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), RESEARCHER));
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ADMIN));
-        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), WORKER));
-        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER)));
-        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(RESEARCHER)));
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(ADMIN)));
-        assertFalse(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(WORKER)));
-        assertTrue(BridgeUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, ADMIN)));
     }
     
     @Test

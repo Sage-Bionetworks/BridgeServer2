@@ -218,7 +218,7 @@ public class EnrollmentServiceTest extends Mockito {
     public void enrollByThirdPartyResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
-                .withCallerOrgMembership(TEST_ORG_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.TRUE);
@@ -427,7 +427,7 @@ public class EnrollmentServiceTest extends Mockito {
     public void unenrollByThirdPartyResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
-                .withCallerOrgMembership(TEST_ORG_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.TRUE);
