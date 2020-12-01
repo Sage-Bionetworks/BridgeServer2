@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableMap;
 public enum Roles {
     DEVELOPER,
     RESEARCHER,
+    STUDY_COORDINATOR,
     ADMIN,
     WORKER,
     SUPERADMIN;
@@ -17,7 +18,7 @@ public enum Roles {
      * This user has a role that marks the user as a user of the non-participant APIs (they have 
      * a role assigned to human administrative accounts).
      */
-    public static final Set<Roles> ADMINISTRATIVE_ROLES = EnumSet.of(DEVELOPER, RESEARCHER, ADMIN);
+    public static final Set<Roles> ADMINISTRATIVE_ROLES = EnumSet.of(DEVELOPER, RESEARCHER, STUDY_COORDINATOR, ADMIN);
     
     /**
      * To assess if an API caller can add or remove a role to/from an account, the caller must 
@@ -30,6 +31,7 @@ public enum Roles {
         .put(ADMIN, EnumSet.of(SUPERADMIN))
         .put(WORKER, EnumSet.of(SUPERADMIN))
         .put(RESEARCHER, EnumSet.of(SUPERADMIN, ADMIN))
+        .put(STUDY_COORDINATOR, EnumSet.of(SUPERADMIN, ADMIN))
         .put(DEVELOPER, EnumSet.of(SUPERADMIN, ADMIN, RESEARCHER))
         .build();
 }

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
@@ -36,12 +37,13 @@ public class AuthUtils {
             .hasAnyRole(WORKER, ADMIN).or()
             .callerConsideredGlobal();
     
-    private static final AuthEvaluator SELF_OR_STUDY_RESEARCHER = new AuthEvaluator().isSelf().or()
-            .canAccessStudy().hasAnyRole(RESEARCHER).or()
+    private static final AuthEvaluator SELF_STUDY_RESEARCHER_OR_COORDINATOR = new AuthEvaluator().isSelf().or()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, RESEARCHER).or()
             .hasAnyRole(ADMIN);
     
-    private static final AuthEvaluator STUDY_RESEARCHER = new AuthEvaluator().canAccessStudy().hasAnyRole(RESEARCHER)
-            .or().hasAnyRole(ADMIN);
+    private static final AuthEvaluator STUDY_RESEARCHER_OR_COORDINATOR = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, RESEARCHER).or()
+            .hasAnyRole(ADMIN);
     
     private static final AuthEvaluator SELF_OR_RESEARCHER = new AuthEvaluator().isSelf().or()
             .hasAnyRole(RESEARCHER, ADMIN);
@@ -55,12 +57,16 @@ public class AuthUtils {
      * 
      * @throws UnauthorizedException
      */
-    public static void checkSelfOrStudyResearcher(String userId, String studyId) {
-        SELF_OR_STUDY_RESEARCHER.checkAndThrow("userId", userId, "studyId", studyId);
+    public static void checkSelfStudyResearcherOrCoordinator(String userId, String studyId) {
+        SELF_STUDY_RESEARCHER_OR_COORDINATOR.checkAndThrow("userId", userId, "studyId", studyId);
     }
     
-    public static void checkStudyResearcher(String studyId) {
-        STUDY_RESEARCHER.checkAndThrow("studyId", studyId);
+    /**
+     * Is the caller a researcher or a study coordinator who has access to this study?
+     * @param studyId
+     */
+    public static void checkStudyResearcherOrCoordinator(String studyId) {
+        STUDY_RESEARCHER_OR_COORDINATOR.checkAndThrow("studyId", studyId);
     }
     
     /**
