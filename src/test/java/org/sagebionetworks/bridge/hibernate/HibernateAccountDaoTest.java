@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
@@ -1013,9 +1014,48 @@ public class HibernateAccountDaoTest extends Mockito {
 
         assertEquals(builder.getQuery(), finalQuery);
         assertNull(builder.getParameters().get("orgId"));
+    }
+    
+    @Test
+    public void queryForEnrollmentInStudyCorrect() {
+        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(
+                ImmutableSet.of(TEST_STUDY_ID, "studyA", "studyB")).build());
         
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withEnrolledInStudyId(TEST_STUDY_ID).build();
+
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+                search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct " 
+                + "LEFT JOIN acct.enrollments AS enrollment WITH acct.id = " 
+                + "enrollment.accountId WHERE acct.appId = :appId AND " 
+                + "enrollment.studyId IN (:studies) GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+        assertEquals(builder.getParameters().get("studies"), ImmutableSet.of(TEST_STUDY_ID));
     }
 
+    @Test
+    public void queryForEnrollmentInStudyFilters() {
+        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(
+                ImmutableSet.of("studyA", "studyB")).build());
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withEnrolledInStudyId(TEST_STUDY_ID).build();
+
+        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
+                search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct " 
+                + "LEFT JOIN acct.enrollments AS enrollment WITH acct.id = " 
+                + "enrollment.accountId WHERE acct.appId = :appId AND " 
+                + "enrollment.studyId IN (:studies) GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+        assertEquals(builder.getParameters().get("studies"), ImmutableSet.of());
+    }
+    
     @Test
     public void getAppIdsForUser() throws Exception {
         List<String> queryResult = ImmutableList.of("appA", "appB");

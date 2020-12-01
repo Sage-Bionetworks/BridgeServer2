@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
@@ -103,7 +104,8 @@ public class StudyParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         
-        
+        search = new AccountSummarySearch.Builder().copyOf(search)
+                .withEnrolledInStudyId(studyId).build();
         
         return participantService.getPagedAccountSummaries(app, search);
     }
@@ -117,7 +119,14 @@ public class StudyParticipantController extends BaseController {
         
         App app = appService.getApp(session.getAppId());
         StudyParticipant participant = parseJson(StudyParticipant.class);
-        return participantService.createParticipant(app, participant, true);
+
+        IdentifierHolder keys = participantService.createParticipant(app, participant, true);
+        
+        Enrollment en = Enrollment.create(session.getAppId(), studyId, keys.getIdentifier());
+        en.setConsentRequired(true); // enrolled, but not consented.
+        enrollmentService.enroll(en);
+        
+        return keys;
     }
 
     @GetMapping(path="/v5/studies/{studyId}/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})

@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -115,6 +116,8 @@ public class HibernateAccountDao implements AccountDao {
     
     QueryBuilder makeQuery(String prefix, String appId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
         RequestContext context = RequestContext.get();
+        Set<String> callerStudies = context.getOrgSponsoredStudies();
+        boolean enrollmentClause = false;
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(prefix);
@@ -157,16 +160,31 @@ public class HibernateAccountDao implements AccountDao {
             if (search.getLanguage() != null) {
                 builder.append("AND :language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
             }
+            // adminOnly=true, should have orgMembership; adminOnly=false, should have only studyId.
+            // adminOnly flag sets a condition on the roles of the account, and is slightly different as
+            // you can query for non-associated and non-enrolled accounts with it.
             builder.adminOnly(search.isAdminOnly());
-            builder.orgMembership(search.getOrgMembership());
+            String studyId = search.getEnrolledInStudyId();
+            if (studyId != null) {
+                if (callerStudies.contains(studyId)) {
+                    builder.append("AND enrollment.studyId IN (:studies)", "studies", ImmutableSet.of(studyId));
+                } else {
+                    // Given earlier auth tests, this code shouldn't be executed, but if it is, the 
+                    // query will return no results (by design)).
+                    builder.append("AND enrollment.studyId IN (:studies)", "studies", ImmutableSet.of());
+                }
+                enrollmentClause = true;
+            }
+            if (search.getOrgMembership() != null) {
+                builder.orgMembership(search.getOrgMembership());
+            }
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
         }
-        
         // If the caller is a member of an organization, then they can only see accounts in the studies 
-        // sponsored by that organization. ADMIN accounts are exempt from this requirement.
-        if (!AuthUtils.isStudyTeamMemberOrWorker(null)) {
-            Set<String> callerStudies = context.getOrgSponsoredStudies();
+        // sponsored by that organization. ADMIN accounts are exempt from this requirement, as are 
+        // queries that look for enrollment in one specific study. 
+        if (!enrollmentClause && !AuthUtils.isStudyTeamMemberOrWorker(null)) {
             builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
         }
         if (!isCount) {

@@ -28,10 +28,11 @@ public final class AccountSummarySearch implements BridgeEntity {
     private final DateTime endTime;
     private final String orgMembership;
     private final Boolean adminOnly;
+    private final String enrolledInStudyId;
 
     private AccountSummarySearch(int offsetBy, int pageSize, String emailFilter, String phoneFilter,
             Set<String> allOfGroups, Set<String> noneOfGroups, String language, DateTime startTime, DateTime endTime,
-            String orgId, Boolean adminOnly) {
+            String orgId, Boolean adminOnly, String enrolledInStudyId) {
         this.offsetBy = offsetBy;
         this.pageSize = pageSize;
         this.emailFilter = emailFilter;
@@ -43,6 +44,7 @@ public final class AccountSummarySearch implements BridgeEntity {
         this.endTime = endTime;
         this.orgMembership = orgId;
         this.adminOnly = adminOnly;
+        this.enrolledInStudyId = enrolledInStudyId;
     }
 
     public int getOffsetBy() {
@@ -89,10 +91,20 @@ public final class AccountSummarySearch implements BridgeEntity {
      * Administrative accounts are accounts with any roles that allow them to operate 
      * against our administrative APIs (not participant-facing, and not requiring consent). 
      * When null, the search returns all accounts. When true, returns accounts with at 
-     * least one assigned role. When false, returns accounts with no administrative roles.  
+     * least one assigned role. When false, returns accounts with no administrative roles.
+     * StudyId will be treated as null when adminOnly == true.  
      */
     public Boolean isAdminOnly() {
         return adminOnly;
+    }
+    
+    /**
+     * Accounts returned should be <em>enrolled</em> in this study (not administrative accounts
+     * with access to the study). If the caller does not have access to this study, the search
+     * results should be empty. This flag implies that adminOnly == false. 
+     */
+    public String getEnrolledInStudyId() {
+        return enrolledInStudyId;
     }
 
     @Override
@@ -102,7 +114,7 @@ public final class AccountSummarySearch implements BridgeEntity {
         // versus ISOChronology[-07:00] if that's the offset at the time of serialization). Using the ISO String
         // representation of the DateTime gives us equality across serialization.
         return Objects.hash(allOfGroups, emailFilter, nullsafeDateString(endTime), language, noneOfGroups, offsetBy,
-                pageSize, phoneFilter, nullsafeDateString(startTime), orgMembership, adminOnly);
+                pageSize, phoneFilter, nullsafeDateString(startTime), orgMembership, adminOnly, enrolledInStudyId);
     }
 
     @Override
@@ -123,7 +135,8 @@ public final class AccountSummarySearch implements BridgeEntity {
                 && Objects.equals(phoneFilter, other.phoneFilter)
                 && Objects.equals(nullsafeDateString(startTime), nullsafeDateString(other.startTime))
                 && Objects.equals(orgMembership, other.orgMembership)
-                && Objects.equals(adminOnly, other.adminOnly);
+                && Objects.equals(adminOnly, other.adminOnly)
+                && Objects.equals(enrolledInStudyId, other.enrolledInStudyId);
     }
     
     private String nullsafeDateString(DateTime dateTime) {
@@ -135,7 +148,7 @@ public final class AccountSummarySearch implements BridgeEntity {
         return "AccountSummarySearch [offsetBy=" + offsetBy + ", pageSize=" + pageSize + ", emailFilter=" + emailFilter
                 + ", phoneFilter=" + phoneFilter + ", allOfGroups=" + allOfGroups + ", noneOfGroups=" + noneOfGroups
                 + ", language=" + language + ", startTime=" + startTime + ", endTime=" + endTime + ", orgMembership="
-                + orgMembership + ", adminOnly=" + adminOnly + "]";
+                + orgMembership + ", adminOnly=" + adminOnly + ", enrolledInStudyId=" + enrolledInStudyId + "]";
     }
     
     public static class Builder {
@@ -150,6 +163,7 @@ public final class AccountSummarySearch implements BridgeEntity {
         private DateTime endTime;
         private String orgMembership;
         private Boolean adminOnly;
+        private String enrolledInStudyId;
         
         public Builder withOffsetBy(Integer offsetBy) {
             this.offsetBy = offsetBy;
@@ -201,6 +215,10 @@ public final class AccountSummarySearch implements BridgeEntity {
             this.adminOnly = adminOnly;
             return this;
         }
+        public Builder withEnrolledInStudyId(String enrolledInStudyId) {
+            this.enrolledInStudyId = enrolledInStudyId;
+            return this;
+        }
         public Builder copyOf(AccountSummarySearch search) {
             this.offsetBy = search.offsetBy;
             this.pageSize = search.pageSize;
@@ -213,14 +231,14 @@ public final class AccountSummarySearch implements BridgeEntity {
             this.endTime = search.endTime;
             this.orgMembership = search.orgMembership;
             this.adminOnly = search.adminOnly;
+            this.enrolledInStudyId = search.enrolledInStudyId;
             return this;
         }
         public AccountSummarySearch build() {
             int defaultedOffsetBy = (offsetBy == null) ? 0 : offsetBy;
             int defaultedPageSize = (pageSize == null) ? API_DEFAULT_PAGE_SIZE : pageSize;
             return new AccountSummarySearch(defaultedOffsetBy, defaultedPageSize, emailFilter, phoneFilter, allOfGroups,
-                    noneOfGroups, language, startTime, endTime, orgMembership, adminOnly);
+                    noneOfGroups, language, startTime, endTime, orgMembership, adminOnly, enrolledInStudyId);
         }
     }
-
 }
