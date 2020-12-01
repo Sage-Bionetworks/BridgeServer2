@@ -482,6 +482,7 @@ public class HibernateAccount implements Account {
     }
     
     @Transient // do not persist in Hibernate (the hash is persisted instead)
+    @JsonIgnore
     public String getReauthToken() {
         return reauthToken;
     }

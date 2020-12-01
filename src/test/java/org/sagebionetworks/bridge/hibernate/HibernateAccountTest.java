@@ -16,6 +16,7 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -47,6 +48,14 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class HibernateAccountTest {
+    private static final SubpopulationGuid GUID1 = SubpopulationGuid.create("guid1");
+    private static final SubpopulationGuid GUID2 = SubpopulationGuid.create("guid2");
+
+    private static final long TIME1 = 100L;
+    private static final long TIME2 = 200L;
+    private static final long TIME3 = 300L;
+    private static final long TIME4 = 400L;
+    private static final long TIME5 = 500L;
     
     // We're only concerned with serializing this model...the StudyParticipant can
     // be used to deserialize an Account model sent from our SDK (it's a superset
@@ -75,9 +84,12 @@ public class HibernateAccountTest {
         account.setLanguages(LANGUAGES);
         account.setReauthToken("reauthToken");
         
+        // Do this just to verify it is not included in the serialization.
+        addConsentHistories(account);
+        
         JsonNode node = BridgeObjectMapper.get().valueToTree(account);
         assertEquals(node.get("type").textValue(), "Account");
-        assertEquals(node.size(), 20);
+        assertEquals(node.size(), 19);
         assertEquals(node.get("id").textValue(), "id");
         assertEquals(node.get("orgMembership").textValue(), "orgId");
         assertEquals(node.get("email").textValue(), "email");
@@ -94,11 +106,28 @@ public class HibernateAccountTest {
         assertEquals(node.get("lastName").textValue(), "lastName");
         assertEquals(toSet(node, "roles"), ImmutableSet.of("developer", "researcher"));
         assertEquals(node.get("status").textValue(), "enabled");
-        account.setClientData(TestUtils.getClientData());
+        assertNotNull(node.get("clientData"));
         assertEquals(node.get("version").intValue(), 1);
         assertEquals(toSet(node, "dataGroups"), ImmutableSet.of("group1", "group2"));
         assertEquals(toSet(node, "languages"), ImmutableSet.of("en", "fr"));
-        assertEquals(node.get("reauthToken").textValue(), "reauthToken");
+        
+        // these should be null
+        assertNull(node.get("appId"));
+        assertNull(node.get("consents"));
+        assertNull(node.get("healthCode"));
+        assertNull(node.get("passwordAlgorithm"));
+        assertNull(node.get("passwordHash"));
+        assertNull(node.get("passwordModifiedOn"));
+        assertNull(node.get("reauthToken"));
+        assertNull(node.get("timeZone"));
+        assertNull(node.get("sharingScope"));
+        assertNull(node.get("notifyByEmail"));
+        assertNull(node.get("migrationVersion"));
+        assertNull(node.get("enrollments"));
+        assertNull(node.get("reauthToken"));
+        assertNull(node.get("activeConsentSignature"));
+        assertNull(node.get("consentSignatureHistory"));
+        assertNull(node.get("allConsentSignatureHistories"));
     }
     
     private Set<String> toSet(JsonNode node, String field) {
@@ -279,73 +308,44 @@ public class HibernateAccountTest {
 
     @Test
     public void consentSignatureHistories() {
-        long TIME1 = 100L;
-        long TIME2 = 200L;
-        long TIME3 = 300L;
-        long TIME4 = 400L;
-        long TIME5 = 500L;
-        
-        SubpopulationGuid guid1 = SubpopulationGuid.create("guid1");
-        SubpopulationGuid guid2 = SubpopulationGuid.create("guid2");
-        
-        HibernateAccountConsentKey key1A = new HibernateAccountConsentKey(guid1.getGuid(), TIME1);
-        HibernateAccountConsentKey key1B = new HibernateAccountConsentKey(guid1.getGuid(), TIME2);
-        HibernateAccountConsentKey key1C = new HibernateAccountConsentKey(guid1.getGuid(), TIME3);
-        HibernateAccountConsentKey key2A = new HibernateAccountConsentKey(guid2.getGuid(), TIME4);
-        HibernateAccountConsentKey key2B = new HibernateAccountConsentKey(guid2.getGuid(), TIME5);
-        
-        HibernateAccountConsent consent1A = getHibernateAccountConsent(null);
-        HibernateAccountConsent consent1B = getHibernateAccountConsent(null);
-        HibernateAccountConsent consent1C = getHibernateAccountConsent(400L);
-        HibernateAccountConsent consent2A = getHibernateAccountConsent(null);
-        HibernateAccountConsent consent2B = getHibernateAccountConsent(null);
-        
-        // Add these out of order to verify that they are sorted by date of signing
-        Map<HibernateAccountConsentKey, HibernateAccountConsent> consents = Maps.newHashMap();
-        consents.put(key1A, consent1A);
-        consents.put(key1C, consent1C);
-        consents.put(key1B, consent1B);
-        consents.put(key2B, consent2B);
-        consents.put(key2A, consent2A);
-        
         HibernateAccount account = new HibernateAccount();
-        account.setConsents(consents);
+        addConsentHistories(account);
         
         // Test getAllConsentSignaturehistories()
         Map<SubpopulationGuid, List<ConsentSignature>> histories = account.getAllConsentSignatureHistories();
         
-        List<ConsentSignature> history1 = histories.get(guid1);
+        List<ConsentSignature> history1 = histories.get(GUID1);
         assertEquals(history1.size(), 3);
         // Signed on values are copied over from keys
         assertEquals(history1.get(0).getSignedOn(), TIME1);
         assertEquals(history1.get(1).getSignedOn(), TIME2);
         assertEquals(history1.get(2).getSignedOn(), TIME3);
         
-        List<ConsentSignature> history2 = histories.get(guid2);
+        List<ConsentSignature> history2 = histories.get(GUID2);
         assertEquals(history2.size(), 2);
         // Signed on values are copied over from keys
         assertEquals(history2.get(0).getSignedOn(), TIME4);
         assertEquals(history2.get(1).getSignedOn(), TIME5);
         
         // Test getConsentSignatureHistory(guid). Should produce identical results.
-        history1 = account.getConsentSignatureHistory(guid1);
+        history1 = account.getConsentSignatureHistory(GUID1);
         assertEquals(history1.size(), 3);
         // Signed on values are copied over from keys
         assertEquals(history1.get(0).getSignedOn(), TIME1);
         assertEquals(history1.get(1).getSignedOn(), TIME2);
         assertEquals(history1.get(2).getSignedOn(), TIME3);
         
-        history2 = account.getConsentSignatureHistory(guid2);
+        history2 = account.getConsentSignatureHistory(GUID2);
         assertEquals(history2.size(), 2);
         // Signed on values are copied over from keys
         assertEquals(history2.get(0).getSignedOn(), TIME4);
         assertEquals(history2.get(1).getSignedOn(), TIME5);
         
         // The last consent in the series was withdrawn, so this consent is not active.
-        ConsentSignature sig1 = account.getActiveConsentSignature(guid1);
+        ConsentSignature sig1 = account.getActiveConsentSignature(GUID1);
         assertNull(sig1);
         
-        ConsentSignature sig2 = account.getActiveConsentSignature(guid2);
+        ConsentSignature sig2 = account.getActiveConsentSignature(GUID2);
         assertEquals(history2.get(1), sig2);
         
         // Add a consent to the withdrawn series.
@@ -355,10 +355,10 @@ public class HibernateAccountTest {
         List<ConsentSignature> signatures = Lists.newArrayList();
         signatures.addAll(history1);
         signatures.add(sig3);
-        account.setConsentSignatureHistory(guid1, signatures);
+        account.setConsentSignatureHistory(GUID1, signatures);
         
-        sig1 = account.getActiveConsentSignature(guid1);
-        assertEquals(account.getAllConsentSignatureHistories().get(guid1).get(3), sig1);
+        sig1 = account.getActiveConsentSignature(GUID1);
+        assertEquals(account.getAllConsentSignatureHistories().get(GUID1).get(3), sig1);
     }
     
     @Test
@@ -397,4 +397,27 @@ public class HibernateAccountTest {
         return consent;
     }
     
+    private void addConsentHistories(Account account) {
+        HibernateAccountConsentKey key1A = new HibernateAccountConsentKey(GUID1.getGuid(), TIME1);
+        HibernateAccountConsentKey key1B = new HibernateAccountConsentKey(GUID1.getGuid(), TIME2);
+        HibernateAccountConsentKey key1C = new HibernateAccountConsentKey(GUID1.getGuid(), TIME3);
+        HibernateAccountConsentKey key2A = new HibernateAccountConsentKey(GUID2.getGuid(), TIME4);
+        HibernateAccountConsentKey key2B = new HibernateAccountConsentKey(GUID2.getGuid(), TIME5);
+        
+        HibernateAccountConsent consent1A = getHibernateAccountConsent(null);
+        HibernateAccountConsent consent1B = getHibernateAccountConsent(null);
+        HibernateAccountConsent consent1C = getHibernateAccountConsent(400L);
+        HibernateAccountConsent consent2A = getHibernateAccountConsent(null);
+        HibernateAccountConsent consent2B = getHibernateAccountConsent(null);
+        
+        // Add these out of order to verify that they are sorted by date of signing
+        Map<HibernateAccountConsentKey, HibernateAccountConsent> consents = Maps.newHashMap();
+        consents.put(key1A, consent1A);
+        consents.put(key1C, consent1C);
+        consents.put(key1B, consent1B);
+        consents.put(key2B, consent2B);
+        consents.put(key2A, consent2A);
+        
+        account.setConsents(consents);
+    }
 }

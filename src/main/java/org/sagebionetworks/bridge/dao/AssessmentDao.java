@@ -51,4 +51,10 @@ public interface AssessmentDao {
      * This is an actual delete from the database.
      */
     void deleteAssessment(String appId, Assessment assessment);
+
+    /**
+     * Returns true if there exists at least one assessment (private or shared) under the
+     * name of the organization; otherwise returns false.
+     */
+    boolean hasAssessmentFromOrg(String appId, String orgId);
 }

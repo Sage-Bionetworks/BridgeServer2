@@ -67,10 +67,14 @@ public class HibernateAssessmentDaoTest extends Mockito {
 
     private static final String QUERY_GET_REVISIONS_INC_DELETED = "FROM HibernateAssessment WHERE "
             +"appId = :appId AND identifier = :identifier ORDER BY revision DESC";
+
+    private static final String QUERY_COUNT_FROM_ORG = "SELECT COUNT(*) FROM HibernateAssessment WHERE " +
+            "(appId = :appId AND ownerId = :ownerId)";
     
     private static final String APP_ID_VALUE = "appId";
     private static final String ID_VALUE = "identifier";
     private static final String GUID_VALUE = "guid";
+    private static final String ORG_ID = "test-org";
     private static final int REV_VALUE = 3;
     private static final HibernateAssessment HIBERNATE_ASSESSMENT = new HibernateAssessment();
     
@@ -351,5 +355,34 @@ public class HibernateAssessmentDaoTest extends Mockito {
         verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
         verify(mockSession).saveOrUpdate(any(HibernateAssessmentConfig.class));
         verify(mockSession).merge(any(HibernateAssessment.class));
+    }
+
+    @Test
+    public void hasAssessmentFromOrg() {
+        when(mockHelper.queryCount(any(), any())).thenReturn(1);
+        assertTrue(dao.hasAssessmentFromOrg(APP_ID_VALUE, ORG_ID));
+        verify(mockHelper).queryCount(any(), any());
+
+        when(mockHelper.queryCount(any(), any())).thenReturn(0, 0);
+        assertFalse(dao.hasAssessmentFromOrg(APP_ID_VALUE, ORG_ID));
+        // Mockito remembers the total count of times method called, so here's 1 + 2 = 3.
+        verify(mockHelper, times(3)).queryCount(any(), any());
+
+        when(mockHelper.queryCount(any(), any())).thenReturn(0, 3);
+        assertTrue(dao.hasAssessmentFromOrg(APP_ID_VALUE, ORG_ID));
+        // Mockito remembers the total count of times method called, so here's 1 + 2 = 3.
+        verify(mockHelper, times(5)).queryCount(queryCaptor.capture(), paramsCaptor.capture());
+
+        List<String> queries = queryCaptor.getAllValues();
+        List<Map<String, Object>> paramsList = paramsCaptor.getAllValues();
+        for (String query : queries) {
+            assertEquals(QUERY_COUNT_FROM_ORG, query);
+        }
+        Map<String, Object> privateMap = paramsList.get(0);
+        Map<String, Object> publishedMap = paramsList.get(1);
+        assertEquals(APP_ID_VALUE, privateMap.get("appId"));
+        assertEquals(ORG_ID, privateMap.get("ownerId"));
+        assertEquals("shared", publishedMap.get("appId"));
+        assertEquals(APP_ID_VALUE + ":" + ORG_ID, publishedMap.get("ownerId"));
     }
 }
