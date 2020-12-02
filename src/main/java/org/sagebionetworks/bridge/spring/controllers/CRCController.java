@@ -192,7 +192,7 @@ public class CRCController extends BaseController {
         }
 
         updateState(account, SELECTED);
-        accountService.updateAccount(account, null);
+        accountService.updateAccount(account);
         return new StatusMessage("Participant updated.");
     }
 
@@ -519,7 +519,7 @@ public class CRCController extends BaseController {
         }
 
         updateState(account, state);
-        accountService.updateAccount(account, null);
+        accountService.updateAccount(account);
 
         try {
             ObjectNode metadata = JsonNodeFactory.instance.objectNode();
@@ -564,7 +564,7 @@ public class CRCController extends BaseController {
                 JAN1.toString(), account.getHealthCode());
 
         updateState(account, SELECTED);
-        accountService.updateAccount(account, null);
+        accountService.updateAccount(account);
         return 200;
     }
 

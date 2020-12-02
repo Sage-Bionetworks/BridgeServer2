@@ -44,7 +44,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public class SchedulePlanServiceMockTest {
+public class SchedulePlanServiceTest {
 
     private App app;
     private String surveyGuid1;
@@ -71,9 +71,9 @@ public class SchedulePlanServiceMockTest {
         service.setSurveyService(mockSurveyService);
         service.setStudyService(mockStudyService);
         
-        Survey survey1 = new TestSurvey(SchedulePlanServiceMockTest.class, false);
+        Survey survey1 = new TestSurvey(SchedulePlanServiceTest.class, false);
         survey1.setIdentifier("identifier1");
-        Survey survey2 = new TestSurvey(SchedulePlanServiceMockTest.class, false);
+        Survey survey2 = new TestSurvey(SchedulePlanServiceTest.class, false);
         survey2.setIdentifier("identifier2");
         when(mockSurveyService.getSurveyMostRecentlyPublishedVersion(any(), any(), anyBoolean())).thenReturn(survey1);
         when(mockSurveyService.getSurvey(eq(TEST_APP_ID), any(), eq(false), eq(true))).thenReturn(survey2);

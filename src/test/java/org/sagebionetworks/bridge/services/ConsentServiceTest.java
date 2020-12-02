@@ -74,7 +74,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 @SuppressWarnings("ConstantConditions")
-public class ConsentServiceMockTest extends Mockito {
+public class ConsentServiceTest extends Mockito {
     private static final String SHORT_URL = "https://ws.sagebridge.org/r/XXXXX";
     private static final String LONG_URL = "http://sagebionetworks.org/platforms/";
     private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
@@ -156,7 +156,7 @@ public class ConsentServiceMockTest extends Mockito {
 
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
 
-        app = TestUtils.getValidApp(ConsentServiceMockTest.class);
+        app = TestUtils.getValidApp(ConsentServiceTest.class);
         
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("signedConsent subject");
@@ -221,7 +221,7 @@ public class ConsentServiceMockTest extends Mockito {
                 true);
 
         // verify consents were set on account properly
-        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture());
 
         Account updatedAccount = accountCaptor.getValue();
         List<ConsentSignature> updatedConsentList = updatedAccount.getConsentSignatureHistory(SUBPOP_GUID);
@@ -332,7 +332,7 @@ public class ConsentServiceMockTest extends Mockito {
         consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON + 10000);
 
         verify(accountService).getAccount(CONTEXT.getAccountId());
-        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture());
         verify(sendMailService).sendEmail(emailCaptor.capture());
 
         Account account = accountCaptor.getValue();
@@ -356,9 +356,9 @@ public class ConsentServiceMockTest extends Mockito {
         MimeTypeEmail email = provider.getMimeTypeEmail();
 
         assertEquals(email.getSenderAddress(),
-                "\"Test App [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
+                "\"Test App [ConsentServiceTest]\" <bridge-testing+support@sagebase.org>");
         assertEquals(email.getRecipientAddresses().get(0), "bridge-testing+consent@sagebase.org");
-        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test App [ConsentServiceMockTest]");
+        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test App [ConsentServiceTest]");
         assertEquals(email.getMessageParts().get(0).getContent(), "<p>User   &lt;" + EMAIL
                 + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>");
         
@@ -393,7 +393,7 @@ public class ConsentServiceMockTest extends Mockito {
         setupWithdrawTest();
         consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountService).updateAccount(account, null);
+        verify(accountService).updateAccount(account);
         verify(sendMailService).sendEmail(any(WithdrawConsentEmailProvider.class));
 
         // Contents of call are tested in prior test where participant is used
@@ -405,7 +405,7 @@ public class ConsentServiceMockTest extends Mockito {
 
         consentService.withdrawFromApp(app, PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture());
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
 
         ArgumentCaptor<MimeTypeEmailProvider> emailCaptor = ArgumentCaptor.forClass(MimeTypeEmailProvider.class);
@@ -415,9 +415,9 @@ public class ConsentServiceMockTest extends Mockito {
         MimeTypeEmail email = provider.getMimeTypeEmail();
 
         assertEquals(email.getSenderAddress(),
-                "\"Test App [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
+                "\"Test App [ConsentServiceTest]\" <bridge-testing+support@sagebase.org>");
         assertEquals(email.getRecipientAddresses().get(0), "bridge-testing+consent@sagebase.org");
-        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test App [ConsentServiceMockTest]");
+        assertEquals(email.getSubject(), "Notification of consent withdrawal for Test App [ConsentServiceTest]");
         assertEquals(email.getMessageParts().get(0).getContent(), "<p>User Allen Wrench &lt;" + EMAIL
                 + "&gt; withdrew from the study on October 28, 2015. </p><p>Reason:</p><p>For reasons.</p>");
 
@@ -450,7 +450,7 @@ public class ConsentServiceMockTest extends Mockito {
 
         consentService.withdrawFromApp(app, PHONE_PARTICIPANT, WITHDRAWAL, SIGNED_ON);
 
-        verify(accountService).updateAccount(accountCaptor.capture(), eq(null));
+        verify(accountService).updateAccount(accountCaptor.capture());
         assertEquals(account.getSharingScope(), SharingScope.NO_SHARING);
         verify(sendMailService, never()).sendEmail(any(MimeTypeEmailProvider.class));
 
@@ -845,7 +845,7 @@ public class ConsentServiceMockTest extends Mockito {
         MimeTypeEmail email = provider.getMimeTypeEmail();
         assertEquals(email.getSubject(), "signedConsent subject");
         assertEquals(email.getSenderAddress(),
-                "\"Test App [ConsentServiceMockTest]\" <bridge-testing+support@sagebase.org>");
+                "\"Test App [ConsentServiceTest]\" <bridge-testing+support@sagebase.org>");
         assertEquals(Sets.newHashSet(email.getRecipientAddresses()),
                 Sets.newHashSet("email@email.com", "bridge-testing+consent@sagebase.org"));
     }

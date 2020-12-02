@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
@@ -99,7 +97,7 @@ public class OrganizationControllerTest extends Mockito {
     
     @Test
     public void getOrganizations() {
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, RESEARCHER, DEVELOPER);
+        doReturn(session).when(controller).getAdministrativeSession();
         
         PagedResourceList<Organization> page = new PagedResourceList<>(ImmutableList.of(), 10);
         when(mockService.getOrganizations(TEST_APP_ID, 150, 50)).thenReturn(page);
@@ -112,7 +110,7 @@ public class OrganizationControllerTest extends Mockito {
     
     @Test
     public void getOrganizationsWithDefaults() {
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, RESEARCHER, DEVELOPER);
+        doReturn(session).when(controller).getAdministrativeSession();
         
         controller.getOrganizations(null, null);
         
@@ -184,7 +182,7 @@ public class OrganizationControllerTest extends Mockito {
     
     @Test
     public void getMembers() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, DEVELOPER, RESEARCHER);
+        doReturn(session).when(controller).getAdministrativeSession();
         
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(ImmutableList.of(), 0);
         when(mockService.getMembers(eq(TEST_APP_ID), eq(IDENTIFIER), any())).thenReturn(page);
@@ -225,7 +223,7 @@ public class OrganizationControllerTest extends Mockito {
     
     @Test
     public void getUnassignedAdmins() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, DEVELOPER, RESEARCHER);
+        doReturn(session).when(controller).getAdministrativeSession();
         
         AccountSummarySearch initial = new AccountSummarySearch.Builder()
             .withOrgMembership("something-to-be-overridden")

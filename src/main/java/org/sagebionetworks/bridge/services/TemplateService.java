@@ -335,7 +335,7 @@ public class TemplateService {
         revision.setTemplateGuid(templateGuid);
         revision.setStoragePath(storagePath);
 
-        templateDao.createTemplate(template, null);
+        templateDao.createTemplate(template);
         templateRevisionDao.createTemplateRevision(revision);
         return new GuidVersionHolder(template.getGuid(), Long.valueOf(template.getVersion()));
     }

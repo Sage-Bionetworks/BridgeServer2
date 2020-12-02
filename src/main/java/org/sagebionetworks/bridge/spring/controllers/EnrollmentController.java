@@ -59,7 +59,8 @@ public class EnrollmentController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         boolean includeTestersBool = Boolean.valueOf(includeTesters);
 
-        return service.getEnrollmentsForStudy(session.getAppId(), studyId, filter, includeTestersBool, offsetByInt, pageSizeInt);        
+        return service.getEnrollmentsForStudy(session.getAppId(), studyId, filter, includeTestersBool, offsetByInt,
+                pageSizeInt);
     }
     
     @PostMapping("/v5/studies/{studyId}/enrollments")

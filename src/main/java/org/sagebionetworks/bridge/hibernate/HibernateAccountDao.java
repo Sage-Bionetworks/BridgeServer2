@@ -6,7 +6,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -72,14 +71,14 @@ public class HibernateAccountDao implements AccountDao {
     
     /** {@inheritDoc} */
     @Override
-    public void createAccount(App app, Account account, Consumer<Account> afterPersistConsumer) {
-        hibernateHelper.create(account, afterPersistConsumer);
+    public void createAccount(App app, Account account) {
+        hibernateHelper.create(account);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void updateAccount(Account account, Consumer<Account> afterPersistConsumer) {
-        hibernateHelper.update(account, afterPersistConsumer);
+    public void updateAccount(Account account) {
+        hibernateHelper.update(account);
     }
     
     /** {@inheritDoc} */
@@ -108,7 +107,7 @@ public class HibernateAccountDao implements AccountDao {
             }
         }
         if (validateHealthCode(account)) {
-            Account updated = hibernateHelper.update(account, null);
+            Account updated = hibernateHelper.update(account);
             account.setVersion(updated.getVersion());
         }
         return Optional.of(account);
@@ -166,7 +165,7 @@ public class HibernateAccountDao implements AccountDao {
         
         // If the caller is a member of an organization, then they can only see accounts in the studies 
         // sponsored by that organization. ADMIN accounts are exempt from this requirement.
-        if (!AuthUtils.isStudyScopedToCaller(null)) {
+        if (!AuthUtils.isStudyTeamMemberOrWorker(null)) {
             Set<String> callerStudies = context.getOrgSponsoredStudies();
             builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
         }

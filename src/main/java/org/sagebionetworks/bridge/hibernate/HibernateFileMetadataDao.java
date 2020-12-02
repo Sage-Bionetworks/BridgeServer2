@@ -65,7 +65,7 @@ public class HibernateFileMetadataDao implements FileMetadataDao {
     public FileMetadata createFile(FileMetadata file) {
         checkNotNull(file);
         
-        hibernateHelper.create(file, null);
+        hibernateHelper.create(file);
         return file;
     }
 
@@ -73,7 +73,7 @@ public class HibernateFileMetadataDao implements FileMetadataDao {
     public FileMetadata updateFile(FileMetadata file) {
         checkNotNull(file);
         
-        hibernateHelper.update(file, null);
+        hibernateHelper.update(file);
         return file;
     }
 

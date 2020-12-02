@@ -21,6 +21,7 @@ import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.amazonaws.services.dynamodbv2.model.ConditionalCheckFailedException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
@@ -35,15 +36,18 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.surveys.BloodPressureConstraints;
+import org.sagebionetworks.bridge.models.surveys.IntegerConstraints;
 import org.sagebionetworks.bridge.models.surveys.Survey;
 import org.sagebionetworks.bridge.models.surveys.SurveyElement;
 import org.sagebionetworks.bridge.models.surveys.SurveyElementConstants;
+import org.sagebionetworks.bridge.models.surveys.SurveyInfoScreen;
 import org.sagebionetworks.bridge.models.surveys.SurveyQuestion;
 import org.sagebionetworks.bridge.models.surveys.SurveyRule;
 import org.sagebionetworks.bridge.models.surveys.UIHint;
@@ -51,14 +55,14 @@ import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.services.UploadSchemaService;
 
 public class DynamoSurveyDaoTest extends Mockito {
-
+    static final long CREATED_ON = TestConstants.CREATED_ON.getMillis();
+    static final int SCHEMA_REV = 42;
     static final String GUID = "oneGuid";
-    static final String SURVEY_ID = "oneSurveyId";
+    static final String SURVEY_ID = "test-survey";
+    static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(GUID, CREATED_ON);
     static final String IDENTIFIER_PREFIX = "identifier:";
     static final String SURVEY_IDENTIFIER = IDENTIFIER_PREFIX + SURVEY_ID;
-    static final long TIMESTAMP = DateTime.now().getMillis();
-    static final GuidCreatedOnVersionHolder SURVEY_KEYS = new GuidCreatedOnVersionHolderImpl(GUID, TIMESTAMP);
-    static final GuidCreatedOnVersionHolder SURVEY_IDENTIFIER_KEYS = new GuidCreatedOnVersionHolderImpl(SURVEY_IDENTIFIER, TIMESTAMP);
+    static final GuidCreatedOnVersionHolder SURVEY_IDENTIFIER_KEYS = new GuidCreatedOnVersionHolderImpl(SURVEY_IDENTIFIER, CREATED_ON);
     
     @Mock
     DynamoDBMapper mockSurveyMapper;
@@ -94,6 +98,8 @@ public class DynamoSurveyDaoTest extends Mockito {
     @Spy
     DynamoSurveyDao dao;
     
+    Survey survey;
+    
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
@@ -102,12 +108,159 @@ public class DynamoSurveyDaoTest extends Mockito {
         dao.setSurveyElementMapper(mockSurveyElementMapper);
         
         doReturn(GUID).when(dao).generateGuid();
-        DateTimeUtils.setCurrentMillisFixed(TIMESTAMP);
+        DateTimeUtils.setCurrentMillisFixed(CREATED_ON);
+
+        survey = new DynamoSurvey(GUID, CREATED_ON);
+        survey.setIdentifier(SURVEY_ID);
+        survey.setAppId(TEST_APP_ID);
+        
+        // mock schema dao
+        UploadSchema schema = UploadSchema.create();
+        schema.setRevision(SCHEMA_REV);
+
+        when(mockUploadSchemaService.createUploadSchemaFromSurvey(TEST_APP_ID, survey, true)).thenReturn(
+                schema);
     }
     
     @AfterMethod
     public void afterMethod() {
         DateTimeUtils.setCurrentMillisSystem();
+    }
+
+    @Test
+    public void getSurveyGuidForIdentifier() {
+        DynamoSurvey survey = new DynamoSurvey();
+        survey.setGuid(GUID);
+        mockSurveyMapper(survey);
+
+        String result = dao.getSurveyGuidForIdentifier(TEST_APP_ID, SURVEY_ID);
+        assertEquals(result, GUID);
+        
+        verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
+        DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
+        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
+        Condition rangeKeyCondition = query.getRangeKeyConditions().get("identifier");
+        assertEquals(rangeKeyCondition.getComparisonOperator(), EQ.name());
+        assertEquals(rangeKeyCondition.getAttributeValueList().get(0).getS(), SURVEY_ID);
+        assertFalse(query.isConsistentRead());
+        assertEquals(query.getLimit(), new Integer(1));
+    }
+
+    public void getSurveyGuidForIdentifier_NoSurvey() {
+        // Mock query.
+        when(mockResultsPage.getResults()).thenReturn(ImmutableList.of());
+        when(mockSurveyMapper.queryPage(eq(DynamoSurvey.class), any())).thenReturn(mockResultsPage);
+
+        // Execute.
+        String surveyGuid = dao.getSurveyGuidForIdentifier(TEST_APP_ID, SURVEY_ID);
+        assertNull(surveyGuid);
+
+        // Query is verified in previous test.
+    }
+
+    @Test
+    public void updateSurveySucceedsOnUndeletedSurvey() {
+        DynamoSurvey existing = new DynamoSurvey(GUID, CREATED_ON);
+        existing.setDeleted(true);
+        
+        List<Survey> results = Lists.newArrayList(existing);
+        doReturn(results).when(mockResultsPage).getResults();
+        doReturn(mockResultsPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
+        
+        survey.setDeleted(false);
+        survey.setName("New title");
+        Survey updatedSurvey = dao.updateSurvey(TEST_APP_ID, survey);
+        
+        assertEquals(updatedSurvey.getName(), "New title");
+    }
+    
+    @Test
+    public void publishSurvey() {
+        // populate the survey with at least one question
+        SurveyQuestion surveyQuestion = new DynamoSurveyQuestion();
+        surveyQuestion.setIdentifier("int");
+        surveyQuestion.setConstraints(new IntegerConstraints());
+
+        survey.setElements(ImmutableList.of(surveyQuestion));
+
+        // execute and validate
+        Survey retval = dao.publishSurvey(TEST_APP_ID, survey, true);
+        assertTrue(retval.isPublished());
+        assertEquals(retval.getModifiedOn(), CREATED_ON);
+        assertEquals(retval.getSchemaRevision().intValue(), SCHEMA_REV);
+
+        verify(mockSurveyMapper).save(same(retval));
+    }
+
+    @Test
+    public void publishSurveyWithInfoScreensOnly() {
+        // populate the survey with an info screen and no questions
+        SurveyInfoScreen infoScreen = new DynamoSurveyInfoScreen();
+        infoScreen.setIdentifier("test-info-screen");
+        infoScreen.setTitle("Test Info Screen");
+        infoScreen.setPrompt("This info screen doesn't do anything, other than not being a question.");
+
+        survey.setElements(ImmutableList.of(infoScreen));
+
+        // same test as above, except we *don't* call through to the upload schema DAO
+        Survey retval = dao.publishSurvey(TEST_APP_ID, survey, true);
+        assertTrue(retval.isPublished());
+        assertEquals(retval.getModifiedOn(), CREATED_ON);
+        assertNull(retval.getSchemaRevision());
+
+        verify(mockSurveyMapper).save(same(retval));
+        verify(mockUploadSchemaService, never()).createUploadSchemaFromSurvey(any(), any(), anyBoolean());
+    }
+
+    @Test
+    public void deleteSurveyAlsoDeletesSchema() {
+        DynamoSurvey survey = new DynamoSurvey();
+        survey.setAppId(TEST_APP_ID);
+        survey.setGuid(GUID);
+        survey.setIdentifier(SURVEY_ID);
+        survey.setCreatedOn(CREATED_ON);
+        mockSurveyMapper(survey);
+        
+        // Execute
+        dao.deleteSurveyPermanently(TEST_APP_ID, SURVEY_KEY);
+
+        // Validate backends
+        verify(dao).deleteAllElements(GUID, CREATED_ON);
+        verify(mockSurveyMapper).delete(survey);
+        verify(mockUploadSchemaService).deleteUploadSchemaByIdPermanently(TEST_APP_ID, SURVEY_ID);
+    }
+    
+    @Test
+    public void deleteSurveyPermanentlyNoSurvey() {
+        List<Survey> results = Lists.newArrayList();
+        doReturn(results).when(mockResultsPage).getResults();
+        doReturn(mockResultsPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
+        
+        GuidCreatedOnVersionHolder keys = new GuidCreatedOnVersionHolderImpl("keys", DateTime.now().getMillis());
+        dao.deleteSurveyPermanently(TEST_APP_ID, keys);
+        
+        verify(mockSurveyMapper, never()).delete(any());
+    }
+    
+    @Test
+    public void updateSurveyUndeleteExistingDeletedOK() {
+        DynamoSurvey existing = new DynamoSurvey(GUID, CREATED_ON);
+        existing.setIdentifier(SURVEY_ID);
+        existing.setAppId(TEST_APP_ID);
+        existing.setDeleted(true);
+        existing.setPublished(false);
+        
+        List<Survey> results = Lists.newArrayList(existing);
+        doReturn(results).when(mockResultsPage).getResults();
+        doReturn(mockResultsPage).when(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), any());
+        
+        survey.setDeleted(false);
+        survey.getElements().add(SurveyInfoScreen.create());
+        dao.updateSurvey(TEST_APP_ID, survey);
+
+        verify(mockSurveyMapper).save(surveyCaptor.capture());
+        assertFalse(surveyCaptor.getValue().isDeleted());
+        assertEquals(surveyCaptor.getValue().getElements().size(), 1);
     }
     
     @Test
@@ -122,7 +275,7 @@ public class DynamoSurveyDaoTest extends Mockito {
 
         verify(mockSurveyElementMapper).query(eq(DynamoSurveyElement.class), elementQueryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurveyElement> query = elementQueryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getSurveyCompoundKey(), GUID + ":" + Long.toString(TIMESTAMP));
+        assertEquals(query.getHashKeyValues().getSurveyCompoundKey(), GUID + ":" + Long.toString(CREATED_ON));
         
         verify(mockSurveyElementMapper).batchSave(elementsCaptor.capture());
         assertEquals(elementsCaptor.getValue().size(), 1);
@@ -176,19 +329,19 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         DynamoSurvey saved = new DynamoSurvey();
         saved.setGuid(GUID);
-        saved.setCreatedOn(TIMESTAMP);
+        saved.setCreatedOn(CREATED_ON);
         
         List<DynamoSurvey> surveyList = ImmutableList.of(saved);
         mockSurveyMapper(surveyList);
         
         Survey result = dao.updateSurvey(TEST_APP_ID, survey);
         // Some fields are changed by update
-        assertEquals(result.getModifiedOn(), TIMESTAMP);
+        assertEquals(result.getModifiedOn(), CREATED_ON);
         assertNull(result.getSchemaRevision());
         
         verify(mockSurveyElementMapper).query(eq(DynamoSurveyElement.class), elementQueryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurveyElement> query = elementQueryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getSurveyCompoundKey(), GUID + ":" + Long.toString(TIMESTAMP));
+        assertEquals(query.getHashKeyValues().getSurveyCompoundKey(), GUID + ":" + Long.toString(CREATED_ON));
         
         verify(mockSurveyElementMapper).batchSave(elementsCaptor.capture());
         assertTrue(elementsCaptor.getValue().isEmpty());
@@ -215,13 +368,13 @@ public class DynamoSurveyDaoTest extends Mockito {
         survey.setElements(ImmutableList.of());
         mockSurveyMapper(survey);
         
-        Survey result = dao.versionSurvey(TEST_APP_ID, SURVEY_KEYS);
+        Survey result = dao.versionSurvey(TEST_APP_ID, SURVEY_KEY);
         
         assertFalse(result.isPublished());
         assertFalse(result.isDeleted());
         assertNull(result.getVersion());
-        assertEquals(result.getCreatedOn(), TIMESTAMP);
-        assertEquals(result.getModifiedOn(), TIMESTAMP);
+        assertEquals(result.getCreatedOn(), CREATED_ON);
+        assertEquals(result.getModifiedOn(), CREATED_ON);
         assertNull(result.getSchemaRevision());
         
         verify(mockSurveyElementMapper).batchSave(result.getElements());
@@ -242,7 +395,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         Survey result = dao.publishSurvey(TEST_APP_ID, survey, true);
         assertTrue(survey.isPublished());
-        assertEquals(result.getModifiedOn(), TIMESTAMP);
+        assertEquals(result.getModifiedOn(), CREATED_ON);
         assertEquals(result.getSchemaRevision(), new Integer(3));
         
         verify(mockUploadSchemaService).createUploadSchemaFromSurvey(TEST_APP_ID, survey, true);
@@ -262,7 +415,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         Survey result = dao.publishSurvey(TEST_APP_ID, survey, false);
         assertTrue(survey.isPublished());
-        assertEquals(result.getModifiedOn(), TIMESTAMP);
+        assertEquals(result.getModifiedOn(), CREATED_ON);
         assertEquals(result.getSchemaRevision(), new Integer(3));
         
         verify(mockUploadSchemaService).createUploadSchemaFromSurvey(TEST_APP_ID, survey, false);
@@ -274,7 +427,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         Survey result = dao.publishSurvey(TEST_APP_ID, survey, true);
         assertTrue(survey.isPublished());
-        assertEquals(result.getModifiedOn(), TIMESTAMP);
+        assertEquals(result.getModifiedOn(), CREATED_ON);
         assertNull(result.getSchemaRevision());
         
         verify(mockUploadSchemaService, never()).createUploadSchemaFromSurvey(any(), any(), anyBoolean());
@@ -320,7 +473,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         survey.setIdentifier(SURVEY_ID);
         mockSurveyMapper(survey);
         
-        dao.deleteSurveyPermanently(TEST_APP_ID, SURVEY_KEYS);
+        dao.deleteSurveyPermanently(TEST_APP_ID, SURVEY_KEY);
         
         verify(mockSurveyMapper).delete(survey);
         verify(mockUploadSchemaService).deleteUploadSchemaByIdPermanently(TEST_APP_ID, SURVEY_ID);
@@ -330,7 +483,7 @@ public class DynamoSurveyDaoTest extends Mockito {
     public void deleteSurveyPermanentlyNotFound() {
         mockSurveyMapper();
         
-        dao.deleteSurveyPermanently(TEST_APP_ID, SURVEY_KEYS);
+        dao.deleteSurveyPermanently(TEST_APP_ID, SURVEY_KEY);
         
         verify(mockSurveyMapper, never()).delete(any());
         verify(mockUploadSchemaService, never()).deleteUploadSchemaByIdPermanently(any(), any());
@@ -347,7 +500,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         survey.setIdentifier(SURVEY_ID);
         mockSurveyMapper(survey);
         
-        dao.deleteSurveyPermanently(TEST_APP_ID, SURVEY_KEYS);
+        dao.deleteSurveyPermanently(TEST_APP_ID, SURVEY_KEY);
         
         verify(mockSurveyMapper).delete(survey);
         verify(mockUploadSchemaService).deleteUploadSchemaByIdPermanently(TEST_APP_ID, SURVEY_ID);
@@ -357,7 +510,7 @@ public class DynamoSurveyDaoTest extends Mockito {
     public void getSurveyIncludeElements() {
         DynamoSurvey survey = new DynamoSurvey();
         survey.setGuid(GUID);
-        survey.setCreatedOn(TIMESTAMP);
+        survey.setCreatedOn(CREATED_ON);
         mockSurveyMapper(survey);
         
         // There is a question that should be retrieved.
@@ -368,7 +521,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         when(mockSurveyElementMapper.queryPage(eq(DynamoSurveyElement.class), any())).thenReturn(mockElementResultsPage);
         when(mockElementResultsPage.getResults()).thenReturn(ImmutableList.of(element));
         
-        Survey result = dao.getSurvey(TEST_APP_ID, SURVEY_KEYS, true);
+        Survey result = dao.getSurvey(TEST_APP_ID, SURVEY_KEY, true);
         assertSame(result, survey);
         assertEquals(result.getElements().size(), 1);
         
@@ -376,11 +529,11 @@ public class DynamoSurveyDaoTest extends Mockito {
         DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
         assertFalse(query.isScanIndexForward());
         assertEquals(query.getHashKeyValues().getGuid(), GUID);
-        assertEquals(query.getHashKeyValues().getCreatedOn(), TIMESTAMP);
+        assertEquals(query.getHashKeyValues().getCreatedOn(), CREATED_ON);
         
         verify(mockSurveyElementMapper).queryPage(eq(DynamoSurveyElement.class), elementQueryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurveyElement> elementQuery = elementQueryCaptor.getValue();
-        assertEquals(elementQuery.getHashKeyValues().getSurveyCompoundKey(), GUID + ":" + TIMESTAMP);
+        assertEquals(elementQuery.getHashKeyValues().getSurveyCompoundKey(), GUID + ":" + CREATED_ON);
     }
 
     @Test
@@ -396,7 +549,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         when(mockSurveyElementMapper.queryPage(eq(DynamoSurveyElement.class), any())).thenReturn(mockElementResultsPage);
         when(mockElementResultsPage.getResults()).thenReturn(ImmutableList.of(element));
         
-        Survey result = dao.getSurvey(TEST_APP_ID, SURVEY_KEYS, false);
+        Survey result = dao.getSurvey(TEST_APP_ID, SURVEY_KEY, false);
         assertSame(result, survey);
         assertEquals(result.getElements().size(), 0);
         
@@ -408,26 +561,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         mockSurveyMapper();
         
         // This does not throw an EntityNotFoundException, that happens in the service
-        assertNull(dao.getSurvey(TEST_APP_ID, SURVEY_KEYS, true));
-    }
-    
-    @Test
-    public void getSurveyGuidForIdentifier() {
-        DynamoSurvey survey = new DynamoSurvey();
-        survey.setGuid(GUID);
-        mockSurveyMapper(survey);
-
-        String result = dao.getSurveyGuidForIdentifier(TEST_APP_ID, SURVEY_ID);
-        assertEquals(result, GUID);
-        
-        verify(mockSurveyMapper).queryPage(eq(DynamoSurvey.class), queryCaptor.capture());
-        DynamoDBQueryExpression<DynamoSurvey> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getAppId(), TEST_APP_ID);
-        Condition rangeKeyCondition = query.getRangeKeyConditions().get("identifier");
-        assertEquals(rangeKeyCondition.getComparisonOperator(), EQ.name());
-        assertEquals(rangeKeyCondition.getAttributeValueList().get(0).getS(), SURVEY_ID);
-        assertFalse(query.isConsistentRead());
-        assertEquals(query.getLimit(), new Integer(1));
+        assertNull(dao.getSurvey(TEST_APP_ID, SURVEY_KEY, true));
     }
     
     @Test
@@ -533,26 +667,26 @@ public class DynamoSurveyDaoTest extends Mockito {
         // Survey 1A
         DynamoSurvey survey1A = new DynamoSurvey();
         survey1A.setGuid(GUID);
-        survey1A.setCreatedOn(TIMESTAMP);
+        survey1A.setCreatedOn(CREATED_ON);
         // Survey 1B
         DynamoSurvey survey1B = new DynamoSurvey();
         survey1B.setGuid(GUID);
-        survey1B.setCreatedOn(TIMESTAMP-2000L);
+        survey1B.setCreatedOn(CREATED_ON-2000L);
         // Survey 2A
         DynamoSurvey survey2A = new DynamoSurvey();
         survey2A.setGuid("guidTwo");
-        survey2A.setCreatedOn(TIMESTAMP);
+        survey2A.setCreatedOn(CREATED_ON);
         // Survey 2B
         DynamoSurvey survey2B = new DynamoSurvey();
         survey2B.setGuid("guidTwo");
-        survey2B.setCreatedOn(TIMESTAMP-2000L);
+        survey2B.setCreatedOn(CREATED_ON-2000L);
         
         mockSurveyMapper(survey1A, survey1B, survey2B, survey2A);
         
         List<Survey> results = dao.getAllSurveysMostRecentlyPublishedVersion(TEST_APP_ID, true);
         assertEquals(results.size(), 2);
-        assertEquals(results.get(0).getCreatedOn(), TIMESTAMP);
-        assertEquals(results.get(1).getCreatedOn(), TIMESTAMP);
+        assertEquals(results.get(0).getCreatedOn(), CREATED_ON);
+        assertEquals(results.get(1).getCreatedOn(), CREATED_ON);
         assertEquals(ImmutableSet.of(results.get(0).getGuid(), results.get(1).getGuid()),
                 ImmutableSet.of(GUID, "guidTwo"));
         
@@ -584,26 +718,26 @@ public class DynamoSurveyDaoTest extends Mockito {
         // Survey 1A
         DynamoSurvey survey1A = new DynamoSurvey();
         survey1A.setGuid(GUID);
-        survey1A.setCreatedOn(TIMESTAMP);
+        survey1A.setCreatedOn(CREATED_ON);
         // Survey 1B
         DynamoSurvey survey1B = new DynamoSurvey();
         survey1B.setGuid(GUID);
-        survey1B.setCreatedOn(TIMESTAMP-2000L);
+        survey1B.setCreatedOn(CREATED_ON-2000L);
         // Survey 2A
         DynamoSurvey survey2A = new DynamoSurvey();
         survey2A.setGuid("guidTwo");
-        survey2A.setCreatedOn(TIMESTAMP);
+        survey2A.setCreatedOn(CREATED_ON);
         // Survey 2B
         DynamoSurvey survey2B = new DynamoSurvey();
         survey2B.setGuid("guidTwo");
-        survey2B.setCreatedOn(TIMESTAMP-2000L);
+        survey2B.setCreatedOn(CREATED_ON-2000L);
         
         mockSurveyMapper(survey1A, survey1B, survey2B, survey2A);
         
         List<Survey> results = dao.getAllSurveysMostRecentVersion(TEST_APP_ID, true);
         assertEquals(results.size(), 2);
-        assertEquals(results.get(0).getCreatedOn(), TIMESTAMP);
-        assertEquals(results.get(1).getCreatedOn(), TIMESTAMP);
+        assertEquals(results.get(0).getCreatedOn(), CREATED_ON);
+        assertEquals(results.get(1).getCreatedOn(), CREATED_ON);
         assertEquals(ImmutableSet.of(results.get(0).getGuid(), results.get(1).getGuid()),
                 ImmutableSet.of(GUID, "guidTwo"));
         
@@ -649,7 +783,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         when(mockSurveyElementMapper.queryPage(eq(DynamoSurveyElement.class), any())).thenReturn(mockElementResultsPage);
         when(mockElementResultsPage.getResults()).thenReturn(ImmutableList.of((DynamoSurveyElement)question));
         
-        Survey result = dao.getSurvey(TEST_APP_ID, SURVEY_KEYS, true);
+        Survey result = dao.getSurvey(TEST_APP_ID, SURVEY_KEY, true);
         SurveyQuestion resultQuestion = result.getUnmodifiableQuestionList().get(0);
         SurveyRule rule = resultQuestion.getAfterRules().get(0);
         assertTrue(rule.getEndSurvey());
@@ -672,7 +806,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         when(mockSurveyElementMapper.queryPage(eq(DynamoSurveyElement.class), any())).thenReturn(mockElementResultsPage);
         when(mockElementResultsPage.getResults()).thenReturn(ImmutableList.of((DynamoSurveyElement)question));
         
-        Survey result = dao.getSurvey(TEST_APP_ID, SURVEY_KEYS, true);
+        Survey result = dao.getSurvey(TEST_APP_ID, SURVEY_KEY, true);
         SurveyQuestion resultQuestion = result.getUnmodifiableQuestionList().get(0);
         SurveyRule rule = resultQuestion.getConstraints().getRules().get(0);
         assertTrue(rule.getEndSurvey());
@@ -684,7 +818,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         survey.setAppId(TEST_APP_ID);
         survey.setGuid(GUID);
         survey.setIdentifier(SURVEY_ID);
-        survey.setCreatedOn(TIMESTAMP);
+        survey.setCreatedOn(CREATED_ON);
         mockSurveyMapper(survey);
         
         // There is a question that should be retrieved.
@@ -712,7 +846,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         
         verify(mockSurveyElementMapper).queryPage(eq(DynamoSurveyElement.class), elementQueryCaptor.capture());
         DynamoDBQueryExpression<DynamoSurveyElement> elementQuery = elementQueryCaptor.getValue();
-        assertEquals(elementQuery.getHashKeyValues().getSurveyCompoundKey(), GUID + ":" + TIMESTAMP);
+        assertEquals(elementQuery.getHashKeyValues().getSurveyCompoundKey(), GUID + ":" + CREATED_ON);
     }
     
     @Test
@@ -721,7 +855,7 @@ public class DynamoSurveyDaoTest extends Mockito {
         survey.setGuid(GUID);
         survey.setAppId(TEST_APP_ID);
         survey.setIdentifier(SURVEY_ID);
-        survey.setCreatedOn(TIMESTAMP);
+        survey.setCreatedOn(CREATED_ON);
         mockSurveyMapper(survey);
         
         Survey result = dao.getSurvey(TEST_APP_ID, SURVEY_IDENTIFIER_KEYS, false);
@@ -737,13 +871,13 @@ public class DynamoSurveyDaoTest extends Mockito {
         DynamoSurvey survey1A = new DynamoSurvey();
         survey1A.setGuid(GUID);
         survey1A.setIdentifier(SURVEY_ID);
-        survey1A.setCreatedOn(TIMESTAMP);
+        survey1A.setCreatedOn(CREATED_ON);
         survey1A.setDeleted(true);
         // Survey 1B
         DynamoSurvey survey1B = new DynamoSurvey();
         survey1B.setGuid(GUID);
         survey1B.setIdentifier(SURVEY_ID);
-        survey1B.setCreatedOn(TIMESTAMP-2000L);
+        survey1B.setCreatedOn(CREATED_ON-2000L);
         survey1B.setDeleted(true);
         mockSurveyMapper(survey1B, survey1A);
         mockSurveyElementMapper();
@@ -768,12 +902,12 @@ public class DynamoSurveyDaoTest extends Mockito {
         DynamoSurvey survey1A = new DynamoSurvey();
         survey1A.setGuid(GUID);
         survey1A.setIdentifier(SURVEY_ID);
-        survey1A.setCreatedOn(TIMESTAMP);
+        survey1A.setCreatedOn(CREATED_ON);
         // Survey 1B
         DynamoSurvey survey1B = new DynamoSurvey();
         survey1B.setGuid(GUID);
         survey1B.setIdentifier(SURVEY_ID);
-        survey1B.setCreatedOn(TIMESTAMP-2000L);
+        survey1B.setCreatedOn(CREATED_ON-2000L);
         mockSurveyMapper(survey1B, survey1A);
         mockSurveyElementMapper();
         
@@ -798,12 +932,12 @@ public class DynamoSurveyDaoTest extends Mockito {
         DynamoSurvey survey1A = new DynamoSurvey();
         survey1A.setGuid(GUID);
         survey1A.setIdentifier(SURVEY_ID);
-        survey1A.setCreatedOn(TIMESTAMP);
+        survey1A.setCreatedOn(CREATED_ON);
         // Survey 1B
         DynamoSurvey survey1B = new DynamoSurvey();
         survey1B.setGuid(GUID);
         survey1B.setIdentifier(SURVEY_ID);
-        survey1B.setCreatedOn(TIMESTAMP-2000L);
+        survey1B.setCreatedOn(CREATED_ON-2000L);
         mockSurveyMapper(survey1B, survey1A);
         mockSurveyElementMapper();
 
@@ -828,12 +962,12 @@ public class DynamoSurveyDaoTest extends Mockito {
         DynamoSurvey survey1A = new DynamoSurvey();
         survey1A.setGuid(GUID);
         survey1A.setIdentifier(SURVEY_ID);
-        survey1A.setCreatedOn(TIMESTAMP);
+        survey1A.setCreatedOn(CREATED_ON);
         // Survey 1B
         DynamoSurvey survey1B = new DynamoSurvey();
         survey1B.setGuid(GUID);
         survey1B.setIdentifier(SURVEY_ID);
-        survey1B.setCreatedOn(TIMESTAMP-2000L);
+        survey1B.setCreatedOn(CREATED_ON-2000L);
         mockSurveyMapper(survey1B, survey1A);
         mockSurveyElementMapper();
         
@@ -864,12 +998,12 @@ public class DynamoSurveyDaoTest extends Mockito {
         DynamoSurvey survey1A = new DynamoSurvey();
         survey1A.setGuid(GUID);
         survey1A.setIdentifier(SURVEY_ID);
-        survey1A.setCreatedOn(TIMESTAMP);
+        survey1A.setCreatedOn(CREATED_ON);
         // Survey 1B
         DynamoSurvey survey1B = new DynamoSurvey();
         survey1B.setGuid(GUID);
         survey1B.setIdentifier(SURVEY_ID);
-        survey1B.setCreatedOn(TIMESTAMP-2000L);
+        survey1B.setCreatedOn(CREATED_ON-2000L);
         mockSurveyMapper(survey1B, survey1A);
         mockSurveyElementMapper();
         

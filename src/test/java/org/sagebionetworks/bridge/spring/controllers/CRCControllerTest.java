@@ -379,7 +379,7 @@ public class CRCControllerTest extends Mockito {
         StatusMessage message = controller.updateParticipant("healthcode:"+HEALTH_CODE);
         assertEquals(message.getMessage(), CRCController.UPDATE_MSG);
 
-        verify(mockAccountService).updateAccount(account, null);
+        verify(mockAccountService).updateAccount(account);
         // verify(controller, never()).createLabOrder(account);
 
         assertEquals(account.getDataGroups(), makeSetOf(CRCController.AccountStates.SELECTED, "group1"));
@@ -546,7 +546,7 @@ public class CRCControllerTest extends Mockito {
         verifyParticipant(capturedReport.getData());
         assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
         
-        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
         Account capturedAcct = accountCaptor.getValue();
         assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_SCHEDULED, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
@@ -654,7 +654,7 @@ public class CRCControllerTest extends Mockito {
         
         assertTrue(account.getDataGroups().contains("selected"));
         
-        verify(mockAccountService).updateAccount(account, null);
+        verify(mockAccountService).updateAccount(account);
         verify(mockReportService).deleteParticipantReportRecord(APP_ID, APPOINTMENT_REPORT, 
                 JAN1.toString(), HEALTH_CODE);
     }
@@ -749,7 +749,7 @@ public class CRCControllerTest extends Mockito {
         assertEquals(capturedSignIn.getExternalId(), CUIMC_USERNAME);
         assertEquals(capturedSignIn.getPassword(), "dummy-password");
         
-        inorder.verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        inorder.verify(mockAccountService).updateAccount(accountCaptor.capture());
         Account capturedAcct = accountCaptor.getValue();
         assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_COLLECTED, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
@@ -822,7 +822,7 @@ public class CRCControllerTest extends Mockito {
         verifySubject(capturedReport.getData());
         assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
         
-        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
         Account capturedAcct = accountCaptor.getValue();
         assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_AVAILABLE, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
@@ -864,7 +864,7 @@ public class CRCControllerTest extends Mockito {
         verifySubject(capturedReport.getData());
         assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
         
-        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
         Account capturedAcct = accountCaptor.getValue();
         assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_AVAILABLE_TYPE_UNKNOWN, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());
@@ -906,7 +906,7 @@ public class CRCControllerTest extends Mockito {
         verifySubject(capturedReport.getData());
         assertEquals(capturedReport.getStudyIds(), USER_STUDY_IDS);
         
-        verify(mockAccountService).updateAccount(accountCaptor.capture(), isNull());
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
         Account capturedAcct = accountCaptor.getValue();
         assertEquals(capturedAcct.getDataGroups(), makeSetOf(CRCController.AccountStates.TESTS_AVAILABLE_TYPE_UNKNOWN, "group1"));
         assertEquals(capturedAcct.getAttributes().get(TIMESTAMP_FIELD), TIMESTAMP.toString());

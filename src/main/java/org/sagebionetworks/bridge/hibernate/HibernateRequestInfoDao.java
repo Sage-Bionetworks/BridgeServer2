@@ -25,9 +25,9 @@ public class HibernateRequestInfoDao implements RequestInfoDao {
             RequestInfo.Builder builder = new RequestInfo.Builder();    
             builder.copyOf(existingRequestInfo);
             builder.copyOf(requestInfo);
-            hibernateHelper.update(builder.build(), null);
+            hibernateHelper.update(builder.build());
         } else {
-            hibernateHelper.create(requestInfo, null);
+            hibernateHelper.create(requestInfo);
         }        
     }
 

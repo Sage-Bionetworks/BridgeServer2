@@ -42,7 +42,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.validators.StudyConsentValidator;
 
-public class StudyConsentServiceMockTest extends Mockito {
+public class StudyConsentServiceTest extends Mockito {
     private static final String DOCUMENT = "<p>Document</p>";
     private static final StudyConsentForm FORM = new StudyConsentForm(DOCUMENT);
     private static final long CREATED_ON = DateTime.now().getMillis();
