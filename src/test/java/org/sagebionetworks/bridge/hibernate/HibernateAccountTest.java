@@ -145,6 +145,7 @@ public class HibernateAccountTest {
         assertNull(node.get("activeConsentSignature"));
         assertNull(node.get("consentSignatureHistory"));
         assertNull(node.get("allConsentSignatureHistories"));
+        assertNull(node.get("activeEnrollments"));
     }
     
     private Set<String> toSet(JsonNode node, String field) {
