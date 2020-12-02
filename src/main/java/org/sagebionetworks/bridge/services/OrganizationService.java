@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.OrganizationValidator.INSTANCE;
@@ -22,6 +23,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.AuthUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -214,8 +216,7 @@ public class OrganizationService {
     }
     
     /**
-     * Note that we currently allow organization admins to re-assign people from 
-     * other organizations, which we might want to change.
+     * Once assigned, only admins can re-assign accounts.
      */
     public void addMember(String appId, String identifier, AccountId accountId) {
         checkArgument(isNotBlank(appId));
@@ -226,7 +227,12 @@ public class OrganizationService {
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-
+        
+        RequestContext context = RequestContext.get();
+        if (!context.isInRole(ADMIN) && account.getOrgMembership() != null) {
+            throw new BadRequestException("Account already assigned to an organization.");
+        }
+        
         account.setOrgMembership(identifier);
         accountDao.updateAccount(account);
         sessionUpdateService.updateOrgMembership(account.getId(), identifier);

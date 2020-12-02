@@ -380,7 +380,6 @@ public class OrganizationServiceTest extends Mockito {
         service.addMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
         
         verify(mockAccountDao).updateAccount(accountCaptor.capture());
-        
         assertEquals(accountCaptor.getValue().getOrgMembership(), IDENTIFIER);
     }
     
@@ -404,7 +403,35 @@ public class OrganizationServiceTest extends Mockito {
         
         service.addMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
     }
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void addMemberFailsForAssignedAccount() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(IDENTIFIER)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
 
+        Account account = Account.create();
+        account.setOrgMembership("another-organization");
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+
+        service.addMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
+    }
+
+    @Test
+    public void addMemberSucceedsForAssignedAccountAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+
+        Account account = Account.create();
+        account.setOrgMembership("another-organization");
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+
+        service.addMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
+        
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
+        assertEquals(accountCaptor.getValue().getOrgMembership(), IDENTIFIER);
+    }
+    
     @Test
     public void getUnassignedAdmins() { 
         AccountSummarySearch search = new AccountSummarySearch.Builder()

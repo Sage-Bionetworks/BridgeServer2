@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -14,6 +15,8 @@ import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
+import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.BCRYPT;
+import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -64,6 +67,7 @@ public class HibernateAccountTest {
     public void canSerialize() throws Exception {
         Account account = new HibernateAccount();
         account.setId("id");
+        account.setAppId(TEST_APP_ID);
         account.setOrgMembership("orgId");
         account.setEmail("email");
         account.setSynapseUserId("synapseUserId");
@@ -83,6 +87,19 @@ public class HibernateAccountTest {
         account.setDataGroups(USER_DATA_GROUPS);
         account.setLanguages(LANGUAGES);
         account.setReauthToken("reauthToken");
+        account.setHealthCode("healthCode");
+        account.setPasswordAlgorithm(BCRYPT);
+        account.setPasswordHash("hash");
+        account.setPasswordModifiedOn(MODIFIED_ON);
+        account.setReauthToken("reauthToken");
+        account.setTimeZone(UTC);
+        account.setSharingScope(ALL_QUALIFIED_RESEARCHERS);
+        account.setNotifyByEmail(true);
+        account.setMigrationVersion(3);
+        
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID);
+        account.setEnrollments(ImmutableSet.of(en1, en2));
         
         // Do this just to verify it is not included in the serialization.
         addConsentHistories(account);
