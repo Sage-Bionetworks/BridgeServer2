@@ -92,7 +92,7 @@ public class StudyParticipantController extends BaseController {
         
         checkStudyResearcherOrCoordinator(studyId);
         
-        return enrollmentService.getEnrollmentsForUser(session.getAppId(), userId);
+        return enrollmentService.getEnrollmentsForUser(session.getAppId(), studyId, userId);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/search")
@@ -248,21 +248,6 @@ public class StudyParticipantController extends BaseController {
         participantService.resendConsentAgreement(app, subpopGuid, userId);
         
         return new StatusMessage("Consent agreement resent to user.");
-    }
-
-    @PostMapping("/v5/studies/{studyId}/participants/{userId}/consents/withdraw")
-    public StatusMessage withdrawFromApp(@PathVariable String studyId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
-
-        checkStudyResearcherOrCoordinator(studyId);
-        
-        App app = appService.getApp(session.getAppId());
-        Withdrawal withdrawal = parseJson(Withdrawal.class);
-        long withdrewOn = DateTime.now().getMillis();
-        
-        participantService.withdrawFromApp(app, userId, withdrawal, withdrewOn);
-        
-        return new StatusMessage("User has been withdrawn from one or more studies in the app.");
     }
 
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/consents/{guid}/withdraw")

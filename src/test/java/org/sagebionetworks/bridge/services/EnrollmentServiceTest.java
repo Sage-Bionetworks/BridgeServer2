@@ -151,7 +151,7 @@ public class EnrollmentServiceTest extends Mockito {
         List<EnrollmentDetail> details = ImmutableList.of();
         when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, USER_ID)).thenReturn(details);
         
-        List<EnrollmentDetail> retValue = service.getEnrollmentsForUser(TEST_APP_ID, USER_ID);
+        List<EnrollmentDetail> retValue = service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
         assertSame(retValue, details);
         
         verify(mockEnrollmentDao).getEnrollmentsForUser(TEST_APP_ID, USER_ID);
@@ -159,7 +159,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getEnrollmentsForUserNotFound() {
-        service.getEnrollmentsForUser(TEST_APP_ID, USER_ID);
+        service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
     }
     
     @Test

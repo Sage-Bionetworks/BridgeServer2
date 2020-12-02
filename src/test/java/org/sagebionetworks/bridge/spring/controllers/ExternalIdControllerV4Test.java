@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
@@ -95,6 +96,7 @@ public class ExternalIdControllerV4Test extends Mockito {
         session = new UserSession();
         session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_COORDINATOR, RESEARCHER);
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
     }

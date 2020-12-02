@@ -165,10 +165,11 @@ public class ParticipantController extends BaseController {
 
     
     @GetMapping("/v3/participants/{userId}/enrollments")
-    public List<EnrollmentDetail> getEnrollments(@PathVariable String userId) {
+    public PagedResourceList<EnrollmentDetail> getEnrollments(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(false, RESEARCHER);
         
-        return enrollmentService.getEnrollmentsForUser(session.getAppId(), userId);
+        List<EnrollmentDetail> details = enrollmentService.getEnrollmentsForUser(session.getAppId(), null, userId);
+        return new PagedResourceList<>(details, details.size(), true);
     }
     
     @DeleteMapping("/v3/participants/{userId}")

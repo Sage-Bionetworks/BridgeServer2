@@ -78,7 +78,7 @@ public class EnrollmentService {
                 .withRequestParam(ENROLLMENT_FILTER, filter);
     }
     
-    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String userId) {
+    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String studyId, String userId) {
         checkNotNull(appId);
         checkNotNull(userId);
         
@@ -87,7 +87,7 @@ public class EnrollmentService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        checkSelfStudyResearcherOrCoordinator(account.getId(), userId);
+        checkSelfStudyResearcherOrCoordinator(userId, studyId);
 
         return enrollmentDao.getEnrollmentsForUser(appId, userId);
     }
@@ -117,7 +117,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, newEnrollment);
         
-        checkStudyResearcherOrCoordinator(newEnrollment.getStudyId());
+        checkSelfStudyResearcherOrCoordinator(account.getId(), newEnrollment.getStudyId());
 
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             if (existingEnrollment.getStudyId().equals(newEnrollment.getStudyId())) {
@@ -177,7 +177,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, enrollment);
         
-        checkStudyResearcherOrCoordinator(enrollment.getStudyId());
+        checkSelfStudyResearcherOrCoordinator(account.getId(), enrollment.getStudyId());
         
         // If supplied, this value should be the same timestamp as the withdrewOn
         // value in the signature. Otherwise just set it here. 

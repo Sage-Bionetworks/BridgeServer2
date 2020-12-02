@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -59,7 +60,7 @@ public class StudyController extends BaseController {
 
     @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public Study getStudy(@PathVariable String id) {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
         return service.getStudy(session.getAppId(), id, true);
     }

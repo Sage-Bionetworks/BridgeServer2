@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
@@ -82,6 +83,7 @@ public class EnrollmentControllerTest extends Mockito {
         UserSession session = new UserSession();
         session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR, ADMIN);
     }
     
     @Test
