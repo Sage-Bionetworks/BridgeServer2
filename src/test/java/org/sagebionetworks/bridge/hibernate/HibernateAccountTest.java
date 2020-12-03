@@ -4,11 +4,16 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_EXTERNAL_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.testng.Assert.assertEquals;
@@ -26,6 +31,7 @@ import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -36,6 +42,9 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class HibernateAccountTest {
+    private static final Set<Enrollment> ENROLLMENTS = ImmutableSet
+            .of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID, TEST_EXTERNAL_ID));
+    
     @Test
     public void attributes() {
         HibernateAccount account = new HibernateAccount();
@@ -151,7 +160,7 @@ public class HibernateAccountTest {
         assertEquals(account.getEmail(), "email");
         assertEquals(account.getPhone(), PHONE);
         assertEquals(account.getId(), "id");
-        assertEquals(account.getStatus(), UNVERIFIED);
+        assertEquals(account.getStatus(), ENABLED); // thanks to synapseUserId
         assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
     }
     
@@ -313,6 +322,60 @@ public class HibernateAccountTest {
         account.setEnrollments(enrollments);
         
         assertEquals(account.getActiveEnrollments(), ImmutableSet.of(en1, en3));
+    }
+    
+    @Test
+    public void statusUnverifiedByDefault() { 
+        Account account = Account.create();
+        assertEquals(account.getStatus(), UNVERIFIED);
+    }
+    
+    @Test
+    public void statusDisabled() {
+        Account account = Account.create();
+        account.setStatus(DISABLED);
+        
+        // even setting a verifiable pathway doesn't change this.
+        account.setSynapseUserId(SYNAPSE_USER_ID);
+        assertEquals(account.getStatus(), DISABLED);
+    }
+    
+    @Test
+    public void statusForExternalIdAccountEnabled() {
+        Account account = Account.create();
+        account.setPasswordHash("asdf");
+        assertEquals(account.getStatus(), UNVERIFIED);
+        
+        account.setEnrollments(ENROLLMENTS);
+        assertEquals(account.getStatus(), ENABLED);
+    }
+    
+    @Test
+    public void statusForEmailAccountEnabled() {
+        Account account = Account.create();
+        assertEquals(account.getStatus(), UNVERIFIED);
+        account.setEmail(EMAIL);
+        assertEquals(account.getStatus(), UNVERIFIED);
+        
+        account.setEmailVerified(true);
+        assertEquals(account.getStatus(), ENABLED);
+    }
+    
+    public void statusForPhoneAccountEnabled() {
+        Account account = Account.create();
+        assertEquals(account.getStatus(), UNVERIFIED);
+        account.setPhone(PHONE);
+        assertEquals(account.getStatus(), UNVERIFIED);
+        
+        account.setPhoneVerified(true);
+        assertEquals(account.getStatus(), ENABLED);
+    }
+    
+    public void statusForSynapseAccountEnabled() {
+        Account account = Account.create();
+        account.setSynapseUserId(SYNAPSE_USER_ID);
+        
+        assertEquals(account.getStatus(), ENABLED);
     }
     
     private HibernateAccountConsent getHibernateAccountConsent(Long withdrewOn) {

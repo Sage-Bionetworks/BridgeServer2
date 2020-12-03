@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
 import static org.testng.Assert.assertEquals;
@@ -272,6 +273,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setId(ID);
         account.setHealthCode(HEALTH_CODE);
         account.setEmail(email);
+        account.setEmailVerified(TRUE);
         account.setPhone(phone);
         Set<Enrollment> enrollments = new HashSet<>();
         if (externalId != null) {
@@ -327,7 +329,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(account.getAttributes().get("can_be_recontacted"), "true");
         assertEquals(account.getRoles(), DEV_CALLER_ROLES);
         assertEquals(account.getClientData(), TestUtils.getClientData());
-        assertEquals(account.getStatus(), AccountStatus.UNVERIFIED);
+        assertEquals(account.getStatus(), AccountStatus.ENABLED); // has external ID and password
         assertEquals(account.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
         assertEquals(account.getNotifyByEmail(), Boolean.TRUE);
         assertNull(account.getTimeZone());
@@ -581,6 +583,11 @@ public class ParticipantServiceTest extends Mockito {
     public void createParticipantExternalIdAndPasswordIsEnabled() {
         mockHealthCodeAndAccountRetrieval(null, null, null);
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
+        
+        when(enrollmentService.enroll(any(), any())).thenAnswer(args -> {
+            account.getEnrollments().add(args.getArgument(1));
+            return args.getArgument(1);
+        });
 
         StudyParticipant participant = withParticipant().withEmail(null).withPhone(null).withPassword(PASSWORD)
                 .withExternalIds(ENROLLMENT_MAP).build();
@@ -603,17 +610,6 @@ public class ParticipantServiceTest extends Mockito {
         assertFalse(account.getEmailVerified());
     }
     
-    @Test
-    public void createParticipantSynapseUserIdWithDeviationIsDisabled() {
-        mockHealthCodeAndAccountRetrieval(null, null, null);
-
-        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
-                .withPassword(PASSWORD).build();
-        participantService.createParticipant(APP, participant, false);
-        
-        assertEquals(account.getStatus(), AccountStatus.UNVERIFIED);
-    }
-
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp=".*is not a study of the caller.*")
     public void createParticipantMustIncludeCallerStudy() {
@@ -1192,6 +1188,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateParticipantDoesNotUpdateImmutableFields() {
         mockHealthCodeAndAccountRetrieval(null, null, null);
+        account.setEmailVerified(null);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         RequestContext.set(new RequestContext.Builder().build());
  
@@ -1219,7 +1216,7 @@ public class ParticipantServiceTest extends Mockito {
         assertNull(account.getSynapseUserId());
         assertEquals(account.getHealthCode(), HEALTH_CODE);
         assertTrue(account.getRoles().isEmpty());
-        assertNull(account.getStatus());
+        assertEquals(account.getStatus(), UNVERIFIED);
         assertNull(account.getCreatedOn());
         assertNull(account.getTimeZone());
     }
@@ -2333,7 +2330,7 @@ public class ParticipantServiceTest extends Mockito {
         
         mockHealthCodeAndAccountRetrieval();
         
-        StudyParticipant participant = withParticipant().withStatus(AccountStatus.ENABLED).build();
+        StudyParticipant participant = withParticipant().withStatus(DISABLED).build();
         
         participantService.updateParticipant(APP, participant);
 
@@ -2341,9 +2338,9 @@ public class ParticipantServiceTest extends Mockito {
         Account account = accountCaptor.getValue();
 
         if (canSetStatus) {
-            assertEquals(account.getStatus(), AccountStatus.ENABLED);
+            assertEquals(account.getStatus(), DISABLED);
         } else {
-            assertNull(account.getStatus());
+            assertNotEquals(account.getStatus(), DISABLED);
         }
     }
 

@@ -23,6 +23,7 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -174,7 +175,8 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(USER_ID);
         account.setEnrollments(Sets.newHashSet(otherStudy));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         DateTime timestamp = DateTime.now();
         
@@ -205,7 +207,8 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
 
@@ -225,7 +228,8 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
 
@@ -248,7 +252,8 @@ public class EnrollmentServiceTest extends Mockito {
         Enrollment otherStudy = Enrollment.create(TEST_APP_ID, "otherStudy", USER_ID);
         account.setEnrollments(ImmutableSet.of(existing, otherStudy));
         
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
         service.enroll(enrollment);
@@ -283,7 +288,8 @@ public class EnrollmentServiceTest extends Mockito {
         existing.setWithdrawnOn(MODIFIED_ON);
         account.setEnrollments(Sets.newHashSet(unrelatedEnrollment, existing));
         
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
         enrollment.setExternalId("extId");
@@ -309,7 +315,8 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
 
