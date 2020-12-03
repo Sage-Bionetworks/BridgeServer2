@@ -1,10 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthUtils.checkStudyResearcherOrCoordinator;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
+import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
@@ -17,6 +19,7 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -33,11 +37,11 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -47,6 +51,8 @@ import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 
@@ -62,6 +68,8 @@ public class StudyParticipantController extends BaseController {
 
     private ParticipantService participantService;
     
+    private UserAdminService userAdminService;
+    
     private EnrollmentService enrollmentService;
     
     @Autowired
@@ -70,29 +78,23 @@ public class StudyParticipantController extends BaseController {
     }
     
     @Autowired
+    final void setUserAdminService(UserAdminService userAdminService) {
+        this.userAdminService = userAdminService;
+    }
+
+    @Autowired
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
     }
 
-    @PostMapping("/v5/studies/{studyId}/participants/{userId}/notifications/sms")
-    @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage createSmsRegistration(@PathVariable String studyId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
-        
-        checkStudyResearcherOrCoordinator(studyId);
-        
-        App app = appService.getApp(session.getAppId());
-        participantService.createSmsRegistration(app, userId);
-        return new StatusMessage("SMS notification registration created");
-    }
-
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/enrollments")
-    public List<EnrollmentDetail> getEnrollments(@PathVariable String studyId, @PathVariable String userId) {
+    public PagedResourceList<EnrollmentDetail> getEnrollmentsForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
         checkStudyResearcherOrCoordinator(studyId);
         
-        return enrollmentService.getEnrollmentsForUser(session.getAppId(), studyId, userId);
+        List<EnrollmentDetail> list = enrollmentService.getEnrollmentsForUser(session.getAppId(), studyId, userId); 
+        return new PagedResourceList<>(list, list.size(), true);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/search")
@@ -250,23 +252,6 @@ public class StudyParticipantController extends BaseController {
         return new StatusMessage("Consent agreement resent to user.");
     }
 
-    @PostMapping("/v5/studies/{studyId}/participants/{userId}/consents/{guid}/withdraw")
-    public StatusMessage withdrawConsent(@PathVariable String studyId, @PathVariable String userId,
-            @PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
-
-        checkStudyResearcherOrCoordinator(studyId);
-
-        App app = appService.getApp(session.getAppId());
-        Withdrawal withdrawal = parseJson(Withdrawal.class);
-        long withdrewOn = DateTime.now().getMillis();
-        SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
-        
-        participantService.withdrawConsent(app, userId, subpopGuid, withdrawal, withdrewOn);
-        
-        return new StatusMessage("User has been withdrawn from subpopulation '"+guid+"'.");
-    }
-
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/uploads")
     public ForwardCursorPagedResourceList<UploadView> getUploads(@PathVariable String studyId,
             @PathVariable String userId, @RequestParam(required = false) String startTime,
@@ -313,6 +298,33 @@ public class StudyParticipantController extends BaseController {
                 + BridgeUtils.COMMA_SPACE_JOINER.join(erroredNotifications) + ".");
     }
 
+    @DeleteMapping("/v5/studies/{studyId}/participants/{userId}")
+    public StatusMessage deleteTestParticipant(@PathVariable String studyId, @PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        
+        checkStudyResearcherOrCoordinator(studyId);
+        
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
+            throw new UnauthorizedException("Account is not a test account.");
+        }
+        // We need to see all enrollments in this case, not just active enrollments
+        Set<String> studyIds = account.getEnrollments().stream()
+                .map(Enrollment::getStudyId)
+                .collect(toImmutableSet());
+        if (studyIds.size() > 1 || (!studyIds.isEmpty() && !studyIds.contains(studyId))) {
+            throw new UnauthorizedException("Account is associated to another study.");
+        }
+        App app = appService.getApp(session.getAppId());
+        userAdminService.deleteUser(app, userId);
+        
+        return new StatusMessage("User deleted.");
+    }    
+    
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/activityEvents")
     public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
