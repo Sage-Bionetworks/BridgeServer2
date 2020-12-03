@@ -372,9 +372,9 @@ public class HibernateAccount implements Account {
         // Can sign in with an external ID and password
         boolean verExtId = (passwordHash != null) && !collectExternalIds(this).isEmpty();
         // Can sign in via email
-        boolean verEmail = (email != null && emailVerified == TRUE);
+        boolean verEmail = (email != null && TRUE.equals(emailVerified));
         // Can sign in with phone number
-        boolean verPhone = (phone != null && phoneVerified == TRUE);
+        boolean verPhone = (phone != null && TRUE.equals(phoneVerified));
         // By setting the field, it's persisted on database updates
         this.status = (verEmail || verPhone || synapseUserId != null || verExtId) ? ENABLED : UNVERIFIED;
         return status;
