@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
@@ -27,6 +28,14 @@ public class AuthUtils {
     private static final AuthEvaluator STUDY_TEAM_MEMBER_OR_WORKER = new AuthEvaluator().canAccessStudy().or()
             .hasAnyRole(WORKER, ADMIN).or()
             .callerConsideredGlobal();
+
+    private static final AuthEvaluator IS_STUDY_COORDINATOR = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(ADMIN);
+    
+    private static final AuthEvaluator STUDY_COORDINATOR_DEVELOPER_OR_RESEARCHER = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
     
     private static final AuthEvaluator SELF_STUDY_TEAM_MEMBER_OR_WORKER = new AuthEvaluator().isSelf().or()
             .canAccessStudy().or()
@@ -52,13 +61,19 @@ public class AuthUtils {
             .hasAnyRole(ADMIN);
     
     /**
+     * Is the caller a coordinator for the study (or, as in all other checks, and admin)?
+     */
+    public static void checkStudyCoordinator(String studyId) {
+        IS_STUDY_COORDINATOR.checkAndThrow("studyId", studyId);
+    }
+    /**
      * Is the caller operating on their own account, or a person with the researcher role and access
      * to the indicated study? 
      * 
      * @throws UnauthorizedException
      */
-    public static void checkSelfStudyResearcherOrCoordinator(String userId, String studyId) {
-        SELF_STUDY_RESEARCHER_OR_COORDINATOR.checkAndThrow("userId", userId, "studyId", studyId);
+    public static void checkSelfStudyResearcherOrCoordinator(String studyId, String userId) {
+        SELF_STUDY_RESEARCHER_OR_COORDINATOR.checkAndThrow("studyId", studyId, "userId", userId);
     }
     
     /**
@@ -123,6 +138,14 @@ public class AuthUtils {
      */
     public static void checkStudyTeamMemberOrWorker(String studyId) {
         STUDY_TEAM_MEMBER_OR_WORKER.checkAndThrow("studyId", studyId);
+    }
+    
+    /**
+     * Is this caller a developer, researcher, or study coordinator with access to 
+     * this study?
+     */
+    public static void checkStudyCoordinatorDeveloperOrResearcher(String studyId) {
+        STUDY_COORDINATOR_DEVELOPER_OR_RESEARCHER.checkAndThrow("studyId", studyId);
     }
     
     /**

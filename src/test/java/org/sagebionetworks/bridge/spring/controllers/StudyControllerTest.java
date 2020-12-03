@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -25,9 +26,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -76,6 +79,11 @@ public class StudyControllerTest extends Mockito {
 
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        RequestContext.set(NULL_INSTANCE);
     }
 
     @Test
@@ -142,6 +150,9 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void getStudy() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
         Study study = Study.create();
         study.setIdentifier("oneId");
         study.setName("oneName");

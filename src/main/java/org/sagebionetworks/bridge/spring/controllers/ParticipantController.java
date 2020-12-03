@@ -168,6 +168,10 @@ public class ParticipantController extends BaseController {
     public PagedResourceList<EnrollmentDetail> getEnrollments(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(false, RESEARCHER);
         
+        // A limitation of Swagger as we use it is that we don't want different collection
+        // containers for the same kind of entity. Since some APIs can page enrollments, 
+        // this API returns a paged enrollment, despite the fact that there will probably
+        // never be more than one page of results.
         List<EnrollmentDetail> details = enrollmentService.getEnrollmentsForUser(session.getAppId(), null, userId);
         return new PagedResourceList<>(details, details.size(), true);
     }

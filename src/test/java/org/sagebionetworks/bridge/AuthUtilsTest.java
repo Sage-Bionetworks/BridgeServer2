@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -37,7 +38,7 @@ public class AuthUtilsTest extends Mockito {
     public void checkSelfOrStudyResearcherSucceedsForSelf() {
         RequestContext.set(new RequestContext.Builder().withCallerUserId(USER_ID).build());
         
-        AuthUtils.checkSelfStudyResearcherOrCoordinator(USER_ID, TEST_STUDY_ID);
+        AuthUtils.checkSelfStudyResearcherOrCoordinator(TEST_STUDY_ID, USER_ID);
     }
     
     @Test
@@ -47,7 +48,7 @@ public class AuthUtilsTest extends Mockito {
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
         
-        AuthUtils.checkSelfStudyResearcherOrCoordinator(USER_ID, TEST_STUDY_ID);
+        AuthUtils.checkSelfStudyResearcherOrCoordinator(TEST_STUDY_ID, USER_ID);
     }
 
     @Test
@@ -56,7 +57,7 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());
         
-        AuthUtils.checkSelfStudyResearcherOrCoordinator(USER_ID, TEST_STUDY_ID);
+        AuthUtils.checkSelfStudyResearcherOrCoordinator(TEST_STUDY_ID, USER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -66,7 +67,7 @@ public class AuthUtilsTest extends Mockito {
                 .withOrgSponsoredStudies(ImmutableSet.of("someOtherStudy"))
                 .build());
         
-        AuthUtils.checkSelfStudyResearcherOrCoordinator(USER_ID, TEST_STUDY_ID);
+        AuthUtils.checkSelfStudyResearcherOrCoordinator(TEST_STUDY_ID, USER_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -76,7 +77,7 @@ public class AuthUtilsTest extends Mockito {
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
         
-        AuthUtils.checkSelfStudyResearcherOrCoordinator(USER_ID, TEST_STUDY_ID);
+        AuthUtils.checkSelfStudyResearcherOrCoordinator(TEST_STUDY_ID, USER_ID);
     }
 
     @Test
@@ -281,5 +282,30 @@ public class AuthUtilsTest extends Mockito {
         RequestContext.set(new RequestContext.Builder().build());
         
         AuthUtils.checkStudyTeamMemberOrWorker(TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void checkStudyCoordinatorSucceedsForStudyCoordinator() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        AuthUtils.checkStudyCoordinator(TEST_STUDY_ID);
+    }
+
+    @Test
+    public void checkStudyCoordinatorSucceedsForAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        AuthUtils.checkStudyCoordinator(TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkStudyCoordinatorFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        AuthUtils.checkStudyCoordinator(TEST_STUDY_ID);
     }
 }

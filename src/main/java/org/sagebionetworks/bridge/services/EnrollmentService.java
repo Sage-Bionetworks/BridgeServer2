@@ -87,7 +87,7 @@ public class EnrollmentService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        checkSelfStudyResearcherOrCoordinator(userId, studyId);
+        checkSelfStudyResearcherOrCoordinator(studyId, userId);
 
         return enrollmentDao.getEnrollmentsForUser(appId, userId);
     }
@@ -117,7 +117,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, newEnrollment);
         
-        checkSelfStudyResearcherOrCoordinator(account.getId(), newEnrollment.getStudyId());
+        checkSelfStudyResearcherOrCoordinator(newEnrollment.getStudyId(), account.getId());
 
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             if (existingEnrollment.getStudyId().equals(newEnrollment.getStudyId())) {
@@ -177,7 +177,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, enrollment);
         
-        checkSelfStudyResearcherOrCoordinator(account.getId(), enrollment.getStudyId());
+        checkSelfStudyResearcherOrCoordinator(enrollment.getStudyId(), account.getId());
         
         // If supplied, this value should be the same timestamp as the withdrewOn
         // value in the signature. Otherwise just set it here. 

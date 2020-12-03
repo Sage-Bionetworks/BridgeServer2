@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -61,7 +62,9 @@ public class StudyController extends BaseController {
     @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public Study getStudy(@PathVariable String id) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
-
+        
+        AuthUtils.checkStudyCoordinator(id);
+        
         return service.getStudy(session.getAppId(), id, true);
     }
 

@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -58,6 +59,8 @@ public class ExternalIdControllerV4 extends BaseController {
             @RequestParam(required = false) String idFilter) {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_COORDINATOR, RESEARCHER);
 
+        AuthUtils.checkStudyCoordinatorDeveloperOrResearcher(studyId);
+        
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
 

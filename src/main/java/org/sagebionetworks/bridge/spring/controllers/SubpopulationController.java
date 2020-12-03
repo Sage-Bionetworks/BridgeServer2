@@ -43,6 +43,8 @@ public class SubpopulationController extends BaseController {
 
     @GetMapping(path="/v3/subpopulations", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getAllSubpopulations(@RequestParam(defaultValue = "false") boolean includeDeleted) throws Exception {
+        // Allowing study coordinator access to subpopulations should be temporary, as we are
+        // going to revamp our consent system.
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_COORDINATOR);
 
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(session.getAppId(),
