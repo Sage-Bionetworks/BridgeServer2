@@ -10,7 +10,6 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
-import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
@@ -459,21 +458,10 @@ public class ParticipantService {
         if (participant.getEmail() != null && !sendEmailVerification) {
             // not verifying, so consider it verified
             account.setEmailVerified(true); 
-            account.setStatus(ENABLED);
         }
         if (participant.getPhone() != null && !shouldSendVerification) {
             // not verifying, so consider it verified
             account.setPhoneVerified(true); 
-            account.setStatus(ENABLED);
-        }
-        // If external ID or Synapse ID only was provided, then the account will need to be enabled through 
-        // use of the the AuthenticationService.generatePassword() pathway, or through authentication via 
-        // Synapse
-        if (shouldEnableCompleteExternalIdAccount(participant)) {
-            account.setStatus(ENABLED);
-        }
-        if (shouldEnableCompleteSynapseUserIdAccount(participant)) {
-            account.setStatus(ENABLED);
         }
         account.setSynapseUserId(participant.getSynapseUserId());
         
@@ -509,16 +497,6 @@ public class ParticipantService {
     protected String generateGUID() {
         return BridgeUtils.generateGuid();
     }
-    
-    private boolean shouldEnableCompleteExternalIdAccount(StudyParticipant participant) {
-        return participant.getEmail() == null && participant.getPhone() == null && 
-            !participant.getExternalIds().isEmpty() && participant.getPassword() != null;
-    }
-    
-    private boolean shouldEnableCompleteSynapseUserIdAccount(StudyParticipant participant) {
-        return participant.getEmail() == null && participant.getPhone() == null && 
-            participant.getSynapseUserId() != null && participant.getPassword() == null;
-    }
 
     public void updateParticipant(App app, StudyParticipant participant) {
         checkNotNull(app);
@@ -533,6 +511,8 @@ public class ParticipantService {
         updateAccountAndRoles(app, account, participant, false);
         
         // Allow admin and worker accounts to toggle status; in particular, to disable/enable accounts.
+        // Unless disabled, accounts are unverified until some conditions can be verified by checking other
+        // fields of the Account (see the Account.getStatus() accessor).
         if (participant.getStatus() != null) {
             if (RequestContext.get().isInRole(ADMIN, WORKER)) {
                 account.setStatus(participant.getStatus());

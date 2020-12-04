@@ -2,10 +2,8 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDateTime;
 import org.testng.annotations.Test;
 
-import static org.joda.time.DateTimeZone.UTC;
 import static org.testng.Assert.assertEquals;
 
 public class DateTimeMarshallerTest {

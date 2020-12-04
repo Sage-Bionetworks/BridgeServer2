@@ -1,6 +1,10 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.BridgeUtils.collectExternalIds;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
 import java.util.ArrayList;
@@ -35,6 +39,7 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -363,12 +368,24 @@ public class HibernateAccount implements Account {
     }
 
     /**
-     * Account status (unverified, enabled, disabled.
+     * Account status (unverified, enabled, disabled).
      *
      * @see AccountStatus
      */
     @Enumerated(EnumType.STRING)
     public AccountStatus getStatus() {
+        if (status == DISABLED) {
+            return status;
+        }
+        // As long as there is a pathway to authenticate, the account is considered verified.
+        // Can sign in with an external ID and password
+        boolean verExtId = (passwordHash != null) && !collectExternalIds(this).isEmpty();
+        // Can sign in via email
+        boolean verEmail = (email != null && TRUE.equals(emailVerified));
+        // Can sign in with phone number
+        boolean verPhone = (phone != null && TRUE.equals(phoneVerified));
+        // By setting the field, it's persisted on database updates
+        this.status = (verEmail || verPhone || synapseUserId != null || verExtId) ? ENABLED : UNVERIFIED;
         return status;
     }
 

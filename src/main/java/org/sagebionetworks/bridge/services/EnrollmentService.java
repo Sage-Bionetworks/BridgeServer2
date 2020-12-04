@@ -97,12 +97,17 @@ public class EnrollmentService {
 
         // verify this has appId and accountId
         Validate.entityThrowingException(INSTANCE, enrollment);
+        
+        // Verify that the caller has access to this study
+        checkSelfOrStudyResearcher(enrollment.getAccountId(), enrollment.getStudyId());
 
+        // Because this is an enrollment, we don't want to check the caller's access to the 
+        // account based on study, because the account has not been put in a study accessible
+        // to the caller. The check would fail for researchers.
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
         enrollment = enroll(account, enrollment);
         accountService.updateAccount(account);
         return enrollment;

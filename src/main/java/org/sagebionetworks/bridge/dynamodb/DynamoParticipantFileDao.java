@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.dynamodb;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
