@@ -1099,7 +1099,6 @@ public class AssessmentServiceTest extends Mockito {
         assertEquals(assessmentCaptor.getValue().getOwnerId(), "new-owner-id");
     }
     
-
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = "ownerId parameter is required")
     public void importAssessmentFailsWithNoOrgMembership() {

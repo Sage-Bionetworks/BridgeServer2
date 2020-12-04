@@ -203,10 +203,7 @@ public class AccountService {
     }
     
     /**
-     * Save account changes. Account should have been retrieved from the getAccount() method 
-     * (constructAccount() is not sufficient). If the optional consumer is passed to this method and 
-     * it throws an exception, the account will not be persisted (the consumer is executed after 
-     * the persist is executed in a transaction, however).
+     * Save account changes. 
      */
     public void updateAccount(Account account) {
         checkNotNull(account);

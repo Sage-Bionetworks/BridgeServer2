@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -23,6 +24,9 @@ public class AuthUtils {
     private static final AuthEvaluator ORG_MEMBER = new AuthEvaluator().isInOrg().or()
             .hasAnyRole(ADMIN);
     
+    private static final AuthEvaluator ORG_ADMINISTRATOR = new AuthEvaluator().isInOrg().hasAnyRole(ORG_ADMIN).or()
+            .hasAnyRole(ADMIN);
+    
     private static final AuthEvaluator STUDY_TEAM_MEMBER_OR_WORKER = new AuthEvaluator().canAccessStudy().or()
             .hasAnyRole(WORKER, ADMIN).or()
             .callerConsideredGlobal();
@@ -32,16 +36,17 @@ public class AuthUtils {
             .hasAnyRole(WORKER, ADMIN).or()
             .callerConsideredGlobal();
     
-    private static final AuthEvaluator SELF_OR_WORKER = new AuthEvaluator().isSelf().or()
+    private static final AuthEvaluator SELF_WORKER_OR_ORG_ADMIN = new AuthEvaluator().isSelf().or()
             .hasAnyRole(WORKER, ADMIN).or()
+            .hasAnyRole(ORG_ADMIN).isInOrg().or()
             .callerConsideredGlobal();
     
     private static final AuthEvaluator SELF_OR_STUDY_RESEARCHER = new AuthEvaluator().isSelf().or()
             .canAccessStudy().hasAnyRole(RESEARCHER).or()
             .hasAnyRole(ADMIN);
     
-    private static final AuthEvaluator STUDY_RESEARCHER = new AuthEvaluator().canAccessStudy().hasAnyRole(RESEARCHER)
-            .or().hasAnyRole(ADMIN);
+    private static final AuthEvaluator STUDY_RESEARCHER = new AuthEvaluator().canAccessStudy().hasAnyRole(RESEARCHER).or()
+            .hasAnyRole(ADMIN);
     
     private static final AuthEvaluator SELF_OR_RESEARCHER = new AuthEvaluator().isSelf().or()
             .hasAnyRole(RESEARCHER, ADMIN);
@@ -71,8 +76,8 @@ public class AuthUtils {
      * 
      * @throws UnauthorizedException
      */
-    public static void checkSelfOrResearcher(String targetUserId) {
-        SELF_OR_RESEARCHER.checkAndThrow("userId", targetUserId);
+    public static void checkSelfOrResearcher(String userId) {
+        SELF_OR_RESEARCHER.checkAndThrow("userId", userId);
     }
     
     /**
@@ -84,6 +89,15 @@ public class AuthUtils {
      */
     public static void checkOrgMember(String orgId) {
         ORG_MEMBER.checkAndThrow("orgId", orgId);
+    }
+    
+    /**
+     * Is the account an organization admin in the target organization?
+     * 
+     * @throws UnauthorizedException
+     */
+    public static void checkOrgAdmin(String orgId) {
+        ORG_ADMINISTRATOR.checkAndThrow("orgId", orgId);    
     }
     
     /**
@@ -129,6 +143,13 @@ public class AuthUtils {
     }
     
     /**
+     * Is the account an organization admin in the target organization?
+     */
+    public static boolean isOrgAdmin(String orgId) {
+        return ORG_ADMINISTRATOR.check("orgId", orgId);    
+    }
+    
+    /**
      * Does this caller have access to the study? 
      */
     public static final boolean isStudyTeamMemberOrWorker(String studyId) {
@@ -146,8 +167,8 @@ public class AuthUtils {
     /**
      * Is the caller 1) referring to their own account, or 2) a worker account? 
      */
-    public static final boolean isSelfOrWorker(String userId) {
-        return SELF_OR_WORKER.check("userId", userId);
+    public static final boolean isSelfWorkerOrOrgAdmin(String orgId, String userId) {
+        return SELF_WORKER_OR_ORG_ADMIN.check("orgId", orgId, "userId", userId);
     }
     
     /**

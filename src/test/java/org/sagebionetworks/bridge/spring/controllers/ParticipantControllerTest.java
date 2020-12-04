@@ -164,7 +164,7 @@ public class ParticipantControllerTest extends Mockito {
             EMAIL, null, null);
     private static final IdentifierUpdate SYNAPSE_ID_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
             null, SYNAPSE_USER_ID);
-
+    
     @InjectMocks
     @Spy
     ParticipantController controller;
@@ -204,7 +204,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
-
+    
     @Captor
     ArgumentCaptor<UserSession> sessionCaptor;
 
@@ -224,10 +224,10 @@ public class ParticipantControllerTest extends Mockito {
     ArgumentCaptor<DateTime> endsOnCaptor;
 
     @Captor
-    ArgumentCaptor<CriteriaContext> contextCaptor;
-
-    @Captor
     ArgumentCaptor<IdentifierUpdate> identifierUpdateCaptor;
+    
+    @Captor
+    ArgumentCaptor<CriteriaContext> contextCaptor;
 
     @Captor
     ArgumentCaptor<AccountSummarySearch> searchCaptor;
@@ -1357,7 +1357,7 @@ public class ParticipantControllerTest extends Mockito {
 
         controller.updateIdentifiers();
     }
-
+    
     @Test
     public void getParticipantWithNoConsents() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
@@ -1549,6 +1549,18 @@ public class ParticipantControllerTest extends Mockito {
         
         List<EnrollmentDetail> retValue = controller.getEnrollments(USER_ID);
         assertSame(retValue, list);
+    }
+    
+    @Test
+    public void getActivityEvents() {
+        List<ActivityEvent> events = ImmutableList.of(new DynamoActivityEvent(), new DynamoActivityEvent());
+        when(mockParticipantService.getActivityEvents(app, USER_ID)).thenReturn(events);        
+        
+        ResourceList<ActivityEvent> retValue = controller.getActivityEvents(USER_ID);
+        assertNotNull(retValue);
+        assertSame(retValue.getItems(), events);
+        
+        verify(mockParticipantService).getActivityEvents(app, USER_ID);
     }
 
     private AccountSummarySearch setAccountSummarySearch() throws Exception {

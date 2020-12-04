@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -88,7 +89,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkOrgMemberFailsOnMismatch() {
+    public void checkOrgMemberFailsWrongOrganization() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("another-organization").build());
         
@@ -284,24 +285,135 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
+    public void checkStudyResearcherSuccedsForResearcher() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .build());
+        
+        AuthUtils.checkStudyResearcher(TEST_STUDY_ID);
+    }
+
+    @Test
+    public void checkStudyResearcherSuccedsForAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+        
+        AuthUtils.checkStudyResearcher(TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkStudyResearcherFailsWrongStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("wrong-study"))
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .build());
+        
+        AuthUtils.checkStudyResearcher(TEST_STUDY_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkStudyResearcherFailsWrongRole() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .build());
+        
+        AuthUtils.checkStudyResearcher(TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void checkOrgAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .build());
+        
+        AuthUtils.checkOrgAdmin(TEST_ORG_ID);
+    }
+
+    @Test
+    public void checkOrgAdminSucceedsForAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+        
+        AuthUtils.checkOrgAdmin(TEST_ORG_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkOrgAdminWrongOrgId() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership("wrong-org-id")
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .build());
+        
+        AuthUtils.checkOrgAdmin(TEST_ORG_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkOrgAdminWrongRole() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .build());
+        
+        AuthUtils.checkOrgAdmin(TEST_ORG_ID);
+    }
+    
+    @Test
     public void isOrgMemberSucceedsForOrgMember() {
-        RequestContext.set(new RequestContext.Builder().withCallerOrgMembership(TEST_ORG_ID).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID).build());
         
         assertTrue( AuthUtils.isOrgMember(TEST_ORG_ID) );
     }
     
     @Test
     public void isOrgMemberSucceedsForAdmin() {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         assertTrue( AuthUtils.isOrgMember(TEST_ORG_ID) );
     }
     
     @Test
-    public void isOrgMemberFails() {
-        RequestContext.set(NULL_INSTANCE);
+    public void isOrgMemberWrongOrg() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership("wrong-org")
+                .build());
         
         assertFalse( AuthUtils.isOrgMember(TEST_ORG_ID) );
+    }
+    
+    @Test
+    public void isOrgAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .build());
+        
+        assertTrue( AuthUtils.isOrgAdmin(TEST_ORG_ID) );
+    }
+
+    @Test
+    public void isOrgAdminWrongOrgMembership() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .build());
+        
+        assertFalse( AuthUtils.isOrgAdmin(TEST_ORG_ID) );
+    }
+
+    @Test
+    public void isOrgAdminWrongRole() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .build());
+        
+        assertFalse( AuthUtils.isOrgAdmin(TEST_ORG_ID) );
     }
     
     @Test
@@ -330,40 +442,83 @@ public class AuthUtilsTest extends Mockito {
 
     @Test
     public void isSelfOrStudyTeamMemberOrWorkerFails() {
-        // This still allows users who are not in an organization to work, so we
-        // need to scope the request.
         RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
-                
+                // we have to set this because we still make an exception for accounts
+                // associated to no studies (ie not in an org or in an org that isn't
+                // sponsoring any studies).
+                .withOrgSponsoredStudies(ImmutableSet.of("study1"))
+                .build());
+        
         assertFalse( AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID) );
     }
     
     @Test
-    public void isSelfOrWorkerSucceedsForSelf() {
+    public void isSelfOrStudyTeamMemberOrWorkerForSelf() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(USER_ID).build());
+                .withCallerUserId(USER_ID)
+                .build());
         
-        assertTrue( AuthUtils.isSelfOrWorker(USER_ID) );
-    }
-    
-    @Test
-    public void isSelfOrWorkerSucceedsForWorker() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(WORKER)).build());
-        
-        assertTrue( AuthUtils.isSelfOrWorker(USER_ID) );
+        assertTrue( AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID) );
     }
 
     @Test
-    public void isSelfOrWorkerSucceedsFails() {
-        // This still allows users who are not in an organization to work, so we
-        // need to scope the request.
+    public void isSelfOrStudyTeamMemberOrWorkerForStudyTeamMember() {
         RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
-                
-        assertFalse( AuthUtils.isSelfOrWorker(USER_ID) );
+                .withCallerUserId(USER_ID)
+                .build());
+        
+        assertTrue( AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID) );
     }
-    
+
+    @Test
+    public void isSelfOrStudyTeamMemberOrWorkerForWorker() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(WORKER))
+                .build());
+        
+        assertTrue( AuthUtils.isSelfOrStudyTeamMemberOrWorker(TEST_STUDY_ID, USER_ID) );
+    }
+
+    @Test
+    public void isSelfWorkerOrOrgAdminFails() {
+        RequestContext.set(new RequestContext.Builder()
+                // we have to set this because we still make an exception for accounts
+                // associated to no studies (ie not in an org or in an org that isn't
+                // sponsoring any studies).
+                .withOrgSponsoredStudies(ImmutableSet.of("study1"))
+                .build());
+        
+        assertFalse( AuthUtils.isSelfWorkerOrOrgAdmin(TEST_ORG_ID, USER_ID) );
+    }
+
+    @Test
+    public void isSelfWorkerOrOrgAdminForSelf() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(USER_ID)
+                .build());
+        
+        assertTrue( AuthUtils.isSelfWorkerOrOrgAdmin(TEST_ORG_ID, USER_ID) );
+    }
+
+    @Test
+    public void isSelfWorkerOrOrgAdminForWorker() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(WORKER))
+                .build());
+        
+        assertTrue( AuthUtils.isSelfWorkerOrOrgAdmin(TEST_ORG_ID, USER_ID) );
+    }
+
+    @Test
+    public void isSelfWorkerOrOrgAdminForOrgAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .build());
+        
+        assertTrue( AuthUtils.isSelfWorkerOrOrgAdmin(TEST_ORG_ID, USER_ID) );
+    }
+
     @Test
     public void checkStudyResearcher() {
         RequestContext.set(new RequestContext.Builder()

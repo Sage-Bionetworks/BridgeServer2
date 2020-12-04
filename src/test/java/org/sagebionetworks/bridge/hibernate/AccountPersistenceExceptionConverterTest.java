@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
@@ -9,16 +8,16 @@ import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
+import java.sql.SQLIntegrityConstraintViolationException;
 import java.util.Map;
 import java.util.Optional;
-
-import static org.mockito.Mockito.verify;
 
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
 import org.hibernate.NonUniqueObjectException;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -29,13 +28,18 @@ import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 import com.google.common.collect.ImmutableSet;
 
-public class AccountPersistenceExceptionConverterTest {
+public class AccountPersistenceExceptionConverterTest extends Mockito {
+    
+    private static final String ORG_FOREIGN_KEY_ERROR = "Cannot add or update a child row: a foreign key constraint fails "
+            +"(`bridgedb`.`accounts`, CONSTRAINT `accounts_ibfk_1` FOREIGN KEY (`studyId`, `orgMembership`) "
+            +"REFERENCES `Organizations` (`appId`, `identifier`))";
 
     private AccountPersistenceExceptionConverter converter;
     
@@ -324,4 +328,19 @@ public class AccountPersistenceExceptionConverterTest {
         assertEquals(result.getMessage(), AccountPersistenceExceptionConverter.NON_UNIQUE_MSG);
     }
     
+    @Test
+    public void organizationForeignKeyConstraint() { 
+        HibernateAccount account = new HibernateAccount();
+        
+        SQLIntegrityConstraintViolationException ex = mock(SQLIntegrityConstraintViolationException.class);
+        when(ex.getMessage()).thenReturn(ORG_FOREIGN_KEY_ERROR);
+        
+        org.hibernate.exception.ConstraintViolationException cve = 
+                new org.hibernate.exception.ConstraintViolationException(ex.getMessage(), ex, "");
+        
+        PersistenceException pe = new PersistenceException(cve);
+        
+        RuntimeException e = converter.convert(pe, account);
+        assertEquals(e.getClass(), EntityNotFoundException.class);
+    }
 }

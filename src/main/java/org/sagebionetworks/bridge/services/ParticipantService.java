@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
@@ -431,6 +432,12 @@ public class ParticipantService {
         account.setEmailVerified(FALSE);
         account.setPhoneVerified(FALSE);
         account.setHealthCode(generateGUID());
+        account.setStatus(UNVERIFIED);
+        // Organizational admins create accounts in their organization.
+        // Otherwise this field is ignored on create.
+        if (AuthUtils.isOrgAdmin(participant.getOrgMembership())) {
+            account.setOrgMembership(participant.getOrgMembership());
+        }
 
         // Hash password if it has been supplied.
         if (participant.getPassword() != null) {
@@ -775,7 +782,6 @@ public class ParticipantService {
             throw new EntityNotFoundException(Account.class);
         }
         
-        // reload account, or you will get an optimistic lock exception
         boolean sendEmailVerification = false;
         boolean accountUpdated = false;
         if (update.getPhoneUpdate() != null && account.getPhone() == null) {

@@ -1,6 +1,7 @@
 
 package org.sagebionetworks.bridge.hibernate;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.List;
@@ -161,13 +162,14 @@ public class HibernateAccountDao implements AccountDao {
             builder.orgMembership(search.getOrgMembership());
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
-        }
-        
-        // If the caller is a member of an organization, then they can only see accounts in the studies 
-        // sponsored by that organization. ADMIN accounts are exempt from this requirement.
-        if (!AuthUtils.isStudyTeamMemberOrWorker(null)) {
-            Set<String> callerStudies = context.getOrgSponsoredStudies();
-            builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
+            
+            // If the caller is a member of an organization, then they can only see accounts in the studies 
+            // sponsored by that organization. Note that this only applies now to enrollments, so admin 
+            // accounts are exempt.
+            if (!TRUE.equals(search.isAdminOnly()) && !AuthUtils.isStudyTeamMemberOrWorker(null)) {
+                Set<String> callerStudies = context.getOrgSponsoredStudies();
+                builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
+            }
         }
         if (!isCount) {
             builder.append("GROUP BY acct.id");
