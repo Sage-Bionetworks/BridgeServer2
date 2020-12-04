@@ -23,10 +23,14 @@ public class OrganizationPersistenceExceptionConverterTest extends Mockito {
             +"key constraint fails (`bridgedb`.`organizationsstudies`, CONSTRAINT `fk_os_organization` "
             +"FOREIGN KEY (`appId`, `orgId`) REFERENCES `Organizations` (`appId`, `identifier`))";
     
-    public static final String ACCOUNT_CONSTRAINT_RAW = "Cannot delete or update a parent row: a foreign key constraint "
+    public static final String ACCOUNT_CONSTRAINT_RAW1 = "Cannot delete or update a parent row: a foreign key constraint "
             +"fails (`bridgedb`.`accounts`, CONSTRAINT `accounts_ibfk_1` FOREIGN KEY (`studyId`, "
             +"`orgMembership`) REFERENCES `Organizations` (`appId`, `identifier`))";
 
+    public static final String ACCOUNT_CONSTRAINT_RAW2 = "Cannot delete or update a parent row: a foreign key constraint "
+            +"fails (`BridgeDB`.`Accounts`, CONSTRAINT `Accounts_ibfk_1` FOREIGN KEY (`studyId`, "
+            +"`orgMembership`) REFERENCES `Organizations` (`appId`, `identifier`))";
+    
     private OrganizationPersistenceExceptionConverter converter;
     
     @Mock
@@ -51,8 +55,19 @@ public class OrganizationPersistenceExceptionConverterTest extends Mockito {
     }
 
     @Test
-    public void convertsAccountConstraint() throws Exception {
-        SQLIntegrityConstraintViolationException sqle = new SQLIntegrityConstraintViolationException(ACCOUNT_CONSTRAINT_RAW);
+    public void convertsAccountConstraint1() throws Exception {
+        SQLIntegrityConstraintViolationException sqle = new SQLIntegrityConstraintViolationException(ACCOUNT_CONSTRAINT_RAW1);
+        org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException("", sqle, "");
+        PersistenceException pe = new PersistenceException(cve);
+        
+        RuntimeException retValue = converter.convert(pe, Organization.create());
+        assertEquals(retValue.getMessage(), OrganizationPersistenceExceptionConverter.ACCOUNT_CONSTRAINT);
+    }
+    
+    // The casing in some environments is different...this still works.
+    @Test
+    public void convertsAccountConstraint2() throws Exception {
+        SQLIntegrityConstraintViolationException sqle = new SQLIntegrityConstraintViolationException(ACCOUNT_CONSTRAINT_RAW2);
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException("", sqle, "");
         PersistenceException pe = new PersistenceException(cve);
         

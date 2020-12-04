@@ -20,7 +20,7 @@ public class OrganizationPersistenceExceptionConverter implements PersistenceExc
             String message = Throwables.getRootCause(throwable).getMessage();
             if (message.matches(".*a foreign key constraint fails.*fk_os_organization.*")) {
                 message = STUDY_CONSTRAINT;
-            } else if (message.matches(".*a foreign key constraint fails.*accounts_ibfk_1.*")) {
+            } else if (message.matches(".*a foreign key constraint fails.*[aA]ccounts_ibfk_1.*")) {
                 message = ACCOUNT_CONSTRAINT;
             }
             return new ConstraintViolationException.Builder().withMessage(message).build();
