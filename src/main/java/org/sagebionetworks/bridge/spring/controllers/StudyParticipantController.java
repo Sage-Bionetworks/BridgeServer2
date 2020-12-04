@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
-import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
@@ -91,6 +90,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
         checkStudyResearcherOrCoordinator(studyId);
+        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         List<EnrollmentDetail> list = enrollmentService.getEnrollmentsForUser(session.getAppId(), studyId, userId); 
         return new PagedResourceList<>(list, list.size(), true);
@@ -136,6 +136,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
         checkStudyResearcherOrCoordinator(studyId);
+        checkAccountInStudy(session.getAppId(), studyId, userId);
 
         App app = appService.getApp(session.getAppId());
         // Do not allow lookup by health code if health code access is disabled. Allow it however
@@ -159,7 +160,8 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
         checkStudyResearcherOrCoordinator(studyId);
-
+        checkAccountInStudy(session.getAppId(), studyId, userId);
+        
         App app = appService.getApp(session.getAppId());
         // Verify it's in the same app as the researcher.
         RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
@@ -176,7 +178,8 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
         checkStudyResearcherOrCoordinator(studyId);
-
+        checkAccountInStudy(session.getAppId(), studyId, userId);
+        
         StudyParticipant participant = parseJson(StudyParticipant.class);
  
         // Force userId of the URL
@@ -194,7 +197,8 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
         checkStudyResearcherOrCoordinator(studyId);
-
+        checkAccountInStudy(session.getAppId(), studyId, userId);
+        
         App app = appService.getApp(session.getAppId());
         participantService.signUserOut(app, userId, deleteReauthToken);
 
@@ -206,7 +210,8 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
         checkStudyResearcherOrCoordinator(studyId);
-
+        checkAccountInStudy(session.getAppId(), studyId, userId);
+        
         App app = appService.getApp(session.getAppId());
         participantService.requestResetPassword(app, userId);
         
@@ -218,7 +223,8 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
         checkStudyResearcherOrCoordinator(studyId);
-
+        checkAccountInStudy(session.getAppId(), studyId, userId);
+        
         App app = appService.getApp(session.getAppId());
         participantService.resendVerification(app, ChannelType.EMAIL, userId);
         
@@ -230,7 +236,8 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
         checkStudyResearcherOrCoordinator(studyId);
-
+        checkAccountInStudy(session.getAppId(), studyId, userId);
+        
         App app = appService.getApp(session.getAppId());
         participantService.resendVerification(app, ChannelType.PHONE, userId);
         
@@ -243,6 +250,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
         checkStudyResearcherOrCoordinator(studyId);
+        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
@@ -259,6 +267,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
         checkStudyResearcherOrCoordinator(studyId);
+        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
         DateTime startTimeDate = getDateTimeOrDefault(startTime, null);
@@ -273,6 +282,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
         checkStudyResearcherOrCoordinator(studyId);
+        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
         List<NotificationRegistration> registrations = participantService.listRegistrations(app, userId);
@@ -285,6 +295,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
         checkStudyResearcherOrCoordinator(studyId);
+        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
         NotificationMessage message = parseJson(NotificationMessage.class);
@@ -302,6 +313,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
         checkStudyResearcherOrCoordinator(studyId);
+        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
         Account account = accountService.getAccount(accountId);
@@ -310,13 +322,6 @@ public class StudyParticipantController extends BaseController {
         }
         if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
             throw new UnauthorizedException("Account is not a test account.");
-        }
-        // We need to see all enrollments in this case, not just active enrollments
-        Set<String> studyIds = account.getEnrollments().stream()
-                .map(Enrollment::getStudyId)
-                .collect(toImmutableSet());
-        if (studyIds.size() > 1 || (!studyIds.isEmpty() && !studyIds.contains(studyId))) {
-            throw new UnauthorizedException("Account is associated to another study.");
         }
         App app = appService.getApp(session.getAppId());
         userAdminService.deleteUser(app, userId);
@@ -329,8 +334,22 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
         checkStudyResearcherOrCoordinator(studyId);
-
+        checkAccountInStudy(session.getAppId(), studyId, userId);
+        
         App app = appService.getApp(session.getAppId());
         return new ResourceList<>(participantService.getActivityEvents(app, userId));
+    }
+    
+    /**
+     * Verify that the account referenced is enrolled in the target study.
+     * 
+     * @throws EntityNotFoundException
+     */
+    void checkAccountInStudy(String appId, String studyId, String userId) {
+        List<EnrollmentDetail> enrollments = enrollmentService.getEnrollmentsForUser(appId, studyId, userId);
+        boolean matches = enrollments.stream().anyMatch(en -> studyId.equals(en.getStudyId()));
+        if (!matches) {
+            throw new EntityNotFoundException(Account.class);
+        }
     }
 }

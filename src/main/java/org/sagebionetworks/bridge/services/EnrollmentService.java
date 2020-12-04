@@ -18,6 +18,7 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -82,7 +83,7 @@ public class EnrollmentService {
         checkNotNull(appId);
         checkNotNull(userId);
         
-        AccountId accountId = AccountId.forId(appId, userId);
+        AccountId accountId = BridgeUtils.parseAccountId(appId, userId);
         Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
