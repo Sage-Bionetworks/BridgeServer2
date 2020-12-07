@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthUtils.checkStudyResearcherOrCoordinator;
+import static org.sagebionetworks.bridge.AuthUtils.isInRole;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -141,7 +143,7 @@ public class StudyParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         // Do not allow lookup by health code if health code access is disabled. Allow it however
         // if the user is an administrator.
-        if (!session.isInRole(ADMIN) && !app.isHealthCodeExportEnabled()
+        if (!isInRole(session.getParticipant().getRoles(), ADMIN) && !app.isHealthCodeExportEnabled()
                 && userId.toLowerCase().startsWith("healthcode:")) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -297,8 +299,8 @@ public class StudyParticipantController extends BaseController {
         checkStudyResearcherOrCoordinator(studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
-        App app = appService.getApp(session.getAppId());
         NotificationMessage message = parseJson(NotificationMessage.class);
+        App app = appService.getApp(session.getAppId());
         Set<String> erroredNotifications = participantService.sendNotification(app, userId, message);
         
         if (erroredNotifications.isEmpty()) {
@@ -313,11 +315,15 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
         checkStudyResearcherOrCoordinator(studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
         Account account = accountService.getAccount(accountId);
         if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        boolean inStudy = account.getEnrollments().stream()
+                .anyMatch(en -> studyId.equals(en.getStudyId()));
+        if (!inStudy) {
             throw new EntityNotFoundException(Account.class);
         }
         if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
