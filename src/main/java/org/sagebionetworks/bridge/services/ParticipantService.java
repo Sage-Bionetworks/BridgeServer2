@@ -577,6 +577,7 @@ public class ParticipantService {
     public void createCustomActivityEvent(App app, String userId, CustomActivityEventRequest request) {
         checkNotNull(app);
         checkArgument(isNotBlank(userId));
+        checkNotNull(request);
         
         Account account = getAccountThrowingException(app.getIdentifier(), userId);
 

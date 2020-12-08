@@ -226,10 +226,10 @@ public class ParticipantServiceTest extends Mockito {
     private AccountWorkflowService accountWorkflowService;
     
     @Mock
-    private OrganizationService organizationService;
+    private ActivityEventService activityEventService;
     
     @Mock
-    private ActivityEventService activityEventService;
+    private OrganizationService organizationService;
     
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
