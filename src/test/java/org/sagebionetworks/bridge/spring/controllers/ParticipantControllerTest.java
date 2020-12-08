@@ -108,6 +108,7 @@ import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.SmsTemplate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -235,6 +236,9 @@ public class ParticipantControllerTest extends Mockito {
     @Captor
     ArgumentCaptor<SmsTemplate> templateCaptor;
     
+    @Captor
+    ArgumentCaptor<CustomActivityEventRequest> eventRequestCaptor;
+    
     UserSession session;
 
     App app;
@@ -317,6 +321,7 @@ public class ParticipantControllerTest extends Mockito {
         assertAccept(ParticipantController.class, "sendNotification");
         assertGet(ParticipantController.class, "getActivityEvents");
         assertAccept(ParticipantController.class, "sendSmsMessageForWorker");
+        assertPost(ParticipantController.class, "createCustomActivityEvent");
     }
 
     @Test
@@ -1561,6 +1566,23 @@ public class ParticipantControllerTest extends Mockito {
         assertSame(retValue.getItems(), events);
         
         verify(mockParticipantService).getActivityEvents(app, USER_ID);
+    }
+    
+    @Test
+    public void createCustomActivityEvent() throws Exception {
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withEventKey("eventKey")
+                .withTimestamp(TIMESTAMP).build();
+        mockRequestBody(mockRequest, request);
+        
+        StatusMessage retValue = controller.createCustomActivityEvent(USER_ID);
+        assertEquals(retValue.getMessage(), "Event recorded.");
+        
+        verify(mockParticipantService).createCustomActivityEvent(
+                eq(app), eq(USER_ID), eventRequestCaptor.capture());
+        CustomActivityEventRequest captured = eventRequestCaptor.getValue();
+        assertEquals(captured.getEventKey(), "eventKey");
+        assertEquals(captured.getTimestamp(), TIMESTAMP);
     }
 
     private AccountSummarySearch setAccountSummarySearch() throws Exception {
