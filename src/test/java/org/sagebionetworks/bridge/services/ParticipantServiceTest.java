@@ -14,6 +14,8 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
@@ -81,6 +83,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.apps.SmsTemplate;
@@ -223,10 +226,10 @@ public class ParticipantServiceTest extends Mockito {
     private AccountWorkflowService accountWorkflowService;
     
     @Mock
-    private ActivityEventService activityEventService;
+    private OrganizationService organizationService;
     
     @Mock
-    private OrganizationService organizationService;
+    private ActivityEventService activityEventService;
     
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
@@ -2379,6 +2382,30 @@ public class ParticipantServiceTest extends Mockito {
         Account captured = accountCaptor.getValue();
         assertEquals(captured.getEnrollments().size(), 1);
         assertEquals(captured.getEnrollments(), account.getEnrollments());
+    }
+    
+    @Test
+    public void createCustomActivityEvent() throws Exception {
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withEventKey("anEvent")
+                .withTimestamp(TIMESTAMP).build();
+        
+        AccountId accountId = AccountId.forId(APP.getIdentifier(), USER_ID);
+        when(accountService.getAccount(accountId)).thenReturn(account);
+        
+        participantService.createCustomActivityEvent(APP, USER_ID, request);
+        
+        verify(activityEventService).publishCustomEvent(APP, HEALTH_CODE, "anEvent", TIMESTAMP);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void createCustomActivityEventAccountNotFound() throws Exception {
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withEventKey("anEvent")
+                .withTimestamp(TIMESTAMP).build();
+        
+        participantService.createCustomActivityEvent(APP, USER_ID, request);
     }
     
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 

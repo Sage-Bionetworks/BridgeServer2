@@ -60,6 +60,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.SmsTemplate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -100,7 +101,7 @@ public class ParticipantController extends BaseController {
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
     }
-
+    
     /** Researcher API to allow backfill of SMS notification registrations. */
     @PostMapping("/v3/participants/{userId}/notifications/sms")
     @ResponseStatus(HttpStatus.CREATED)
@@ -112,6 +113,18 @@ public class ParticipantController extends BaseController {
 
         participantService.createSmsRegistration(app, userId);
         return new StatusMessage("SMS notification registration created");
+    }
+    
+    @PostMapping("/v3/participants/{userId}/activityEvents")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StatusMessage createCustomActivityEvent(@PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        App app = appService.getApp(session.getAppId());
+        
+        CustomActivityEventRequest activityEvent = parseJson(CustomActivityEventRequest.class);
+        participantService.createCustomActivityEvent(app, userId, activityEvent);
+        
+        return new StatusMessage("Event recorded.");
     }
 
     @PostMapping("/v3/participants/self")
