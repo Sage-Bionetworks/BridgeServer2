@@ -50,7 +50,6 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
-import org.sagebionetworks.bridge.dynamodb.DynamoParticipantFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -575,12 +574,6 @@ public class SpringConfig {
     @Autowired
     public DynamoDBMapper externalIdDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoExternalIdentifier.class);
-    }
-
-    @Bean(name = "participantFileDdbMapper")
-    @Autowired
-    public DynamoDBMapper participantFileDdbMapper(DynamoUtils dynamoUtils) {
-        return dynamoUtils.getMapper(DynamoParticipantFile.class);
     }
     
     @Bean(name = "uploadValidationHandlerList")
