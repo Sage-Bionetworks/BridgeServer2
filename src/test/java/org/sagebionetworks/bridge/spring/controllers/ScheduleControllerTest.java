@@ -28,7 +28,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -80,7 +79,7 @@ public class ScheduleControllerTest extends Mockito {
                 return null;
             }
             @Override
-            public void validate(Set<String> dataGroups, Set<String> substudyIds, Set<String> taskIdentifiers, Errors errors) {
+            public void validate(Set<String> dataGroups, Set<String> studyIds, Set<String> taskIdentifiers, Errors errors) {
             }
             @Override
             public List<Schedule> getAllPossibleSchedules() {
@@ -95,7 +94,7 @@ public class ScheduleControllerTest extends Mockito {
         session.setAppId(appId);
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerClientInfo(clientInfo).build());
+        RequestContext.set(new RequestContext.Builder().withCallerClientInfo(clientInfo).build());
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -103,7 +102,7 @@ public class ScheduleControllerTest extends Mockito {
     
     @AfterMethod
     public void afterMethod() {
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     @Test

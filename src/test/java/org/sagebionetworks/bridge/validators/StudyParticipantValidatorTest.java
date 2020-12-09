@@ -2,9 +2,10 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.Assert.assertNull;
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
 import java.util.Map;
@@ -13,6 +14,7 @@ import java.util.Set;
 
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -21,15 +23,16 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
-import org.sagebionetworks.bridge.services.ExternalIdService;
-import org.sagebionetworks.bridge.services.SubstudyService;
+import org.sagebionetworks.bridge.models.organizations.Organization;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.OrganizationService;
+import org.sagebionetworks.bridge.services.StudyService;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -38,24 +41,19 @@ public class StudyParticipantValidatorTest {
     
     private static final Set<String> APP_PROFILE_ATTRS = BridgeUtils.commaListToOrderedSet("attr1,attr2");
     private static final Set<String> APP_DATA_GROUPS = BridgeUtils.commaListToOrderedSet("group1,group2,bluebell");
-    private static final ExternalIdentifier EXT_ID = ExternalIdentifier.create(TEST_APP_ID, "id");
     private App app;
 
     private StudyParticipantValidator validator;
     
     @Mock
-    private ExternalIdService externalIdService;
+    private StudyService studyService;
     
     @Mock
-    private SubstudyService substudyService;
-    
-    private Substudy substudy;
+    private OrganizationService mockOrganizationService;
     
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        
-        substudy = Substudy.create();
         
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
@@ -66,9 +64,14 @@ public class StudyParticipantValidatorTest {
         app.getUserProfileAttributes().add("phone");
     }
     
+    @AfterMethod
+    public void afterMethod() {
+        RequestContext.set(RequestContext.NULL_INSTANCE);
+    }
+    
     @Test
     public void validatesNew() throws Exception {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         app.setExternalIdRequiredOnSignup(true);
         
         Map<String,String> attrs = Maps.newHashMap();
@@ -92,7 +95,7 @@ public class StudyParticipantValidatorTest {
     // Password, email address, and externalId (if being validated) cannot be updated, so these don't need to be validated.
     @Test
     public void validatesUpdate() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, false);
+        validator = makeValidator(false);
         
         Map<String,String> attrs = Maps.newHashMap();
         attrs.put("badValue", "value");
@@ -117,20 +120,20 @@ public class StudyParticipantValidatorTest {
     @Test
     public void validatesIdForNew() {
         // not new, this succeeds
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true); 
+        validator = makeValidator(true); 
         Validate.entityThrowingException(validator, withEmail("email@email.com"));
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void validatesIdForExisting() {
         // not new, this should fail, as there's no ID in participant.
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, false); 
+        validator = makeValidator(false); 
         Validate.entityThrowingException(validator, withEmail("email@email.com"));
     }
     
     @Test
     public void validPasses() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         Validate.entityThrowingException(validator, withEmail("email@email.com"));
         Validate.entityThrowingException(validator, withDataGroup("bluebell"));
         Validate.entityThrowingException(validator, withSynapseUserId(SYNAPSE_USER_ID));
@@ -138,36 +141,53 @@ public class StudyParticipantValidatorTest {
     
     @Test
     public void emailPhoneSynapseUserIdOrExternalIdRequired() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withEmail(null), "StudyParticipant", "email, phone, synapseUserId or externalId is required");
     }
     
     @Test
     public void emailCannotBeEmptyString() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withEmail(""), "email", "does not appear to be an email address");
     }
     
     @Test
     public void emailCannotBeBlankString() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withEmail("    \n    \t "), "email", "does not appear to be an email address");
     }
     
     @Test
     public void emailCannotBeInvalid() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withEmail("a"), "email", "does not appear to be an email address");
+    }
+
+    @Test
+    public void emailCanIncludeWordTest() {
+        validator = makeValidator(true);
+        
+        String email = "bridge-testing+jenkins-dev-ScheduledActivityAutoResolutionTest-zstm@sagebase.org";
+        Validate.entityThrowingException(validator, withEmail(email));
     }
     
     @Test
-    public void externalIdOnlyOK() {
-        StudyParticipant participant = new StudyParticipant.Builder().withExternalId("external-id").build();
-
-        when(externalIdService.getExternalId(TEST_APP_ID, "external-id"))
-                .thenReturn(Optional.of(ExternalIdentifier.create(TEST_APP_ID, "external-id")));
+    public void externalIdFieldInvalid() {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withExternalId("external-id").build();
         
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, participant, "externalId", 
+                "must now be supplied in the externalIds property that maps a study ID to the new external ID");
+    }
+    
+    @Test
+    public void externalIdsOK() {
+        when(studyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(Study.create());
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withExternalIds(ImmutableMap.of(TEST_STUDY_ID, "external-id")).build();
+        
+        validator = makeValidator(true);
         Validate.entityThrowingException(validator, participant);
     }
     
@@ -175,97 +195,97 @@ public class StudyParticipantValidatorTest {
     public void synapseUserIdOnlyOK() {
         StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID).build();
 
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         Validate.entityThrowingException(validator, participant);
     }
     
     @Test
     public void emptyStringPasswordRequired() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withPassword(""), "password", "is required");
     }
     
     @Test
     public void emptyStringUserSynapseIdRequired() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withSynapseUserId(""), "synapseUserId", "cannot be blank");
     }
     
     @Test
     public void nullPasswordOK() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         Validate.entityThrowingException(validator, withPassword(null));
     }
     
     @Test
     public void validEmail() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withEmail("belgium"), "email", "does not appear to be an email address");
     }
     
     @Test
     public void minLength() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withPassword("a1A~"), "password", "must be at least 8 characters");
     }
     
     @Test
     public void numberRequired() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withPassword("aaaaaaaaA~"), "password", "must contain at least one number (0-9)");
     }
     
     @Test
     public void symbolRequired() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withPassword("aaaaaaaaA1"), "password", "must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )");
     }
     
     @Test
     public void lowerCaseRequired() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withPassword("AAAAA!A1"), "password", "must contain at least one lowercase letter (a-z)");
     }
     
     @Test
     public void upperCaseRequired() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withPassword("aaaaa!a1"), "password", "must contain at least one uppercase letter (A-Z)");
     }
     
     @Test
     public void validatesDataGroupsValidIfSupplied() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withDataGroup("squirrel"), "dataGroups", "'squirrel' is not defined for app (use group1, group2, bluebell)");
     }
     
     @Test
     public void validatePhoneRegionRequired() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withPhone("1234567890", null), "phone", "does not appear to be a phone number");
     }
     
     @Test
     public void validatePhoneRegionIsCode() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withPhone("1234567890", "esg"), "phone", "does not appear to be a phone number");
     }
     
     @Test
     public void validatePhoneRequired() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withPhone(null, "US"), "phone", "does not appear to be a phone number");
     }
     
     @Test
     public void validatePhonePattern() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withPhone("234567890", "US"), "phone", "does not appear to be a phone number");
     }
     
     @Test
     public void validatePhone() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
                 .withPassword("pAssword1@").withPhone(TestConstants.PHONE).build();
         Validate.entityThrowingException(validator, participant);
@@ -273,31 +293,22 @@ public class StudyParticipantValidatorTest {
     
     @Test
     public void validateTotallyWrongPhone() {
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, withPhone("this isn't a phone number", "US"), "phone", "does not appear to be a phone number");
     }
     
     @Test
-    public void createWithExternalIdManagedOk() {
-        when(externalIdService.getExternalId(app.getIdentifier(), "foo")).thenReturn(Optional.of(EXT_ID));
+    public void createWithExternalIdOk() {
         StudyParticipant participant = withExternalId("foo");
 
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         Validate.entityThrowingException(validator, participant);
-    }
-    @Test
-    public void createWithExternalIdManagedInvalid() {
-        when(externalIdService.getExternalId(any(), any())).thenReturn(Optional.empty());
-        StudyParticipant participant = withExternalId("wrong-external-id");
-        
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
-        assertValidatorMessage(validator, participant, "externalId", "is not a valid external ID");
     }
     @Test
     public void createWithoutExternalIdManagedOk() {
         StudyParticipant participant = withEmail("email@email.com");
         
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         Validate.entityThrowingException(validator, participant);
     }
     @Test
@@ -305,7 +316,7 @@ public class StudyParticipantValidatorTest {
         app.setExternalIdRequiredOnSignup(true);
         StudyParticipant participant = withEmail("email@email.com");
         
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, participant, "externalId", "is required");
     }
     @Test
@@ -315,104 +326,101 @@ public class StudyParticipantValidatorTest {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
                 .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         Validate.entityThrowingException(validator, participant);
     }
     @Test
     public void updateWithExternalIdManagedOk() {
-        when(externalIdService.getExternalId(app.getIdentifier(), "foo")).thenReturn(Optional.of(EXT_ID));
         StudyParticipant participant = withExternalIdAndId("foo");
         
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, false);
-        Validate.entityThrowingException(validator, participant);
-    }
-    @Test
-    public void updateWithExternalIdManagedInvalid() {
-        when(externalIdService.getExternalId(any(), any())).thenReturn(Optional.empty());
-        StudyParticipant participant = withExternalId("does-not-exist");
-        
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, false);
-        assertValidatorMessage(validator, participant, "externalId", "is not a valid external ID");
-    }
-    @Test
-    public void updateWithoutExternalIdManagedOk() {
-        StudyParticipant participant = withEmailAndId("email@email.com");
-        
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, false);
+        validator = makeValidator(false);
         Validate.entityThrowingException(validator, participant);
     }
     @Test
     public void emptyExternalIdInvalidOnCreate() {
         StudyParticipant participant = withExternalId(" ");
         
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
-        assertValidatorMessage(validator, participant, "externalId", "cannot be blank");
-    }
-    @Test
-    public void emptyExternalIdInvalidOnUpdate() {
-        StudyParticipant participant = withExternalId(" ");
-        
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, false);
-        assertValidatorMessage(validator, participant, "externalId", "cannot be blank");
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, participant, "externalIds[test-study].externalId", "cannot be blank");
     }
     @Test
     public void emptySynapseUserIdOnCreate() {
         StudyParticipant participant = withSynapseUserId(" ");
         
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        validator = makeValidator(true);
         assertValidatorMessage(validator, participant, "synapseUserId", "cannot be blank");
     }
     @Test
     public void emptySynapseUserIdOnUpdate() {
         StudyParticipant participant = withSynapseUserId(" ");
         
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, false);
+        validator = makeValidator(false);
         assertValidatorMessage(validator, participant, "synapseUserId", "cannot be blank");
     }
     @Test
-    public void substudyAllowedIfCallerHasNoSubstudies() {
-        // In other words, you can "taint" a user with substudies, putting them in a limited security role.
-        StudyParticipant participant = withSubstudies("substudyA", "substudyB");
+    public void validateStudyIdInvalid() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of("studyA", "studyC")).build());
+        try {
+            StudyParticipant participant = new StudyParticipant.Builder()
+                    .withExternalIds(ImmutableMap.of("studyA", "extIdA")).build();
+
+            validator = makeValidator(true);
+            assertValidatorMessage(validator, participant, "externalIds[studyA]", "is not a study");
+        } finally {
+            RequestContext.set(RequestContext.NULL_INSTANCE);
+        }
+    }    
+    @Test
+    public void validateOrganization() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID)).thenReturn(Optional.empty());
         
-        when(substudyService.getSubstudy(app.getIdentifier(), "substudyA", false)).thenReturn(substudy);
-        when(substudyService.getSubstudy(app.getIdentifier(), "substudyB", false)).thenReturn(substudy);
+        StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, participant, "orgMembership", "is not a valid organization");
+    }
+    @Test
+    public void validateOrgIsSameAsCallers() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
+            .thenReturn(Optional.of(Organization.create()));
         
-        validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, participant, "orgMembership", "cannot be set by caller");
+    }
+    @Test
+    public void validateOrgCanBeDifferentFromSuperadmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership("someOtherOrgId")
+                .withCallerRoles(ImmutableSet.of(Roles.SUPERADMIN))
+                .build());
+        
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
+            .thenReturn(Optional.of(Organization.create()));
+        
+        StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
+        validator = makeValidator(true);
         Validate.entityThrowingException(validator, participant);
     }
     @Test
-    public void subsetOfsubstudiesOK() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyB", "substudyC")).build());
-        try {
-            // The user (in three substudies) can create a participant in only one of those substudies
-            StudyParticipant participant = withSubstudies("substudyB");
-            
-            when(substudyService.getSubstudy(app.getIdentifier(), "substudyB", false)).thenReturn(substudy);
-            
-            validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
-            Validate.entityThrowingException(validator, participant);
-        } finally {
-            BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
-        }
-    }
-    @Test
-    public void nonexistentSubstudyIds() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyA", "substudyC")).build());
-        try {
-            StudyParticipant participant = withSubstudies("substudyA");
-            
-            validator = new StudyParticipantValidator(externalIdService, substudyService, app, true);
-            assertValidatorMessage(validator, participant, "substudyIds[substudyA]", "is not a substudy");
-        } finally {
-            BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
-        }
+    public void organizationOK() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
+            .thenReturn(Optional.of(Organization.create()));
+        
+        StudyParticipant participant = withMemberOrganization(TEST_ORG_ID);
+        validator = makeValidator(true);
+        Validate.entityThrowingException(validator, participant);
     }
     
-    private StudyParticipant withSubstudies(String... substudyIds) {
-        return new StudyParticipant.Builder().withEmail("email@email.com").withSubstudyIds(ImmutableSet.copyOf(substudyIds)).build();
-        
+    private StudyParticipantValidator makeValidator(boolean isNew) {
+        return new StudyParticipantValidator(studyService, mockOrganizationService, app, isNew);
+    }
+
+    private StudyParticipant withMemberOrganization(String orgId) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withOrgMembership(orgId).build();
     }
     private StudyParticipant withPhone(String phone, String phoneRegion) {
         return new StudyParticipant.Builder().withPhone(new Phone(phone, phoneRegion)).build();
@@ -430,13 +438,10 @@ public class StudyParticipantValidatorTest {
         return new StudyParticipant.Builder().withSynapseUserId(synapseUserId).build();
     }
     
-    private StudyParticipant withEmailAndId(String email) {
-        return new StudyParticipant.Builder().withId("id").withEmail(email).withPassword("aAz1%_aAz1%").build();
-    }
-    
     private StudyParticipant withExternalId(String externalId) {
+        when(studyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(Study.create());
         return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
-                .withExternalId(externalId).build();
+                .withExternalIds(ImmutableMap.of(TEST_STUDY_ID, externalId)).build();
     }
     
     private StudyParticipant withExternalIdAndId(String externalId) {

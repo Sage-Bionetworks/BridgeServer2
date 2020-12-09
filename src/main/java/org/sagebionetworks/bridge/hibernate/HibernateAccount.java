@@ -1,6 +1,11 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.BridgeUtils.collectExternalIds;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
+import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -34,22 +39,27 @@ import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
 /** MySQL implementation of accounts via Hibernate. */
 @Entity
 @Table(name = "Accounts")
+@BridgeTypeName("Account")
 public class HibernateAccount implements Account {
     private String id;
     private String appId;
+    private String orgMembership; 
     private String email;
     private String synapseUserId;
     private Phone phone;
@@ -76,7 +86,22 @@ public class HibernateAccount implements Account {
     private Set<String> dataGroups;
     private List<String> languages;
     private int migrationVersion;
-    private Set<AccountSubstudy> accountSubstudies; 
+    private Set<Enrollment> enrollments; 
+    
+    /**
+     * Constructor to load information for the AccountRef object. This avoids loading any of the 
+     * ancillary tables.
+     */
+    public HibernateAccount(String firstName, String lastName, String email, Phone phone, String synapseUserId,
+            String orgMembership, String id) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.phone = phone;
+        this.synapseUserId = synapseUserId;
+        this.orgMembership = orgMembership;
+        this.id = id;
+    }
     
     /**
      * No args constructor, required and used by Hibernate for full object initialization.
@@ -88,10 +113,11 @@ public class HibernateAccount implements Account {
      * construct this object with just the indicated fields using a select clause, without also 
      * specifying a constructor.
      */
-    public HibernateAccount(DateTime createdOn, String appId, String firstName, String lastName,
+    public HibernateAccount(DateTime createdOn, String appId, String orgId, String firstName, String lastName,
             String email, Phone phone, String id, AccountStatus status, String synapseUserId) {
         this.createdOn = createdOn;
         this.appId = appId;
+        this.orgMembership = orgId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -117,6 +143,7 @@ public class HibernateAccount implements Account {
 
     /** App ID the account lives in. */
     @Column(name = "studyId")
+    @JsonIgnore
     public String getAppId() {
         return appId;
     }
@@ -126,6 +153,16 @@ public class HibernateAccount implements Account {
         this.appId = appId;
     }
 
+    /** Account is an administrative account that is a member of this organization. */
+    public String getOrgMembership() {
+        return orgMembership;
+    }
+
+    /** @see #getOrgMembershiop */
+    public void setOrgMembership(String orgId) {
+        this.orgMembership = orgId;
+    }
+    
     /** Account email address. */
     public String getEmail() {
         return email;
@@ -201,6 +238,7 @@ public class HibernateAccount implements Account {
             referencedColumnName = "id"))
     @ElementCollection(fetch = FetchType.EAGER)
     @MapKeyClass(HibernateAccountConsentKey.class)
+    @JsonIgnore
     public Map<HibernateAccountConsentKey, HibernateAccountConsent> getConsents() {
         if (consents == null) {
             consents = new HashMap<>();
@@ -226,6 +264,7 @@ public class HibernateAccount implements Account {
     }
 
     /** Account health code. */
+    @JsonIgnore
     public String getHealthCode() {
         return healthCode;
     }
@@ -273,6 +312,7 @@ public class HibernateAccount implements Account {
      * @see PasswordAlgorithm
      */
     @Enumerated(EnumType.STRING)
+    @JsonIgnore
     public PasswordAlgorithm getPasswordAlgorithm() {
         return passwordAlgorithm;
     }
@@ -283,6 +323,7 @@ public class HibernateAccount implements Account {
     }
 
     /** The full password hash, as used by {@link PasswordAlgorithm} to decode it. */
+    @JsonIgnore
     public String getPasswordHash() {
         return passwordHash;
     }
@@ -294,6 +335,7 @@ public class HibernateAccount implements Account {
 
     /** Epoch milliseconds when the user last changed their password. */
     @Convert(converter = DateTimeToLongAttributeConverter.class)
+    @JsonIgnore
     public DateTime getPasswordModifiedOn() {
         return passwordModifiedOn;
     }
@@ -326,12 +368,24 @@ public class HibernateAccount implements Account {
     }
 
     /**
-     * Account status (unverified, enabled, disabled.
+     * Account status (unverified, enabled, disabled).
      *
      * @see AccountStatus
      */
     @Enumerated(EnumType.STRING)
     public AccountStatus getStatus() {
+        if (status == DISABLED) {
+            return status;
+        }
+        // As long as there is a pathway to authenticate, the account is considered verified.
+        // Can sign in with an external ID and password
+        boolean verExtId = (passwordHash != null) && !collectExternalIds(this).isEmpty();
+        // Can sign in via email
+        boolean verEmail = (email != null && TRUE.equals(emailVerified));
+        // Can sign in with phone number
+        boolean verPhone = (phone != null && TRUE.equals(phoneVerified));
+        // By setting the field, it's persisted on database updates
+        this.status = (verEmail || verPhone || synapseUserId != null || verExtId) ? ENABLED : UNVERIFIED;
         return status;
     }
 
@@ -366,6 +420,7 @@ public class HibernateAccount implements Account {
     /** The time zone initially captured from this user's requests, used to correctly calculate 
      * schedules for the user. Should not be updated once set. */
     @Convert(converter = DateTimeZoneAttributeConverter.class)
+    @JsonIgnore
     public DateTimeZone getTimeZone() {
         return timeZone;
     }
@@ -377,6 +432,7 @@ public class HibernateAccount implements Account {
 
     /** The sharing scope set for data being generated by this study participant. */
     @Enumerated(EnumType.STRING)
+    @JsonIgnore
     public SharingScope getSharingScope() {
         return (sharingScope == null) ? SharingScope.NO_SHARING : sharingScope;
     }
@@ -387,6 +443,7 @@ public class HibernateAccount implements Account {
     }
 
     /** Has this user consented to receive email from the app administrators? */
+    @JsonIgnore
     public Boolean getNotifyByEmail() {
         return (notifyByEmail == null) ? TRUE : notifyByEmail;
     }
@@ -431,6 +488,7 @@ public class HibernateAccount implements Account {
     }
 
     /** Used internally to track migration of data to/from this table. */
+    @JsonIgnore
     public int getMigrationVersion() {
         return migrationVersion;
     }
@@ -441,6 +499,7 @@ public class HibernateAccount implements Account {
     }
     
     @Transient // do not persist in Hibernate (the hash is persisted instead)
+    @JsonIgnore
     public String getReauthToken() {
         return reauthToken;
     }
@@ -450,18 +509,27 @@ public class HibernateAccount implements Account {
     }
     
     @OneToMany(mappedBy = "accountId", cascade = CascadeType.ALL, orphanRemoval = true, 
-        fetch = FetchType.EAGER, targetEntity=HibernateAccountSubstudy.class)
+        fetch = FetchType.EAGER, targetEntity=HibernateEnrollment.class)
     @OnDelete(action=OnDeleteAction.CASCADE)
+    @JsonIgnore
     @Override
-    public Set<AccountSubstudy> getAccountSubstudies() {
-        if (accountSubstudies == null) {
-            accountSubstudies = new HashSet<>();
+    public Set<Enrollment> getEnrollments() {
+        if (enrollments == null) {
+            enrollments = new HashSet<>();
         }
-        return accountSubstudies;
+        return enrollments;
     }
 
     @Override
-    public void setAccountSubstudies(Set<AccountSubstudy> accountSubstudies) {
-        this.accountSubstudies = accountSubstudies;
+    public void setEnrollments(Set<Enrollment> enrollments) {
+        this.enrollments = enrollments;
+    }
+    
+    @Transient
+    @JsonIgnore
+    public Set<Enrollment> getActiveEnrollments() {
+        return getEnrollments().stream()
+                .filter(en -> en.getWithdrawnOn() == null)
+                .collect(toImmutableSet());
     }
 }

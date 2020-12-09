@@ -12,6 +12,7 @@ import javax.servlet.http.Cookie;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import org.sagebionetworks.bridge.spring.util.HttpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -44,6 +45,13 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 @RestController
 public class AuthenticationController extends BaseController {
 
+    static String EMAIL_VERIFY_REQUEST_MSG = "If registered with the app, we'll send an email to that address so you can verify it.";
+    static String EMAIL_SIGNIN_REQUEST_MSG = "If registered with the app, we'll send an email to that address so you can sign in.";
+    static String EMAIL_RESET_PWD_MSG = "If registered with the app, we'll send an email to that address so you can change your password.";
+    static String PHONE_VERIFY_REQUEST_MSG = "If registered with the app, we'll send a message to that number so you can verify it.";
+    static String PHONE_SIGNIN_REQUEST_MSG = "If registered with the app, we'll send a message to that number so you can sign in.";
+    static String PHONE_RESET_PWD_MSG = "If registered with the app, we'll send a message to that number so you can change your password.";
+    
     private AccountWorkflowService accountWorkflowService;
     
     @Autowired
@@ -62,7 +70,7 @@ public class AuthenticationController extends BaseController {
             getMetrics().setUserId(userId);
         }
 
-        return new StatusMessage("Email sent.");
+        return new StatusMessage(EMAIL_SIGNIN_REQUEST_MSG);
     }
 
     @PostMapping("/v3/auth/email/signIn")
@@ -78,14 +86,16 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
+
         UserSession session = null;
         try {
             session = authenticationService.emailSignIn(context, signInRequest);
-        } catch(ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+        } catch (ConsentRequiredException e) {
+            session = e.getUserSession();
             throw e;
+        } finally {
+            updateRequestInfoFromSession(session);
         }
-        setCookieAndRecordMetrics(session);
 
         return UserSessionInfo.toJSON(session);
     }
@@ -101,7 +111,7 @@ public class AuthenticationController extends BaseController {
             getMetrics().setUserId(userId);
         }
 
-        return new StatusMessage("Message sent.");
+        return new StatusMessage(PHONE_SIGNIN_REQUEST_MSG);
     }
 
     @PostMapping("/v3/auth/phone/signIn")
@@ -117,15 +127,16 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
-        
+
         UserSession session = null;
         try {
             session = authenticationService.phoneSignIn(context, signInRequest);
-        } catch(ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+        } catch (ConsentRequiredException e) {
+            session = e.getUserSession();
             throw e;
+        } finally {
+            updateRequestInfoFromSession(session);
         }
-        setCookieAndRecordMetrics(session);
 
         return UserSessionInfo.toJSON(session);
     }
@@ -140,15 +151,16 @@ public class AuthenticationController extends BaseController {
 
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
 
-        UserSession session;
+        UserSession session = null;
         try {
             session = authenticationService.signIn(app, context, signIn);
         } catch (ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+            session = e.getUserSession();
             throw e;
+        } finally {
+            updateRequestInfoFromSession(session);
         }
 
-        setCookieAndRecordMetrics(session);
         return UserSessionInfo.toJSON(session);
     }
 
@@ -165,15 +177,15 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(app);
         
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
-        UserSession session;
+        UserSession session = null;
         try {
             session = authenticationService.reauthenticate(app, context, signInRequest);
         } catch (ConsentRequiredException e) {
-            setCookieAndRecordMetrics(e.getUserSession());
+            session = e.getUserSession();
             throw e;
+        } finally {
+            updateRequestInfoFromSession(session);
         }
-
-        setCookieAndRecordMetrics(session);
         
         return UserSessionInfo.toJSON(session);
     }
@@ -199,7 +211,7 @@ public class AuthenticationController extends BaseController {
             authenticationService.signOut(session);
         }
         // Servlet API has no way to delete cookies. strange but true. Set it "blank" to remove
-        Cookie cookie = makeSessionCookie("", 0);
+        Cookie cookie = HttpUtil.makeSessionCookie("", 0);
         response().addCookie(cookie);
         return new StatusMessage("Signed out.");
     }
@@ -214,7 +226,7 @@ public class AuthenticationController extends BaseController {
     public StatusMessage signOutV4() {
         final UserSession session = getSessionIfItExists();
         // Always set, even if we eventually decide to return an error code when there's no session
-        Cookie cookie = makeSessionCookie("", 0);
+        Cookie cookie = HttpUtil.makeSessionCookie("", 0);
         response().addCookie(cookie);
         response().setHeader(CLEAR_SITE_DATA_HEADER, CLEAR_SITE_DATA_VALUE);
         if (session != null) {
@@ -248,12 +260,13 @@ public class AuthenticationController extends BaseController {
     }
 
     @PostMapping({"/v3/auth/resendEmailVerification", "/api/v1/auth/resendEmailVerification"})
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage resendEmailVerification() {
         AccountId accountId = parseJson(AccountId.class);
         getAppOrThrowException(accountId.getUnguardedAccountId().getAppId());
         
         authenticationService.resendVerification(ChannelType.EMAIL, accountId);
-        return new StatusMessage("If registered with the app, we'll email you instructions on how to verify your account.");
+        return new StatusMessage(EMAIL_VERIFY_REQUEST_MSG);
     }
 
     @PostMapping("/v3/auth/verifyPhone")
@@ -266,6 +279,7 @@ public class AuthenticationController extends BaseController {
     }
 
     @PostMapping("/v3/auth/resendPhoneVerification")
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage resendPhoneVerification() {
         AccountId accountId = parseJson(AccountId.class);
         
@@ -273,10 +287,11 @@ public class AuthenticationController extends BaseController {
         getAppOrThrowException(accountId.getUnguardedAccountId().getAppId());
         
         authenticationService.resendVerification(ChannelType.PHONE, accountId);
-        return new StatusMessage("If registered with the app, we'll send an SMS message to your phone.");
+        return new StatusMessage(PHONE_VERIFY_REQUEST_MSG);
     }
 
     @PostMapping({"/v3/auth/requestResetPassword", "/api/v1/auth/requestResetPassword"})
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage requestResetPassword() {
         SignIn signIn = parseJson(SignIn.class);
         
@@ -284,8 +299,12 @@ public class AuthenticationController extends BaseController {
         verifySupportedVersionOrThrowException(app);
         
         authenticationService.requestResetPassword(app, false, signIn);
-
-        return new StatusMessage("If registered with the app, we'll send you instructions on how to change your password.");
+        
+        // Email is chosen over phone number, so if email was provided, respond as if we used it.
+        if (signIn.getEmail() != null) {
+            return new StatusMessage(EMAIL_RESET_PWD_MSG);    
+        }
+        return new StatusMessage(PHONE_RESET_PWD_MSG);    
     }
     
     @PostMapping({"/v3/auth/resetPassword", "/api/v1/auth/resetPassword"})
@@ -348,9 +367,16 @@ public class AuthenticationController extends BaseController {
         
         App app = appService.getApp(token.getAppId());
         CriteriaContext context = getCriteriaContext(app.getIdentifier());
-        
-        UserSession session = authenticationService.oauthSignIn(context, token);
-        setCookieAndRecordMetrics(session);
+
+        UserSession session = null;
+        try {
+            session = authenticationService.oauthSignIn(context, token);
+        } catch (ConsentRequiredException e) {
+            session = e.getUserSession();
+            throw e;
+        } finally {
+            updateRequestInfoFromSession(session);
+        }
         
         return UserSessionInfo.toJSON(session);
     }

@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
@@ -49,7 +49,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
@@ -87,7 +86,7 @@ public class TemplateServiceTest extends Mockito {
     AppService mockAppService;
     
     @Mock
-    SubstudyService mockSubstudyService;
+    StudyService mockStudyService;
     
     @InjectMocks
     @Spy
@@ -138,12 +137,12 @@ public class TemplateServiceTest extends Mockito {
         app.setDataGroups(USER_DATA_GROUPS);
         app.setDefaultTemplates(new HashMap<>());
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockSubstudyService.getSubstudyIds(TEST_APP_ID)).thenReturn(USER_SUBSTUDY_IDS);
+        when(mockStudyService.getStudyIds(TEST_APP_ID)).thenReturn(USER_STUDY_IDS);
     }
     
     @AfterMethod
     public void afterMethod() {
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     private Resource res(TemplateType type) {
@@ -156,8 +155,8 @@ public class TemplateServiceTest extends Mockito {
         criteria.setLanguage(lang);
         criteria.setAllOfGroups(ImmutableSet.of());
         criteria.setNoneOfGroups(ImmutableSet.of());
-        criteria.setAllOfSubstudyIds(ImmutableSet.of());
-        criteria.setNoneOfSubstudyIds(ImmutableSet.of());
+        criteria.setAllOfStudyIds(ImmutableSet.of());
+        criteria.setNoneOfStudyIds(ImmutableSet.of());
         when(mockCriteriaDao.getCriteria("template:"+guid)).thenReturn(criteria);
         return criteria;
     }
@@ -390,7 +389,7 @@ public class TemplateServiceTest extends Mockito {
             Template captured = answer.getArgument(0);
             captured.setVersion(10);
             return null;
-        }).when(mockTemplateDao).createTemplate(any(), any());
+        }).when(mockTemplateDao).createTemplate(any());
         
         Criteria criteria = Criteria.create();
         criteria.setAllOfGroups(ImmutableSet.of("group1", "group2"));
@@ -417,7 +416,7 @@ public class TemplateServiceTest extends Mockito {
         
         verify(mockTemplateRevisionDao).createTemplateRevision(revisionCaptor.capture());
         verify(mockCriteriaDao).createOrUpdateCriteria(criteria);
-        verify(mockTemplateDao).createTemplate(eq(template), any());
+        verify(mockTemplateDao).createTemplate(template);
         
         TemplateRevision revision = revisionCaptor.getValue();
         assertEquals(revision.getCreatedBy(), USER_ID);
@@ -632,7 +631,7 @@ public class TemplateServiceTest extends Mockito {
     @Test
     public void getRevisionForUser() throws Exception {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache(UA);
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerClientInfo(clientInfo).withCallerLanguages(LANGUAGES).build());
         
         DateTime createdOn = DateTime.now();
@@ -663,7 +662,7 @@ public class TemplateServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = "TemplateRevision not found.")
     public void getRevisionForUserWhenTemplateExistsButRevisionMissing() throws Exception {
         ClientInfo clientInfo = ClientInfo.fromUserAgentCache(UA);
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerClientInfo(clientInfo).withCallerLanguages(LANGUAGES).build());
         
         DateTime createdOn = DateTime.now();

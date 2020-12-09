@@ -72,6 +72,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
@@ -126,10 +127,10 @@ public class AppService {
     private SynapseClient synapseClient;
     private String synapseTrackingViewId;
     private ParticipantService participantService;
-    private ExternalIdService externalIdService;
-    private SubstudyService substudyService;
+    private StudyService studyService;
     private TemplateService templateService;
     private FileService fileService;
+    private OrganizationService organizationService;
 
     // Not defaults, if you wish to change these, change in source. Not configurable per app
     private String appEmailVerificationTemplate;
@@ -208,12 +209,8 @@ public class AppService {
         this.participantService = participantService;
     }
     @Autowired
-    final void setExternalIdService(ExternalIdService externalIdService) {
-        this.externalIdService = externalIdService;
-    }
-    @Autowired
-    final void setSubstudyService(SubstudyService substudyService) {
-        this.substudyService = substudyService;
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     @Autowired
     @Qualifier("bridgePFSynapseClient")
@@ -227,6 +224,10 @@ public class AppService {
     @Autowired
     final void setFileService(FileService fileService) {
         this.fileService = fileService;
+    }
+    @Autowired
+    final void setOrganizationService(OrganizationService organizationService) {
+        this.organizationService = organizationService;
     }
     
     public App getApp(String identifier, boolean includeDeleted) {
@@ -267,7 +268,7 @@ public class AppService {
         checkNotNull(appAndUsers, Validate.CANNOT_BE_NULL, "app and users");
         
         App app = appAndUsers.getApp();
-        StudyParticipantValidator val = new StudyParticipantValidator(externalIdService, substudyService, app, true);
+        StudyParticipantValidator val = new StudyParticipantValidator(studyService, organizationService, app, true);
         
         Errors errors = Validate.getErrorsFor(appAndUsers);
         
@@ -336,7 +337,12 @@ public class AppService {
             throw new EntityAlreadyExistsException(App.class, IDENTIFIER_PROPERTY, app.getIdentifier());
         }
         
-        subpopService.createDefaultSubpopulation(app);
+        Study study = Study.create();
+        study.setAppId(app.getIdentifier());
+        study.setIdentifier(app.getIdentifier() + "-study");
+        study.setName(app.getName() + " Study");
+        studyService.createStudy(app.getIdentifier(), study);
+        subpopService.createDefaultSubpopulation(app, study);
         
         Map<String,String> map = new HashMap<>();
         for (TemplateType type: TemplateType.values()) {
@@ -633,6 +639,8 @@ public class AppService {
             appDao.deleteApp(existing);
 
             // delete app data
+            studyService.deleteAllStudies(existing.getIdentifier());
+            organizationService.deleteAllOrganizations(existing.getIdentifier());
             templateService.deleteTemplatesForApp(existing.getIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInApp(
                     existing.getIdentifier());

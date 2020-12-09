@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
@@ -19,7 +18,6 @@ import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.config.Environment.LOCAL;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.fail;
 
 import javax.servlet.http.Cookie;
@@ -162,17 +160,6 @@ public class UserManagementControllerTest extends Mockito {
         // This isn't in the session that is returned to the user, but verify it has been changed
         assertEquals(session.getAppId(), "originalStudy");
         assertEquals(signInCaptor.getValue().getAppId(), API_APP_ID);
-
-        verify(mockResponse).addCookie(cookieCaptor.capture());
-        
-        Cookie cookie = cookieCaptor.getValue();
-        assertEquals(cookie.getName(), SESSION_TOKEN_HEADER);
-        assertEquals(cookie.getValue(), session.getSessionToken());
-        assertEquals(cookie.getMaxAge(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-        assertEquals(cookie.getPath(), "/");
-        assertEquals(cookie.getDomain(), "localhost");
-        assertFalse(cookie.isHttpOnly());
-        assertFalse(cookie.getSecure());
     }
 
     @Test
@@ -197,6 +184,7 @@ public class UserManagementControllerTest extends Mockito {
         verify(mockAuthService).signOut(session);
     }
 
+    @SuppressWarnings("deprecation")
     @Test
     public void changeStudyForAdmin() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
@@ -216,6 +204,7 @@ public class UserManagementControllerTest extends Mockito {
         verify(mockCacheProvider).setUserSession(session);
     }
     
+    @SuppressWarnings("deprecation")
     @Test(expectedExceptions = UnauthorizedException.class)
     public void changeStudyRejectsStudyAdmin() throws Exception {
         doReturn(session).when(controller).getSessionIfItExists();

@@ -121,9 +121,9 @@ public class HibernateTemplateDaoTest extends Mockito {
     public void createTemplate() {
         Template template = Template.create();
                 
-        dao.createTemplate(template, null);
+        dao.createTemplate(template);
         
-        verify(mockHelper).create(template, null);
+        verify(mockHelper).create(template);
     }
 
     @Test
@@ -132,7 +132,7 @@ public class HibernateTemplateDaoTest extends Mockito {
         
         dao.updateTemplate(template);
         
-        verify(mockHelper).update(template, null);
+        verify(mockHelper).update(template);
     }
 
     @Test

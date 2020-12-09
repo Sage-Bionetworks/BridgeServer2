@@ -1,10 +1,8 @@
 package org.sagebionetworks.bridge.models;
 
-import static org.sagebionetworks.bridge.TestConstants.PHONE;
-import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
-import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
+import static org.sagebionetworks.bridge.TestConstants.SUMMARY1;
+import static org.sagebionetworks.bridge.TestConstants.SUMMARY2;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -22,8 +20,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 public class ForwardCursorPagedResourceListTest {
@@ -31,12 +27,8 @@ public class ForwardCursorPagedResourceListTest {
     @Test
     public void canSerialize() throws Exception {
         List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
-        accounts.add(new AccountSummary("firstName1", "lastName1", "email1@email.com", SYNAPSE_USER_ID, PHONE,
-                ImmutableMap.of("substudy1", "externalId1"), "id", DateTime.now(), DISABLED, TEST_APP_ID,
-                ImmutableSet.of()));
-        accounts.add(new AccountSummary("firstName2", "lastName2", "email2@email.com", SYNAPSE_USER_ID, PHONE,
-                ImmutableMap.of("substudy2", "externalId2"), "id2", DateTime.now(), ENABLED, TEST_APP_ID,
-                ImmutableSet.of()));
+        accounts.add(SUMMARY1);
+        accounts.add(SUMMARY2);
         
         DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
         DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");
@@ -79,7 +71,7 @@ public class ForwardCursorPagedResourceListTest {
         JsonNode child1 = items.get(0);
         assertEquals(child1.get("firstName").asText(), "firstName1");
         assertEquals(child1.get("lastName").asText(), "lastName1");
-        assertEquals(child1.get("email").asText(), "email1@email.com");
+        assertEquals(child1.get("email").asText(), EMAIL);
         assertEquals(child1.get("id").asText(), "id");
         assertEquals(child1.get("status").asText(), "disabled");
         
@@ -106,6 +98,36 @@ public class ForwardCursorPagedResourceListTest {
         assertEquals(params.get("offsetKey"), "offsetKey");
         
         assertEquals(serPage.getItems(), page.getItems());
+    }
+    
+    @Test
+    public void canSerializeWithoutDeprecated() throws Exception {
+        List<AccountSummary> accounts = Lists.newArrayListWithCapacity(2);
+        accounts.add(SUMMARY1);
+        accounts.add(SUMMARY2);
+        
+        DateTime startTime = DateTime.parse("2016-02-03T10:10:10.000-08:00");
+        DateTime endTime = DateTime.parse("2016-02-23T14:14:14.000-08:00");
+        
+        ForwardCursorPagedResourceList<AccountSummary> page = new ForwardCursorPagedResourceList<AccountSummary>(
+                accounts, "nextOffsetKey", true)
+                .withRequestParam(ResourceList.OFFSET_KEY, "offsetKey")
+                .withRequestParam(ResourceList.START_TIME, startTime)
+                .withRequestParam(ResourceList.END_TIME, endTime)
+                .withRequestParam(ResourceList.SCHEDULED_ON_START, startTime)
+                .withRequestParam(ResourceList.SCHEDULED_ON_END, endTime)
+                .withRequestParam(ResourceList.PAGE_SIZE, 100)
+                .withRequestParam(ResourceList.EMAIL_FILTER, "filterString");
+        
+        JsonNode node = BridgeObjectMapper.get().valueToTree(page);
+        
+        assertNull(node.get("offsetKey"));
+        assertNull(node.get("startTime"));
+        assertNull(node.get("endTime"));
+        assertNull(node.get("scheduledOnStart"));
+        assertNull(node.get("scheduledOnEnd"));
+        assertNull(node.get("pageSize"));
+        assertNull(node.get("total"));
     }
     
     @Test

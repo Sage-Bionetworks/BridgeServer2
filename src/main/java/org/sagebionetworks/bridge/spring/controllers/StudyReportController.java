@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getLocalDateOrDefault;
-import static org.sagebionetworks.bridge.BridgeUtils.setRequestContext;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -24,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -100,7 +100,7 @@ public class StudyReportController extends BaseController {
         verifyIndexIsPublic(appId, identifier);
         // We do not want to inherit a user's session information, if a session token is being 
         // passed to this method.
-        setRequestContext(NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
 
         LocalDate startDateObj = getLocalDateOrDefault(startDate, null);
         LocalDate endDateObj = getLocalDateOrDefault(endDate, null);

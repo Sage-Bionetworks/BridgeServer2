@@ -4,9 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.DefaultAppBootstrapper.API_SUBPOP;
 import static org.sagebionetworks.bridge.DefaultAppBootstrapper.SHARED_SUBPOP;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
@@ -114,16 +112,16 @@ public class DefaultStudyBootstrapperTest extends Mockito {
         verify(mockUserAdminService, times(3)).createUser(any(), participantCaptor.capture(),
                 subpopCaptor.capture(), eq(false), eq(false));
         
-        assertEquals(BridgeUtils.getRequestContext().getCallerAppId(), API_APP_ID);
-        assertTrue(BridgeUtils.getRequestContext().isInRole(SUPERADMIN));
-        assertEquals(BridgeUtils.getRequestContext().getCallerUserId(), "DefaultStudyBootstrapper");
+        assertEquals(RequestContext.get().getCallerAppId(), API_APP_ID);
+        assertTrue(RequestContext.get().isInRole(SUPERADMIN));
+        assertEquals(RequestContext.get().getCallerUserId(), "DefaultStudyBootstrapper");
         
         assertEquals(API_SUBPOP, subpopCaptor.getAllValues().get(0));
         assertEquals(API_SUBPOP, subpopCaptor.getAllValues().get(1));
         assertEquals(SHARED_SUBPOP, subpopCaptor.getAllValues().get(2));
         
         StudyParticipant admin = participantCaptor.getAllValues().get(0);
-        assertEquals(admin.getRoles(), ImmutableSet.of(ADMIN, RESEARCHER));
+        assertEquals(admin.getRoles(), ImmutableSet.of(SUPERADMIN));
         assertEquals(admin.getEmail(), config.get("admin.email"));
         assertEquals(admin.getPassword(), config.get("admin.password"));
         

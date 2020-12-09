@@ -78,7 +78,7 @@ public class AssessmentTest {
         Assessment dto = createAssessment();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(dto);
-        assertEquals(node.size(), 17);
+        assertEquals(node.size(), 18);
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
         assertEquals(node.get("revision").intValue(), 5);
@@ -134,6 +134,7 @@ public class AssessmentTest {
         dto.setOriginGuid("originGuid");
         dto.setValidationStatus("validationStatus");
         dto.setNormingStatus("normingStatus");
+        dto.setMinutesToComplete(10);
         dto.setTags(STRING_TAGS);
         dto.setCustomizationFields(CUSTOMIZATION_FIELDS);
         dto.setCreatedOn(CREATED_ON);

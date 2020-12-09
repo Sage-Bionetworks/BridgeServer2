@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.isEmpty;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -38,6 +39,7 @@ class HibernateAssessmentDao implements AssessmentDao {
     static final String GET_BY_IDENTIFIER = "FROM HibernateAssessment WHERE appId=:appId "+
             "AND identifier=:identifier AND revision=:revision";
     static final String GET_BY_GUID = "FROM HibernateAssessment WHERE appId=:appId AND guid=:guid";
+    static final String GET_FROM_ORG = "FROM HibernateAssessment WHERE (appId = :appId AND ownerId = :ownerId)";
 
     static final String GET_REVISIONS = "FROM HibernateAssessment WHERE appId = :appId AND "
             +"identifier = :identifier";
@@ -61,7 +63,7 @@ class HibernateAssessmentDao implements AssessmentDao {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM (");
         builder.append("SELECT DISTINCT identifier as id, MAX(revision) AS rev FROM Assessments");
-        builder.append("GROUP BY identifier) AS latest_assessments");
+        builder.append("WHERE appId = :appId GROUP BY identifier) AS latest_assessments");
         builder.append("INNER JOIN Assessments AS a ON a.identifier = latest_assessments.id AND");
         builder.append("a.revision = latest_assessments.rev");
         
@@ -84,7 +86,7 @@ class HibernateAssessmentDao implements AssessmentDao {
                 offsetBy, pageSize, HibernateAssessment.class);
         
         List<Assessment> dtos = assessments.stream().map(Assessment::create).collect(toList());
-        return new PagedResourceList<Assessment>(dtos, count);
+        return new PagedResourceList<Assessment>(dtos, count, true);
     }
     
     public PagedResourceList<Assessment> getAssessmentRevisions(String appId, String identifier, 
@@ -103,7 +105,7 @@ class HibernateAssessmentDao implements AssessmentDao {
                 builder.getQuery(), builder.getParameters(), offsetBy, pageSize, HibernateAssessment.class);
         
         List<Assessment> dtos = assessments.stream().map(Assessment::create).collect(toList());
-        return new PagedResourceList<Assessment>(dtos, count);
+        return new PagedResourceList<Assessment>(dtos, count, true);
     }
     
     @Override
@@ -201,5 +203,21 @@ class HibernateAssessmentDao implements AssessmentDao {
             return hibernateDest;
         });
         return Assessment.create(retValue);
+    }
+
+    @Override
+    public boolean hasAssessmentFromOrg(String appId, String orgId) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(SELECT_COUNT);
+        builder.append(GET_FROM_ORG, "appId", appId, "ownerId", orgId);
+        int resultCount = hibernateHelper.queryCount(builder.getQuery(), builder.getParameters());
+        if (resultCount != 0) {
+            return true;
+        }
+        Map<String, Object> params = builder.getParameters();
+        params.put("appId", "shared");
+        params.put("ownerId", appId + ":" + orgId);
+        resultCount = hibernateHelper.queryCount(builder.getQuery(), builder.getParameters());
+        return resultCount != 0;
     }
 }

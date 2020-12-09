@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_VENDOR_ID;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
 import java.lang.reflect.Field;
@@ -107,8 +108,13 @@ public class AppValidator implements Validator {
         if (app.isReauthenticationEnabled() == null) {
             errors.rejectValue("reauthenticationEnabled", "is required");
         }
-        if (app.getShortName() != null && app.getShortName().length() > 10) {
-            errors.rejectValue("shortName", "must be 10 characters or less");
+        if (app.getShortName() != null) {
+            if (app.getShortName().length() > 10) {
+                errors.rejectValue("shortName", "must be 10 characters or less");
+            }
+            if (app.getShortName().contains(" ")) {
+                errors.rejectValue("shortName", "cannot contain spaces");
+            }
         }
         if (isBlank(app.getSponsorName())) {
             errors.rejectValue("sponsorName", "is required");
@@ -191,6 +197,9 @@ public class AppValidator implements Validator {
         
         for (Map.Entry<String, OAuthProvider> entry : app.getOAuthProviders().entrySet()) {
             String fieldName = "oauthProviders["+entry.getKey()+"]";
+            if (SYNAPSE_OAUTH_VENDOR_ID.equals(entry.getKey())) {
+                errors.rejectValue(fieldName, "is a reserved vendor ID");
+            }
             OAuthProvider provider = entry.getValue();
             if (provider == null) {
                 errors.rejectValue(fieldName, "is required");

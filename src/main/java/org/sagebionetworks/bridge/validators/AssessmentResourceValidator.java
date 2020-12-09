@@ -8,10 +8,13 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
+import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 
 public class AssessmentResourceValidator implements Validator {
-    
     public static final AssessmentResourceValidator INSTANCE = new AssessmentResourceValidator();
+    
+    static final String RELEASE_NOTE_REVISION_ERROR = "must specify same min/max revision value for release notes";
+    static final String MIN_OVER_MAX_ERROR = "should not be greater than maxRevision";
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -53,6 +56,17 @@ public class AssessmentResourceValidator implements Validator {
                 if (isBlank(pub)) {
                     errors.rejectValue("publishers["+i+"]", CANNOT_BE_BLANK);
                 }
+            }
+        }
+        if (resource.getMinRevision() != null && resource.getMaxRevision() != null && 
+                resource.getMinRevision() > resource.getMaxRevision()) {
+            errors.rejectValue("minRevision", MIN_OVER_MAX_ERROR);
+        }
+        if (resource.getCategory() == ResourceCategory.RELEASE_NOTE) {
+            // findbugs doesn't like comparison operator with Integer, convert it
+            if (resource.getMinRevision() == null || resource.getMaxRevision() == null ||
+                    resource.getMinRevision().intValue() != resource.getMaxRevision().intValue()) {
+                errors.rejectValue("category", RELEASE_NOTE_REVISION_ERROR);
             }
         }
     }

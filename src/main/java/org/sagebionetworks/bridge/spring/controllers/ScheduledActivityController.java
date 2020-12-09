@@ -224,7 +224,7 @@ public class ScheduledActivityController extends BaseController {
     private ScheduleContext getScheduledActivitiesInternal(UserSession session, DateTimeZone requestTimeZone,
             DateTime startsOn, DateTime endsOn, int minPerSchedule) {
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         
         ScheduleContext.Builder builder = new ScheduleContext.Builder();
         
@@ -241,7 +241,7 @@ public class ScheduledActivityController extends BaseController {
         builder.withEndsOn(endsOn);
         builder.withInitialTimeZone(initialTimeZone);
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
-        builder.withUserSubstudyIds(session.getParticipant().getSubstudyIds());
+        builder.withUserStudyIds(session.getParticipant().getStudyIds());
         builder.withHealthCode(session.getHealthCode());
         builder.withUserId(session.getId());
         builder.withAppId(session.getAppId());

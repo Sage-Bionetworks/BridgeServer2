@@ -2,11 +2,10 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
-import static org.sagebionetworks.bridge.BridgeUtils.filterForSubstudy;
+import static org.sagebionetworks.bridge.BridgeUtils.filterForStudy;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
-import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
@@ -93,23 +92,21 @@ public class AccountService {
             return;
         }
         
-        // Avoid updating on every sign in by examining object state first.
+        // Avoid updating on every sign in by examining object state first. We do update the status 
+        // flag so we can see the value in the database, but it is now derived in memory from other fields 
+        // of the account.
         boolean shouldUpdateEmailVerified = (channelType == EMAIL && !TRUE.equals(account.getEmailVerified()));
         boolean shouldUpdatePhoneVerified = (channelType == PHONE && !TRUE.equals(account.getPhoneVerified()));
-        boolean shouldUpdateStatus = (account.getStatus() == UNVERIFIED);
         
-        if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified || shouldUpdateStatus) {
+        if (shouldUpdatePhoneVerified || shouldUpdateEmailVerified) {
             if (shouldUpdateEmailVerified) {
                 account.setEmailVerified(TRUE);
             }
             if (shouldUpdatePhoneVerified) {
                 account.setPhoneVerified(TRUE);
             }
-            if (shouldUpdateStatus) {
-                account.setStatus(ENABLED);
-            }
             account.setModifiedOn(DateUtils.getCurrentDateTime());
-            accountDao.updateAccount(account, null);    
+            accountDao.updateAccount(account);    
         }        
     }
     
@@ -133,18 +130,11 @@ public class AccountService {
         account.setPasswordModifiedOn(modifiedOn);
         // One of these (the channel used to reset the password) is also verified by resetting the password.
         if (channelType == EMAIL) {
-            account.setStatus(ENABLED);
             account.setEmailVerified(true);    
         } else if (channelType == PHONE) {
-            account.setStatus(ENABLED);
             account.setPhoneVerified(true);    
-        } else if (channelType == null) {
-            // If there's no channel type, we're assuming a password-based sign-in using
-            // external ID (the third identifying credential that can be used), so here
-            // we will enable the account.
-            account.setStatus(ENABLED);
         }
-        accountDao.updateAccount(account, null);
+        accountDao.updateAccount(account);
     }
     
     /**
@@ -197,7 +187,7 @@ public class AccountService {
      * exception, the account will not be persisted (the consumer is executed after the persist 
      * is executed in a transaction, however).
      */
-    public void createAccount(App app, Account account, Consumer<Account> afterPersistConsumer) {
+    public void createAccount(App app, Account account) {
         checkNotNull(app);
         checkNotNull(account);
         
@@ -208,17 +198,14 @@ public class AccountService {
         account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(MIGRATION_VERSION);
 
-        // Create account. We don't verify substudies because this is handled by validation
-        accountDao.createAccount(app, account, afterPersistConsumer);
+        // Create account. We don't verify studies because this is handled by validation
+        accountDao.createAccount(app, account);
     }
     
     /**
-     * Save account changes. Account should have been retrieved from the getAccount() method 
-     * (constructAccount() is not sufficient). If the optional consumer is passed to this method and 
-     * it throws an exception, the account will not be persisted (the consumer is executed after 
-     * the persist is executed in a transaction, however).
+     * Save account changes. 
      */
-    public void updateAccount(Account account, Consumer<Account> afterPersistConsumer) {
+    public void updateAccount(Account account) {
         checkNotNull(account);
         
         AccountId accountId = AccountId.forId(account.getAppId(),  account.getId());
@@ -232,15 +219,18 @@ public class AccountService {
         account.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
         account.setPasswordHash(persistedAccount.getPasswordHash());
         account.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
+        // This has to be changed via the membership APIs.
+        account.setOrgMembership(persistedAccount.getOrgMembership());
         // Update modifiedOn.
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
-        // Update. We don't verify substudies because this is handled by validation
-        accountDao.updateAccount(account, afterPersistConsumer);         
+        // Update. We don't verify studies because this is handled by validation
+        accountDao.updateAccount(account);         
     }
     
     /**
-     * Load, and if it exists, edit and save an account. 
+     * Load, and if it exists, edit and save an account. Note that constraints are not
+     * enforced here (which is intentional).
      */
     public void editAccount(String appId, String healthCode, Consumer<Account> accountEdits) {
         checkNotNull(appId);
@@ -250,25 +240,36 @@ public class AccountService {
         Account account = getAccount(accountId);
         if (account != null) {
             accountEdits.accept(account);
-            accountDao.updateAccount(account, null);
+            accountDao.updateAccount(account);
         }        
     }
     
     /**
      * Get an account in the context of a app by the user's ID, email address, health code,
      * or phone number. Returns null if the account cannot be found, or the caller does not have 
-     * the correct substudy associations to access the account. (Other methods in this service 
-     * also make a check for substudy associations by relying on this method internally).
+     * the correct study associations to access the account. (Other methods in this service 
+     * also make a check for study associations by relying on this method internally).
      */
     public Account getAccount(AccountId accountId) {
         checkNotNull(accountId);
 
         Optional<Account> optional = accountDao.getAccount(accountId);
         if (optional.isPresent()) {
-            // filtering based on the substudy associations of the caller.
-            return filterForSubstudy(optional.get());
+            // filtering based on the study associations of the caller.
+            return filterForStudy(optional.get());
         }
         return null;
+    }
+    
+    /**
+     * This is used when enrolling a user, since the account itself is not yet in a study
+     * that is visible to the caller. There may be similar cases where study access 
+     * permissions need to be bypassed.
+     */
+    public Optional<Account> getAccountNoFilter(AccountId accountId) {
+        checkNotNull(accountId);
+        
+        return accountDao.getAccount(accountId);
     }
     
     /**
@@ -286,17 +287,17 @@ public class AccountService {
     /**
      * Get a page of lightweight account summaries (most importantly, the email addresses of 
      * participants which are required for the rest of the participant APIs). 
-     * @param app
+     * @param appId
      *      retrieve participants in this app
      * @param search
      *      all the parameters necessary to perform a filtered search of user account summaries, including
      *      paging parameters.
      */
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(App app, AccountSummarySearch search) {
-        checkNotNull(app);
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(String appId, AccountSummarySearch search) {
+        checkNotNull(appId);
         checkNotNull(search);
         
-        return accountDao.getPagedAccountSummaries(app, search);
+        return accountDao.getPagedAccountSummaries(appId, search);
     }
     
     /**
@@ -317,7 +318,7 @@ public class AccountService {
         // Auth successful, you can now leak further information about the account through other exceptions.
         // For email/phone sign ins, the specific credential must have been verified (unless we've disabled
         // email verification for older apps that didn't have full external ID support).
-        if (account.getStatus() == UNVERIFIED) {
+        if (account.getStatus() == UNVERIFIED && app.isEmailVerificationEnabled()) {
             throw new UnauthorizedException("Email or phone number have not been verified");
         } else if (account.getStatus() == DISABLED) {
             throw new AccountDisabledException();

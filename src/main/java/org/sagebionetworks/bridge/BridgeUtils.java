@@ -6,9 +6,10 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.CALLER_NOT_MEMBER_ERROR;
+import static org.sagebionetworks.bridge.AuthUtils.isSelfWorkerOrOrgAdmin;
+import static org.sagebionetworks.bridge.AuthUtils.isSelfOrStudyTeamMemberOrWorker;
+import static org.sagebionetworks.bridge.AuthUtils.isStudyTeamMemberOrWorker;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
@@ -42,14 +43,11 @@ import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities.EscapeMode;
 import org.jsoup.safety.Cleaner;
 import org.jsoup.safety.Whitelist;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Tuple;
@@ -61,7 +59,7 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
 
 import org.springframework.core.annotation.AnnotationUtils;
@@ -81,17 +79,16 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class BridgeUtils {
-    private static final Logger LOG = LoggerFactory.getLogger(BridgeUtils.class);
 
-    public static class SubstudyAssociations {
-        private final Set<String> substudyIdsVisibleToCaller;
+    public static class StudyAssociations {
+        private final Set<String> studyIdsVisibleToCaller;
         private final Map<String, String> externalIdsVisibleToCaller;
-        SubstudyAssociations(Set<String> substudyIdsVisibleToCaller, Map<String, String> externalIdsVisibleToCaller) {
-            this.substudyIdsVisibleToCaller = substudyIdsVisibleToCaller;
+        StudyAssociations(Set<String> studyIdsVisibleToCaller, Map<String, String> externalIdsVisibleToCaller) {
+            this.studyIdsVisibleToCaller = studyIdsVisibleToCaller;
             this.externalIdsVisibleToCaller = externalIdsVisibleToCaller;
         }
-        public Set<String> getSubstudyIdsVisibleToCaller() {
-            return substudyIdsVisibleToCaller;
+        public Set<String> getStudyIdsVisibleToCaller() {
+            return studyIdsVisibleToCaller;
         }
         public Map<String, String> getExternalIdsVisibleToCaller() {
             return externalIdsVisibleToCaller;
@@ -109,20 +106,15 @@ public class BridgeUtils {
     
     private static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
-    private static final SubstudyAssociations NO_ASSOCIATIONS = new SubstudyAssociations(ImmutableSet.of(),
+    private static final StudyAssociations NO_ASSOCIATIONS = new StudyAssociations(ImmutableSet.of(),
             ImmutableMap.of());
 
-    // ThreadLocals are weird. They are basically a container that allows us to hold "global variables" for each
-    // thread. This can be used, for example, to provide the request ID to any class without having to plumb a
-    // "request context" object into every method of every class.
-    private static final ThreadLocal<RequestContext> REQUEST_CONTEXT_THREAD_LOCAL = ThreadLocal.withInitial(() -> null);
-
-    public static Map<String,String> mapSubstudyMemberships(Account account) {
+    public static Map<String,String> mapStudyMemberships(Account account) {
         ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
-        for (AccountSubstudy acctSubstudy : account.getAccountSubstudies()) {
-            String value = (acctSubstudy.getExternalId() == null) ? 
-                    "<none>" : acctSubstudy.getExternalId();
-            builder.put(acctSubstudy.getSubstudyId(), value);
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
+            String value = (enrollment.getExternalId() == null) ? 
+                    "<none>" : enrollment.getExternalId();
+            builder.put(enrollment.getStudyId(), value);
         }
         return builder.build();
     }
@@ -137,7 +129,7 @@ public class BridgeUtils {
     }
     
     public static boolean isExternalIdAccount(StudyParticipant participant) {
-        // We do not look at externalIds because it is a read-only reflection of the substudies
+        // We do not look at externalIds because it is a read-only reflection of the studies
         // a user is associated to. It cannot be submitted by the caller.
         return (StringUtils.isNotBlank(participant.getExternalId()) && 
                 StringUtils.isBlank(participant.getEmail()) && 
@@ -145,48 +137,48 @@ public class BridgeUtils {
     }
 
     public static Set<String> collectExternalIds(Account account) {
-        return account.getAccountSubstudies().stream()
-                .map(AccountSubstudy::getExternalId)
+        return account.getActiveEnrollments().stream()
+                .map(Enrollment::getExternalId)
                 .filter(Objects::nonNull)
                 .collect(toImmutableSet());
     }
     
-    public static Set<String> collectSubstudyIds(Account account) {
-        return account.getAccountSubstudies().stream()
-                .map(AccountSubstudy::getSubstudyId)
+    public static Set<String> collectStudyIds(Account account) {
+        return account.getActiveEnrollments().stream()
+                .map(Enrollment::getStudyId)
                 .collect(toImmutableSet());
     }
     
-    /** Gets the request context for the current thread. See also RequestInterceptor. */
-    public static RequestContext getRequestContext() {
-        RequestContext context = REQUEST_CONTEXT_THREAD_LOCAL.get();
-        if (context == null) {
-            return RequestContext.NULL_INSTANCE; 
-        }
-        return context;
-    }
-
-    /** @see #getRequestContext */
-    public static void setRequestContext(RequestContext context) {
-        REQUEST_CONTEXT_THREAD_LOCAL.set(context);
-    }
-    
-    public static Account filterForSubstudy(Account account) {
+    /**
+     * Return the account if the caller has access to it; false otherwise. Currently, 
+     * the account must be 1) the caller's account; 2) enrolled in a study that the 
+     * caller has access to; or 3) the caller is associated to no studies at all 
+     * (this last part is transitional as we migrate to a multi-study security model). 
+     * Do not call this method before updating the account; this method may remove
+     * enrollments from the account that are not visible to the caller so it can be
+     * displayed to the caller without leaking enrollment information.
+     */
+    public static Account filterForStudy(Account account) {
         if (account != null) {
-            RequestContext context = getRequestContext();
-            Set<String> callerSubstudies = context.getCallerSubstudies();
-            if (BridgeUtils.isEmpty(callerSubstudies)) {
+            RequestContext context = RequestContext.get();
+            Set<String> callerStudies = context.getOrgSponsoredStudies();
+            
+            // If this is a call for one’s own record, or the caller is an admin or 
+            // worker, or the account is in the same organization as the caller who 
+            // is an org admin, return the account. Callers that are not associated to an 
+            // organization also gain access, but only while we migrate away from 
+            // this kind of global account.
+            if (isSelfWorkerOrOrgAdmin(account.getOrgMembership(), account.getId())) {
                 return account;
             }
-            Set<AccountSubstudy> matched = account.getAccountSubstudies().stream()
-                    .filter(as -> callerSubstudies.isEmpty() || callerSubstudies.contains(as.getSubstudyId()))
+            // If after removing all enrollments that are not visible to the caller, 
+            // there are no remaining enrollments, then we do not return the 
+            // account to the caller.
+            Set<Enrollment> removals = account.getEnrollments().stream()
+                    .filter(en -> !callerStudies.contains(en.getStudyId()))
                     .collect(toSet());
-            
-            if (!matched.isEmpty()) {
-                // Hibernate managed objects use a collection implementation that tracks changes,
-                // and shouldn't be set with a Java library collection. Here it is okay because 
-                // we're filtering an object to return through the API, and it won't be persisted.
-                account.setAccountSubstudies(matched);
+            account.getEnrollments().removeAll(removals);
+            if (!account.getEnrollments().isEmpty()) {
                 return account;
             }
         }
@@ -194,37 +186,29 @@ public class BridgeUtils {
     }
     
     /**
-     * Callers only see the accountSubstudy records they themselves are assigned to, unless they have no
-     * substudy memberships (then they are global and see everything).
+     * Callers only see the enrollment records they themselves are assigned to, unless they have no
+     * study memberships (then they are global and see everything).
      */
-    public static SubstudyAssociations substudyAssociationsVisibleToCaller(Collection<? extends AccountSubstudy> accountSubstudies) {
-        if (accountSubstudies == null || accountSubstudies.isEmpty()) {
+    public static StudyAssociations studyAssociationsVisibleToCaller(Account account) {
+        if (account == null || account.getActiveEnrollments().isEmpty()) {
             return NO_ASSOCIATIONS;
         }
-        ImmutableSet.Builder<String> substudyIds = new ImmutableSet.Builder<>();
+        ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
-        Set<String> callerSubstudies = getRequestContext().getCallerSubstudies();
-        for (AccountSubstudy acctSubstudy : accountSubstudies) {
-            if (callerSubstudies.isEmpty() || callerSubstudies.contains(acctSubstudy.getSubstudyId())) {
-                substudyIds.add(acctSubstudy.getSubstudyId());
-                if (acctSubstudy.getExternalId() != null) {
-                    externalIds.put(acctSubstudy.getSubstudyId(), acctSubstudy.getExternalId());
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
+            if (isSelfOrStudyTeamMemberOrWorker(enrollment.getStudyId(), account.getId())) {
+                studyIds.add(enrollment.getStudyId());
+                if (enrollment.getExternalId() != null) {
+                    externalIds.put(enrollment.getStudyId(), enrollment.getExternalId());
                 }
             }
         }
-        return new SubstudyAssociations(substudyIds.build(), externalIds.build()); 
+        return new StudyAssociations(studyIds.build(), externalIds.build()); 
     }
     
-    public static ExternalIdentifier filterForSubstudy(ExternalIdentifier externalId) {
-        if (externalId != null) {
-            RequestContext context = getRequestContext();
-            Set<String> callerSubstudies = context.getCallerSubstudies();
-            if (BridgeUtils.isEmpty(callerSubstudies)) {
-                return externalId;
-            }
-            if (callerSubstudies.contains(externalId.getSubstudyId())) {
-                return externalId;
-            }
+    public static ExternalIdentifier filterForStudy(ExternalIdentifier externalId) {
+        if (externalId != null && isStudyTeamMemberOrWorker(externalId.getStudyId())) {
+            return externalId;
         }
         return null;
     }
@@ -319,7 +303,7 @@ public class BridgeUtils {
      * This value will be replaced with the value of the variable name. The variable name/value pairs are passed to the
      * method as a map. Variables that are not found in the map will be left in the string as is.
      *
-     * @see https://sagebionetworks.jira.com/wiki/display/BRIDGE/EmailTemplate
+     * @see <a href="https://sagebionetworks.jira.com/wiki/display/BRIDGE/EmailTemplate"></a>
      * 
      * @param template
      * @param values
@@ -389,16 +373,6 @@ public class BridgeUtils {
     
     public static boolean isEmpty(Collection<?> coll) {
         return (coll == null || coll.isEmpty());
-    }
-    
-    public static <S,T> Map<S,T> asMap(List<T> list, Function<T,S> function) {
-        Map<S,T> map = Maps.newHashMap();
-        if (list != null && function != null) {
-            for (T item : list) {
-                map.put(function.apply(item), item);
-            }
-        }
-        return map;
     }
     
     public static Long parseLong(String value) {
@@ -678,16 +652,6 @@ public class BridgeUtils {
         return clean.body().html();
     }
     
-    public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
-        return (callerRoles != null && requiredRole != null && 
-                (callerRoles.contains(SUPERADMIN) || callerRoles.contains(requiredRole)));
-    }
-    
-    public static boolean isInRole(Set<Roles> callerRoles, Set<Roles> requiredRoles) {
-        return callerRoles != null && requiredRoles != null && 
-                requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
-    }
-    
     public static <T extends Enum<T>> T getEnumOrDefault(String value, Class<T> enumType, T defaultValue) {
         if (isBlank(value)) {
             return defaultValue;
@@ -701,48 +665,7 @@ public class BridgeUtils {
         }
     }
     
-    /**
-     * If the caller has no organizational membership, then they can set any organization (however they 
-     * must set one, unlike the implementation of substudy relationships to user accounts). In this 
-     * case we check the org ID to ensure it's valid. If the caller has organizational memberships, 
-     * then the caller must be a member of the organization being cited. At that point we do not need 
-     * to validate the org ID since it was validated when it was set as an organizational relationship
-     * on the account. 
-     */
-    public static void checkOwnership(String appId, String ownerId) {
-        if (isBlank(ownerId)) {
-            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
-        }
-        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
-        if (callerSubstudies.isEmpty() || callerSubstudies.contains(ownerId)) {
-            return;
-        }
-        throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
-    }
-    
-    public static void checkSharedOwnership(String callerAppId, String guid, String ownerId) {
-        if (ownerId == null) {
-            LOG.error("Owner ID is null, guid=" + guid);
-            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
-        }
-        String[] parts = ownerId.split(":", 2);
-        // This happens in tests, we expect it to never happens in production. So log if it does.
-        if (parts.length != 2) {
-            LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);
-            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
-        }
-        String originAppId = parts[0];
-        String originOrgId = parts[1];
-        Set<String> callerSubstudies = BridgeUtils.getRequestContext().getCallerSubstudies();
-        boolean scopedUser = !callerSubstudies.isEmpty();
-        boolean orgMember = callerSubstudies.contains(originOrgId);
-        
-        if (!callerAppId.equals(originAppId) || (scopedUser && !orgMember)) {
-            throw new UnauthorizedException(CALLER_NOT_MEMBER_ERROR);
-        }
-    }
-    
-    public static Integer getIntegerOrDefault(String value, Integer defaultValue) {
+   public static Integer getIntegerOrDefault(String value, Integer defaultValue) {
         if (isBlank(value)) {
             return defaultValue;
         }
@@ -795,4 +718,5 @@ public class BridgeUtils {
         }
         return new InvalidEntityException("Error parsing JSON in request body: " + throwable.getMessage());
     }
+
 }

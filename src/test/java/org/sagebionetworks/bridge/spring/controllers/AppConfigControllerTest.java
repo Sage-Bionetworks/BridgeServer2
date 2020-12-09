@@ -33,7 +33,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -122,7 +121,7 @@ public class AppConfigControllerTest extends Mockito {
     
     @AfterMethod
     public void afterMethod() {
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     @Test
@@ -138,7 +137,7 @@ public class AppConfigControllerTest extends Mockito {
     
     @Test
     public void getAppConfigByCriteria() throws Exception {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         
@@ -157,7 +156,7 @@ public class AppConfigControllerTest extends Mockito {
         assertEquals(capturedContext.getClientInfo().getAppVersion(), new Integer(26));
         assertEquals(capturedContext.getLanguages(), ImmutableList.of("en"));
         assertEquals(capturedContext.getClientInfo().getOsName(), "iPhone OS");
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
 
     @Test
@@ -255,7 +254,7 @@ public class AppConfigControllerTest extends Mockito {
 
     @Test
     public void getAppConfigByCriteriaAddsToCache() throws Exception {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerLanguages(ImmutableList.of("en"))
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA)).build());
         mockRequestBody(mockRequest, appConfig);

@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.GuidVersionHolder;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -115,6 +116,19 @@ public class FileController extends BaseController {
         revision.setFileGuid(guid);
         
         return fileService.createFileRevision(session.getAppId(), revision);
+    }
+    
+    @GetMapping("/v3/files/{guid}/revisions/{createdOn}")
+    public FileRevision getFileRevision(@PathVariable String guid, @PathVariable("createdOn") String createdOnStr) {
+        UserSession session = getAuthenticatedSession(DEVELOPER);
+        
+        DateTime createdOn = DateTime.parse(createdOnStr);
+        
+        // Verify access to this file stream.
+        fileService.getFile(session.getAppId(), guid);
+        
+        return fileService.getFileRevision(guid, createdOn)
+            .orElseThrow(() -> new EntityNotFoundException(FileRevision.class));
     }
     
     @PostMapping("/v3/files/{guid}/revisions/{createdOn}")

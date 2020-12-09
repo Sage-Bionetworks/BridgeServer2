@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
@@ -9,33 +8,38 @@ import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
+import java.sql.SQLIntegrityConstraintViolationException;
+import java.util.Map;
 import java.util.Optional;
-
-import static org.mockito.Mockito.verify;
 
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
 import org.hibernate.NonUniqueObjectException;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 import com.google.common.collect.ImmutableSet;
 
-public class AccountPersistenceExceptionConverterTest {
+public class AccountPersistenceExceptionConverterTest extends Mockito {
+    
+    private static final String ORG_FOREIGN_KEY_ERROR = "Cannot add or update a child row: a foreign key constraint fails "
+            +"(`bridgedb`.`accounts`, CONSTRAINT `accounts_ibfk_1` FOREIGN KEY (`studyId`, `orgMembership`) "
+            +"REFERENCES `Organizations` (`appId`, `identifier`))";
 
     private AccountPersistenceExceptionConverter converter;
     
@@ -45,13 +49,13 @@ public class AccountPersistenceExceptionConverterTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        RequestContext.set(RequestContext.NULL_INSTANCE);
         converter = new AccountPersistenceExceptionConverter(accountDao);
     }
     
     @AfterMethod
     public void after() {
-        BridgeUtils.setRequestContext(RequestContext.NULL_INSTANCE);
+        RequestContext.set(RequestContext.NULL_INSTANCE);
     }
     
     @Test
@@ -111,17 +115,16 @@ public class AccountPersistenceExceptionConverterTest {
 
     @Test
     public void entityAlreadyExistsForExternalId() {
-        AccountSubstudy acctSubstudy = AccountSubstudy.create(TEST_APP_ID, "something", USER_ID);
-        acctSubstudy.setExternalId("ext");
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "something", USER_ID, "ext");
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        account.setAccountSubstudies(ImmutableSet.of(acctSubstudy));
+        account.setEnrollments(ImmutableSet.of(enrollment));
         
         Account existing = Account.create();
         existing.setId(USER_ID);
         existing.setAppId(TEST_APP_ID);
-        existing.setAccountSubstudies(ImmutableSet.of(acctSubstudy));
+        existing.setEnrollments(ImmutableSet.of(enrollment));
         
         when(accountDao.getAccount(AccountId.forExternalId(TEST_APP_ID, "ext"))).thenReturn(Optional.of(existing));
         
@@ -139,13 +142,9 @@ public class AccountPersistenceExceptionConverterTest {
     public void entityAlreadyExistsForExternalIdWhenThereAreMultiple() {
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_APP_ID, "substudyA", USER_ID);
-        as1.setExternalId("externalIdA");
-        HibernateAccountSubstudy as2 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_APP_ID, "substudyB", USER_ID);
-        as2.setExternalId("externalIdB");
-        account.setAccountSubstudies(ImmutableSet.of(as1, as2));
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID, "externalIdB");
+        account.setEnrollments(ImmutableSet.of(en1, en2));
         
         Account existing = Account.create();
         existing.setId(USER_ID);
@@ -165,19 +164,15 @@ public class AccountPersistenceExceptionConverterTest {
     }
     
     @Test
-    public void entityAlreadyExistsForExternalIdWhenThereAreMultipleIgnoringSubstudies() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyB")).build());
+    public void entityAlreadyExistsForExternalIdWhenThereAreMultipleIgnoringStudies() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of("studyB")).build());
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_APP_ID, "substudyA", USER_ID);
-        as1.setExternalId("externalIdA");
-        HibernateAccountSubstudy as2 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_APP_ID, "substudyB", USER_ID);
-        as2.setExternalId("externalIdB");
-        account.setAccountSubstudies(ImmutableSet.of(as1, as2));
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID, "externalIdB");
+        account.setEnrollments(ImmutableSet.of(en1, en2));
         
         Account existing = Account.create();
         existing.setId(USER_ID);
@@ -200,16 +195,14 @@ public class AccountPersistenceExceptionConverterTest {
     }
     
     @Test
-    public void entityAlreadyExistsForExternalIdWhenSubstudyOutsideOfCallerSubstudy() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudyB")).build());
+    public void entityAlreadyExistsForExternalIdWhenStudyOutsideOfCallerStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of("studyB")).build());
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        HibernateAccountSubstudy as1 = (HibernateAccountSubstudy) AccountSubstudy
-                .create(TEST_APP_ID, "substudyA", USER_ID);
-        as1.setExternalId("externalIdA");
-        account.setAccountSubstudies(ImmutableSet.of(as1));
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID, "externalIdA");
+        account.setEnrollments(ImmutableSet.of(as1));
         
         Account existing = Account.create();
         existing.setId(USER_ID);
@@ -234,7 +227,7 @@ public class AccountPersistenceExceptionConverterTest {
     public void entityAlreadyExistsIfAccountCannotBeFound() {
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        account.setAccountSubstudies(ImmutableSet.of());
+        account.setEnrollments(ImmutableSet.of());
 
         org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
                 "Duplicate entry 'testStudy-ext' for key 'Accounts-StudyId-ExternalId-Index'", null, null);
@@ -277,6 +270,27 @@ public class AccountPersistenceExceptionConverterTest {
     }
     
     @Test
+    public void entityAlreadyExistsForDuplicateExternalIdInApp() {
+        Account account = Account.create();
+        account.setId(USER_ID);
+        account.setAppId(TEST_APP_ID);
+        
+        when(accountDao.getAccount(AccountId.forExternalId(TEST_APP_ID, "CCC")))
+                .thenReturn(Optional.of(account));
+        
+        org.hibernate.exception.ConstraintViolationException cve = new org.hibernate.exception.ConstraintViolationException(
+                "Duplicate entry 'api-CCC' for key 'unique_extId'", null, null);
+        PersistenceException pe = new PersistenceException(cve);
+        
+        RuntimeException result = converter.convert(pe, account);
+        assertEquals(result.getClass(), EntityAlreadyExistsException.class);
+        assertEquals(result.getMessage(), "External ID has already been used by another account.");
+        Map<String,Object> keys = ((EntityAlreadyExistsException)result).getEntityKeys();
+        assertEquals(keys.get("userId"), "userId");
+        assertEquals(keys.size(), 1);
+    }
+    
+    @Test
     public void constraintViolationExceptionMessageIsHidden() {
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
@@ -314,4 +328,19 @@ public class AccountPersistenceExceptionConverterTest {
         assertEquals(result.getMessage(), AccountPersistenceExceptionConverter.NON_UNIQUE_MSG);
     }
     
+    @Test
+    public void organizationForeignKeyConstraint() { 
+        HibernateAccount account = new HibernateAccount();
+        
+        SQLIntegrityConstraintViolationException ex = mock(SQLIntegrityConstraintViolationException.class);
+        when(ex.getMessage()).thenReturn(ORG_FOREIGN_KEY_ERROR);
+        
+        org.hibernate.exception.ConstraintViolationException cve = 
+                new org.hibernate.exception.ConstraintViolationException(ex.getMessage(), ex, "");
+        
+        PersistenceException pe = new PersistenceException(cve);
+        
+        RuntimeException e = converter.convert(pe, account);
+        assertEquals(e.getClass(), EntityNotFoundException.class);
+    }
 }

@@ -1,14 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeUtils.getRequestContext;
-import static org.sagebionetworks.bridge.BridgeUtils.setRequestContext;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.reports.ReportType.STUDY;
 import static org.testng.Assert.assertEquals;
@@ -40,7 +38,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
@@ -147,8 +144,8 @@ public class StudyReportControllerTest extends Mockito {
                 .withRequestParam(ResourceList.END_TIME, END_TIME);
         
         // There are some tests that need to clear this for the call to work correctly.
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(USER_SUBSTUDY_IDS).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(USER_STUDY_IDS).build());
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -156,7 +153,7 @@ public class StudyReportControllerTest extends Mockito {
     
     @AfterMethod
     public void after() {
-        setRequestContext(NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
     }
     
     @Test
@@ -299,7 +296,7 @@ public class StudyReportControllerTest extends Mockito {
 
         assertEquals(2, result.getItems().size());
         
-        assertEquals(NULL_INSTANCE, getRequestContext());
+        assertEquals(NULL_INSTANCE, RequestContext.get());
         verify(mockReportService).getReportIndex(key);
         verify(mockReportService).getStudyReport(TEST_APP_ID, REPORT_ID, START_DATE, END_DATE);
     }

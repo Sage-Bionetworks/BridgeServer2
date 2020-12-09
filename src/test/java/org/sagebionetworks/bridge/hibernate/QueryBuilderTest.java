@@ -6,6 +6,8 @@ import com.google.common.collect.ImmutableSet;
 
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
+
 public class QueryBuilderTest {
 
     @Test
@@ -34,5 +36,55 @@ public class QueryBuilderTest {
         assertEquals(builder.getParameters().get("IN2"), "B");
         assertEquals(builder.getParameters().get("NOTIN1"), "C");
         assertEquals(builder.getParameters().get("NOTIN2"), "D");
+    }
+    
+    @Test
+    public void testAdmin() {
+        QueryBuilder builder = new QueryBuilder();
+        builder.adminOnly(null);
+        assertEquals(builder.getQuery(), "");
+        
+        builder = new QueryBuilder();
+        builder.adminOnly(true);
+        assertEquals(builder.getQuery(), "AND size(acct.roles) > 0");
+
+        builder = new QueryBuilder();
+        builder.adminOnly(false);
+        assertEquals(builder.getQuery(), "AND size(acct.roles) = 0");
+    }
+    
+    @Test
+    public void testOrgMembership() {
+        QueryBuilder builder = new QueryBuilder();
+        builder.orgMembership(null);
+        assertEquals(builder.getQuery(), "");
+        
+        builder = new QueryBuilder();
+        builder.orgMembership("<NONE>");
+        assertEquals(builder.getQuery(), "AND acct.orgMembership IS NULL");
+
+        builder = new QueryBuilder();
+        builder.orgMembership("foo");
+        assertEquals(builder.getQuery(), "AND acct.orgMembership = :orgId");
+        assertEquals(builder.getParameters().get("orgId"), "foo");
+    }
+    
+    @Test
+    public void enrollment() {
+        QueryBuilder builder = new QueryBuilder();
+        builder.enrollment(EnrollmentFilter.ENROLLED);
+        assertEquals(builder.getQuery(), "AND withdrawnOn IS NULL");
+        
+        builder = new QueryBuilder();
+        builder.enrollment(EnrollmentFilter.WITHDRAWN);
+        assertEquals(builder.getQuery(), "AND withdrawnOn IS NOT NULL");
+        
+        builder = new QueryBuilder();
+        builder.enrollment(EnrollmentFilter.ALL);
+        assertEquals(builder.getQuery(), "");
+        
+        builder = new QueryBuilder();
+        builder.enrollment(null);
+        assertEquals(builder.getQuery(), "");
     }
 }

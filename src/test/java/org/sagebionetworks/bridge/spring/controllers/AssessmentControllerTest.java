@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.BridgeConstants.NONPOSITIVE_REVISION_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -23,7 +24,6 @@ import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
-import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_NOT_POSITIVE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
@@ -46,7 +46,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -90,7 +90,7 @@ public class AssessmentControllerTest extends Mockito {
 
     @AfterMethod
     public void afterMethod() {
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
     
     @Test
@@ -286,13 +286,13 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(retValue.getVersion(), 8L);
     }
 
-    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = OFFSET_NOT_POSITIVE)
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = NONPOSITIVE_REVISION_ERROR)
     public void getAssessmentByIdZeroRevision() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         controller.getAssessmentById(IDENTIFIER, "0");
     }
     
-    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = OFFSET_NOT_POSITIVE)
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = NONPOSITIVE_REVISION_ERROR)
     public void getAssessmentByIdNegativeRevision() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         controller.getAssessmentById(IDENTIFIER, "-1");

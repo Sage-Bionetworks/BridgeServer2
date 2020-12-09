@@ -6,6 +6,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.SPONSORS_AND_PARTNERS;
 import static org.testng.Assert.assertEquals;
@@ -47,7 +48,7 @@ public class StudyParticipantTest {
     private static final Phone PHONE = TestConstants.PHONE;
     private static final Set<Roles> ROLES = ImmutableSet.of(Roles.ADMIN, Roles.WORKER);
     private static final List<String> LANGS = ImmutableList.of("en","fr");
-    private static final Set<String> SUBSTUDIES = ImmutableSet.of("substudyA", "substudyB");
+    private static final Set<String> STUDIES = ImmutableSet.of("studyA", "studyB");
     private static final Set<String> DATA_GROUPS = Sets.newHashSet("group1","group2");
     private static final DateTimeZone TIME_ZONE = DateTimeZone.forOffsetHours(4);
     private static final Map<String,String> ATTRIBUTES = ImmutableMap.<String,String>builder()
@@ -67,49 +68,50 @@ public class StudyParticipantTest {
         String json = StudyParticipant.CACHE_WRITER.writeValueAsString(participant);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
         
-        assertEquals(node.get("firstName").asText(), "firstName");
-        assertEquals(node.get("lastName").asText(), "lastName");
-        assertEquals(node.get("email").asText(), "email@email.com");
-        assertEquals(node.get("externalId").asText(), "externalId");
-        assertEquals(node.get("synapseUserId").asText(), SYNAPSE_USER_ID);
-        assertEquals(node.get("password").asText(), "newUserPassword");
-        assertEquals(node.get("sharingScope").asText(), "sponsors_and_partners");
+        assertEquals(node.get("firstName").textValue(), "firstName");
+        assertEquals(node.get("lastName").textValue(), "lastName");
+        assertEquals(node.get("email").textValue(), "email@email.com");
+        assertEquals(node.get("externalId").textValue(), "externalId");
+        assertEquals(node.get("synapseUserId").textValue(), SYNAPSE_USER_ID);
+        assertEquals(node.get("password").textValue(), "newUserPassword");
+        assertEquals(node.get("sharingScope").textValue(), "sponsors_and_partners");
         assertTrue(node.get("notifyByEmail").asBoolean());
         assertNull(node.get("healthCode"));
         assertNotNull(node.get("encryptedHealthCode"));
         assertTrue(node.get("consented").booleanValue());
-        assertEquals(node.get("status").asText(), "enabled");
-        assertEquals(node.get("createdOn").asText(), CREATED_ON_UTC.toString());
-        assertEquals(node.get("id").asText(), ACCOUNT_ID);
-        assertEquals(node.get("substudyIds").get(0).textValue(), "substudyA");
-        assertEquals(node.get("substudyIds").get(1).textValue(), "substudyB");
-        assertEquals(node.get("timeZone").asText(), "+04:00");
-        assertEquals(node.get("externalIds").get("substudyA").textValue(), "externalIdA");
-        assertEquals(node.get("type").asText(), "StudyParticipant");
+        assertEquals(node.get("status").textValue(), "enabled");
+        assertEquals(node.get("createdOn").textValue(), CREATED_ON_UTC.toString());
+        assertEquals(node.get("id").textValue(), ACCOUNT_ID);
+        assertEquals(node.get("studyIds").get(0).textValue(), "studyA");
+        assertEquals(node.get("studyIds").get(1).textValue(), "studyB");
+        assertEquals(node.get("timeZone").textValue(), "+04:00");
+        assertEquals(node.get("externalIds").get("studyA").textValue(), "externalIdA");
+        assertEquals(node.get("orgMembership").textValue(), TEST_ORG_ID);
+        assertEquals(node.get("type").textValue(), "StudyParticipant");
         
         JsonNode clientData = node.get("clientData");
         assertTrue(clientData.get("booleanFlag").booleanValue());
-        assertEquals(clientData.get("stringValue").asText(), "testString");
+        assertEquals(clientData.get("stringValue").textValue(), "testString");
         assertEquals(clientData.get("intValue").intValue(), 4);
 
         Set<String> roleNames = Sets.newHashSet(
                 Roles.ADMIN.name().toLowerCase(), Roles.WORKER.name().toLowerCase());
         ArrayNode rolesArray = (ArrayNode)node.get("roles");
-        assertTrue(roleNames.contains(rolesArray.get(0).asText()));
-        assertTrue(roleNames.contains(rolesArray.get(1).asText()));
+        assertTrue(roleNames.contains(rolesArray.get(0).textValue()));
+        assertTrue(roleNames.contains(rolesArray.get(1).textValue()));
         
         // This array the order is significant, it serializes LinkedHashSet
         ArrayNode langsArray = (ArrayNode)node.get("languages"); 
-        assertEquals(langsArray.get(0).asText(), "en");
-        assertEquals(langsArray.get(1).asText(), "fr");
+        assertEquals(langsArray.get(0).textValue(), "en");
+        assertEquals(langsArray.get(1).textValue(), "fr");
         
         ArrayNode dataGroupsArray = (ArrayNode)node.get("dataGroups");
-        assertTrue(DATA_GROUPS.contains(dataGroupsArray.get(0).asText()));
-        assertTrue(DATA_GROUPS.contains(dataGroupsArray.get(1).asText()));
+        assertTrue(DATA_GROUPS.contains(dataGroupsArray.get(0).textValue()));
+        assertTrue(DATA_GROUPS.contains(dataGroupsArray.get(1).textValue()));
 
-        assertEquals(node.get("attributes").get("A").asText(), "B");
-        assertEquals(node.get("attributes").get("C").asText(), "D");
-        assertEquals(node.size(), 26);
+        assertEquals(node.get("attributes").get("A").textValue(), "B");
+        assertEquals(node.get("attributes").get("C").textValue(), "D");
+        assertEquals(node.size(), 27);
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals(deserParticipant.getFirstName(), "firstName");
@@ -122,7 +124,7 @@ public class StudyParticipantTest {
         assertEquals(deserParticipant.getSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
         assertTrue(deserParticipant.isNotifyByEmail());
         assertEquals(deserParticipant.getDataGroups(), DATA_GROUPS);
-        assertEquals(deserParticipant.getSubstudyIds(), SUBSTUDIES);
+        assertEquals(deserParticipant.getStudyIds(), STUDIES);
         assertEquals(deserParticipant.getHealthCode(), TestConstants.UNENCRYPTED_HEALTH_CODE);
         // This is encrypted with different series of characters each time, so just verify it is there.
         assertNotNull(deserParticipant.getEncryptedHealthCode());
@@ -131,7 +133,8 @@ public class StudyParticipantTest {
         assertEquals(deserParticipant.getCreatedOn(), CREATED_ON_UTC);
         assertEquals(deserParticipant.getStatus(), AccountStatus.ENABLED);
         assertEquals(deserParticipant.getId(), ACCOUNT_ID);
-        assertEquals(deserParticipant.getExternalIds().get("substudyA"), "externalIdA");
+        assertEquals(deserParticipant.getExternalIds().get("studyA"), "externalIdA");
+        assertEquals(deserParticipant.getOrgMembership(), TEST_ORG_ID);
         
         UserConsentHistory deserHistory = deserParticipant.getConsentHistories().get("AAA").get(0);
         assertEquals(deserHistory.getBirthdate(), "2002-02-02");
@@ -187,7 +190,7 @@ public class StudyParticipantTest {
         assertTrue(copy.isConsented());
         assertEquals(copy.getCreatedOn(), CREATED_ON);
         assertEquals(copy.getStatus(), ENABLED);
-        assertEquals(copy.getSubstudyIds(), SUBSTUDIES);
+        assertEquals(copy.getStudyIds(), STUDIES);
         assertEquals(copy.getId(), ACCOUNT_ID);
         assertEquals(copy.getClientData(), TestUtils.getClientData());
         
@@ -273,8 +276,8 @@ public class StudyParticipantTest {
         assertCopyField("phoneVerified", (builder)-> verify(builder).withPhoneVerified(any()));
     }
     @Test
-    public void canCopySubstudiesVerified() {
-        assertCopyField("substudyIds", (builder)-> verify(builder).withSubstudyIds(any()));
+    public void canCopyStudiesVerified() {
+        assertCopyField("studyIds", (builder)-> verify(builder).withStudyIds(any()));
     }
     @Test
     public void canCopyExternalIdsVerified() { 
@@ -283,6 +286,10 @@ public class StudyParticipantTest {
     @Test
     public void canCopyGetSynapseUserId() {
         assertCopyField("synapseUserId", (builder) -> verify(builder).withSynapseUserId(any()));
+    }
+    @Test
+    public void canCopyOrgMembership() {
+        assertCopyField("orgMembership", (builder) -> verify(builder).withOrgMembership(any()));
     }
     
     @Test
@@ -298,28 +305,31 @@ public class StudyParticipantTest {
         assertTrue(participant.getAttributes().isEmpty());
         assertTrue(participant.getRoles().isEmpty());
         assertTrue(participant.getLanguages().isEmpty());
-        assertTrue(participant.getSubstudyIds().isEmpty());
+        assertTrue(participant.getStudyIds().isEmpty());
     }
     
     @Test
     public void nullParametersBreakNothing() {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
-                .withPassword("password").withConsented(null).withSubstudyIds(null).build();
+                .withPassword("password").withConsented(null).withStudyIds(null).build();
         
         assertTrue(participant.getRoles().isEmpty());
         assertTrue(participant.getDataGroups().isEmpty());
-        assertTrue(participant.getSubstudyIds().isEmpty());
+        assertTrue(participant.getStudyIds().isEmpty());
         assertNull(participant.isConsented());
     }
     
     @Test
     public void oldJsonParsesCorrectly() throws Exception {
         // Old clients will continue to submit a username, this will be ignored.
-        String json = "{\"email\":\"email@email.com\",\"username\":\"username@email.com\",\"password\":\"password\",\"roles\":[],\"dataGroups\":[],\"type\":\"SignUp\"}";
+        String json = TestUtils.createJson("{'substudyIds': ['A', 'B'], 'email':'email@email.com',"
+                +"'username':'username@email.com','password':'password','roles':[],'dataGroups':"
+                +"[],'type':'SignUp'}");
         
         StudyParticipant participant = BridgeObjectMapper.get().readValue(json, StudyParticipant.class);
         assertEquals(participant.getEmail(), "email@email.com");
         assertEquals(participant.getPassword(), "password");
+        assertEquals(participant.getStudyIds(), ImmutableSet.of("A", "B"));
     }
     
     @Test
@@ -387,13 +397,14 @@ public class StudyParticipantTest {
                 .withConsented(true)
                 .withRoles(ROLES)
                 .withLanguages(LANGS)
-                .withSubstudyIds(SUBSTUDIES)
-                .withExternalIds(ImmutableMap.of("substudyA","externalIdA"))
+                .withStudyIds(STUDIES)
+                .withExternalIds(ImmutableMap.of("studyA","externalIdA"))
                 .withCreatedOn(CREATED_ON)
                 .withId(ACCOUNT_ID)
                 .withStatus(AccountStatus.ENABLED)
                 .withClientData(clientData)
-                .withTimeZone(TIME_ZONE);
+                .withTimeZone(TIME_ZONE)
+                .withOrgMembership(TEST_ORG_ID);
         
         Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();
         
@@ -441,7 +452,7 @@ public class StudyParticipantTest {
     @Test
     public void externalIdRetrievedFromMap() { 
         StudyParticipant participant = new StudyParticipant.Builder()
-                .withExternalIds(ImmutableMap.of("oneSubstudy", "oneExternalId")).build();
+                .withExternalIds(ImmutableMap.of("oneStudy", "oneExternalId")).build();
         assertEquals(participant.getExternalId(), "oneExternalId");
     }
 }

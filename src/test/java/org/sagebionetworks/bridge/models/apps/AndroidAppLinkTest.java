@@ -8,8 +8,6 @@ import com.google.common.collect.Lists;
 
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
-
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class AndroidAppLinkTest {

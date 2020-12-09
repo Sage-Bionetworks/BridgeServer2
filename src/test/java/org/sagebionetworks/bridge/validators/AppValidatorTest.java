@@ -81,6 +81,12 @@ public class AppValidatorTest {
     }
     
     @Test
+    public void shortNameHasSpace() {
+        app.setShortName("CRC Corps");
+        assertValidatorMessage(INSTANCE, app, "shortName", "cannot contain spaces");
+    }
+    
+    @Test
     public void sponsorNameRequired() {
         app.setSponsorName("");
         assertValidatorMessage(INSTANCE, app, "sponsorName", "is required");
@@ -178,6 +184,9 @@ public class AppValidatorTest {
         
         app.setSupportEmail(null);
         assertValidatorMessage(INSTANCE, app, "supportEmail", "is required");
+        
+        app.setSupportEmail("alx@keywise.tech");
+        Validate.entityThrowingException(INSTANCE, app);
     }
     
     @Test
@@ -404,6 +413,14 @@ public class AppValidatorTest {
     public void oauthProviderRequired() {
         app.getOAuthProviders().put("vendor", null);
         assertValidatorMessage(INSTANCE, app, "oauthProviders[vendor]", "is required");
+    }
+    
+    @Test
+    public void oauthProviderCannotBeCalledSynapse() {
+        OAuthProvider provider = new OAuthProvider("clientId", "secret", "endpoint",
+                CALLBACK_URL, "http://example.com/introspect");
+        app.getOAuthProviders().put("synapse", provider);
+        assertValidatorMessage(INSTANCE, app, "oauthProviders[synapse]", "is a reserved vendor ID");
     }
     
     @Test

@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,8 +27,8 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
-import org.sagebionetworks.bridge.models.substudies.Substudy;
-import org.sagebionetworks.bridge.services.SubstudyService;
+import org.sagebionetworks.bridge.models.organizations.Organization;
+import org.sagebionetworks.bridge.services.OrganizationService;
 
 public class AssessmentValidatorTest extends Mockito {
 
@@ -35,7 +36,7 @@ public class AssessmentValidatorTest extends Mockito {
     AssessmentDao mockAssessmentDao;
     
     @Mock
-    SubstudyService mockSubstudyService;
+    OrganizationService mockOrganizationService;
     
     AssessmentValidator validator;
     
@@ -49,22 +50,22 @@ public class AssessmentValidatorTest extends Mockito {
         when(mockAssessmentDao.getAssessmentRevisions(TEST_APP_ID, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<Assessment>(ImmutableList.of(), 0));
         
-        validator = new AssessmentValidator(mockSubstudyService, TEST_APP_ID);
+        validator = new AssessmentValidator(TEST_APP_ID, mockOrganizationService);
     }
     
     @Test
     public void validAssessment() {
-        when(mockSubstudyService.getSubstudy(TEST_APP_ID, assessment.getOwnerId(), false))
-            .thenReturn(Substudy.create());
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Organization.create());
         
         Validate.entityThrowingException(validator, assessment);
     }
     @Test
     public void validSharedAssessment() {
-        validator = new AssessmentValidator(mockSubstudyService, SHARED_APP_ID);
+        validator = new AssessmentValidator(SHARED_APP_ID, mockOrganizationService);
         assessment.setOwnerId(TEST_APP_ID + ":" + OWNER_ID);
         
-        when(mockSubstudyService.getSubstudy(TEST_APP_ID, OWNER_ID, false)).thenReturn(Substudy.create());
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, OWNER_ID)).thenReturn(Organization.create());
     
         Validate.entityThrowingException(validator, assessment);
     }
@@ -93,6 +94,11 @@ public class AssessmentValidatorTest extends Mockito {
         assertValidatorMessage(validator, assessment, "title", CANNOT_BE_BLANK);
     }
     @Test
+    public void minutesToCompleteNegative() {
+        assessment.setMinutesToComplete(-1);
+        assertValidatorMessage(validator, assessment, "minutesToComplete", CANNOT_BE_NEGATIVE);
+    }
+    @Test
     public void osNameNull() {
         assessment.setOsName(null);
         assertValidatorMessage(validator, assessment, "osName", CANNOT_BE_BLANK);
@@ -109,8 +115,8 @@ public class AssessmentValidatorTest extends Mockito {
     }
     @Test
     public void osNameUniversalIsValid() {
-        when(mockSubstudyService.getSubstudy(TEST_APP_ID, assessment.getOwnerId(), false))
-            .thenReturn(Substudy.create());
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Organization.create());
         
         assessment.setOsName("Universal");
         Validate.entityThrowingException(validator, assessment);

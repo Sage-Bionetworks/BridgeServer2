@@ -8,7 +8,9 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,6 +47,7 @@ public class AccountSummarySearchTest {
                 .withLanguage("en")
                 .withStartTime(startTime)
                 .withEndTime(endTime)
+                .withOrgMembership(TEST_ORG_ID)
                 .build();
         
         ObjectMapper mapper = BridgeObjectMapper.get();
@@ -70,7 +73,9 @@ public class AccountSummarySearchTest {
             .withNoneOfGroups(Sets.newHashSet("group2"))
             .withLanguage("en")
             .withStartTime(startTime)
-            .withEndTime(endTime).build();
+            .withEndTime(endTime)
+            .withOrgMembership(TEST_ORG_ID)
+            .withAdminOnly(true).build();
         
         String json = BridgeObjectMapper.get().writeValueAsString(search);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -89,6 +94,40 @@ public class AccountSummarySearchTest {
         assertEquals(deser.getLanguage(), "en");
         assertEquals(deser.getStartTime(), startTime);
         assertEquals(deser.getEndTime(), endTime);
+        assertEquals(deser.getOrgMembership(), TEST_ORG_ID);
+        assertTrue(deser.isAdminOnly());
+    }
+    
+    @Test
+    public void copyOfWorks() { 
+        DateTime startTime = DateTime.now(DateTimeZone.forOffsetHours(3)).minusDays(2);
+        DateTime endTime = DateTime.now(DateTimeZone.forOffsetHours(3));
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+            .withOffsetBy(10)
+            .withPageSize(100)
+            .withEmailFilter("email")
+            .withPhoneFilter("phone")
+            .withAllOfGroups(Sets.newHashSet("group1"))
+            .withNoneOfGroups(Sets.newHashSet("group2"))
+            .withLanguage("en")
+            .withStartTime(startTime)
+            .withEndTime(endTime)
+            .withAdminOnly(false)
+            .withOrgMembership(TEST_ORG_ID).build();
+
+        AccountSummarySearch copy = new AccountSummarySearch.Builder().copyOf(search).build();
+        assertEquals(copy.getOffsetBy(), 10);
+        assertEquals(copy.getPageSize(), 100);
+        assertEquals(copy.getEmailFilter(), "email");
+        assertEquals(copy.getPhoneFilter(), "phone");
+        assertEquals(copy.getAllOfGroups(), Sets.newHashSet("group1"));
+        assertEquals(copy.getNoneOfGroups(), Sets.newHashSet("group2"));
+        assertEquals(copy.getLanguage(), "en");
+        assertEquals(copy.getStartTime(), startTime);
+        assertEquals(copy.getEndTime(), endTime);
+        assertEquals(copy.getOrgMembership(), TEST_ORG_ID);
+        assertEquals(copy.isAdminOnly(), Boolean.FALSE);
     }
     
     @Test

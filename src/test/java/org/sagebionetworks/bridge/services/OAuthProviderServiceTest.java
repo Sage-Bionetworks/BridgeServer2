@@ -41,6 +41,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.OAuthProvider;
 import org.sagebionetworks.bridge.models.oauth.OAuthAccessGrant;
 import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
@@ -96,6 +97,9 @@ public class OAuthProviderServiceTest extends Mockito {
     @Spy
     @InjectMocks
     private OAuthProviderService service;
+    
+    @Mock
+    private AppService mockAppService;
     
     @Mock
     private CloseableHttpClient mockClient;
@@ -403,6 +407,43 @@ public class OAuthProviderServiceTest extends Mockito {
         assertEquals(EntityUtils.toString(thePost.getEntity()), body);
     }
     
+    @Test
+    public void oauthSignInDifferentVendor() throws Exception {
+        // This is not encrypted, the real token is public/private key encrypted. We mock the parser
+        // to avoid having to sign the payload.
+        mockAccessGrantCall(201, "{\"access_token\":\"not used\",\"id_token\":{\"userid\":\"77777\"}}");
+        
+        when(service.getJwtParser()).thenReturn(mockJwtParser);
+        when(mockJwtParser.parseClaimsJws(any())).thenReturn(mockJwtClaims);
+        when(mockJwtClaims.getBody()).thenReturn(mockClaims);
+        when(mockClaims.get(SYNAPSE_USERID_KEY, String.class)).thenReturn("12345");
+        
+        OAuthAuthorizationToken signIn = new OAuthAuthorizationToken(TEST_APP_ID, "anotherVendor", AUTH_TOKEN_STRING,
+                "callbackUrl");
+        
+        // Reusing the Synapse client constants because I don't want to recalculate the base64
+        // of the values.
+        OAuthProvider provider = new OAuthProvider(SYNAPSE_OAUTH_CLIENT_ID_VALUE, SYNAPSE_OAUTH_CLIENT_SECRET_VALUE,
+                "endpoint", "callbackUrl", "introspectEndpoint");
+        
+        App app = App.create();
+        app.getOAuthProviders().put("anotherVendor", provider);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        AccountId returnedValue = service.oauthSignIn(signIn);
+        assertEquals(returnedValue, AccountId.forSynapseUserId(TEST_APP_ID, "12345"));
+        
+        String authHeader = "Basic " + Base64.encodeBase64String(
+                (SYNAPSE_OAUTH_CLIENT_ID_VALUE + ":" + SYNAPSE_OAUTH_CLIENT_SECRET_VALUE).getBytes());
+        String body = "grant_type=authorization_code&code=" + BridgeUtils.encodeURIComponent(AUTH_TOKEN_STRING)
+                + "&redirect_uri=" + BridgeUtils.encodeURIComponent("callbackUrl");
+
+        HttpPost thePost = grantPostCaptor.getValue();
+        assertEquals(thePost.getURI().toString(), "endpoint");
+        assertEquals(thePost.getFirstHeader(AUTHORIZATION_PROP_NAME).getValue(), authHeader);
+        assertEquals(EntityUtils.toString(thePost.getEntity()), body);
+    }
+    
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignInNoVendor() {
         OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, null, AUTH_TOKEN_STRING, null);
@@ -411,6 +452,8 @@ public class OAuthProviderServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void oauthSignInWrongVendor() {
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(App.create());
+        
         OAuthAuthorizationToken token = new OAuthAuthorizationToken(TEST_APP_ID, "google", AUTH_TOKEN_STRING, null);
         service.oauthSignIn(token);
     }

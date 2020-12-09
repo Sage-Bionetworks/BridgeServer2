@@ -71,7 +71,7 @@ public class TemplateService {
     private TemplateRevisionDao templateRevisionDao;
     private CriteriaDao criteriaDao;
     private AppService appService;
-    private SubstudyService substudyService;
+    private StudyService studyService;
     
     private String defaultEmailVerificationTemplate;
     private String defaultEmailVerificationTemplateSubject;
@@ -109,8 +109,8 @@ public class TemplateService {
         this.appService = appService;
     }
     @Autowired
-    final void setSubstudyService(SubstudyService substudyService) {
-        this.substudyService = substudyService;
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
 
     @Value("classpath:conf/app-defaults/email-verification.txt")
@@ -209,7 +209,7 @@ public class TemplateService {
     }
     
     public TemplateRevision getRevisionForUser(App app, TemplateType type) {
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         CriteriaContext context = new CriteriaContext.Builder()
             .withClientInfo(reqContext.getCallerClientInfo())
             .withLanguages(reqContext.getCallerLanguages())
@@ -310,9 +310,9 @@ public class TemplateService {
             revision.setMimeType(triple.getRight());
         }
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
         
-        TemplateValidator validator = new TemplateValidator(app.getDataGroups(), substudyIds);
+        TemplateValidator validator = new TemplateValidator(app.getDataGroups(), studyIds);
         Validate.entityThrowingException(validator, template);
 
         String templateGuid = generateGuid();
@@ -335,7 +335,7 @@ public class TemplateService {
         revision.setTemplateGuid(templateGuid);
         revision.setStoragePath(storagePath);
 
-        templateDao.createTemplate(template, null);
+        templateDao.createTemplate(template);
         templateRevisionDao.createTemplateRevision(revision);
         return new GuidVersionHolder(template.getGuid(), Long.valueOf(template.getVersion()));
     }
@@ -356,9 +356,9 @@ public class TemplateService {
         template.setCreatedOn(existing.getCreatedOn());
         
         App app = appService.getApp(appId);
-        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
         
-        TemplateValidator validator = new TemplateValidator(app.getDataGroups(), substudyIds);
+        TemplateValidator validator = new TemplateValidator(app.getDataGroups(), studyIds);
         Validate.entityThrowingException(validator, template);
 
         if (template.isDeleted() && isDefaultTemplate(template, appId)) {
@@ -439,6 +439,6 @@ public class TemplateService {
     }
     
     String getUserId() {
-        return BridgeUtils.getRequestContext().getCallerUserId();
+        return RequestContext.get().getCallerUserId();
     }
 }

@@ -47,7 +47,7 @@ public final class CriteriaScheduleStrategy implements ScheduleStrategy {
     }
 
     @Override
-    public void validate(Set<String> dataGroups, Set<String> substudyIds, Set<String> taskIdentifiers, Errors errors) {
+    public void validate(Set<String> dataGroups, Set<String> studyIds, Set<String> taskIdentifiers, Errors errors) {
         for (int i=0; i < scheduleCriteria.size(); i++) {
             ScheduleCriteria schCriteria = scheduleCriteria.get(i);
             errors.pushNestedPath("scheduleCriteria["+i+"]");
@@ -62,7 +62,7 @@ public final class CriteriaScheduleStrategy implements ScheduleStrategy {
                 errors.rejectValue("criteria", "is required");
             } else {
                 errors.pushNestedPath("criteria");
-                CriteriaUtils.validate(schCriteria.getCriteria(), dataGroups, substudyIds, errors);
+                CriteriaUtils.validate(schCriteria.getCriteria(), dataGroups, studyIds, errors);
                 errors.popNestedPath();
             }
             errors.popNestedPath();

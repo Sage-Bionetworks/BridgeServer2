@@ -57,7 +57,7 @@ public class AppConfigController extends BaseController {
     public String getAppConfigByCriteria(@PathVariable String appId) {
         App app = appService.getApp(appId);
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(reqContext.getCallerLanguages())

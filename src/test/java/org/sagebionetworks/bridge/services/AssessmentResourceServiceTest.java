@@ -10,8 +10,8 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
 import static org.sagebionetworks.bridge.models.ResourceList.CATEGORIES;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.MAX_REVISION;
@@ -44,7 +44,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AssessmentResourceDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -87,11 +86,15 @@ public class AssessmentResourceServiceTest extends Mockito {
         when(service.getCreatedOn()).thenReturn(CREATED_ON);
         when(service.getModifiedOn()).thenReturn(MODIFIED_ON);
         when(service.generateGuid()).thenReturn(GUID);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(OWNER_ID).build());
     }
     
     @AfterMethod
     public void afterMethod() {
-        BridgeUtils.setRequestContext(NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
     }
     
     @Test
@@ -196,10 +199,11 @@ public class AssessmentResourceServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void createResourceChecksAssessmentOwnership() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudy2")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId("orgB");
         when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         service.createResource(TEST_APP_ID, ASSESSMENT_ID, new AssessmentResource());
@@ -301,10 +305,8 @@ public class AssessmentResourceServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateResourceChecksAssessmentOwnership() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudy2")).build());
-
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(TEST_ORG_ID);
         when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
@@ -369,7 +371,8 @@ public class AssessmentResourceServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateSharedResourceFails() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerSubstudies(USER_SUBSTUDY_IDS).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID + ":anotherOrg");
@@ -401,10 +404,11 @@ public class AssessmentResourceServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteResourceChecksAssessmentOwnership() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("substudy2")).build());        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID).build());
 
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId("owner-id");
         when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
 
         service.deleteResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
@@ -583,10 +587,11 @@ public class AssessmentResourceServiceTest extends Mockito {
     
     @Test
     public void importAssessmentResourcesCallerCorrectOrg() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(OWNER_ID).build());
 
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
@@ -600,10 +605,11 @@ public class AssessmentResourceServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void importAssessmentResourcesCallerWrongOrg() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("notOwnerId")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership("notOwnerId").build());
         
         Assessment assessment = AssessmentTest.createAssessment();
+        assessment.setOwnerId(TEST_ORG_ID);
         when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
@@ -629,9 +635,10 @@ public class AssessmentResourceServiceTest extends Mockito {
     }
     
     @Test
-    public void publishAssessmentResourcesScopedOwner() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+    public void publishAssessmentResourcesOwnerInOrg() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID+":"+OWNER_ID);
@@ -650,8 +657,8 @@ public class AssessmentResourceServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void publishAssessmentResourcesCallerWrongOrg() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of("wrongOwnerId")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership("wrongOwnerId").build());
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID+":"+OWNER_ID);
@@ -664,8 +671,8 @@ public class AssessmentResourceServiceTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void publishAssessmentResourcesCallerWrongAppContext() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
-                .withCallerSubstudies(ImmutableSet.of(OWNER_ID)).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of(OWNER_ID)).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID+":"+OWNER_ID);

@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.apps.SynapseProjectIdTeamIdHolder;
 
 public class SynapseProjectIdTeamIdHolderTest {
     private static final String TEST_PROJECT_ID = "test-project-id";

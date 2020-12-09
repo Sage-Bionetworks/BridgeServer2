@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServletRequest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -42,6 +43,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -307,6 +309,45 @@ public class ParticipantReportControllerTest extends Mockito {
     }
 
     @Test
+    public void getParticipantReportDataAsDeveloperForSelf() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .withCallerUserId(OTHER_PARTICIPANT_ID).build());
+        
+        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
+                .withId(OTHER_PARTICIPANT_ID).withRoles(Sets.newHashSet(DEVELOPER)).build();
+        session.setParticipant(participant);
+        
+        doReturn(mockAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
+        
+        doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getAppId(),
+                REPORT_ID, HEALTH_CODE, START_DATE, END_DATE);
+        
+        DateRangeResourceList<? extends ReportData> result = controller.getParticipantReport(OTHER_PARTICIPANT_ID,
+                REPORT_ID, START_DATE.toString(), END_DATE.toString());
+        assertResultContent(START_DATE, END_DATE, result);
+    }
+    
+    @Test
+    public void getParticipantReportDataV4AsDeveloperForSelf() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
+                .withId(OTHER_PARTICIPANT_ID).withRoles(Sets.newHashSet(DEVELOPER)).build();
+        session.setParticipant(participant);
+        
+        doReturn(mockAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
+        
+        doReturn(makePagedResults(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT)).when(mockReportService)
+                .getParticipantReportV4(session.getAppId(), REPORT_ID, HEALTH_CODE, START_TIME, END_TIME,
+                        OFFSET_KEY, Integer.parseInt(PAGE_SIZE));
+        
+        ForwardCursorPagedResourceList<ReportData> result = controller.getParticipantReportV4(OTHER_PARTICIPANT_ID,
+                REPORT_ID, START_TIME.toString(), END_TIME.toString(), OFFSET_KEY, PAGE_SIZE);
+        
+        assertReportDataPage(START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE_INT, result);
+        
+    }
+    
+    @Test
     public void getParticipantReportForWorker_DefaultParams() throws Exception {
         // Mock dependencies
         when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
@@ -425,14 +466,14 @@ public class ParticipantReportControllerTest extends Mockito {
         ReportIndex index = ReportIndex.create();
         index.setIdentifier(REPORT_ID);
         index.setPublic(true);
-        index.setSubstudyIds(USER_SUBSTUDY_IDS);
+        index.setStudyIds(USER_STUDY_IDS);
         
         when(mockReportService.getReportIndex(any())).thenReturn(index);
         
         ReportIndex result = controller.getParticipantReportIndex(REPORT_ID);
         
         assertEquals(result.getIdentifier(), REPORT_ID);
-        assertEquals(result.getSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(result.getStudyIds(), USER_STUDY_IDS);
         
         verify(mockReportService).getReportIndex(reportDataKeyCaptor.capture());
         ReportDataKey key = reportDataKeyCaptor.getValue();
@@ -491,7 +532,10 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp=".*Account not found.*")
     public void getParticipantReportAccountNotFound() {
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         reset(mockAccountService);
         controller.getParticipantReport(USER_ID, REPORT_ID, null, null);
     }
@@ -531,7 +575,10 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp=".*Account not found.*")
     public void getParticipantReportV4AccountNotFound() {
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         reset(mockAccountService);
         controller.getParticipantReportV4(USER_ID, REPORT_ID, null, null, null, null);
     }

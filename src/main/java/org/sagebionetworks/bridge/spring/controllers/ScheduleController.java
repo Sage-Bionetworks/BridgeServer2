@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -74,7 +74,7 @@ public class ScheduleController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         String appId = session.getAppId();
         
-        ClientInfo clientInfo = BridgeUtils.getRequestContext().getCallerClientInfo();
+        ClientInfo clientInfo = RequestContext.get().getCallerClientInfo();
 
         ScheduleContext context = new ScheduleContext.Builder()
                 .withLanguages(getLanguages(session))

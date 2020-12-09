@@ -32,32 +32,38 @@ public class PagedResourceList<T> extends ResourceList<T> {
     public PagedResourceList(
             @JsonProperty(ITEMS) List<T> items, 
             @JsonProperty(TOTAL) Integer total) {
-        super(items);
+        super(items, false);
         checkNotNull(total);
         this.total = total;
     }
 
+    public PagedResourceList(List<T> items, Integer total, boolean suppressDeprecated) {
+        super(items, suppressDeprecated);
+        checkNotNull(total);
+        this.total = total;
+    }
+    
     @Deprecated
     public String getEmailFilter() {
-        return (String)getRequestParams().get(EMAIL_FILTER);
+        return (suppressDeprecated) ? null : (String)getRequestParams().get(EMAIL_FILTER);
     }
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getStartTime() {
-        return getDateTime(START_TIME);
+        return (suppressDeprecated) ? null : getDateTime(START_TIME);
     }
     @Deprecated
     @JsonSerialize(using = DateTimeSerializer.class)
     public DateTime getEndTime() {
-        return getDateTime(END_TIME);
+        return (suppressDeprecated) ? null : getDateTime(END_TIME);
     }
     @Deprecated
-    public int getPageSize() {
-        return (Integer)getRequestParams().get(PAGE_SIZE);
+    public Integer getPageSize() {
+        return (suppressDeprecated) ? null : (Integer)getRequestParams().get(PAGE_SIZE);
     }
     @Deprecated
     public Integer getOffsetBy() {
-        return (Integer)getRequestParams().get(OFFSET_BY);
+        return (suppressDeprecated) ? null : (Integer)getRequestParams().get(OFFSET_BY);
     }
     public Integer getTotal() {
         return total;

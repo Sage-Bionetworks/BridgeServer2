@@ -116,7 +116,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         FileMetadata returned = dao.createFile(metadata);
         assertSame(returned, metadata);
         
-        verify(mockHibernateHelper).create(metadata, null);
+        verify(mockHibernateHelper).create(metadata);
     }
 
     @Test
@@ -126,7 +126,7 @@ public class HibernateFileMetadataDaoTest extends Mockito {
         FileMetadata returned = dao.updateFile(metadata);
         assertSame(returned, metadata);
         
-        verify(mockHibernateHelper).update(metadata, null);
+        verify(mockHibernateHelper).update(metadata);
     }
 
     @Test

@@ -8,6 +8,10 @@ import org.springframework.http.ResponseEntity;
 
 import org.sagebionetworks.bridge.json.DefaultObjectMapper;
 
+import javax.servlet.http.Cookie;
+
+import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+
 /** Utilities for Spring HTTP. */
 public class HttpUtil {
     public static final String CONTENT_TYPE_HEADER = "Content-Type";
@@ -38,5 +42,23 @@ public class HttpUtil {
         headers.add(CONTENT_TYPE_HEADER, CONTENT_TYPE_JSON);
 
         return new ResponseEntity<>(responseString, headers, status);
+    }
+
+
+    /**
+     * Make a session web cookie based on given sessonToken and expireInSeconds (duration).
+     *
+     * @param sessionToken the sessionToken of the cookie
+     * @param expireInSeconds the effective duration of this cookie
+     * @return the Cookie
+     */
+    public static Cookie makeSessionCookie(String sessionToken, int expireInSeconds) {
+        Cookie cookie = new Cookie(SESSION_TOKEN_HEADER, sessionToken);
+        cookie.setMaxAge(expireInSeconds);
+        cookie.setPath("/");
+        cookie.setDomain("localhost");
+        cookie.setHttpOnly(false);
+        cookie.setSecure(false);
+        return cookie;
     }
 }

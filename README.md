@@ -1,5 +1,5 @@
 # BridgeServer2
-Bridge Server 2.0 running on Spring Boot
+Bridge Server 2.0 running on Spring Boot.
 
 Set-up:
 In your home directory, add a file BridgeServer2.conf and add

@@ -70,7 +70,7 @@ public class DefaultAppBootstrapper  implements ApplicationListener<ContextRefre
 
         BridgeConfig config = BridgeConfigFactory.getConfig();
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerAppId(API_APP_ID)
+        RequestContext.set(new RequestContext.Builder().withCallerAppId(API_APP_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN, SUPERADMIN, DEVELOPER, RESEARCHER))
                 .withCallerUserId("DefaultStudyBootstrapper").build());
 
@@ -99,7 +99,7 @@ public class DefaultAppBootstrapper  implements ApplicationListener<ContextRefre
             StudyParticipant admin = new StudyParticipant.Builder()
                     .withEmail(config.get("admin.email"))
                     .withPassword(config.get("admin.password"))
-                    .withRoles(ImmutableSet.of(ADMIN, RESEARCHER)).build();
+                    .withRoles(ImmutableSet.of(SUPERADMIN)).build();
             userAdminService.createUser(app, admin, API_SUBPOP, false, false);
 
             StudyParticipant dev = new StudyParticipant.Builder()

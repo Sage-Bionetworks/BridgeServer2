@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_EMPTY;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 
 import java.util.Set;
 
@@ -14,11 +16,11 @@ import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 public class SubpopulationValidator implements Validator {
 
     private Set<String> dataGroups;
-    private Set<String> substudyIds;
+    private Set<String> studyIds;
     
-    public SubpopulationValidator(Set<String> dataGroups, Set<String> substudyIds) {
+    public SubpopulationValidator(Set<String> dataGroups, Set<String> studyIds) {
         this.dataGroups = dataGroups;
-        this.substudyIds = substudyIds;
+        this.studyIds = studyIds;
     }
     
     @Override
@@ -31,13 +33,13 @@ public class SubpopulationValidator implements Validator {
         Subpopulation subpop = (Subpopulation)object;
         
         if (subpop.getAppId() == null) {
-            errors.rejectValue("appId", "is required");
+            errors.rejectValue("appId", CANNOT_BE_NULL);
         }
         if (isBlank(subpop.getName())) {
-            errors.rejectValue("name", "is required");
+            errors.rejectValue("name", CANNOT_BE_NULL);
         }
         if (isBlank(subpop.getGuidString())) {
-            errors.rejectValue("guid", "is required");
+            errors.rejectValue("guid", CANNOT_BE_NULL);
         }
         for (String dataGroup : subpop.getDataGroupsAssignedWhileConsented()) {
             if (!dataGroups.contains(dataGroup)) {
@@ -46,13 +48,19 @@ public class SubpopulationValidator implements Validator {
                 errors.rejectValue("dataGroupsAssignedWhileConsented", message);
             }
         }
-        for (String substudyId : subpop.getSubstudyIdsAssignedOnConsent()) {
-            if (!substudyIds.contains(substudyId)) {
-                String listStr = (substudyIds.isEmpty()) ? "<empty>" : COMMA_SPACE_JOINER.join(substudyIds);
-                String message = String.format("'%s' is not in enumeration: %s", substudyId, listStr);
-                errors.rejectValue("substudyIdsAssignedOnConsent", message);
+        if (subpop.isRequired() && subpop.getStudyIdsAssignedOnConsent().isEmpty()) {
+            errors.rejectValue("studyIdsAssignedOnConsent", CANNOT_BE_EMPTY);
+        } else {
+            for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
+                if (!studyIds.contains(studyId)) {
+                    String listStr = COMMA_SPACE_JOINER.join(studyIds);
+                    String message = String.format("'%s' is not in enumeration: %s", studyId, listStr);
+                    errors.rejectValue("studyIdsAssignedOnConsent", message);
+                }
             }
         }
-        CriteriaUtils.validate(subpop.getCriteria(), dataGroups, substudyIds, errors);
+        errors.pushNestedPath("criteria");
+        CriteriaUtils.validate(subpop.getCriteria(), dataGroups, studyIds, errors);
+        errors.popNestedPath();
     }
 }

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 
@@ -15,6 +17,7 @@ import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.TagUtils;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -34,6 +37,9 @@ import com.google.common.collect.Lists;
 
 public class TestConstants {
     public static final String TEST_APP_ID = "test-app";
+    public static final String TEST_STUDY_ID = "test-study";
+    public static final String TEST_ORG_ID = "test-org-id";
+    public static final String TEST_EXTERNAL_ID = "test-external-id";
 
     public static final NotificationMessage NOTIFICATION_MESSAGE = new NotificationMessage.Builder()
             .withSubject("a subject").withMessage("a message").build();
@@ -119,7 +125,7 @@ public class TestConstants {
     
     public static final Set<String> USER_DATA_GROUPS = ImmutableSet.of("group1","group2");
 
-    public static final Set<String> USER_SUBSTUDY_IDS = ImmutableSet.of("substudyA","substudyB");
+    public static final Set<String> USER_STUDY_IDS = ImmutableSet.of("studyA","studyB");
     
     public static final List<String> LANGUAGES = ImmutableList.of("en","fr");
     
@@ -178,4 +184,15 @@ public class TestConstants {
     public static final ImmutableList<String> PUBLISHERS = ImmutableList.of("pub1", "pub2");
     public static final ImmutableList<String> CREATORS = ImmutableList.of("creator1", "creator2");
     public static final ImmutableList<String> CONTRIBUTORS = ImmutableList.of("contrib1", "contrib2");
+    
+    public static final AccountSummary SUMMARY1 = new AccountSummary.Builder().withFirstName("firstName1")
+            .withLastName("lastName1").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
+            .withExternalIds(ImmutableMap.of("study1", "externalId1")).withId("id")
+            .withStudyIds(ImmutableSet.of("study1", "study2")).withCreatedOn(TIMESTAMP).withStatus(DISABLED)
+            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
+    public static final AccountSummary SUMMARY2 = new AccountSummary.Builder().withFirstName("firstName2")
+            .withLastName("lastName2").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
+            .withExternalIds(ImmutableMap.of("study2", "externalId2")).withId("id2")
+            .withStudyIds(ImmutableSet.of("study1", "study2")).withCreatedOn(TIMESTAMP).withStatus(ENABLED)
+            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
 }

@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.ViewCache;
@@ -164,7 +163,7 @@ public class UserProfileController extends BaseController {
         
         participantService.updateParticipant(app, updated);
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(session.getParticipant().getLanguages())
@@ -172,7 +171,7 @@ public class UserProfileController extends BaseController {
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
                 .withUserDataGroups(updated.getDataGroups())
-                .withUserSubstudyIds(updated.getSubstudyIds())
+                .withUserStudyIds(updated.getStudyIds())
                 .withAppId(session.getAppId())
                 .build();
         

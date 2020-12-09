@@ -1,10 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.NONPOSITIVE_REVISION_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
-import static org.sagebionetworks.bridge.services.AssessmentService.OFFSET_NOT_POSITIVE;
 
 import java.util.Set;
 
@@ -77,7 +77,7 @@ public class SharedAssessmentController extends BaseController {
     public Assessment getSharedAssessmentById(@PathVariable String identifier, @PathVariable String revision) {
         int revisionInt = BridgeUtils.getIntOrDefault(revision, 0);
         if (revisionInt < 1) {
-            throw new BadRequestException(OFFSET_NOT_POSITIVE);
+            throw new BadRequestException(NONPOSITIVE_REVISION_ERROR);
         }
         return service.getAssessmentById(SHARED_APP_ID, identifier, revisionInt);
     }

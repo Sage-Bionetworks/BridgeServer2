@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.BridgeUtils.checkOwnership;
+import static org.sagebionetworks.bridge.AuthUtils.checkOrgMember;
 
 import java.util.Map;
 import java.util.Set;
@@ -42,15 +42,23 @@ public class AssessmentConfigService {
         this.dao = dao;
     }
     
+    // Allow timestamp to be mocked
     DateTime getModifiedOn() {
         return DateTime.now();
+    }
+    
+    // Allow validator to be mocked
+    AssessmentConfigValidator getValidator() {
+        return AssessmentConfigValidator.INSTANCE;
     }
     
     public AssessmentConfig getAssessmentConfig(String appId, String guid) {
         checkArgument(isNotBlank(guid));
         
-        Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
-        checkOwnership(appId, assessment.getOwnerId());
+        // Check the assessment exists
+        assessmentService.getAssessmentByGuid(appId, guid);
+        // Note: we were checking organizational access to the config but we've refined our model
+        // such that assessments are public for assignment, so they can be read by anyone.
         
         return dao.getAssessmentConfig(guid).orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
     }
@@ -66,14 +74,14 @@ public class AssessmentConfigService {
         checkNotNull(config);
         
         Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
-        checkOwnership(appId, assessment.getOwnerId());
+        checkOrgMember(assessment.getOwnerId());
         
         AssessmentConfig existing = dao.getAssessmentConfig(guid)
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
         config.setCreatedOn(existing.getCreatedOn());
         config.setModifiedOn(getModifiedOn());
         
-        Validate.entityThrowingException(AssessmentConfigValidator.INSTANCE, config);
+        Validate.entityThrowingException(getValidator(), config);
         
         // This is no longer a copy of a shared assessment because the config has been edited.
         // It also needs to be updated to reflect this.
@@ -89,7 +97,7 @@ public class AssessmentConfigService {
             throw new BadRequestException("Updates to configuration are missing");
         }
         Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
-        checkOwnership(appId, assessment.getOwnerId());
+        checkOrgMember(assessment.getOwnerId());
         
         Map<String, Set<PropertyInfo>> fields = assessment.getCustomizationFields();
         
@@ -103,7 +111,7 @@ public class AssessmentConfigService {
             return existing;
         }
         
-        Validate.entityThrowingException(AssessmentConfigValidator.INSTANCE, existing);
+        Validate.entityThrowingException(getValidator(), existing);
         
         existing.setModifiedOn(getModifiedOn());
         

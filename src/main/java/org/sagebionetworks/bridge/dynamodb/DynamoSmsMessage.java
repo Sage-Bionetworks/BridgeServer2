@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.json.DateTimeToPrimitiveLongDeserializer;
 import org.sagebionetworks.bridge.models.sms.SmsMessage;
 import org.sagebionetworks.bridge.models.sms.SmsType;
 
-@DynamoThroughput(readCapacity=1, writeCapacity=1)
 @DynamoDBTable(tableName = "SmsMessage")
 public class DynamoSmsMessage implements SmsMessage {
     private String phoneNumber;

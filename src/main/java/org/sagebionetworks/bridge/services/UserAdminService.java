@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING
 import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
-import org.sagebionetworks.bridge.BridgeUtils;
+
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -37,10 +37,10 @@ public class UserAdminService {
     private AccountService accountService;
     private ConsentService consentService;
     private HealthDataService healthDataService;
+    private HealthDataEx3Service healthDataEx3Service;
     private ScheduledActivityService scheduledActivityService;
     private ActivityEventService activityEventService;
     private CacheProvider cacheProvider;
-    private ExternalIdService externalIdService;
     private UploadService uploadService;
     private RequestInfoService requestInfoService;
 
@@ -72,6 +72,10 @@ public class UserAdminService {
         this.healthDataService = healthDataService;
     }
     @Autowired
+    final void setHealthDataEx3Service(HealthDataEx3Service healthDataEx3Service) {
+        this.healthDataEx3Service = healthDataEx3Service;
+    }
+    @Autowired
     final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
     }
@@ -82,10 +86,6 @@ public class UserAdminService {
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
         this.cacheProvider = cache;
-    }
-    @Autowired
-    final void setExternalIdService(ExternalIdService externalIdService) {
-        this.externalIdService = externalIdService;
     }
     @Autowired
     final void setUploadService(UploadService uploadService) {
@@ -127,8 +127,6 @@ public class UserAdminService {
         
         IdentifierHolder identifier = null;
         try {
-            // This used to hard-code the admin role to allow assignment of roles; now it must actually be called by an 
-            // admin user (previously this was only checked in the related controller method).
             identifier = participantService.createParticipant(app, participant, false);
             StudyParticipant updatedParticipant = participantService.getParticipant(app, identifier.getIdentifier(), false);
             
@@ -201,14 +199,12 @@ public class UserAdminService {
             
             String healthCode = account.getHealthCode();
             healthDataService.deleteRecordsForHealthCode(healthCode);
+            healthDataEx3Service.deleteRecordsForHealthCode(healthCode);
             notificationsService.deleteAllRegistrations(app.getIdentifier(), healthCode);
             uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             activityEventService.deleteActivityEvents(healthCode);
-            for (String externalId : BridgeUtils.collectExternalIds(account)) {
-                externalIdService.unassignExternalId(account, externalId);
-            }
-            // AccountSecret records and AccountsSubstudies records are are deleted on a 
+            // AccountSecret records and Enrollment records are are deleted on a 
             // cascading delete from Account
             accountService.deleteAccount(accountId);
         }

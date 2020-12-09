@@ -75,6 +75,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoFPHSExternalIdentifier;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthCode;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecord;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecordEx3;
 import org.sagebionetworks.bridge.dynamodb.DynamoIndexHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoMasterSchedulerConfig;
 import org.sagebionetworks.bridge.dynamodb.DynamoMasterSchedulerStatus;
@@ -101,13 +102,15 @@ import org.sagebionetworks.bridge.heartbeat.HeartbeatLogger;
 import org.sagebionetworks.bridge.hibernate.AccountPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountSecret;
-import org.sagebionetworks.bridge.hibernate.HibernateAccountSubstudy;
+import org.sagebionetworks.bridge.hibernate.HibernateEnrollment;
 import org.sagebionetworks.bridge.hibernate.HibernateHelper;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
-import org.sagebionetworks.bridge.hibernate.HibernateSubstudy;
+import org.sagebionetworks.bridge.hibernate.HibernateStudy;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplateRevision;
-import org.sagebionetworks.bridge.hibernate.SubstudyPersistenceExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.OrganizationPersistenceExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.SponsorPersistenceExceptionConverter;
+import org.sagebionetworks.bridge.hibernate.StudyPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.TagEventListener;
 import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -118,6 +121,7 @@ import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource
 import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
+import org.sagebionetworks.bridge.models.organizations.HibernateOrganization;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
@@ -399,6 +403,12 @@ public class SpringConfig {
         return dynamoUtils.getMapper(DynamoHealthDataRecord.class);
     }
 
+    @Bean(name = "healthDataEx3DdbMapper")
+    @Autowired
+    public DynamoDBMapper healthDataEx3DdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoHealthDataRecordEx3.class);
+    }
+
     @Bean(name = "activityEventDdbMapper")
     @Autowired
     public DynamoDBMapper activityEventDdbMapper(DynamoUtils dynamoUtils) {
@@ -620,7 +630,6 @@ public class SpringConfig {
         // https://stackoverflow.com/questions/27536380/how-to-connect-to-a-remote-mysql-database-via-ssl-using-play-framework/27536391
         Path trustStorePath = null;
         try {
-            //trustStorePath = Paths.get(new ClassPathResource("truststore.jks").getURI().toString());
             trustStorePath = Paths.get(classLoader.getResource("truststore.jks").toURI());
         } catch (URISyntaxException ex/*IOException ex*/) {
             throw new RuntimeException("Error loading truststore from classpath: " + ex.getMessage(), ex);
@@ -632,7 +641,6 @@ public class SpringConfig {
         Properties props = new Properties();
         props.put("hibernate.connection.characterEncoding", "UTF-8");
         props.put("hibernate.connection.CharSet", "UTF-8");
-        props.put("hibernate.connection.driver_class", "com.mysql.jdbc.Driver");
         props.put("hibernate.connection.useUnicode", true);
         props.put("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
 
@@ -653,8 +661,8 @@ public class SpringConfig {
         // For whatever reason, we need to list each Hibernate-enabled class individually.
         MetadataSources metadataSources = new MetadataSources(reg);
         metadataSources.addAnnotatedClass(HibernateAccount.class);
-        metadataSources.addAnnotatedClass(HibernateSubstudy.class);
-        metadataSources.addAnnotatedClass(HibernateAccountSubstudy.class);
+        metadataSources.addAnnotatedClass(HibernateStudy.class);
+        metadataSources.addAnnotatedClass(HibernateEnrollment.class);
         metadataSources.addAnnotatedClass(HibernateSharedModuleMetadata.class);
         metadataSources.addAnnotatedClass(HibernateAccountSecret.class);
         metadataSources.addAnnotatedClass(HibernateTemplate.class);
@@ -665,6 +673,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(HibernateAssessment.class);
         metadataSources.addAnnotatedClass(HibernateAssessmentResource.class);
         metadataSources.addAnnotatedClass(HibernateAssessmentConfig.class);
+        metadataSources.addAnnotatedClass(HibernateOrganization.class);
         metadataSources.addAnnotatedClass(Tag.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
@@ -700,10 +709,10 @@ public class SpringConfig {
         return new HibernateHelper(sessionFactory, converter);
     }
     
-    @Bean(name = "substudyHibernateHelper")
+    @Bean(name = "studyHibernateHelper")
     @Autowired
-    public HibernateHelper substudyHibernateHelper(SessionFactory sessionFactory,
-            SubstudyPersistenceExceptionConverter converter) {
+    public HibernateHelper studyHibernateHelper(SessionFactory sessionFactory,
+            StudyPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     
@@ -711,6 +720,20 @@ public class SpringConfig {
     @Autowired
     public HibernateHelper accountHibernateHelper(SessionFactory sessionFactory,
             AccountPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+    @Bean(name = "sponsorHibernateHelper")
+    @Autowired
+    public HibernateHelper sponsorHibernateHelper(SessionFactory sessionFactory,
+            SponsorPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+    @Bean(name = "organizationHibernateHelper")
+    @Autowired
+    public HibernateHelper organizationHibernateHelper(SessionFactory sessionFactory,
+            OrganizationPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     

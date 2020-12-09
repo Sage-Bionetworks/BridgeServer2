@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_SESSION_EXPIRE_IN_SECONDS;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 
 import java.util.List;
@@ -20,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.lang3.StringUtils;
+import org.sagebionetworks.bridge.spring.util.HttpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -47,15 +49,24 @@ import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
+import org.sagebionetworks.bridge.services.SponsorService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public abstract class BaseController {
+
+    private static final Roles[] ADMIN_ROLE_ARRAY = ADMINISTRATIVE_ROLES.toArray(new Roles[] {});
+    
+    /**
+     * The attribute key in request() for Filters to catch UserSession if it
+     * exists.
+     */
+    public final static String USER_SESSION_FLAG = "CreatedUserSession";
     
     @FunctionalInterface
     private static interface ExceptionThrowingSupplier<T> {
         T get() throws Throwable;
-    };
+    }
     
     protected final static ObjectMapper MAPPER = BridgeObjectMapper.get();
 
@@ -72,6 +83,8 @@ public abstract class BaseController {
     SessionUpdateService sessionUpdateService;
     
     RequestInfoService requestInfoService;
+    
+    SponsorService sponsorService;
     
     @Autowired
     final void setBridgeConfig(BridgeConfig bridgeConfig) {
@@ -108,6 +121,11 @@ public abstract class BaseController {
         this.requestInfoService = requestInfoService;
     }
     
+    @Autowired
+    final void setSponsorService(SponsorService sponsorService) {
+        this.sponsorService = sponsorService;
+    }
+    
     protected HttpServletRequest request() {
         HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
         if (request == null) {
@@ -130,10 +148,19 @@ public abstract class BaseController {
             return null;
         }
         final UserSession session = authenticationService.getSession(sessionToken);
-        writeSessionInfoToMetrics(session);
+        // Raise a "flag" in the request to let MetricsFilter record the metrics.
+        request().setAttribute(USER_SESSION_FLAG, session);
         return session;
     }
 
+    /**
+     * Retrieve a user's session using the Bridge-Session header, throwing an exception if the session does
+     * not have an administrative role (a role that is assigned to users).
+     */
+    UserSession getAdministrativeSession() throws NotAuthenticatedException, ConsentRequiredException, UnsupportedVersionException {
+        return getAuthenticatedSession(false, ADMIN_ROLE_ARRAY);
+    }
+    
     /**
      * Retrieve user's session using the Bridge-Session header, throwing an exception if the session doesn't
      * exist (user not authorized), consent has not been given or the client app version is not supported.
@@ -173,18 +200,8 @@ public abstract class BaseController {
             throw new NotAuthenticatedException();
         }
         
-        // This request has required the presence of a session, so we add additional information about the user to 
-        // the existing request context (which starts with only the information present in HTTP headers). This will 
-        // be immediately removed from the thread local if an exception is thrown.
-        RequestContext.Builder builder = BridgeUtils.getRequestContext().toBuilder();
-        // If the user has already persisted languages, we'll use that instead of the Accept-Language header
-        builder.withCallerLanguages(getLanguages(session));
-        builder.withCallerAppId(session.getAppId());
-        builder.withCallerSubstudies(session.getParticipant().getSubstudyIds());
-        builder.withCallerRoles(session.getParticipant().getRoles());
-        builder.withCallerUserId(session.getParticipant().getId());
-        RequestContext reqContext = builder.build();
-        BridgeUtils.setRequestContext(reqContext);
+        getLanguages(session);
+        RequestContext reqContext = RequestContext.updateFromSession(session, sponsorService);
         
         // Sessions are locked to an IP address if (a) it is enabled in the app for unprivileged participant accounts
         // or (b) always for privileged accounts.
@@ -238,7 +255,7 @@ public abstract class BaseController {
             // Not sure why this is 
             Cookie sessionCookie = WebUtils.getCookie(request(), SESSION_TOKEN_HEADER);
             if (sessionCookie != null && StringUtils.isNotBlank(sessionCookie.getValue())) {
-                Cookie cookie = makeSessionCookie(sessionCookie.getValue(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
+                Cookie cookie = HttpUtil.makeSessionCookie(sessionCookie.getValue(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
                 response().addCookie(cookie);
                 return sessionCookie.getValue();
             }
@@ -247,7 +264,7 @@ public abstract class BaseController {
     }
     
     void verifySupportedVersionOrThrowException(App app) throws UnsupportedVersionException {
-        ClientInfo clientInfo = BridgeUtils.getRequestContext().getCallerClientInfo();
+        ClientInfo clientInfo = RequestContext.get().getCallerClientInfo();
         String osName = clientInfo.getOsName();
         Integer minVersionForOs = app.getMinSupportedAppVersions().get(osName);
         
@@ -268,7 +285,7 @@ public abstract class BaseController {
         if (!participant.getLanguages().isEmpty()) {
             return participant.getLanguages();
         }
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         List<String> languages = reqContext.getCallerLanguages();
         if (!languages.isEmpty()) {
             accountService.editAccount(session.getAppId(), session.getHealthCode(),
@@ -280,7 +297,7 @@ public abstract class BaseController {
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
                 .withUserDataGroups(session.getParticipant().getDataGroups())
-                .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
+                .withUserStudyIds(session.getParticipant().getStudyIds())
                 .withAppId(session.getAppId())
                 .build();
 
@@ -290,7 +307,7 @@ public abstract class BaseController {
     }
 
     CriteriaContext getCriteriaContext(String appId) {
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         return new CriteriaContext.Builder()
             .withAppId(appId)
             .withLanguages(reqContext.getCallerLanguages())
@@ -301,14 +318,14 @@ public abstract class BaseController {
     CriteriaContext getCriteriaContext(UserSession session) {
         checkNotNull(session);
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         return new CriteriaContext.Builder()
             .withLanguages(getLanguages(session))
             .withClientInfo(reqContext.getCallerClientInfo())
             .withHealthCode(session.getHealthCode())
             .withUserId(session.getId())
             .withUserDataGroups(session.getParticipant().getDataGroups())
-            .withUserSubstudyIds(session.getParticipant().getSubstudyIds())
+            .withUserStudyIds(session.getParticipant().getStudyIds())
             .withAppId(session.getAppId())
             .build();
     }
@@ -337,41 +354,30 @@ public abstract class BaseController {
      * Retrieves the metrics object from the cache. Can be null if the metrics is not in the cache.
      */
     Metrics getMetrics() {
-        return BridgeUtils.getRequestContext().getMetrics();
+        return RequestContext.get().getMetrics();
     }
 
-    /** Writes the user's account ID, internal session ID, and app ID to the metrics. */
-    protected void writeSessionInfoToMetrics(UserSession session) {
-        Metrics metrics = getMetrics();
-        if (metrics != null && session != null) {
-            metrics.setSessionId(session.getInternalSessionToken());
-            metrics.setUserId(session.getId());
-            metrics.setAppId(session.getAppId());
-        }
-    }
-    
-    /** Combines metrics logging with the setting of the session token as a cookie in local
-     * environments (useful for testing).
+    /**
+     * Updates the request info from the given session. Also sets the USER_SESSION_FLAG
+     * attribute in request() so that Filters can get the UserSession.
+     *
+     * @param session the given UserSession. If it is null, then do nothing.
      */
-    protected void setCookieAndRecordMetrics(UserSession session) {
-        writeSessionInfoToMetrics(session);  
-        RequestInfo requestInfo = getRequestInfoBuilder(session)
-                .withSignedInOn(DateUtils.getCurrentDateTime()).build();
-        
-        requestInfoService.updateRequestInfo(requestInfo);
-        
-        // only set cookie in local environment
-        if (bridgeConfig.getEnvironment() == Environment.LOCAL) {
-            String sessionToken = session.getSessionToken();
-            Cookie cookie = makeSessionCookie(sessionToken, BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-            response().addCookie(cookie);
+    protected void updateRequestInfoFromSession(UserSession session) {
+        if (session != null) {
+            RequestInfo requestInfo = getRequestInfoBuilder(session)
+                    .withSignedInOn(DateUtils.getCurrentDateTime()).build();
+
+            requestInfoService.updateRequestInfo(requestInfo);
+
+            request().setAttribute(USER_SESSION_FLAG, session);
         }
     }
     
     protected RequestInfo.Builder getRequestInfoBuilder(UserSession session) {
         checkNotNull(session);
         
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         
         RequestInfo.Builder builder = new RequestInfo.Builder();
         // If any timestamps exist, retrieve and preserve them in the returned requestInfo
@@ -384,19 +390,9 @@ public abstract class BaseController {
         builder.withUserAgent(request().getHeader(USER_AGENT));
         builder.withLanguages(getLanguages(session));
         builder.withUserDataGroups(session.getParticipant().getDataGroups());
-        builder.withUserSubstudyIds(session.getParticipant().getSubstudyIds());
+        builder.withUserStudyIds(session.getParticipant().getStudyIds());
         builder.withTimeZone(session.getParticipant().getTimeZone());
         builder.withAppId(session.getAppId());
         return builder;
     }
-    
-    protected Cookie makeSessionCookie(String sessionToken, int expireInSeconds) {
-        Cookie cookie = new Cookie(SESSION_TOKEN_HEADER, sessionToken);
-        cookie.setMaxAge(expireInSeconds);
-        cookie.setPath("/");
-        cookie.setDomain("localhost");
-        cookie.setHttpOnly(false);
-        cookie.setSecure(false);
-        return cookie;
-    }    
 }

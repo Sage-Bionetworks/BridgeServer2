@@ -15,6 +15,11 @@ public class BridgeConstants {
     public static final TypeReference<Set<String>> STRING_SET_TYPEREF = new TypeReference<Set<String>>() {};
     public static final TypeReference<Map<String, Map<String, JsonNode>>> UPDATES_TYPEREF = new TypeReference<Map<String, Map<String, JsonNode>>>() {};
 
+    public static final String SAGE_ID = "sage-bionetworks";
+    public static final String SAGE_NAME = "Sage Bionetworks";
+    
+    public static final String SYNAPSE_OAUTH_VENDOR_ID = "synapse";
+
     public static final String ID_FIELD_NAME = "identifier";
     public static final String TYPE_FIELD_NAME = "type";
     
@@ -30,7 +35,9 @@ public class BridgeConstants {
     public static final String MAX_USERS_ERROR = "While app is in evaluation mode, it may not exceed %s accounts.";
     public static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
     public static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
-    public static final String CALLER_NOT_MEMBER_ERROR = "Assessment must be associated to one of the caller’s organizations.";
+    public static final String CALLER_NOT_MEMBER_ERROR = "Assessment must be associated to the caller’s organization.";
+    public static final String NEGATIVE_OFFSET_ERROR = "offsetBy cannot be negative";
+    public static final String NONPOSITIVE_REVISION_ERROR = "revision cannot be less than 1";
 
     // App ID for the test app, used in local tests and most integ tests.
     public static final String API_APP_ID = "api";

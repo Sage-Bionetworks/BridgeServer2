@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
+import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.WITHDRAWN;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -7,6 +11,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 
 import com.google.common.base.Joiner;
 
@@ -42,6 +47,34 @@ class QueryBuilder {
             phrases.add("AND (" + Joiner.on(" AND ").join(clauses) + ")");
         }
     }
+    public void adminOnly(Boolean isAdmin) {
+        if (isAdmin != null) {
+            if (TRUE.equals(isAdmin)) {
+                phrases.add("AND size(acct.roles) > 0");
+            } else {
+                phrases.add("AND size(acct.roles) = 0");
+            }
+        }
+    }
+    public void orgMembership(String orgMembership) {
+        if (orgMembership != null) {
+            if ("<none>".equals(orgMembership.toLowerCase())) {
+                phrases.add("AND acct.orgMembership IS NULL");
+            } else {
+                append("AND acct.orgMembership = :orgId", "orgId", orgMembership);
+            }
+        }
+    }
+    public void enrollment(EnrollmentFilter filter) {
+        if (filter != null) {
+            if (filter == ENROLLED) {
+                phrases.add("AND withdrawnOn IS NULL");
+            } else if (filter == WITHDRAWN) {
+                phrases.add("AND withdrawnOn IS NOT NULL");
+            }
+        }
+    }
+    
     public String getQuery() {
         return BridgeUtils.SPACE_JOINER.join(phrases);
     }

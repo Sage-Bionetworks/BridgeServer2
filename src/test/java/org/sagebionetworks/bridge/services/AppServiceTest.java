@@ -81,6 +81,8 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.organizations.Organization;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
 import org.sagebionetworks.bridge.models.templates.Template;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
@@ -149,6 +151,10 @@ public class AppServiceTest extends Mockito {
     TemplateService mockTemplateService;
     @Mock
     FileService mockFileService;
+    @Mock
+    OrganizationService mockOrgService;
+    @Mock
+    StudyService mockStudyService;
 
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -158,6 +164,10 @@ public class AppServiceTest extends Mockito {
     ArgumentCaptor<App> appCaptor;
     @Captor
     ArgumentCaptor<Template> templateCaptor;
+    @Captor
+    ArgumentCaptor<Study> studyCaptor;
+    @Captor
+    ArgumentCaptor<Organization> orgCaptor;
 
     @Spy
     @InjectMocks
@@ -709,6 +719,8 @@ public class AppServiceTest extends Mockito {
 
         // verify we called the correct dependent services
         verify(mockAppDao).deleteApp(app);
+        verify(mockStudyService).deleteAllStudies(app.getIdentifier());
+        verify(mockOrgService).deleteAllOrganizations(app.getIdentifier());
         verify(mockCompoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInApp(
                 app.getIdentifier());
         verify(mockSubpopService).deleteAllSubpopulations(app.getIdentifier());
@@ -1008,7 +1020,7 @@ public class AppServiceTest extends Mockito {
     
     @Test(expectedExceptions = InvalidEntityException.class, 
             expectedExceptionsMessageRegExp = ".*users\\[0\\].roles can only have roles developer and/or researcher.*")
-    public void createAPpAndUsersUserWithSuperadminRole() throws SynapseException {
+    public void createAppAndUsersUserWithSuperadminRole() throws SynapseException {
         createAppAndUserInWrongRole(ImmutableSet.of(SUPERADMIN));
     }
     
@@ -1553,7 +1565,7 @@ public class AppServiceTest extends Mockito {
         when(mockTemplateService.getTemplatesForType(any(), any(), anyInt(), anyInt(), anyBoolean()))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
         // developer
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
         app = TestUtils.getValidApp(AppServiceTest.class);
         // verify this can be null, that's okay, and the flags are reset correctly on create
@@ -1583,9 +1595,19 @@ public class AppServiceTest extends Mockito {
 
         verify(mockCacheProvider).setApp(app);
         
+        ArgumentCaptor<Study> studyCaptor = ArgumentCaptor.forClass(Study.class);
+        
         // A default, active consent should be created for the app.
-        verify(mockSubpopService).createDefaultSubpopulation(app);
+        verify(mockSubpopService).createDefaultSubpopulation(eq(app), studyCaptor.capture());
+        
+        verify(mockStudyService).createStudy(eq(app.getIdentifier()), studyCaptor.capture());
+        Study defaultStudy = studyCaptor.getValue();
+        assertEquals(defaultStudy.getAppId(), app.getIdentifier());
+        assertEquals(defaultStudy.getIdentifier(), app.getIdentifier() + "-study");
+        assertEquals(defaultStudy.getName(), "Test App [AppServiceTest] Study");
 
+        verify(mockSubpopService).createDefaultSubpopulation(app, defaultStudy);
+        
         verify(mockAppDao).createApp(appCaptor.capture());
 
         App newApp = appCaptor.getValue();
@@ -1607,6 +1629,8 @@ public class AppServiceTest extends Mockito {
         newApp.setConsentNotificationEmailVerified(true);
         newApp.setStrictUploadValidationEnabled(true);
         newApp.setUploadValidationStrictness(WARNING);
+        
+        assertEquals(studyCaptor.getValue().getIdentifier(), app.getIdentifier() + "-study");
         
         when(mockAppDao.getApp(newApp.getIdentifier())).thenReturn(newApp);
         App updatedApp = service.updateApp(newApp, false);

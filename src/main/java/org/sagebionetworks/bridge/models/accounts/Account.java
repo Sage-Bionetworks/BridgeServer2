@@ -13,10 +13,11 @@ import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountConsent;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountConsentKey;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -88,6 +89,7 @@ public interface Account extends BridgeEntity {
     }
 
     /** Returns an immutable copy of all consents in the account, keyed by subpopulation. */
+    @JsonIgnore
     default Map<SubpopulationGuid, List<ConsentSignature>> getAllConsentSignatureHistories() {
         Map<SubpopulationGuid, List<ConsentSignature>> map = Maps.newHashMap();
         
@@ -154,6 +156,9 @@ public interface Account extends BridgeEntity {
 
     String getAppId();
     void setAppId(String appId);
+    
+    String getOrgMembership();
+    void setOrgMembership(String orgId);
 
     /** Gets an immutable copy of the set of roles attached to this account. */
     Set<Roles> getRoles();
@@ -220,6 +225,9 @@ public interface Account extends BridgeEntity {
     PasswordAlgorithm getPasswordAlgorithm();
     void setPasswordAlgorithm(PasswordAlgorithm passwordAlgorithm);
     
-    void setAccountSubstudies(Set<AccountSubstudy> accountSubstudies);
-    Set<AccountSubstudy> getAccountSubstudies();
+    void setEnrollments(Set<Enrollment> enrollments);
+    Set<Enrollment> getEnrollments();
+    
+    /** Get all enrollments that have not been withdrawn. */
+    Set<Enrollment> getActiveEnrollments();
 }

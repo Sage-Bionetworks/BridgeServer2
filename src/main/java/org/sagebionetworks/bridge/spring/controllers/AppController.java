@@ -4,7 +4,6 @@ import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeConstants.APP_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.apps.App.APP_LIST_WRITER;
@@ -104,7 +103,7 @@ public class AppController extends BaseController {
 
     @GetMapping(path = {"/v1/apps/self", "/v3/studies/self"})
     public App getCurrentApp() {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, ADMIN);
+        UserSession session = getAdministrativeSession();
         
         return appService.getApp(session.getAppId());
     }
@@ -169,22 +168,21 @@ public class AppController extends BaseController {
         if (session.getParticipant().getRoles().isEmpty()) {
             throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
         }
-        List<String> appIds = accountService.getAppIdsForUser(session.getParticipant().getSynapseUserId());
-        
         Stream<App> stream = null;
-        // In our current app permissions model, an admin in the API app is a 
-        // "cross-app admin" and can see all apps and can switch between all apps, 
-        // so check for this condition.
         if (session.isInRole(SUPERADMIN)) {
+            // Superadmins can see all apps and can switch between all apps.
             stream = appService.getApps().stream()
                 .filter(s -> s.isActive());
         } else {
+            // Otherwise, apps are linked by Synapse user ID.
+            List<String> appIds = accountService
+                    .getAppIdsForUser(session.getParticipant().getSynapseUserId());
             stream = appIds.stream()
                 .map(id -> appService.getApp(id))
                 .filter(s -> s.isActive() && appIds.contains(s.getIdentifier()));
         }
         List<App> apps = stream.sorted(APP_COMPARATOR).collect(toList());
-        return APP_LIST_WRITER.writeValueAsString(new ResourceList<App>(apps));
+        return APP_LIST_WRITER.writeValueAsString(new ResourceList<App>(apps, true));
     }
 
     @PostMapping(path = {"/v1/apps", "/v3/studies"})

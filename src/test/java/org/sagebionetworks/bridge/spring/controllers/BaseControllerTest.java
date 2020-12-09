@@ -14,13 +14,15 @@ import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.REQUEST_ID;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_TOKEN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.TIMEZONE_MSK;
 import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.sagebionetworks.bridge.TestConstants.UNCONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_SUBSTUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
+import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
 import static org.springframework.http.HttpHeaders.USER_AGENT;
 import static org.testng.Assert.assertEquals;
@@ -39,7 +41,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -59,7 +60,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
@@ -86,6 +86,7 @@ import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AuthenticationService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
+import org.sagebionetworks.bridge.services.SponsorService;
 import org.sagebionetworks.bridge.services.AppService;
 
 public class BaseControllerTest extends Mockito {
@@ -116,6 +117,9 @@ public class BaseControllerTest extends Mockito {
     
     @Mock
     private RequestInfoService requestInfoService;
+    
+    @Mock
+    private SponsorService mockSponsorService;
 
     @Captor
     private ArgumentCaptor<CriteriaContext> contextCaptor;
@@ -139,14 +143,14 @@ public class BaseControllerTest extends Mockito {
     private void before() {
         DateTimeUtils.setCurrentMillisFixed(TIMESTAMP.getMillis());
         MockitoAnnotations.initMocks(this);
-
+        
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
 
         session = new UserSession();
         app = App.create();
         
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA))
                 .withCallerLanguages(ImmutableList.of("en", "fr")).build());
     }
@@ -154,7 +158,7 @@ public class BaseControllerTest extends Mockito {
     @AfterMethod
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
     }
 
     @Test
@@ -173,6 +177,8 @@ public class BaseControllerTest extends Mockito {
 
         UserSession returnedSession = controller.getSessionIfItExists();
         assertEquals(returnedSession, session);
+
+        verify(mockRequest).setAttribute(eq(BaseController.USER_SESSION_FLAG), any(UserSession.class));
     }
 
     @Test
@@ -378,7 +384,7 @@ public class BaseControllerTest extends Mockito {
 
     @Test
     public void getCriteriaContextWithAppId() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder()
+        RequestContext.set(new RequestContext.Builder()
                 .withCallerClientInfo(ClientInfo.fromUserAgentCache(UA))
                 .withCallerLanguages(ImmutableList.of("en"))
                 .build());
@@ -398,7 +404,7 @@ public class BaseControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         session.setIpAddress(IP_ADDRESS);
         session.setParticipant(new StudyParticipant.Builder()
-                .withDataGroups(USER_DATA_GROUPS).withSubstudyIds(USER_SUBSTUDY_IDS)
+                .withDataGroups(USER_DATA_GROUPS).withStudyIds(USER_STUDY_IDS)
                 .withLanguages(LANGUAGES).withHealthCode(HEALTH_CODE).withId(USER_ID).build());
         
         CriteriaContext context = controller.getCriteriaContext(session);
@@ -408,7 +414,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(context.getHealthCode(), HEALTH_CODE);
         assertEquals(context.getUserId(), USER_ID);
         assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
-        assertEquals(context.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(context.getUserStudyIds(), USER_STUDY_IDS);
         assertEquals(context.getAppId(), TEST_APP_ID);
     }
 
@@ -461,90 +467,23 @@ public class BaseControllerTest extends Mockito {
     public void getMetrics() {
         Metrics metrics = new Metrics("a-request-id");
         
-        BridgeUtils.setRequestContext(
+        RequestContext.set(
                 new RequestContext.Builder().withMetrics(metrics).withRequestId("a-request-id").build());
         
         Metrics retrievedMetrics = controller.getMetrics();
         assertEquals(retrievedMetrics, metrics);
     }
-
-    @Test
-    public void writeSessionInfoToMetrics() {
-        // Mock metrics
-        Metrics metrics = new Metrics(REQUEST_ID);
-        
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withMetrics(metrics)
-                .withRequestId(REQUEST_ID).build());
-        
-        session.setInternalSessionToken("internalSessionToken");
-        session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).build());
-        session.setAppId(TEST_APP_ID);
-        
-        controller.writeSessionInfoToMetrics(session);
-        
-        ObjectNode node = metrics.getJson();
-        assertEquals(node.get("session_id").textValue(), "internalSessionToken");
-        assertEquals(node.get("user_id").textValue(), USER_ID);
-        assertEquals(node.get("app_id").textValue(), TEST_APP_ID);
-    }
     
     @Test
-    public void writeSessionInfoToMetricsNoSession() {
-        // Mock metrics
-        Metrics metrics = mock(Metrics.class);
-        
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withMetrics(metrics)
-                .withRequestId(REQUEST_ID).build());
-        
-        controller.writeSessionInfoToMetrics(null);
-        verifyNoMoreInteractions(metrics);
-    }
-
-    @Test
-    public void writeSessionInfoToMetricsNoMetrics() {
-        Metrics metrics = mock(Metrics.class);
-        controller.writeSessionInfoToMetrics(null);
-        verifyNoMoreInteractions(metrics);
-    }
-    
-    @Test
-    public void setCookieAndRecordMetrics() {
+    public void updateRequestInfoFromSessionTest() {
         session.setSessionToken(SESSION_TOKEN);
         session.setAppId(TEST_APP_ID);
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
         
-        controller.setCookieAndRecordMetrics(session);
-        
-        verify(mockResponse).addCookie(cookieCaptor.capture());
-        
-        Cookie cookie = cookieCaptor.getValue();
-        assertEquals(cookie.getValue(), SESSION_TOKEN);
-        assertEquals(cookie.getName(), SESSION_TOKEN_HEADER);
-        assertEquals(cookie.getMaxAge(), BRIDGE_SESSION_EXPIRE_IN_SECONDS);
-        assertEquals(cookie.getPath(), "/");
-        assertFalse(cookie.isHttpOnly());
-        assertFalse(cookie.getSecure());
-        assertEquals(cookie.getDomain(), "localhost");
-        
-        verify(controller).writeSessionInfoToMetrics(session);
+        controller.updateRequestInfoFromSession(session);
+
         verify(requestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         assertEquals(TIMESTAMP, requestInfoCaptor.getValue().getSignedInOn());
-    }
-    
-    @Test
-    public void setCookieAndRecordMetricsNoCookieOutsideLocal() throws Exception {
-        session.setSessionToken(SESSION_TOKEN);
-        session.setAppId(TEST_APP_ID);
-        when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.UAT);
-        when(mockBridgeConfig.get("domain")).thenReturn("domain-value");
-        
-        controller.setCookieAndRecordMetrics(session);
-        
-        verify(mockResponse, never()).addCookie(any());
-        
-        verify(controller).writeSessionInfoToMetrics(session);
-        verify(requestInfoService).updateRequestInfo(requestInfoCaptor.capture());
-        assertEquals(TIMESTAMP, requestInfoCaptor.getValue().getSignedInOn());        
     }
 
     @Test
@@ -555,7 +494,7 @@ public class BaseControllerTest extends Mockito {
         
         session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).withLanguages(LANGUAGES)
-                .withDataGroups(USER_DATA_GROUPS).withSubstudyIds(USER_SUBSTUDY_IDS)
+                .withDataGroups(USER_DATA_GROUPS).withStudyIds(USER_STUDY_IDS)
                 .withTimeZone(TIMEZONE_MSK).build());
 
         RequestInfo info = controller.getRequestInfoBuilder(session).build();
@@ -565,7 +504,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(info.getUserAgent(), UA);
         assertEquals(info.getLanguages(), LANGUAGES);
         assertEquals(info.getUserDataGroups(), USER_DATA_GROUPS);
-        assertEquals(info.getUserSubstudyIds(), USER_SUBSTUDY_IDS);
+        assertEquals(info.getUserStudyIds(), USER_STUDY_IDS);
         assertEquals(info.getTimeZone(), TIMEZONE_MSK);
         assertEquals(info.getAppId(), TEST_APP_ID);
     }
@@ -703,7 +642,7 @@ public class BaseControllerTest extends Mockito {
 
     @Test
     public void canGetLanguagesWhenNotInSessionOrHeader() throws Exception {
-        BridgeUtils.setRequestContext(null);
+        RequestContext.set(null);
 
         // Set up mocks.
         StudyParticipant participant = new StudyParticipant.Builder()
@@ -731,7 +670,7 @@ public class BaseControllerTest extends Mockito {
     }
     @Test(expectedExceptions = NotAuthenticatedException.class)
     public void ipLockingForPrivilegedAccounts() throws Exception {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress("different address").build());
+        RequestContext.set(new RequestContext.Builder().withCallerIpAddress("different address").build());
 
         // Setup test
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER))
@@ -752,7 +691,7 @@ public class BaseControllerTest extends Mockito {
     
     @Test(expectedExceptions = NotAuthenticatedException.class)
     public void ipLockingForParticipantsEnabled() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress("different address").build());
+        RequestContext.set(new RequestContext.Builder().withCallerIpAddress("different address").build());
         
         // Setup test
         session.setAuthenticated(true);
@@ -770,7 +709,7 @@ public class BaseControllerTest extends Mockito {
 
     @Test
     public void ipLockingForParticipantsDisabled() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress("different address").build());
+        RequestContext.set(new RequestContext.Builder().withCallerIpAddress("different address").build());
         
         // Setup test
         session.setAuthenticated(true);
@@ -788,7 +727,7 @@ public class BaseControllerTest extends Mockito {
 
     @Test
     public void ipLockingSameIpAddress() {
-        BridgeUtils.setRequestContext(new RequestContext.Builder().withCallerIpAddress("same address").build());
+        RequestContext.set(new RequestContext.Builder().withCallerIpAddress("same address").build());
         
         // Setup test - Append different load balancers to make sure we handle this properly.
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER))
@@ -808,36 +747,6 @@ public class BaseControllerTest extends Mockito {
         controller.getAuthenticatedSession(false);
     }
 
-    @Test
-    public void getSessionPopulatesTheRequestContext() {
-        RequestContext context = new RequestContext.Builder().withRequestId(REQUEST_ID).build();
-        assertNotNull(context.getId());
-        assertNull(context.getCallerAppId());
-        assertEquals(ImmutableSet.of(), context.getCallerSubstudies());
-        assertFalse(context.isAdministrator());
-        BridgeUtils.setRequestContext(context);
-        
-        Set<Roles> roles = ImmutableSet.of(DEVELOPER);
-        
-        StudyParticipant participant = new StudyParticipant.Builder().withSubstudyIds(USER_SUBSTUDY_IDS)
-                .withRoles(roles).withId(USER_ID).build();
-        session.setParticipant(participant);
-        session.setAuthenticated(true);
-        session.setAppId(TEST_APP_ID);
-        
-        doReturn(session).when(controller).getSessionIfItExists();
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        
-        controller.getAuthenticatedSession(false);
-        
-        context = BridgeUtils.getRequestContext();
-        assertEquals(context.getId(), REQUEST_ID);
-        assertEquals(context.getCallerAppId(), TEST_APP_ID);
-        assertEquals(context.getCallerSubstudies(), USER_SUBSTUDY_IDS);
-        assertTrue(context.isAdministrator());
-        assertTrue(context.isInRole(DEVELOPER));
-        assertEquals(context.getCallerUserId(), USER_ID);
-    }
 
     @Test
     public void getSessionWithRoleSucceed() {
@@ -852,6 +761,46 @@ public class BaseControllerTest extends Mockito {
         
         UserSession returned = controller.getAuthenticatedSession(false, Roles.DEVELOPER);
         assertEquals(session, returned);
+    }
+    
+    @Test
+    public void getAuthenticatedSessionFillsRequestContext() {
+        RequestContext.set(new RequestContext.Builder()
+                .withRequestId(REQUEST_ID)
+                .withCallerIpAddress("1.2.3.4").build());
+        
+        session.setAuthenticated(true);
+        session.setAppId(TEST_APP_ID);
+        session.setIpAddress("1.2.3.4");
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(USER_ID)
+                .withOrgMembership(TEST_ORG_ID)
+                .withLanguages(LANGUAGES)
+                .withStudyIds(USER_STUDY_IDS)
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        app.setIdentifier(TEST_APP_ID);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        doReturn(session).when(controller).getSessionIfItExists();
+        
+        Set<String> orgStudies = ImmutableSet.of("study1", "study2");
+        when(mockSponsorService.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID)).thenReturn(orgStudies);
+        
+        controller.getAuthenticatedSession(true, DEVELOPER);
+        
+        RequestContext context = RequestContext.get();
+        assertNotNull(context.getMetrics());
+        assertEquals(context.getId(), REQUEST_ID);
+        assertEquals(context.getCallerAppId(), TEST_APP_ID);
+        assertEquals(context.getCallerOrgMembership(), TEST_ORG_ID);
+        assertEquals(context.getCallerEnrolledStudies(), USER_STUDY_IDS);
+        assertEquals(context.getOrgSponsoredStudies(), orgStudies);
+        assertTrue(context.isAdministrator()); 
+        assertEquals(context.getCallerUserId(), USER_ID); 
+        assertEquals(context.getCallerClientInfo(), UNKNOWN_CLIENT);
+        assertEquals(context.getCallerLanguages(), LANGUAGES);
+        assertEquals(context.getCallerIpAddress(), "1.2.3.4");
     }
 
     // In this scenario, a user without roles receives the consent required exception

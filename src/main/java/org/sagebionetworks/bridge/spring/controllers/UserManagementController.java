@@ -62,7 +62,8 @@ public class UserManagementController extends BaseController {
         
         // Now act as if the user is in the app that was requested
         sessionUpdateService.updateApp(session, originSignIn.getAppId());
-        setCookieAndRecordMetrics(session);
+        request().setAttribute("CreatedUserSession", session);
+        updateRequestInfoFromSession(session);
         
         return UserSessionInfo.toJSON(session);
     }

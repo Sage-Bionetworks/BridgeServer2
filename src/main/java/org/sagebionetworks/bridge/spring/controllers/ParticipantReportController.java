@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthUtils.checkSelfOrResearcher;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getLocalDateOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -127,9 +127,10 @@ public class ParticipantReportController extends BaseController {
     public DateRangeResourceList<? extends ReportData> getParticipantReport(@PathVariable String userId,
             @PathVariable String identifier, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
-        return getParticipantReportInternal(session.getAppId(), userId, identifier, startDate,
-                endDate);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
+        
+        return getParticipantReportInternal(session.getAppId(), userId, identifier, startDate, endDate);
     }
 
     /** Worker API to get reports for the given user in the given app by date. */
@@ -160,9 +161,11 @@ public class ParticipantReportController extends BaseController {
             @PathVariable String identifier, @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
-        return getParticipantReportInternalV4(session.getAppId(), userId, identifier, startTime,
-                endTime, offsetKey, pageSize);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
+        
+        return getParticipantReportInternalV4(session.getAppId(), userId, identifier, 
+                startTime, endTime, offsetKey, pageSize);
     }
 
     /** Worker API to get reports for the given user in the given app by date-time. */

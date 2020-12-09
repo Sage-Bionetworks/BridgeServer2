@@ -93,6 +93,15 @@ public class SessionUpdateService {
         
         cacheProvider.setUserSession(newSession);
     }
+    
+    public void updateOrgMembership(String userId, String newOrgId) {
+        UserSession session = cacheProvider.getUserSessionByUserId(userId);
+        if (session != null) {
+            session.setParticipant(new StudyParticipant.Builder().copyOf(
+                    session.getParticipant()).withOrgMembership(newOrgId).build());
+            cacheProvider.setUserSession(session);
+        }
+    }
 
     private StudyParticipant.Builder builder(UserSession session) {
         return new StudyParticipant.Builder().copyOf(session.getParticipant());

@@ -6,12 +6,14 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.jsoup.safety.Whitelist.none;
 import static org.jsoup.safety.Whitelist.simpleText;
+import static org.sagebionetworks.bridge.AuthUtils.checkOrgMember;
+import static org.sagebionetworks.bridge.AuthUtils.checkOrgMemberOfSharedAssessmentOwner;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.NONPOSITIVE_REVISION_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
-import static org.sagebionetworks.bridge.BridgeUtils.checkOwnership;
-import static org.sagebionetworks.bridge.BridgeUtils.checkSharedOwnership;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
 import static org.sagebionetworks.bridge.models.OperatingSystem.SYNONYMS;
 import static org.sagebionetworks.bridge.models.ResourceList.GUID;
@@ -30,7 +32,6 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -38,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -52,15 +54,13 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class AssessmentService {
-    public static final String OFFSET_NOT_POSITIVE = "offsetBy must be positive integer";
     static final String IDENTIFIER_REQUIRED = "identifier required";
-    static final String OFFSET_BY_CANNOT_BE_NEGATIVE = "offsetBy cannot be negative";
 
     private AssessmentDao dao;
     
     private AssessmentConfigService configService;
     
-    private SubstudyService substudyService;
+    private OrganizationService organizationService;
     
     @Autowired
     final void setAssessmentDao(AssessmentDao assessmentDao) {
@@ -73,8 +73,8 @@ public class AssessmentService {
     }
     
     @Autowired
-    final void setSubstudyService(SubstudyService substudyService) {
-        this.substudyService = substudyService;
+    final void setOrganizationService(OrganizationService organizationService) {
+        this.organizationService = organizationService;
     }
     
     // accessor to mock for tests
@@ -102,7 +102,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(appId));
         
         if (offsetBy < 0) {
-            throw new BadRequestException(OFFSET_BY_CANNOT_BE_NEGATIVE);
+            throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
@@ -118,12 +118,11 @@ public class AssessmentService {
         checkArgument(isNotBlank(appId));
         checkNotNull(assessment);
         
-        checkOwnership(appId, assessment.getOwnerId());
-        
         // If the identifier is missing, it will be a validation error.
         if (assessment.getIdentifier() != null) {
             // If an assessment under this identifier exists, use the revisions API. We want to 
             // warn people when they are unintentionally stomping on an existing identifier.
+            
             Optional<Assessment> opt = getLatestInternal(appId, assessment.getIdentifier(), true);
             if (opt.isPresent()) {
                 Assessment e = opt.get();
@@ -141,8 +140,6 @@ public class AssessmentService {
     public Assessment createAssessmentRevision(String appId, String guid, Assessment assessment) {
         checkArgument(isNotBlank(appId));
         checkNotNull(assessment);
-        
-        checkOwnership(appId, assessment.getOwnerId());
         
         // Verify this is an existing assessment, and that we're trying to add a revision
         // with the same identifier.
@@ -162,7 +159,7 @@ public class AssessmentService {
         if (existing.isDeleted() && assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-        checkOwnership(appId, existing.getOwnerId());
+        checkOrgMember(existing.getOwnerId());
         
         return updateAssessmentInternal(appId, assessment, existing);
     }
@@ -177,7 +174,7 @@ public class AssessmentService {
             throw new EntityNotFoundException(Assessment.class);
         }
 
-        checkSharedOwnership(callerAppId, existing.getGuid(), existing.getOwnerId());
+        checkOrgMemberOfSharedAssessmentOwner(callerAppId, existing.getGuid(), existing.getOwnerId());
         
         return updateAssessmentInternal(SHARED_APP_ID, assessment, existing);
     }
@@ -195,7 +192,7 @@ public class AssessmentService {
         if (SYNONYMS.get(osName) != null) {
             assessment.setOsName(SYNONYMS.get(osName));
         }
-        AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
+        AssessmentValidator validator = new AssessmentValidator(appId, organizationService);
         Validate.entityThrowingException(validator, assessment);
 
         return dao.updateAssessment(appId, assessment);        
@@ -214,7 +211,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(identifier));
         
         if (revision < 1) {
-            throw new BadRequestException(OFFSET_NOT_POSITIVE);
+            throw new BadRequestException(NONPOSITIVE_REVISION_ERROR);
         }
         return dao.getAssessment(appId, identifier, revision)
                 .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
@@ -236,7 +233,7 @@ public class AssessmentService {
             throw new BadRequestException(IDENTIFIER_REQUIRED);
         }
         if (offsetBy < 0) {
-            throw new BadRequestException(OFFSET_BY_CANNOT_BE_NEGATIVE);
+            throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
@@ -264,11 +261,11 @@ public class AssessmentService {
 
     /**
      * Takes a reference to an assessment in the caller's context (appId), and creates an 
-     * assessment in the shared context. Stores the full substudy identifier (appId + 
-     * substudyId) as the "ownerId" in shared context for authorization checks on 
-     * operations in the shared context (only owners can edit their shared assessments).
-     * The caller must be associated to the organization that own's the assessment 
-     * locally.
+     * assessment in the shared context. Stores a scoped organization identifier (appId + 
+     * orgId) as the "ownerId" in the sshared context for authorization checks on 
+     * operations in the shared context (only members of the owning organization in the 
+     * origin app can edit their shared assessments). The caller must be associated to 
+     * the organization that own's the assessment locally.
      */
     public Assessment publishAssessment(String appId, String newIdentifier, String guid) {
         checkArgument(isNotBlank(appId));
@@ -278,7 +275,7 @@ public class AssessmentService {
         AssessmentConfig configToPublish =  configService.getAssessmentConfig(appId, guid);
         Assessment original = Assessment.copy(assessmentToPublish);
         
-        checkOwnership(appId, assessmentToPublish.getOwnerId());
+        checkOrgMember(assessmentToPublish.getOwnerId());
         
         if (StringUtils.isNotBlank(newIdentifier)) {
             assessmentToPublish.setIdentifier(newIdentifier);
@@ -327,20 +324,20 @@ public class AssessmentService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(guid));
 
-        // If the caller did not provide an ownerId, but they only have one ownerId, use 
-        // that ownerId. It's possible there are client apps where the organizational 
-        // memberships are not exposed to the calling user.
-        Set<String> ownerIds = BridgeUtils.getRequestContext().getCallerSubstudies();
-        if (ownerId == null && ownerIds.size() == 1) {
-            ownerId = Iterables.getFirst(ownerIds, null);
+        if (ownerId == null) {
+            ownerId = RequestContext.get().getCallerOrgMembership();
         }
         if (isBlank(ownerId)) {
             throw new BadRequestException("ownerId parameter is required");
         }
-        checkOwnership(appId, ownerId);
+        checkOrgMember(ownerId);
 
         Assessment sharedAssessment = getAssessmentByGuid(SHARED_APP_ID, guid);
         AssessmentConfig sharedConfig = configService.getSharedAssessmentConfig(SHARED_APP_ID, guid);
+        
+        // Check organization because admins and superadmins can provide anything, it's not 
+        // inherited from the caller's org membership (if any).
+        organizationService.getOrganization(appId, ownerId);
         
         if (isNotBlank(newIdentifier)) {
             sharedAssessment.setIdentifier(newIdentifier);
@@ -363,7 +360,7 @@ public class AssessmentService {
         if (assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-        checkOwnership(appId, assessment.getOwnerId());
+        checkOrgMember(assessment.getOwnerId());
         
         assessment.setDeleted(true);
         assessment.setModifiedOn(getModifiedOn());
@@ -389,15 +386,18 @@ public class AssessmentService {
         assessment.setCreatedOn(timestamp);
         assessment.setModifiedOn(timestamp);
         assessment.setDeleted(false);
+        assessment.setOriginGuid(null);
         sanitizeAssessment(assessment);
 
         String osName = assessment.getOsName();
         if (SYNONYMS.get(osName) != null) {
             assessment.setOsName(SYNONYMS.get(osName));
         }
-        AssessmentValidator validator = new AssessmentValidator(substudyService, appId);
+        AssessmentValidator validator = new AssessmentValidator(appId, organizationService);
         Validate.entityThrowingException(validator, assessment);
         
+        checkOrgMember(assessment.getOwnerId());
+
         AssessmentConfig config = new AssessmentConfig();
         config.setCreatedOn(timestamp);
         config.setModifiedOn(timestamp);

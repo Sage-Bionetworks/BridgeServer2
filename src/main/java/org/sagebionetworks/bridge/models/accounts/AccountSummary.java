@@ -7,25 +7,11 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.Iterables;
 
+@JsonDeserialize(builder = AccountSummary.Builder.class)
 public final class AccountSummary {
-    
-    // This is the one class that exposes this object through the API. Because this 
-    // may involve updating some downstream projects like BridgeWorkerPlatform, leave
-    // it until the full refactor to getAppId() is done, then swap out. getStudyId has
-    // been added and will be refactored to getAppId in the next step of migration.
-    public final static class StudyIdentifier {
-        private final String identifier;
-        StudyIdentifier(String identifier) {
-            this.identifier = identifier;
-        }
-        public String getIdentifier() {
-            return identifier;
-        }
-    }
     
     private final String firstName;
     private final String lastName;
@@ -37,15 +23,13 @@ public final class AccountSummary {
     private final DateTime createdOn;
     private final AccountStatus status;
     private final String appId;
-    private final Set<String> substudyIds;
+    private final Set<String> studyIds;
+    private final Map<String, String> attributes;
+    private final String orgMembership;
     
-    @JsonCreator
-    public AccountSummary(@JsonProperty("firstName") String firstName, @JsonProperty("lastName") String lastName,
-            @JsonProperty("email") String email, @JsonProperty("synapseUserId") String synapseUserId,
-            @JsonProperty("phone") Phone phone, @JsonProperty("externalIds") Map<String, String> externalIds,
-            @JsonProperty("id") String id, @JsonProperty("createdOn") DateTime createdOn,
-            @JsonProperty("status") AccountStatus status, @JsonProperty("appId") String appId,
-            @JsonProperty("substudyIds") Set<String> substudyIds) {
+    private AccountSummary(String firstName, String lastName, String email, String synapseUserId, Phone phone,
+            Map<String, String> externalIds, String id, DateTime createdOn, AccountStatus status, String appId,
+            Set<String> studyIds, Map<String, String> attributes, String orgMembership) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -56,7 +40,9 @@ public final class AccountSummary {
         this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
         this.status = status;
         this.appId = appId;
-        this.substudyIds = substudyIds;
+        this.studyIds = studyIds;
+        this.attributes = attributes;
+        this.orgMembership = orgMembership;
     }
     
     public String getFirstName() {
@@ -106,22 +92,26 @@ public final class AccountSummary {
         return status;
     }
     
-    public StudyIdentifier getStudyIdentifier() {
-        return new StudyIdentifier(appId);
-    }
-    
     public String getAppId() { 
         return appId;
     }
     
-    public Set<String> getSubstudyIds() {
-        return substudyIds;
+    public Set<String> getStudyIds() {
+        return studyIds;
+    }
+    
+    public Map<String, String> getAttributes() {
+        return attributes;
+    }
+    
+    public String getOrgMembership() {
+        return orgMembership;
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn, status,
-                appId, substudyIds);
+                appId, studyIds, attributes, orgMembership);
     }
 
     @Override
@@ -136,8 +126,82 @@ public final class AccountSummary {
                 && Objects.equals(externalIds, other.externalIds) && Objects.equals(synapseUserId, other.synapseUserId)
                 && Objects.equals(createdOn, other.createdOn) && Objects.equals(status, other.status)
                 && Objects.equals(id, other.id) && Objects.equals(appId, other.appId)
-                && Objects.equals(substudyIds, other.substudyIds);
+                && Objects.equals(studyIds, other.studyIds)
+                && Objects.equals(attributes, other.attributes)
+                && Objects.equals(orgMembership, other.orgMembership);
     }
     
     // no toString() method as the information is sensitive.
+    public static class Builder {
+        private String firstName;
+        private String lastName;
+        private String email;
+        private String synapseUserId;
+        private Phone phone;
+        private String id;
+        private DateTime createdOn;
+        private AccountStatus status;
+        private String appId;
+        private Map<String,String> externalIds;
+        private Set<String> studyIds;
+        private Map<String, String> attributes;
+        private String orgMembership;
+        
+        public Builder withAppId(String appId) {
+            this.appId = appId;
+            return this;
+        }
+        public Builder withFirstName(String firstName) {
+            this.firstName = firstName;
+            return this;
+        }
+        public Builder withLastName(String lastName) {
+            this.lastName = lastName;
+            return this;
+        }
+        public Builder withEmail(String email) {
+            this.email = email;
+            return this;
+        }
+        public Builder withSynapseUserId(String synapseUserId) {
+            this.synapseUserId = synapseUserId;
+            return this;
+        }
+        public Builder withPhone(Phone phone) {
+            this.phone = phone;
+            return this;
+        }
+        public Builder withId(String id) {
+            this.id = id;
+            return this;
+        }
+        public Builder withCreatedOn(DateTime createdOn) {
+            this.createdOn = createdOn;
+            return this;
+        }
+        public Builder withStatus(AccountStatus status) {
+            this.status = status;
+            return this;
+        }
+        public Builder withExternalIds(Map<String, String> externalIds) {
+            this.externalIds = externalIds;
+            return this;
+        }
+        public Builder withStudyIds(Set<String> studyIds) {
+            this.studyIds = studyIds;
+            return this;
+        }
+        public Builder withAttributes(Map<String, String> attributes) {
+            this.attributes = attributes;
+            return this;
+        }
+        public Builder withOrgMembership(String orgMembership) {
+            this.orgMembership = orgMembership;
+            return this;
+        }
+        public AccountSummary build() {
+            return new AccountSummary(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn,
+                    status, appId, studyIds, attributes, orgMembership);
+        }
+    }
 }

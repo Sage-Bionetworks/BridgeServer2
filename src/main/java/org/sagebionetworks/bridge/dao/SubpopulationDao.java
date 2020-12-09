@@ -17,19 +17,16 @@ public interface SubpopulationDao {
      * as part of creating an app, or when an existing app is found to have no subpopulations.
      * Subpopulations in turn create a default consent document. 
      */
-    Subpopulation createDefaultSubpopulation(String appId);
+    Subpopulation createDefaultSubpopulation(String appId, String studyId);
     
     /**
      * Get all subpopulations defined for this app. It is possible to create a first default
      * subpopulation if none exists
      *
-     * @param createDefault
-     *      if true and this app has no subpopulations, create and return a default subpopulation with a 
-     *      default consent.
      * @param includeDeleted
      *      if true, return logically deleted subpopulations. If false, do not return them.
      */
-    List<Subpopulation> getSubpopulations(String appId, boolean createDefault, boolean includeDeleted);
+    List<Subpopulation> getSubpopulations(String appId, boolean includeDeleted);
     
     /**
      * Get a specific subpopulation. This always returns the subpopulation whether it is logically deleted or not. 

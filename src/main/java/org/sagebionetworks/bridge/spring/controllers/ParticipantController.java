@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthUtils.checkSelfOrResearcher;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
@@ -39,7 +41,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -59,17 +60,20 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.SmsTemplate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.services.EnrollmentService;
 
 @CrossOrigin
 @RestController
@@ -81,6 +85,8 @@ public class ParticipantController extends BaseController {
     
     private UserAdminService userAdminService;
     
+    private EnrollmentService enrollmentService;
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -90,29 +96,37 @@ public class ParticipantController extends BaseController {
     final void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
     }
-
+    
+    @Autowired
+    final void setEnrollmentService(EnrollmentService enrollmentService) {
+        this.enrollmentService = enrollmentService;
+    }
+    
     /** Researcher API to allow backfill of SMS notification registrations. */
     @PostMapping("/v3/participants/{userId}/notifications/sms")
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage createSmsRegistration(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
+        
         App app = appService.getApp(session.getAppId());
 
         participantService.createSmsRegistration(app, userId);
         return new StatusMessage("SMS notification registration created");
     }
-
-    @GetMapping(path="/v3/participants/self", produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getSelfParticipant(@RequestParam(defaultValue = "true") boolean consents) throws Exception {
-        UserSession session = getAuthenticatedSession();
+    
+    @PostMapping("/v3/participants/{userId}/activityEvents")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StatusMessage createCustomActivityEvent(@PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
         App app = appService.getApp(session.getAppId());
         
-        CriteriaContext context = getCriteriaContext(session);
-        StudyParticipant participant = participantService.getSelfParticipant(app, context, consents);
+        CustomActivityEventRequest activityEvent = parseJson(CustomActivityEventRequest.class);
+        participantService.createCustomActivityEvent(app, userId, activityEvent);
         
-        return StudyParticipant.API_NO_HEALTH_CODE_WRITER.writeValueAsString(participant);
+        return new StatusMessage("Event recorded.");
     }
-    
+
     @PostMapping("/v3/participants/self")
     public JsonNode updateSelfParticipant() {
         UserSession session = getAuthenticatedSession();
@@ -142,10 +156,10 @@ public class ParticipantController extends BaseController {
         participantService.updateParticipant(app, updated);
         
         // Construction of the participant record now includes some fields that aren't set directly by the update,
-        // such as substudy associations. Load a completely updated participant record. Do get history 
+        // such as study associations. Load a completely updated participant record. Do get history 
         // for consent and session.
         StudyParticipant updatedParticipant = participantService.getParticipant(app, session.getId(), true);
-        RequestContext reqContext = BridgeUtils.getRequestContext();
+        RequestContext reqContext = RequestContext.get();
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withLanguages(session.getParticipant().getLanguages())
@@ -153,7 +167,7 @@ public class ParticipantController extends BaseController {
                 .withHealthCode(session.getHealthCode())
                 .withUserId(session.getId())
                 .withUserDataGroups(updatedParticipant.getDataGroups())
-                .withUserSubstudyIds(updatedParticipant.getSubstudyIds())
+                .withUserStudyIds(updatedParticipant.getStudyIds())
                 .withAppId(session.getAppId())
                 .build();
         
@@ -161,10 +175,19 @@ public class ParticipantController extends BaseController {
         
         return UserSessionInfo.toJSON(session);
     }
+
+    
+    @GetMapping("/v3/participants/{userId}/enrollments")
+    public List<EnrollmentDetail> getEnrollments(@PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(false, RESEARCHER);
+        
+        return enrollmentService.getEnrollmentsForUser(session.getAppId(), userId);
+    }
     
     @DeleteMapping("/v3/participants/{userId}")
     public StatusMessage deleteTestParticipant(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(Roles.RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
         
         StudyParticipant participant = participantService.getParticipant(app, userId, false);
@@ -180,7 +203,7 @@ public class ParticipantController extends BaseController {
             "/v3/studies/{appId}/participants/{userId}/activityEvents" })
     public ResourceList<ActivityEvent> getActivityEventsForWorker(@PathVariable String appId,
             @PathVariable String userId) {
-        getAuthenticatedSession(Roles.WORKER);
+        getAuthenticatedSession(WORKER);
         App app = appService.getApp(appId);
 
         return new ResourceList<>(participantService.getActivityEvents(app, userId));
@@ -194,7 +217,7 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String scheduledOnStart,
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) throws Exception {
-        getAuthenticatedSession(Roles.WORKER);
+        getAuthenticatedSession(WORKER);
         App app = appService.getApp(appId);
         
         return getActivityHistoryV3Internal(app, userId, activityType, referentGuid, scheduledOnStart, scheduledOnEnd,
@@ -208,7 +231,7 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetBy,
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize)
             throws Exception {
-        getAuthenticatedSession(Roles.WORKER);
+        getAuthenticatedSession(WORKER);
         App app = appService.getApp(appId);
         
         return getActivityHistoryInternalV2(app, userId, activityGuid, scheduledOnStart, scheduledOnEnd, offsetBy,
@@ -286,10 +309,27 @@ public class ParticipantController extends BaseController {
         return participantService.createParticipant(app, participant, true);
     }
 
+    @GetMapping(path="/v3/participants/self", produces={APPLICATION_JSON_UTF8_VALUE})
+    public String getSelfParticipant(@RequestParam(defaultValue = "true") boolean consents) throws Exception {
+        UserSession session = getAuthenticatedSession();
+        App app = appService.getApp(session.getAppId());
+        
+        CriteriaContext context = getCriteriaContext(session);
+        StudyParticipant participant = participantService.getSelfParticipant(app, context, consents);
+        
+        // Return the health code if this is an administrative account. This is because developers 
+        // should call this method to retrieve their own account.
+        ObjectWriter writer = (session.isInRole(ADMINISTRATIVE_ROLES)) ?
+                StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
+                StudyParticipant.API_NO_HEALTH_CODE_WRITER;
+        return writer.writeValueAsString(participant);
+    }
+
     @GetMapping(path="/v3/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getParticipant(@PathVariable String userId, @RequestParam(defaultValue = "true") boolean consents)
             throws Exception {
         UserSession session = getAuthenticatedSession(RESEARCHER);
+
         App app = appService.getApp(session.getAppId());
 
         // Do not allow lookup by health code if health code access is disabled. Allow it however
@@ -300,8 +340,8 @@ public class ParticipantController extends BaseController {
         }
         
         StudyParticipant participant = participantService.getParticipant(app, userId, consents);
-
-        ObjectWriter writer = (app.isHealthCodeExportEnabled()) ?
+        
+        ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(ADMIN)) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
         return writer.writeValueAsString(participant);
@@ -340,7 +380,8 @@ public class ParticipantController extends BaseController {
     @GetMapping(path = "/v3/participants/{userId}/requestInfo", produces = {
             APPLICATION_JSON_UTF8_VALUE })
     public String getRequestInfo(@PathVariable String userId) throws JsonProcessingException {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
 
         // Verify it's in the same app as the researcher.
@@ -355,7 +396,8 @@ public class ParticipantController extends BaseController {
     
     @PostMapping("/v3/participants/{userId}")
     public StatusMessage updateParticipant(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
 
         StudyParticipant participant = parseJson(StudyParticipant.class);
@@ -370,7 +412,8 @@ public class ParticipantController extends BaseController {
     
     @PostMapping("/v3/participants/{userId}/signOut")
     public StatusMessage signOut(@PathVariable String userId, @RequestParam(required = false) boolean deleteReauthToken) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
 
         participantService.signUserOut(app, userId, deleteReauthToken);
@@ -380,7 +423,8 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/{userId}/requestResetPassword")
     public StatusMessage requestResetPassword(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
 
         participantService.requestResetPassword(app, userId);
@@ -394,7 +438,8 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetBy,
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize)
             throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
         
         return getActivityHistoryInternalV2(app, userId, activityGuid, scheduledOnStart,
@@ -406,7 +451,8 @@ public class ParticipantController extends BaseController {
             @PathVariable String referentGuid, @RequestParam(required = false) String scheduledOnStart,
             @RequestParam(required = false) String scheduledOnEnd, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
         
         return getActivityHistoryV3Internal(app, userId, activityType, referentGuid, scheduledOnStart,
@@ -415,7 +461,8 @@ public class ParticipantController extends BaseController {
 
     @DeleteMapping("/v3/participants/{userId}/activities")
     public StatusMessage deleteActivities(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
 
         participantService.deleteActivities(app, userId);
@@ -425,7 +472,8 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/{userId}/resendEmailVerification")
     public StatusMessage resendEmailVerification(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
 
         participantService.resendVerification(app, ChannelType.EMAIL, userId);
@@ -435,7 +483,8 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/{userId}/resendPhoneVerification")
     public StatusMessage resendPhoneVerification(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
 
         participantService.resendVerification(app, ChannelType.PHONE, userId);
@@ -445,7 +494,8 @@ public class ParticipantController extends BaseController {
     
     @PostMapping("/v3/participants/{userId}/consents/{guid}/resendConsent")
     public StatusMessage resendConsentAgreement(@PathVariable String userId, @PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
         
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
@@ -456,7 +506,8 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/{userId}/consents/withdraw")
     public StatusMessage withdrawFromApp(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
         
         Withdrawal withdrawal = parseJson(Withdrawal.class);
@@ -469,7 +520,8 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/{userId}/consents/{guid}/withdraw")
     public StatusMessage withdrawConsent(@PathVariable String userId, @PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
         
         Withdrawal withdrawal = parseJson(Withdrawal.class);
@@ -485,7 +537,8 @@ public class ParticipantController extends BaseController {
     public ForwardCursorPagedResourceList<UploadView> getUploads(@PathVariable String userId,
             @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
             @RequestParam(required = false) Integer pageSize, @RequestParam(required = false) String offsetKey) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
         
         DateTime startTimeDate = getDateTimeOrDefault(startTime, null);
@@ -496,7 +549,8 @@ public class ParticipantController extends BaseController {
 
     @GetMapping("/v3/participants/{userId}/notifications")
     public ResourceList<NotificationRegistration> getNotificationRegistrations(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
         
         List<NotificationRegistration> registrations = participantService.listRegistrations(app, userId);
@@ -507,7 +561,8 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/{userId}/sendNotification")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage sendNotification(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(session.getAppId());
         
         NotificationMessage message = parseJson(NotificationMessage.class);
@@ -523,7 +578,8 @@ public class ParticipantController extends BaseController {
 
     @GetMapping("/v3/participants/{userId}/activityEvents")
     public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String userId) {
-        UserSession researcherSession = getAuthenticatedSession(Roles.RESEARCHER);
+        UserSession researcherSession = getAdministrativeSession();
+        checkSelfOrResearcher(userId);
         App app = appService.getApp(researcherSession.getAppId());
 
         return new ResourceList<>(participantService.getActivityEvents(app, userId));

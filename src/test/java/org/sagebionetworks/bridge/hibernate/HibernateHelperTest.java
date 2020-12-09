@@ -18,13 +18,11 @@ import static org.testng.Assert.fail;
 import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.persistence.OptimisticLockException;
 import javax.persistence.PersistenceException;
 
-import com.amazonaws.services.dynamodbv2.model.ProvisionedThroughputExceededException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
@@ -59,8 +57,6 @@ public class HibernateHelperTest {
     @Mock
     private PersistenceExceptionConverter mockExceptionConverter;
     @Mock
-    private Consumer<Account> mockConsumer;
-    @Mock
     private Transaction mockTransaction;
     
     @BeforeMethod
@@ -77,7 +73,7 @@ public class HibernateHelperTest {
     @Test
     public void createSuccess() {
         Object testObj = new Object();
-        helper.create(testObj, null);
+        helper.create(testObj);
         verify(mockSession).save(testObj);
     }
     
@@ -89,37 +85,14 @@ public class HibernateHelperTest {
         
         Account testObj = Account.create();
         
-        helper.create(testObj, mockConsumer);
+        helper.create(testObj);
         
-        InOrder inOrder = Mockito.inOrder(mockConsumer, mockSession, mockTransaction);
+        InOrder inOrder = Mockito.inOrder(mockSession, mockTransaction);
         inOrder.verify(mockSession).beginTransaction();
         inOrder.verify(mockSession).save(testObj);
-        inOrder.verify(mockConsumer).accept(testObj);
         inOrder.verify(mockTransaction).commit();
     }
     
-    @Test
-    public void createConsumerTriggersRollback() { 
-        reset(helper); // clear @Before setup
-        when(mockSessionFactory.openSession()).thenReturn(mockSession);
-        when(mockSession.beginTransaction()).thenReturn(mockTransaction);
-        Account testObj = Account.create();
-        doThrow(new ProvisionedThroughputExceededException("message")).when(mockConsumer).accept(testObj);
-        
-        try {
-            helper.create(testObj, mockConsumer);
-            fail("Should have thrown exception");
-        } catch(ProvisionedThroughputExceededException e) {
-            InOrder inOrder = Mockito.inOrder(mockConsumer, mockSession, mockTransaction);
-            inOrder.verify(mockSession).beginTransaction();
-            inOrder.verify(mockSession).save(testObj);
-            inOrder.verify(mockConsumer).accept(testObj);
-            inOrder.verify(mockSession).close();
-            
-            verify(mockTransaction, never()).commit();
-        }
-    }
-
     @Test
     public void createOtherException() {
         PersistenceException ex = new PersistenceException();
@@ -129,7 +102,7 @@ public class HibernateHelperTest {
         when(mockExceptionConverter.convert(ex, testObj)).thenReturn(TEST_EXCEPTION);
         
         try {
-            helper.create(testObj, null);
+            helper.create(testObj);
             fail("Should have thrown exception");
         } catch(Exception e) {
             assertSame(e, TEST_EXCEPTION);
@@ -291,51 +264,11 @@ public class HibernateHelperTest {
     @Test
     public void update() {
         Object testObj = new Object();
-        Object received = helper.update(testObj, null);
+        Object received = helper.update(testObj);
         assertSame(received, testObj);
         verify(mockSession).update(testObj);
     }
 
-    @Test
-    public void updateCallsConsumer() { 
-        reset(helper); // clear @Before setup
-        when(mockSessionFactory.openSession()).thenReturn(mockSession);
-        when(mockSession.beginTransaction()).thenReturn(mockTransaction);
-        
-        Account testObj = Account.create();
-        
-        helper.update(testObj, mockConsumer);
-        
-        InOrder inOrder = Mockito.inOrder(mockConsumer, mockSession, mockTransaction);
-        inOrder.verify(mockSession).beginTransaction();
-        inOrder.verify(mockSession).update(testObj);
-        inOrder.verify(mockConsumer).accept(testObj);
-        inOrder.verify(mockTransaction).commit();
-        inOrder.verify(mockSession).close();
-    }
-    
-    @Test
-    public void updateConsumerTriggersRollback() { 
-        reset(helper); // clear @Before setup
-        when(mockSessionFactory.openSession()).thenReturn(mockSession);
-        when(mockSession.beginTransaction()).thenReturn(mockTransaction);
-        Account testObj = Account.create();
-        doThrow(new ProvisionedThroughputExceededException("message")).when(mockConsumer).accept(testObj);
-        
-        try {
-            helper.update(testObj, mockConsumer);
-            fail("Should have thrown exception");
-        } catch(ProvisionedThroughputExceededException e) {
-            InOrder inOrder = Mockito.inOrder(mockConsumer, mockSession, mockTransaction);
-            inOrder.verify(mockSession).beginTransaction();
-            inOrder.verify(mockSession).update(testObj);
-            inOrder.verify(mockConsumer).accept(testObj);
-            inOrder.verify(mockSession).close();
-            
-            verify(mockTransaction, never()).commit();
-        }
-    }
-    
     @Test
     public void execute() {
         // mock session to produce transaction
@@ -382,7 +315,7 @@ public class HibernateHelperTest {
         when(mockExceptionConverter.convert(ex, account)).thenReturn(TEST_EXCEPTION);
         
         try {
-            helper.create(account, null);
+            helper.create(account);
             fail("Should have thrown exception");
         } catch(Exception e) {
             assertSame(e, TEST_EXCEPTION);
@@ -515,7 +448,7 @@ public class HibernateHelperTest {
         when(mockExceptionConverter.convert(ex, account)).thenReturn(TEST_EXCEPTION);
 
         try {
-            helper.update(account, null);
+            helper.update(account);
             fail("Should have thrown exception");
         } catch(Exception e) {
             assertSame(e, TEST_EXCEPTION);
@@ -538,7 +471,7 @@ public class HibernateHelperTest {
         when(mockExceptionConverter.convert(pe, account)).thenReturn(pe);
         
         try {
-            helper.update(account, null);
+            helper.update(account);
             fail("Should have thrown exception");
         } catch(BridgeServiceException e) {
             // So we wrap it with a BridgeServiceException
@@ -631,5 +564,22 @@ public class HibernateHelperTest {
         
         verify(mockQuery).setFirstResult(100);
         verify(mockQuery).setMaxResults(25);
-    }    
+    }
+    
+    @Test
+    public void nativeQueryUpdate() {
+        when(mockSessionFactory.openSession()).thenReturn(mockSession);
+        when(mockSession.beginTransaction()).thenReturn(mockTransaction);
+        
+        NativeQuery<Object> mockQuery = mock(NativeQuery.class);
+        when(mockSession.createNativeQuery(QUERY)).thenReturn(mockQuery);
+        when(mockQuery.executeUpdate()).thenReturn(3);
+        
+        int retValue = helper.nativeQueryUpdate(QUERY, ImmutableMap.of("a", "b", "c", "d"));
+        assertEquals(retValue, 3);
+        
+        verify(mockQuery).setParameter("a", "b");
+        verify(mockQuery).setParameter("c", "d");
+        verify(mockQuery).executeUpdate();
+    }
 }

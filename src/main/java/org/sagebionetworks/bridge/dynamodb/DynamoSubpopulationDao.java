@@ -23,7 +23,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 @Component
 public class DynamoSubpopulationDao implements SubpopulationDao {
@@ -91,22 +91,15 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
 
     @Override
-    public List<Subpopulation> getSubpopulations(String appId, boolean createDefault, boolean includeDeleted) {
+    public List<Subpopulation> getSubpopulations(String appId, boolean includeDeleted) {
         DynamoSubpopulation hashKey = new DynamoSubpopulation();
         hashKey.setAppId(appId);
         
         DynamoDBQueryExpression<DynamoSubpopulation> query = 
                 new DynamoDBQueryExpression<DynamoSubpopulation>().withHashKeyValues(hashKey);
         
-        // Get all the records because we only create a default if there are no physical records, 
-        // regardless of the deletion status. This was a bootstrapping step and at this point, 
-        // no new apps will be created without a default subpopulation.
         List<DynamoSubpopulation> subpops = mapper.query(DynamoSubpopulation.class, query);
-        if (createDefault && subpops.isEmpty()) {
-            Subpopulation subpop = createDefaultSubpopulation(appId);
-            return ImmutableList.of(subpop);
-        }
-        // Now filter out deleted subpopulations, if requested
+        // Filter out deleted subpopulations, if requested
         List<Subpopulation> subpopulations = subpops.stream()
                 .filter(subpop -> includeDeleted || !subpop.isDeleted())
                 .collect(toImmutableList());
@@ -118,7 +111,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
     }
     
     @Override
-    public Subpopulation createDefaultSubpopulation(String appId) {
+    public Subpopulation createDefaultSubpopulation(String appId, String studyId) {
         DynamoSubpopulation subpop = new DynamoSubpopulation();
         subpop.setAppId(appId);
         subpop.setGuidString(appId);
@@ -126,6 +119,7 @@ public class DynamoSubpopulationDao implements SubpopulationDao {
         subpop.setDefaultGroup(true);
         // The first group is required until the study designers say otherwise
         subpop.setRequired(true);
+        subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of(studyId));
         
         Criteria criteria = Criteria.create();
         criteria.setKey(getKey(subpop));

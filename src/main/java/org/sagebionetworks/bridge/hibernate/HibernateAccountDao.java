@@ -1,11 +1,12 @@
+
 package org.sagebionetworks.bridge.hibernate;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import javax.annotation.Resource;
@@ -17,10 +18,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.BridgeUtils.SubstudyAssociations;
+import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -37,11 +38,9 @@ import org.sagebionetworks.bridge.models.apps.App;
 public class HibernateAccountDao implements AccountDao {
     
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
+
+    static final String ID_QUERY = "SELECT acct.id FROM HibernateAccount AS acct";
     
-    static final String SUMMARY_QUERY = "SELECT new HibernateAccount(acct.createdOn, acct.appId, "+
-            "acct.firstName, acct.lastName, acct.email, acct.phone, acct.id, acct.status, " + 
-            "acct.synapseUserId) FROM HibernateAccount AS acct";
-            
     static final String FULL_QUERY = "SELECT acct FROM HibernateAccount AS acct";
     
     static final String COUNT_QUERY = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct";
@@ -73,14 +72,14 @@ public class HibernateAccountDao implements AccountDao {
     
     /** {@inheritDoc} */
     @Override
-    public void createAccount(App app, Account account, Consumer<Account> afterPersistConsumer) {
-        hibernateHelper.create(account, afterPersistConsumer);
+    public void createAccount(App app, Account account) {
+        hibernateHelper.create(account);
     }
 
     /** {@inheritDoc} */
     @Override
-    public void updateAccount(Account account, Consumer<Account> afterPersistConsumer) {
-        hibernateHelper.update(account, afterPersistConsumer);
+    public void updateAccount(Account account) {
+        hibernateHelper.update(account);
     }
     
     /** {@inheritDoc} */
@@ -109,21 +108,21 @@ public class HibernateAccountDao implements AccountDao {
             }
         }
         if (validateHealthCode(account)) {
-            Account updated = hibernateHelper.update(account, null);
+            Account updated = hibernateHelper.update(account);
             account.setVersion(updated.getVersion());
         }
         return Optional.of(account);
     }
     
     QueryBuilder makeQuery(String prefix, String appId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
-        RequestContext context = BridgeUtils.getRequestContext();
+        RequestContext context = RequestContext.get();
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(prefix);
-        builder.append("LEFT JOIN acct.accountSubstudies AS acctSubstudy");
-        builder.append("WITH acct.id = acctSubstudy.accountId");
+        builder.append("LEFT JOIN acct.enrollments AS enrollment");
+        builder.append("WITH acct.id = enrollment.accountId");
         builder.append("WHERE acct.appId = :appId", "appId", appId);
-
+        
         if (accountId != null) {
             AccountId unguarded = accountId.getUnguardedAccountId();
             if (unguarded.getEmail() != null) {
@@ -137,7 +136,7 @@ public class HibernateAccountDao implements AccountDao {
             } else if (unguarded.getSynapseUserId() != null) {
                 builder.append("AND acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
             } else {
-                builder.append("AND acctSubstudy.externalId=:externalId", "externalId", unguarded.getExternalId());
+                builder.append("AND enrollment.externalId=:externalId", "externalId", unguarded.getExternalId());
             }
         }
         if (search != null) {
@@ -159,15 +158,21 @@ public class HibernateAccountDao implements AccountDao {
             if (search.getLanguage() != null) {
                 builder.append("AND :language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
             }
+            builder.adminOnly(search.isAdminOnly());
+            builder.orgMembership(search.getOrgMembership());
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
-        }
-        Set<String> callerSubstudies = context.getCallerSubstudies();
-        if (!callerSubstudies.isEmpty()) {
-            builder.append("AND acctSubstudy.substudyId IN (:substudies)", "substudies", callerSubstudies);
+            
+            // If the caller is a member of an organization, then they can only see accounts in the studies 
+            // sponsored by that organization. Note that this only applies now to enrollments, so admin 
+            // accounts are exempt.
+            if (!TRUE.equals(search.isAdminOnly()) && !AuthUtils.isStudyTeamMemberOrWorker(null)) {
+                Set<String> callerStudies = context.getOrgSponsoredStudies();
+                builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
+            }
         }
         if (!isCount) {
-            builder.append("GROUP BY acct.id");        
+            builder.append("GROUP BY acct.id");
         }
         return builder;
     }
@@ -180,30 +185,39 @@ public class HibernateAccountDao implements AccountDao {
 
     /** {@inheritDoc} */
     @Override
-    public PagedResourceList<AccountSummary> getPagedAccountSummaries(App app, AccountSummarySearch search) {
-        QueryBuilder builder = makeQuery(SUMMARY_QUERY, app.getIdentifier(), null, search, false);
-
-        // Get page of accounts.
-        List<HibernateAccount> hibernateAccountList = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
-                search.getOffsetBy(), search.getPageSize(), HibernateAccount.class);
-        List<AccountSummary> accountSummaryList = hibernateAccountList.stream()
-                .map(this::unmarshallAccountSummary).collect(Collectors.toList());
+    public PagedResourceList<AccountSummary> getPagedAccountSummaries(String appId, AccountSummarySearch search) {
+        // Getting the IDs and loading the records individually leads to N+1 queries (one id query and a 
+        // query for each object), whereas querying for a constructor of a subset of columns leads to 
+        // (N*Y)+1 queries as we must load each collection individually... Y=1 in the prior code to load
+        // studies, and Y=2 once we add attributes. On the downside, this approach loads all 
+        // HibernateAccount fields, like clientData, though it is not returned.
+        QueryBuilder builder = makeQuery(ID_QUERY, appId, null, search, false);
+        
+        List<String> ids = hibernateHelper.queryGet(builder.getQuery(), builder.getParameters(),
+                search.getOffsetBy(), search.getPageSize(), String.class);
+        
+        List<AccountSummary>accountSummaryList = ids.stream()
+                .map(id -> hibernateHelper.getById(HibernateAccount.class, id))
+                .map(this::unmarshallAccountSummary)
+                .collect(Collectors.toList());
 
         // Get count of accounts.
-        builder = makeQuery(COUNT_QUERY, app.getIdentifier(), null, search, true);
+        builder = makeQuery(COUNT_QUERY, appId, null, search, true);
         int count = hibernateHelper.queryCount(builder.getQuery(), builder.getParameters());
         
         // Package results and return.
         return new PagedResourceList<>(accountSummaryList, count)
-                .withRequestParam(ResourceList.OFFSET_BY, search.getOffsetBy())
-                .withRequestParam(ResourceList.PAGE_SIZE, search.getPageSize())
+                .withRequestParam(ResourceList.ADMIN_ONLY, search.isAdminOnly())
+                .withRequestParam(ResourceList.ALL_OF_GROUPS, search.getAllOfGroups())
                 .withRequestParam(ResourceList.EMAIL_FILTER, search.getEmailFilter())
-                .withRequestParam(ResourceList.PHONE_FILTER, search.getPhoneFilter())
-                .withRequestParam(ResourceList.START_TIME, search.getStartTime())
                 .withRequestParam(ResourceList.END_TIME, search.getEndTime())
                 .withRequestParam(ResourceList.LANGUAGE, search.getLanguage())
-                .withRequestParam(ResourceList.ALL_OF_GROUPS, search.getAllOfGroups())
-                .withRequestParam(ResourceList.NONE_OF_GROUPS, search.getNoneOfGroups());
+                .withRequestParam(ResourceList.NONE_OF_GROUPS, search.getNoneOfGroups())
+                .withRequestParam(ResourceList.OFFSET_BY, search.getOffsetBy())
+                .withRequestParam(ResourceList.ORG_MEMBERSHIP, search.getOrgMembership())
+                .withRequestParam(ResourceList.PAGE_SIZE, search.getPageSize())
+                .withRequestParam(ResourceList.PHONE_FILTER, search.getPhoneFilter())
+                .withRequestParam(ResourceList.START_TIME, search.getStartTime());
     }
     
     // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created
@@ -224,26 +238,26 @@ public class HibernateAccountDao implements AccountDao {
 
     // Helper method to unmarshall a HibernateAccount into an AccountSummary.
     // Package-scoped to facilitate unit tests.
-    AccountSummary unmarshallAccountSummary(HibernateAccount hibernateAccount) {
-        String appId = hibernateAccount.getAppId();
+    AccountSummary unmarshallAccountSummary(HibernateAccount acct) {
+        AccountSummary.Builder builder = new AccountSummary.Builder();
+        builder.withAppId(acct.getAppId());
+        builder.withId(acct.getId());
+        builder.withFirstName(acct.getFirstName());
+        builder.withLastName(acct.getLastName());
+        builder.withEmail(acct.getEmail());
+        builder.withPhone(acct.getPhone());
+        builder.withCreatedOn(acct.getCreatedOn());
+        builder.withStatus(acct.getStatus());
+        builder.withSynapseUserId(acct.getSynapseUserId());
+        builder.withAttributes(acct.getAttributes());
+        builder.withOrgMembership(acct.getOrgMembership());
         
-        // Hibernate will not load the collection of substudies once you use the constructor form of HQL 
-        // to limit the data you retrieve from a table. May need to manually construct the objects to 
-        // avoid this 1+N query.
-        SubstudyAssociations assoc = null;
-        if (hibernateAccount.getId() != null) {
-            List<HibernateAccountSubstudy> accountSubstudies = hibernateHelper.queryGet(
-                    "FROM HibernateAccountSubstudy WHERE accountId=:accountId",
-                    ImmutableMap.of("accountId", hibernateAccount.getId()), null, null, HibernateAccountSubstudy.class);
-            
-            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(accountSubstudies);
-        } else {
-            assoc = BridgeUtils.substudyAssociationsVisibleToCaller(null);
+        StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(null);
+        if (acct.getId() != null) {
+            assoc = BridgeUtils.studyAssociationsVisibleToCaller(acct);
         }
-        
-        return new AccountSummary(hibernateAccount.getFirstName(), hibernateAccount.getLastName(),
-                hibernateAccount.getEmail(), hibernateAccount.getSynapseUserId(), hibernateAccount.getPhone(),
-                assoc.getExternalIdsVisibleToCaller(), hibernateAccount.getId(), hibernateAccount.getCreatedOn(),
-                hibernateAccount.getStatus(), appId, assoc.getSubstudyIdsVisibleToCaller());
+        builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
+        builder.withStudyIds(assoc.getStudyIdsVisibleToCaller());
+        return builder.build();
     }
 }

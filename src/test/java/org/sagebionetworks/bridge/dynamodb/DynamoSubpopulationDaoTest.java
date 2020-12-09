@@ -17,6 +17,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -28,6 +30,8 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.CriteriaDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -37,6 +41,8 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 public class DynamoSubpopulationDaoTest extends Mockito {
 
+    private static final Criteria CRITERIA = TestUtils.createCriteria(2, 10, 
+            Sets.newHashSet("a", "b"), Sets.newHashSet("c", "d"));
     private static final String GUID = "oneGuid";
     private static final String CRITERIA_KEY = "subpopulation:" + GUID;
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(GUID);
@@ -63,14 +69,257 @@ public class DynamoSubpopulationDaoTest extends Mockito {
     @Spy
     DynamoSubpopulationDao dao;
     
+    DynamoSubpopulation persistedSubpop;
+
     @BeforeMethod
     public void beforeMethod() { 
         MockitoAnnotations.initMocks(this);
         when(dao.generateGuid()).thenReturn(GUID);
+        
+        dao.setMapper(mockMapper);
+        dao.setCriteriaDao(mockCriteriaDao);
+        
+        List<DynamoSubpopulation> list = ImmutableList.of((DynamoSubpopulation)createSubpopulation());
+
+        when(mockQueryList.stream()).thenReturn(list.stream());
+
+        persistedSubpop = (DynamoSubpopulation)createSubpopulation();
+        doReturn(persistedSubpop).when(mockMapper).load(any());
+        doReturn(mockQueryList).when(mockMapper).query(eq(DynamoSubpopulation.class), any());
+        
+        when(mockCriteriaDao.getCriteria(any())).thenReturn(CRITERIA);
+        when(mockCriteriaDao.createOrUpdateCriteria(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+    
+    private Subpopulation createSubpopulation() {
+        Criteria criteria = TestUtils.copyCriteria(CRITERIA);
+        criteria.setKey("subpopulation:"+SUBPOP_GUID);
+        
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setGuid(SUBPOP_GUID);
+        subpop.setAppId(TEST_APP_ID);
+        subpop.setCriteria(criteria);
+        return subpop;
     }
     
     @Test
-    public void createSubpopulation() {
+    public void createSubpopulationWritesCriteria() {
+        Subpopulation subpop = createSubpopulation();
+        
+        dao.createSubpopulation(subpop);
+        
+        Criteria criteria = subpop.getCriteria();
+        verify(mockCriteriaDao).createOrUpdateCriteria(criteria);
+    }
+    
+    @Test
+    public void createDefaultSubpopulation() {
+        when(mockCriteriaDao.createOrUpdateCriteria(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        
+        Subpopulation result = dao.createDefaultSubpopulation(TEST_APP_ID, "study-identifier");
+        
+        verify(mockMapper).save(subpopCaptor.capture());
+        Subpopulation subpop = subpopCaptor.getValue();
+        assertEquals(subpop.getAppId(), TEST_APP_ID);
+        assertEquals(subpop.getGuidString(), TEST_APP_ID);
+        assertEquals(subpop.getName(), "Default Consent Group");
+        assertEquals(subpop.getStudyIdsAssignedOnConsent(), ImmutableSet.of("study-identifier"));
+        assertTrue(subpop.isDefaultGroup());
+        assertTrue(subpop.isRequired());
+        assertSame(subpop, result);
+        
+        verify(mockCriteriaDao).createOrUpdateCriteria(criteriaCaptor.capture());
+        Criteria criteria = criteriaCaptor.getValue();
+        assertEquals(criteria.getKey(), "subpopulation:" + TEST_APP_ID);
+        assertEquals(criteria.getMinAppVersion(ANDROID), new Integer(0));
+        assertEquals(criteria.getMinAppVersion(IOS), new Integer(0));
+        assertSame(criteria, subpop.getCriteria());
+    }
+    
+    @Test
+    public void getSubpopulationRetrievesCriteria() {
+        Subpopulation subpop = dao.getSubpopulation(TEST_APP_ID, SUBPOP_GUID);
+        
+        Criteria criteria = subpop.getCriteria();
+        assertEquals(criteria, CRITERIA);
+        
+        verify(mockCriteriaDao).getCriteria(criteria.getKey());
+        verifyNoMoreInteractions(mockCriteriaDao);
+    }
+    
+    @Test
+    public void getSubpopulationConstructsCriteriaIfNotSaved() {
+        when(mockCriteriaDao.getCriteria(any())).thenReturn(null);
+        
+        Subpopulation subpop = dao.getSubpopulation(TEST_APP_ID, SUBPOP_GUID);
+        Criteria criteria = subpop.getCriteria();
+        assertNotNull(criteria);
+        
+        verify(mockCriteriaDao).getCriteria(criteria.getKey());
+    }
+    
+    @Test
+    public void physicalDeleteSubpopulationDeletesCriteria() {
+        dao.deleteSubpopulationPermanently(TEST_APP_ID, SUBPOP_GUID);
+        
+        verify(mockCriteriaDao).deleteCriteria(createSubpopulation().getCriteria().getKey());
+    }
+    
+    @Test
+    public void logicalDeleteSubpopulationDoesNotDeleteCriteria() {
+        dao.deleteSubpopulation(TEST_APP_ID, SUBPOP_GUID);
+        
+        verify(mockCriteriaDao, never()).deleteCriteria(createSubpopulation().getCriteria().getKey());
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void doNotAllowLogicalDeleteOfDefault() {
+        Subpopulation defaultSubpop = Subpopulation.create();
+        defaultSubpop.setGuid(SUBPOP_GUID);
+        defaultSubpop.setDefaultGroup(true);
+        
+        doReturn(defaultSubpop).when(dao).getSubpopulation(TEST_APP_ID, SUBPOP_GUID);
+        
+        dao.deleteSubpopulation(TEST_APP_ID, SUBPOP_GUID);
+    }
+    
+    @Test
+    public void allowDeleteOfDefault() {
+        Subpopulation defaultSubpop = Subpopulation.create();
+        defaultSubpop.setGuid(SUBPOP_GUID);
+        defaultSubpop.setDefaultGroup(true);
+        
+        doReturn(defaultSubpop).when(dao).getSubpopulation(TEST_APP_ID, SUBPOP_GUID);
+        
+        dao.deleteSubpopulationPermanently(TEST_APP_ID, SUBPOP_GUID);
+        verify(mockCriteriaDao).deleteCriteria(defaultSubpop.getCriteria().getKey());
+        verify(mockMapper).delete(defaultSubpop);
+    }
+    
+    @Test
+    public void updateSubpopulationUpdatesCriteriaFromSubpop() {
+        // This subpopulation has the criteria fields, but no object
+        Subpopulation subpop = createSubpopulation();
+        subpop.setVersion(1L);
+        
+        Subpopulation updatedSubpop = dao.updateSubpopulation(subpop);
+        assertEquals(updatedSubpop.getCriteria(), CRITERIA);
+        
+        verify(mockCriteriaDao).createOrUpdateCriteria(criteriaCaptor.capture());
+        Criteria savedCriteria = criteriaCaptor.getValue();
+        assertEquals(savedCriteria, CRITERIA);
+    }
+    
+    @Test
+    public void updateSubpopulationUpdatesCriteriaFromObject() {
+        Subpopulation subpopWithCritObject = Subpopulation.create();
+        subpopWithCritObject.setAppId(TEST_APP_ID);
+        subpopWithCritObject.setGuidString(BridgeUtils.generateGuid());
+        subpopWithCritObject.setVersion(1L);
+        subpopWithCritObject.setCriteria(CRITERIA);
+        
+        reset(mockMapper);
+        doReturn(subpopWithCritObject).when(mockMapper).load(any());
+        
+        Subpopulation updatedSubpop = dao.updateSubpopulation(subpopWithCritObject);
+        assertEquals(updatedSubpop.getCriteria(), CRITERIA);
+        
+        verify(mockCriteriaDao).getCriteria(subpopWithCritObject.getCriteria().getKey());
+        verify(mockCriteriaDao).createOrUpdateCriteria(criteriaCaptor.capture());
+        Criteria savedCriteria = criteriaCaptor.getValue();
+        assertEquals(savedCriteria, CRITERIA);
+    }
+    
+    @Test
+    public void updateSubpopulationCanUndelete() {
+        persistedSubpop.setDeleted(true);
+        
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setDeleted(false);
+        subpop.setAppId(TEST_APP_ID);
+        subpop.setGuidString(BridgeUtils.generateGuid());
+        subpop.setVersion(1L);
+        
+        Subpopulation updatedSubpop = dao.updateSubpopulation(subpop);
+        assertFalse(updatedSubpop.isDeleted());
+        
+        verify(mockMapper).save(subpopCaptor.capture());
+        assertFalse(subpopCaptor.getValue().isDeleted());
+    }
+    
+    @Test
+    public void updateSubpopulationCanDelete() {
+        persistedSubpop.setDeleted(false);
+        
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setDeleted(true);
+        subpop.setAppId(TEST_APP_ID);
+        subpop.setGuidString(BridgeUtils.generateGuid());
+        subpop.setVersion(1L);
+        
+        Subpopulation updatedSubpop = dao.updateSubpopulation(subpop);
+        assertTrue(updatedSubpop.isDeleted());
+        
+        verify(mockMapper).save(subpopCaptor.capture());
+        assertTrue(subpopCaptor.getValue().isDeleted());
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void updateSubpopulationCannotDeleteDefaultSubpopulation() {
+        persistedSubpop.setDefaultGroup(true);
+        
+        Subpopulation subpop = Subpopulation.create();
+        subpop.setDeleted(true);
+        subpop.setAppId(TEST_APP_ID);
+        subpop.setGuidString(BridgeUtils.generateGuid());
+        subpop.setVersion(1L);
+        
+        dao.updateSubpopulation(subpop);
+    }
+    
+    @Test
+    public void getSubpopulationsCreatesCriteria() {
+        // The test subpopulation in the list that is returned from the mock mapper does not have
+        // a criteria object. So it will be created as part of loading.
+        List<Subpopulation> list = dao.getSubpopulations(TEST_APP_ID, true);
+        assertEquals(list.get(0).getCriteria(), CRITERIA);
+        
+        verify(mockCriteriaDao).getCriteria(list.get(0).getCriteria().getKey());
+    }
+    
+    @Test
+    public void getSubpopulationsRetrievesCriteria() {
+        // The test subpopulation in the list that is returned from the mock mapper does not have
+        // a criteria object. So it will be created as part of loading.
+        List<Subpopulation> list = dao.getSubpopulations(TEST_APP_ID, true);
+        assertEquals(list.get(0).getCriteria(), CRITERIA);
+        
+        // In this case it actually returns a criteria object.
+        verify(mockCriteriaDao).getCriteria(list.get(0).getCriteria().getKey());
+    }
+    
+    @Test
+    public void criteriaTableTakesPrecedenceOnGet() {
+        reset(mockCriteriaDao);
+        doReturn(CRITERIA).when(mockCriteriaDao).getCriteria(any());
+        
+        Subpopulation subpop = dao.getSubpopulation(TEST_APP_ID, SUBPOP_GUID);
+        Criteria retrievedCriteria = subpop.getCriteria();
+        assertEquals(retrievedCriteria, CRITERIA);
+    }
+    
+    @Test
+    public void criteriaTableTakesPrecedenceOnGetList() {
+        reset(mockCriteriaDao);
+        doReturn(CRITERIA).when(mockCriteriaDao).getCriteria(any());
+        
+        List<Subpopulation> subpops = dao.getSubpopulations(TEST_APP_ID, true);
+        Criteria retrievedCriteria = subpops.get(0).getCriteria();
+        assertEquals(retrievedCriteria, CRITERIA);
+    }    
+    
+    @Test
+    public void createSubpopulationTest() {
         Subpopulation subpop = Subpopulation.create();
         // We cannot set any of these values on create, they are all defaulted
         subpop.setGuidString("some nonsense");
@@ -96,29 +345,6 @@ public class DynamoSubpopulationDaoTest extends Mockito {
     }
     
     @Test
-    public void createDefaultSubpopulation() {
-        when(mockCriteriaDao.createOrUpdateCriteria(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        
-        Subpopulation result = dao.createDefaultSubpopulation(TEST_APP_ID);
-        
-        verify(mockMapper).save(subpopCaptor.capture());
-        Subpopulation subpop = subpopCaptor.getValue();
-        assertEquals(subpop.getAppId(), TEST_APP_ID);
-        assertEquals(subpop.getGuidString(), TEST_APP_ID);
-        assertEquals(subpop.getName(), "Default Consent Group");
-        assertTrue(subpop.isDefaultGroup());
-        assertTrue(subpop.isRequired());
-        assertSame(subpop, result);
-        
-        verify(mockCriteriaDao).createOrUpdateCriteria(criteriaCaptor.capture());
-        Criteria criteria = criteriaCaptor.getValue();
-        assertEquals(criteria.getKey(), "subpopulation:" + TEST_APP_ID);
-        assertEquals(criteria.getMinAppVersion(ANDROID), new Integer(0));
-        assertEquals(criteria.getMinAppVersion(IOS), new Integer(0));
-        assertSame(criteria, subpop.getCriteria());
-    }
-    
-    @Test
     public void getSubpopulationsIncludeDeleted() {
         DynamoSubpopulation subpop1 = new DynamoSubpopulation();
         subpop1.setDeleted(false);
@@ -131,7 +357,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
         when(mockQueryList.stream()).thenReturn(subpopList.stream());
         
-        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, false, true);
+        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, true);
         assertEquals(result.size(), 2);
         
         verify(mockMapper).query(eq(DynamoSubpopulation.class), queryCaptor.capture());
@@ -151,49 +377,11 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
         when(mockQueryList.stream()).thenReturn(subpopList.stream());
         
-        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, false, false);
+        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, false);
         assertEquals(result.size(), 1);
         assertFalse(result.get(0).isDeleted());
     }
 
-    @Test
-    public void getSubpopulationsDoesNotCreateDefaultIfThereAreExistingSubpops() {
-        DynamoSubpopulation subpop1 = new DynamoSubpopulation();
-        List<DynamoSubpopulation> subpopList = ImmutableList.of(subpop1);
-        when(mockMapper.query(eq(DynamoSubpopulation.class), any())).thenReturn(mockQueryList);
-        when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
-        when(mockQueryList.stream()).thenReturn(subpopList.stream());
-        
-        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, true, true);
-        assertEquals(result.size(), 1);
-        assertFalse(result.get(0).isDefaultGroup());
-    }
-    
-    @Test
-    public void getSubpopulationsDoesNotCreateDefaultIfFlagIsFalse() {
-        // No subopulation
-        List<DynamoSubpopulation> subpopList = ImmutableList.of();
-        when(mockMapper.query(eq(DynamoSubpopulation.class), any())).thenReturn(mockQueryList);
-        when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
-        when(mockQueryList.stream()).thenReturn(subpopList.stream());
-        
-        // but don't create a default
-        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, false, true);
-        assertTrue(result.isEmpty());
-    }
-    
-    @Test
-    public void getSubpopulationsCreatesDefault() {
-        List<DynamoSubpopulation> subpopList = ImmutableList.of();
-        when(mockMapper.query(eq(DynamoSubpopulation.class), any())).thenReturn(mockQueryList);
-        when(mockQueryList.isEmpty()).thenReturn(subpopList.isEmpty());
-        when(mockQueryList.stream()).thenReturn(subpopList.stream());
-        
-        List<Subpopulation> result = dao.getSubpopulations(TEST_APP_ID, true, true);
-        assertEquals(result.size(), 1);
-        assertTrue(result.get(0).isDefaultGroup());
-    }
-    
     @Test
     public void getSubpopulation() {
         Subpopulation saved = Subpopulation.create();
@@ -205,6 +393,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getSubpopulationNotFound() {
+        reset(mockMapper);
         dao.getSubpopulation(TEST_APP_ID, SUBPOP_GUID);
     }
 
@@ -246,44 +435,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
         
         dao.updateSubpopulation(subpop);
     }
-    
-    @Test
-    public void updateSubpopulationCanUndelete() {
-        Subpopulation saved = Subpopulation.create();
-        saved.setDeleted(true);
-        when(mockMapper.load(any())).thenReturn(saved);
-        
-        Subpopulation subpop = Subpopulation.create();
-        subpop.setAppId(TEST_APP_ID);
-        subpop.setGuid(SUBPOP_GUID);
-        subpop.setVersion(2L);
-        // not deleted
-        
-        dao.updateSubpopulation(subpop);
-        
-        verify(mockMapper).save(subpopCaptor.capture());
-        Subpopulation updated = subpopCaptor.getValue();
-        assertFalse(updated.isDeleted());        
-    }
 
-    @Test
-    public void updateSubpopulationCanDelete() {
-        Subpopulation saved = Subpopulation.create();
-        // not deleted
-        when(mockMapper.load(any())).thenReturn(saved);
-        
-        Subpopulation subpop = Subpopulation.create();
-        subpop.setAppId(TEST_APP_ID);
-        subpop.setGuid(SUBPOP_GUID);
-        subpop.setVersion(2L);
-        subpop.setDeleted(true);
-        
-        dao.updateSubpopulation(subpop);
-        
-        verify(mockMapper).save(subpopCaptor.capture());
-        Subpopulation updated = subpopCaptor.getValue();
-        assertTrue(updated.isDeleted());        
-    }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateSubpopulationCannotUpdateLogicallyDeletedSubpop() {
@@ -328,6 +480,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteSubpopulationNotFound() {
+        reset(mockMapper);
         dao.deleteSubpopulation(TEST_APP_ID, SUBPOP_GUID);
     }
     
@@ -363,6 +516,7 @@ public class DynamoSubpopulationDaoTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteSubpopulationPermanentlyNotFound() {
+        reset(mockMapper);
         dao.deleteSubpopulationPermanently(TEST_APP_ID, SUBPOP_GUID);
     }
 }

@@ -9,6 +9,7 @@ import javax.servlet.http.Cookie;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.spring.util.HttpUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -133,7 +134,7 @@ public class ConsentController extends BaseController {
         CriteriaContext context = getCriteriaContext(session);
         consentService.withdrawConsent(app, subpopGuid, session.getParticipant(), context, withdrawal, withdrewOn);
         
-        // We must do a full refresh of the session because consents can set data groups and substudies.
+        // We must do a full refresh of the session because consents can set data groups and studies.
         UserSession updatedSession = authenticationService.getSession(app, context);
         sessionUpdateService.updateSession(session, updatedSession);
 
@@ -151,7 +152,7 @@ public class ConsentController extends BaseController {
         
         authenticationService.signOut(session);
         
-        Cookie cookie = makeSessionCookie("", 0);
+        Cookie cookie = HttpUtil.makeSessionCookie("", 0);
         response().addCookie(cookie);
         return new StatusMessage("Signed out.");
     }
@@ -202,7 +203,7 @@ public class ConsentController extends BaseController {
         consentService.consentToResearch(app, subpopGuid, session.getParticipant(), consentSignature,
                 sharing.getSharingScope(), true);
         
-        // We must do a full refresh of the session because consents can set data groups and substudies.
+        // We must do a full refresh of the session because consents can set data groups and studies.
         CriteriaContext updatedContext = getCriteriaContext(session);
         UserSession updatedSession = authenticationService.getSession(app, updatedContext);
         sessionUpdateService.updateSession(session, updatedSession);

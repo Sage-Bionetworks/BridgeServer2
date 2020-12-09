@@ -38,11 +38,11 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.MimeType;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
-import org.sagebionetworks.bridge.models.substudies.AccountSubstudy;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
@@ -82,6 +82,7 @@ public class ConsentService {
     private S3Helper s3Helper;
     private UrlShortenerService urlShortenerService;
     private TemplateService templateService;
+    private EnrollmentService enrollmentService;
     
     @Value("classpath:conf/app-defaults/consent-page.xhtml")
     final void setConsentTemplate(org.springframework.core.io.Resource resource) throws IOException {
@@ -129,6 +130,10 @@ public class ConsentService {
     @Autowired
     final void setTemplateService(TemplateService templateService) {
         this.templateService = templateService;
+    }
+    @Autowired
+    final void setEnrollmentService(EnrollmentService enrollmentService) {
+        this.enrollmentService = enrollmentService;
     }
     
     /**
@@ -200,14 +205,12 @@ public class ConsentService {
         account.setConsentSignatureHistory(subpopGuid, consentListCopy);
         account.setSharingScope(sharingScope);
         
-        account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());    
-        for (String substudyId : subpop.getSubstudyIdsAssignedOnConsent()) {
-            AccountSubstudy acctSubstudy = AccountSubstudy.create(
-                    app.getIdentifier(), substudyId, account.getId());
-            account.getAccountSubstudies().add(acctSubstudy);
+        account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());
+        for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
+            Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), studyId, account.getId());
+            enrollmentService.enroll(account, newEnrollment);
         }
-        
-        accountService.updateAccount(account, null);
+        accountService.updateAccount(account);
         
         // Publish an enrollment event, set sharing scope 
         activityEventService.publishEnrollmentEvent(app, participant.getHealthCode(), withConsentCreatedOnSignature);
@@ -314,7 +317,16 @@ public class ConsentService {
         }
         account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
 
-        accountService.updateAccount(account, null);
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
+            if (subpop.isRequired() && subpop.getStudyIdsAssignedOnConsent().contains(enrollment.getStudyId())) {
+                Enrollment withdrawnEnrollment = Enrollment.create(app.getIdentifier(), enrollment.getStudyId(), account.getId());
+                withdrawnEnrollment.setWithdrawnOn(new DateTime(withdrewOn));
+                withdrawnEnrollment.setWithdrawalNote(withdrawal.getReason());
+                enrollmentService.unenroll(account, withdrawnEnrollment);
+            }
+        }
+        
+        accountService.updateAccount(account);
         
         sendWithdrawEmail(app, account, withdrawal, withdrewOn);
 
@@ -346,8 +358,8 @@ public class ConsentService {
         
         // Forget this person. If the user registers again at a later date, it is as if they have 
         // created a new account. But we hold on to this record so we can still retrieve the consent 
-        // records for a given healthCode. We also don't delete external ID/substudy releationships
-        // so substudies can continue to view withdrawals by health code.
+        // records for a given healthCode. We also don't delete external ID/study relationships
+        // so studies can continue to view withdrawals by health code.
         account.setSharingScope(SharingScope.NO_SHARING);
         account.setFirstName(null);
         account.setLastName(null);
@@ -356,7 +368,15 @@ public class ConsentService {
         account.setEmailVerified(false);
         account.setPhone(null);
         account.setPhoneVerified(false);
-        accountService.updateAccount(account, null);
+        
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
+            Enrollment withdrawnEnrollment = Enrollment.create(enrollment.getAppId(), enrollment.getStudyId(),
+                    enrollment.getAccountId());
+            withdrawnEnrollment.setWithdrawnOn(new DateTime(withdrewOn));
+            withdrawnEnrollment.setWithdrawalNote(withdrawal.getReason());
+            enrollmentService.unenroll(account, withdrawnEnrollment);
+        }
+        accountService.updateAccount(account);
 
         notificationsService.deleteAllRegistrations(app.getIdentifier(), participant.getHealthCode());
     }

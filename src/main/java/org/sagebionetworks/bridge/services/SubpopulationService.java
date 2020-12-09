@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentForm;
 import org.sagebionetworks.bridge.models.subpopulations.StudyConsentView;
@@ -40,7 +41,7 @@ public class SubpopulationService {
     private SubpopulationDao subpopDao;
     private StudyConsentDao studyConsentDao;
     private StudyConsentService studyConsentService;
-    private SubstudyService substudyService;
+    private StudyService studyService;
     private StudyConsentForm defaultConsentDocument;
     private CacheProvider cacheProvider;
     
@@ -61,8 +62,8 @@ public class SubpopulationService {
         this.cacheProvider = cacheProvider;
     }
     @Autowired
-    final void setSubstudyService(SubstudyService substudyService) {
-        this.substudyService = substudyService;
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     @Value("classpath:conf/app-defaults/consent-body.xhtml")
     final void setDefaultConsentDocument(org.springframework.core.io.Resource resource) throws IOException {
@@ -86,9 +87,9 @@ public class SubpopulationService {
         subpop.setGuidString(BridgeUtils.generateGuid());
         subpop.setAppId(app.getIdentifier());
 
-        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
         
-        Validator validator = new SubpopulationValidator(app.getDataGroups(), substudyIds);
+        Validator validator = new SubpopulationValidator(app.getDataGroups(), studyIds);
         Validate.entityThrowingException(validator, subpop);
         
         Subpopulation created = subpopDao.createSubpopulation(subpop);
@@ -106,9 +107,9 @@ public class SubpopulationService {
      * @param app
      * @return
      */
-    public Subpopulation createDefaultSubpopulation(App app) {
+    public Subpopulation createDefaultSubpopulation(App app, Study study) {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(app.getIdentifier());
-        Subpopulation created = subpopDao.createDefaultSubpopulation(app.getIdentifier());
+        Subpopulation created = subpopDao.createDefaultSubpopulation(app.getIdentifier(), study.getIdentifier());
         
         // It should no longer be necessary to check that there are no consents yet, but not harmful to keep doing it.
         if (studyConsentService.getAllConsents(subpopGuid).isEmpty()) {
@@ -145,9 +146,9 @@ public class SubpopulationService {
             throw new EntityNotFoundException(StudyConsent.class);
         }
         
-        Set<String> substudyIds = substudyService.getSubstudyIds(app.getIdentifier());
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
         
-        Validator validator = new SubpopulationValidator(app.getDataGroups(), substudyIds);
+        Validator validator = new SubpopulationValidator(app.getDataGroups(), studyIds);
         Validate.entityThrowingException(validator, subpop);
         
         Subpopulation updated = subpopDao.updateSubpopulation(subpop);
@@ -167,12 +168,12 @@ public class SubpopulationService {
         // If retrieving all subpopulations, which is unusual, do not use the cache. Cache is always
         // of the undeleted subpopulations only.
         if (includeDeleted) {
-            return subpopDao.getSubpopulations(appId, true, includeDeleted);
+            return subpopDao.getSubpopulations(appId, includeDeleted);
         }
         CacheKey subpopListKey = CacheKey.subpopList(appId);
         List<Subpopulation> subpops = cacheProvider.getObject(subpopListKey, SURVEY_LIST_REF);
         if (subpops == null) {
-            subpops = subpopDao.getSubpopulations(appId, true, includeDeleted);
+            subpops = subpopDao.getSubpopulations(appId, includeDeleted);
             cacheProvider.setObject(subpopListKey, subpops);
         }
         return subpops;

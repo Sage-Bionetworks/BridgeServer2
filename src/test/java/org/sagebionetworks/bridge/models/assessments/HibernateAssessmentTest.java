@@ -43,6 +43,7 @@ public class HibernateAssessmentTest {
         assessment.setSummary("summary");
         assessment.setValidationStatus("validationStatus");
         assessment.setNormingStatus("normingStatus");
+        assessment.setMinutesToComplete(10);
         assessment.setOsName(ANDROID);
         assessment.setOriginGuid("originGuid");
         assessment.setOwnerId(OWNER_ID);
@@ -64,6 +65,7 @@ public class HibernateAssessmentTest {
         assertEquals(assessment.getSummary(), "summary");
         assertEquals(assessment.getValidationStatus(), "validationStatus");
         assertEquals(assessment.getNormingStatus(), "normingStatus");
+        assertEquals(assessment.getMinutesToComplete(), new Integer(10));
         assertEquals(assessment.getOsName(), ANDROID);
         assertEquals(assessment.getOriginGuid(), "originGuid");
         assertEquals(assessment.getOwnerId(), OWNER_ID);
