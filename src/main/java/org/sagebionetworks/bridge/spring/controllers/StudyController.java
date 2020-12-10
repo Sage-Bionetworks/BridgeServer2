@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -61,9 +61,7 @@ public class StudyController extends BaseController {
 
     @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public Study getStudy(@PathVariable String id) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
-        
-        AuthUtils.checkStudyCoordinator(id);
+        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ORG_ADMIN, ADMIN);
         
         return service.getStudy(session.getAppId(), id, true);
     }

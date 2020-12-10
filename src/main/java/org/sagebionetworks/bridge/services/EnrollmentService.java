@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.AuthUtils.checkSelfStudyResearcherOrCoordinator;
-import static org.sagebionetworks.bridge.AuthUtils.checkStudyResearcherOrCoordinator;
+import static org.sagebionetworks.bridge.AuthUtils.checkSelfStudyCoordinatorOrResearcher;
+import static org.sagebionetworks.bridge.AuthUtils.checkStudyCoordinatorOrResearcher;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -65,7 +65,7 @@ public class EnrollmentService {
         checkNotNull(appId);
         checkNotNull(studyId);
         
-        checkStudyResearcherOrCoordinator(studyId);
+        checkStudyCoordinatorOrResearcher(studyId);
 
         if (offsetBy != null && offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
@@ -88,7 +88,7 @@ public class EnrollmentService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        checkSelfStudyResearcherOrCoordinator(studyId, userId);
+        checkSelfStudyCoordinatorOrResearcher(studyId, userId);
 
         return enrollmentDao.getEnrollmentsForUser(appId, userId);
     }
@@ -98,12 +98,17 @@ public class EnrollmentService {
 
         // verify this has appId and accountId
         Validate.entityThrowingException(INSTANCE, enrollment);
+        
+        // Verify that the caller has access to this study
+        checkSelfStudyCoordinatorOrResearcher(enrollment.getStudyId(), enrollment.getAccountId());
 
+        // Because this is an enrollment, we don't want to check the caller's access to the 
+        // account based on study, because the account has not been put in a study accessible
+        // to the caller. The check would fail for researchers.
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
         enrollment = enroll(account, enrollment);
         accountService.updateAccount(account);
         return enrollment;
@@ -118,7 +123,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, newEnrollment);
         
-        checkSelfStudyResearcherOrCoordinator(newEnrollment.getStudyId(), account.getId());
+        checkSelfStudyCoordinatorOrResearcher(newEnrollment.getStudyId(), account.getId());
 
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             if (existingEnrollment.getStudyId().equals(newEnrollment.getStudyId())) {
@@ -178,7 +183,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, enrollment);
         
-        checkSelfStudyResearcherOrCoordinator(enrollment.getStudyId(), account.getId());
+        checkSelfStudyCoordinatorOrResearcher(enrollment.getStudyId(), account.getId());
         
         // If supplied, this value should be the same timestamp as the withdrewOn
         // value in the signature. Otherwise just set it here. 

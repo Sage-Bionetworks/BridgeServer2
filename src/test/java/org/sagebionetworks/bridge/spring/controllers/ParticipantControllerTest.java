@@ -108,6 +108,7 @@ import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.SmsTemplate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -164,7 +165,7 @@ public class ParticipantControllerTest extends Mockito {
             EMAIL, null, null);
     private static final IdentifierUpdate SYNAPSE_ID_UPDATE = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN_REQUEST, null,
             null, SYNAPSE_USER_ID);
-
+    
     @InjectMocks
     @Spy
     ParticipantController controller;
@@ -204,7 +205,7 @@ public class ParticipantControllerTest extends Mockito {
 
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
-
+    
     @Captor
     ArgumentCaptor<UserSession> sessionCaptor;
 
@@ -224,16 +225,19 @@ public class ParticipantControllerTest extends Mockito {
     ArgumentCaptor<DateTime> endsOnCaptor;
 
     @Captor
-    ArgumentCaptor<CriteriaContext> contextCaptor;
-
-    @Captor
     ArgumentCaptor<IdentifierUpdate> identifierUpdateCaptor;
+    
+    @Captor
+    ArgumentCaptor<CriteriaContext> contextCaptor;
 
     @Captor
     ArgumentCaptor<AccountSummarySearch> searchCaptor;
 
     @Captor
     ArgumentCaptor<SmsTemplate> templateCaptor;
+    
+    @Captor
+    ArgumentCaptor<CustomActivityEventRequest> eventRequestCaptor;
     
     UserSession session;
 
@@ -317,6 +321,7 @@ public class ParticipantControllerTest extends Mockito {
         assertAccept(ParticipantController.class, "sendNotification");
         assertGet(ParticipantController.class, "getActivityEvents");
         assertAccept(ParticipantController.class, "sendSmsMessageForWorker");
+        assertPost(ParticipantController.class, "createCustomActivityEvent");
     }
 
     @Test
@@ -1357,7 +1362,7 @@ public class ParticipantControllerTest extends Mockito {
 
         controller.updateIdentifiers();
     }
-
+    
     @Test
     public void getParticipantWithNoConsents() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withFirstName("Test").build();
@@ -1549,6 +1554,35 @@ public class ParticipantControllerTest extends Mockito {
         
         PagedResourceList<EnrollmentDetail> retValue = controller.getEnrollments(USER_ID);
         assertSame(retValue.getItems(), list);
+    }
+    
+    @Test
+    public void getActivityEvents() {
+        List<ActivityEvent> events = ImmutableList.of(new DynamoActivityEvent(), new DynamoActivityEvent());
+        when(mockParticipantService.getActivityEvents(app, USER_ID)).thenReturn(events);        
+        
+        ResourceList<ActivityEvent> retValue = controller.getActivityEvents(USER_ID);
+        assertNotNull(retValue);
+        assertSame(retValue.getItems(), events);
+        
+        verify(mockParticipantService).getActivityEvents(app, USER_ID);
+    }
+    
+    @Test
+    public void createCustomActivityEvent() throws Exception {
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withEventKey("eventKey")
+                .withTimestamp(TIMESTAMP).build();
+        mockRequestBody(mockRequest, request);
+        
+        StatusMessage retValue = controller.createCustomActivityEvent(USER_ID);
+        assertEquals(retValue.getMessage(), "Event recorded.");
+        
+        verify(mockParticipantService).createCustomActivityEvent(
+                eq(app), eq(USER_ID), eventRequestCaptor.capture());
+        CustomActivityEventRequest captured = eventRequestCaptor.getValue();
+        assertEquals(captured.getEventKey(), "eventKey");
+        assertEquals(captured.getTimestamp(), TIMESTAMP);
     }
 
     private AccountSummarySearch setAccountSummarySearch() throws Exception {

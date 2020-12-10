@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
@@ -23,6 +24,7 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -174,7 +176,8 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(USER_ID);
         account.setEnrollments(Sets.newHashSet(otherStudy));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         DateTime timestamp = DateTime.now();
         
@@ -198,14 +201,15 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void enrollByThirdPartyAdmin() {
+    public void enrollByAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         Account account = Account.create();
         account.setId(USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
 
@@ -215,23 +219,40 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void enrollByThirdPartyResearcher() {
+    public void enrollByResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.TRUE);
         
         Account account = Account.create();
         account.setId(USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
 
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAccountId(), USER_ID);
         assertEquals(retValue.getEnrolledBy(), "adminUser");
+    }
+    
+    @Test
+    public void enrollByStudyCoordinator() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        Account account = Account.create();
+        account.setId(USER_ID);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
+        
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+
+        Enrollment retValue = service.enroll(enrollment);
+        assertEquals(retValue.getAccountId(), USER_ID);
     }
     
     // TODO: Should this throw an exception? I think during migration, it cannot
@@ -248,7 +269,8 @@ public class EnrollmentServiceTest extends Mockito {
         Enrollment otherStudy = Enrollment.create(TEST_APP_ID, "otherStudy", USER_ID);
         account.setEnrollments(ImmutableSet.of(existing, otherStudy));
         
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
         service.enroll(enrollment);
@@ -283,7 +305,8 @@ public class EnrollmentServiceTest extends Mockito {
         existing.setWithdrawnOn(MODIFIED_ON);
         account.setEnrollments(Sets.newHashSet(unrelatedEnrollment, existing));
         
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
         enrollment.setExternalId("extId");
@@ -309,7 +332,8 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
 
@@ -317,11 +341,11 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void enrollNotAuthorizedAsStudyResearcher() {
+    public void enrollNotAuthorizedAsStudyCoordinator() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyB"))
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
         
         // the call to sponsorService returns null
         
@@ -516,8 +540,7 @@ public class EnrollmentServiceTest extends Mockito {
     public void unenrollNotAuthorizedAsStudyResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
-                .withOrgSponsoredStudies(ImmutableSet.of("studyC", "studyD"))
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.FALSE);
 

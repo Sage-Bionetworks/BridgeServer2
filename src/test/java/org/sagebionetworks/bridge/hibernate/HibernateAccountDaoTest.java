@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -781,6 +782,7 @@ public class HibernateAccountDaoTest extends Mockito {
         hibernateAccount.setId(ACCOUNT_ID);
         hibernateAccount.setAppId(TEST_APP_ID);
         hibernateAccount.setEmail(EMAIL);
+        hibernateAccount.setEmailVerified(TRUE);
         hibernateAccount.setPhone(PHONE);
         hibernateAccount.setFirstName(FIRST_NAME);
         hibernateAccount.setLastName(LAST_NAME);

@@ -422,4 +422,9 @@ ADD CONSTRAINT `unique_extId` UNIQUE (studyId, externalId);
 -- changeset bridge:22
 
 ALTER TABLE `AccountRoles`
+MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','ORG_ADMIN','WORKER','SUPERADMIN') NOT NULL;
+
+-- changeset bridge:23
+
+ALTER TABLE `AccountRoles`
 MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','ORG_ADMIN','STUDY_COORDINATOR','WORKER','SUPERADMIN') NOT NULL;

@@ -39,6 +39,7 @@ public class TestConstants {
     public static final String TEST_APP_ID = "test-app";
     public static final String TEST_STUDY_ID = "test-study";
     public static final String TEST_ORG_ID = "test-org-id";
+    public static final String TEST_EXTERNAL_ID = "test-external-id";
 
     public static final NotificationMessage NOTIFICATION_MESSAGE = new NotificationMessage.Builder()
             .withSubject("a subject").withMessage("a message").build();

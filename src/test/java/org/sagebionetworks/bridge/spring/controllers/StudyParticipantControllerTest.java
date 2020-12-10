@@ -10,7 +10,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -317,7 +316,7 @@ public class StudyParticipantControllerTest extends Mockito {
         assertEquals(deser.getHealthCode(), "healthCode");
     }
     
-    @Test//(expectedExceptions = EntityNotFoundException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantPreventsUnauthorizedHealthCodeRequests() throws Exception {
         app.setHealthCodeExportEnabled(false);
         
@@ -592,8 +591,6 @@ public class StudyParticipantControllerTest extends Mockito {
         List<UploadView> list = ImmutableList.of();
         ForwardCursorPagedResourceList<UploadView> page = new ForwardCursorPagedResourceList<>(list, "key");
         
-        DateTime start = TestConstants.CREATED_ON;
-        DateTime end = TestConstants.MODIFIED_ON;
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());

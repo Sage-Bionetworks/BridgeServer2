@@ -17,6 +17,7 @@ import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -88,6 +89,7 @@ public interface Account extends BridgeEntity {
     }
 
     /** Returns an immutable copy of all consents in the account, keyed by subpopulation. */
+    @JsonIgnore
     default Map<SubpopulationGuid, List<ConsentSignature>> getAllConsentSignatureHistories() {
         Map<SubpopulationGuid, List<ConsentSignature>> map = Maps.newHashMap();
         
