@@ -864,7 +864,8 @@ public class ParticipantService {
     }
     
     private Account getAccountThrowingException(String appId, String id) {
-        return getAccountThrowingException(AccountId.forId(appId, id));
+        AccountId accountId = BridgeUtils.parseAccountId(appId, id);
+        return getAccountThrowingException(accountId);
     }
     
     private Account getAccountThrowingException(AccountId accountId) {
