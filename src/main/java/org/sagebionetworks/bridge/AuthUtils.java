@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -9,64 +8,76 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
-
 /**
  * Utility methods to check caller authorization in service methods. Note that in all of these checks, 
- * ADMIN and SUPERADMIN roles will always pass and are implicit.  
+ * ADMIN and SUPERADMIN roles will always pass and are implicit in the naming.
  */
 public class AuthUtils {
-    private static final Logger LOG = LoggerFactory.getLogger(AuthUtils.class);
+    public static final AuthEvaluator IS_ADMIN = new AuthEvaluator().hasAnyRole(ADMIN);
     
-    private static final AuthEvaluator ORG_MEMBER = new AuthEvaluator().isInOrg().or()
+    /**
+     * Is the account a member of this organization? Note that this does not verify
+     * the organization is in the caller's app...this can only be done by trying to load the 
+     * organization with this ID.
+     * 
+     * @throws UnauthorizedException
+     */
+    public static final AuthEvaluator IS_ORG_MEMBER = new AuthEvaluator().isInOrg().or()
             .hasAnyRole(ADMIN);
     
-    private static final AuthEvaluator ORG_ADMINISTRATOR = new AuthEvaluator().isInOrg().hasAnyRole(ORG_ADMIN).or()
+    /**
+     * Is the account an organization admin in the target organization?
+     * 
+     * @throws UnauthorizedException
+     */
+    public static final AuthEvaluator IS_ORGADMIN = new AuthEvaluator()
+            .isInOrg().hasAnyRole(ORG_ADMIN).or()
             .hasAnyRole(ADMIN);
     
-    private static final AuthEvaluator STUDY_TEAM_MEMBER_OR_WORKER = new AuthEvaluator().canAccessStudy().or()
+    /**
+     * Does this caller have access to the study? 
+     * 
+     * @throws UnauthorizedException
+     */
+    public static final AuthEvaluator IS_STUDY_TEAM_OR_WORKER = new AuthEvaluator().canAccessStudy().or()
             .hasAnyRole(WORKER, ADMIN).or()
             .callerConsideredGlobal();
     
-    private static final AuthEvaluator SELF_STUDY_TEAM_MEMBER_OR_WORKER = new AuthEvaluator().isSelf().or()
+    /**
+     * Is the caller 1) referring to their own account, 2) a member of an 
+     * organization that can access the target study, or 3) a worker account? 
+     */
+    public static final AuthEvaluator IS_SELF_STUDY_TEAM_OR_WORKER = new AuthEvaluator().isSelf().or()
             .canAccessStudy().or()
             .hasAnyRole(WORKER, ADMIN).or()
             .callerConsideredGlobal();
     
-    private static final AuthEvaluator SELF_WORKER_OR_ORG_ADMIN = new AuthEvaluator().isSelf().or()
+    /**
+     * Is the caller 1) referring to their own account, 2) and organization admin, or 3) a worker account? 
+     */
+    public static final AuthEvaluator IS_SELF_ORGADMIN_OR_WORKER = new AuthEvaluator().isSelf().or()
             .hasAnyRole(WORKER, ADMIN).or()
-            .hasAnyRole(ORG_ADMIN).isInOrg().or()
+            .isInOrg().hasAnyRole(ORG_ADMIN).or()
             .callerConsideredGlobal();
-    
-    private static final AuthEvaluator SELF_OR_STUDY_RESEARCHER = new AuthEvaluator().isSelf().or()
-            .canAccessStudy().hasAnyRole(RESEARCHER).or()
-            .hasAnyRole(ADMIN);
-    
-    private static final AuthEvaluator STUDY_RESEARCHER = new AuthEvaluator().canAccessStudy().hasAnyRole(RESEARCHER).or()
-            .hasAnyRole(ADMIN);
-    
-    private static final AuthEvaluator SELF_OR_RESEARCHER = new AuthEvaluator().isSelf().or()
-            .hasAnyRole(RESEARCHER, ADMIN);
-    
-    private static final AuthEvaluator ORG_MEMBER_OF_SHARED_OWNER = new AuthEvaluator().isInApp().isInOrg().or()
-            .hasAnyRole(ADMIN);
     
     /**
      * Is the caller operating on their own account, or a person with the researcher role and access
      * to the indicated study? 
      * 
+     * NOTE: This will be replaced with a study coordinator role.
+     * 
      * @throws UnauthorizedException
      */
-    public static void checkSelfOrStudyResearcher(String userId, String studyId) {
-        SELF_OR_STUDY_RESEARCHER.checkAndThrow("userId", userId, "studyId", studyId);
-    }
+    public static final AuthEvaluator IS_SELF_OR_STUDY_RESEARCHER = new AuthEvaluator().isSelf().or()
+            .canAccessStudy().hasAnyRole(RESEARCHER).or()
+            .hasAnyRole(ADMIN);
     
-    public static void checkStudyResearcher(String studyId) {
-        STUDY_RESEARCHER.checkAndThrow("studyId", studyId);
-    }
+    /**
+     * NOTE: This will be replaced with a study coordinator role.
+     */
+    public static final AuthEvaluator IS_STUDY_RESEARCHER = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(RESEARCHER).or()
+            .hasAnyRole(ADMIN);
     
     /**
      * This is only called from the ParticipantController and the ParticipantReportController, where 
@@ -76,100 +87,18 @@ public class AuthUtils {
      * 
      * @throws UnauthorizedException
      */
-    public static void checkSelfOrResearcher(String userId) {
-        SELF_OR_RESEARCHER.checkAndThrow("userId", userId);
-    }
+    public static final AuthEvaluator IS_SELF_OR_RESEARCHER = new AuthEvaluator().isSelf().or()
+            .hasAnyRole(RESEARCHER, ADMIN);
     
     /**
-     * Is the account a member of this organization? Note that this does not verify
-     * the organization is in the caller's app...this can only be done by trying to load the 
-     * organization with this ID.
+     * The caller must be a member of an organization expressed in the shared organization ID format, 
+     * or "appId:orgId" (which is used in shared assessments so that organization IDs do not collide
+     * between applications). 
      * 
      * @throws UnauthorizedException
      */
-    public static void checkOrgMember(String orgId) {
-        ORG_MEMBER.checkAndThrow("orgId", orgId);
-    }
-    
-    /**
-     * Is the account an organization admin in the target organization?
-     * 
-     * @throws UnauthorizedException
-     */
-    public static void checkOrgAdmin(String orgId) {
-        ORG_ADMINISTRATOR.checkAndThrow("orgId", orgId);    
-    }
-    
-    /**
-     * The same rules apply as checkOrgMember, however you are examining the caller against a compound
-     * value stored in the assessment's originId. The call succeeds if the caller is in the app and 
-     * organization that owns the shared assessment. 
-     * 
-     * @throws UnauthorizedException
-     */
-    public static void checkOrgMemberOfSharedAssessmentOwner(String callerAppId, String guid, String ownerId) {
-        checkNotNull(callerAppId);
-        checkNotNull(guid);
-        checkNotNull(ownerId);
-        
-        String[] parts = ownerId.split(":", 2);
-        // This happens in tests, we expect it to never happens in production. So log if it does.
-        if (parts.length != 2) {
-            LOG.error("Could not parse shared assessment ownerID, guid=" + guid + ", ownerId=" + ownerId);
-            throw new UnauthorizedException();
-        }
-        String originAppId = parts[0];
-        String originOrgId = parts[1];
-        
-        ORG_MEMBER_OF_SHARED_OWNER.checkAndThrow("appId", originAppId, "orgId", originOrgId);
-    }
-    
-    /**
-     * Does this caller have access to the study? 
-     * 
-     * @throws UnauthorizedException
-     */
-    public static void checkStudyTeamMemberOrWorker(String studyId) {
-        STUDY_TEAM_MEMBER_OR_WORKER.checkAndThrow("studyId", studyId);
-    }
-    
-    /**
-     * Is the account a member of this organization? Note that this does not verify
-     * the organization is in the caller's app...this can only be done by trying to load the 
-     * organization with this ID. 
-     */
-    public static final boolean isOrgMember(String orgId) {
-        return ORG_MEMBER.check("orgId", orgId);
-    }
-    
-    /**
-     * Is the account an organization admin in the target organization?
-     */
-    public static boolean isOrgAdmin(String orgId) {
-        return ORG_ADMINISTRATOR.check("orgId", orgId);    
-    }
-    
-    /**
-     * Does this caller have access to the study? 
-     */
-    public static final boolean isStudyTeamMemberOrWorker(String studyId) {
-        return STUDY_TEAM_MEMBER_OR_WORKER.check("studyId", studyId);
-    }
-    
-    /**
-     * Is the caller 1) referring to their own account, 2) a member of an 
-     * organization that can access the target study, or 3) a worker account? 
-     */
-    public static final boolean isSelfOrStudyTeamMemberOrWorker(String studyId, String userId) {
-        return SELF_STUDY_TEAM_MEMBER_OR_WORKER.check("studyId", studyId, "userId", userId);
-    }
-    
-    /**
-     * Is the caller 1) referring to their own account, or 2) a worker account? 
-     */
-    public static final boolean isSelfWorkerOrOrgAdmin(String orgId, String userId) {
-        return SELF_WORKER_OR_ORG_ADMIN.check("orgId", orgId, "userId", userId);
-    }
+    public static final AuthEvaluator IS_ORG_MEMBER_IN_APP = new AuthEvaluator().isSharedOwner().or()
+            .hasAnyRole(ADMIN);
     
     /**
      * Is the caller in the required role? Superadmins always pass this check, but not admins.

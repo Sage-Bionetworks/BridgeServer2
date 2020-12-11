@@ -15,7 +15,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
  * Utility for creating rules that can evaluate authorization for a caller. Currently referenced
  * by the AuthUtils class, but could be used elsewhere.
  */
-class AuthEvaluator {
+public class AuthEvaluator {
     private final Set<Predicate<Map<String,String>>> predicates;
     
     public AuthEvaluator() {
@@ -88,11 +88,35 @@ class AuthEvaluator {
         });
         return this;
     }
+    public AuthEvaluator isSharedOwner() {
+        predicates.add((factMap) -> {
+            String ownerId = factMap.get("ownerId");
+            String[] parts = ownerId.split(":", 2);
+            if (parts.length != 2) {
+                return false;
+            }
+            String appId = parts[0];
+            String orgId = parts[1];
+            return appId != null && appId.equals(RequestContext.get().getCallerAppId()) &&
+                orgId != null && orgId.equals(RequestContext.get().getCallerOrgMembership());
+        });
+        return this;
+    }
     /**
      * Either the left- or right-hand portion of the expression needs to be true (but not both).
      */
     public AuthEvaluator or() {
         return new OrAuthEvaluator(this);
+    }
+    /**
+     * Check the authorization rule and throw an exception if it fails.
+     * 
+     * @throws org.sagebionetworks.bridge.exceptions.UnauthorizedException
+     */
+    public void checkAndThrow() {
+        if (!check()) {
+            throw new UnauthorizedException();
+        }
     }
     /**
      * Check the authorization rule and throw an exception if it fails.

@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.AuthUtils.IS_ADMIN;
+import static org.sagebionetworks.bridge.AuthUtils.IS_ORGADMIN;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -22,7 +24,6 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -127,7 +128,7 @@ public class OrganizationService {
     public Organization updateOrganization(Organization organization) {
         checkNotNull(organization);
 
-        AuthUtils.checkOrgMember(organization.getIdentifier());
+        IS_ORGADMIN.checkAndThrow("orgId", organization.getIdentifier());
         
         Validate.entityThrowingException(INSTANCE, organization);
         
@@ -171,7 +172,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
-        AuthUtils.checkOrgMember(identifier); // or admin
+        IS_ADMIN.checkAndThrow();
         
         Organization existing = orgDao.getOrganization(appId, identifier)
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
@@ -193,7 +194,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(search);
         
-        AuthUtils.checkOrgMember(identifier);
+        IS_ORGADMIN.checkAndThrow("orgId", identifier);
         
         AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
                 .copyOf(search)
@@ -223,7 +224,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        AuthUtils.checkOrgAdmin(identifier);
+        IS_ORGADMIN.checkAndThrow("orgId", identifier);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
@@ -243,7 +244,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        AuthUtils.checkOrgMember(identifier);
+        IS_ORGADMIN.checkAndThrow("orgId", identifier);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
