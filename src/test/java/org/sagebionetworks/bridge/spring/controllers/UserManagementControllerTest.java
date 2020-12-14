@@ -10,7 +10,7 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -107,7 +107,7 @@ public class UserManagementControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
 
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
-                .withId(USER_ID).withRoles(ImmutableSet.of(SUPERADMIN)).withEmail(EMAIL).build();
+                .withId(TEST_USER_ID).withRoles(ImmutableSet.of(SUPERADMIN)).withEmail(EMAIL).build();
 
         session = new UserSession(participant);
         session.setAppId(TEST_APP_ID);
@@ -189,7 +189,7 @@ public class UserManagementControllerTest extends Mockito {
     public void changeStudyForAdmin() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
         
-        AccountId accountId = AccountId.forId(TEST_APP_ID, USER_ID);
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
 
         SignIn signIn = new SignIn.Builder().withAppId("nextStudy").build();
@@ -271,9 +271,9 @@ public class UserManagementControllerTest extends Mockito {
         mockRequestBody(mockRequest, "{}");
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
 
-        StatusMessage result = controller.deleteUser(USER_ID);
+        StatusMessage result = controller.deleteUser(TEST_USER_ID);
         assertEquals(result, UserManagementController.DELETED_MSG);
 
-        verify(mockUserAdminService).deleteUser(mockApp, USER_ID);
+        verify(mockUserAdminService).deleteUser(mockApp, TEST_USER_ID);
     }
 }

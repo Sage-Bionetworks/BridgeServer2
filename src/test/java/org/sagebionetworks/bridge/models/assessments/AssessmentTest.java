@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
-import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -44,7 +44,7 @@ public class AssessmentTest {
         assessment.setGuid(GUID);
         assessment.setIdentifier(IDENTIFIER);
         assessment.setRevision(5);
-        assessment.setOwnerId(OWNER_ID);
+        assessment.setOwnerId(TEST_OWNER_ID);
         assessment.setTitle("title");
         assessment.setSummary("summary");
         assessment.setOsName(ANDROID);
@@ -82,7 +82,7 @@ public class AssessmentTest {
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
         assertEquals(node.get("revision").intValue(), 5);
-        assertEquals(node.get("ownerId").textValue(), OWNER_ID);
+        assertEquals(node.get("ownerId").textValue(), TEST_OWNER_ID);
         assertEquals(node.get("title").textValue(), "title");
         assertEquals(node.get("summary").textValue(), "summary");
         assertEquals(node.get("osName").textValue(), ANDROID);
@@ -127,7 +127,7 @@ public class AssessmentTest {
         dto.setGuid(GUID);
         dto.setIdentifier(IDENTIFIER);
         dto.setRevision(5);
-        dto.setOwnerId(OWNER_ID);
+        dto.setOwnerId(TEST_OWNER_ID);
         dto.setTitle("title");
         dto.setSummary("summary");
         dto.setOsName(ANDROID);
@@ -148,7 +148,7 @@ public class AssessmentTest {
         assertEquals(assessment.getGuid(), GUID);
         assertEquals(assessment.getIdentifier(), IDENTIFIER);
         assertEquals(assessment.getRevision(), 5);
-        assertEquals(assessment.getOwnerId(), OWNER_ID);
+        assertEquals(assessment.getOwnerId(), TEST_OWNER_ID);
         assertEquals(assessment.getTitle(), "title");
         assertEquals(assessment.getSummary(), "summary");
         assertEquals(assessment.getOsName(), ANDROID);

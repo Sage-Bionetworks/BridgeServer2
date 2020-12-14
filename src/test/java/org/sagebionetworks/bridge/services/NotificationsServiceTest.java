@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationMessage;
 import static org.sagebionetworks.bridge.TestUtils.getNotificationRegistration;
 import static org.testng.Assert.assertEquals;
@@ -51,7 +51,7 @@ public class NotificationsServiceTest {
     private static final String PLATFORM_ARN = "arn:platform";
 
     private static final CriteriaContext DUMMY_CONTEXT = new CriteriaContext.Builder().withAppId(TEST_APP_ID)
-            .withUserId(USER_ID).build();
+            .withUserId(TEST_USER_ID).build();
 
     @Mock
     private NotificationTopicService mockNotificationTopicService;
@@ -142,9 +142,9 @@ public class NotificationsServiceTest {
         when(mockRegistrationDao.createRegistration(registration)).thenReturn(registration);
 
         // Mock participant DAO w/ phone number.
-        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withPhone(TestConstants.PHONE)
+        StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID).withPhone(TestConstants.PHONE)
                 .withPhoneVerified(true).build();
-        when(mockParticipantService.getParticipant(mockApp, USER_ID, false)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(mockApp, TEST_USER_ID, false)).thenReturn(participant);
 
         // Execute and validate.
         NotificationRegistration result = service.createRegistration(TEST_APP_ID, DUMMY_CONTEXT, registration);
@@ -158,9 +158,9 @@ public class NotificationsServiceTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void createRegistration_SmsNotificationPhoneNotVerified() {
         // Mock participant DAO w/ unverified phone number.
-        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withPhone(TestConstants.PHONE)
+        StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID).withPhone(TestConstants.PHONE)
                 .withPhoneVerified(null).build();
-        when(mockParticipantService.getParticipant(mockApp, USER_ID, false)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(mockApp, TEST_USER_ID, false)).thenReturn(participant);
 
         // Execute and validate.
         service.createRegistration(TEST_APP_ID, DUMMY_CONTEXT, getSmsNotificationRegistration());
@@ -169,9 +169,9 @@ public class NotificationsServiceTest {
     @Test(expectedExceptions = BadRequestException.class)
     public void createRegistration_SmsNotificationPhoneDoesNotMatch() {
         // Mock participant DAO w/ wrong phone number.
-        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withPhone(TestConstants.PHONE)
+        StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID).withPhone(TestConstants.PHONE)
                 .withPhoneVerified(true).build();
-        when(mockParticipantService.getParticipant(mockApp, USER_ID, false)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(mockApp, TEST_USER_ID, false)).thenReturn(participant);
 
         // Execute and validate.
         NotificationRegistration registration = getSmsNotificationRegistration();

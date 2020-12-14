@@ -1,5 +1,12 @@
 package org.sagebionetworks.bridge;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.APP_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.OWNER_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -15,8 +22,9 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
  * Utility for creating rules that can evaluate authorization for a caller. Currently referenced
  * by the AuthUtils class, but could be used elsewhere.
  */
-class AuthEvaluator {
-    private final Set<Predicate<Map<String,String>>> predicates;
+public class AuthEvaluator {
+    
+    private final Set<Predicate<Map<AuthEvaluatorField,String>>> predicates;
     
     public AuthEvaluator() {
         predicates = new HashSet<>();
@@ -39,7 +47,7 @@ class AuthEvaluator {
      */
     public AuthEvaluator canAccessStudy() {
         predicates.add((factMap) -> {
-            String studyId = factMap.get("studyId");
+            String studyId = factMap.get(STUDY_ID);
             return RequestContext.get().getOrgSponsoredStudies().contains(studyId);
         });
         return this;
@@ -63,7 +71,7 @@ class AuthEvaluator {
      */
     public AuthEvaluator isInApp() {
         predicates.add((factMap) -> {
-            String appId = factMap.get("appId");
+            String appId = factMap.get(APP_ID);
             return appId != null && appId.equals(RequestContext.get().getCallerAppId()); 
         });
         return this;
@@ -73,7 +81,7 @@ class AuthEvaluator {
      */
     public AuthEvaluator isInOrg() {
         predicates.add((factMap) -> {
-            String orgId = factMap.get("orgId");
+            String orgId = factMap.get(ORG_ID);
             return orgId != null && orgId.equals(RequestContext.get().getCallerOrgMembership()); 
         });
         return this;
@@ -83,8 +91,22 @@ class AuthEvaluator {
      */
     public AuthEvaluator isSelf() {
         predicates.add((factMap) -> {
-            String userId = factMap.get("userId");
+            String userId = factMap.get(USER_ID);
             return userId != null && userId.equals(RequestContext.get().getCallerUserId()); 
+        });
+        return this;
+    }
+    public AuthEvaluator isSharedOwner() {
+        predicates.add((factMap) -> {
+            String ownerId = factMap.get(OWNER_ID);
+            String[] parts = ownerId.split(":", 2);
+            if (parts.length != 2) {
+                return false;
+            }
+            String appId = parts[0];
+            String orgId = parts[1];
+            return appId != null && appId.equals(RequestContext.get().getCallerAppId()) &&
+                orgId != null && orgId.equals(RequestContext.get().getCallerOrgMembership());
         });
         return this;
     }
@@ -99,7 +121,18 @@ class AuthEvaluator {
      * 
      * @throws org.sagebionetworks.bridge.exceptions.UnauthorizedException
      */
-    public void checkAndThrow(String arg1, String val1) {
+    public void checkAndThrow() {
+        if (!check()) {
+            throw new UnauthorizedException();
+        }
+    }
+    /**
+     * Check the authorization rule and throw an exception if it fails.
+     * 
+     * @throws org.sagebionetworks.bridge.exceptions.UnauthorizedException
+     */
+    public void checkAndThrow(AuthEvaluatorField arg1, String val1) {
+        checkNotNull(arg1);
         if (!check(arg1, val1)) {
             throw new UnauthorizedException();
         }
@@ -109,7 +142,9 @@ class AuthEvaluator {
      * 
      * @throws org.sagebionetworks.bridge.exceptions.UnauthorizedException
      */
-    public void checkAndThrow(String arg1, String val1, String arg2, String val2) {
+    public void checkAndThrow(AuthEvaluatorField arg1, String val1, AuthEvaluatorField arg2, String val2) {
+        checkNotNull(arg1);
+        checkNotNull(arg2);
         if (!check(arg1, val1, arg2, val2)) {
             throw new UnauthorizedException();
         }
@@ -125,8 +160,9 @@ class AuthEvaluator {
      * Return true if the authorization rule passes, false otherwise. Missing, blank, and 
      * null values fail authorization tests.
      */
-    public boolean check(String arg1, String val1) {
-        Map<String,String> factMap = new HashMap<>(); // can contain nulls
+    public boolean check(AuthEvaluatorField arg1, String val1) {
+        checkNotNull(arg1);
+        Map<AuthEvaluatorField,String> factMap = new HashMap<>(); // can contain nulls
         factMap.put(arg1, val1);
         return checkInternal(factMap);
     }
@@ -134,21 +170,24 @@ class AuthEvaluator {
      * Return true if the authorization rule passes, false otherwise. Missing, blank, and 
      * null values fail authorization tests.
      */
-    public boolean check(String arg1, String val1, String arg2, String val2) {
-        Map<String,String> factMap = new HashMap<>(); // can contain nulls
+    public boolean check(AuthEvaluatorField arg1, String val1, AuthEvaluatorField arg2, String val2) {
+        checkNotNull(arg1);
+        checkNotNull(arg2);
+        Map<AuthEvaluatorField,String> factMap = new HashMap<>(); // can contain nulls
         factMap.put(arg1, val1);
         factMap.put(arg2, val2);
         return checkInternal(factMap);
     }
-    protected boolean checkInternal(Map<String,String> factMap) {
+    protected boolean checkInternal(Map<AuthEvaluatorField,String> factMap) {
         // this happens on the stack and should be thread-safe. 
-        for (Predicate<Map<String,String>> predicate : predicates) {
+        for (Predicate<Map<AuthEvaluatorField,String>> predicate : predicates) {
             if (!predicate.test(factMap)) {
                 return false;
             }
         }
         return true;
     }
+    
     private static class OrAuthEvaluator extends AuthEvaluator {
         AuthEvaluator evaluator;
         
@@ -156,7 +195,7 @@ class AuthEvaluator {
             this.evaluator = evaluator;
         }
         @Override
-        protected boolean checkInternal(Map<String, String> factMap) {
+        protected boolean checkInternal(Map<AuthEvaluatorField, String> factMap) {
             return super.checkInternal(factMap) || evaluator.checkInternal(factMap);
         }
     }

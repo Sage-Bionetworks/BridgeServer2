@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -161,9 +162,10 @@ public class SponsorServiceTest extends Mockito {
     }
 
     @Test
-    public void addStudySponsorAsOrgMember() {
+    public void addStudySponsorAsOrgAdmin() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(TEST_ORG_ID).build());
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
         service.addStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
         
@@ -193,9 +195,10 @@ public class SponsorServiceTest extends Mockito {
     }
     
     @Test
-    public void removeStudySponsorAsOrgMember() {
+    public void removeStudySponsorAsOrgAdmin() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(TEST_ORG_ID).build());
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
 
         when(mockSponsorDao.doesOrganizationSponsorStudy(
                 TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(true);

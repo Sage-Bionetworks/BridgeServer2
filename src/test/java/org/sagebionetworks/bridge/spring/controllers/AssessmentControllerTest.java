@@ -11,7 +11,7 @@ import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
-import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
@@ -174,7 +174,7 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(captured.getNormingStatus(), "normingStatus");
         assertEquals(captured.getOsName(), ANDROID);
         assertEquals(captured.getOriginGuid(), "originGuid");
-        assertEquals(captured.getOwnerId(), OWNER_ID);
+        assertEquals(captured.getOwnerId(), TEST_OWNER_ID);
         assertEquals(captured.getTags(), STRING_TAGS);
         assertEquals(captured.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(captured.getCreatedOn(), CREATED_ON);
@@ -241,7 +241,7 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(retValue.getNormingStatus(), "normingStatus");
         assertEquals(retValue.getOsName(), ANDROID);
         assertEquals(retValue.getOriginGuid(), "originGuid");
-        assertEquals(retValue.getOwnerId(), OWNER_ID);
+        assertEquals(retValue.getOwnerId(), TEST_OWNER_ID);
         assertEquals(retValue.getTags(), STRING_TAGS);
         assertEquals(retValue.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(retValue.getCreatedOn(), CREATED_ON);
@@ -276,7 +276,7 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(retValue.getNormingStatus(), "normingStatus");
         assertEquals(retValue.getOsName(), ANDROID);
         assertEquals(retValue.getOriginGuid(), "originGuid");
-        assertEquals(retValue.getOwnerId(), OWNER_ID);
+        assertEquals(retValue.getOwnerId(), TEST_OWNER_ID);
         assertEquals(retValue.getTags(), STRING_TAGS);
         assertEquals(retValue.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(retValue.getCreatedOn(), CREATED_ON);
@@ -422,7 +422,7 @@ public class AssessmentControllerTest extends Mockito {
         assertEquals(captured.getNormingStatus(), "normingStatus");
         assertEquals(captured.getOsName(), ANDROID);
         assertEquals(captured.getOriginGuid(), "originGuid");
-        assertEquals(captured.getOwnerId(), OWNER_ID);
+        assertEquals(captured.getOwnerId(), TEST_OWNER_ID);
         assertEquals(captured.getTags(), STRING_TAGS);
         assertEquals(captured.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(captured.getCreatedOn(), CREATED_ON);

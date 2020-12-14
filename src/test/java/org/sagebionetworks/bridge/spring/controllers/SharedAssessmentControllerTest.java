@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
-import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
@@ -70,12 +70,12 @@ public class SharedAssessmentControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.importAssessment(TEST_APP_ID, OWNER_ID, null, GUID)).thenReturn(assessment);
+        when(mockService.importAssessment(TEST_APP_ID, TEST_OWNER_ID, null, GUID)).thenReturn(assessment);
 
-        Assessment retValue = controller.importAssessment(GUID, OWNER_ID, null);
+        Assessment retValue = controller.importAssessment(GUID, TEST_OWNER_ID, null);
         assertSame(retValue, assessment);
 
-        verify(mockService).importAssessment(TEST_APP_ID, OWNER_ID, null, GUID);
+        verify(mockService).importAssessment(TEST_APP_ID, TEST_OWNER_ID, null, GUID);
     }
 
     @Test
@@ -85,12 +85,12 @@ public class SharedAssessmentControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.importAssessment(TEST_APP_ID, OWNER_ID, NEW_ID, GUID)).thenReturn(assessment);
+        when(mockService.importAssessment(TEST_APP_ID, TEST_OWNER_ID, NEW_ID, GUID)).thenReturn(assessment);
 
-        Assessment retValue = controller.importAssessment(GUID, OWNER_ID, NEW_ID);
+        Assessment retValue = controller.importAssessment(GUID, TEST_OWNER_ID, NEW_ID);
         assertSame(retValue, assessment);
 
-        verify(mockService).importAssessment(TEST_APP_ID, OWNER_ID, NEW_ID, GUID);
+        verify(mockService).importAssessment(TEST_APP_ID, TEST_OWNER_ID, NEW_ID, GUID);
     }
     
     @Test

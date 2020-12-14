@@ -4,7 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -72,7 +72,7 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
         account.setEmail(EMAIL);
         
         Account existing = Account.create();
-        existing.setId(USER_ID);
+        existing.setId(TEST_USER_ID);
         existing.setAppId(TEST_APP_ID);
         existing.setEmail(EMAIL);
         
@@ -86,7 +86,7 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
         RuntimeException result = converter.convert(pe, account);
         assertEquals(result.getClass(), EntityAlreadyExistsException.class);
         assertEquals(result.getMessage(), "Email address has already been used by another account.");
-        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), USER_ID);
+        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), TEST_USER_ID);
     }
     
     @Test
@@ -96,7 +96,7 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
         account.setPhone(PHONE);
         
         Account existing = Account.create();
-        existing.setId(USER_ID);
+        existing.setId(TEST_USER_ID);
         existing.setAppId(TEST_APP_ID);
         existing.setPhone(PHONE);
         
@@ -110,19 +110,19 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
         RuntimeException result = converter.convert(pe, account);
         assertEquals(result.getClass(), EntityAlreadyExistsException.class);
         assertEquals(result.getMessage(), "Phone number has already been used by another account.");
-        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), USER_ID);
+        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), TEST_USER_ID);
     }
 
     @Test
     public void entityAlreadyExistsForExternalId() {
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "something", USER_ID, "ext");
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, "something", TEST_USER_ID, "ext");
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
         account.setEnrollments(ImmutableSet.of(enrollment));
         
         Account existing = Account.create();
-        existing.setId(USER_ID);
+        existing.setId(TEST_USER_ID);
         existing.setAppId(TEST_APP_ID);
         existing.setEnrollments(ImmutableSet.of(enrollment));
         
@@ -135,19 +135,19 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
         RuntimeException result = converter.convert(pe, account);
         assertEquals(result.getClass(), EntityAlreadyExistsException.class);
         assertEquals(result.getMessage(), "External ID has already been used by another account.");
-        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), USER_ID);
+        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), TEST_USER_ID);
     }
     
     @Test
     public void entityAlreadyExistsForExternalIdWhenThereAreMultiple() {
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID, "externalIdA");
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID, "externalIdB");
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID, "externalIdB");
         account.setEnrollments(ImmutableSet.of(en1, en2));
         
         Account existing = Account.create();
-        existing.setId(USER_ID);
+        existing.setId(TEST_USER_ID);
         existing.setAppId(TEST_APP_ID);
         
         when(accountDao.getAccount(AccountId.forExternalId(TEST_APP_ID, "externalIdB")))
@@ -160,7 +160,7 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
         RuntimeException result = converter.convert(pe, account);
         assertEquals(result.getClass(), EntityAlreadyExistsException.class);
         assertEquals(result.getMessage(), "External ID has already been used by another account.");
-        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), USER_ID);
+        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), TEST_USER_ID);
     }
     
     @Test
@@ -170,12 +170,12 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID, "externalIdA");
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID, "externalIdB");
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID, "externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID, "externalIdB");
         account.setEnrollments(ImmutableSet.of(en1, en2));
         
         Account existing = Account.create();
-        existing.setId(USER_ID);
+        existing.setId(TEST_USER_ID);
         existing.setAppId(TEST_APP_ID);
         
         // Accept anything here, but verify that it is externalIdB still (the first that would match
@@ -189,7 +189,7 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
         RuntimeException result = converter.convert(pe, account);
         assertEquals(result.getClass(), EntityAlreadyExistsException.class);
         assertEquals(result.getMessage(), "External ID has already been used by another account.");
-        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), USER_ID);
+        assertEquals(((EntityAlreadyExistsException)result).getEntityKeys().get("userId"), TEST_USER_ID);
         
         verify(accountDao).getAccount(AccountId.forExternalId(TEST_APP_ID, "externalIdA"));
     }
@@ -201,11 +201,11 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
         
         HibernateAccount account = new HibernateAccount();
         account.setAppId(TEST_APP_ID);
-        Enrollment as1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID, "externalIdA");
+        Enrollment as1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID, "externalIdA");
         account.setEnrollments(ImmutableSet.of(as1));
         
         Account existing = Account.create();
-        existing.setId(USER_ID);
+        existing.setId(TEST_USER_ID);
         existing.setAppId(TEST_APP_ID);
         
         // Accept anything here, but verify that it is externalIdA (which won't match user calling method)
@@ -254,7 +254,7 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
     public void entityAlreadyExistsForSynapseUserId() {
         Account account = Account.create();
         account.setSynapseUserId(SYNAPSE_USER_ID);
-        account.setId(USER_ID);
+        account.setId(TEST_USER_ID);
         account.setAppId(TEST_APP_ID);
         
         when(accountDao.getAccount(AccountId.forSynapseUserId(TEST_APP_ID, SYNAPSE_USER_ID)))
@@ -272,7 +272,7 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
     @Test
     public void entityAlreadyExistsForDuplicateExternalIdInApp() {
         Account account = Account.create();
-        account.setId(USER_ID);
+        account.setId(TEST_USER_ID);
         account.setAppId(TEST_APP_ID);
         
         when(accountDao.getAccount(AccountId.forExternalId(TEST_APP_ID, "CCC")))

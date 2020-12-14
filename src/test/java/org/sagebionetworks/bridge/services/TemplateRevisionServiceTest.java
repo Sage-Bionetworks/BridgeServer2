@@ -4,7 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.models.apps.MimeType.TEXT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_PHONE_SIGN_IN;
 import static org.testng.Assert.assertEquals;
@@ -66,7 +66,7 @@ public class TemplateRevisionServiceTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         when(service.getDateTime()).thenReturn(TIMESTAMP);
-        when(service.getUserId()).thenReturn(USER_ID);
+        when(service.getUserId()).thenReturn(TEST_USER_ID);
     }
 
     @Test
@@ -136,7 +136,7 @@ public class TemplateRevisionServiceTest extends Mockito {
         
         assertEquals(captured.getTemplateGuid(), TEMPLATE_GUID);
         assertEquals(captured.getCreatedOn(), CREATED_ON);
-        assertEquals(captured.getCreatedBy(), USER_ID);
+        assertEquals(captured.getCreatedBy(), TEST_USER_ID);
         assertEquals(captured.getStoragePath(), STORAGE_PATH);
         assertEquals(captured.getDocumentContent(), DOCUMENT_CONTENT);
         assertEquals(captured.getMimeType(), TEXT);

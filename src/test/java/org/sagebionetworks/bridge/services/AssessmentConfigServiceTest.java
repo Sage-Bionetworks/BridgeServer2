@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
-import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.testng.Assert.assertEquals;
@@ -146,10 +146,10 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void updateAssessmentConfig() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(OWNER_ID);
+        assessment.setOwnerId(TEST_OWNER_ID);
         assessment.setOriginGuid(GUID);
         when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
             .thenReturn(assessment);
@@ -181,7 +181,7 @@ public class AssessmentConfigServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = ".*config is required.*")
     public void updateAssessmentConfigInvalid() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID).build());
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOriginGuid(GUID);
         when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
@@ -201,10 +201,10 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void customizeAssessmentConfig() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(OWNER_ID);
+        assessment.setOwnerId(TEST_OWNER_ID);
         assessment.setCustomizationFields(ImmutableMap.of("anIdentifier", ImmutableSet.of(
                 new PropertyInfo.Builder().withPropName("stringValue").build(),
                 new PropertyInfo.Builder().withPropName("intValue").build(),
@@ -242,7 +242,7 @@ public class AssessmentConfigServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = ".*identifier is missing.*")
     public void customizeAssessmentConfigInvalid() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID).build());
         
         AssessmentConfigValidator val = new AssessmentConfigValidator.Builder()
                 .addValidator("*", new AbstractValidator() {
@@ -256,7 +256,7 @@ public class AssessmentConfigServiceTest extends Mockito {
         doReturn(val).when(service).getValidator();
         
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(OWNER_ID);
+        assessment.setOwnerId(TEST_OWNER_ID);
         assessment.setCustomizationFields(ImmutableMap.of("anIdentifier", ImmutableSet.of(
                 new PropertyInfo.Builder().withPropName("stringValue").build(),
                 new PropertyInfo.Builder().withPropName("intValue").build(),
@@ -283,10 +283,10 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void customizeAssessmentConfigUnchanged() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(OWNER_ID);
+        assessment.setOwnerId(TEST_OWNER_ID);
         assessment.setCustomizationFields(ImmutableMap.of("anIdentifier", ImmutableSet.of(
                 new PropertyInfo.Builder().withPropName("stringValue").build()
         )));

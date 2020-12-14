@@ -20,7 +20,7 @@ import static org.sagebionetworks.bridge.TestConstants.TIMEZONE_MSK;
 import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.sagebionetworks.bridge.TestConstants.UNCONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
 import static org.springframework.http.HttpHeaders.ACCEPT_LANGUAGE;
@@ -405,14 +405,14 @@ public class BaseControllerTest extends Mockito {
         session.setIpAddress(IP_ADDRESS);
         session.setParticipant(new StudyParticipant.Builder()
                 .withDataGroups(USER_DATA_GROUPS).withStudyIds(USER_STUDY_IDS)
-                .withLanguages(LANGUAGES).withHealthCode(HEALTH_CODE).withId(USER_ID).build());
+                .withLanguages(LANGUAGES).withHealthCode(HEALTH_CODE).withId(TEST_USER_ID).build());
         
         CriteriaContext context = controller.getCriteriaContext(session);
         
         assertEquals(context.getLanguages(), LANGUAGES);
         assertEquals(context.getClientInfo(), ClientInfo.fromUserAgentCache(UA));
         assertEquals(context.getHealthCode(), HEALTH_CODE);
-        assertEquals(context.getUserId(), USER_ID);
+        assertEquals(context.getUserId(), TEST_USER_ID);
         assertEquals(context.getUserDataGroups(), USER_DATA_GROUPS);
         assertEquals(context.getUserStudyIds(), USER_STUDY_IDS);
         assertEquals(context.getAppId(), TEST_APP_ID);
@@ -489,17 +489,17 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void getRequestInfoBuilder() {
         RequestInfo existingInfo = new RequestInfo.Builder().withActivitiesAccessedOn(TIMESTAMP).build();
-        when(requestInfoService.getRequestInfo(USER_ID)).thenReturn(existingInfo);
+        when(requestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(existingInfo);
         when(mockRequest.getHeader(USER_AGENT)).thenReturn(UA);
         
         session.setAppId(TEST_APP_ID);
-        session.setParticipant(new StudyParticipant.Builder().withId(USER_ID).withLanguages(LANGUAGES)
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).withLanguages(LANGUAGES)
                 .withDataGroups(USER_DATA_GROUPS).withStudyIds(USER_STUDY_IDS)
                 .withTimeZone(TIMEZONE_MSK).build());
 
         RequestInfo info = controller.getRequestInfoBuilder(session).build();
         assertEquals(info.getActivitiesAccessedOn(), TIMESTAMP.withZone(TIMEZONE_MSK));
-        assertEquals(info.getUserId(), USER_ID);
+        assertEquals(info.getUserId(), TEST_USER_ID);
         assertEquals(info.getClientInfo(), ClientInfo.fromUserAgentCache(UA));
         assertEquals(info.getUserAgent(), UA);
         assertEquals(info.getLanguages(), LANGUAGES);
@@ -773,7 +773,7 @@ public class BaseControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         session.setIpAddress("1.2.3.4");
         session.setParticipant(new StudyParticipant.Builder()
-                .withId(USER_ID)
+                .withId(TEST_USER_ID)
                 .withOrgMembership(TEST_ORG_ID)
                 .withLanguages(LANGUAGES)
                 .withStudyIds(USER_STUDY_IDS)
@@ -797,7 +797,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(context.getCallerEnrolledStudies(), USER_STUDY_IDS);
         assertEquals(context.getOrgSponsoredStudies(), orgStudies);
         assertTrue(context.isAdministrator()); 
-        assertEquals(context.getCallerUserId(), USER_ID); 
+        assertEquals(context.getCallerUserId(), TEST_USER_ID); 
         assertEquals(context.getCallerClientInfo(), UNKNOWN_CLIENT);
         assertEquals(context.getCallerLanguages(), LANGUAGES);
         assertEquals(context.getCallerIpAddress(), "1.2.3.4");

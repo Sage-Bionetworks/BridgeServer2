@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
@@ -42,9 +42,9 @@ public class RequestInfoServiceTest extends Mockito {
     @Test
     public void getRequestInfoFromDatabase() {
         RequestInfo info = new RequestInfo.Builder().build();
-        when(mockRequestInfoDao.getRequestInfo(USER_ID)).thenReturn(info);
+        when(mockRequestInfoDao.getRequestInfo(TEST_USER_ID)).thenReturn(info);
         
-        RequestInfo retrieved = service.getRequestInfo(USER_ID);
+        RequestInfo retrieved = service.getRequestInfo(TEST_USER_ID);
         assertSame(retrieved, info);
         
         // No need to execute this path
@@ -55,9 +55,9 @@ public class RequestInfoServiceTest extends Mockito {
     @Test
     public void getRequestInfoFromCache() {
         RequestInfo info = new RequestInfo.Builder().build();
-        when(mockCacheProvider.getRequestInfo(USER_ID)).thenReturn(info);
+        when(mockCacheProvider.getRequestInfo(TEST_USER_ID)).thenReturn(info);
         
-        RequestInfo retrieved = service.getRequestInfo(USER_ID);
+        RequestInfo retrieved = service.getRequestInfo(TEST_USER_ID);
         assertSame(retrieved, info);
         
         // And it was saved
@@ -66,15 +66,15 @@ public class RequestInfoServiceTest extends Mockito {
     
     @Test
     public void getRequestInfoReturnsNothing() {
-        RequestInfo retrieved = service.getRequestInfo(USER_ID);
+        RequestInfo retrieved = service.getRequestInfo(TEST_USER_ID);
         assertNull(retrieved);
         verify(mockRequestInfoDao, never()).updateRequestInfo(any());
     }
     
     @Test
     public void removeRequestInfo() {
-        service.removeRequestInfo(USER_ID);
-        verify(mockRequestInfoDao).removeRequestInfo(USER_ID);
-        verify(mockCacheProvider).removeRequestInfo(USER_ID);
+        service.removeRequestInfo(TEST_USER_ID);
+        verify(mockRequestInfoDao).removeRequestInfo(TEST_USER_ID);
+        verify(mockCacheProvider).removeRequestInfo(TEST_USER_ID);
     }
 }

@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
@@ -125,24 +125,24 @@ public class MembershipControllerTest extends Mockito {
     public void addMember() {
         doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
-        controller.addMember(TEST_ORG_ID, USER_ID);
+        controller.addMember(TEST_ORG_ID, TEST_USER_ID);
         
         verify(mockOrganizationService).addMember(eq(TEST_APP_ID), eq(TEST_ORG_ID), accountIdCaptor.capture());
         AccountId accountId = accountIdCaptor.getValue();
         assertEquals(TEST_APP_ID, accountId.getAppId());
-        assertEquals(USER_ID, accountId.getId());
+        assertEquals(TEST_USER_ID, accountId.getId());
     }
 
     @Test
     public void removeMember() {
         doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
-        controller.removeMember(TEST_ORG_ID, USER_ID);
+        controller.removeMember(TEST_ORG_ID, TEST_USER_ID);
         
         verify(mockOrganizationService).removeMember(eq(TEST_APP_ID), eq(TEST_ORG_ID), accountIdCaptor.capture());
         AccountId accountId = accountIdCaptor.getValue();
         assertEquals(TEST_APP_ID, accountId.getAppId());
-        assertEquals(USER_ID, accountId.getId());
+        assertEquals(TEST_USER_ID, accountId.getId());
     }
 
     @Test

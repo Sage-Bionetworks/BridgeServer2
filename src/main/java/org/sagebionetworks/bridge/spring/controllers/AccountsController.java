@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthUtils.IS_ORGADMIN;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
@@ -25,7 +27,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -226,7 +227,7 @@ public class AccountsController extends BaseController  {
     
     public Account verifyOrgAdminIsActingOnOrgMember(String appId, String orgId, String userId) {
         // The caller needs to be an administrator of this organization
-        if(!AuthUtils.isOrgAdmin(orgId)) {
+        if (!IS_ORGADMIN.check(ORG_ID, orgId)) {
             throw new EntityNotFoundException(Account.class);
         }
         // The account (if it exists) must be in the organization. Return account for 

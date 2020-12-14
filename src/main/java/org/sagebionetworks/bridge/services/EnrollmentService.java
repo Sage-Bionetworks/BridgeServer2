@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.AuthUtils.checkSelfOrStudyResearcher;
-import static org.sagebionetworks.bridge.AuthUtils.checkStudyResearcher;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_OR_STUDY_RESEARCHER;
+import static org.sagebionetworks.bridge.AuthUtils.IS_STUDY_RESEARCHER;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -64,7 +66,7 @@ public class EnrollmentService {
         checkNotNull(appId);
         checkNotNull(studyId);
         
-        checkStudyResearcher(studyId);
+        IS_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
 
         if (offsetBy != null && offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
@@ -87,7 +89,7 @@ public class EnrollmentService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        checkSelfOrStudyResearcher(account.getId(), userId);
+        IS_SELF_OR_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, null, USER_ID, account.getId());
 
         return enrollmentDao.getEnrollmentsForUser(appId, userId);
     }
@@ -99,7 +101,7 @@ public class EnrollmentService {
         Validate.entityThrowingException(INSTANCE, enrollment);
         
         // Verify that the caller has access to this study
-        checkSelfOrStudyResearcher(enrollment.getAccountId(), enrollment.getStudyId());
+        IS_SELF_OR_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID, enrollment.getAccountId());
 
         // Because this is an enrollment, we don't want to check the caller's access to the 
         // account based on study, because the account has not been put in a study accessible
@@ -122,7 +124,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, newEnrollment);
         
-        checkSelfOrStudyResearcher(account.getId(), newEnrollment.getStudyId());
+        IS_SELF_OR_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, newEnrollment.getStudyId(), USER_ID, account.getId());
 
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             if (existingEnrollment.getStudyId().equals(newEnrollment.getStudyId())) {
@@ -182,7 +184,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, enrollment);
         
-        checkSelfOrStudyResearcher(account.getId(), enrollment.getStudyId());
+        IS_SELF_OR_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID, account.getId());
         
         // If supplied, this value should be the same timestamp as the withdrewOn
         // value in the signature. Otherwise just set it here. 

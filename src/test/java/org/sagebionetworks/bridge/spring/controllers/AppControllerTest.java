@@ -12,7 +12,6 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -148,7 +147,7 @@ public class AppControllerTest extends Mockito {
         
         // mock session with appId
         when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
-        when(mockSession.getId()).thenReturn(USER_ID);
+        when(mockSession.getId()).thenReturn(TEST_USER_ID);
         
         app = new DynamoApp();
         app.setSupportEmail(EMAIL_ADDRESS);

@@ -10,7 +10,7 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
@@ -116,9 +116,9 @@ public class CRCControllerTest extends Mockito {
     String AUTHORIZATION_HEADER_VALUE = "Basic "
             + new String(Base64.getEncoder().encode(CREDENTIALS.getBytes()));
     
-    static final Enrollment ENROLLMENT1 = Enrollment.create(APP_ID, "studyA", USER_ID);
-    static final Enrollment ENROLLMENT2 = Enrollment.create(APP_ID, "studyB", USER_ID);
-    static final AccountId ACCOUNT_ID = AccountId.forId(APP_ID, USER_ID);
+    static final Enrollment ENROLLMENT1 = Enrollment.create(APP_ID, "studyA", TEST_USER_ID);
+    static final Enrollment ENROLLMENT2 = Enrollment.create(APP_ID, "studyB", TEST_USER_ID);
+    static final AccountId ACCOUNT_ID = AccountId.forId(APP_ID, TEST_USER_ID);
     static final AccountId ACCOUNT_ID_FOR_HC = AccountId.forHealthCode(APP_ID, HEALTH_CODE);
     static final String LOCATION_JSON = TestUtils.createJson("{ 'id':'4b72216e-f638-4eb0-b901-e23ca2aa69de', "
             +"'meta':{ 'lastUpdated':'2020-08-20T12:41:26Z' }, 'resourceType':'Bundle', 'type':'searchset', "
@@ -316,7 +316,7 @@ public class CRCControllerTest extends Mockito {
 
         account = Account.create();
         account.setHealthCode(HEALTH_CODE);
-        account.setId(USER_ID);
+        account.setId(TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(ENROLLMENT1, ENROLLMENT2));
         account.setDataGroups(ImmutableSet.of("group1", TEST_USER_GROUP));
         
@@ -524,7 +524,7 @@ public class CRCControllerTest extends Mockito {
         appointment.setStatus(BOOKED);
         // add a wrong participant to verify we go through them all and look for ours
         addAppointmentParticipantComponent(appointment, "Location/foo");
-        addAppointmentSageId(appointment, USER_ID);
+        addAppointmentSageId(appointment, TEST_USER_ID);
         
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
         mockRequestBody(mockRequest, json);
@@ -576,7 +576,7 @@ public class CRCControllerTest extends Mockito {
         appointment.setStatus(BOOKED);
         // add a wrong participant to verify we go through them all and look for ours
         addAppointmentParticipantComponent(appointment, LOCATION_NS + "foo");
-        addAppointmentSageId(appointment, USER_ID);
+        addAppointmentSageId(appointment, TEST_USER_ID);
         
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
         mockRequestBody(mockRequest, json);
@@ -614,7 +614,7 @@ public class CRCControllerTest extends Mockito {
         Appointment appointment = new Appointment();
         appointment.setStatus(CANCELLED);
         addAppointmentParticipantComponent(appointment, LOCATION_NS + "foo");
-        addAppointmentSageId(appointment, USER_ID);
+        addAppointmentSageId(appointment, TEST_USER_ID);
         
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
         mockRequestBody(mockRequest, json);
@@ -643,7 +643,7 @@ public class CRCControllerTest extends Mockito {
         Appointment appointment = new Appointment();
         appointment.setStatus(ENTEREDINERROR);
         addAppointmentParticipantComponent(appointment, LOCATION_NS + "foo");
-        addAppointmentSageId(appointment, USER_ID);
+        addAppointmentSageId(appointment, TEST_USER_ID);
         
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
         mockRequestBody(mockRequest, json);
@@ -675,7 +675,7 @@ public class CRCControllerTest extends Mockito {
         appointment.setStatus(BOOKED);
         // add a wrong participant to verify we go through them all and look for ours
         addAppointmentParticipantComponent(appointment, "Location/foo");
-        addAppointmentSageId(appointment, USER_ID);
+        addAppointmentSageId(appointment, TEST_USER_ID);
         
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
         mockRequestBody(mockRequest, json);
@@ -715,7 +715,7 @@ public class CRCControllerTest extends Mockito {
 
         Appointment appointment = new Appointment();
         appointment.setStatus(BOOKED);
-        addAppointmentSageId(appointment, USER_ID);
+        addAppointmentSageId(appointment, TEST_USER_ID);
         
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(appointment);
         mockRequestBody(mockRequest, json);
@@ -923,7 +923,7 @@ public class CRCControllerTest extends Mockito {
         String ns = node.get("subject").get("identifier").get("system").textValue();
         String value = node.get("subject").get("identifier").get("value").textValue();
         assertEquals(ns, USER_ID_VALUE_NS); 
-        assertEquals(value, USER_ID);
+        assertEquals(value, TEST_USER_ID);
     }
     
     @Test
@@ -1067,7 +1067,7 @@ public class CRCControllerTest extends Mockito {
         Patient patient = controller.createPatient(account);
         
         assertTrue(patient.getActive());
-        assertEquals(patient.getIdentifier().get(0).getValue(), USER_ID);
+        assertEquals(patient.getIdentifier().get(0).getValue(), TEST_USER_ID);
         assertEquals(patient.getIdentifier().get(0).getSystem(), USER_ID_VALUE_NS);
         assertEquals(patient.getName().get(0).getGivenAsSingleString(), "Test");
         assertEquals(patient.getName().get(0).getFamily(), "User");
@@ -1147,7 +1147,7 @@ public class CRCControllerTest extends Mockito {
         
         Identifier identifier = new Identifier();
         identifier.setSystem("wrong-system");
-        identifier.setValue(USER_ID);
+        identifier.setValue(TEST_USER_ID);
         ProcedureRequest procedure = new ProcedureRequest();
         procedure.addIdentifier(identifier);
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(procedure);
@@ -1179,7 +1179,7 @@ public class CRCControllerTest extends Mockito {
         
         Identifier identifier = new Identifier();
         identifier.setSystem("wrong-system");
-        identifier.setValue(USER_ID);
+        identifier.setValue(TEST_USER_ID);
         Observation observation = new Observation();
         observation.addIdentifier(identifier);
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(observation);
@@ -1194,7 +1194,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         when(mockAccountService.getAccount(any())).thenReturn(null);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
+        mockRequestBody(mockRequest, makeAppointment(TEST_USER_ID, BOOKED));
         mockGetLocation(LOCATION_JSON);
         
         controller.postAppointment();
@@ -1204,7 +1204,7 @@ public class CRCControllerTest extends Mockito {
     public void callerUserNameIncorrect() throws Exception {
         String auth = new String(Base64.getEncoder().encode(("foo:dummy-password").getBytes()));
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn("Basic " + auth);
-        mockRequestBody(mockRequest, makeAppointment(USER_ID, BOOKED));
+        mockRequestBody(mockRequest, makeAppointment(TEST_USER_ID, BOOKED));
         
         controller.postProcedureRequest();
     }
@@ -1417,7 +1417,7 @@ public class CRCControllerTest extends Mockito {
             if (node.get("actor").has("identifier")) {
                 String ns = node.get("actor").get("identifier").get("system").textValue();
                 String value = node.get("actor").get("identifier").get("value").textValue();
-                if (value.equals(USER_ID) && USER_ID_VALUE_NS.equals(ns)) {
+                if (value.equals(TEST_USER_ID) && USER_ID_VALUE_NS.equals(ns)) {
                     return;
                 }
             }
@@ -1444,7 +1444,7 @@ public class CRCControllerTest extends Mockito {
         
         Identifier id = new Identifier();
         id.setSystem(USER_ID_VALUE_NS);
-        id.setValue(USER_ID);
+        id.setValue(TEST_USER_ID);
         
         Reference ref = new Reference();
         ref.setIdentifier(id);

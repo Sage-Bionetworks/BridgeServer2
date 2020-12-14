@@ -4,7 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
@@ -16,12 +16,12 @@ import org.sagebionetworks.bridge.models.studies.Enrollment;
 public class EnrollmentValidatorTest {
     
     Enrollment getEnrollment() {
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setExternalId("anExternalId");
         enrollment.setConsentRequired(true);
         enrollment.setEnrolledOn(CREATED_ON);
         enrollment.setWithdrawnOn(MODIFIED_ON);
-        enrollment.setEnrolledBy(USER_ID);
+        enrollment.setEnrolledBy(TEST_USER_ID);
         enrollment.setWithdrawnBy("withdrawnBy");
         enrollment.setWithdrawalNote("withdrawal note");
         return enrollment;
