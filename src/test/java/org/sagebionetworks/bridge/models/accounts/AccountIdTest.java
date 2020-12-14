@@ -4,7 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -25,8 +25,8 @@ public class AccountIdTest {
     
     @Test
     public void twoAccountIdsAreTheSameWithTheSameData() {
-        assertTrue(AccountId.forId(TEST_APP_ID, USER_ID)
-                .equals(AccountId.forId(TEST_APP_ID, USER_ID)));
+        assertTrue(AccountId.forId(TEST_APP_ID, TEST_USER_ID)
+                .equals(AccountId.forId(TEST_APP_ID, TEST_USER_ID)));
         
         assertTrue(AccountId.forPhone(TEST_APP_ID, PHONE)
                 .equals(AccountId.forPhone(TEST_APP_ID, PHONE)));
@@ -46,7 +46,7 @@ public class AccountIdTest {
     
     @Test
     public void testToString() {
-        assertEquals(AccountId.forId(TEST_APP_ID, USER_ID).toString(), "AccountId [appId="+TEST_APP_ID+", credential="+ USER_ID + "]");
+        assertEquals(AccountId.forId(TEST_APP_ID, TEST_USER_ID).toString(), "AccountId [appId="+TEST_APP_ID+", credential="+ TEST_USER_ID + "]");
         
         assertEquals(AccountId.forPhone(TEST_APP_ID, PHONE).toString(), "AccountId [appId="+TEST_APP_ID+", credential=Phone [regionCode=US, number=9712486796]]");
         
@@ -62,7 +62,7 @@ public class AccountIdTest {
     @Test
     public void factoryMethodsWork() {
         String number = PHONE.getNumber();
-        assertEquals(AccountId.forId(TEST_APP_ID, USER_ID).getId(), USER_ID);
+        assertEquals(AccountId.forId(TEST_APP_ID, TEST_USER_ID).getId(), TEST_USER_ID);
         assertEquals(AccountId.forEmail(TEST_APP_ID, "one").getEmail(), "one");
         assertEquals(AccountId.forPhone(TEST_APP_ID, PHONE).getPhone().getNumber(), number);
         assertEquals(AccountId.forHealthCode(TEST_APP_ID, "ABC-DEF").getHealthCode(), "ABC-DEF");
@@ -77,12 +77,12 @@ public class AccountIdTest {
     
     @Test(expectedExceptions = NullPointerException.class)
     public void emailAccessorThrows() {
-        AccountId.forId(TEST_APP_ID, USER_ID).getEmail();
+        AccountId.forId(TEST_APP_ID, TEST_USER_ID).getEmail();
     }
     
     @Test(expectedExceptions = NullPointerException.class)
     public void phoneAccessorThrows() {
-        AccountId.forId(TEST_APP_ID, USER_ID).getPhone();
+        AccountId.forId(TEST_APP_ID, TEST_USER_ID).getPhone();
     }
     
     @Test(expectedExceptions = NullPointerException.class)
@@ -132,7 +132,7 @@ public class AccountIdTest {
     
     @Test(expectedExceptions = NullPointerException.class)
     public void cannotCreateIdObjectWithNoAppId() {
-        AccountId.forId(null, USER_ID);
+        AccountId.forId(null, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = NullPointerException.class)
@@ -152,11 +152,11 @@ public class AccountIdTest {
     
     @Test
     public void getValuesWithoutGuards() {
-        AccountId id = AccountId.forId(TEST_APP_ID, USER_ID);
+        AccountId id = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
         
         AccountId accountId = id.getUnguardedAccountId();
         assertEquals(accountId.getAppId(), TEST_APP_ID);
-        assertEquals(accountId.getId(), USER_ID);
+        assertEquals(accountId.getId(), TEST_USER_ID);
         assertNull(accountId.getEmail());
         assertNull(accountId.getPhone());
         assertNull(accountId.getHealthCode());

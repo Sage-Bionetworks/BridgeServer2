@@ -2,6 +2,7 @@
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthUtils.IS_ORGADMIN;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
@@ -126,7 +127,7 @@ public class SponsorService {
         checkNotNull(studyId);
         checkNotNull(orgId);
         
-        IS_ORGADMIN.checkOrgId(orgId);
+        IS_ORGADMIN.checkAndThrow(ORG_ID, orgId);
         
         // The database constraints are thrown and converted to EntityNotFoundExceptions
         // if either the organization or the study do not exist, or if the org already
@@ -141,7 +142,7 @@ public class SponsorService {
         checkNotNull(studyId);
         checkNotNull(orgId);
         
-        IS_ORGADMIN.checkOrgId(orgId);
+        IS_ORGADMIN.checkAndThrow(ORG_ID, orgId);
 
         if (sponsorDao.doesOrganizationSponsorStudy(appId, studyId, orgId)) {
             // Currently we allow you to remove the last sponsor from a study. There is no 

@@ -114,14 +114,14 @@ public class HealthDataEx3ControllerTest {
     public void deleteRecordsForUser() {
         when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(TestConstants.HEALTH_CODE);
 
-        StatusMessage statusMessage = controller.deleteRecordsForUser(TestConstants.USER_ID);
+        StatusMessage statusMessage = controller.deleteRecordsForUser(TestConstants.TEST_USER_ID);
         assertEquals(statusMessage.getMessage(), "Health data has been deleted for participant");
 
         ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
         verify(mockAccountService).getHealthCodeForAccount(accountIdCaptor.capture());
         AccountId accountId = accountIdCaptor.getValue();
         assertEquals(accountId.getAppId(), TestConstants.TEST_APP_ID);
-        assertEquals(accountId.getId(), TestConstants.USER_ID);
+        assertEquals(accountId.getId(), TestConstants.TEST_USER_ID);
 
         verify(mockHealthDataEx3Service).deleteRecordsForHealthCode(TestConstants.HEALTH_CODE);
     }
@@ -129,7 +129,7 @@ public class HealthDataEx3ControllerTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteRecordsForUser_UserNotFound() {
         when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(null);
-        controller.deleteRecordsForUser(TestConstants.USER_ID);
+        controller.deleteRecordsForUser(TestConstants.TEST_USER_ID);
     }
 
     @Test
@@ -160,11 +160,11 @@ public class HealthDataEx3ControllerTest {
         when(mockHealthDataEx3Service.getRecordsForHealthCode(TestConstants.HEALTH_CODE, CREATED_ON_START,
                 CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY)).thenReturn(recordList);
 
-        ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForUser(TestConstants.USER_ID,
+        ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForUser(TestConstants.TEST_USER_ID,
                 CREATED_ON_START_STRING, CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
         assertSame(outputList, recordList);
         assertEquals(outputList.getRequestParams().size(), 6);
-        assertEquals(outputList.getRequestParams().get("userId"), TestConstants.USER_ID);
+        assertEquals(outputList.getRequestParams().get("userId"), TestConstants.TEST_USER_ID);
         assertEquals(outputList.getRequestParams().get(ResourceList.START_TIME), CREATED_ON_START_STRING);
         assertEquals(outputList.getRequestParams().get(ResourceList.END_TIME), CREATED_ON_END_STRING);
         assertEquals(outputList.getRequestParams().get(ResourceList.PAGE_SIZE), BridgeConstants.API_DEFAULT_PAGE_SIZE);
@@ -175,7 +175,7 @@ public class HealthDataEx3ControllerTest {
         verify(mockAccountService).getHealthCodeForAccount(accountIdCaptor.capture());
         AccountId accountId = accountIdCaptor.getValue();
         assertEquals(accountId.getAppId(), TestConstants.TEST_APP_ID);
-        assertEquals(accountId.getId(), TestConstants.USER_ID);
+        assertEquals(accountId.getId(), TestConstants.TEST_USER_ID);
 
         verify(mockHealthDataEx3Service).getRecordsForHealthCode(TestConstants.HEALTH_CODE, CREATED_ON_START,
                 CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY);
@@ -184,7 +184,7 @@ public class HealthDataEx3ControllerTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getRecordsForUser_UserNotFound() {
         when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(null);
-        controller.getRecordsForUser(TestConstants.USER_ID, CREATED_ON_START_STRING, CREATED_ON_END_STRING,
+        controller.getRecordsForUser(TestConstants.TEST_USER_ID, CREATED_ON_START_STRING, CREATED_ON_END_STRING,
                 PAGE_SIZE_STRING, OFFSET_KEY);
     }
 

@@ -1,5 +1,12 @@
 package org.sagebionetworks.bridge;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.APP_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.OWNER_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -16,7 +23,8 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
  * by the AuthUtils class, but could be used elsewhere.
  */
 public class AuthEvaluator {
-    private final Set<Predicate<Map<String,String>>> predicates;
+    
+    private final Set<Predicate<Map<AuthEvaluatorField,String>>> predicates;
     
     public AuthEvaluator() {
         predicates = new HashSet<>();
@@ -39,7 +47,7 @@ public class AuthEvaluator {
      */
     public AuthEvaluator canAccessStudy() {
         predicates.add((factMap) -> {
-            String studyId = factMap.get("studyId");
+            String studyId = factMap.get(STUDY_ID);
             return RequestContext.get().getOrgSponsoredStudies().contains(studyId);
         });
         return this;
@@ -63,7 +71,7 @@ public class AuthEvaluator {
      */
     public AuthEvaluator isInApp() {
         predicates.add((factMap) -> {
-            String appId = factMap.get("appId");
+            String appId = factMap.get(APP_ID);
             return appId != null && appId.equals(RequestContext.get().getCallerAppId()); 
         });
         return this;
@@ -73,7 +81,7 @@ public class AuthEvaluator {
      */
     public AuthEvaluator isInOrg() {
         predicates.add((factMap) -> {
-            String orgId = factMap.get("orgId");
+            String orgId = factMap.get(ORG_ID);
             return orgId != null && orgId.equals(RequestContext.get().getCallerOrgMembership()); 
         });
         return this;
@@ -83,14 +91,14 @@ public class AuthEvaluator {
      */
     public AuthEvaluator isSelf() {
         predicates.add((factMap) -> {
-            String userId = factMap.get("userId");
+            String userId = factMap.get(USER_ID);
             return userId != null && userId.equals(RequestContext.get().getCallerUserId()); 
         });
         return this;
     }
     public AuthEvaluator isSharedOwner() {
         predicates.add((factMap) -> {
-            String ownerId = factMap.get("ownerId");
+            String ownerId = factMap.get(OWNER_ID);
             String[] parts = ownerId.split(":", 2);
             if (parts.length != 2) {
                 return false;
@@ -113,8 +121,8 @@ public class AuthEvaluator {
      * 
      * @throws org.sagebionetworks.bridge.exceptions.UnauthorizedException
      */
-    public void check() {
-        if (!verify()) {
+    public void checkAndThrow() {
+        if (!check()) {
             throw new UnauthorizedException();
         }
     }
@@ -123,8 +131,9 @@ public class AuthEvaluator {
      * 
      * @throws org.sagebionetworks.bridge.exceptions.UnauthorizedException
      */
-    private void check(String arg1, String val1) {
-        if (!verify(arg1, val1)) {
+    public void checkAndThrow(AuthEvaluatorField arg1, String val1) {
+        checkNotNull(arg1);
+        if (!check(arg1, val1)) {
             throw new UnauthorizedException();
         }
     }
@@ -133,8 +142,10 @@ public class AuthEvaluator {
      * 
      * @throws org.sagebionetworks.bridge.exceptions.UnauthorizedException
      */
-    private void check(String arg1, String val1, String arg2, String val2) {
-        if (!verify(arg1, val1, arg2, val2)) {
+    public void checkAndThrow(AuthEvaluatorField arg1, String val1, AuthEvaluatorField arg2, String val2) {
+        checkNotNull(arg1);
+        checkNotNull(arg2);
+        if (!check(arg1, val1, arg2, val2)) {
             throw new UnauthorizedException();
         }
     }
@@ -142,69 +153,39 @@ public class AuthEvaluator {
      * Return true if the authorization rule passes, false otherwise. Missing, blank, and 
      * null values fail authorization tests.
      */
-    public boolean verify() {
-        return verifyInternal(ImmutableMap.of());
+    public boolean check() {
+        return checkInternal(ImmutableMap.of());
     }
     /**
      * Return true if the authorization rule passes, false otherwise. Missing, blank, and 
      * null values fail authorization tests.
      */
-    public boolean verify(String arg1, String val1) {
-        Map<String,String> factMap = new HashMap<>(); // can contain nulls
+    public boolean check(AuthEvaluatorField arg1, String val1) {
+        checkNotNull(arg1);
+        Map<AuthEvaluatorField,String> factMap = new HashMap<>(); // can contain nulls
         factMap.put(arg1, val1);
-        return verifyInternal(factMap);
+        return checkInternal(factMap);
     }
     /**
      * Return true if the authorization rule passes, false otherwise. Missing, blank, and 
      * null values fail authorization tests.
      */
-    public boolean verify(String arg1, String val1, String arg2, String val2) {
-        Map<String,String> factMap = new HashMap<>(); // can contain nulls
+    public boolean check(AuthEvaluatorField arg1, String val1, AuthEvaluatorField arg2, String val2) {
+        checkNotNull(arg1);
+        checkNotNull(arg2);
+        Map<AuthEvaluatorField,String> factMap = new HashMap<>(); // can contain nulls
         factMap.put(arg1, val1);
         factMap.put(arg2, val2);
-        return verifyInternal(factMap);
+        return checkInternal(factMap);
     }
-    protected boolean verifyInternal(Map<String,String> factMap) {
+    protected boolean checkInternal(Map<AuthEvaluatorField,String> factMap) {
         // this happens on the stack and should be thread-safe. 
-        for (Predicate<Map<String,String>> predicate : predicates) {
+        for (Predicate<Map<AuthEvaluatorField,String>> predicate : predicates) {
             if (!predicate.test(factMap)) {
                 return false;
             }
         }
         return true;
-    }
-    
-    // UTILITY METHODS (it turns out we only have this many argument combinations).
-    
-    public boolean verifyOrgId(String orgId) {
-        return verify("orgId", orgId);
-    }
-    public boolean verifyOrgAndUserIds(String orgId, String userId) {
-        return verify("orgId", orgId, "userId", userId);
-    }
-    public boolean verifyStudyAndUserIds(String studyId, String userId) {
-        return verify("studyId", studyId, "userId", userId);
-    }
-    public boolean verifyStudyId(String studyId) {
-        return verify("studyId", studyId);
-    }
-    public void checkOrgId(String orgId) {
-        check("orgId", orgId);
-    }
-    public void checkStudyId(String studyId) {
-        check("studyId", studyId);
-    }
-    public void checkUserId(String userId) {
-        check("userId", userId);
-    }
-    public void checkOwnerId(String ownerId) {
-        check("ownerId", ownerId);
-    }
-    public void checkOrgAndUserIds(String orgId, String userId) {
-        check("orgId", orgId, "userId", userId);
-    }
-    public void checkStudyAndUserIds(String studyId, String userId) {
-        check("studyId", studyId, "userId", userId);
     }
     
     private static class OrAuthEvaluator extends AuthEvaluator {
@@ -214,8 +195,8 @@ public class AuthEvaluator {
             this.evaluator = evaluator;
         }
         @Override
-        protected boolean verifyInternal(Map<String, String> factMap) {
-            return super.verifyInternal(factMap) || evaluator.verifyInternal(factMap);
+        protected boolean checkInternal(Map<AuthEvaluatorField, String> factMap) {
+            return super.checkInternal(factMap) || evaluator.checkInternal(factMap);
         }
     }
 }

@@ -11,7 +11,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -363,7 +363,7 @@ public class OrganizationServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
         Account account = Account.create();
-        account.setId(USER_ID);
+        account.setId(TEST_USER_ID);
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         service.addMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
@@ -371,7 +371,7 @@ public class OrganizationServiceTest extends Mockito {
         verify(mockAccountDao).updateAccount(accountCaptor.capture());
         assertEquals(accountCaptor.getValue().getOrgMembership(), IDENTIFIER);
         
-        verify(mockSessionUpdateService).updateOrgMembership(USER_ID, IDENTIFIER);
+        verify(mockSessionUpdateService).updateOrgMembership(TEST_USER_ID, IDENTIFIER);
     }
     
     @Test
@@ -462,7 +462,7 @@ public class OrganizationServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setOrgMembership(IDENTIFIER);
-        account.setId(USER_ID);
+        account.setId(TEST_USER_ID);
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         service.removeMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
@@ -470,7 +470,7 @@ public class OrganizationServiceTest extends Mockito {
         verify(mockAccountDao).updateAccount(accountCaptor.capture());
         assertNull(accountCaptor.getValue().getOrgMembership());
         
-        verify(mockSessionUpdateService).updateOrgMembership(USER_ID, null);
+        verify(mockSessionUpdateService).updateOrgMembership(TEST_USER_ID, null);
     }
     
     @Test

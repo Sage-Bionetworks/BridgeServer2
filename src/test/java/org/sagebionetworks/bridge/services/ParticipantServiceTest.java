@@ -15,7 +15,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
@@ -2390,10 +2390,10 @@ public class ParticipantServiceTest extends Mockito {
                 .withEventKey("anEvent")
                 .withTimestamp(TIMESTAMP).build();
         
-        AccountId accountId = AccountId.forId(APP.getIdentifier(), USER_ID);
+        AccountId accountId = AccountId.forId(APP.getIdentifier(), TEST_USER_ID);
         when(accountService.getAccount(accountId)).thenReturn(account);
         
-        participantService.createCustomActivityEvent(APP, USER_ID, request);
+        participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
         
         verify(activityEventService).publishCustomEvent(APP, HEALTH_CODE, "anEvent", TIMESTAMP);
     }
@@ -2405,7 +2405,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withEventKey("anEvent")
                 .withTimestamp(TIMESTAMP).build();
         
-        participantService.createCustomActivityEvent(APP, USER_ID, request);
+        participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
     }
     
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 

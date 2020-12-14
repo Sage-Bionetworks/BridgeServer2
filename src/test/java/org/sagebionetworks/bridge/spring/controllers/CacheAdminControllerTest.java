@@ -4,7 +4,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -59,7 +59,7 @@ public class CacheAdminControllerTest extends Mockito {
         
         session = new UserSession();
         session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(SUPERADMIN)).withId(USER_ID).build());
+                .withRoles(ImmutableSet.of(SUPERADMIN)).withId(TEST_USER_ID).build());
         doAnswer(answer -> {
             if (session.isInRole(SUPERADMIN)) {
                 return session;
@@ -96,7 +96,7 @@ public class CacheAdminControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void listItemsRejectsAppAdmin() throws Exception {
         session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(ADMIN)).withId(USER_ID).build());
+                .withRoles(ImmutableSet.of(ADMIN)).withId(TEST_USER_ID).build());
         
         Set<String> items = ImmutableSet.of("A", "B", "C");
         when(mockCacheAdminService.listItems()).thenReturn(items);
@@ -119,7 +119,7 @@ public class CacheAdminControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void removeItemRejectsAppAdmin() throws Exception {
         session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(ADMIN)).withId(USER_ID).build());
+                .withRoles(ImmutableSet.of(ADMIN)).withId(TEST_USER_ID).build());
         
         controller.removeItem("cacheKey");
     }    

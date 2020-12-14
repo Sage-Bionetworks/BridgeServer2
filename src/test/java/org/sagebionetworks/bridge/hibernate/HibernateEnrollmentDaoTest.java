@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.hibernate;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.hibernate.HibernateEnrollmentDao.REF_QUERY;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
 import static org.testng.Assert.assertEquals;
@@ -209,7 +209,7 @@ public class HibernateEnrollmentDaoTest extends Mockito {
         when(mockHelper.queryGet(eq(REF_QUERY), any(), isNull(), eq(1), eq(HibernateAccount.class)))
             .thenReturn(ImmutableList.of(account1), ImmutableList.of(account2), ImmutableList.of(account3));
         
-        List<EnrollmentDetail> retValue = dao.getEnrollmentsForUser(TEST_APP_ID, USER_ID);
+        List<EnrollmentDetail> retValue = dao.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID);
         EnrollmentDetail detail1 = retValue.get(0);
         assertEquals(detail1.getParticipant().getLastName(), "account1");
         assertEquals(detail1.getEnrolledBy().getLastName(), "account2");
@@ -220,7 +220,7 @@ public class HibernateEnrollmentDaoTest extends Mockito {
         
         assertEquals(queryCaptor.getValue(), "FROM HibernateEnrollment WHERE appId = :appId AND accountId = :userId");
         assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
-        assertEquals(paramsCaptor.getValue().get("userId"), USER_ID);
+        assertEquals(paramsCaptor.getValue().get("userId"), TEST_USER_ID);
     }
 
 }

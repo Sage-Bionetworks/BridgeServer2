@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthUtils.IS_ORG_MEMBER;
 
 import java.util.Map;
@@ -74,7 +75,7 @@ public class AssessmentConfigService {
         checkNotNull(config);
         
         Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
-        IS_ORG_MEMBER.checkOrgId(assessment.getOwnerId());
+        IS_ORG_MEMBER.checkAndThrow(ORG_ID, assessment.getOwnerId());
         
         AssessmentConfig existing = dao.getAssessmentConfig(guid)
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
@@ -97,7 +98,7 @@ public class AssessmentConfigService {
             throw new BadRequestException("Updates to configuration are missing");
         }
         Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
-        IS_ORG_MEMBER.checkOrgId(assessment.getOwnerId());
+        IS_ORG_MEMBER.checkAndThrow(ORG_ID, assessment.getOwnerId());
         
         Map<String, Set<PropertyInfo>> fields = assessment.getCustomizationFields();
         

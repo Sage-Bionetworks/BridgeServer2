@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -147,7 +147,7 @@ public class HibernateExternalIdDaoTest extends Mockito {
 
     @Test
     public void deleteExternalId() {
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         en.setExternalId(EXTERNAL_ID);
         
         Account account = Account.create();
@@ -185,7 +185,7 @@ public class HibernateExternalIdDaoTest extends Mockito {
 
     @Test
     public void deleteExternalIdEnrollmentNotFound() {
-        Enrollment en = Enrollment.create(TEST_APP_ID, "anotherStudy", USER_ID);
+        Enrollment en = Enrollment.create(TEST_APP_ID, "anotherStudy", TEST_USER_ID);
         
         Account account = Account.create();
         account.setEnrollments(ImmutableSet.of(en));
@@ -215,10 +215,10 @@ public class HibernateExternalIdDaoTest extends Mockito {
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         
         // The enrollment has the external ID the caller is looking for, but it's not in study A
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID, EXTERNAL_ID);
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, EXTERNAL_ID);
         
         Account account = Account.create();
-        account.setId(USER_ID);
+        account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(en));
         
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, EXTERNAL_ID);
