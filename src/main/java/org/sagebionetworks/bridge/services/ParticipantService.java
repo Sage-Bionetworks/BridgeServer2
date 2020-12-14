@@ -437,7 +437,7 @@ public class ParticipantService {
         account.setStatus(UNVERIFIED);
         // Organizational admins create accounts in their organization.
         // Otherwise this field is ignored on create.
-        if (IS_ORGADMIN.check("orgId", participant.getOrgMembership())) {
+        if (IS_ORGADMIN.verifyOrgId(participant.getOrgMembership())) {
             account.setOrgMembership(participant.getOrgMembership());
         }
 
@@ -535,7 +535,7 @@ public class ParticipantService {
     private void updateAccountAndRoles(App app, Account account, StudyParticipant participant, boolean isNew) {
         // Do this much earlier in the call and avoid some expensive operations like password hashing.
         for (String studyId : participant.getExternalIds().keySet()) {
-            if (!IS_STUDY_TEAM_OR_WORKER.check("studyId", studyId)) {
+            if (!IS_STUDY_TEAM_OR_WORKER.verifyStudyId(studyId)) {
                 throw new BadRequestException(studyId + " is not a study of the caller");
             }
         }

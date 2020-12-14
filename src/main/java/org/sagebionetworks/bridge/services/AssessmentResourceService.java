@@ -107,7 +107,7 @@ public class AssessmentResourceService {
         checkNotNull(resource);
         
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
-        IS_ORG_MEMBER.checkAndThrow("orgId", assessment.getOwnerId());
+        IS_ORG_MEMBER.checkOrgId(assessment.getOwnerId());
         
         DateTime timestamp = getCreatedOn();
         resource.setGuid(generateGuid());
@@ -132,7 +132,7 @@ public class AssessmentResourceService {
         
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
         
-        IS_ORG_MEMBER.checkAndThrow("orgId", assessment.getOwnerId());
+        IS_ORG_MEMBER.checkOrgId(assessment.getOwnerId());
         
         return updateResourceInternal(appId, assessmentId, assessment, resource);
     }
@@ -145,7 +145,7 @@ public class AssessmentResourceService {
         
         Assessment assessment = assessmentService.getLatestAssessment(SHARED_APP_ID, assessmentId);
         
-        IS_ORG_MEMBER_IN_APP.checkAndThrow("ownerId", assessment.getOwnerId());
+        IS_ORG_MEMBER_IN_APP.checkOwnerId(assessment.getOwnerId());
         
         return updateResourceInternal(SHARED_APP_ID, assessmentId, assessment, resource);
     }
@@ -178,7 +178,7 @@ public class AssessmentResourceService {
         
         // Verify access to this.
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
-        IS_ORG_MEMBER.checkAndThrow("orgId", assessment.getOwnerId());
+        IS_ORG_MEMBER.checkOrgId(assessment.getOwnerId());
         
         AssessmentResource resource = dao.getResource(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
@@ -207,7 +207,7 @@ public class AssessmentResourceService {
         // Must have imported the assessment already before you move resources
         Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
         // Cannot import a resource unless you are member of the org that owns the assessment
-        IS_ORG_MEMBER.checkAndThrow("orgId", assessment.getOwnerId());
+        IS_ORG_MEMBER.checkOrgId(assessment.getOwnerId());
         return copyResources(SHARED_APP_ID, appId, assessment, guids);
     }
     
@@ -218,7 +218,7 @@ public class AssessmentResourceService {
         // Must have published the assessment already before you move resources
         Assessment assessment = assessmentService.getLatestAssessment(SHARED_APP_ID, assessmentId);
         // Cannot publish a resource unless you are member of the org that owns the shared assessment
-        IS_ORG_MEMBER_IN_APP.checkAndThrow("ownerId", assessment.getOwnerId());
+        IS_ORG_MEMBER_IN_APP.checkOwnerId(assessment.getOwnerId());
         
         return copyResources(appId, SHARED_APP_ID, assessment, guids);
     }

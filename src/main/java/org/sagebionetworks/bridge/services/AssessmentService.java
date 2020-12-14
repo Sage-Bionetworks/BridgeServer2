@@ -159,7 +159,7 @@ public class AssessmentService {
         if (existing.isDeleted() && assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-        IS_ORG_MEMBER.checkAndThrow("orgId", existing.getOwnerId());
+        IS_ORG_MEMBER.checkOrgId(existing.getOwnerId());
         
         return updateAssessmentInternal(appId, assessment, existing);
     }
@@ -174,7 +174,7 @@ public class AssessmentService {
             throw new EntityNotFoundException(Assessment.class);
         }
 
-        IS_ORG_MEMBER_IN_APP.checkAndThrow("ownerId", existing.getOwnerId());
+        IS_ORG_MEMBER_IN_APP.checkOwnerId(existing.getOwnerId());
         
         return updateAssessmentInternal(SHARED_APP_ID, assessment, existing);
     }
@@ -275,7 +275,7 @@ public class AssessmentService {
         AssessmentConfig configToPublish =  configService.getAssessmentConfig(appId, guid);
         Assessment original = Assessment.copy(assessmentToPublish);
         
-        IS_ORG_MEMBER.checkAndThrow("orgId", assessmentToPublish.getOwnerId());
+        IS_ORG_MEMBER.checkOrgId(assessmentToPublish.getOwnerId());
         
         if (StringUtils.isNotBlank(newIdentifier)) {
             assessmentToPublish.setIdentifier(newIdentifier);
@@ -330,7 +330,7 @@ public class AssessmentService {
         if (isBlank(ownerId)) {
             throw new BadRequestException("ownerId parameter is required");
         }
-        IS_ORG_MEMBER.checkAndThrow("orgId", ownerId);
+        IS_ORG_MEMBER.checkOrgId(ownerId);
 
         Assessment sharedAssessment = getAssessmentByGuid(SHARED_APP_ID, guid);
         AssessmentConfig sharedConfig = configService.getSharedAssessmentConfig(SHARED_APP_ID, guid);
@@ -360,7 +360,7 @@ public class AssessmentService {
         if (assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-        IS_ORG_MEMBER.checkAndThrow("orgId", assessment.getOwnerId());
+        IS_ORG_MEMBER.checkOrgId(assessment.getOwnerId());
 
         assessment.setDeleted(true);
         assessment.setModifiedOn(getModifiedOn());
@@ -396,7 +396,7 @@ public class AssessmentService {
         AssessmentValidator validator = new AssessmentValidator(appId, organizationService);
         Validate.entityThrowingException(validator, assessment);
         
-        IS_ORG_MEMBER.checkAndThrow("orgId", assessment.getOwnerId());
+        IS_ORG_MEMBER.checkOrgId(assessment.getOwnerId());
 
         AssessmentConfig config = new AssessmentConfig();
         config.setCreatedOn(timestamp);

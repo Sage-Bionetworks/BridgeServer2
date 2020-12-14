@@ -168,7 +168,7 @@ public class BridgeUtils {
             // is an org admin, return the account. Callers that are not associated to an 
             // organization also gain access, but only while we migrate away from 
             // this kind of global account.
-            if (IS_SELF_ORGADMIN_OR_WORKER.check("orgId", account.getOrgMembership(), "userId", account.getId())) {
+            if (IS_SELF_ORGADMIN_OR_WORKER.verifyOrgAndUserIds(account.getOrgMembership(), account.getId())) {
                 return account;
             }
             // If after removing all enrollments that are not visible to the caller, 
@@ -196,7 +196,7 @@ public class BridgeUtils {
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
         for (Enrollment enrollment : account.getActiveEnrollments()) {
-            if (IS_SELF_STUDY_TEAM_OR_WORKER.check("studyId", enrollment.getStudyId(), "userId", account.getId())) {
+            if (IS_SELF_STUDY_TEAM_OR_WORKER.verifyStudyAndUserIds(enrollment.getStudyId(), account.getId())) {
                 studyIds.add(enrollment.getStudyId());
                 if (enrollment.getExternalId() != null) {
                     externalIds.put(enrollment.getStudyId(), enrollment.getExternalId());
@@ -207,7 +207,7 @@ public class BridgeUtils {
     }
     
     public static ExternalIdentifier filterForStudy(ExternalIdentifier externalId) {
-        if (externalId != null && IS_STUDY_TEAM_OR_WORKER.check("studyId", externalId.getStudyId())) {
+        if (externalId != null && IS_STUDY_TEAM_OR_WORKER.verifyStudyId(externalId.getStudyId())) {
             return externalId;
         }
         return null;

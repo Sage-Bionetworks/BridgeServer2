@@ -33,17 +33,17 @@ public class AuthEvaluatorTest {
         
         AuthEvaluator evaluator = new AuthEvaluator().canAccessStudy();
         
-        assertTrue(evaluator.check("studyId", "study2"));
-        assertFalse(evaluator.check());
-        assertFalse(evaluator.check("studyId", "study3"));
-        assertFalse(evaluator.check("userId", "user"));
+        assertTrue(evaluator.verify("studyId", "study2"));
+        assertFalse(evaluator.verify());
+        assertFalse(evaluator.verify("studyId", "study3"));
+        assertFalse(evaluator.verify("userId", "user"));
     }
     
     // This does need to go away
     @Test
     public void callerConsideredGlobal() {
         AuthEvaluator evaluator = new AuthEvaluator().callerConsideredGlobal();
-        assertTrue(evaluator.check("studyId", "study2"));
+        assertTrue(evaluator.verify("studyId", "study2"));
     }
     
     @Test
@@ -52,12 +52,12 @@ public class AuthEvaluatorTest {
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
         AuthEvaluator evaluator = new AuthEvaluator().hasAnyRole(DEVELOPER, RESEARCHER);
-        assertTrue(evaluator.check());
-        assertTrue(evaluator.check("studyId", "study3")); // params are just ignored
+        assertTrue(evaluator.verify());
+        assertTrue(evaluator.verify("studyId", "study3")); // params are just ignored
         
         evaluator = new AuthEvaluator().hasAnyRole(WORKER);
-        assertFalse(evaluator.check());
-        assertFalse(evaluator.check("studyId", "study3")); // params are just ignored
+        assertFalse(evaluator.verify());
+        assertFalse(evaluator.verify("studyId", "study3")); // params are just ignored
     }
     
     @Test
@@ -66,11 +66,11 @@ public class AuthEvaluatorTest {
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
         AuthEvaluator evaluator = new AuthEvaluator().hasAnyRole();
-        assertTrue(evaluator.check());
+        assertTrue(evaluator.verify());
         
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of()).build());
-        assertFalse(evaluator.check());
+        assertFalse(evaluator.verify());
     }
     
     @Test
@@ -79,7 +79,7 @@ public class AuthEvaluatorTest {
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
         
         AuthEvaluator evaluator = new AuthEvaluator().hasAnyRole(RESEARCHER);
-        assertTrue(evaluator.check());
+        assertTrue(evaluator.verify());
     }
     
     @Test
@@ -89,10 +89,10 @@ public class AuthEvaluatorTest {
         
         AuthEvaluator evaluator = new AuthEvaluator().isInApp();
         
-        assertTrue(evaluator.check("appId", TEST_APP_ID));
-        assertFalse(evaluator.check());
-        assertFalse(evaluator.check("appId", "some-other-app-id"));
-        assertFalse(evaluator.check("userId", USER_ID));
+        assertTrue(evaluator.verify("appId", TEST_APP_ID));
+        assertFalse(evaluator.verify());
+        assertFalse(evaluator.verify("appId", "some-other-app-id"));
+        assertFalse(evaluator.verify("userId", USER_ID));
     }
 
     @Test
@@ -102,10 +102,10 @@ public class AuthEvaluatorTest {
         
         AuthEvaluator evaluator = new AuthEvaluator().isInOrg();
         
-        assertTrue(evaluator.check("orgId", TEST_ORG_ID));
-        assertFalse(evaluator.check());
-        assertFalse(evaluator.check("orgId", "some-other-org-id"));
-        assertFalse(evaluator.check("userId", USER_ID));
+        assertTrue(evaluator.verify("orgId", TEST_ORG_ID));
+        assertFalse(evaluator.verify());
+        assertFalse(evaluator.verify("orgId", "some-other-org-id"));
+        assertFalse(evaluator.verify("userId", USER_ID));
     }
     
     @Test
@@ -114,10 +114,10 @@ public class AuthEvaluatorTest {
                 .withCallerUserId(USER_ID).build());
         
         AuthEvaluator evaluator = new AuthEvaluator().isSelf();
-        assertTrue(evaluator.check("userId", USER_ID));
-        assertFalse(evaluator.check());
-        assertFalse(evaluator.check("userId", "another-user-id"));
-        assertFalse(evaluator.check("studyId", USER_ID));
+        assertTrue(evaluator.verify("userId", USER_ID));
+        assertFalse(evaluator.verify());
+        assertFalse(evaluator.verify("userId", "another-user-id"));
+        assertFalse(evaluator.verify("studyId", USER_ID));
     }
     
     @Test
@@ -127,17 +127,17 @@ public class AuthEvaluatorTest {
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
 
         AuthEvaluator evaluator = new AuthEvaluator().isInOrg().hasAnyRole(RESEARCHER);
-        assertTrue(evaluator.check("orgId", TEST_ORG_ID));
+        assertTrue(evaluator.verify("orgId", TEST_ORG_ID));
         
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("another-org")
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        assertFalse(evaluator.check("orgId", TEST_ORG_ID));
+        assertFalse(evaluator.verify("orgId", TEST_ORG_ID));
         
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
-        assertFalse(evaluator.check("orgId", TEST_ORG_ID));
+        assertFalse(evaluator.verify("orgId", TEST_ORG_ID));
     }
     
     @Test
@@ -148,16 +148,16 @@ public class AuthEvaluatorTest {
 
         AuthEvaluator evaluator = new AuthEvaluator().isInOrg().or().isSelf();
         // left side passes
-        assertTrue(evaluator.check("orgId", TEST_ORG_ID, "userId", "wrong-id"));
+        assertTrue(evaluator.verify("orgId", TEST_ORG_ID, "userId", "wrong-id"));
         
         // right side passes
-        assertTrue(evaluator.check("orgId", "wrong-organization", "userId", USER_ID));
+        assertTrue(evaluator.verify("orgId", "wrong-organization", "userId", USER_ID));
         
         // both sides pass
-        assertTrue(evaluator.check("orgId", TEST_ORG_ID, "userId", USER_ID));
+        assertTrue(evaluator.verify("orgId", TEST_ORG_ID, "userId", USER_ID));
         
         // both sides fail
-        assertFalse(evaluator.check("orgId", "wrong-organization", "userId", "wrong-id"));
+        assertFalse(evaluator.verify("orgId", "wrong-organization", "userId", "wrong-id"));
     }
 
     @Test
@@ -167,7 +167,7 @@ public class AuthEvaluatorTest {
 
         AuthEvaluator evaluator = new AuthEvaluator().isInOrg();
         
-        evaluator.checkAndThrow("orgId", TEST_ORG_ID);
+        evaluator.checkOrgId(TEST_ORG_ID);
     }
     
     @Test
@@ -178,7 +178,7 @@ public class AuthEvaluatorTest {
 
         AuthEvaluator evaluator = new AuthEvaluator().isInOrg().isSelf();
         
-        evaluator.checkAndThrow("orgId", TEST_ORG_ID, "userId", USER_ID);
+        evaluator.checkOrgAndUserIds(TEST_ORG_ID, USER_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -188,7 +188,7 @@ public class AuthEvaluatorTest {
 
         AuthEvaluator evaluator = new AuthEvaluator().isInOrg();
         
-        evaluator.checkAndThrow("orgId", "foo");
+        evaluator.checkOrgId("foo");
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -199,6 +199,6 @@ public class AuthEvaluatorTest {
 
         AuthEvaluator evaluator = new AuthEvaluator().isInOrg().isSelf();
         
-        evaluator.checkAndThrow("orgId", "foo", "userId", "foo");
+        evaluator.checkOrgAndUserIds("foo", "foo");
     }
 }

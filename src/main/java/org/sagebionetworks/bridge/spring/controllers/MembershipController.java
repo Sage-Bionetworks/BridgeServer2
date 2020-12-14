@@ -38,7 +38,7 @@ public class MembershipController extends BaseController {
         // should this just be scoped to any administrative user?
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
-        IS_ORGADMIN.checkAndThrow("orgId", orgId);
+        IS_ORGADMIN.checkOrgId(orgId);
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         return organizationService.getMembers(session.getAppId(), orgId, search);

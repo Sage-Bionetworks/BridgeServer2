@@ -226,7 +226,7 @@ public class AccountsController extends BaseController  {
     
     public Account verifyOrgAdminIsActingOnOrgMember(String appId, String orgId, String userId) {
         // The caller needs to be an administrator of this organization
-        if (!IS_ORGADMIN.check("orgId", orgId)) {
+        if (!IS_ORGADMIN.verifyOrgId(orgId)) {
             throw new EntityNotFoundException(Account.class);
         }
         // The account (if it exists) must be in the organization. Return account for 

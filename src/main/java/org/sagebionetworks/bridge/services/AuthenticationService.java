@@ -344,7 +344,7 @@ public class AuthenticationService {
                 .findAny()
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        IS_STUDY_TEAM_OR_WORKER.checkAndThrow("studyId", en.getStudyId());
+        IS_STUDY_TEAM_OR_WORKER.checkStudyId(en.getStudyId());
 
         String password = generatePassword(app.getPasswordPolicy().getMinLength());
         accountService.changePassword(account, null, password);

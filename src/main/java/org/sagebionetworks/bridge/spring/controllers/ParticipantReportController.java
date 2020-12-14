@@ -128,7 +128,7 @@ public class ParticipantReportController extends BaseController {
             @PathVariable String identifier, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         UserSession session = getAdministrativeSession();
-        IS_SELF_OR_RESEARCHER.checkAndThrow("userId", userId);
+        IS_SELF_OR_RESEARCHER.checkUserId(userId);
         
         return getParticipantReportInternal(session.getAppId(), userId, identifier, startDate, endDate);
     }
@@ -162,7 +162,7 @@ public class ParticipantReportController extends BaseController {
             @RequestParam(required = false) String endTime, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) {
         UserSession session = getAdministrativeSession();
-        IS_SELF_OR_RESEARCHER.checkAndThrow("userId", userId);
+        IS_SELF_OR_RESEARCHER.checkUserId(userId);
         
         return getParticipantReportInternalV4(session.getAppId(), userId, identifier, 
                 startTime, endTime, offsetKey, pageSize);

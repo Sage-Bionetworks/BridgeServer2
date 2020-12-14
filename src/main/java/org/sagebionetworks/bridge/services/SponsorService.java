@@ -126,7 +126,7 @@ public class SponsorService {
         checkNotNull(studyId);
         checkNotNull(orgId);
         
-        IS_ORGADMIN.checkAndThrow("orgId", orgId);
+        IS_ORGADMIN.checkOrgId(orgId);
         
         // The database constraints are thrown and converted to EntityNotFoundExceptions
         // if either the organization or the study do not exist, or if the org already
@@ -141,7 +141,7 @@ public class SponsorService {
         checkNotNull(studyId);
         checkNotNull(orgId);
         
-        IS_ORGADMIN.checkAndThrow("orgId", orgId);
+        IS_ORGADMIN.checkOrgId(orgId);
 
         if (sponsorDao.doesOrganizationSponsorStudy(appId, studyId, orgId)) {
             // Currently we allow you to remove the last sponsor from a study. There is no 

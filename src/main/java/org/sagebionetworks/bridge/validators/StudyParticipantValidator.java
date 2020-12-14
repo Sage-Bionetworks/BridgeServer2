@@ -88,7 +88,7 @@ public class StudyParticipantValidator implements Validator {
                 Optional<Organization> opt = organizationService.getOrganizationOpt(app.getIdentifier(), orgId);
                 if (!opt.isPresent()) {
                     errors.rejectValue("orgMembership", "is not a valid organization");
-                } else if (!IS_ORG_MEMBER.check("orgId", orgId)) {
+                } else if (!IS_ORG_MEMBER.verifyOrgId(orgId)) {
                     errors.rejectValue("orgMembership", "cannot be set by caller");
                 }
             }
