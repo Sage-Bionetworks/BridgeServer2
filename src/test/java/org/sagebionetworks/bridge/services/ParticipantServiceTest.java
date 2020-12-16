@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.collectExternalIds;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -13,8 +14,11 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
 import static org.testng.Assert.assertEquals;
@@ -29,6 +33,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -78,12 +83,14 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.apps.SmsTemplate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -97,6 +104,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 public class ParticipantServiceTest extends Mockito {
     private static final DateTime ACTIVITIES_RETRIEVED_DATETIME = DateTime.parse("2019-08-01T18:32:36.487-0700");
@@ -220,6 +228,9 @@ public class ParticipantServiceTest extends Mockito {
     @Mock
     private ActivityEventService activityEventService;
     
+    @Mock
+    private OrganizationService organizationService;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -272,6 +283,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setId(ID);
         account.setHealthCode(HEALTH_CODE);
         account.setEmail(email);
+        account.setEmailVerified(TRUE);
         account.setPhone(phone);
         Set<Enrollment> enrollments = new HashSet<>();
         if (externalId != null) {
@@ -327,7 +339,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(account.getAttributes().get("can_be_recontacted"), "true");
         assertEquals(account.getRoles(), DEV_CALLER_ROLES);
         assertEquals(account.getClientData(), TestUtils.getClientData());
-        assertEquals(account.getStatus(), AccountStatus.UNVERIFIED);
+        assertEquals(account.getStatus(), AccountStatus.ENABLED); // has external ID and password
         assertEquals(account.getSharingScope(), SharingScope.ALL_QUALIFIED_RESEARCHERS);
         assertEquals(account.getNotifyByEmail(), Boolean.TRUE);
         assertNull(account.getTimeZone());
@@ -338,6 +350,41 @@ public class ParticipantServiceTest extends Mockito {
         
         // don't update cache
         Mockito.verifyNoMoreInteractions(cacheProvider);
+    }
+    
+    @Test
+    public void createParticipantSetsOrgMembershipWhenCallerOrgAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        when(participantService.generateGUID()).thenReturn(ID);
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
+        when(organizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
+            .thenReturn(Optional.of(Organization.create()));
+
+        StudyParticipant participant = withParticipant()
+                .withOrgMembership(TEST_ORG_ID)
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
+        participantService.createParticipant(APP, participant, true);
+        
+        verify(accountService).createAccount(eq(APP), accountCaptor.capture());
+        
+        Account account = accountCaptor.getValue();
+        assertEquals(account.getOrgMembership(), TEST_ORG_ID);
+    }
+    
+    @Test
+    public void createParticipantSettingOrgMembershipFailsOnWrongRole() {
+        when(organizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
+            .thenReturn(Optional.of(Organization.create()));
+
+        StudyParticipant participant = withParticipant().withOrgMembership(TEST_ORG_ID).build();
+        
+        try {
+            participantService.createParticipant(APP, participant, true);    
+        } catch(InvalidEntityException e) {
+            assertEquals(e.getErrors().get("orgMembership").get(0), "orgMembership cannot be set by caller");
+        }
     }
     
     @Test
@@ -581,6 +628,11 @@ public class ParticipantServiceTest extends Mockito {
     public void createParticipantExternalIdAndPasswordIsEnabled() {
         mockHealthCodeAndAccountRetrieval(null, null, null);
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
+        
+        when(enrollmentService.enroll(any(), any())).thenAnswer(args -> {
+            account.getEnrollments().add(args.getArgument(1));
+            return args.getArgument(1);
+        });
 
         StudyParticipant participant = withParticipant().withEmail(null).withPhone(null).withPassword(PASSWORD)
                 .withExternalIds(ENROLLMENT_MAP).build();
@@ -603,17 +655,6 @@ public class ParticipantServiceTest extends Mockito {
         assertFalse(account.getEmailVerified());
     }
     
-    @Test
-    public void createParticipantSynapseUserIdWithDeviationIsDisabled() {
-        mockHealthCodeAndAccountRetrieval(null, null, null);
-
-        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
-                .withPassword(PASSWORD).build();
-        participantService.createParticipant(APP, participant, false);
-        
-        assertEquals(account.getStatus(), AccountStatus.UNVERIFIED);
-    }
-
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp=".*is not a study of the caller.*")
     public void createParticipantMustIncludeCallerStudy() {
@@ -625,7 +666,7 @@ public class ParticipantServiceTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withExternalIds(ImmutableMap.of("inaccessible-study-to-caller", EXTERNAL_ID))
                 .withRoles(null).build();
-
+        
         participantService.createParticipant(APP, participant, false);
     }
     
@@ -833,6 +874,25 @@ public class ParticipantServiceTest extends Mockito {
         participantService.getParticipant(APP, "externalId:some-junk", false);
     }
     
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getParticiantAccountFilteredOutByStudyAssocation() {
+        when(participantService.getAccount()).thenReturn(account);
+        when(participantService.generateGUID()).thenReturn(ID);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+
+        // Account is in studyA
+        account.setAppId(APP.getIdentifier());
+        account.setId(ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ID, "externalIdA");
+        account.setEnrollments(Sets.newHashSet(en1));
+        
+        // The caller is not in studyA
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("studyB")).build());
+        
+        participantService.getParticipant(APP, ID, true);
+    }
+    
     @Test
     public void getSelfParticipantWithHistory() throws Exception {
         RequestContext.set(new RequestContext.Builder()
@@ -904,7 +964,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void getStudyParticipant() {
+    public void getParticipant() {
         when(participantService.getAccount()).thenReturn(account);
         when(participantService.generateGUID()).thenReturn(ID);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -1017,7 +1077,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void getStudyParticipantFilteringStudiesAndExternalIds() {
+    public void getParticipantFilteringStudiesAndExternalIds() {
         // There is a partial overlap of study memberships between caller and user, the studies that are 
         // not in the intersection, and the external IDs, should be removed from the participant
         mockHealthCodeAndAccountRetrieval(EMAIL, PHONE, null);
@@ -1192,6 +1252,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateParticipantDoesNotUpdateImmutableFields() {
         mockHealthCodeAndAccountRetrieval(null, null, null);
+        account.setEmailVerified(null);
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         RequestContext.set(new RequestContext.Builder().build());
  
@@ -1219,7 +1280,7 @@ public class ParticipantServiceTest extends Mockito {
         assertNull(account.getSynapseUserId());
         assertEquals(account.getHealthCode(), HEALTH_CODE);
         assertTrue(account.getRoles().isEmpty());
-        assertNull(account.getStatus());
+        assertEquals(account.getStatus(), UNVERIFIED);
         assertNull(account.getCreatedOn());
         assertNull(account.getTimeZone());
     }
@@ -1551,7 +1612,7 @@ public class ParticipantServiceTest extends Mockito {
     }
 
     @Test
-    public void getStudyParticipantWithAccount() throws Exception {
+    public void getParticipantWithAccount() throws Exception {
         mockHealthCodeAndAccountRetrieval();
         account.setClientData(TestUtils.getClientData());
         
@@ -1568,7 +1629,7 @@ public class ParticipantServiceTest extends Mockito {
     // Contrived test case for a case that never happens, but somehow does.
     // See https://sagebionetworks.jira.com/browse/BRIDGE-1463
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getStudyParticipantWithoutAccountThrows404() {
+    public void getParticipantWithoutAccountThrows404() {
         participantService.getParticipant(APP, (Account) null, false);
     }
 
@@ -2323,6 +2384,30 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(captured.getEnrollments(), account.getEnrollments());
     }
     
+    @Test
+    public void createCustomActivityEvent() throws Exception {
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withEventKey("anEvent")
+                .withTimestamp(TIMESTAMP).build();
+        
+        AccountId accountId = AccountId.forId(APP.getIdentifier(), TEST_USER_ID);
+        when(accountService.getAccount(accountId)).thenReturn(account);
+        
+        participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
+        
+        verify(activityEventService).publishCustomEvent(APP, HEALTH_CODE, "anEvent", TIMESTAMP);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void createCustomActivityEventAccountNotFound() throws Exception {
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withEventKey("anEvent")
+                .withTimestamp(TIMESTAMP).build();
+        
+        participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
+    }
+    
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 
     // way to get correct paging.
     
@@ -2333,7 +2418,7 @@ public class ParticipantServiceTest extends Mockito {
         
         mockHealthCodeAndAccountRetrieval();
         
-        StudyParticipant participant = withParticipant().withStatus(AccountStatus.ENABLED).build();
+        StudyParticipant participant = withParticipant().withStatus(DISABLED).build();
         
         participantService.updateParticipant(APP, participant);
 
@@ -2341,9 +2426,9 @@ public class ParticipantServiceTest extends Mockito {
         Account account = accountCaptor.getValue();
 
         if (canSetStatus) {
-            assertEquals(account.getStatus(), AccountStatus.ENABLED);
+            assertEquals(account.getStatus(), DISABLED);
         } else {
-            assertNull(account.getStatus());
+            assertNotEquals(account.getStatus(), DISABLED);
         }
     }
 

@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -405,7 +405,7 @@ public class ParticipantReportControllerTest extends Mockito {
     public void saveParticipantReportForWorkerBadJson() throws Exception {
         mockRequestBody(mockRequest, "\"+1234567890\"");
         
-        controller.saveParticipantReport(USER_ID, REPORT_ID);
+        controller.saveParticipantReport(TEST_USER_ID, REPORT_ID);
     }
     
     // This should be legal
@@ -537,7 +537,7 @@ public class ParticipantReportControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAdministrativeSession();
         reset(mockAccountService);
-        controller.getParticipantReport(USER_ID, REPORT_ID, null, null);
+        controller.getParticipantReport(TEST_USER_ID, REPORT_ID, null, null);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -545,7 +545,7 @@ public class ParticipantReportControllerTest extends Mockito {
     public void getParticipantReportForWorkerAccountNotFound() {
         doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         reset(mockAccountService);
-        controller.getParticipantReportForWorker(TEST_APP_ID, USER_ID, REPORT_ID, null, null);
+        controller.getParticipantReportForWorker(TEST_APP_ID, TEST_USER_ID, REPORT_ID, null, null);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -553,7 +553,7 @@ public class ParticipantReportControllerTest extends Mockito {
     public void saveParticipantReportAccountNotFound() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         reset(mockAccountService);
-        controller.saveParticipantReport(USER_ID, REPORT_ID);
+        controller.saveParticipantReport(TEST_USER_ID, REPORT_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -561,7 +561,7 @@ public class ParticipantReportControllerTest extends Mockito {
     public void deleteParticipantReportAccountNotFound() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, WORKER);
         reset(mockAccountService);
-        controller.deleteParticipantReport(USER_ID, REPORT_ID);
+        controller.deleteParticipantReport(TEST_USER_ID, REPORT_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -569,7 +569,7 @@ public class ParticipantReportControllerTest extends Mockito {
     public void deleteParticipantReportRecordAccountNotFound() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, WORKER);
         reset(mockAccountService);
-        controller.deleteParticipantReportRecord(USER_ID, REPORT_ID, null);
+        controller.deleteParticipantReportRecord(TEST_USER_ID, REPORT_ID, null);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -580,7 +580,7 @@ public class ParticipantReportControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAdministrativeSession();
         reset(mockAccountService);
-        controller.getParticipantReportV4(USER_ID, REPORT_ID, null, null, null, null);
+        controller.getParticipantReportV4(TEST_USER_ID, REPORT_ID, null, null, null, null);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -588,7 +588,7 @@ public class ParticipantReportControllerTest extends Mockito {
     public void getParticipantReportForWorkerV4AccountNotFound() {
         doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         reset(mockAccountService);
-        controller.getParticipantReportForWorkerV4(TEST_APP_ID, USER_ID, REPORT_ID, null, null, null, null);
+        controller.getParticipantReportForWorkerV4(TEST_APP_ID, TEST_USER_ID, REPORT_ID, null, null, null, null);
     }
     
     private void assertResultContent(LocalDate expectedStartDate, LocalDate expectedEndDate,

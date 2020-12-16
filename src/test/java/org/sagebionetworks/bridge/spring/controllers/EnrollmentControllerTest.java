@@ -8,7 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -127,7 +127,7 @@ public class EnrollmentControllerTest extends Mockito {
         Enrollment enrollment = new HibernateEnrollment();
         enrollment.setEnrolledOn(CREATED_ON);
         enrollment.setExternalId("anExternalId");
-        enrollment.setAccountId(USER_ID);
+        enrollment.setAccountId(TEST_USER_ID);
         enrollment.setConsentRequired(true);
         
         TestUtils.mockRequestBody(mockRequest, enrollment);
@@ -145,7 +145,7 @@ public class EnrollmentControllerTest extends Mockito {
         assertEquals(value.getStudyId(), TEST_STUDY_ID);
         assertEquals(value.getEnrolledOn(), CREATED_ON);
         assertEquals(value.getExternalId(), "anExternalId");
-        assertEquals(value.getAccountId(), USER_ID);
+        assertEquals(value.getAccountId(), TEST_USER_ID);
         assertTrue(value.isConsentRequired());
     }
 
@@ -154,7 +154,7 @@ public class EnrollmentControllerTest extends Mockito {
         Enrollment completed = new HibernateEnrollment();
         when(mockService.unenroll(any())).thenReturn(completed);
 
-        Enrollment retValue = controller.unenroll(TEST_STUDY_ID, USER_ID, "This is a note");
+        Enrollment retValue = controller.unenroll(TEST_STUDY_ID, TEST_USER_ID, "This is a note");
         assertSame(retValue, completed);
         
         verify(mockService).unenroll(enrollmentCaptor.capture());
@@ -163,7 +163,7 @@ public class EnrollmentControllerTest extends Mockito {
         assertEquals(value.getWithdrawalNote(), "This is a note");
         assertEquals(value.getAppId(), TEST_APP_ID);
         assertEquals(value.getStudyId(), TEST_STUDY_ID);
-        assertEquals(value.getAccountId(), USER_ID);
+        assertEquals(value.getAccountId(), TEST_USER_ID);
     }
     
     @Test
@@ -172,14 +172,14 @@ public class EnrollmentControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
         
-        AccountId accountId = AccountId.forId(TEST_APP_ID, USER_ID);
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
         
         AccountService mockAccountService = mock(AccountService.class);
         controller.setAccountService(mockAccountService);
         
         Account account = Account.create();
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID, "externalId");
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "anotherStudy", USER_ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, "externalId");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "anotherStudy", TEST_USER_ID);
         en2.setConsentRequired(true);
         en2.setEnrolledOn(CREATED_ON);
         en2.setWithdrawnOn(MODIFIED_ON);
@@ -189,7 +189,7 @@ public class EnrollmentControllerTest extends Mockito {
         account.setEnrollments(ImmutableSet.of(en1, en2));
         when(mockAccountService.getAccount(accountId)).thenReturn(account);
         
-        List<EnrollmentMigration> returnValue = controller.getUserEnrollments(USER_ID);
+        List<EnrollmentMigration> returnValue = controller.getUserEnrollments(TEST_USER_ID);
         assertEquals(returnValue.size(), 2);
         assertEquals(returnValue.stream().map(m -> m.getStudyId()).collect(toSet()), 
                 ImmutableSet.of(TEST_STUDY_ID, "anotherStudy"));
@@ -206,7 +206,7 @@ public class EnrollmentControllerTest extends Mockito {
         
         when(mockAccountService.getAccount(any())).thenReturn(null);
         
-        controller.getUserEnrollments(USER_ID);
+        controller.getUserEnrollments(TEST_USER_ID);
     }
     
     @Test
@@ -215,23 +215,23 @@ public class EnrollmentControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
 
-        Enrollment newEnrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", USER_ID);
+        Enrollment newEnrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", TEST_USER_ID);
         mockRequestBody(mockRequest, ImmutableSet.of(EnrollmentMigration.create(newEnrollment)));
         
-        AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, USER_ID);
+        AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, TEST_USER_ID);
         
         AccountService mockAccountService = mock(AccountService.class);
         controller.setAccountService(mockAccountService);
         
         Account mockAccount = mock(Account.class);
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID, "externalId");
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, "externalId");
         Set<Enrollment> enrollments = Sets.newHashSet(en1);
         when(mockAccount.getEnrollments()).thenReturn(enrollments);
         when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
         
         mockEditAccount(mockAccountService, mockAccount);
         
-        StatusMessage message = controller.updateUserEnrollments("healthcode:"+USER_ID);
+        StatusMessage message = controller.updateUserEnrollments("healthcode:"+TEST_USER_ID);
         assertEquals(message.getMessage(), "Enrollments updated.");
         
         verify(mockAccount, times(2)).getEnrollments();
@@ -244,7 +244,7 @@ public class EnrollmentControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
 
-        Enrollment newEnrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", USER_ID);
+        Enrollment newEnrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", TEST_USER_ID);
         mockRequestBody(mockRequest, ImmutableSet.of(EnrollmentMigration.create(newEnrollment)));
         
         AccountService mockAccountService = mock(AccountService.class);
@@ -252,7 +252,7 @@ public class EnrollmentControllerTest extends Mockito {
         
         when(mockAccountService.getAccount(any())).thenReturn(null);
         
-        controller.updateUserEnrollments(USER_ID);
+        controller.updateUserEnrollments(TEST_USER_ID);
     }
     
     @Test
@@ -263,20 +263,20 @@ public class EnrollmentControllerTest extends Mockito {
 
         mockRequestBody(mockRequest, ImmutableSet.of());
         
-        AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, USER_ID);
+        AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, TEST_USER_ID);
         
         AccountService mockAccountService = mock(AccountService.class);
         controller.setAccountService(mockAccountService);
         
         Account mockAccount = mock(Account.class);
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID, "externalId");
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, "externalId");
         Set<Enrollment> enrollments = Sets.newHashSet(en1);
         when(mockAccount.getEnrollments()).thenReturn(enrollments);
         when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
         
         mockEditAccount(mockAccountService, mockAccount);
         
-        controller.updateUserEnrollments("healthcode:"+USER_ID);
+        controller.updateUserEnrollments("healthcode:"+TEST_USER_ID);
         
         verify(mockAccount, times(2)).getEnrollments();
         assertTrue(enrollments.isEmpty());

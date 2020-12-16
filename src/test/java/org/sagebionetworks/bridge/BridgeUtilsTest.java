@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge;
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
@@ -342,18 +342,18 @@ public class BridgeUtilsTest {
     
     @Test
     public void filterForStudyAccountReturnsSelfAccount() {
-        RequestContext.set(new RequestContext.Builder().withCallerUserId(USER_ID)
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID)
                 .withOrgSponsoredStudies(ImmutableSet.of("A")).build());
         
         Account account = Account.create();
-        account.setId(USER_ID);
+        account.setId(TEST_USER_ID);
         
         assertNotNull(BridgeUtils.filterForStudy(account));
     }
 
     @Test
     public void filterForStudyAccountNotSelfReturnsNull() {
-        RequestContext.set(new RequestContext.Builder().withCallerUserId(USER_ID)
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID)
                 .withOrgSponsoredStudies(ImmutableSet.of("A")).build());
         
         Account account = Account.create();

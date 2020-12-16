@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -106,7 +106,7 @@ public class FPHSControllerTest extends Mockito {
     }
     
     private UserSession setUserSession() {
-        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).withHealthCode("BBB").build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID).withHealthCode("BBB").build();
         
         UserSession session = new UserSession(participant);
         session.setAppId(FPHS_ID);

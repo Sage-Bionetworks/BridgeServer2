@@ -39,6 +39,7 @@ public class TestConstants {
     public static final String TEST_APP_ID = "test-app";
     public static final String TEST_STUDY_ID = "test-study";
     public static final String TEST_ORG_ID = "test-org-id";
+    public static final String TEST_EXTERNAL_ID = "test-external-id";
 
     public static final NotificationMessage NOTIFICATION_MESSAGE = new NotificationMessage.Builder()
             .withSubject("a subject").withMessage("a message").build();
@@ -46,7 +47,7 @@ public class TestConstants {
     public static final String REQUEST_ID = "request-id";
     public static final String UA = "Asthma/26 (Unknown iPhone; iPhone OS/9.1) BridgeSDK/4";
     public static final String IP_ADDRESS = "2.3.4.5";
-    public static final String USER_ID = "userId";
+    public static final String TEST_USER_ID = "userId";
     public static final String SYNAPSE_USER_ID = "12345";
     public static final DateTimeZone TIMEZONE_MSK = DateTimeZone.forOffsetHours(3);
 
@@ -59,7 +60,7 @@ public class TestConstants {
     public static final byte[] MOCK_MD5 = { -104, 10, -30, -37, 25, -113, 92, -9, 69, -118, -46, -87, 11, -14, 38, -61 };
     public static final String MOCK_MD5_HEX_ENCODED = "980ae2db198f5cf7458ad2a90bf226c3";
 
-    public static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, USER_ID);
+    public static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
     public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
             .withUserId("user-id").withAppId(TEST_APP_ID).build();
 
@@ -160,7 +161,7 @@ public class TestConstants {
     public static final Activity ACTIVITY_3 = new Activity.Builder().withLabel("Activity3").withGuid("AAA")
             .withTask("tapTest").build();
 
-    public static final String OWNER_ID = "oneOwnerId";
+    public static final String TEST_OWNER_ID = "oneOwnerId";
     public static final String IDENTIFIER = "oneIdentifier";
     public static final Set<String> STRING_TAGS = ImmutableSet.of("tag1", "tag2");
     public static final Set<Tag> TAGS = TagUtils.toTagSet(STRING_TAGS);

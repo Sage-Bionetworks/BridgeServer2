@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.SIGNATURE;
 import static org.sagebionetworks.bridge.TestConstants.SUBPOP_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.WITHDRAWAL;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -116,7 +116,7 @@ public class ConsentControllerTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         StudyParticipant participant = new StudyParticipant.Builder()
-                .withHealthCode(HEALTH_CODE).withId(USER_ID).build();
+                .withHealthCode(HEALTH_CODE).withId(TEST_USER_ID).build();
         session = new UserSession(participant);
         session.setAppId(TEST_APP_ID);
         session.setSessionToken(ORIGINAL_SESSION_TOKEN);
@@ -183,7 +183,7 @@ public class ConsentControllerTest extends Mockito {
     @Test
     public void getConsentSignatureV1() throws Exception {
         SubpopulationGuid defaultGuid = SubpopulationGuid.create(TEST_APP_ID);
-        when(mockConsentService.getConsentSignature(app, defaultGuid, USER_ID)).thenReturn(SIGNATURE);
+        when(mockConsentService.getConsentSignature(app, defaultGuid, TEST_USER_ID)).thenReturn(SIGNATURE);
         
         String result = controller.getConsentSignature();
         
@@ -191,12 +191,12 @@ public class ConsentControllerTest extends Mockito {
         assertEquals(SIGNATURE.getName(), retrieved.getName());
         assertEquals(SIGNATURE.getBirthdate(), retrieved.getBirthdate());
         
-        verify(mockConsentService).getConsentSignature(app, defaultGuid, USER_ID);
+        verify(mockConsentService).getConsentSignature(app, defaultGuid, TEST_USER_ID);
     }
     
     @Test
     public void getConsentSignatureV2() throws Exception {
-        when(mockConsentService.getConsentSignature(app, SUBPOP_GUID, USER_ID)).thenReturn(SIGNATURE);
+        when(mockConsentService.getConsentSignature(app, SUBPOP_GUID, TEST_USER_ID)).thenReturn(SIGNATURE);
         
         String result = controller.getConsentSignatureV2(SUBPOP_GUID.getGuid());
         
@@ -204,7 +204,7 @@ public class ConsentControllerTest extends Mockito {
         assertEquals(SIGNATURE.getName(), retrieved.getName());
         assertEquals(SIGNATURE.getBirthdate(), retrieved.getBirthdate());
         
-        verify(mockConsentService).getConsentSignature(app, SUBPOP_GUID, USER_ID);
+        verify(mockConsentService).getConsentSignature(app, SUBPOP_GUID, TEST_USER_ID);
     }
     
     @SuppressWarnings("deprecation")

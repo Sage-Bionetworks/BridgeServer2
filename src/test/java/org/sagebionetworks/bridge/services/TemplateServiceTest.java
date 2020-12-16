@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.UA;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
@@ -130,7 +130,7 @@ public class TemplateServiceTest extends Mockito {
         service.makeDefaultTemplateMap();
         when(service.generateGuid()).thenReturn(GUID1);
         when(service.getTimestamp()).thenReturn(TIMESTAMP);
-        when(service.getUserId()).thenReturn(USER_ID);
+        when(service.getUserId()).thenReturn(TEST_USER_ID);
         
         app = App.create();
         app.setIdentifier(TEST_APP_ID);
@@ -419,7 +419,7 @@ public class TemplateServiceTest extends Mockito {
         verify(mockTemplateDao).createTemplate(template);
         
         TemplateRevision revision = revisionCaptor.getValue();
-        assertEquals(revision.getCreatedBy(), USER_ID);
+        assertEquals(revision.getCreatedBy(), TEST_USER_ID);
         assertEquals(revision.getCreatedOn(), TIMESTAMP);
         assertEquals(revision.getTemplateGuid(), GUID1);
         assertEquals(revision.getStoragePath(), GUID1 + "." + TIMESTAMP.getMillis());

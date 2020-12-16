@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
-import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TAGS;
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.testng.Assert.assertEquals;
@@ -46,7 +46,7 @@ public class HibernateAssessmentTest {
         assessment.setMinutesToComplete(10);
         assessment.setOsName(ANDROID);
         assessment.setOriginGuid("originGuid");
-        assessment.setOwnerId(OWNER_ID);
+        assessment.setOwnerId(TEST_OWNER_ID);
         assessment.setTags(TAGS);
         assessment.setCustomizationFields(CUSTOMIZATION_FIELDS);
         assessment.setCreatedOn(CREATED_ON);
@@ -68,7 +68,7 @@ public class HibernateAssessmentTest {
         assertEquals(assessment.getMinutesToComplete(), new Integer(10));
         assertEquals(assessment.getOsName(), ANDROID);
         assertEquals(assessment.getOriginGuid(), "originGuid");
-        assertEquals(assessment.getOwnerId(), OWNER_ID);
+        assertEquals(assessment.getOwnerId(), TEST_OWNER_ID);
         assertEquals(assessment.getTags(), TAGS);
         assertEquals(assessment.getCustomizationFields(), CUSTOMIZATION_FIELDS);
         assertEquals(assessment.getCreatedOn(), CREATED_ON);

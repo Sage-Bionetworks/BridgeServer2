@@ -6,9 +6,12 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.AuthUtils.isSelfOrWorker;
-import static org.sagebionetworks.bridge.AuthUtils.isSelfOrStudyTeamMemberOrWorker;
-import static org.sagebionetworks.bridge.AuthUtils.isStudyTeamMemberOrWorker;
+import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_STUDY_TEAM_OR_WORKER;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_ORGADMIN_OR_WORKER;
+import static org.sagebionetworks.bridge.AuthUtils.IS_STUDY_TEAM_OR_WORKER;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -164,10 +167,11 @@ public class BridgeUtils {
             Set<String> callerStudies = context.getOrgSponsoredStudies();
             
             // If this is a call for one’s own record, or the caller is an admin or 
-            // worker, return the account. Callers that are not associated to an 
+            // worker, or the account is in the same organization as the caller who 
+            // is an org admin, return the account. Callers that are not associated to an 
             // organization also gain access, but only while we migrate away from 
             // this kind of global account.
-            if (isSelfOrWorker(account.getId())) {
+            if (IS_SELF_ORGADMIN_OR_WORKER.check(ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
                 return account;
             }
             // If after removing all enrollments that are not visible to the caller, 
@@ -195,7 +199,7 @@ public class BridgeUtils {
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
         for (Enrollment enrollment : account.getActiveEnrollments()) {
-            if (isSelfOrStudyTeamMemberOrWorker(enrollment.getStudyId(), account.getId())) {
+            if (IS_SELF_STUDY_TEAM_OR_WORKER.check(STUDY_ID, enrollment.getStudyId(), USER_ID, account.getId())) {
                 studyIds.add(enrollment.getStudyId());
                 if (enrollment.getExternalId() != null) {
                     externalIds.put(enrollment.getStudyId(), enrollment.getExternalId());
@@ -206,7 +210,7 @@ public class BridgeUtils {
     }
     
     public static ExternalIdentifier filterForStudy(ExternalIdentifier externalId) {
-        if (externalId != null && isStudyTeamMemberOrWorker(externalId.getStudyId())) {
+        if (externalId != null && IS_STUDY_TEAM_OR_WORKER.check(STUDY_ID, externalId.getStudyId())) {
             return externalId;
         }
         return null;
@@ -372,16 +376,6 @@ public class BridgeUtils {
     
     public static boolean isEmpty(Collection<?> coll) {
         return (coll == null || coll.isEmpty());
-    }
-    
-    public static <S,T> Map<S,T> asMap(List<T> list, Function<T,S> function) {
-        Map<S,T> map = Maps.newHashMap();
-        if (list != null && function != null) {
-            for (T item : list) {
-                map.put(function.apply(item), item);
-            }
-        }
-        return map;
     }
     
     public static Long parseLong(String value) {

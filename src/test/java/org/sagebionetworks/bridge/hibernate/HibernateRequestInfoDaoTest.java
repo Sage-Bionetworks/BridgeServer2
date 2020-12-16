@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertNotNull;
 
 import org.joda.time.DateTime;
@@ -33,8 +33,8 @@ public class HibernateRequestInfoDaoTest extends Mockito {
     
     @Test
     public void updateRequestInfoNoExistingObject() {
-        RequestInfo newInfo = new RequestInfo.Builder().withUserId(USER_ID).build();
-        when(mockHelper.getById(RequestInfo.class, USER_ID)).thenReturn(null);
+        RequestInfo newInfo = new RequestInfo.Builder().withUserId(TEST_USER_ID).build();
+        when(mockHelper.getById(RequestInfo.class, TEST_USER_ID)).thenReturn(null);
         
         dao.updateRequestInfo(newInfo);
 
@@ -43,11 +43,11 @@ public class HibernateRequestInfoDaoTest extends Mockito {
     
     @Test
     public void updateRequestInfoMergedWithExistingObject() {
-        RequestInfo newInfo = new RequestInfo.Builder().withUserId(USER_ID)
+        RequestInfo newInfo = new RequestInfo.Builder().withUserId(TEST_USER_ID)
                 .withActivitiesAccessedOn(DateTime.now()).build();
-        RequestInfo existingInfo = new RequestInfo.Builder().withUserId(USER_ID)
+        RequestInfo existingInfo = new RequestInfo.Builder().withUserId(TEST_USER_ID)
                 .withSignedInOn(DateTime.now()).build();
-        when(mockHelper.getById(RequestInfo.class, USER_ID)).thenReturn(existingInfo);
+        when(mockHelper.getById(RequestInfo.class, TEST_USER_ID)).thenReturn(existingInfo);
         
         dao.updateRequestInfo(newInfo);
 
@@ -60,23 +60,23 @@ public class HibernateRequestInfoDaoTest extends Mockito {
 
     @Test
     public void getRequestInfo() {
-        dao.getRequestInfo(USER_ID);
-        verify(mockHelper).getById(RequestInfo.class, USER_ID);
+        dao.getRequestInfo(TEST_USER_ID);
+        verify(mockHelper).getById(RequestInfo.class, TEST_USER_ID);
     }
 
     @Test
     public void removeRequestInfo() {
-        RequestInfo existingInfo = new RequestInfo.Builder().withUserId(USER_ID)
+        RequestInfo existingInfo = new RequestInfo.Builder().withUserId(TEST_USER_ID)
                 .withSignedInOn(DateTime.now()).build();
-        when(mockHelper.getById(RequestInfo.class, USER_ID)).thenReturn(existingInfo);
+        when(mockHelper.getById(RequestInfo.class, TEST_USER_ID)).thenReturn(existingInfo);
         
-        dao.removeRequestInfo(USER_ID);
-        verify(mockHelper).deleteById(RequestInfo.class, USER_ID);
+        dao.removeRequestInfo(TEST_USER_ID);
+        verify(mockHelper).deleteById(RequestInfo.class, TEST_USER_ID);
     }       
     
     @Test
     public void removeRequestInfoNoObject() {
-        dao.removeRequestInfo(USER_ID);
+        dao.removeRequestInfo(TEST_USER_ID);
         verify(mockHelper, never()).deleteById(any(), any());
     }       
 }

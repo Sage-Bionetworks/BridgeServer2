@@ -1,7 +1,9 @@
 
 package org.sagebionetworks.bridge.hibernate;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.AuthUtils.IS_STUDY_TEAM_OR_WORKER;
 
 import java.util.List;
 import java.util.Optional;
@@ -18,7 +20,6 @@ import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
 
-import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
@@ -161,13 +162,14 @@ public class HibernateAccountDao implements AccountDao {
             builder.orgMembership(search.getOrgMembership());
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
-        }
-        
-        // If the caller is a member of an organization, then they can only see accounts in the studies 
-        // sponsored by that organization. ADMIN accounts are exempt from this requirement.
-        if (!AuthUtils.isStudyTeamMemberOrWorker(null)) {
-            Set<String> callerStudies = context.getOrgSponsoredStudies();
-            builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
+            
+            // If the caller is a member of an organization, then they can only see accounts in the studies 
+            // sponsored by that organization. Note that this only applies now to enrollments, so admin 
+            // accounts are exempt.
+            if (!TRUE.equals(search.isAdminOnly()) && !IS_STUDY_TEAM_OR_WORKER.check()) {
+                Set<String> callerStudies = context.getOrgSponsoredStudies();
+                builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
+            }
         }
         if (!isCount) {
             builder.append("GROUP BY acct.id");

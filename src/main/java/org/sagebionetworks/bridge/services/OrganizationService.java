@@ -3,11 +3,14 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.AuthUtils.checkOrgMember;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthUtils.IS_ADMIN;
+import static org.sagebionetworks.bridge.AuthUtils.IS_ORGADMIN;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.OrganizationValidator.INSTANCE;
@@ -22,6 +25,7 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
@@ -124,6 +128,8 @@ public class OrganizationService {
      */
     public Organization updateOrganization(Organization organization) {
         checkNotNull(organization);
+
+        IS_ORGADMIN.checkAndThrow(ORG_ID, organization.getIdentifier());
         
         Validate.entityThrowingException(INSTANCE, organization);
         
@@ -167,6 +173,8 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
+        IS_ADMIN.checkAndThrow();
+        
         Organization existing = orgDao.getOrganization(appId, identifier)
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
         if (assessmentDao.hasAssessmentFromOrg(appId, identifier)) {
@@ -187,10 +195,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(search);
         
-        // Throws if organization does not exist.
-        getOrganization(appId, identifier);
-        
-        checkOrgMember(identifier);
+        IS_ORGADMIN.checkAndThrow(ORG_ID, identifier);
         
         AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
                 .copyOf(search)
@@ -200,19 +205,36 @@ public class OrganizationService {
         return accountDao.getPagedAccountSummaries(appId, scopedSearch);
     }
     
+    public PagedResourceList<AccountSummary> getUnassignedAdmins(String appId, AccountSummarySearch search) {
+        checkArgument(isNotBlank(appId));
+        checkNotNull(search);
+
+        AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
+            .copyOf(search)
+            .withAdminOnly(true)
+            .withOrgMembership("<none>").build();
+
+        return accountDao.getPagedAccountSummaries(appId, scopedSearch);
+    }
+    
+    /**
+     * Once assigned, only admins can re-assign accounts.
+     */
     public void addMember(String appId, String identifier, AccountId accountId) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        // Throws if organization does not exist.
-        getOrganization(appId, identifier);
+        IS_ORGADMIN.checkAndThrow(ORG_ID, identifier);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
-        checkOrgMember(identifier);
-
+        RequestContext context = RequestContext.get();
+        if (!context.isInRole(ADMIN) && account.getOrgMembership() != null) {
+            throw new BadRequestException("Account already assigned to an organization.");
+        }
+        
         account.setOrgMembership(identifier);
         accountDao.updateAccount(account);
         sessionUpdateService.updateOrgMembership(account.getId(), identifier);
@@ -223,13 +245,10 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        // Throws if organization does not exist.
-        getOrganization(appId, identifier);
+        IS_ORGADMIN.checkAndThrow(ORG_ID, identifier);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        
-        checkOrgMember(identifier);
         
         // Indicate if caller is trying to remove someone from an org they don't belong to
         if (account.getOrgMembership() == null || !account.getOrgMembership().equals(identifier)) {
