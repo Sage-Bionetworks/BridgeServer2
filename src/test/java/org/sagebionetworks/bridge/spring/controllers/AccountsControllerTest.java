@@ -223,7 +223,7 @@ public class AccountsControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAdministrativeSession();
         
         session.setParticipant(new StudyParticipant.Builder().withOrgMembership(TEST_ORG_ID).build());
         

@@ -190,10 +190,11 @@ public class BridgeUtils {
     
     /**
      * Callers only see the enrollment records they themselves are assigned to, unless they have no
-     * study memberships (then they are global and see everything).
+     * study memberships (then they are global and see everything). This call shows active enrollments
+     * only. 
      */
     public static StudyAssociations studyAssociationsVisibleToCaller(Account account) {
-        if (account == null || account.getEnrollments().isEmpty()) {
+        if (account == null || account.getActiveEnrollments().isEmpty()) {
             return NO_ASSOCIATIONS;
         }
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
@@ -201,7 +202,7 @@ public class BridgeUtils {
         // retrieving active enrollments here, while it can make sense, doesn't align with the APIs
         // for enrollments and external IDs, where the account is still visible (and still assigned
         // to an external ID that can't be reused). So return these but adjust tests accordingly.
-        for (Enrollment enrollment : account.getEnrollments()) {
+        for (Enrollment enrollment : account.getActiveEnrollments()) {
             if (IS_SELF_STUDY_TEAM_OR_WORKER.check(STUDY_ID, enrollment.getStudyId(), USER_ID, account.getId())) {
                 studyIds.add(enrollment.getStudyId());
                 if (enrollment.getExternalId() != null) {

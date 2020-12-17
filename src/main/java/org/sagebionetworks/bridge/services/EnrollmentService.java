@@ -20,13 +20,11 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -87,11 +85,11 @@ public class EnrollmentService {
         checkNotNull(appId);
         checkNotNull(userId);
         
+        // We want all enrollments, even withdrawn enrollments, so don't filter here.
         AccountId accountId = BridgeUtils.parseAccountId(appId, userId);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         IS_SELF_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId, USER_ID, account.getId());
 
         return enrollmentDao.getEnrollmentsForUser(appId, account.getId());

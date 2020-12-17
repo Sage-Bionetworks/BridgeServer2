@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -24,7 +23,6 @@ import com.google.common.collect.ImmutableSet;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -162,18 +160,16 @@ public class HibernateAccountDao implements AccountDao {
                 builder.append("AND :language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
             }
             builder.adminOnly(search.isAdminOnly());
-            if (search.getOrgMembership() != null) {
-                builder.orgMembership(search.getOrgMembership());
-            }
             
             String enrolledInStudy = search.getEnrolledInStudyId();
-            if (enrolledInStudy != null) { // this always takes precedence
+            if (search.getOrgMembership() != null) {
+                builder.orgMembership(search.getOrgMembership());
+            } else if (enrolledInStudy != null) { // this always takes precedence
                 Set<String> studies = ImmutableSet.of(search.getEnrolledInStudyId());
                 builder.append("AND enrollment.studyId IN (:studies)", "studies", studies);
             } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, WORKER)) {
                 builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
             }
-            
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
         }

@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -20,6 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -28,9 +28,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.hibernate.HibernateEnrollment;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -63,10 +65,18 @@ public class EnrollmentControllerTest extends Mockito {
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
         
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        
         UserSession session = new UserSession();
         session.setAppId(TEST_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, ADMIN);
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR, ADMIN);
+        doReturn(session).when(controller).getAdministrativeSession();
+    }
+    
+    @AfterMethod
+    public void afterMethod() { 
+        RequestContext.set(NULL_INSTANCE);
     }
     
     @Test

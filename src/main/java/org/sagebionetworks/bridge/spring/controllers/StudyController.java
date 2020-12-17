@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_ORGADMIN;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
-import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -61,7 +61,9 @@ public class StudyController extends BaseController {
 
     @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public Study getStudy(@PathVariable String id) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ORG_ADMIN, ADMIN);
+        UserSession session = getAdministrativeSession();
+        
+        IS_COORD_OR_ORGADMIN.checkAndThrow(STUDY_ID, id);
         
         return service.getStudy(session.getAppId(), id, true);
     }

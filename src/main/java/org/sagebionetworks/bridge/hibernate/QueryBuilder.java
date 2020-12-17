@@ -14,7 +14,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableSet;
 
 /**
  * A helper class to manage construction of HQL strings.

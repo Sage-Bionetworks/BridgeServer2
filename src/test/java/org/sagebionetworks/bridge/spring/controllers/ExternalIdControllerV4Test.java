@@ -100,7 +100,6 @@ public class ExternalIdControllerV4Test extends Mockito {
         session = new UserSession();
         session.setAppId(TEST_APP_ID);
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_COORDINATOR, RESEARCHER);
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
     }
@@ -180,6 +179,8 @@ public class ExternalIdControllerV4Test extends Mockito {
     
     @Test
     public void getExternalIdentifiersForStudy() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
 
@@ -196,6 +197,8 @@ public class ExternalIdControllerV4Test extends Mockito {
 
     @Test
     public void getExternalIdentifiersForNoParameters() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());

@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.apache.http.HttpStatus.SC_GONE;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,7 +57,7 @@ public class ExternalIdControllerV4 extends BaseController {
     public PagedResourceList<ExternalIdentifierInfo> getExternalIdentifiersForStudy(@PathVariable String studyId,
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize,
             @RequestParam(required = false) String idFilter) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_COORDINATOR, RESEARCHER);
+        UserSession session = getAdministrativeSession();
 
         IS_COORD_DEV_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         

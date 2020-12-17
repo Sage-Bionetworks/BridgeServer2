@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_ORGADMIN;
 import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_AND_ORG_MEMBER_OR_ORGADMIN;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -29,8 +28,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.AuthEvaluatorField;
-import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -62,16 +59,9 @@ public class AccountsController extends BaseController  {
             "roles", "dataGroups", "clientData", "languages", "orgMembership", 
             "password");
     
-    // The only fields that can be edited on an update on one's own account.
-    private static final Set<String> LIMITED_ACCOUNT_FIELDS = ImmutableSet.of("firstName", 
-            "lastName", "synapseUserId", "email", "phone", "attributes", "dataGroups", 
-            "clientData", "languages");
-    
     private ParticipantService participantService;
     
     private UserAdminService userAdminService;
-
-    private Object object;
     
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
@@ -108,32 +98,9 @@ public class AccountsController extends BaseController  {
         return verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
     }
     
-    @PostMapping("/v1/accounts/self")
-    public StatusMessage updateSelf() {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
-        String orgId = session.getParticipant().getOrgMembership();
-        
-        Account account = verifyOrgAdminIsActingOnOrgMember(
-                session.getAppId(), orgId, session.getId());
-        App app = appService.getApp(session.getAppId());
-        StudyParticipant existing = participantService.getParticipant(app, account, false);
-
-        // Only copy some fields to the existing object. We do it this way in case the 
-        // account is also being used as a participant—this way none of those fields will 
-        // be erased by an update through this API.
-        StudyParticipant updates = parseJson(StudyParticipant.class);
-        
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .copyOf(existing)
-                .copyFieldsOf(updates, LIMITED_ACCOUNT_FIELDS).build();
-        participantService.updateParticipant(app, participant);
-
-        return new StatusMessage("Member updated.");
-    }
-    
     @PostMapping("/v1/accounts/{userId}")
     public StatusMessage updateAccount(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAdministrativeSession();
         String orgId = session.getParticipant().getOrgMembership();
         
         Account account = verifyOrgAdminIsActingOnOrgMember(
@@ -260,17 +227,20 @@ public class AccountsController extends BaseController  {
         return new StatusMessage("User signed out.");
     }
     
-    public Account verifyOrgAdminIsActingOnOrgMember(String appId, String orgId, String userId) {
+    public Account verifyOrgAdminIsActingOnOrgMember(String appId, String callerOrgId, String userId) {
+        if (callerOrgId == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
         // The caller needs to be an administrator of this organization
         AccountId accountId = parseAccountId(appId, userId);
         Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        if (!orgId.equals(account.getOrgMembership())) {
+        if (!callerOrgId.equals(account.getOrgMembership())) {
             throw new EntityNotFoundException(Account.class);
         }
-        if (!IS_SELF_AND_ORG_MEMBER_OR_ORGADMIN.check(ORG_ID, orgId, USER_ID, account.getId())) {
+        if (!IS_SELF_AND_ORG_MEMBER_OR_ORGADMIN.check(ORG_ID, callerOrgId, USER_ID, account.getId())) {
             throw new EntityNotFoundException(Account.class);
         }
         return account;

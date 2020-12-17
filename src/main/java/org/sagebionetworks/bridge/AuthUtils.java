@@ -109,6 +109,10 @@ public class AuthUtils {
     public static final AuthEvaluator IS_ORG_MEMBER_IN_APP = new AuthEvaluator().isSharedOwner().or()
             .hasAnyRole(ADMIN);
     
+    public static final AuthEvaluator IS_COORD_OR_ORGADMIN = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, ORG_ADMIN).or()
+            .hasAnyRole(ADMIN);
+    
     /**
      * Is the caller in the required role? Superadmins always pass this check, but not admins.
      */

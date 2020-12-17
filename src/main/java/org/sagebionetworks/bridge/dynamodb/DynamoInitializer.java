@@ -41,7 +41,7 @@ public class DynamoInitializer {
      * and secondary indices) does not match.
      */
     public void init(Collection<TableDescription> tables) {
-        // initTables(tables);
+        initTables(tables);
     }
 
     void deleteTable(Class<?> table) {

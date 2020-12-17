@@ -155,7 +155,7 @@ public class EnrollmentServiceTest extends Mockito {
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, "extId");
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccount(accountId)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(account));
         
         List<EnrollmentDetail> details = ImmutableList.of();
         when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID)).thenReturn(details);
@@ -169,6 +169,9 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getEnrollmentsForUserNotFound() {
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.empty());
+        
         service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
     

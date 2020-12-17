@@ -1,9 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_RESEARCHER;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -41,7 +40,9 @@ public class EnrollmentController extends BaseController {
             @RequestParam(required = false) String pageSize,
             @RequestParam(required = false) String enrollmentFilter,
             @RequestParam(required = false) String includeTesters) {
-        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
+        
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         
         EnrollmentFilter filter = BridgeUtils.getEnumOrDefault(enrollmentFilter, EnrollmentFilter.class, null);
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
@@ -55,7 +56,9 @@ public class EnrollmentController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/enrollments")
     @ResponseStatus(HttpStatus.CREATED)
     public Enrollment enroll(@PathVariable String studyId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
+        
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         
         Enrollment enrollment = parseJson(Enrollment.class);
         enrollment.setAppId(session.getAppId());
@@ -67,7 +70,9 @@ public class EnrollmentController extends BaseController {
     @DeleteMapping("/v5/studies/{studyId}/enrollments/{userId}")
     public Enrollment unenroll(@PathVariable String studyId, @PathVariable String userId,
             @RequestParam(required = false) String withdrawalNote) {
-        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
+        
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         
         Enrollment enrollment = Enrollment.create(session.getAppId(), studyId, userId);
         enrollment.setWithdrawalNote(withdrawalNote);
