@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.IS_ORGADMIN;
+import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_AND_ORG_MEMBER_OR_ORGADMIN;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
@@ -25,12 +29,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -56,9 +62,16 @@ public class AccountsController extends BaseController  {
             "roles", "dataGroups", "clientData", "languages", "orgMembership", 
             "password");
     
+    // The only fields that can be edited on an update on one's own account.
+    private static final Set<String> LIMITED_ACCOUNT_FIELDS = ImmutableSet.of("firstName", 
+            "lastName", "synapseUserId", "email", "phone", "attributes", "dataGroups", 
+            "clientData", "languages");
+    
     private ParticipantService participantService;
     
     private UserAdminService userAdminService;
+
+    private Object object;
     
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
@@ -89,10 +102,33 @@ public class AccountsController extends BaseController  {
     
     @GetMapping("/v1/accounts/{userId}")
     public Account getAccount(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAdministrativeSession();
         String orgId = session.getParticipant().getOrgMembership();
         
         return verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
+    }
+    
+    @PostMapping("/v1/accounts/self")
+    public StatusMessage updateSelf() {
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        String orgId = session.getParticipant().getOrgMembership();
+        
+        Account account = verifyOrgAdminIsActingOnOrgMember(
+                session.getAppId(), orgId, session.getId());
+        App app = appService.getApp(session.getAppId());
+        StudyParticipant existing = participantService.getParticipant(app, account, false);
+
+        // Only copy some fields to the existing object. We do it this way in case the 
+        // account is also being used as a participant—this way none of those fields will 
+        // be erased by an update through this API.
+        StudyParticipant updates = parseJson(StudyParticipant.class);
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .copyOf(existing)
+                .copyFieldsOf(updates, LIMITED_ACCOUNT_FIELDS).build();
+        participantService.updateParticipant(app, participant);
+
+        return new StatusMessage("Member updated.");
     }
     
     @PostMapping("/v1/accounts/{userId}")
@@ -138,7 +174,7 @@ public class AccountsController extends BaseController  {
             produces = { APPLICATION_JSON_UTF8_VALUE })
     public String getRequestInfo(@PathVariable String userId) 
             throws JsonProcessingException {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAdministrativeSession();
         String orgId = session.getParticipant().getOrgMembership();
         
         verifyOrgAdminIsActingOnOrgMember(
@@ -156,7 +192,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/requestResetPassword")
     @ResponseStatus(code = ACCEPTED)
     public StatusMessage requestResetPassword(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAdministrativeSession();
         String orgId = session.getParticipant().getOrgMembership();
         
         verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
@@ -170,7 +206,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/resendEmailVerification")
     @ResponseStatus(code = ACCEPTED)
     public StatusMessage resendEmailVerification(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAdministrativeSession();
         String orgId = session.getParticipant().getOrgMembership();
         
         verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
@@ -184,7 +220,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/resendPhoneVerification")
     @ResponseStatus(code = ACCEPTED)
     public StatusMessage resendPhoneVerification(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAdministrativeSession();
         String orgId = session.getParticipant().getOrgMembership();
         
         verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
@@ -213,7 +249,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/signOut")
     public StatusMessage signOut(@PathVariable String userId,
             @RequestParam(required = false) boolean deleteReauthToken) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAdministrativeSession();
         String orgId = session.getParticipant().getOrgMembership();
         
         verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
@@ -226,16 +262,15 @@ public class AccountsController extends BaseController  {
     
     public Account verifyOrgAdminIsActingOnOrgMember(String appId, String orgId, String userId) {
         // The caller needs to be an administrator of this organization
-        if(!AuthUtils.isOrgAdmin(orgId)) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        // The account (if it exists) must be in the organization. Return account for 
-        // methods that need to load a StudyParticipant (don't load account twice).
-        Account account = accountService.getAccount( parseAccountId(appId, userId) );
+        AccountId accountId = parseAccountId(appId, userId);
+        Account account = accountService.getAccount(accountId);
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
         if (!orgId.equals(account.getOrgMembership())) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        if (!IS_SELF_AND_ORG_MEMBER_OR_ORGADMIN.check(ORG_ID, orgId, USER_ID, account.getId())) {
             throw new EntityNotFoundException(Account.class);
         }
         return account;

@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -110,7 +110,7 @@ public class EnrollmentControllerTest extends Mockito {
         Enrollment enrollment = new HibernateEnrollment();
         enrollment.setEnrolledOn(CREATED_ON);
         enrollment.setExternalId("anExternalId");
-        enrollment.setAccountId(USER_ID);
+        enrollment.setAccountId(TEST_USER_ID);
         enrollment.setConsentRequired(true);
         
         TestUtils.mockRequestBody(mockRequest, enrollment);
@@ -128,7 +128,7 @@ public class EnrollmentControllerTest extends Mockito {
         assertEquals(value.getStudyId(), TEST_STUDY_ID);
         assertEquals(value.getEnrolledOn(), CREATED_ON);
         assertEquals(value.getExternalId(), "anExternalId");
-        assertEquals(value.getAccountId(), USER_ID);
+        assertEquals(value.getAccountId(), TEST_USER_ID);
         assertTrue(value.isConsentRequired());
     }
 
@@ -137,7 +137,7 @@ public class EnrollmentControllerTest extends Mockito {
         Enrollment completed = new HibernateEnrollment();
         when(mockService.unenroll(any())).thenReturn(completed);
 
-        Enrollment retValue = controller.unenroll(TEST_STUDY_ID, USER_ID, "This is a note");
+        Enrollment retValue = controller.unenroll(TEST_STUDY_ID, TEST_USER_ID, "This is a note");
         assertSame(retValue, completed);
         
         verify(mockService).unenroll(enrollmentCaptor.capture());
@@ -146,6 +146,6 @@ public class EnrollmentControllerTest extends Mockito {
         assertEquals(value.getWithdrawalNote(), "This is a note");
         assertEquals(value.getAppId(), TEST_APP_ID);
         assertEquals(value.getStudyId(), TEST_STUDY_ID);
-        assertEquals(value.getAccountId(), USER_ID);
+        assertEquals(value.getAccountId(), TEST_USER_ID);
     }
 }

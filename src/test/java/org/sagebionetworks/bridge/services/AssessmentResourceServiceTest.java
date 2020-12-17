@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
-import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
@@ -89,7 +89,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID).build());
     }
     
     @AfterMethod
@@ -348,7 +348,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void updateSharedResource() { 
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(TEST_APP_ID + ":" + OWNER_ID);
+        assessment.setOwnerId(TEST_APP_ID + ":" + TEST_OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource existing = AssessmentResourceTest.createAssessmentResource();
@@ -588,10 +588,10 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void importAssessmentResourcesCallerCorrectOrg() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID).build());
 
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(OWNER_ID);
+        assessment.setOwnerId(TEST_OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
@@ -619,7 +619,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void publishAssessmentResources() {
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(TEST_APP_ID+":"+OWNER_ID);
+        assessment.setOwnerId(TEST_APP_ID+":"+TEST_OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
@@ -638,10 +638,10 @@ public class AssessmentResourceServiceTest extends Mockito {
     public void publishAssessmentResourcesOwnerInOrg() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(TEST_APP_ID+":"+OWNER_ID);
+        assessment.setOwnerId(TEST_APP_ID+":"+TEST_OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
@@ -661,7 +661,7 @@ public class AssessmentResourceServiceTest extends Mockito {
                 .withCallerOrgMembership("wrongOwnerId").build());
         
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(TEST_APP_ID+":"+OWNER_ID);
+        assessment.setOwnerId(TEST_APP_ID+":"+TEST_OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
@@ -672,10 +672,10 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void publishAssessmentResourcesCallerWrongAppContext() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerEnrolledStudies(ImmutableSet.of(OWNER_ID)).build());
+                .withCallerEnrolledStudies(ImmutableSet.of(TEST_OWNER_ID)).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
-        assessment.setOwnerId(TEST_APP_ID+":"+OWNER_ID);
+        assessment.setOwnerId(TEST_APP_ID+":"+TEST_OWNER_ID);
         when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");

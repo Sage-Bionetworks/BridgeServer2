@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.sagebionetworks.bridge.AuthUtils.checkSelfStudyCoordinatorOrResearcher;
-import static org.sagebionetworks.bridge.AuthUtils.checkStudyCoordinatorOrResearcher;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_RESEARCHER;
+import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_COORD_OR_RESEARCHER;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -18,11 +20,13 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -65,7 +69,7 @@ public class EnrollmentService {
         checkNotNull(appId);
         checkNotNull(studyId);
         
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
 
         if (offsetBy != null && offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
@@ -88,9 +92,9 @@ public class EnrollmentService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        checkSelfStudyCoordinatorOrResearcher(studyId, userId);
+        IS_SELF_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId, USER_ID, account.getId());
 
-        return enrollmentDao.getEnrollmentsForUser(appId, userId);
+        return enrollmentDao.getEnrollmentsForUser(appId, account.getId());
     }
     
     public Enrollment enroll(Enrollment enrollment) {
@@ -100,7 +104,8 @@ public class EnrollmentService {
         Validate.entityThrowingException(INSTANCE, enrollment);
         
         // Verify that the caller has access to this study
-        checkSelfStudyCoordinatorOrResearcher(enrollment.getStudyId(), enrollment.getAccountId());
+        IS_SELF_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID,
+                enrollment.getAccountId());
 
         // Because this is an enrollment, we don't want to check the caller's access to the 
         // account based on study, because the account has not been put in a study accessible
@@ -123,7 +128,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, newEnrollment);
         
-        checkSelfStudyCoordinatorOrResearcher(newEnrollment.getStudyId(), account.getId());
+        IS_SELF_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, newEnrollment.getStudyId(), USER_ID, account.getId());
 
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             if (existingEnrollment.getStudyId().equals(newEnrollment.getStudyId())) {
@@ -183,7 +188,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, enrollment);
         
-        checkSelfStudyCoordinatorOrResearcher(enrollment.getStudyId(), account.getId());
+        IS_SELF_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID, account.getId());
         
         // If supplied, this value should be the same timestamp as the withdrewOn
         // value in the signature. Otherwise just set it here. 

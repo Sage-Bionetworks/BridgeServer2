@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthUtils.IS_ORG_MEMBER;
 
 import java.util.Map;
 import java.util.Optional;
@@ -12,7 +14,6 @@ import com.google.common.collect.Iterables;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -88,7 +89,7 @@ public class StudyParticipantValidator implements Validator {
                 Optional<Organization> opt = organizationService.getOrganizationOpt(app.getIdentifier(), orgId);
                 if (!opt.isPresent()) {
                     errors.rejectValue("orgMembership", "is not a valid organization");
-                } else if (!AuthUtils.isOrgMember(orgId)) {
+                } else if (!IS_ORG_MEMBER.check(ORG_ID, orgId)) {
                     errors.rejectValue("orgMembership", "cannot be set by caller");
                 }
             }

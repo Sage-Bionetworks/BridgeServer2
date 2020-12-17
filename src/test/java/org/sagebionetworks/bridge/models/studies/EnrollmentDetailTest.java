@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.models.studies;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -30,7 +30,7 @@ public class EnrollmentDetailTest {
         account3.setEmail("email3@email.com");
         AccountRef ref3 = new AccountRef(account3);
         
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setExternalId("anExternalId");
         enrollment.setConsentRequired(true);
 

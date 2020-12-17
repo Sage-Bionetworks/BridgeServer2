@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
@@ -147,7 +147,7 @@ public class TemplateRevisionValidatorTest {
         revision.setDocumentContent(BODY);
         revision.setTemplateGuid(TEMPLATE_GUID);
         revision.setCreatedOn(TIMESTAMP);
-        revision.setCreatedBy(USER_ID);
+        revision.setCreatedBy(TEST_USER_ID);
         revision.setStoragePath(STORAGE_PATH);
         revision.setMimeType(HTML);
         return revision;

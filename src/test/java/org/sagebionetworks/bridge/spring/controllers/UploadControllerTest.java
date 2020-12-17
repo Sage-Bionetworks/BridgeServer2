@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
@@ -397,7 +397,7 @@ public class UploadControllerTest extends Mockito {
     
     @Test
     public void getUploadByRecordId() throws Exception {
-        doReturn(USER_ID).when(mockResearcherSession).getId();
+        doReturn(TEST_USER_ID).when(mockResearcherSession).getId();
         doReturn(TEST_APP_ID).when(mockResearcherSession).getAppId();
         doReturn(true).when(mockResearcherSession).isInRole(EnumSet.of(SUPERADMIN, WORKER));
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
@@ -428,7 +428,7 @@ public class UploadControllerTest extends Mockito {
     public void getUploadByRecordIdRejectsAppAdmin() throws Exception {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
         doReturn(true).when(mockResearcherSession).isInRole(ADMIN);
-        doReturn(USER_ID).when(mockResearcherSession).getId();
+        doReturn(TEST_USER_ID).when(mockResearcherSession).getId();
         when(mockResearcherSession.getAppId()).thenReturn(TEST_APP_ID);
 
         HealthDataRecord record = HealthDataRecord.create();

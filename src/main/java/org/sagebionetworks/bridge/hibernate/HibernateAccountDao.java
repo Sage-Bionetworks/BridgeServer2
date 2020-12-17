@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,10 +19,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -156,26 +161,19 @@ public class HibernateAccountDao implements AccountDao {
             if (search.getLanguage() != null) {
                 builder.append("AND :language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
             }
-            // adminOnly=true, should have orgMembership; adminOnly=false, should have only studyId.
-            // adminOnly flag sets a condition on the roles of the account, and is slightly different as
-            // you can query for non-associated and non-enrolled accounts with it.
             builder.adminOnly(search.isAdminOnly());
-            builder.enrolledInStudy(callerStudies, search.getEnrolledInStudyId());
-/*            
-            String studyId = search.getEnrolledInStudyId();
-            if (studyId != null) {
-                if (callerStudies.contains(studyId)) {
-                    builder.append("AND enrollment.studyId IN (:studies)", "studies", ImmutableSet.of(studyId));
-                } else {
-                    // Given earlier auth tests, this code shouldn't be executed, but if it is, the 
-                    // query will return no results (by design)).
-                    builder.append("AND enrollment.studyId IN (:studies)", "studies", ImmutableSet.of());
-                }
-            }
-            */
             if (search.getOrgMembership() != null) {
                 builder.orgMembership(search.getOrgMembership());
             }
+            
+            String enrolledInStudy = search.getEnrolledInStudyId();
+            if (enrolledInStudy != null) { // this always takes precedence
+                Set<String> studies = ImmutableSet.of(search.getEnrolledInStudyId());
+                builder.append("AND enrollment.studyId IN (:studies)", "studies", studies);
+            } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, WORKER)) {
+                builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
+            }
+            
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
         }

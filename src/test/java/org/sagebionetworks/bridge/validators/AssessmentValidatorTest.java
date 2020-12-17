@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
-import static org.sagebionetworks.bridge.TestConstants.OWNER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
@@ -63,9 +63,9 @@ public class AssessmentValidatorTest extends Mockito {
     @Test
     public void validSharedAssessment() {
         validator = new AssessmentValidator(SHARED_APP_ID, mockOrganizationService);
-        assessment.setOwnerId(TEST_APP_ID + ":" + OWNER_ID);
+        assessment.setOwnerId(TEST_APP_ID + ":" + TEST_OWNER_ID);
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, OWNER_ID)).thenReturn(Organization.create());
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID)).thenReturn(Organization.create());
     
         Validate.entityThrowingException(validator, assessment);
     }

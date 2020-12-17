@@ -10,10 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.http.client.fluent.Request;
-
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 
 import com.google.common.base.Joiner;
@@ -57,17 +54,6 @@ class QueryBuilder {
                 phrases.add("AND size(acct.roles) > 0");
             } else {
                 phrases.add("AND size(acct.roles) = 0");
-            }
-        }
-    }
-    public void enrolledInStudy(Set<String> callerStudies, String studyId) {
-        if (studyId != null) {
-            phrases.add("AND enrollment.studyId IN (:studies)");
-            if (callerStudies.contains(studyId)) {
-                params.put("studies", ImmutableSet.of(studyId));
-            } else {
-                // this effectively means no results will be returned.
-                params.put("studies", ImmutableSet.of());
             }
         }
     }

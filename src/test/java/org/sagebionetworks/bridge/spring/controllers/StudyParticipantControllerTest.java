@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -147,10 +147,10 @@ public class StudyParticipantControllerTest extends Mockito {
         // the target study.
         mockAccountInStudy();
         
-        PagedResourceList<EnrollmentDetail> page = controller.getEnrollmentsForUser(TEST_STUDY_ID, USER_ID);
+        PagedResourceList<EnrollmentDetail> page = controller.getEnrollmentsForUser(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(page.getItems().size(), 1);
         
-        verify(mockEnrollmentService, times(2)).getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+        verify(mockEnrollmentService, times(2)).getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -164,7 +164,7 @@ public class StudyParticipantControllerTest extends Mockito {
         // the target study.
         mockAccountNotInStudy();
         
-        controller.getEnrollmentsForUser(TEST_STUDY_ID, USER_ID);
+        controller.getEnrollmentsForUser(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -224,15 +224,15 @@ public class StudyParticipantControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withLastName("lastName").build();
-        when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, TEST_USER_ID, true)).thenReturn(participant);
         
         mockAccountInStudy();
 
-        String retValue = controller.getParticipant(TEST_STUDY_ID, USER_ID, true);
+        String retValue = controller.getParticipant(TEST_STUDY_ID, TEST_USER_ID, true);
         StudyParticipant deser = BridgeObjectMapper.get().readValue(retValue, StudyParticipant.class);
         assertEquals(deser.getLastName(), participant.getLastName());
         
-        verify(mockParticipantService).getParticipant(app, USER_ID, true);
+        verify(mockParticipantService).getParticipant(app, TEST_USER_ID, true);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -243,11 +243,11 @@ public class StudyParticipantControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withLastName("lastName").build();
-        when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, TEST_USER_ID, true)).thenReturn(participant);
         
         mockAccountNotInStudy();
 
-        controller.getParticipant(TEST_STUDY_ID, USER_ID, true);
+        controller.getParticipant(TEST_STUDY_ID, TEST_USER_ID, true);
     }
     
     @Test
@@ -258,9 +258,9 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountInStudy();
         
-        controller.getParticipant(TEST_STUDY_ID, USER_ID, false);
+        controller.getParticipant(TEST_STUDY_ID, TEST_USER_ID, false);
         
-        verify(mockParticipantService).getParticipant(app, USER_ID, false);
+        verify(mockParticipantService).getParticipant(app, TEST_USER_ID, false);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -271,7 +271,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountNotInStudy();
         
-        controller.getParticipant(TEST_STUDY_ID, USER_ID, false);
+        controller.getParticipant(TEST_STUDY_ID, TEST_USER_ID, false);
     }
     
     @Test
@@ -287,11 +287,11 @@ public class StudyParticipantControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode").build();
-        when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, TEST_USER_ID, true)).thenReturn(participant);
         
         mockAccountInStudy();
 
-        String retValue = controller.getParticipant(TEST_STUDY_ID, USER_ID, true);
+        String retValue = controller.getParticipant(TEST_STUDY_ID, TEST_USER_ID, true);
         StudyParticipant deser = BridgeObjectMapper.get().readValue(retValue, StudyParticipant.class);
         assertEquals(deser.getHealthCode(), "healthCode");
     }
@@ -307,11 +307,11 @@ public class StudyParticipantControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode").build();
-        when(mockParticipantService.getParticipant(app, USER_ID, true)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, TEST_USER_ID, true)).thenReturn(participant);
         
         mockAccountInStudy();
 
-        String retValue = controller.getParticipant(TEST_STUDY_ID, USER_ID, true);
+        String retValue = controller.getParticipant(TEST_STUDY_ID, TEST_USER_ID, true);
         StudyParticipant deser = BridgeObjectMapper.get().readValue(retValue, StudyParticipant.class);
         assertEquals(deser.getHealthCode(), "healthCode");
     }
@@ -329,14 +329,14 @@ public class StudyParticipantControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode").build();
-        when(mockParticipantService.getParticipant(app, "healthcode:"+USER_ID, true)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, "healthcode:"+TEST_USER_ID, true)).thenReturn(participant);
         
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "healthcode:"+USER_ID);
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "healthcode:"+TEST_USER_ID);
         List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, "healthcode:"+USER_ID))
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, "healthcode:"+TEST_USER_ID))
             .thenReturn(list);
 
-        controller.getParticipant(TEST_STUDY_ID, "healthcode:"+USER_ID, true);
+        controller.getParticipant(TEST_STUDY_ID, "healthcode:"+TEST_USER_ID, true);
     }
     
     @Test
@@ -348,19 +348,19 @@ public class StudyParticipantControllerTest extends Mockito {
         RequestInfo requestInfo = new RequestInfo.Builder()
                 .withAppId(TEST_APP_ID)
                 .withLanguages(LANGUAGES).build();
-        when(mockRequestInfoService.getRequestInfo(USER_ID)).thenReturn(requestInfo);
+        when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
         
         mockAccountInStudy();
 
-        String retValue = controller.getRequestInfo(TEST_STUDY_ID, USER_ID);
+        String retValue = controller.getRequestInfo(TEST_STUDY_ID, TEST_USER_ID);
         RequestInfo deser = BridgeObjectMapper.get().readValue(retValue, RequestInfo.class);
         assertEquals(deser.getLanguages(), LANGUAGES);
         
-        verify(mockRequestInfoService).getRequestInfo(USER_ID);
+        verify(mockRequestInfoService).getRequestInfo(TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getRequestInfoWrongSTudy() throws Exception {
+    public void getRequestInfoWrongStudy() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());
@@ -368,11 +368,11 @@ public class StudyParticipantControllerTest extends Mockito {
         RequestInfo requestInfo = new RequestInfo.Builder()
                 .withAppId(TEST_APP_ID)
                 .withLanguages(LANGUAGES).build();
-        when(mockRequestInfoService.getRequestInfo(USER_ID)).thenReturn(requestInfo);
+        when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
         
         mockAccountNotInStudy();
 
-        controller.getRequestInfo(TEST_STUDY_ID, USER_ID);
+        controller.getRequestInfo(TEST_STUDY_ID, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -381,12 +381,20 @@ public class StudyParticipantControllerTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());
         
+        EnrollmentDetail mockDetail = mock(EnrollmentDetail.class);
+        when(mockDetail.getStudyId()).thenReturn(TEST_STUDY_ID);
+        
+        List<EnrollmentDetail> list = ImmutableList.of(mockDetail);
+        
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
+            .thenReturn(list);
+        
         RequestInfo requestInfo = new RequestInfo.Builder()
                 .withAppId("not-the-test-app")
                 .withLanguages(LANGUAGES).build();
-        when(mockRequestInfoService.getRequestInfo(USER_ID)).thenReturn(requestInfo);
+        when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
         
-        controller.getRequestInfo(TEST_STUDY_ID, USER_ID);
+        controller.getRequestInfo(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -402,12 +410,12 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountInStudy();
 
-        StatusMessage retValue = controller.updateParticipant(TEST_STUDY_ID, USER_ID);
+        StatusMessage retValue = controller.updateParticipant(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getMessage(), "Participant updated.");
         
         verify(mockParticipantService).updateParticipant(eq(app), participantCaptor.capture());
         StudyParticipant captured = participantCaptor.getValue();
-        assertEquals(captured.getId(), USER_ID);
+        assertEquals(captured.getId(), TEST_USER_ID);
         assertEquals(captured.getLastName(), "lastName");
     }
     
@@ -424,7 +432,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountNotInStudy();
 
-        controller.updateParticipant(TEST_STUDY_ID, USER_ID);
+        controller.updateParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -435,10 +443,10 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountInStudy();
 
-        StatusMessage retValue = controller.signOut(TEST_STUDY_ID, USER_ID, true);
+        StatusMessage retValue = controller.signOut(TEST_STUDY_ID, TEST_USER_ID, true);
         assertEquals(retValue.getMessage(), "User signed out.");
         
-        verify(mockParticipantService).signUserOut(app, USER_ID, true);
+        verify(mockParticipantService).signUserOut(app, TEST_USER_ID, true);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -449,7 +457,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountNotInStudy();
 
-        controller.signOut(TEST_STUDY_ID, USER_ID, true);
+        controller.signOut(TEST_STUDY_ID, TEST_USER_ID, true);
     }
     
     @Test
@@ -460,10 +468,10 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountInStudy();
 
-        StatusMessage retValue = controller.signOut(TEST_STUDY_ID, USER_ID, false);
+        StatusMessage retValue = controller.signOut(TEST_STUDY_ID, TEST_USER_ID, false);
         assertEquals(retValue.getMessage(), "User signed out.");
         
-        verify(mockParticipantService).signUserOut(app, USER_ID, false);
+        verify(mockParticipantService).signUserOut(app, TEST_USER_ID, false);
     }
     
     @Test
@@ -474,10 +482,10 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountInStudy();
         
-        StatusMessage retValue = controller.requestResetPassword(TEST_STUDY_ID, USER_ID);
+        StatusMessage retValue = controller.requestResetPassword(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getMessage(), "Request to reset password sent to user.");
         
-        verify(mockParticipantService).requestResetPassword(app, USER_ID);
+        verify(mockParticipantService).requestResetPassword(app, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -488,7 +496,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountNotInStudy();
         
-        controller.requestResetPassword(TEST_STUDY_ID, USER_ID);
+        controller.requestResetPassword(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -499,9 +507,9 @@ public class StudyParticipantControllerTest extends Mockito {
 
         mockAccountInStudy();
         
-        controller.resendEmailVerification(TEST_STUDY_ID, USER_ID);
+        controller.resendEmailVerification(TEST_STUDY_ID, TEST_USER_ID);
         
-        verify(mockParticipantService).resendVerification(app, ChannelType.EMAIL, USER_ID);
+        verify(mockParticipantService).resendVerification(app, ChannelType.EMAIL, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -512,7 +520,7 @@ public class StudyParticipantControllerTest extends Mockito {
 
         mockAccountNotInStudy();
         
-        controller.resendEmailVerification(TEST_STUDY_ID, USER_ID);
+        controller.resendEmailVerification(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -523,9 +531,9 @@ public class StudyParticipantControllerTest extends Mockito {
 
         mockAccountInStudy();
         
-        controller.resendPhoneVerification(TEST_STUDY_ID, USER_ID);
+        controller.resendPhoneVerification(TEST_STUDY_ID, TEST_USER_ID);
         
-        verify(mockParticipantService).resendVerification(app, ChannelType.PHONE, USER_ID);
+        verify(mockParticipantService).resendVerification(app, ChannelType.PHONE, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -536,7 +544,7 @@ public class StudyParticipantControllerTest extends Mockito {
 
         mockAccountNotInStudy();
         
-        controller.resendPhoneVerification(TEST_STUDY_ID, USER_ID);
+        controller.resendPhoneVerification(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -547,10 +555,10 @@ public class StudyParticipantControllerTest extends Mockito {
 
         mockAccountInStudy();
         
-        StatusMessage retValue = controller.resendConsentAgreement(TEST_STUDY_ID, USER_ID, "guid");
+        StatusMessage retValue = controller.resendConsentAgreement(TEST_STUDY_ID, TEST_USER_ID, "guid");
         assertEquals(retValue.getMessage(), "Consent agreement resent to user.");
         
-        verify(mockParticipantService).resendConsentAgreement(app, SubpopulationGuid.create("guid"), USER_ID);
+        verify(mockParticipantService).resendConsentAgreement(app, SubpopulationGuid.create("guid"), TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -561,7 +569,7 @@ public class StudyParticipantControllerTest extends Mockito {
 
         mockAccountNotInStudy();
         
-        controller.resendConsentAgreement(TEST_STUDY_ID, USER_ID, "guid");
+        controller.resendConsentAgreement(TEST_STUDY_ID, TEST_USER_ID, "guid");
     }
     
     @Test
@@ -576,14 +584,14 @@ public class StudyParticipantControllerTest extends Mockito {
                 .build());
         
         when(mockParticipantService
-                .getUploads(app, USER_ID, start, end, 50, "offsetKey")).thenReturn(page);
+                .getUploads(app, TEST_USER_ID, start, end, 50, "offsetKey")).thenReturn(page);
 
         mockAccountInStudy();
         
-        ForwardCursorPagedResourceList<UploadView> retValue = controller.getUploads(TEST_STUDY_ID, USER_ID, start.toString(), end.toString(), 50, "offsetKey");
+        ForwardCursorPagedResourceList<UploadView> retValue = controller.getUploads(TEST_STUDY_ID, TEST_USER_ID, start.toString(), end.toString(), 50, "offsetKey");
         assertSame(retValue, page);
         
-        verify(mockParticipantService).getUploads(app, USER_ID, start, end, 50, "offsetKey");
+        verify(mockParticipantService).getUploads(app, TEST_USER_ID, start, end, 50, "offsetKey");
     }
 
     @Test
@@ -595,14 +603,14 @@ public class StudyParticipantControllerTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());
         
-        when(mockParticipantService.getUploads(app, USER_ID, null, null, null, null)).thenReturn(page);
+        when(mockParticipantService.getUploads(app, TEST_USER_ID, null, null, null, null)).thenReturn(page);
 
         mockAccountInStudy();
         
-        ForwardCursorPagedResourceList<UploadView> retValue = controller.getUploads(TEST_STUDY_ID, USER_ID, null, null, null, null);
+        ForwardCursorPagedResourceList<UploadView> retValue = controller.getUploads(TEST_STUDY_ID, TEST_USER_ID, null, null, null, null);
         assertSame(retValue, page);
         
-        verify(mockParticipantService).getUploads(app, USER_ID, null, null, null, null);
+        verify(mockParticipantService).getUploads(app, TEST_USER_ID, null, null, null, null);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -615,7 +623,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountNotInStudy();
         
-        controller.getUploads(TEST_STUDY_ID, USER_ID, start.toString(), end.toString(), 50, "offsetKey");
+        controller.getUploads(TEST_STUDY_ID, TEST_USER_ID, start.toString(), end.toString(), 50, "offsetKey");
     }
     
     @Test
@@ -627,12 +635,12 @@ public class StudyParticipantControllerTest extends Mockito {
         mockAccountInStudy();
         
         List<NotificationRegistration> list = ImmutableList.of(NotificationRegistration.create());
-        when(mockParticipantService.listRegistrations(app, USER_ID)).thenReturn(list);
+        when(mockParticipantService.listRegistrations(app, TEST_USER_ID)).thenReturn(list);
         
-        ResourceList<NotificationRegistration> retValue = controller.getNotificationRegistrations(TEST_STUDY_ID, USER_ID);
+        ResourceList<NotificationRegistration> retValue = controller.getNotificationRegistrations(TEST_STUDY_ID, TEST_USER_ID);
         assertSame(retValue.getItems(), list);
         
-        verify(mockParticipantService).listRegistrations(app, USER_ID);
+        verify(mockParticipantService).listRegistrations(app, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -643,7 +651,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountNotInStudy();
         
-        controller.getNotificationRegistrations(TEST_STUDY_ID, USER_ID);
+        controller.getNotificationRegistrations(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -658,9 +666,9 @@ public class StudyParticipantControllerTest extends Mockito {
                 .withMessage("message").build();
         mockRequestBody(mockRequest, msg);
         
-        controller.sendNotification(TEST_STUDY_ID, USER_ID);
+        controller.sendNotification(TEST_STUDY_ID, TEST_USER_ID);
         
-        verify(mockParticipantService).sendNotification(eq(app), eq(USER_ID), messageCaptor.capture());
+        verify(mockParticipantService).sendNotification(eq(app), eq(TEST_USER_ID), messageCaptor.capture());
         NotificationMessage captured = messageCaptor.getValue();
         assertEquals(captured.getSubject(), "subject");
         assertEquals(captured.getMessage(), "message");
@@ -674,7 +682,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountNotInStudy();
         
-        controller.sendNotification(TEST_STUDY_ID, USER_ID);
+        controller.sendNotification(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -684,17 +692,17 @@ public class StudyParticipantControllerTest extends Mockito {
                 .build());
         
         Account account = Account.create();
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(en));
         account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
         
-        AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, USER_ID);
+        AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(account);
         
-        StatusMessage retValue = controller.deleteTestParticipant(TEST_STUDY_ID, USER_ID);
+        StatusMessage retValue = controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getMessage(), "User deleted.");
         
-        verify(mockUserAdminService).deleteUser(app, USER_ID);
+        verify(mockUserAdminService).deleteUser(app, TEST_USER_ID);
     }    
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -704,14 +712,14 @@ public class StudyParticipantControllerTest extends Mockito {
                 .build());
         
         Account account = Account.create();
-        Enrollment en = Enrollment.create(TEST_APP_ID, "wrong-study", USER_ID);
+        Enrollment en = Enrollment.create(TEST_APP_ID, "wrong-study", TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(en));
         account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
         
-        AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, USER_ID);
+        AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(account);
         
-        controller.deleteTestParticipant(TEST_STUDY_ID, USER_ID);
+        controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -720,10 +728,10 @@ public class StudyParticipantControllerTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());
         
-        AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, USER_ID);
+        AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(null);
         
-        controller.deleteTestParticipant(TEST_STUDY_ID, USER_ID);
+        controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }    
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -733,13 +741,13 @@ public class StudyParticipantControllerTest extends Mockito {
                 .build());
         
         Account account = Account.create();
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(en));
         
-        AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, USER_ID);
+        AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(account);
         
-        controller.deleteTestParticipant(TEST_STUDY_ID, USER_ID);
+        controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -751,12 +759,12 @@ public class StudyParticipantControllerTest extends Mockito {
         mockAccountInStudy();
         
         List<ActivityEvent> list = ImmutableList.of();
-        when(mockParticipantService.getActivityEvents(app, USER_ID)).thenReturn(list);
+        when(mockParticipantService.getActivityEvents(app, TEST_USER_ID)).thenReturn(list);
         
-        ResourceList<ActivityEvent> retValue = controller.getActivityEvents(TEST_STUDY_ID, USER_ID);
+        ResourceList<ActivityEvent> retValue = controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
         assertSame(retValue.getItems(), list);
         
-        verify(mockParticipantService).getActivityEvents(app, USER_ID);
+        verify(mockParticipantService).getActivityEvents(app, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -767,20 +775,20 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountNotInStudy();
         
-        controller.getActivityEvents(TEST_STUDY_ID, USER_ID);
+        controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     private void mockAccountInStudy() {
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID);
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, USER_ID))
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
             .thenReturn(list);
     }
     
     private void mockAccountNotInStudy() {
-        Enrollment en = Enrollment.create(TEST_APP_ID, "some other study", USER_ID);
+        Enrollment en = Enrollment.create(TEST_APP_ID, "some other study", TEST_USER_ID);
         List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, USER_ID))
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
             .thenReturn(list);
     }
 }

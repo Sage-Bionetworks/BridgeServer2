@@ -1055,7 +1055,7 @@ public class HibernateAccountDaoTest extends Mockito {
                 + "enrollment.studyId IN (:studies) GROUP BY acct.id";
 
         assertEquals(builder.getQuery(), finalQuery);
-        assertEquals(builder.getParameters().get("studies"), ImmutableSet.of());
+        assertEquals(builder.getParameters().get("studies"), ImmutableSet.of(TEST_STUDY_ID));
     }
     
     @Test

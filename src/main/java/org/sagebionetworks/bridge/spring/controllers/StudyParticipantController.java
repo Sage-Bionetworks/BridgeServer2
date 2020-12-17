@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.AuthUtils.checkStudyCoordinatorOrResearcher;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_RESEARCHER;
 import static org.sagebionetworks.bridge.AuthUtils.isInRole;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
@@ -90,7 +91,7 @@ public class StudyParticipantController extends BaseController {
     public PagedResourceList<EnrollmentDetail> getEnrollmentsForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         List<EnrollmentDetail> list = enrollmentService.getEnrollmentsForUser(session.getAppId(), studyId, userId); 
@@ -101,7 +102,7 @@ public class StudyParticipantController extends BaseController {
     public PagedResourceList<AccountSummary> searchForAccountSummaries(@PathVariable String studyId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
@@ -117,7 +118,7 @@ public class StudyParticipantController extends BaseController {
     public IdentifierHolder createParticipant(@PathVariable String studyId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         StudyParticipant participant = parseJson(StudyParticipant.class);
@@ -136,13 +137,15 @@ public class StudyParticipantController extends BaseController {
             @RequestParam(defaultValue = "true") boolean consents) throws Exception {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
 
         App app = appService.getApp(session.getAppId());
         // Do not allow lookup by health code if health code access is disabled. Allow it however
         // if the user is an administrator.
-        if (!isInRole(session.getParticipant().getRoles(), ADMIN) && !app.isHealthCodeExportEnabled()
+        
+        
+        if (!session.isInRole(ADMIN) && !app.isHealthCodeExportEnabled()
                 && userId.toLowerCase().startsWith("healthcode:")) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -160,7 +163,7 @@ public class StudyParticipantController extends BaseController {
     public String getRequestInfo(@PathVariable String studyId, @PathVariable String userId) throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
@@ -178,7 +181,7 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage updateParticipant(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         StudyParticipant participant = parseJson(StudyParticipant.class);
@@ -197,7 +200,7 @@ public class StudyParticipantController extends BaseController {
             @RequestParam(required = false) boolean deleteReauthToken) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
@@ -210,7 +213,7 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage requestResetPassword(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
@@ -223,7 +226,7 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage resendEmailVerification(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
@@ -236,7 +239,7 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage resendPhoneVerification(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
@@ -250,7 +253,7 @@ public class StudyParticipantController extends BaseController {
             @PathVariable String guid) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
@@ -267,7 +270,7 @@ public class StudyParticipantController extends BaseController {
             @RequestParam(required = false) String offsetKey) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
@@ -282,7 +285,7 @@ public class StudyParticipantController extends BaseController {
             @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
@@ -295,7 +298,7 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage sendNotification(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         NotificationMessage message = parseJson(NotificationMessage.class);
@@ -313,7 +316,7 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage deleteTestParticipant(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
         
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
         Account account = accountService.getAccount(accountId);
@@ -338,7 +341,7 @@ public class StudyParticipantController extends BaseController {
     public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
 
-        checkStudyCoordinatorOrResearcher(studyId);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());

@@ -11,7 +11,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -180,7 +180,8 @@ public class OrganizationServiceTest extends Mockito {
     @Test
     public void updateOrganization() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(IDENTIFIER).build());
+                .withCallerOrgMembership(IDENTIFIER)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         Organization org = Organization.create();
         org.setAppId(TEST_APP_ID);
         org.setIdentifier(IDENTIFIER);
@@ -206,7 +207,8 @@ public class OrganizationServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = "Organization not found.")
     public void updateOrganizationNotFound() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(IDENTIFIER).build());
+                .withCallerOrgMembership(IDENTIFIER)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.empty());
         
         Organization org = Organization.create();
@@ -220,7 +222,8 @@ public class OrganizationServiceTest extends Mockito {
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateOrganizationNotValid() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(IDENTIFIER).build());
+                .withCallerOrgMembership(IDENTIFIER)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         Organization org = Organization.create();
         org.setIdentifier(IDENTIFIER);
         
@@ -260,7 +263,7 @@ public class OrganizationServiceTest extends Mockito {
     @Test
     public void deleteOrganization() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(IDENTIFIER).build());
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         Organization org = Organization.create();
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(org));
         
@@ -297,7 +300,7 @@ public class OrganizationServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = "Organization not found.")
     public void deleteOrganizationNotFound() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(IDENTIFIER).build());
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.empty());
         
         service.deleteOrganization(TEST_APP_ID, IDENTIFIER);
@@ -306,7 +309,8 @@ public class OrganizationServiceTest extends Mockito {
     @Test
     public void getMembers() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(IDENTIFIER).build());
+                .withCallerOrgMembership(IDENTIFIER)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
         when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
         
@@ -321,7 +325,7 @@ public class OrganizationServiceTest extends Mockito {
         verify(mockAccountDao).getPagedAccountSummaries(eq(TEST_APP_ID), searchCaptor.capture());
         assertEquals(searchCaptor.getValue().getLanguage(), "en");
         assertEquals(searchCaptor.getValue().getOrgMembership(), IDENTIFIER);
-        assertTrue(searchCaptor.getValue().isAdminOnly());
+        assertNull(searchCaptor.getValue().isAdminOnly());
     }
     
     @Test
@@ -359,7 +363,7 @@ public class OrganizationServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
         Account account = Account.create();
-        account.setId(USER_ID);
+        account.setId(TEST_USER_ID);
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         service.addMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
@@ -367,7 +371,7 @@ public class OrganizationServiceTest extends Mockito {
         verify(mockAccountDao).updateAccount(accountCaptor.capture());
         assertEquals(accountCaptor.getValue().getOrgMembership(), IDENTIFIER);
         
-        verify(mockSessionUpdateService).updateOrgMembership(USER_ID, IDENTIFIER);
+        verify(mockSessionUpdateService).updateOrgMembership(TEST_USER_ID, IDENTIFIER);
     }
     
     @Test
@@ -453,11 +457,12 @@ public class OrganizationServiceTest extends Mockito {
     @Test
     public void removeMember() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(IDENTIFIER).build());
+                .withCallerOrgMembership(IDENTIFIER)
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
         Account account = Account.create();
         account.setOrgMembership(IDENTIFIER);
-        account.setId(USER_ID);
+        account.setId(TEST_USER_ID);
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         service.removeMember(TEST_APP_ID, IDENTIFIER, ACCOUNT_ID);
@@ -465,7 +470,7 @@ public class OrganizationServiceTest extends Mockito {
         verify(mockAccountDao).updateAccount(accountCaptor.capture());
         assertNull(accountCaptor.getValue().getOrgMembership());
         
-        verify(mockSessionUpdateService).updateOrgMembership(USER_ID, null);
+        verify(mockSessionUpdateService).updateOrgMembership(TEST_USER_ID, null);
     }
     
     @Test

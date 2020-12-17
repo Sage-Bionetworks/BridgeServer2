@@ -14,7 +14,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_EXTERNAL_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
-import static org.sagebionetworks.bridge.TestConstants.USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
@@ -56,7 +56,7 @@ import com.google.common.collect.Sets;
 
 public class HibernateAccountTest {
     private static final Set<Enrollment> ENROLLMENTS = ImmutableSet
-            .of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, USER_ID, TEST_EXTERNAL_ID));
+            .of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID));
     
     private static final SubpopulationGuid GUID1 = SubpopulationGuid.create("guid1");
     private static final SubpopulationGuid GUID2 = SubpopulationGuid.create("guid2");
@@ -104,8 +104,8 @@ public class HibernateAccountTest {
         account.setNotifyByEmail(true);
         account.setMigrationVersion(3);
         
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID);
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(en1, en2));
         
         // Do this just to verify it is not included in the serialization.
@@ -401,9 +401,9 @@ public class HibernateAccountTest {
     
     @Test
     public void getActiveEnrollments() {
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", USER_ID);
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", USER_ID);
-        Enrollment en3 = Enrollment.create(TEST_APP_ID, "studyC", USER_ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);
+        Enrollment en3 = Enrollment.create(TEST_APP_ID, "studyC", TEST_USER_ID);
         en2.setWithdrawnOn(CREATED_ON);
         Set<Enrollment> enrollments = ImmutableSet.of(en1, en2, en3);
         
