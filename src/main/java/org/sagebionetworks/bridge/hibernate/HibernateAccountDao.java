@@ -160,6 +160,8 @@ public class HibernateAccountDao implements AccountDao {
                 builder.append("AND :language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
             }
             builder.adminOnly(search.isAdminOnly());
+            builder.dataGroups(search.getAllOfGroups(), "IN");
+            builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
             
             String enrolledInStudy = search.getEnrolledInStudyId();
             if (search.getOrgMembership() != null) {
@@ -170,8 +172,6 @@ public class HibernateAccountDao implements AccountDao {
             } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, WORKER)) {
                 builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
             }
-            builder.dataGroups(search.getAllOfGroups(), "IN");
-            builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
         }
         if (!isCount) {
             builder.append("GROUP BY acct.id");

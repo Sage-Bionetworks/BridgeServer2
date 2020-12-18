@@ -2,9 +2,11 @@ package org.sagebionetworks.bridge;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.APP_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.OWNER_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
@@ -163,7 +165,43 @@ public class AuthEvaluatorTest {
         // both sides fail
         assertFalse(evaluator.check(ORG_ID, "wrong-organization", USER_ID, "wrong-id"));
     }
+    
+    @Test
+    public void checkPasses() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        AuthEvaluator evaluator = new AuthEvaluator().hasAnyRole(ADMIN);
+        
+        assertTrue(evaluator.check());
+    }
 
+    @Test
+    public void checkFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        AuthEvaluator evaluator = new AuthEvaluator().hasAnyRole(ADMIN);
+        
+        assertFalse(evaluator.check());
+    }
+    
+    @Test
+    public void checkAndThrowPasses() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        AuthEvaluator evaluator = new AuthEvaluator().hasAnyRole(ADMIN);
+        
+        evaluator.checkAndThrow();
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkAndThrowFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        AuthEvaluator evaluator = new AuthEvaluator().hasAnyRole(ADMIN);
+        
+        evaluator.checkAndThrow();
+    }
+    
     @Test
     public void checkAndThrowOneArgPasses() {
         RequestContext.set(new RequestContext.Builder()
@@ -204,5 +242,23 @@ public class AuthEvaluatorTest {
         AuthEvaluator evaluator = new AuthEvaluator().isInOrg().isSelf();
         
         evaluator.checkAndThrow(ORG_ID, "foo", USER_ID, "foo");
+    }
+    
+    @Test
+    public void isSharedOwner() {
+        String ownerId = TEST_APP_ID + ":" + TEST_ORG_ID;
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        AuthEvaluator evaluator = new AuthEvaluator().isSharedOwner();
+        
+        assertTrue(evaluator.check(OWNER_ID, ownerId));
+        assertFalse(evaluator.check(OWNER_ID, null));
+        assertFalse(evaluator.check(OWNER_ID, TEST_APP_ID + ":wrong-value"));
+        assertFalse(evaluator.check(OWNER_ID, "wrong-value:" + TEST_ORG_ID));
+        assertFalse(evaluator.check(OWNER_ID, TEST_APP_ID));
+        assertFalse(evaluator.check(OWNER_ID, TEST_ORG_ID));
+        assertFalse(evaluator.check(OWNER_ID, TEST_APP_ID + ":too-many:colons"));
     }
 }

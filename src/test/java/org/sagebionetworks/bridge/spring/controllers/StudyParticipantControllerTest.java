@@ -124,7 +124,7 @@ public class StudyParticipantControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
         
         // These are pretty much the same for all calls
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        doReturn(session).when(controller).getAdministrativeSession();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         doReturn(mockRequest).when(controller).request();

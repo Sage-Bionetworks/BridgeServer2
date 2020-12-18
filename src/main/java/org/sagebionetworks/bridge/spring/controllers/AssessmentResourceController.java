@@ -120,7 +120,7 @@ public class AssessmentResourceController extends BaseController {
     @DeleteMapping("/v1/assessments/identifier:{assessmentId}/resources/{guid}")
     public StatusMessage deleteAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid,
             @RequestParam(required = false) String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getAppId();
         
         if (SHARED_APP_ID.equals(appId)) {

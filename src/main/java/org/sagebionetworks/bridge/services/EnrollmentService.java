@@ -81,12 +81,12 @@ public class EnrollmentService {
                 .withRequestParam(ENROLLMENT_FILTER, filter);
     }
     
-    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String studyId, String userId) {
+    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String studyId, String userIdToken) {
         checkNotNull(appId);
-        checkNotNull(userId);
+        checkNotNull(userIdToken);
         
         // We want all enrollments, even withdrawn enrollments, so don't filter here.
-        AccountId accountId = BridgeUtils.parseAccountId(appId, userId);
+        AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
         Account account = accountService.getAccountNoFilter(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 

@@ -199,9 +199,6 @@ public class BridgeUtils {
         }
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
-        // retrieving active enrollments here, while it can make sense, doesn't align with the APIs
-        // for enrollments and external IDs, where the account is still visible (and still assigned
-        // to an external ID that can't be reused). So return these but adjust tests accordingly.
         for (Enrollment enrollment : account.getActiveEnrollments()) {
             if (IS_SELF_STUDY_TEAM_OR_WORKER.check(STUDY_ID, enrollment.getStudyId(), USER_ID, account.getId())) {
                 studyIds.add(enrollment.getStudyId());
@@ -242,21 +239,21 @@ public class BridgeUtils {
         return Integer.toString(seconds) + " seconds";
     }
     
-    public static AccountId parseAccountId(String appId, String identifier) {
+    public static AccountId parseAccountId(String appId, String userIdToken) {
         checkNotNull(appId);
-        checkNotNull(identifier);
+        checkNotNull(userIdToken);
         
-        String id = identifier.toLowerCase();
+        String id = userIdToken.toLowerCase();
         if (id.startsWith("externalid:")) {
-            return AccountId.forExternalId(appId, identifier.substring(11));
+            return AccountId.forExternalId(appId, userIdToken.substring(11));
         } else if (id.startsWith("healthcode:")) {
-            return AccountId.forHealthCode(appId, identifier.substring(11));
+            return AccountId.forHealthCode(appId, userIdToken.substring(11));
         } else if (id.startsWith("synapseuserid:")) {
-            return AccountId.forSynapseUserId(appId, identifier.substring(14));
+            return AccountId.forSynapseUserId(appId, userIdToken.substring(14));
         } else if (id.startsWith("syn:")) {
-            return AccountId.forSynapseUserId(appId, identifier.substring(4));
+            return AccountId.forSynapseUserId(appId, userIdToken.substring(4));
         }
-        return AccountId.forId(appId, identifier);
+        return AccountId.forId(appId, userIdToken);
     }
     
     /**

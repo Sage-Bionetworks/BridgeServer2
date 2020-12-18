@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_RESEARCHER;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
@@ -94,7 +93,7 @@ public class StudyParticipantController extends BaseController {
 
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/enrollments")
     public PagedResourceList<EnrollmentDetail> getEnrollmentsForUser(@PathVariable String studyId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
         
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -105,7 +104,7 @@ public class StudyParticipantController extends BaseController {
     
     @PostMapping("/v5/studies/{studyId}/participants/search")
     public PagedResourceList<AccountSummary> searchForAccountSummaries(@PathVariable String studyId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
         
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         
@@ -121,7 +120,7 @@ public class StudyParticipantController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants")
     @ResponseStatus(HttpStatus.CREATED)
     public IdentifierHolder createParticipant(@PathVariable String studyId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
         
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         
@@ -140,7 +139,7 @@ public class StudyParticipantController extends BaseController {
     @GetMapping(path="/v5/studies/{studyId}/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getParticipant(@PathVariable String studyId, @PathVariable String userId,
             @RequestParam(defaultValue = "true") boolean consents) throws Exception {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
         
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -166,7 +165,7 @@ public class StudyParticipantController extends BaseController {
     @GetMapping(path = "/v5/studies/{studyId}/participants/{userId}/requestInfo", produces = {
             APPLICATION_JSON_UTF8_VALUE })
     public String getRequestInfo(@PathVariable String studyId, @PathVariable String userId) throws JsonProcessingException {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
         
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -184,7 +183,7 @@ public class StudyParticipantController extends BaseController {
     
     @PostMapping("/v5/studies/{studyId}/participants/{userId}")
     public StatusMessage updateParticipant(@PathVariable String studyId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
 
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -203,7 +202,7 @@ public class StudyParticipantController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/signOut")
     public StatusMessage signOut(@PathVariable String studyId, @PathVariable String userId,
             @RequestParam(required = false) boolean deleteReauthToken) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
 
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -216,7 +215,7 @@ public class StudyParticipantController extends BaseController {
 
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/requestResetPassword")
     public StatusMessage requestResetPassword(@PathVariable String studyId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
 
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -229,7 +228,7 @@ public class StudyParticipantController extends BaseController {
 
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/resendEmailVerification")
     public StatusMessage resendEmailVerification(@PathVariable String studyId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
 
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -242,7 +241,7 @@ public class StudyParticipantController extends BaseController {
 
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/resendPhoneVerification")
     public StatusMessage resendPhoneVerification(@PathVariable String studyId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
 
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -256,7 +255,7 @@ public class StudyParticipantController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/consents/{guid}/resendConsent")
     public StatusMessage resendConsentAgreement(@PathVariable String studyId, @PathVariable String userId,
             @PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
 
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -273,7 +272,7 @@ public class StudyParticipantController extends BaseController {
             @PathVariable String userId, @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime, @RequestParam(required = false) Integer pageSize,
             @RequestParam(required = false) String offsetKey) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
 
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -288,7 +287,7 @@ public class StudyParticipantController extends BaseController {
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/notifications")
     public ResourceList<NotificationRegistration> getNotificationRegistrations(@PathVariable String studyId,
             @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
 
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -301,7 +300,7 @@ public class StudyParticipantController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/sendNotification")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage sendNotification(@PathVariable String studyId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
 
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
@@ -319,7 +318,7 @@ public class StudyParticipantController extends BaseController {
 
     @DeleteMapping("/v5/studies/{studyId}/participants/{userId}")
     public StatusMessage deleteTestParticipant(@PathVariable String studyId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
         
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         
@@ -344,7 +343,7 @@ public class StudyParticipantController extends BaseController {
     
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/activityEvents")
     public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String studyId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ADMIN);
+        UserSession session = getAdministrativeSession();
 
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);

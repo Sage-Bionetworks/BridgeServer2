@@ -247,9 +247,8 @@ public class ParticipantService {
         notificationsService.createRegistration(app.getIdentifier(), criteriaContext, registration);
     }
 
-    public StudyParticipant getParticipant(App app, String userId, boolean includeHistory) {
-        // This parse method correctly deserializes formats such as externalId:XXXXXXXX.
-        AccountId accountId = BridgeUtils.parseAccountId(app.getIdentifier(), userId);
+    public StudyParticipant getParticipant(App app, String userIdToken, boolean includeHistory) {
+        AccountId accountId = BridgeUtils.parseAccountId(app.getIdentifier(), userIdToken);
         Account account = getAccountThrowingException(accountId);
         return getParticipant(app, account, includeHistory);
     }

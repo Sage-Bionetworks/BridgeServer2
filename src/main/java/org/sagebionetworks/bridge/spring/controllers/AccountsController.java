@@ -29,6 +29,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -80,7 +81,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts")
     @ResponseStatus(code = CREATED)
     public IdentifierHolder createAccount() {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
         // We can deserialize this as a participant record, because StudyParticipant
@@ -128,7 +129,7 @@ public class AccountsController extends BaseController  {
     
     @DeleteMapping("/v1/accounts/{userId}")
     public StatusMessage deleteAccount(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN);
             
         App app = appService.getApp(session.getAppId());
         StudyParticipant existing = participantService.getParticipant(app, userId, false);
@@ -231,16 +232,25 @@ public class AccountsController extends BaseController  {
         return SIGN_OUT_MSG;
     }
     
-    public Account verifyOrgAdminIsActingOnOrgMember(String appId, String callerOrgId, String userId) {
+    /**
+     * This kind of code is driving me nuts... I'm not sure how to rationalize it further. We need
+     * to retrieve the account and test its organization membership. 
+     */
+    public Account verifyOrgAdminIsActingOnOrgMember(String appId, String callerOrgId, String userIdToken) {
+        // The caller needs to be associated to an organization
         if (callerOrgId == null) {
-            throw new EntityNotFoundException(Account.class);
+            throw new UnauthorizedException();
         }
-        // The caller needs to be an administrator of this organization
-        AccountId accountId = parseAccountId(appId, userId);
+        AccountId accountId = parseAccountId(appId, userIdToken);
         Account account = accountService.getAccount(accountId);
-        if (account == null || !callerOrgId.equals(account.getOrgMembership())) {
+        if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
+        // The caller needs to be an administrator of the account's organization
+        if (!callerOrgId.equals(account.getOrgMembership())) {
+            throw new UnauthorizedException();
+        }
+        // The caller needs to have permissions to manipulate the account
         if (!IS_SELF_AND_ORG_MEMBER_OR_ORGADMIN.check(ORG_ID, callerOrgId, USER_ID, account.getId())) {
             throw new EntityNotFoundException(Account.class);
         }

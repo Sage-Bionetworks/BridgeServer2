@@ -14,6 +14,7 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -33,9 +34,16 @@ public class StudyService {
     
     private StudyDao studyDao;
     
+    private SponsorService sponsorService;
+    
     @Autowired
     final void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
+    }
+    
+    @Autowired
+    final void setSponsorService(SponsorService sponsorService) {
+        this.sponsorService = sponsorService;
     }
     
     public Study getStudy(String appId, String studyId, boolean throwsException) {
@@ -93,7 +101,13 @@ public class StudyService {
         if (existing != null) {
             throw new EntityAlreadyExistsException(Study.class, ImmutableMap.of("id", existing.getIdentifier()));
         }
-        return studyDao.createStudy(study);
+        VersionHolder version = studyDao.createStudy(study);
+        
+        String orgId = RequestContext.get().getCallerOrgMembership();
+        if (orgId != null) {
+            sponsorService.addStudySponsor(appId, study.getIdentifier(), orgId);    
+        }
+        return version;
     }
 
     public VersionHolder updateStudy(String appId, Study study) {

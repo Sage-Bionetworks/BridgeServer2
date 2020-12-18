@@ -93,6 +93,10 @@ public class AuthUtils {
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
     
+    public static final AuthEvaluator IS_COORD_DEV = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, ADMIN);
+    
     /**
      * Is the caller a study coordinator or researcher?
      */

@@ -37,7 +37,7 @@ public class MembershipController extends BaseController {
     @PostMapping("/v1/organizations/{orgId}/members")
     public PagedResourceList<AccountSummary> getMembers(@PathVariable String orgId) {
         // should this just be scoped to any administrative user?
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN);
         
         IS_ORGADMIN.checkAndThrow(ORG_ID, orgId);
         
@@ -48,7 +48,7 @@ public class MembershipController extends BaseController {
     @PostMapping("/v1/organizations/{orgId}/members/{userId}")
     @ResponseStatus(code = CREATED)
     public StatusMessage addMember(@PathVariable String orgId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN);
         
         // organization membership checked in service
         
@@ -60,7 +60,7 @@ public class MembershipController extends BaseController {
 
     @DeleteMapping("/v1/organizations/{orgId}/members/{userId}")
     public StatusMessage removeMember(@PathVariable String orgId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN);
 
         // organization membership checked in service
         

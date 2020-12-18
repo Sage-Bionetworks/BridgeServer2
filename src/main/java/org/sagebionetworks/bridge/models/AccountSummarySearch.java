@@ -99,8 +99,8 @@ public final class AccountSummarySearch implements BridgeEntity {
     }
     
     /**
-     * Accounts returned should be <em>enrolled</em> in this study (not administrative accounts
-     * with access to the study). If the caller does not have access to this study, the search
+     * Accounts returned should be enrolled in this study (not administrative accounts with 
+     * access to the study). If the caller does not have access to this study, the search
      * results should be empty. This flag implies that adminOnly == false. 
      */
     public String getEnrolledInStudyId() {
