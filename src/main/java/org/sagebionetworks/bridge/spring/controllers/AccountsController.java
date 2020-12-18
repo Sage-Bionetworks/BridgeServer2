@@ -53,11 +53,15 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 @CrossOrigin
 @RestController
 public class AccountsController extends BaseController  {
-    
-    private static final Set<String> ACCOUNT_FIELDS = ImmutableSet.of("firstName", 
-            "lastName", "synapseUserId", "email", "phone", "attributes", "status", 
-            "roles", "dataGroups", "clientData", "languages", "orgMembership", 
-            "password");
+    private static final StatusMessage UPDATED_MSG = new StatusMessage("Member updated.");
+    private static final StatusMessage DELETED_MSG = new StatusMessage("Member account deleted.");
+    private static final StatusMessage RESET_PWD_MSG = new StatusMessage("Request to reset password sent to user.");
+    private static final StatusMessage EMAIL_VERIFY_MSG = new StatusMessage("Email verification request has been resent to user.");
+    private static final StatusMessage PHONE_VERIFY_MSG = new StatusMessage("Phone verification request has been resent to user.");
+    private static final StatusMessage SIGN_OUT_MSG = new StatusMessage("User signed out.");
+    private static final Set<String> ACCOUNT_FIELDS = ImmutableSet.of("firstName", "lastName", "synapseUserId", 
+            "email", "phone", "attributes", "status", "roles", "dataGroups", "clientData", "languages", 
+            "orgMembership", "password");
     
     private ParticipantService participantService;
     
@@ -119,7 +123,7 @@ public class AccountsController extends BaseController  {
                 .withOrgMembership(existing.getOrgMembership()).build();
         participantService.updateParticipant(app, participant);
 
-        return new StatusMessage("Member updated.");
+        return UPDATED_MSG;
     }
     
     @DeleteMapping("/v1/accounts/{userId}")
@@ -133,7 +137,7 @@ public class AccountsController extends BaseController  {
         
         userAdminService.deleteUser(app, userId);
         
-        return new StatusMessage("Member account deleted.");
+        return DELETED_MSG;
     }
     
     
@@ -167,7 +171,7 @@ public class AccountsController extends BaseController  {
         App app = appService.getApp(session.getAppId());
         participantService.requestResetPassword(app, userId);
         
-        return new StatusMessage("Request to reset password sent to user.");
+        return RESET_PWD_MSG;
     }
     
     @PostMapping("/v1/accounts/{userId}/resendEmailVerification")
@@ -181,7 +185,7 @@ public class AccountsController extends BaseController  {
         App app = appService.getApp(session.getAppId());
         participantService.resendVerification(app, ChannelType.EMAIL, userId);
         
-        return new StatusMessage("Email verification request has been resent to user.");
+        return EMAIL_VERIFY_MSG;
     }
 
     @PostMapping("/v1/accounts/{userId}/resendPhoneVerification")
@@ -195,7 +199,7 @@ public class AccountsController extends BaseController  {
         App app = appService.getApp(session.getAppId());
         participantService.resendVerification(app, ChannelType.PHONE, userId);
         
-        return new StatusMessage("Phone verification request has been resent to user.");
+        return PHONE_VERIFY_MSG;
     }
     
     @PostMapping("/v1/accounts/self/identifiers")
@@ -224,7 +228,7 @@ public class AccountsController extends BaseController  {
         App app = appService.getApp(session.getAppId());
         participantService.signUserOut(app, userId, deleteReauthToken);
 
-        return new StatusMessage("User signed out.");
+        return SIGN_OUT_MSG;
     }
     
     public Account verifyOrgAdminIsActingOnOrgMember(String appId, String callerOrgId, String userId) {
@@ -234,10 +238,7 @@ public class AccountsController extends BaseController  {
         // The caller needs to be an administrator of this organization
         AccountId accountId = parseAccountId(appId, userId);
         Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        if (!callerOrgId.equals(account.getOrgMembership())) {
+        if (account == null || !callerOrgId.equals(account.getOrgMembership())) {
             throw new EntityNotFoundException(Account.class);
         }
         if (!IS_SELF_AND_ORG_MEMBER_OR_ORGADMIN.check(ORG_ID, callerOrgId, USER_ID, account.getId())) {

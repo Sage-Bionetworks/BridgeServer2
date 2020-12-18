@@ -62,8 +62,14 @@ import org.sagebionetworks.bridge.services.EnrollmentService;
 @CrossOrigin
 @RestController
 public class StudyParticipantController extends BaseController {
-    
-    private static final String NOTIFY_SUCCESS_MESSAGE = "Message has been sent to external notification service.";
+    private static final StatusMessage UPDATE_MSG = new StatusMessage("Participant updated.");
+    private static final StatusMessage SIGN_OUT_MSG = new StatusMessage("User signed out.");
+    private static final StatusMessage RESET_PWD_MSG = new StatusMessage("Request to reset password sent to user.");
+    private static final StatusMessage EMAIL_VERIFY_MSG = new StatusMessage("Email verification request has been resent to user.");
+    private static final StatusMessage PHONE_VERIFY_MSG = new StatusMessage("Phone verification request has been resent to user.");
+    private static final StatusMessage CONSENT_RESENT_MSG = new StatusMessage("Consent agreement resent to user.");
+    private static final StatusMessage DELETE_MSG = new StatusMessage("User deleted.");
+    private static final StatusMessage NOTIFY_SUCCESS_MSG = new StatusMessage("Message has been sent to external notification service.");
 
     private ParticipantService participantService;
     
@@ -191,7 +197,7 @@ public class StudyParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         participantService.updateParticipant(app, participant);
 
-        return new StatusMessage("Participant updated.");
+        return UPDATE_MSG;
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/signOut")
@@ -205,7 +211,7 @@ public class StudyParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         participantService.signUserOut(app, userId, deleteReauthToken);
 
-        return new StatusMessage("User signed out.");
+        return SIGN_OUT_MSG;
     }
 
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/requestResetPassword")
@@ -218,7 +224,7 @@ public class StudyParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         participantService.requestResetPassword(app, userId);
         
-        return new StatusMessage("Request to reset password sent to user.");
+        return RESET_PWD_MSG;
     }
 
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/resendEmailVerification")
@@ -231,7 +237,7 @@ public class StudyParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         participantService.resendVerification(app, ChannelType.EMAIL, userId);
         
-        return new StatusMessage("Email verification request has been resent to user.");
+        return EMAIL_VERIFY_MSG;
     }
 
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/resendPhoneVerification")
@@ -244,7 +250,7 @@ public class StudyParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         participantService.resendVerification(app, ChannelType.PHONE, userId);
         
-        return new StatusMessage("Phone verification request has been resent to user.");
+        return PHONE_VERIFY_MSG;
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/consents/{guid}/resendConsent")
@@ -259,7 +265,7 @@ public class StudyParticipantController extends BaseController {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         participantService.resendConsentAgreement(app, subpopGuid, userId);
         
-        return new StatusMessage("Consent agreement resent to user.");
+        return CONSENT_RESENT_MSG;
     }
 
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/uploads")
@@ -305,9 +311,9 @@ public class StudyParticipantController extends BaseController {
         Set<String> erroredNotifications = participantService.sendNotification(app, userId, message);
         
         if (erroredNotifications.isEmpty()) {
-            return new StatusMessage(NOTIFY_SUCCESS_MESSAGE);                    
+            return NOTIFY_SUCCESS_MSG;                    
         }
-        return new StatusMessage(NOTIFY_SUCCESS_MESSAGE + " Some registrations returned errors: "
+        return new StatusMessage(NOTIFY_SUCCESS_MSG.getMessage() + " Some registrations returned errors: "
                 + BridgeUtils.COMMA_SPACE_JOINER.join(erroredNotifications) + ".");
     }
 
@@ -333,7 +339,7 @@ public class StudyParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         userAdminService.deleteUser(app, userId);
         
-        return new StatusMessage("User deleted.");
+        return DELETE_MSG;
     }    
     
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/activityEvents")
