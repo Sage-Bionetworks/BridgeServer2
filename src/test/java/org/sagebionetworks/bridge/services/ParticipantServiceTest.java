@@ -2244,6 +2244,24 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
+    public void getAccountThrowingExceptionHandlesPrefixedIDs() {
+        account.setId(ID);
+        account.setHealthCode(HEALTH_CODE);
+        account.setAppId(TEST_APP_ID);
+        AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, HEALTH_CODE);
+        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
+
+        // This directly calls getAccountThrowingException(); it should recognize and
+        // handle the healthCode version of an ID.
+        participantService.getActivityEvents(APP, "healthcode:"+HEALTH_CODE);
+        
+        // still works
+        verify(accountService).getAccount(accountId);
+        verify(activityEventService).getActivityEventList(APP.getIdentifier(), HEALTH_CODE);
+    }
+    
+    @Test
     public void normalUserCannotAddExternalIdOnUpdate() {
         RequestContext.set(NULL_INSTANCE);
         mockHealthCodeAndAccountRetrieval();
