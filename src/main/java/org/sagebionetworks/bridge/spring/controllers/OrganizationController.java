@@ -60,7 +60,7 @@ public class OrganizationController extends BaseController {
     public Organization updateOrganization(@PathVariable String orgId) {
         // A study admin caller will also be able to edit some fields of their own organization.
         // The association of accounts to organizations has to be completed first.
-        UserSession session = getAuthenticatedSession(ORG_ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         Organization organization = parseJson(Organization.class);
         organization.setAppId(session.getAppId());

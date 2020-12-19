@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -72,9 +74,10 @@ public class StudyControllerTest extends Mockito {
 
         controller.setStudyService(service);
 
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR, ORG_ADMIN, ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         doReturn(session).when(controller).getAdministrativeSession();
-
+        
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
     }
@@ -167,6 +170,10 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void updateStudy() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("id"))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+
         Study study = Study.create();
         study.setIdentifier("oneId");
         study.setName("oneName");

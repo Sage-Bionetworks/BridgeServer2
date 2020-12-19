@@ -177,7 +177,7 @@ public class SurveyController extends BaseController {
     @DeleteMapping("/v3/surveys/{surveyGuid}/revisions/{createdOn}")
     public StatusMessage deleteSurvey(@PathVariable String surveyGuid, @PathVariable String createdOn,
             @RequestParam(defaultValue = "false") boolean physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         String appId = session.getAppId();
 
         long createdOnLong = DateUtils.convertToMillisFromEpoch(createdOn);

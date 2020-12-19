@@ -98,7 +98,7 @@ public class SchedulePlanController extends BaseController {
     @DeleteMapping("/v3/scheduleplans/{guid}")
     public StatusMessage deleteSchedulePlan(@PathVariable String guid,
             @RequestParam(defaultValue = "false") boolean physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         String appId = session.getAppId();
         
         if (physical && session.isInRole(ADMIN)) {

@@ -82,7 +82,7 @@ public class NotificationTopicController extends BaseController {
     @DeleteMapping("/v3/topics/{guid}")
     public StatusMessage deleteTopic(@PathVariable String guid,
             @RequestParam(defaultValue = "false") boolean physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
 
         if (physical && session.isInRole(ADMIN)) {
             topicService.deleteTopicPermanently(session.getAppId(), guid);

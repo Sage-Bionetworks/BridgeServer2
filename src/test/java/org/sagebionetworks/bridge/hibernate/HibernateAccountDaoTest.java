@@ -542,19 +542,19 @@ public class HibernateAccountDaoTest extends Mockito {
     public void getPagedWithOptionalParams() throws Exception {
         String expQuery = "SELECT acct.id FROM HibernateAccount AS acct LEFT JOIN acct.enrollments AS "
                 + "enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
-                + "acct.email LIKE :email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime "
-                + "AND acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) AND "
-                + "size(acct.roles) > 0 AND acct.orgMembership = :orgId AND (:IN1 IN elements(acct.dataGroups) "
-                + "AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) " 
-                + "AND :NOTIN2 NOT IN elements(acct.dataGroups)) GROUP BY acct.id";
+                + "acct.email LIKE :email AND acct.phone.number LIKE :number AND acct.createdOn >= "
+                + ":startTime AND acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) "
+                + "AND size(acct.roles) > 0 AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN "
+                + "elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND "
+                + ":NOTIN2 NOT IN elements(acct.dataGroups)) AND acct.orgMembership = :orgId GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct LEFT JOIN "
-                + "acct.enrollments AS enrollment WITH acct.id = enrollment.accountId WHERE "
-                + "acct.appId = :appId AND acct.email LIKE :email AND acct.phone.number LIKE :number AND "
-                + "acct.createdOn >= :startTime AND acct.createdOn <= :endTime AND :language IN " 
-                + "ELEMENTS(acct.languages) AND size(acct.roles) > 0 AND acct.orgMembership = :orgId AND (:IN1 "
-                + "IN elements(acct.dataGroups) AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN "
-                + "elements(acct.dataGroups) AND :NOTIN2 NOT IN elements(acct.dataGroups))";
+                + "acct.enrollments AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = "
+                + ":appId AND acct.email LIKE :email AND acct.phone.number LIKE :number AND acct.createdOn "
+                + ">= :startTime AND acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) "
+                + "AND size(acct.roles) > 0 AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN "
+                + "elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND :NOTIN2 "
+                + "NOT IN elements(acct.dataGroups)) AND acct.orgMembership = :orgId";
 
         // Setup start and end dates.
         DateTime startDate = DateTime.parse("2017-05-19T11:40:06.247-0700");

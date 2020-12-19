@@ -153,7 +153,7 @@ public class AssessmentController extends BaseController {
         
     @DeleteMapping("/v1/assessments/{guid}")
     public StatusMessage deleteAssessment(@PathVariable String guid, @RequestParam(required = false) String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
 
         String appId = session.getAppId();
         if (SHARED_APP_ID.equals(appId)) {

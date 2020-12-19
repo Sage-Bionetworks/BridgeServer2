@@ -91,7 +91,7 @@ public class SubpopulationController extends BaseController {
     @DeleteMapping("/v3/subpopulations/{guid}")
     public StatusMessage deleteSubpopulation(@PathVariable String guid,
             @RequestParam(defaultValue = "false") boolean physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(ADMIN, DEVELOPER);
 
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
         if (physical && session.isInRole(ADMIN)) {

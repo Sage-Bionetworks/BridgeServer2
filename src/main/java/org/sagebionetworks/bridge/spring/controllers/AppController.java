@@ -110,7 +110,7 @@ public class AppController extends BaseController {
     
     @PostMapping(path = {"/v1/apps/self", "/v3/studies/self"})
     public VersionHolder updateAppForDeveloperOrAdmin() {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN  );
 
         App appUpdate = parseJson(App.class);
         appUpdate.setIdentifier(session.getAppId());

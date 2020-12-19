@@ -167,7 +167,7 @@ public class UploadController extends BaseController {
     
     @GetMapping("/v3/uploads/{uploadId}")
     public UploadView getUpload(@PathVariable String uploadId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
 
         if (uploadId.startsWith("recordId:")) {
             String recordId = uploadId.split(":")[1];

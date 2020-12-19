@@ -91,7 +91,7 @@ public class TemplateController extends BaseController {
     
     @DeleteMapping("/v3/templates/{guid}")
     public StatusMessage deleteTemplate(@PathVariable String guid, @RequestParam String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             templateService.deleteTemplatePermanently(session.getAppId(), guid);

@@ -121,7 +121,7 @@ public class AppConfigController extends BaseController {
     
     @DeleteMapping("/v3/appconfigs/{guid}")
     public StatusMessage deleteAppConfig(@PathVariable String guid, @RequestParam String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             appConfigService.deleteAppConfigPermanently(session.getAppId(), guid);

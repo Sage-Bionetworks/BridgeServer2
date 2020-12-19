@@ -55,7 +55,7 @@ public class StudyController extends BaseController {
     @PostMapping(path = {"/v5/studies", "/v3/substudies"})
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudy() {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ORG_ADMIN);
+        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ORG_ADMIN, ADMIN);
 
         // we don't check if the study coordinator is member of the study because it doesn't
         // exist yet. If the caller is in an organization, that organization will sponsor the

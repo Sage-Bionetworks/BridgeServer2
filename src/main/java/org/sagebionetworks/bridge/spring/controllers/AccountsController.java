@@ -81,7 +81,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts")
     @ResponseStatus(code = CREATED)
     public IdentifierHolder createAccount() {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
         // We can deserialize this as a participant record, because StudyParticipant
@@ -97,7 +97,7 @@ public class AccountsController extends BaseController  {
     
     @GetMapping("/v1/accounts/{userId}")
     public Account getAccount(@PathVariable String userId) {
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
         return verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
@@ -105,7 +105,7 @@ public class AccountsController extends BaseController  {
     
     @PostMapping("/v1/accounts/{userId}")
     public StatusMessage updateAccount(@PathVariable String userId) {
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
         Account account = verifyOrgAdminIsActingOnOrgMember(
@@ -129,7 +129,7 @@ public class AccountsController extends BaseController  {
     
     @DeleteMapping("/v1/accounts/{userId}")
     public StatusMessage deleteAccount(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
             
         App app = appService.getApp(session.getAppId());
         StudyParticipant existing = participantService.getParticipant(app, userId, false);
@@ -146,7 +146,7 @@ public class AccountsController extends BaseController  {
             produces = { APPLICATION_JSON_UTF8_VALUE })
     public String getRequestInfo(@PathVariable String userId) 
             throws JsonProcessingException {
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
         verifyOrgAdminIsActingOnOrgMember(
@@ -164,7 +164,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/requestResetPassword")
     @ResponseStatus(code = ACCEPTED)
     public StatusMessage requestResetPassword(@PathVariable String userId) {
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
         verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
@@ -178,7 +178,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/resendEmailVerification")
     @ResponseStatus(code = ACCEPTED)
     public StatusMessage resendEmailVerification(@PathVariable String userId) {
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
         verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
@@ -192,7 +192,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/resendPhoneVerification")
     @ResponseStatus(code = ACCEPTED)
     public StatusMessage resendPhoneVerification(@PathVariable String userId) {
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
         verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
@@ -221,7 +221,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/signOut")
     public StatusMessage signOut(@PathVariable String userId,
             @RequestParam(required = false) boolean deleteReauthToken) {
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
         verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
