@@ -132,7 +132,7 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void createStudy() throws Exception {
-        when(service.createStudy(any(), any())).thenReturn(VERSION_HOLDER);
+        when(service.createStudy(any(), any(), anyBoolean())).thenReturn(VERSION_HOLDER);
 
         Study study = Study.create();
         study.setIdentifier("oneId");
@@ -142,7 +142,7 @@ public class StudyControllerTest extends Mockito {
         VersionHolder result = controller.createStudy();
         assertEquals(result, VERSION_HOLDER);
 
-        verify(service).createStudy(eq(TEST_APP_ID), studyCaptor.capture());
+        verify(service).createStudy(eq(TEST_APP_ID), studyCaptor.capture(), eq(true));
 
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getIdentifier(), "oneId");

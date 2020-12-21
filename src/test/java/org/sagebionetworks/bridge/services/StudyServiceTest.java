@@ -1,11 +1,14 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -18,11 +21,14 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -47,17 +53,23 @@ public class StudyServiceTest {
     @Mock
     private OrganizationDao organizationDao;
     
+    @Mock
+    private SponsorService sponsorService;
+    
     @Captor
     private ArgumentCaptor<Study> studyCaptor;
     
+    @InjectMocks
     private StudyService service;
     
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        
-        service = new StudyService();
-        service.setStudyDao(studyDao);
+    }
+    
+    @AfterMethod
+    public void afterEmthod() {
+        RequestContext.set(NULL_INSTANCE);
     }
     
     @Test
@@ -143,7 +155,11 @@ public class StudyServiceTest {
     }
     
     @Test
-    public void createStudy() {
+    public void createStudyWithSponsorship() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .build());
+        
         Study study = Study.create();
         study.setIdentifier("oneId");
         study.setName("oneName");
@@ -156,7 +172,7 @@ public class StudyServiceTest {
 
         when(studyDao.createStudy(any())).thenReturn(VERSION_HOLDER);
         
-        VersionHolder returnedValue = service.createStudy(TEST_APP_ID, study);
+        VersionHolder returnedValue = service.createStudy(TEST_APP_ID, study, true);
         assertEquals(returnedValue, VERSION_HOLDER);
         
         verify(studyDao).createStudy(studyCaptor.capture());
@@ -169,11 +185,27 @@ public class StudyServiceTest {
         assertFalse(persisted.isDeleted());
         assertNotEquals(persisted.getCreatedOn(), timestamp);
         assertNotEquals(persisted.getModifiedOn(), timestamp);
+        
+        verify(sponsorService).addStudySponsor(TEST_APP_ID, "oneId", TEST_ORG_ID);
+    }
+    
+    @Test
+    public void createStudyWithoutSponsorship() {
+        Study study = Study.create();
+        study.setIdentifier("oneId");
+        study.setName("oneName");
+
+        when(studyDao.createStudy(any())).thenReturn(VERSION_HOLDER);
+        
+        service.createStudy(TEST_APP_ID, study, true);
+        
+        verify(studyDao).createStudy(studyCaptor.capture());
+        verify(sponsorService, never()).addStudySponsor(any(), any(), any());
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createStudyInvalidStudy() {
-        service.createStudy(TEST_APP_ID, Study.create());
+        service.createStudy(TEST_APP_ID, Study.create(), true);
     }
     
     @Test(expectedExceptions = EntityAlreadyExistsException.class)
@@ -184,7 +216,7 @@ public class StudyServiceTest {
         
         when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(study);
         
-        service.createStudy(TEST_APP_ID, study);
+        service.createStudy(TEST_APP_ID, study, true);
     }
     
     @Test

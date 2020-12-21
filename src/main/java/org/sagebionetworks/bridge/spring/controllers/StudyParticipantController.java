@@ -61,14 +61,14 @@ import org.sagebionetworks.bridge.services.EnrollmentService;
 @CrossOrigin
 @RestController
 public class StudyParticipantController extends BaseController {
-    private static final StatusMessage UPDATE_MSG = new StatusMessage("Participant updated.");
-    private static final StatusMessage SIGN_OUT_MSG = new StatusMessage("User signed out.");
-    private static final StatusMessage RESET_PWD_MSG = new StatusMessage("Request to reset password sent to user.");
-    private static final StatusMessage EMAIL_VERIFY_MSG = new StatusMessage("Email verification request has been resent to user.");
-    private static final StatusMessage PHONE_VERIFY_MSG = new StatusMessage("Phone verification request has been resent to user.");
-    private static final StatusMessage CONSENT_RESENT_MSG = new StatusMessage("Consent agreement resent to user.");
-    private static final StatusMessage DELETE_MSG = new StatusMessage("User deleted.");
-    private static final StatusMessage NOTIFY_SUCCESS_MSG = new StatusMessage("Message has been sent to external notification service.");
+    static final StatusMessage UPDATE_MSG = new StatusMessage("Participant updated.");
+    static final StatusMessage SIGN_OUT_MSG = new StatusMessage("User signed out.");
+    static final StatusMessage RESET_PWD_MSG = new StatusMessage("Request to reset password sent to user.");
+    static final StatusMessage EMAIL_VERIFY_MSG = new StatusMessage("Email verification request has been resent to user.");
+    static final StatusMessage PHONE_VERIFY_MSG = new StatusMessage("Phone verification request has been resent to user.");
+    static final StatusMessage CONSENT_RESENT_MSG = new StatusMessage("Consent agreement resent to user.");
+    static final StatusMessage DELETE_MSG = new StatusMessage("User deleted.");
+    static final StatusMessage NOTIFY_SUCCESS_MSG = new StatusMessage("Message has been sent to external notification service.");
 
     private ParticipantService participantService;
     

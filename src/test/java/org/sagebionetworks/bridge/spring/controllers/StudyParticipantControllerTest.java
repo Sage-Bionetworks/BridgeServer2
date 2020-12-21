@@ -9,7 +9,9 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
+import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.NOTIFY_SUCCESS_MSG;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -398,6 +400,20 @@ public class StudyParticipantControllerTest extends Mockito {
     }
     
     @Test
+    public void getRequestInfoNoObject() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+        
+        mockAccountInStudy();
+
+        String retValue = controller.getRequestInfo(TEST_STUDY_ID, TEST_USER_ID);
+        assertNotNull(retValue);
+        
+        verify(mockRequestInfoService).getRequestInfo(TEST_USER_ID);        
+    }
+    
+    @Test
     public void updateParticipant() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
@@ -660,13 +676,17 @@ public class StudyParticipantControllerTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());
         
+        when(mockParticipantService.sendNotification(any(), any(), any()))
+            .thenReturn(ImmutableSet.of("This is an error"));
+        
         mockAccountInStudy();
         
         NotificationMessage msg = new NotificationMessage.Builder().withSubject("subject")
                 .withMessage("message").build();
         mockRequestBody(mockRequest, msg);
         
-        controller.sendNotification(TEST_STUDY_ID, TEST_USER_ID);
+        StatusMessage retValue = controller.sendNotification(TEST_STUDY_ID, TEST_USER_ID);
+        assertTrue(retValue.getMessage().contains("This is an error"));
         
         verify(mockParticipantService).sendNotification(eq(app), eq(TEST_USER_ID), messageCaptor.capture());
         NotificationMessage captured = messageCaptor.getValue();
@@ -674,6 +694,25 @@ public class StudyParticipantControllerTest extends Mockito {
         assertEquals(captured.getMessage(), "message");
     }
 
+    @Test
+    public void sendNotificationNoMessages() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+        
+        when(mockParticipantService.sendNotification(any(), any(), any()))
+            .thenReturn(ImmutableSet.of());
+        
+        mockAccountInStudy();
+        
+        NotificationMessage msg = new NotificationMessage.Builder().withSubject("subject")
+                .withMessage("message").build();
+        mockRequestBody(mockRequest, msg);
+        
+        StatusMessage retValue = controller.sendNotification(TEST_STUDY_ID, TEST_USER_ID);
+        assertEquals(NOTIFY_SUCCESS_MSG, retValue);
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void sendNotificationWrongStudy() throws Exception {
         RequestContext.set(new RequestContext.Builder()

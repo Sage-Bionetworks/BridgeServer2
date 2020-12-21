@@ -84,7 +84,7 @@ public class StudyService {
                 .withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
     
-    public VersionHolder createStudy(String appId, Study study) {
+    public VersionHolder createStudy(String appId, Study study, boolean setStudySponsor) {
         checkNotNull(appId);
         checkNotNull(study);
         
@@ -102,9 +102,12 @@ public class StudyService {
             throw new EntityAlreadyExistsException(Study.class, ImmutableMap.of("id", existing.getIdentifier()));
         }
         VersionHolder version = studyDao.createStudy(study);
-        
+        // You cannot do this when creating an app because it will fail: the caller's organization will not 
+        // yet exist. After initial app creation when accounts are established in the app, it should be 
+        // possible to create studies that are associated to the caller's organization (so the caller can 
+        // access the study!).
         String orgId = RequestContext.get().getCallerOrgMembership();
-        if (orgId != null) {
+        if (setStudySponsor && orgId != null) {
             sponsorService.addStudySponsor(appId, study.getIdentifier(), orgId);    
         }
         return version;

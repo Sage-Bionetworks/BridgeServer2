@@ -130,12 +130,11 @@ public class AccountsController extends BaseController  {
     @DeleteMapping("/v1/accounts/{userId}")
     public StatusMessage deleteAccount(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
-            
+        String orgId = session.getParticipant().getOrgMembership();
+        
+        verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
+        
         App app = appService.getApp(session.getAppId());
-        StudyParticipant existing = participantService.getParticipant(app, userId, false);
-        
-        verifyOrgAdminIsActingOnOrgMember(session.getAppId(), existing.getOrgMembership(), userId);
-        
         userAdminService.deleteUser(app, userId);
         
         return DELETED_MSG;
@@ -149,8 +148,7 @@ public class AccountsController extends BaseController  {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         String orgId = session.getParticipant().getOrgMembership();
         
-        verifyOrgAdminIsActingOnOrgMember(
-                session.getAppId(), orgId, userId);
+        verifyOrgAdminIsActingOnOrgMember(session.getAppId(), orgId, userId);
         
         // RequestInfo is accessible because the user is accessible, no reason to 
         // test again.
