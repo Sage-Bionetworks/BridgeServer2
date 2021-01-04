@@ -145,10 +145,9 @@ public class StudyParticipantController extends BaseController {
         checkAccountInStudy(session.getAppId(), studyId, userId);
 
         App app = appService.getApp(session.getAppId());
+
         // Do not allow lookup by health code if health code access is disabled. Allow it however
         // if the user is an administrator.
-        
-        
         if (!session.isInRole(ADMIN) && !app.isHealthCodeExportEnabled()
                 && userId.toLowerCase().startsWith("healthcode:")) {
             throw new EntityNotFoundException(Account.class);
