@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -24,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDateTime;
+import org.joda.time.Period;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -31,6 +33,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -696,12 +699,19 @@ public class ActivityEventServiceTest {
         verify(mockParticipantService, never()).getParticipant(any(), anyString(), anyBoolean());
     }
     
+    @Test
+    public void autoCustomEventsCanBeUsedToCloneEvents() {
+        // newEvent = oldEvent:P0D should create a new custom event with the same 
+        // timestamp. We can use this in MTB to clone an event like created_on to 
+        // a custom event that the admin client can then change. This verifies that
+        // the libraries do what we want here.
+        Period automaticEventDelay = Period.parse("P0D"); // no difference
+        DateTime automaticEventTime = CREATED_ON.plus(automaticEventDelay);
+        assertEquals(automaticEventTime, CREATED_ON); // no difference
+    }
+    
     private ActivityEvent getEventByKey(List<ActivityEvent> results, String key) {
         return results.stream()
-                .map(event -> {
-                    System.out.println(event.getEventId());
-                    return event;
-                })
                 .filter(event -> event.getEventId().equals(key))
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("Could not find activity event"));
