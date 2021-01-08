@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
+
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -24,6 +25,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonFilter("filter")
 public class DynamoActivityEvent implements ActivityEvent {
 
+    private String studyId;
     private String healthCode;
     private String answerValue;
     private Long timestamp;
@@ -32,10 +34,17 @@ public class DynamoActivityEvent implements ActivityEvent {
     @DynamoDBHashKey
     @Override
     public String getHealthCode() {
-        return healthCode;
+        return (studyId == null) ? healthCode : (healthCode + ":" + studyId);
     }
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
+    }
+    @Override
+    public String getStudyId() {
+        return studyId;
+    }
+    public void setStudyId(String studyId) {
+        this.studyId = studyId;
     }
     @Override
     public String getAnswerValue() {
@@ -64,6 +73,7 @@ public class DynamoActivityEvent implements ActivityEvent {
     
     public static class Builder {
         private String healthCode;
+        private String studyId;
         private Long timestamp;
         private ActivityEventObjectType objectType;
         private String objectId;
@@ -72,6 +82,10 @@ public class DynamoActivityEvent implements ActivityEvent {
         
         public Builder withHealthCode(String healthCode) {
             this.healthCode = healthCode;
+            return this;
+        }
+        public Builder withStudyId(String studyId) {
+            this.studyId = studyId;
             return this;
         }
         public Builder withTimestamp(Long timestamp) {
@@ -114,7 +128,8 @@ public class DynamoActivityEvent implements ActivityEvent {
         public DynamoActivityEvent build() {
             DynamoActivityEvent event = new DynamoActivityEvent();
             event.setHealthCode(healthCode);
-            event.setTimestamp((timestamp == null) ? null : timestamp);
+            event.setStudyId(studyId);
+            event.setTimestamp(timestamp);
             event.setEventId(getEventId());
             event.setAnswerValue(answerValue);
 

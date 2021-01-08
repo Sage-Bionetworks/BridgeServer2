@@ -209,6 +209,8 @@ public class ConsentServiceTest extends Mockito {
 
     @Test
     public void giveConsentSuccess() {
+        when(subpopulation.getStudyId()).thenReturn(TEST_STUDY_ID);
+        
         // Account already has a withdrawn consent, to make sure we're correctly appending consents.
         account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(WITHDRAWN_CONSENT_SIGNATURE));
 
@@ -239,7 +241,7 @@ public class ConsentServiceTest extends Mockito {
 
         // Consent we send to activityEventService is same as the second consent.
         verify(activityEventService).publishEnrollmentEvent(app, PARTICIPANT.getHealthCode(),
-                updatedConsentList.get(1));
+                updatedConsentList.get(1), TEST_STUDY_ID);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
 

@@ -182,7 +182,7 @@ public class ParticipantController extends BaseController {
     public List<EnrollmentDetail> getEnrollments(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(false, RESEARCHER);
         
-        return enrollmentService.getEnrollmentsForUser(session.getAppId(), userId);
+        return enrollmentService.getEnrollmentsForUser(session.getAppId(), userId, null);
     }
     
     @DeleteMapping("/v3/participants/{userId}")

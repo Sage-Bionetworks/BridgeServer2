@@ -136,7 +136,7 @@ public class ScheduledActivityServiceTest {
                 .thenReturn(TestUtils.getSchedulePlans(TEST_APP_ID));
         
         Map<String,DateTime> map = ImmutableMap.of();
-        when(activityEventService.getActivityEventMap(eq(TEST_APP_ID), anyString())).thenReturn(map);
+        when(activityEventService.getActivityEventMap(eq(TEST_APP_ID), anyString(), anyString())).thenReturn(map);
         
         when(activityDao.getActivity(any(), anyString(), anyString(), eq(true))).thenAnswer(invocation -> {
             Object[] args = invocation.getArguments();
@@ -189,7 +189,8 @@ public class ScheduledActivityServiceTest {
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
         service.getScheduledActivities(app, context);
         
-        verify(activityEventService).publishActivitiesRetrieved(eq(app), eq(HEALTH_CODE), any(DateTime.class));
+        verify(activityEventService).publishActivitiesRetrieved(
+                eq(app), eq(HEALTH_CODE), any(DateTime.class), eq(null));
     }
     
     @Test
@@ -197,7 +198,8 @@ public class ScheduledActivityServiceTest {
         ScheduleContext context = createScheduleContext(ENDS_ON).build();
         service.getScheduledActivitiesV4(app, context);
 
-        verify(activityEventService).publishActivitiesRetrieved(eq(app), eq(HEALTH_CODE), any(DateTime.class));
+        verify(activityEventService).publishActivitiesRetrieved(
+                eq(app), eq(HEALTH_CODE), any(DateTime.class), eq(null));
     }
     
     @Test
@@ -960,7 +962,7 @@ public class ScheduledActivityServiceTest {
             
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", startsOn.withZone(DateTimeZone.UTC).minusDays(3));
-        when(activityEventService.getActivityEventMap(TEST_APP_ID, "AAA")).thenReturn(events);
+        when(activityEventService.getActivityEventMap(TEST_APP_ID, "AAA", null)).thenReturn(events);
         
         ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
         
@@ -1231,7 +1233,7 @@ public class ScheduledActivityServiceTest {
                 .put("activity:0c48dbe7-4091-4024-b199-e81a8f7327ed:finished", 
                         new DateTime(finishedActivity.getFinishedOn(), TIME_ZONE))
                 .build();
-        when(activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(eventsMap);
+        when(activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE, null)).thenReturn(eventsMap);
         return createScheduleContext(ENDS_ON).withEvents(eventsMap).build();
     }
     
@@ -1322,7 +1324,7 @@ public class ScheduledActivityServiceTest {
         
         Map<String,DateTime> eventMap = Maps.newHashMap();
         eventMap.put("enrollment", enrollment);
-        when(activityEventService.getActivityEventMap(TEST_APP_ID, "healthCode")).thenReturn(eventMap);
+        when(activityEventService.getActivityEventMap(TEST_APP_ID, "healthCode", null)).thenReturn(eventMap);
 
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
@@ -1342,7 +1344,7 @@ public class ScheduledActivityServiceTest {
         
         List<ScheduledActivity> activities = service.getScheduledActivities(app, context);
         
-        verify(activityEventService).getActivityEventMap(TEST_APP_ID, "healthCode");
+        verify(activityEventService).getActivityEventMap(TEST_APP_ID, "healthCode", null);
         verify(schedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_APP_ID, false);
         
         return activities.get(0).getScheduledOn().toString();

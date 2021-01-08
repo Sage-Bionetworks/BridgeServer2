@@ -25,7 +25,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -83,14 +82,25 @@ public class ActivityEventControllerTest extends Mockito {
     }
     
     @Test
-    public void createCustomActivityEvent() throws Exception {
+    public void createGlobalCustomActivityEvent() throws Exception {
         String json = TestUtils.createJson("{'eventKey':'foo','timestamp':'%s'}", TIMESTAMP.toString());
         doReturn(TestUtils.toInputStream(json)).when(mockRequest).getInputStream();
         
         StatusMessage message = controller.createCustomActivityEvent();
         assertEquals("Event recorded", message.getMessage());
         
-        verify(mockActivityEventService).publishCustomEvent(app, HEALTH_CODE, "foo", TestConstants.TIMESTAMP);
+        verify(mockActivityEventService).publishCustomEvent(app, HEALTH_CODE, "foo", TIMESTAMP, null);
+    }
+    
+    @Test
+    public void createScopedStudyCustomActivityEvent() throws Exception {
+        String json = TestUtils.createJson("{'eventKey':'foo','timestamp':'%s'}", TIMESTAMP.toString());
+        doReturn(TestUtils.toInputStream(json)).when(mockRequest).getInputStream();
+        
+        StatusMessage message = controller.createCustomActivityEvent();
+        assertEquals("Event recorded", message.getMessage());
+        
+        verify(mockActivityEventService).publishCustomEvent(app, HEALTH_CODE, "foo", TIMESTAMP, null);
     }
     
     @Test
@@ -101,7 +111,7 @@ public class ActivityEventControllerTest extends Mockito {
         event.setTimestamp(TIMESTAMP.getMillis());
         
         List<ActivityEvent> activityEvents = ImmutableList.of(event);
-        when(mockActivityEventService.getActivityEventList(TEST_APP_ID, HEALTH_CODE)).thenReturn(activityEvents);
+        when(mockActivityEventService.getActivityEventList(TEST_APP_ID, HEALTH_CODE, null)).thenReturn(activityEvents);
         String response = controller.getSelfActivityEvents();
         
         ResourceList<ActivityEvent> list = BridgeObjectMapper.get().readValue(response, 
@@ -111,6 +121,6 @@ public class ActivityEventControllerTest extends Mockito {
         assertEquals(new Long(TIMESTAMP.getMillis()), returnedEvent.getTimestamp());
         assertNull(returnedEvent.getHealthCode());
         
-        verify(mockActivityEventService).getActivityEventList(TEST_APP_ID, HEALTH_CODE);
+        verify(mockActivityEventService).getActivityEventList(TEST_APP_ID, HEALTH_CODE, null);
     }
 }

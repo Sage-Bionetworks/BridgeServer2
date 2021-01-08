@@ -80,7 +80,7 @@ public class EnrollmentService {
                 .withRequestParam(ENROLLMENT_FILTER, filter);
     }
     
-    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String userId) {
+    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String userId, String studyId) {
         checkNotNull(appId);
         checkNotNull(userId);
         
@@ -89,7 +89,7 @@ public class EnrollmentService {
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        IS_SELF_OR_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, null, USER_ID, account.getId());
+        IS_SELF_OR_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, studyId, USER_ID, account.getId());
 
         return enrollmentDao.getEnrollmentsForUser(appId, userId);
     }

@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
-import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_EMPTY;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 
 import java.util.Set;
@@ -48,8 +47,8 @@ public class SubpopulationValidator implements Validator {
                 errors.rejectValue("dataGroupsAssignedWhileConsented", message);
             }
         }
-        if (subpop.isRequired() && subpop.getStudyIdsAssignedOnConsent().isEmpty()) {
-            errors.rejectValue("studyIdsAssignedOnConsent", CANNOT_BE_EMPTY);
+        if (subpop.isRequired() && subpop.getStudyIdsAssignedOnConsent().size() != 1) {
+            errors.rejectValue("studyIdsAssignedOnConsent", "must contain one (and only one) study identifier");
         } else {
             for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
                 if (!studyIds.contains(studyId)) {

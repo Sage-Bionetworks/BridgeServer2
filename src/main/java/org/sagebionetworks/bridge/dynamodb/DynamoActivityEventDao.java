@@ -33,7 +33,8 @@ public class DynamoActivityEventDao implements ActivityEventDao {
     private static final String ANSWERED_EVENT_POSTFIX = ":"+ActivityEventType.ANSWERED.name().toLowerCase();
     private static final Set<String> IMMUTABLE_EVENTS = ImmutableSet.of(
             ActivityEventObjectType.ENROLLMENT.name().toLowerCase(),
-            ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase());
+            ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase(),
+            ActivityEventObjectType.CREATED_ON.name().toLowerCase() );
     private DynamoDBMapper mapper;
 
     @Resource(name = "activityEventDdbMapper")
@@ -47,6 +48,7 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
         hashKey.setHealthCode(event.getHealthCode());
+        hashKey.setStudyId(event.getStudyId());
         hashKey.setEventId(event.getEventId());
         
         ActivityEvent savedEvent = mapper.load(hashKey);
@@ -58,11 +60,12 @@ public class DynamoActivityEventDao implements ActivityEventDao {
     }
 
     @Override
-    public Map<String, DateTime> getActivityEventMap(String healthCode) {
+    public Map<String, DateTime> getActivityEventMap(String healthCode, String studyId) {
         checkNotNull(healthCode);
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
         hashKey.setHealthCode(healthCode);
+        hashKey.setStudyId(studyId);
         DynamoDBQueryExpression<DynamoActivityEvent> query = new DynamoDBQueryExpression<DynamoActivityEvent>()
             .withHashKeyValues(hashKey);
 
@@ -76,11 +79,12 @@ public class DynamoActivityEventDao implements ActivityEventDao {
     }
     
     @Override
-    public void deleteActivityEvents(String healthCode) {
+    public void deleteActivityEvents(String healthCode, String studyId) {
         checkNotNull(healthCode);
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
         hashKey.setHealthCode(healthCode);
+        hashKey.setStudyId(studyId);
         DynamoDBQueryExpression<DynamoActivityEvent> query = new DynamoDBQueryExpression<DynamoActivityEvent>()
             .withHashKeyValues(hashKey);
 

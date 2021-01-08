@@ -15,6 +15,8 @@ public interface ActivityEvent extends BridgeEntity {
             new SimpleFilterProvider().addFilter("filter",
                     SimpleBeanPropertyFilter.serializeAllExcept("healthCode")));
 
+    String getStudyId();
+    
     String getHealthCode();
 
     String getEventId();

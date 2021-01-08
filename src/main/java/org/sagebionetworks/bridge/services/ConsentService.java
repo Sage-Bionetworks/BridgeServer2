@@ -213,7 +213,8 @@ public class ConsentService {
         accountService.updateAccount(account);
         
         // Publish an enrollment event, set sharing scope 
-        activityEventService.publishEnrollmentEvent(app, participant.getHealthCode(), withConsentCreatedOnSignature);
+        activityEventService.publishEnrollmentEvent(app, participant.getHealthCode(), 
+                withConsentCreatedOnSignature, subpop.getStudyId());
 
         // Administrative actions, almost exclusively for testing, will send no consent documents
         if (sendSignedConsent) {

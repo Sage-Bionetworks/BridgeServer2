@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyBoolean;
 import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.never;
@@ -325,6 +326,7 @@ public class UserAdminServiceTest {
         doReturn("userId").when(account).getId();
         doReturn("healthCode").when(account).getHealthCode();
         doReturn(enrollments).when(account).getActiveEnrollments();
+        doReturn(enrollments).when(account).getEnrollments();
         doReturn(account).when(accountService).getAccount(accountId);
         
         service.deleteUser(app, "userId");
@@ -337,7 +339,9 @@ public class UserAdminServiceTest {
         verify(notificationsService).deleteAllRegistrations(app.getIdentifier(), "healthCode");
         verify(uploadService).deleteUploadsForHealthCode("healthCode");
         verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
-        verify(activityEventService).deleteActivityEvents("healthCode");
+        verify(activityEventService, atLeastOnce()).deleteActivityEvents("healthCode", "studyA");
+        verify(activityEventService, atLeastOnce()).deleteActivityEvents("healthCode", "studyB");
+        verify(activityEventService, atLeastOnce()).deleteActivityEvents("healthCode", null);
         verify(accountService).deleteAccount(accountId);
         
         assertEquals(account.getHealthCode(), "healthCode");
@@ -356,7 +360,7 @@ public class UserAdminServiceTest {
         verify(notificationsService, never()).deleteAllRegistrations(any(), any());
         verify(uploadService, never()).deleteUploadsForHealthCode(any());
         verify(scheduledActivityService, never()).deleteActivitiesForUser(any());
-        verify(activityEventService, never()).deleteActivityEvents(any());
+        verify(activityEventService, never()).deleteActivityEvents(any(), any());
         verify(accountService, never()).deleteAccount(any());
     }
 }
