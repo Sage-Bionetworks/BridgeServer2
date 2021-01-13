@@ -73,25 +73,5 @@ public class DynamoParticipantState{
         this.data = data;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        DynamoParticipantState that = (DynamoParticipantState) o;
-        return Objects.equals(userId, that.userId) && Objects.equals(configId, that.configId) && Objects.equals(data, that.data);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(userId, configId, data);
-    }
-
-    @Override
-    public String toString() {
-        return "DynamoParticipantState[" +
-                "userId='" + userId +
-                ", configId='" + configId +
-                ", data='" + data +
-                "}";
-    }
+    //TODO: equals, hashcode, toString once class is more finalized
 }
