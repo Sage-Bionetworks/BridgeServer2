@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -21,6 +22,29 @@ public class DynamoParticipantState{
     private String configId;
     private String data;
 
+    @JsonIgnore
+    @DynamoDBIgnore
+    public ReportDataKey getReportDataKey() {
+        return reportDataKey;
+    }
+
+    public void setReportDataKey(ReportDataKey reportDataKey) {
+        this.reportDataKey = reportDataKey;
+    }
+
+    @JsonIgnore
+    @DynamoDBHashKey
+    public String getKey() {
+        // Transfer to the property that is persisted when it is requested.
+        if (reportDataKey != null) {
+            key = reportDataKey.getKeyString();
+        }
+        return key;
+    }
+
+    public void setKey(String key) {
+        this.key = key;
+    }
     //TODO: figure out which methods require a @JsonIgnore annotation
     //TODO: figure out which methods require a @DynamoDBIgnore annotation
     public String getUserId () {
