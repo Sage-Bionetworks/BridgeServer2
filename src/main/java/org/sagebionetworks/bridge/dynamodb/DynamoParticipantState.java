@@ -4,16 +4,19 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 
 import java.util.Objects;
 
 /**
  *
  */
-@DynamoDBTable(tableName = "ParticipantState") //TODO: change name from config
-public class DynamoParticipantState {
+@DynamoDBTable(tableName = "ParticipantState")
+public class DynamoParticipantState{
     //TODO: does this implement ReportData of ReportType "PARTICIPANT"?
 
+    private String key;
+    private ReportDataKey reportDataKey;
     private String userId;
     private String configId;
     private String data;
