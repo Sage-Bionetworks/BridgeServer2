@@ -12,8 +12,8 @@ import java.util.Objects;
 /**
  *
  */
-@DynamoDBTable(tableName = "ParticipantState")
-public class DynamoParticipantState{
+@DynamoDBTable(tableName = "ParticipantData")
+public class DynamoParticipantData {
     //TODO: does this implement ReportData of ReportType "PARTICIPANT"?
 
     private String key;

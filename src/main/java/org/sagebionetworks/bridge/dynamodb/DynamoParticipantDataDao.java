@@ -14,8 +14,9 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Component
-public class DynamoParticipantStateDao {
+public class DynamoParticipantDataDao {
     // TODO: likewise to the question in DynamoParticipantState, does this implement ReportDataDao?
+    // we'd have to overload the default functions with params that don't include times/dates
 
     private DynamoDBMapper mapper;
 
@@ -24,20 +25,27 @@ public class DynamoParticipantStateDao {
         this.mapper = participantStateMapper;
     }
 
-    public ResourceList<DynamoParticipantState> getReportData(ReportDataKey key) { //TODO: <? extends ReportData>
+    public ResourceList<DynamoParticipantData> getReportData(ReportDataKey key) { //TODO: <? extends ReportData>
         checkNotNull(key);
 
-        DynamoParticipantState hashKey = new DynamoParticipantState();
+        DynamoParticipantData hashKey = new DynamoParticipantData();
         hashKey.setKey(key.getKeyString());
 
-        DynamoDBQueryExpression<DynamoParticipantState> query =
-                new DynamoDBQueryExpression<DynamoParticipantState>().withHashKeyValues(hashKey);
-        List<DynamoParticipantState> results = mapper.query(DynamoParticipantState.class, query);
+        DynamoDBQueryExpression<DynamoParticipantData> query =
+                new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashKey);
+        List<DynamoParticipantData> results = mapper.query(DynamoParticipantData.class, query);
 
-        return new ResourceList<DynamoParticipantState>(results);
+        return new ResourceList<DynamoParticipantData>(results);
     }
+
     // getReportDataV4()
+
     // saveReportdata()
+    public void saveReportData(ReportData reportData) {
+        checkNotNull(reportData);
+        mapper.save(reportData);
+    }
+
     // deleteReportData()
     // deleteReportDataRecord()
 }
