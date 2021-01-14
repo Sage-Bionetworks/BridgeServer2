@@ -13,6 +13,13 @@ public interface ParticipantData extends BridgeEntity{
     static TypeReference<ForwardCursorPagedResourceList<ParticipantData>> PAGED_REPORT_DATA = new TypeReference<ForwardCursorPagedResourceList<ParticipantData>>() {
     };
 
+    static ParticipantData create(){
+        return new DynamoParticipantData();
+    }
+
+    String getUserId();
+    void setUserId(String userId);
+
 }
 
 //TODO: organize imports once more finalized

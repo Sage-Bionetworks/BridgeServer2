@@ -4,6 +4,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.sagebionetworks.bridge.models.ParticipantData;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 
@@ -13,12 +14,12 @@ import java.util.Objects;
  *
  */
 @DynamoDBTable(tableName = "ParticipantData")
-public class DynamoParticipantData {
-    //TODO: does this implement ReportData of ReportType "PARTICIPANT"?
+public class DynamoParticipantData implements ParticipantData {
 
     private String userId;
     private String configId;
     private String data;
+    private Long version;
 
     //TODO: figure out which methods require a @JsonIgnore annotation
     //TODO: figure out which methods require a @DynamoDBIgnore annotation
