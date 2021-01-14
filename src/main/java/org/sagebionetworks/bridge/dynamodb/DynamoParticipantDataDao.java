@@ -29,7 +29,7 @@ public class DynamoParticipantDataDao {
         checkNotNull(key);
 
         DynamoParticipantData hashKey = new DynamoParticipantData();
-        hashKey.setKey(key.getKeyString());
+        //hashKey.setKey(key.getKeyString());
 
         DynamoDBQueryExpression<DynamoParticipantData> query =
                 new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashKey);
@@ -48,4 +48,6 @@ public class DynamoParticipantDataDao {
 
     // deleteReportData()
     // deleteReportDataRecord()
+
+    //TODO: organize imports once more finalized
 }
