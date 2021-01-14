@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.NOTIFY_SUCCESS_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -37,6 +38,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -289,11 +291,11 @@ public class StudyParticipantControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode").build();
-        when(mockParticipantService.getParticipant(app, TEST_USER_ID, true)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, "healthcode:"+TEST_USER_ID, true)).thenReturn(participant);
         
-        mockAccountInStudy();
+        mockAccountInStudy("healthcode:"+TEST_USER_ID);
 
-        String retValue = controller.getParticipant(TEST_STUDY_ID, TEST_USER_ID, true);
+        String retValue = controller.getParticipant(TEST_STUDY_ID, "healthcode:"+TEST_USER_ID, true);
         StudyParticipant deser = BridgeObjectMapper.get().readValue(retValue, StudyParticipant.class);
         assertEquals(deser.getHealthCode(), "healthCode");
     }
@@ -318,6 +320,28 @@ public class StudyParticipantControllerTest extends Mockito {
         assertEquals(deser.getHealthCode(), "healthCode");
     }
     
+    @Test
+    public void getParticipantGetsByHealthCodeIfConfigured() throws Exception {
+        app.setHealthCodeExportEnabled(true);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        session.setAppId(TEST_APP_ID);
+
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("healthCode").build();
+        when(mockParticipantService.getParticipant(app, "healthCode:"+TEST_USER_ID, true)).thenReturn(participant);
+        
+        mockAccountInStudy("healthCode:"+TEST_USER_ID);
+
+        String retValue = controller.getParticipant(TEST_STUDY_ID, "healthCode:"+TEST_USER_ID, true);
+        assertNotNull(retValue);
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantPreventsUnauthorizedHealthCodeRequests() throws Exception {
         app.setHealthCodeExportEnabled(false);
@@ -339,6 +363,50 @@ public class StudyParticipantControllerTest extends Mockito {
             .thenReturn(list);
 
         controller.getParticipant(TEST_STUDY_ID, "healthcode:"+TEST_USER_ID, true);
+    }
+    
+    @Test
+    public void getParticipantPreventsNoHealthCodeExportOverrriddenByAdmin() throws Exception {
+        app.setHealthCodeExportEnabled(false);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(ADMIN)).build());
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("healthCode").build();
+        when(mockParticipantService.getParticipant(app, "healthcode:"+TEST_USER_ID, true)).thenReturn(participant);
+        
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "healthcode:"+TEST_USER_ID);
+        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, "healthcode:"+TEST_USER_ID))
+            .thenReturn(list);
+
+        String retValue = controller.getParticipant(TEST_STUDY_ID, "healthcode:"+TEST_USER_ID, true);
+        assertNotNull(retValue);
+    }
+    
+    @Test
+    public void getParticipantRemovesHealthCodeIfDisabled() throws Exception {
+        app.setHealthCodeExportEnabled(false);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withHealthCode("healthCode").build();
+        when(mockParticipantService.getParticipant(app, TEST_USER_ID, true)).thenReturn(participant);
+        
+        mockAccountInStudy();
+
+        String retValue = controller.getParticipant(TEST_STUDY_ID, TEST_USER_ID, true);
+        StudyParticipant deser = BridgeObjectMapper.get().readValue(retValue, StudyParticipant.class);
+        assertNull(deser.getHealthCode());
     }
     
     @Test
@@ -818,9 +886,13 @@ public class StudyParticipantControllerTest extends Mockito {
     }
     
     private void mockAccountInStudy() {
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        mockAccountInStudy(TEST_USER_ID);
+    }
+    
+    private void mockAccountInStudy(String userIdToken) {
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, userIdToken);
         List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, userIdToken))
             .thenReturn(list);
     }
     

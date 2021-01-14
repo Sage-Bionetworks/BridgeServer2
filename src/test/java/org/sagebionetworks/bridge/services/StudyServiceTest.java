@@ -203,6 +203,28 @@ public class StudyServiceTest {
         verify(sponsorService, never()).addStudySponsor(any(), any(), any());
     }
     
+    @Test
+    public void createStudyWithoutSponsorshipWhenCallerInOrg() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .build());
+        
+        Study study = Study.create();
+        study.setIdentifier("oneId");
+        study.setName("oneName");
+        study.setAppId("junk");
+        study.setVersion(10L);
+        study.setDeleted(true);
+        DateTime timestamp = DateTime.now().minusHours(2);
+        study.setCreatedOn(timestamp);
+        study.setModifiedOn(timestamp);
+        
+        service.createStudy(TEST_APP_ID, study, false);
+        
+        verify(studyDao).createStudy(any());
+        verify(sponsorService, never()).addStudySponsor(any(), any(), any());
+    }
+    
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createStudyInvalidStudy() {
         service.createStudy(TEST_APP_ID, Study.create(), true);
