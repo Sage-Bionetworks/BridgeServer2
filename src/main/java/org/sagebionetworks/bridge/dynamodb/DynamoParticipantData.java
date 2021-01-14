@@ -1,12 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.sagebionetworks.bridge.models.ParticipantData;
-import org.sagebionetworks.bridge.models.reports.ReportData;
-import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 
 import java.util.Objects;
 
@@ -60,7 +57,29 @@ public class DynamoParticipantData implements ParticipantData {
         this.version = version;
     }
 
-    //TODO: equals, hashcode, toString once class is more finalized
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        DynamoParticipantData that = (DynamoParticipantData) o;
+        return Objects.equals(userId, that.userId) && Objects.equals(configId, that.configId) &&
+                Objects.equals(data, that.data) && Objects.equals(version, that.version);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(userId, configId, data, version);
+    }
+
+    @Override
+    public String toString() {
+        return "DynamoParticipantData{" +
+                "userId='" + userId +
+                ", configId='" + configId +
+                ", data='" + data +
+                ", version=" + version +
+                '}';
+    }
 
     //TODO: organize imports once more finalized
 }
