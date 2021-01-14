@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import org.sagebionetworks.bridge.models.ParticipantData;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
@@ -25,11 +26,13 @@ public class DynamoParticipantDataDao {
         this.mapper = participantStateMapper;
     }
 
-    public ResourceList<DynamoParticipantData> getReportData(ReportDataKey key) { //TODO: <? extends ReportData>
-        checkNotNull(key);
+    public ResourceList<? extends ParticipantData> getReportData(String userId, String configId) {
+        checkNotNull(userId);
+        checkNotNull(configId);
 
         DynamoParticipantData hashKey = new DynamoParticipantData();
-        //hashKey.setKey(key.getKeyString());
+        hashKey.setUserId(userId);
+        // TODO: in DynamoReportData, a ReportDataKey is used. Here, is it sufficient to use userId? If so, remove configId or add to hashKey
 
         DynamoDBQueryExpression<DynamoParticipantData> query =
                 new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashKey);

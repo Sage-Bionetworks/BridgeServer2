@@ -23,16 +23,19 @@ public class DynamoParticipantData implements ParticipantData {
 
     //TODO: figure out which methods require a @JsonIgnore annotation
     //TODO: figure out which methods require a @DynamoDBIgnore annotation
+
+    @JsonIgnore
+    @DynamoDBIgnore
+    @Override
     public String getUserId () {
         return this.userId;
     }
 
+    @Override
     public void setUserId(String userId) {
         this.userId = userId;
     }
 
-    //TODO: @JsonIgnore
-    //TODO: @DynamoDBIgnore
     public String getConfigId() {
         return this.configId;
     }
@@ -47,6 +50,14 @@ public class DynamoParticipantData implements ParticipantData {
 
     public void setData(String data) {
         this.data = data;
+    }
+
+    public Long getVersion() {
+        return this.version;
+    }
+
+    public void setVersion(Long version) {
+        this.version = version;
     }
 
     //TODO: equals, hashcode, toString once class is more finalized
