@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.sagebionetworks.bridge.models.ParticipantData;
@@ -22,7 +24,7 @@ public class DynamoParticipantData implements ParticipantData {
     //TODO: figure out which methods require a @DynamoDBIgnore annotation
 
     @JsonIgnore
-    @DynamoDBIgnore
+    @DynamoDBHashKey
     @Override
     public String getUserId () {
         return this.userId;
@@ -33,18 +35,23 @@ public class DynamoParticipantData implements ParticipantData {
         this.userId = userId;
     }
 
+    @DynamoDBRangeKey
+    @Override
     public String getConfigId() {
         return this.configId;
     }
 
+    @Override
     public void setConfigId(String configId) {
         this.configId = configId;
     }
 
+    @Override
     public String getData() {
         return this.data;
     }
 
+    @Override
     public void setData(String data) {
         this.data = data;
     }
