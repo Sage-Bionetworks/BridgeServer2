@@ -56,10 +56,12 @@ public class DynamoParticipantData implements ParticipantData {
         this.data = data;
     }
 
+    @Override
     public Long getVersion() {
         return this.version;
     }
 
+    @Override
     public void setVersion(Long version) {
         this.version = version;
     }

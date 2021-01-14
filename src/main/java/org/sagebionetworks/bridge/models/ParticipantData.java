@@ -27,7 +27,8 @@ public interface ParticipantData extends BridgeEntity{
     String getData();
     void setData(String data);
 
-    //TODO: Do we need getter and setter for version, or is that specific to DynamoDB?
+    Long getVersion();
+    void setVersion(Long version);
 }
 
 //TODO: organize imports once more finalized
