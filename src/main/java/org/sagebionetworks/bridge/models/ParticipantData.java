@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 @JsonDeserialize(as= DynamoParticipantData.class)
 public interface ParticipantData extends BridgeEntity{
 
+    // TODO: I'm not sure what this is for but it's in ReportData
     static TypeReference<ForwardCursorPagedResourceList<ParticipantData>> PAGED_REPORT_DATA = new TypeReference<ForwardCursorPagedResourceList<ParticipantData>>() {
     };
 
@@ -20,6 +21,13 @@ public interface ParticipantData extends BridgeEntity{
     String getUserId();
     void setUserId(String userId);
 
+    String getConfigId();
+    void setConfigId(String configId);
+
+    String getData();
+    void setData(String data);
+
+    //TODO: Do we need getter and setter for version, or is that specific to DynamoDB?
 }
 
 //TODO: organize imports once more finalized
