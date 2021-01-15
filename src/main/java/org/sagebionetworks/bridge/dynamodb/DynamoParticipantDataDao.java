@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.dynamodb;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import org.sagebionetworks.bridge.dao.ParticipantDataDao;
@@ -34,11 +36,14 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
         checkNotNull(configId);
 
         DynamoParticipantData hashKey = new DynamoParticipantData();
-        hashKey.setUserId(userId + configId);
-        // TODO: in DynamoReportData, a ReportDataKey is used. Here, is it sufficient to use userId? If so, remove configId from params or add to hashKey
+        hashKey.setUserId(userId);
+
+        Condition configIdCondition = new Condition().withAttributeValueList(new AttributeValue(configId));
+        // TODO: I need to check this, did I do this correctly?
 
         DynamoDBQueryExpression<DynamoParticipantData> query =
-                new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashKey);
+                new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashKey)
+                        .withRangeKeyCondition("configId", configIdCondition);
         List<DynamoParticipantData> results = mapper.query(DynamoParticipantData.class, query);
 
         return new PagedResourceList<DynamoParticipantData>(results, results.size());
