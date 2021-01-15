@@ -2,10 +2,15 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import org.sagebionetworks.bridge.dao.ParticipantDataDao;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.reports.ReportData;
-import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -15,10 +20,7 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @Component
-public class DynamoParticipantDataDao {
-    // TODO: likewise to the question in DynamoParticipantState, does this implement ReportDataDao?
-    // we'd have to overload the default functions with params that don't include times/dates
-
+public class DynamoParticipantDataDao implements ParticipantDataDao {
     private DynamoDBMapper mapper;
 
     @Resource(name = "participantStateMapper")
@@ -26,31 +28,70 @@ public class DynamoParticipantDataDao {
         this.mapper = participantStateMapper;
     }
 
-    public ResourceList<? extends ParticipantData> getReportData(String userId, String configId) {
+    @Override
+    public PagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId) {
         checkNotNull(userId);
         checkNotNull(configId);
 
         DynamoParticipantData hashKey = new DynamoParticipantData();
-        hashKey.setUserId(userId);
-        // TODO: in DynamoReportData, a ReportDataKey is used. Here, is it sufficient to use userId? If so, remove configId or add to hashKey
+        hashKey.setUserId(userId + configId);
+        // TODO: in DynamoReportData, a ReportDataKey is used. Here, is it sufficient to use userId? If so, remove configId from params or add to hashKey
 
         DynamoDBQueryExpression<DynamoParticipantData> query =
                 new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashKey);
         List<DynamoParticipantData> results = mapper.query(DynamoParticipantData.class, query);
 
-        return new ResourceList<DynamoParticipantData>(results);
+        return new PagedResourceList<DynamoParticipantData>(results, results.size());
+        //TODO: is this the correct way of using the PagedResourceList?
     }
 
-    // getReportDataV4()
+    @Override
+    public PagedResourceList<ParticipantData> getParticipantDataV4(final String userId, final String configId,
+                                                                   final String offsetKey, final int pageSize) {
+        //TODO: why do we use final for these params but not the others?
+        checkNotNull(userId);
+        checkNotNull(configId);
 
-    // saveReportdata()
-    public void saveReportData(ReportData reportData) {
-        checkNotNull(reportData);
-        mapper.save(reportData);
+        int pageSizeWithIndicatorRecord = pageSize + 1; //TODO: what is indicatorRecord?
+        DynamoParticipantData hashKey = new DynamoParticipantData();
+
+        DynamoDBQueryExpression<DynamoParticipantData> query = new DynamoDBQueryExpression<DynamoParticipantData>()
+                .withHashKeyValues(hashKey)
+                .withLimit(pageSizeWithIndicatorRecord);
+
+        QueryResultPage<DynamoParticipantData> page = mapper.queryPage(DynamoParticipantData.class, query);
+
+        List<ParticipantData> list = Lists.newArrayListWithCapacity(pageSizeWithIndicatorRecord);
+        for (int i = 0, len = page.getResults().size(); i < len; i++) {
+            ParticipantData oneParticipant = page.getResults().get(i);
+            list.add(i, oneParticipant);
+        }
+
+        int limit = Math.min(list.size(), pageSize);
+        return new PagedResourceList<ParticipantData>(list.subList(0, limit), limit);
+        //TODO: is this the correct way of using the PagedResourceList?
     }
 
-    // deleteReportData()
-    // deleteReportDataRecord()
+    @Override
+    public void saveParticipantData(String data) {
+        checkNotNull(data);
+        mapper.save(data);
+    }
+
+    @Override
+    public void deleteParticipantData(String userId, String configId) {
+        checkNotNull(userId);
+        checkNotNull(configId);
+
+        DynamoParticipantData hashkey = new DynamoParticipantData();
+        hashkey.setUserId(userId);
+        hashkey.setConfigId(configId);
+
+        DynamoParticipantData participantDataRecord = mapper.load(hashkey);
+        if (participantDataRecord != null) {
+            mapper.delete(participantDataRecord);
+        }
+    }
 
     //TODO: organize imports once more finalized
 }
