@@ -36,16 +36,20 @@ public class ParticipantDataService {
         return participantDataDao.getParticipantDataV4(userid, configId, offsetKey, pageSize);
     }
 
-    public void saveParticipantData(String userId, String configId, ParticipantData data) {
-        checkNotNull(data); // TODO: why doesn't Report service check if the appID and Identifier are null?
-
-        // TODO: how does userID and configId come into play here********************
+    public void saveParticipantData(ParticipantData data) {
+        checkNotNull(data);
         participantDataDao.saveParticipantData(data);
     }
 
-    public void deleteParticipantData(String userId) {
+    public void deleteParticipantData(String userId) { //TODO: why isn't there a checkNotNull() in the ReportService code?
         participantDataDao.deleteParticipantData(userId);
     }
+
+    public void deleteParticipantDataRecord(String userId, String configId) {
+        participantDataDao.deleteParticipantDataRecord(userId, configId);
+    }
+
+    //TODO: can participant data be updated?
 
     //TODO: organize imports once more finalized
 }

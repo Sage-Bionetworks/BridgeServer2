@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantData;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.services.ParticipantDataService;
 import org.sagebionetworks.bridge.services.ReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -11,11 +12,11 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 public class ParticipantDataController extends BaseController {
 
-    private ReportService reportService;
+    private ParticipantDataService participantDataService;
 
     @Autowired
-    final void setReportService(ReportService reportService) {
-        this.reportService = reportService;
+    final void setReportService(ParticipantDataService participantDataService) {
+        this.participantDataService = participantDataService;
     }
 
 //    @GetMapping("/v4/users/self/configs")
