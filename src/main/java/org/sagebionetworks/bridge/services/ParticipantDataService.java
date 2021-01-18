@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.ParticipantDataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,12 +23,13 @@ public class ParticipantDataService {
     }
 
     // TODO: what kind of resource list?
-    public ResourceList<? extends ParticipantData> getParticipantData(String userId, String configId) {
-        return participantDataDao.getParticipantData(userId, configId);
+    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId, String offsetKey,
+                                                                                        int pageSize) { //TODO: make these params final?
+        return participantDataDao.getParticipantData(userId, configId, offsetKey, pageSize);
     }
 
     // TODO: what kind of resource list?
-    public ResourceList<? extends ParticipantData> getParticipantDataV4(final String userid, final String configId,
+    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantDataV4(final String userid, final String configId,
                                                                         final String offsetKey, final int pageSize) {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);

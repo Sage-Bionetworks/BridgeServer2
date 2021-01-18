@@ -31,7 +31,8 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
     }
 
     @Override
-    public PagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId) {
+    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId,
+                                                                                        String offsetKey, int pageSize) {
         checkNotNull(userId);
         checkNotNull(configId);
 
@@ -46,12 +47,11 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
                         .withRangeKeyCondition("configId", configIdCondition);
         List<DynamoParticipantData> results = mapper.query(DynamoParticipantData.class, query);
 
-        return new PagedResourceList<DynamoParticipantData>(results, results.size());
-        //TODO: is this the correct way of using the PagedResourceList?
+        return new ForwardCursorPagedResourceList<DynamoParticipantData>(results, offsetKey);
     }
 
     @Override
-    public PagedResourceList<ParticipantData> getParticipantDataV4(final String userId, final String configId,
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataV4(final String userId, final String configId,
                                                                    final String offsetKey, final int pageSize) {
         //TODO: why do we use final for these params but not the others?
         checkNotNull(userId);
@@ -72,8 +72,13 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
             list.add(i, oneParticipant);
         }
 
+        String nextPageOffsetKey = null;
+        if (list.size() == pageSizeWithIndicatorRecord) {
+            nextPageOffsetKey = Iterables.getLast(list).getConfigId(); // TODO: is this right? We want to get the range key essentially
+        }
+
         int limit = Math.min(list.size(), pageSize);
-        return new PagedResourceList<ParticipantData>(list.subList(0, limit), limit);
+        return new ForwardCursorPagedResourceList<ParticipantData>(list.subList(0, limit), nextPageOffsetKey);
         //TODO: is this the correct way of using the PagedResourceList?
     }
 
