@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantData;
+import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.ParticipantDataService;
@@ -19,11 +20,12 @@ public class ParticipantDataController extends BaseController {
         this.participantDataService = participantDataService;
     }
 
-//    @GetMapping("/v4/users/self/configs")
-//    public ResourceList<DynamoParticipantData> getParticipantDataForSelf(@PathVariable String identifer) {
-//        UserSession session = getAuthenticatedSession();
-//        return reportService.getParticipantReport(session.getAppId(), identifer, session.getHealthCode(), null, null);
-//    }
+    @GetMapping("/v4/users/self/configs")
+    public ForwardCursorPagedResourceList<String> listParticipantConfigIds(String userId) {
+        UserSession session = getAuthenticatedSession();
+
+        return participantDataService.getParticipantDataV4()
+    }
 
     //TODO: organize imports once more finalized
 }
