@@ -5,6 +5,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -20,9 +23,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -60,6 +65,11 @@ public class StudyServiceTest {
         service.setStudyDao(studyDao);
     }
     
+    @AfterMethod
+    public void afterMethod( ) {
+        RequestContext.set(NULL_INSTANCE);
+    }
+    
     @Test
     public void getStudy() {
         Study study = Study.create();
@@ -80,10 +90,12 @@ public class StudyServiceTest {
         studyB.setIdentifier("studyB");
         
         PagedResourceList<Study> studies = new PagedResourceList<>(ImmutableList.of(studyA, studyB), 2); 
-        when(studyDao.getStudies(TEST_APP_ID, null, null, false)).thenReturn(studies);
+        when(studyDao.getStudies(TEST_APP_ID, null, null, null, false)).thenReturn(studies);
         
         Set<String> studyIds = service.getStudyIds(TEST_APP_ID);
         assertEquals(studyIds, ImmutableSet.of("studyA","studyB"));
+        
+        verify(studyDao).getStudies(TEST_APP_ID, null, null, null, false);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -99,22 +111,22 @@ public class StudyServiceTest {
     
     @Test
     public void getStudiesIncludeDeleted() {
-        when(studyDao.getStudies(TEST_APP_ID, 0, 50, true)).thenReturn(STUDIES);
+        when(studyDao.getStudies(TEST_APP_ID, null, 0, 50, true)).thenReturn(STUDIES);
         
         PagedResourceList<Study> returnedValue = service.getStudies(TEST_APP_ID, 0, 50, true);
         assertEquals(returnedValue, STUDIES);
         
-        verify(studyDao).getStudies(TEST_APP_ID, 0, 50, true);
+        verify(studyDao).getStudies(TEST_APP_ID, null, 0, 50, true);
     }
     
     @Test
     public void getStudiesExcludeDeleted() {
-        when(studyDao.getStudies(TEST_APP_ID, 10, 20, false)).thenReturn(STUDIES);
+        when(studyDao.getStudies(TEST_APP_ID, null, 10, 20, false)).thenReturn(STUDIES);
         
         PagedResourceList<Study> returnedValue = service.getStudies(TEST_APP_ID, 10, 20, false);
         assertEquals(returnedValue, STUDIES);
         
-        verify(studyDao).getStudies(TEST_APP_ID, 10, 20, false);
+        verify(studyDao).getStudies(TEST_APP_ID, null, 10, 20, false);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -134,12 +146,43 @@ public class StudyServiceTest {
     
     @Test
     public void getStudiesWithNullParams() {
-        when(studyDao.getStudies(TEST_APP_ID, null, null, false))
+        when(studyDao.getStudies(TEST_APP_ID, null, null, null, false))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
     
         service.getStudies(TEST_APP_ID, null, null, false);
         
-        verify(studyDao).getStudies(TEST_APP_ID, null, null, false);
+        verify(studyDao).getStudies(TEST_APP_ID, null, null, null, false);
+    }
+    
+    @Test
+    public void getStudiesScopesSearchForScopedRoles() {
+        Set<String> studies = ImmutableSet.of("studyA", "studyB");
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .withOrgSponsoredStudies(studies)
+                .build());
+        
+        when(studyDao.getStudies(TEST_APP_ID, studies, null, null, false))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+
+        service.getStudies(TEST_APP_ID, null, null, false);
+    
+        verify(studyDao).getStudies(TEST_APP_ID, studies, null, null, false);
+    }
+    
+    @Test
+    public void getStudiesDoesNotScopeSearchForUnscopedRoles() {
+        Set<String> studies = ImmutableSet.of("studyA", "studyB");
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .withOrgSponsoredStudies(studies).build());
+        
+        when(studyDao.getStudies(TEST_APP_ID, null, null, null, false))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+
+        service.getStudies(TEST_APP_ID, null, null, false);
+    
+        verify(studyDao).getStudies(TEST_APP_ID, null, null, null, false);
     }
     
     @Test

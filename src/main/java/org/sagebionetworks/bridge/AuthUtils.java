@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
@@ -13,6 +14,14 @@ import java.util.Set;
  * ADMIN and SUPERADMIN roles will always pass and are implicit in the naming.
  */
 public class AuthUtils {
+    /**
+     * Is this scoped to specific studies? It should have one of the study-scoped
+     * roles, and no roles that are app scoped that we would allow wider latitude
+     * when using the APIs.
+     */
+    public static final AuthEvaluator IS_STUDY_SCOPED_ADMIN = new AuthEvaluator()
+            .hasAnyRole(ORG_ADMIN).hasNoRole(DEVELOPER, RESEARCHER, ADMIN, WORKER);
+
     public static final AuthEvaluator IS_ADMIN = new AuthEvaluator().hasAnyRole(ADMIN);
     
     /**

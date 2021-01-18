@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toSet;
+import static org.sagebionetworks.bridge.AuthUtils.IS_STUDY_SCOPED_ADMIN;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -14,6 +15,7 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -55,13 +57,22 @@ public class StudyService {
      * so we can provide a cache for these infrequently changing identifiers.
      */
     public Set<String> getStudyIds(String appId) {
-        return getStudies(appId, null, null, false)
+        return getStudies(appId, null, null, false, false)
                 .getItems().stream()
                 .map(Study::getIdentifier)
                 .collect(toSet());
     }
     
-    public PagedResourceList<Study> getStudies(String appId, Integer offsetBy, Integer pageSize, boolean includeDeleted) {
+    public PagedResourceList<Study> getStudies(String appId, Integer offsetBy, Integer pageSize, 
+            boolean includeDeleted) {
+        return getStudies(appId, offsetBy, pageSize, includeDeleted, true);
+    }
+    
+    // We only scope studies when directly acting for them...getStudyIds() is sometimes used in ways
+    // where we're detecting an existing study ID, and that needs to continue to work, even if you're
+    // choosing someone else's studyId and you can't see it (it's a good argument for using GUIDs).
+    private PagedResourceList<Study> getStudies(String appId, Integer offsetBy, Integer pageSize,
+            boolean includeDeleted, boolean scopeStudies) {
         checkNotNull(appId);
         
         if (offsetBy != null && offsetBy < 0) {
@@ -70,7 +81,11 @@ public class StudyService {
         if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return studyDao.getStudies(appId, offsetBy, pageSize, includeDeleted)
+        Set<String> studies = null;
+        if (scopeStudies && IS_STUDY_SCOPED_ADMIN.check()) {
+            studies = RequestContext.get().getOrgSponsoredStudies();
+        }
+        return studyDao.getStudies(appId, studies, offsetBy, pageSize, includeDeleted)
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize)
                 .withRequestParam(INCLUDE_DELETED, includeDeleted);
