@@ -7,10 +7,8 @@ public interface ParticipantDataDao {
 
     /**
      * Get participant data records for the given userId and configId.
-     * @param userId
-     *          the userId for the participant data
-     * @param configId
-     *          the configId for the participant data
+     * @param userId - the userId for the participant data
+     * @param configId - the configId for the participant data
      * @return list of participant data records in a resource list that includes original query values
      */
     ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId,
@@ -30,22 +28,24 @@ public interface ParticipantDataDao {
 
     /**
      * Writes a participant data to the backing store.
-     * @param data
-     *          String data
+     * @param data - String data
      */
-    void saveParticipantData(String data); //TODO: how do we know the userId and configId of this data?
+    void saveParticipantData(ParticipantData data); //TODO: how do we know the userId and configId of this data?
 
     /**
      * Delete all records
      * @param userId
      *          userId to delete
-     * @param configId
-     *          configId to delete
      */
-    void deleteParticipantData(String userId, String configId);
+    void deleteParticipantData(String userId);
 
-    // TODO: can we delete a single record in the participant data if we also provide the String data value?
-    // void deleteParticipantDataRecord(String userId, String configId);
+    /**
+     * Delete a single participant data record.
+     * @param userId
+     * @param configId
+     */
+    void deleteParticipantDataRecord(String userId, String configId);
 }
 
 //TODO: organize imports once more finalized
+//TODO: finish javadoc

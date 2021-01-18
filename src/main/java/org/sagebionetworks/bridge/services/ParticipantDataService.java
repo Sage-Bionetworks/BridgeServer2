@@ -5,7 +5,7 @@ import org.sagebionetworks.bridge.dao.ParticipantDataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
-import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,30 +22,29 @@ public class ParticipantDataService {
         this.participantDataDao = participantDataDao;
     }
 
-    // TODO: what kind of resource list?
-    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId, String offsetKey,
-                                                                                        int pageSize) { //TODO: make these params final?
+    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId,
+                                                                                        String offsetKey, int pageSize) {
         return participantDataDao.getParticipantData(userId, configId, offsetKey, pageSize);
     }
 
-    // TODO: what kind of resource list?
-    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantDataV4(final String userid, final String configId,
-                                                                        final String offsetKey, final int pageSize) {
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataV4(final String userid,
+            final String configId, final String offsetKey, final int pageSize) {
+
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
         return participantDataDao.getParticipantDataV4(userid, configId, offsetKey, pageSize);
     }
 
-    public void saveParticipantData(String userId, String configId, String data) {
+    public void saveParticipantData(String userId, String configId, ParticipantData data) {
         checkNotNull(data); // TODO: why doesn't Report service check if the appID and Identifier are null?
 
-        // TODO: how does userID and configId come into play here
+        // TODO: how does userID and configId come into play here********************
         participantDataDao.saveParticipantData(data);
     }
 
-    public void deleteParticipantData(String userId, String configId) {
-        participantDataDao.deleteParticipantData(userId, configId);
+    public void deleteParticipantData(String userId) {
+        participantDataDao.deleteParticipantData(userId);
     }
 
     //TODO: organize imports once more finalized

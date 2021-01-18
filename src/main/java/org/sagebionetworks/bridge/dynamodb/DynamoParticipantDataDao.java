@@ -7,6 +7,7 @@ import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantDataDao;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -79,25 +80,39 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
 
         int limit = Math.min(list.size(), pageSize);
         return new ForwardCursorPagedResourceList<ParticipantData>(list.subList(0, limit), nextPageOffsetKey);
-        //TODO: is this the correct way of using the PagedResourceList?
     }
 
     @Override
-    public void saveParticipantData(String data) {
+    public void saveParticipantData(ParticipantData data) {
         checkNotNull(data);
         mapper.save(data);
     }
 
     @Override
-    public void deleteParticipantData(String userId, String configId) {
+    public void deleteParticipantData(String userId) { //TODO do I need to include the range key here?
         checkNotNull(userId);
-        checkNotNull(configId);
 
         DynamoParticipantData hashkey = new DynamoParticipantData();
         hashkey.setUserId(userId);
-        hashkey.setConfigId(configId);
 
-        DynamoParticipantData participantDataRecord = mapper.load(hashkey);
+        DynamoDBQueryExpression<DynamoParticipantData> query =
+                new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashkey);
+        List<DynamoParticipantData> objectsToDelete = mapper.query(DynamoParticipantData.class, query);
+
+        if (!objectsToDelete.isEmpty()) {
+            List<DynamoDBMapper.FailedBatch> failures = mapper.batchDelete(objectsToDelete);
+            //TODO: in DynamoReportDataDao, this is FailedBatch only, not DynamoDBMapper.FailedBatch. Is that an issuE?
+            BridgeUtils.ifFailuresThrowException(failures);
+        }
+    }
+
+    @Override
+    public void deleteParticipantDataRecord(String userId, String configId) {
+        DynamoParticipantData hashKey = new DynamoParticipantData();
+        hashKey.setUserId(userId);
+        hashKey.setConfigId(configId);
+
+        DynamoParticipantData participantDataRecord = mapper.load(hashKey);
         if (participantDataRecord != null) {
             mapper.delete(participantDataRecord);
         }
