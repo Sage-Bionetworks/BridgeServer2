@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.models.apps.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.REPORT;
@@ -912,6 +913,10 @@ public class AppServiceTest extends Mockito {
 
     @Test
     public void createAppAndUsers() throws SynapseException {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .build());
+        
         // mock
         App app = getTestApp();
         app.setSynapseProjectId(null);
@@ -940,9 +945,6 @@ public class AppServiceTest extends Mockito {
         List<StudyParticipant> mockUsers = ImmutableList.of(mockUser1, mockUser2);
         AppAndUsers mockAppAndUsers = new AppAndUsers(TEST_ADMIN_IDS, app, mockUsers);
         IdentifierHolder mockIdentifierHolder = new IdentifierHolder(TEST_IDENTIFIER);
-
-        // spy
-        doReturn(app).when(service).createApp(any());
         
         // stub out use of synapse client so we can validate it, not just ignore it.
         when(mockAccessControlList.getResourceAccess()).thenReturn(new HashSet<>());
@@ -964,6 +966,14 @@ public class AppServiceTest extends Mockito {
         verify(mockParticipantService).createParticipant(app, mockUser1, false);
         verify(mockParticipantService).createParticipant(app, mockUser2, false);
         verify(mockParticipantService, times(2)).requestResetPassword(app, mockIdentifierHolder.getIdentifier());
+        
+        verify(mockStudyService).createStudy(eq(TEST_APP_ID), studyCaptor.capture(), eq(false));
+        
+        Study capturedStudy = studyCaptor.getValue();
+        assertEquals(capturedStudy.getAppId(), TEST_APP_ID);
+        assertEquals(capturedStudy.getIdentifier(), TEST_APP_ID + "-study");
+        assertEquals(capturedStudy.getName(), app.getName() + " Study");
+        
         verify(service).createApp(app);
         verify(service).createSynapseProjectTeam(TEST_ADMIN_IDS,
                 ImmutableList.of(TEST_USER_SYNAPSE_ID, TEST_USER_SYNAPSE_ID_2), app);
@@ -1600,7 +1610,7 @@ public class AppServiceTest extends Mockito {
         // A default, active consent should be created for the app.
         verify(mockSubpopService).createDefaultSubpopulation(eq(app), studyCaptor.capture());
         
-        verify(mockStudyService).createStudy(eq(app.getIdentifier()), studyCaptor.capture());
+        verify(mockStudyService).createStudy(eq(app.getIdentifier()), studyCaptor.capture(), eq(false));
         Study defaultStudy = studyCaptor.getValue();
         assertEquals(defaultStudy.getAppId(), app.getIdentifier());
         assertEquals(defaultStudy.getIdentifier(), app.getIdentifier() + "-study");

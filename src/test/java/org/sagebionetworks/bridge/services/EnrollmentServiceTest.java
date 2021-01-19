@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
@@ -146,13 +147,21 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void getEnrollmentsForUser() {
-        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-        when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
+        // We had a bug where the unparsed userId being passed into this method was
+        // being passed along, rather than the ID from the retrieved account. The 
+        // userId passed in to this method can be one of a number of identifiers...
+        // the parameter in this case should not be userId, should be something like
+        // userIdToken as a cue that it needs to be parsed.
+        AccountId accountId = AccountId.forExternalId(TEST_APP_ID, "extId");
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(account));
         
         List<EnrollmentDetail> details = ImmutableList.of();
         when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID)).thenReturn(details);
         
-        List<EnrollmentDetail> retValue = service.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID);
+        List<EnrollmentDetail> retValue = service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID,
+                "externalId:extId");
         assertSame(retValue, details);
         
         verify(mockEnrollmentDao).getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID);
@@ -160,7 +169,10 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getEnrollmentsForUserNotFound() {
-        service.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID);
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.empty());
+        
+        service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -200,7 +212,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void enrollByThirdPartyAdmin() {
+    public void enrollByAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
@@ -218,10 +230,9 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void enrollByThirdPartyResearcher() {
+    public void enrollByResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.TRUE);
@@ -236,6 +247,23 @@ public class EnrollmentServiceTest extends Mockito {
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAccountId(), TEST_USER_ID);
         assertEquals(retValue.getEnrolledBy(), "adminUser");
+    }
+    
+    @Test
+    public void enrollByStudyCoordinator() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
+        
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+
+        Enrollment retValue = service.enroll(enrollment);
+        assertEquals(retValue.getAccountId(), TEST_USER_ID);
     }
     
     // TODO: Should this throw an exception? I think during migration, it cannot
@@ -324,11 +352,11 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void enrollNotAuthorizedAsStudyResearcher() {
+    public void enrollNotAuthorizedAsStudyCoordinator() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyB"))
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
         
         // the call to sponsorService returns null
         
@@ -523,8 +551,7 @@ public class EnrollmentServiceTest extends Mockito {
     public void unenrollNotAuthorizedAsStudyResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
-                .withOrgSponsoredStudies(ImmutableSet.of("studyC", "studyD"))
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
         when(mockSponsorService.isStudySponsoredBy(TEST_STUDY_ID, TEST_ORG_ID)).thenReturn(Boolean.FALSE);
 

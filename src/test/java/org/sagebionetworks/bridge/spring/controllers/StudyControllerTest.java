@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -25,9 +27,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -70,12 +74,17 @@ public class StudyControllerTest extends Mockito {
 
         controller.setStudyService(service);
 
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR, ORG_ADMIN, ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         doReturn(session).when(controller).getAdministrativeSession();
-
+        
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        RequestContext.set(NULL_INSTANCE);
     }
 
     @Test
@@ -123,7 +132,7 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void createStudy() throws Exception {
-        when(service.createStudy(any(), any())).thenReturn(VERSION_HOLDER);
+        when(service.createStudy(any(), any(), anyBoolean())).thenReturn(VERSION_HOLDER);
 
         Study study = Study.create();
         study.setIdentifier("oneId");
@@ -133,7 +142,7 @@ public class StudyControllerTest extends Mockito {
         VersionHolder result = controller.createStudy();
         assertEquals(result, VERSION_HOLDER);
 
-        verify(service).createStudy(eq(TEST_APP_ID), studyCaptor.capture());
+        verify(service).createStudy(eq(TEST_APP_ID), studyCaptor.capture(), eq(true));
 
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getIdentifier(), "oneId");
@@ -142,6 +151,9 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void getStudy() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
         Study study = Study.create();
         study.setIdentifier("oneId");
         study.setName("oneName");
@@ -158,6 +170,10 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void updateStudy() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("id"))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+
         Study study = Study.create();
         study.setIdentifier("oneId");
         study.setName("oneName");

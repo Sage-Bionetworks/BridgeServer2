@@ -388,18 +388,35 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void createParticipantAlreadyExistsWithExternalId() {
+    public void createParticipantFixForExistingAccountWithExternalId() {
         mockHealthCodeAndAccountRetrieval();
         
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, EXTERNAL_ID);
         when(accountService.getAccount(accountId)).thenReturn(account);
         
         StudyParticipant participant = withParticipant()
+                // no map, so it is trapped and quietly returned as successful
                 .withExternalId(EXTERNAL_ID).build();
         IdentifierHolder idHolder = participantService.createParticipant(APP, participant, true);
         assertEquals(idHolder.getIdentifier(), ID);
     }
 
+    @Test
+    public void createParticipantWithExternalIdMapAvoidsExistingAccountFix() {
+        when(participantService.generateGUID()).thenReturn(ID);
+        when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
+
+        StudyParticipant participant = withParticipant()
+                // does not have externalId, and so it proceeds to create the account
+                .withExternalIds(ENROLLMENT_MAP)
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
+        
+        participantService.createParticipant(APP, participant, true);
+        
+        // This is still called, even with the map
+        verify(accountService).createAccount(eq(APP), accountCaptor.capture());
+    }
+    
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createParticipantDoesNotAlreadyExistThrowsInvalidEntity() {
         mockHealthCodeAndAccountRetrieval();

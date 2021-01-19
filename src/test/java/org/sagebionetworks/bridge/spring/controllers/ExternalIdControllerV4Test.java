@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
@@ -21,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.apache.http.HttpStatus;
 import org.mockito.ArgumentCaptor;
@@ -30,9 +33,11 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -97,6 +102,11 @@ public class ExternalIdControllerV4Test extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER);
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        RequestContext.set(NULL_INSTANCE);
     }
 
     @Test
@@ -169,6 +179,11 @@ public class ExternalIdControllerV4Test extends Mockito {
     
     @Test
     public void getExternalIdentifiersForStudy() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
         PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<>(ImmutableList.of(), 1000, true);
         when(mockService.getPagedExternalIds(TEST_APP_ID, TEST_STUDY_ID, "idFilter", 1000, 50))
             .thenReturn(page);
@@ -182,6 +197,12 @@ public class ExternalIdControllerV4Test extends Mockito {
 
     @Test
     public void getExternalIdentifiersForNoParameters() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
         PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<>(ImmutableList.of(), 1000, true);
         when(mockService.getPagedExternalIds(TEST_APP_ID, TEST_STUDY_ID, null, 0, API_DEFAULT_PAGE_SIZE))
             .thenReturn(page);

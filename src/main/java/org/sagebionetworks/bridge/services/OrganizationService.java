@@ -199,7 +199,8 @@ public class OrganizationService {
         
         AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
                 .copyOf(search)
-                .withAdminOnly(true)
+                // only needed for legacy APIs
+                .withAdminOnly(null) 
                 .withOrgMembership(identifier).build();
         
         return accountDao.getPagedAccountSummaries(appId, scopedSearch);
