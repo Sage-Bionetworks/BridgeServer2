@@ -32,31 +32,23 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
     }
 
     @Override
-    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId,
-                                                                                        String offsetKey, int pageSize) {
+    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String offsetKey, int pageSize) {
         checkNotNull(userId);
-        checkNotNull(configId);
 
         DynamoParticipantData hashKey = new DynamoParticipantData();
         hashKey.setUserId(userId);
 
-        Condition configIdCondition = new Condition().withAttributeValueList(new AttributeValue(configId));
-        // TODO: I need to check this, did I do this correctly?
-
         DynamoDBQueryExpression<DynamoParticipantData> query =
-                new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashKey)
-                        .withRangeKeyCondition("configId", configIdCondition);
+                new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashKey);
         List<DynamoParticipantData> results = mapper.query(DynamoParticipantData.class, query);
 
         return new ForwardCursorPagedResourceList<DynamoParticipantData>(results, offsetKey);
     }
 
     @Override
-    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataV4(final String userId, final String configId,
-                                                                   final String offsetKey, final int pageSize) {
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataV4(final String userId, final String offsetKey, final int pageSize) {
         //TODO: why do we use final for these params but not the others?
         checkNotNull(userId);
-        checkNotNull(configId);
 
         int pageSizeWithIndicatorRecord = pageSize + 1; //TODO: what is indicatorRecord?
         DynamoParticipantData hashKey = new DynamoParticipantData();

@@ -8,21 +8,18 @@ public interface ParticipantDataDao {
     /**
      * Get participant data records for the given userId and configId.
      * @param userId - the userId for the participant data
-     * @param configId - the configId for the participant data
      * @return list of participant data records in a resource list that includes original query values
      */
-    ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId,
-                                                                                 String offsetKey, int pageSize);
+    ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String offsetKey, int pageSize);
 
     /**
      * Get participant data for the given userId and configId
      * @param userId
-     * @param configId
      * @param offsetKey
      * @param pageSize
      * @return
      */
-    ForwardCursorPagedResourceList<ParticipantData> getParticipantDataV4(String userId, String configId, String offsetKey, int pageSize);
+    ForwardCursorPagedResourceList<ParticipantData> getParticipantDataV4(String userId, String offsetKey, int pageSize);
 
     //TODO check the three functions below..
 

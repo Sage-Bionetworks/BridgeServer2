@@ -24,16 +24,15 @@ public class ParticipantDataService {
 
     public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId,
                                                                                         String offsetKey, int pageSize) {
-        return participantDataDao.getParticipantData(userId, configId, offsetKey, pageSize);
+        return participantDataDao.getParticipantData(userId, offsetKey, pageSize);
     }
 
-    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataV4(final String userid,
-            final String configId, final String offsetKey, final int pageSize) {
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataV4(final String userid, final String offsetKey, final int pageSize) {
 
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
-        return participantDataDao.getParticipantDataV4(userid, configId, offsetKey, pageSize);
+        return participantDataDao.getParticipantDataV4(userid, offsetKey, pageSize);
     }
 
     public void saveParticipantData(ParticipantData data) {
