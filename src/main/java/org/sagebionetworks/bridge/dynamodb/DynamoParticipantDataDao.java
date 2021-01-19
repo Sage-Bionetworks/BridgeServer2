@@ -26,7 +26,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class DynamoParticipantDataDao implements ParticipantDataDao {
     private DynamoDBMapper mapper;
 
-    @Resource(name = "participantStateMapper")
+    @Resource(name = "participantDataMapper")
     final void setParticipantStateMapper(DynamoDBMapper participantStateMapper) {
         this.mapper = participantStateMapper;
     }
