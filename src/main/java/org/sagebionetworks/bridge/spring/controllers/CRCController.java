@@ -9,8 +9,10 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.SPACE_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.encodeURIComponent;
+import static org.sagebionetworks.bridge.BridgeUtils.getLocalDateOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.SELECTED;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.SHIP_TESTS_REQUESTED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_AVAILABLE;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_AVAILABLE_TYPE_UNKNOWN;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.TESTS_CANCELLED;
@@ -28,16 +30,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.net.HttpHeaders;
-
 import org.apache.commons.io.IOUtils;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -49,9 +52,9 @@ import org.hl7.fhir.dstu3.model.Appointment.AppointmentParticipantComponent;
 import org.hl7.fhir.dstu3.model.CodeableConcept;
 import org.hl7.fhir.dstu3.model.Coding;
 import org.hl7.fhir.dstu3.model.ContactPoint;
-import org.hl7.fhir.dstu3.model.Extension;
 import org.hl7.fhir.dstu3.model.ContactPoint.ContactPointSystem;
 import org.hl7.fhir.dstu3.model.Enumerations.AdministrativeGender;
+import org.hl7.fhir.dstu3.model.Extension;
 import org.hl7.fhir.dstu3.model.HumanName;
 import org.hl7.fhir.dstu3.model.Identifier;
 import org.hl7.fhir.dstu3.model.Meta;
@@ -73,6 +76,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -81,17 +85,24 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.crc.gbf.external.CheckOrderStatusResponse;
+import org.sagebionetworks.bridge.models.crc.gbf.external.Order;
+import org.sagebionetworks.bridge.models.crc.gbf.external.ShippingConfirmations;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.services.GBFOrderService;
 import org.sagebionetworks.bridge.services.HealthDataService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.ReportService;
@@ -102,7 +113,7 @@ import ca.uhn.fhir.parser.IParser;
 
 
 /**
- * NOTE: There are references to some properties in the config file that can be removed now 
+ * NOTE: There are references to some properties in the config file that can be removed now
  * that we are not calling Columbia's servers. These should also be removed.
  */
 @CrossOrigin
@@ -118,6 +129,8 @@ public class CRCController extends BaseController {
     static final String OBSERVATION_REPORT = "observation";
     static final String PROCEDURE_REPORT = "procedurerequest";
     static final String APPOINTMENT_REPORT = "appointment";
+    static final String SHIPMENT_REPORT = "shipmentrequest";
+    static final String SHIPMENT_REPORT_KEY_ORDER_ID = "orderNumber";
     static final String CUIMC_USERNAME = "A5hfO-tdLP_eEjx9vf2orSd5";
     static final String SYN_USERNAME = "bridgeit+crc@sagebase.org";
     static final String TEST_USERNAME = "bridge-testing+crc@sagebase.org";
@@ -130,22 +143,24 @@ public class CRCController extends BaseController {
     static final LocalDate JAN1 = LocalDate.parse("1970-01-01");
     static final LocalDate JAN2 = LocalDate.parse("1970-01-02");
     static final Map<String, String> ACCOUNTS = ImmutableMap.of(
-            CUIMC_USERNAME, APP_ID, 
+            CUIMC_USERNAME, APP_ID,
             SYN_USERNAME, APP_ID,
             TEST_USERNAME, API_APP_ID);
     static final Set<String> SERUM_TEST_CODES = ImmutableSet.of("484670513");
     static final Set<String> SERUM_TEST_STATES = ImmutableSet.of("Negative", "Positive", "Indeterminate");
+    static final String GBF_TEST_KIT_PART_NUMBER = "FM-00049";
 
     static enum AccountStates {
-        ENROLLED, 
-        SELECTED, 
-        DECLINED, 
-        TESTS_REQUESTED, 
+        ENROLLED,
+        SELECTED,
+        DECLINED,
+        TESTS_REQUESTED,
         TESTS_SCHEDULED,
-        TESTS_CANCELLED, 
-        TESTS_COLLECTED, 
+        TESTS_CANCELLED,
+        TESTS_COLLECTED,
         TESTS_AVAILABLE,
-        TESTS_AVAILABLE_TYPE_UNKNOWN
+        TESTS_AVAILABLE_TYPE_UNKNOWN,
+        SHIP_TESTS_REQUESTED
     }
 
     private static final Set<String> ALL_STATES = Arrays.stream(AccountStates.values()).map(e -> e.name().toLowerCase())
@@ -156,6 +171,8 @@ public class CRCController extends BaseController {
     private ReportService reportService;
 
     private HealthDataService healthDataService;
+
+    private GBFOrderService gbfOrderService;
 
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
@@ -172,6 +189,11 @@ public class CRCController extends BaseController {
         this.healthDataService = healthDataService;
     }
 
+    @Autowired
+    final void setGbfOrderService(GBFOrderService GBFOrderService) {
+        this.gbfOrderService = GBFOrderService;
+    }
+
     DateTime getTimestamp() {
         return DateTime.now().withZone(DateTimeZone.UTC);
     }
@@ -179,6 +201,122 @@ public class CRCController extends BaseController {
     String getUserAgent() {
         String userAgent = request().getHeader(HttpHeaders.USER_AGENT);
         return (userAgent == null) ? "<Unknown>" : userAgent;
+    }
+
+    @PostMapping("v1/cuicm/participants/self/labshipments/request")
+    public ResponseEntity<StatusMessage> postUserLabShipmentRequest() {
+        UserSession session = getAuthenticatedSession();
+        App app = appService.getApp(session.getAppId());
+
+        AccountId accountId = parseAccountId(app.getIdentifier(), session.getId());
+        Account account = accountService.getAccount(accountId);
+
+        return internalLabShipmentRequest(app, account);
+    }
+
+    @PostMapping("v1/cuicm/participants/{userId}/labshipments/request")
+    public ResponseEntity<StatusMessage> postLabShipmentRequest(@PathVariable String userId) {
+        App app = httpBasicAuthentication();
+
+        AccountId accountId = parseAccountId(app.getIdentifier(), userId);
+        Account account = accountService.getAccount(accountId);
+
+        return internalLabShipmentRequest(app, account);
+    }
+
+    ResponseEntity<StatusMessage> internalLabShipmentRequest(App app, Account account) {
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+
+        if (account.getDataGroups().contains(SHIP_TESTS_REQUESTED.name().toLowerCase())) {
+            throw new LimitExceededException("Limited to one active shipment request.");
+        }
+
+        boolean isTestUser = account.getDataGroups().contains(TEST_USER_GROUP);
+        LOG.info("Lab shipment requested for {} participant", isTestUser ? "test" : "non-test");
+
+        LocalDate date = LocalDate.now();
+        Order.ShippingInfo.Address address = validateAndGetAddress(account);
+        String orderNumber = account.getId() + ":" + date;
+
+        Order o = new Order(isTestUser, orderNumber, account.getId(), date,
+                new Order.ShippingInfo(address, null), new Order.LineItem(GBF_TEST_KIT_PART_NUMBER, 1));
+        gbfOrderService.placeOrder(o, true);
+
+        JsonNode node = JsonNodeFactory.instance.objectNode().put(SHIPMENT_REPORT_KEY_ORDER_ID, orderNumber);
+        writeReportAndUpdateState(app, account.getId(), node, SHIPMENT_REPORT, SHIP_TESTS_REQUESTED);
+
+        return ResponseEntity.accepted()
+                .body(new StatusMessage("Test shipment requested."));
+    }
+
+    // performs basic check for fields required for shipping
+    Order.ShippingInfo.Address validateAndGetAddress(Account account) {
+        if (Strings.isNullOrEmpty(account.getFirstName())) {
+            throw new BadRequestException("Missing first name");
+        }
+        if (Strings.isNullOrEmpty(account.getLastName())) {
+            throw new BadRequestException(("Missing last name"));
+        }
+        String recipientName = account.getFirstName() + " " + account.getLastName();
+
+        Map<String, String> atts = account.getAttributes();
+        String address1 = atts.get("address1");
+        if (Strings.isNullOrEmpty(address1)) {
+            throw new BadRequestException("Missing shipping address1");
+        }
+        String city = atts.get("city");
+        if (Strings.isNullOrEmpty(city)) {
+            throw new BadRequestException("Missing shipping city");
+        }
+        String state = atts.get("state");
+        if (Strings.isNullOrEmpty(state)) {
+            throw new BadRequestException("Missing shipping state");
+        }
+        String zip = atts.get("zip_code");
+        if (Strings.isNullOrEmpty(zip)) {
+            throw new BadRequestException("Missing shipping zip code");
+        }
+
+        String phoneString = atts.get("home_phone");
+        Phone phone = new Phone(atts.get("home_phone"), "US");
+        if (Phone.isValid(phone)) {
+            phoneString = phone.getNationalFormat();
+        }
+
+        return new Order.ShippingInfo.Address(
+                recipientName,
+                address1,
+                atts.get("address2"),
+                city,
+                state,
+                zip,
+                "United States",
+                phoneString
+        );
+    }
+
+    // Waiting for integration workflow to be finalized
+    //@GetMapping(path = "v1/cuicm/labshipments/{orderId}/status", produces = {APPLICATION_JSON_UTF8_VALUE})
+    public String getLabShipmentStatus(@PathVariable String orderId) throws JsonProcessingException {
+        App app = httpBasicAuthentication();
+        CheckOrderStatusResponse response = gbfOrderService.checkOrderStatus(orderId);
+        return MAPPER.writeValueAsString(response);
+    }
+
+    // Waiting for integration workflow to be finalized
+    //@GetMapping(path = "v1/cuicm/participants/labshipments/confirmations", produces = {APPLICATION_JSON_UTF8_VALUE})
+    public String getLabShipmentConfirmations(@RequestParam String startDate,
+                                              @RequestParam String endDate) throws JsonProcessingException {
+        App app = httpBasicAuthentication();
+
+        LocalDate startDateObj = getLocalDateOrDefault(startDate, null);
+        LocalDate endDateObj = getLocalDateOrDefault(endDate, null);
+
+        ShippingConfirmations shippingConfirmations = gbfOrderService.requestShippingConfirmations(startDateObj, endDateObj);
+
+        return MAPPER.writeValueAsString(shippingConfirmations);
     }
 
     @PostMapping("/v1/cuimc/participants/{userId}/laborders")
@@ -313,7 +451,7 @@ public class CRCController extends BaseController {
     }
 
     /**
-     * This is a nice-to-have addition of address information for the location given by an 
+     * This is a nice-to-have addition of address information for the location given by an
      * ID in the appointment record. Do not fail the request if this fails, but log enough
      * to troubleshoot if the issue is on our side.
      */
@@ -354,7 +492,7 @@ public class CRCController extends BaseController {
                         String ref = actor.get("reference").textValue();
                         if (ref.startsWith("Location")) {
                             if (telecom != null) {
-                                actor.set("telecom", telecom);    
+                                actor.set("telecom", telecom);
                             }
                             if (address != null) {
                                 actor.set("address", address);
@@ -382,7 +520,7 @@ public class CRCController extends BaseController {
     void addGeocodingInformation(ObjectNode actor) {
         String addressString = combineLocationJson(actor);
         if (addressString != null) {
-            String url = String.format(GEOCODING_API, addressString, bridgeConfig.get(GEOCODE_KEY)); 
+            String url = String.format(GEOCODING_API, addressString, bridgeConfig.get(GEOCODE_KEY));
             try {
                 HttpResponse response = get(url);
                 if (response.getStatusLine().getStatusCode() != 200) {
@@ -417,13 +555,13 @@ public class CRCController extends BaseController {
                 }
             }
             if (address.has("city")) {
-                elements.add(address.get("city").textValue());    
+                elements.add(address.get("city").textValue());
             }
             if (address.has("state")) {
                 elements.add(address.get("state").textValue());
             }
             if (address.has("postalCode")) {
-                elements.add(address.get("postalCode").textValue());    
+                elements.add(address.get("postalCode").textValue());
             }
             return encodeURIComponent(SPACE_JOINER.join(elements));
         }
@@ -560,7 +698,7 @@ public class CRCController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
 
-        reportService.deleteParticipantReportRecord(app.getIdentifier(), APPOINTMENT_REPORT, 
+        reportService.deleteParticipantReportRecord(app.getIdentifier(), APPOINTMENT_REPORT,
                 JAN1.toString(), account.getHealthCode());
 
         updateState(account, SELECTED);
@@ -688,6 +826,13 @@ public class CRCController extends BaseController {
             address.setPostalCode(atts.get("zip_code"));
         }
         patient.addAddress(address);
+
+        if (isNotBlank(atts.get("home_phone"))) {
+            ContactPoint contact = new ContactPoint();
+            contact.setSystem(ContactPointSystem.PHONE);
+            contact.setValue(atts.get("home_phone"));
+            patient.addTelecom(contact);
+        }
 
         if (account.getPhone() != null && TRUE.equals(account.getPhoneVerified())) {
             ContactPoint contact = new ContactPoint();
