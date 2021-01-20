@@ -28,7 +28,7 @@ public class ParticipantDataController extends BaseController {
         this.participantDataService = participantDataService;
     }
 
-    @GetMapping("/v4/users/self/configs")
+    @GetMapping("/v4/users/self/configs") //TODO: get all data for user
     public ForwardCursorPagedResourceList<String> listParticipantConfigIds(@RequestParam(required = false) String offsetKey,
                                                                            @RequestParam(required = false) String pageSize) {
         UserSession session = getAuthenticatedSession();
@@ -41,7 +41,7 @@ public class ParticipantDataController extends BaseController {
         return new ForwardCursorPagedResourceList<String>(configIds, participantData.getNextPageOffsetKey());
     }
 
-    @GetMapping("/v4/users/self/configs/{identifier}")
+    @GetMapping("/v4/users/self/configs/{identifier}") //TODO: get data by id
     public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataConfig(@PathVariable String identifier,
                                                     @RequestParam(required = false) String offsetKey,
                                                     @RequestParam(required = false) String pageSize) {
