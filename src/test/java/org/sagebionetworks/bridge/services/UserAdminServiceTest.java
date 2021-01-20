@@ -9,6 +9,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_EXTERNAL_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
@@ -199,7 +200,30 @@ public class UserAdminServiceTest {
         
         verify(consentService).getConsentStatuses(context);
     }
-    
+
+    @Test
+    public void creatingUserWithExternalId() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(Roles.ADMIN)).build());
+
+        App app = TestUtils.getValidApp(UserAdminServiceTest.class);
+        StudyParticipant participant = new StudyParticipant.Builder().withExternalId(TEST_EXTERNAL_ID)
+                .withPassword("password").build();
+
+        service.createUser(app, participant, null, true, true);
+
+        verify(participantService).createParticipant(app, participant, false);
+        verify(authenticationService).signIn(eq(app), contextCaptor.capture(), signInCaptor.capture());
+
+        CriteriaContext context = contextCaptor.getValue();
+        assertEquals(context.getAppId(), app.getIdentifier());
+
+        SignIn signIn = signInCaptor.getValue();
+        assertEquals(signIn.getExternalId(), participant.getExternalId());
+        assertEquals(signIn.getPassword(), participant.getPassword());
+
+        verify(consentService).getConsentStatuses(context);
+    }
+
     @Test(expectedExceptions = InvalidEntityException.class)
     public void creatingUserWithoutEmailOrPhoneProhibited() {
         App app = TestUtils.getValidApp(UserAdminServiceTest.class);
