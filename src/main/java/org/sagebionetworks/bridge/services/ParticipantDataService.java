@@ -22,17 +22,32 @@ public class ParticipantDataService {
         this.participantDataDao = participantDataDao;
     }
 
+    /**
+     * Return a set of participant data records.
+     */
     public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId,
                                                                                         String offsetKey, int pageSize) {
         return participantDataDao.getParticipantData(userId, offsetKey, pageSize);
     }
 
-    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataV4(final String userid, final String offsetKey, final int pageSize) {
+    /**
+     * Return a set of participant data records.
+     */
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataV4(final String userId, final String offsetKey,
+                                                                                final int pageSize) {
 
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
-        return participantDataDao.getParticipantDataV4(userid, offsetKey, pageSize);
+        return participantDataDao.getParticipantDataV4(userId, offsetKey, pageSize);
+    }
+
+    /**
+     * Return a participant data record based on the given configId.
+     */
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataRecordV4(final String userId,
+        final String configId, final String offsetKey, final int pageSize) {
+        return participantDataDao.getParticipantDataRecordV4(userId, configId, offsetKey, pageSize);
     }
 
     public void saveParticipantData(ParticipantData data) {

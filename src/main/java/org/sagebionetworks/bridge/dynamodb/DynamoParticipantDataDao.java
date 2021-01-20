@@ -75,6 +75,42 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
         return new ForwardCursorPagedResourceList<ParticipantData>(list.subList(0, limit), nextPageOffsetKey);
     }
 
+    //TODO: is there a way to do this in the function above and make the configId optional?
+    @Override
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataRecordV4(final String userId, final String configId,
+                                                                                      final String offsetKey, final int pageSize) {
+        checkNotNull(userId);
+        checkNotNull(configId);
+
+        int pageSizeWithIndicatorRecord = pageSize + 1;
+        DynamoParticipantData hashKey = new DynamoParticipantData();
+        hashKey.setUserId(userId);
+        hashKey.setConfigId(configId);
+
+        Condition rangeKeyCondition = new Condition().withAttributeValueList(new AttributeValue().withS(configId));
+
+        DynamoDBQueryExpression<DynamoParticipantData> query = new DynamoDBQueryExpression<DynamoParticipantData>()
+                .withHashKeyValues(hashKey)
+                .withRangeKeyCondition("configId", rangeKeyCondition)
+                .withLimit(pageSizeWithIndicatorRecord);
+
+        QueryResultPage<DynamoParticipantData> page = mapper.queryPage(DynamoParticipantData.class, query);
+
+        List<ParticipantData> list = Lists.newArrayListWithCapacity(pageSizeWithIndicatorRecord);
+        for (int i = 0, len = page.getResults().size(); i < len; i++) {
+            ParticipantData oneParticipant = page.getResults().get(i);
+            list.add(i, oneParticipant);
+        }
+
+        String nextPageOffsetKey = null;
+        if (list.size() == pageSizeWithIndicatorRecord) {
+            nextPageOffsetKey = Iterables.getLast(list).getConfigId();
+        }
+
+        int limit = Math.min(list.size(), pageSize);
+        return new ForwardCursorPagedResourceList<ParticipantData>(list.subList(0, limit), nextPageOffsetKey);
+    }
+
     @Override
     public void saveParticipantData(ParticipantData data) {
         checkNotNull(data);

@@ -34,9 +34,21 @@ public class ParticipantDataController extends BaseController {
         UserSession session = getAuthenticatedSession();
 
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
-        ForwardCursorPagedResourceList<ParticipantData> participantData = participantDataService.getParticipantDataV4(session.getId(), offsetKey, pageSizeInt);
+        ForwardCursorPagedResourceList<ParticipantData> participantData = participantDataService
+                .getParticipantDataV4(session.getId(), offsetKey, pageSizeInt);
         List<String> configIds = participantData.getItems().stream().map(ParticipantData::getConfigId).collect(Collectors.toList());
+
         return new ForwardCursorPagedResourceList<String>(configIds, participantData.getNextPageOffsetKey());
+    }
+
+    @GetMapping("/v4/users/self/configs/{identifier}")
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataConfig(@PathVariable String identifier,
+                                                    @RequestParam(required = false) String offsetKey,
+                                                    @RequestParam(required = false) String pageSize) {
+        UserSession session = getAuthenticatedSession();
+
+        int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
+        return participantDataService.getParticipantDataRecordV4(session.getId(), identifier, offsetKey, pageSizeInt);
     }
 
     //TODO: organize imports once more finalized
