@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -43,6 +44,7 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
@@ -382,46 +384,19 @@ public class AccountsControllerTest extends Mockito {
         
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-        Account retValue = controller.verifyOrgAdminIsActingOnOrgMember(
-                TEST_APP_ID, TEST_ORG_ID, TEST_USER_ID);
+        Account retValue = controller.verifyOrgAdminIsActingOnOrgMember(session, TEST_USER_ID);
         assertSame(retValue, account);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
     public void verifyOrgAdminIsActingOnOrgMemberFailsAccountNotFound() throws Exception {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_ORG_ID)
-                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        
         AccountService mockAccountService = mock(AccountService.class);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(null);
         
-        controller.verifyOrgAdminIsActingOnOrgMember(
-                TEST_APP_ID, TEST_ORG_ID, TEST_USER_ID);
+        controller.verifyOrgAdminIsActingOnOrgMember(session, TEST_USER_ID);
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class, 
-            expectedExceptionsMessageRegExp = "Account not found.")
-    public void verifyOrgAdminIsActingOnOrgMemberFailsWrongOrg() throws Exception {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_ORG_ID)
-                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        
-        Account account = Account.create();
-        account.setOrgMembership("wrong-organization-id");
-        
-        AccountService mockAccountService = mock(AccountService.class);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        
-        Account retValue = controller.verifyOrgAdminIsActingOnOrgMember(
-                TEST_APP_ID, TEST_ORG_ID, TEST_USER_ID);
-       
-        assertSame(retValue, account);
-    }
-    
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
     public void verifyOrgAdminIsActingOnOrgMemberFailsNotOrgAdmin() {
@@ -434,14 +409,11 @@ public class AccountsControllerTest extends Mockito {
         
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-        Account retValue = controller.verifyOrgAdminIsActingOnOrgMember(
-                TEST_APP_ID, TEST_ORG_ID, TEST_USER_ID);
-        assertSame(retValue, account);
+        controller.verifyOrgAdminIsActingOnOrgMember(session, TEST_USER_ID);
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class, 
-            expectedExceptionsMessageRegExp = "Account not found.")
-    public void verifyOrgAdminIsActingOnOrgMemberFailsNotSameOrg() {
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void verifyOrgAdminIsActingOnOrgAccountNotInOrg() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(TEST_ORG_ID)
@@ -449,12 +421,45 @@ public class AccountsControllerTest extends Mockito {
         
         Account account = Account.create();
         account.setOrgMembership("different-organization");
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        controller.verifyOrgAdminIsActingOnOrgMember(session, TEST_USER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void verifyOrgAdminIsActingOnOrgMemberNotAnOrgMember() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withOrgMembership(null).build());
         
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         
-        Account retValue = controller.verifyOrgAdminIsActingOnOrgMember(
-                TEST_APP_ID, TEST_ORG_ID, TEST_USER_ID);
-        assertSame(retValue, account);
+        controller.verifyOrgAdminIsActingOnOrgMember(session, TEST_USER_ID);
+    }
+    
+    @Test
+    public void verifySuperadminCanAccessAccount() {
+        // Not part of the target organization, but it doesn't matter
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(SUPERADMIN))
+                .withOrgMembership(null).build());
+        
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        Account retValue = controller.verifyOrgAdminIsActingOnOrgMember(session, TEST_USER_ID);
+        assertEquals(retValue, account);
+    }
+    
+    @Test
+    public void verifyAdminCanAccessAccount() {
+        // Not part of the target organization, but it doesn't matter
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(ADMIN))
+                .withOrgMembership(null).build());
+        
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        
+        Account retValue = controller.verifyOrgAdminIsActingOnOrgMember(session, TEST_USER_ID);
+        assertEquals(retValue, account);
     }
     
     @Test

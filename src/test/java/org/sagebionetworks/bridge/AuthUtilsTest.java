@@ -7,17 +7,20 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.IS_ORGADMIN;
 import static org.sagebionetworks.bridge.AuthUtils.IS_ORG_MEMBER;
 import static org.sagebionetworks.bridge.AuthUtils.IS_ORG_MEMBER_IN_APP;
+import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_COORD_OR_RESEARCHER;
 import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_OR_RESEARCHER;
-import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_OR_STUDY_RESEARCHER;
 import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_STUDY_TEAM_OR_WORKER;
+import static org.sagebionetworks.bridge.AuthUtils.IS_COORD;
+import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_DEV_OR_RESEARCHER;
+import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_RESEARCHER;
 import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_ORGADMIN_OR_WORKER;
-import static org.sagebionetworks.bridge.AuthUtils.IS_STUDY_RESEARCHER;
 import static org.sagebionetworks.bridge.AuthUtils.IS_STUDY_TEAM_OR_WORKER;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
@@ -50,7 +53,7 @@ public class AuthUtilsTest extends Mockito {
     public void checkSelfOrStudyResearcherSucceedsForSelf() {
         RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
         
-        IS_SELF_OR_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
+        IS_SELF_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
     }
     
     @Test
@@ -60,7 +63,7 @@ public class AuthUtilsTest extends Mockito {
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
         
-        IS_SELF_OR_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
+        IS_SELF_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
     }
 
     @Test
@@ -69,17 +72,17 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());
         
-        IS_SELF_OR_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
+        IS_SELF_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkSelfOrStudyResearcherFailsForNonStudyResearcher() {
+    public void checkSelfOrStudyResearcherFailsForNonStudyCoordinator() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of("someOtherStudy"))
                 .build());
         
-        IS_SELF_OR_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
+        IS_SELF_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -89,7 +92,7 @@ public class AuthUtilsTest extends Mockito {
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
         
-        IS_SELF_OR_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
+        IS_SELF_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
     }
 
     @Test
@@ -297,32 +300,30 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void checkStudyResearcherSuccedsForResearcher() {
+    public void checkStudyCoordinatorSucceedsForStudyCoordinator() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(RESEARCHER))
-                .build());
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
         
-        IS_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+        IS_COORD.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
     }
 
     @Test
-    public void checkStudyResearcherSuccedsForAdmin() {
+    public void checkStudyCoordinatorSucceedsForAdmin() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN))
-                .build());
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
-        IS_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+        IS_COORD.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkStudyResearcherFailsWrongStudy() {
+    public void checkStudyCoordinatorFails() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of("wrong-study"))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER))
                 .build());
         
-        IS_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+        IS_COORD.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -332,7 +333,7 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
                 .build());
         
-        IS_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+        IS_COORD.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -530,22 +531,71 @@ public class AuthUtilsTest extends Mockito {
         
         assertTrue( IS_SELF_ORGADMIN_OR_WORKER.check(ORG_ID, TEST_ORG_ID, USER_ID, TEST_USER_ID) );
     }
-
+    
     @Test
-    public void checkStudyResearcher() {
+    public void checkStudyCoordinatorDeveloperOrResearcherSucceedsForStudyCoordinator() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
         
-        IS_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+        IS_COORD_DEV_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+    }
+
+    @Test
+    public void checkStudyCoordinatorDeveloperOrResearcherSucceedsForDeveloper() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .build());
+        
+        IS_COORD_DEV_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+    }
+
+    @Test
+    public void checkStudyCoordinatorDeveloperOrResearcherSucceedsForResearcher() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .build());
+        
+        IS_COORD_DEV_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void checkStudyCoordinatorDeveloperOrResearcherFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("some-other-study"))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        
+        IS_COORD_DEV_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void checkStudyCoordinatorOrResearcherSucceedsForStudyCoordinator() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        
+        IS_COORD_DEV_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+    }
+
+    @Test
+    public void checkStudyCoordinatorOrResearcherSucceedsForResearcher() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .build());
+        
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void checkStudyResearcherFails() {
+    public void checkStudyCoordinatorOrResearcherFailsForWrongStudyCoordinator() {
         RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of("studyA"))
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+                .withOrgSponsoredStudies(ImmutableSet.of("some-study-id"))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
         
-        IS_STUDY_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
     }
 }

@@ -1,9 +1,8 @@
-
 package org.sagebionetworks.bridge.hibernate;
 
-import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.AuthUtils.IS_STUDY_TEAM_OR_WORKER;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +18,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
@@ -116,6 +116,7 @@ public class HibernateAccountDao implements AccountDao {
     
     QueryBuilder makeQuery(String prefix, String appId, AccountId accountId, AccountSummarySearch search, boolean isCount) {
         RequestContext context = RequestContext.get();
+        Set<String> callerStudies = context.getOrgSponsoredStudies();
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(prefix);
@@ -159,15 +160,16 @@ public class HibernateAccountDao implements AccountDao {
                 builder.append("AND :language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
             }
             builder.adminOnly(search.isAdminOnly());
-            builder.orgMembership(search.getOrgMembership());
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
             
-            // If the caller is a member of an organization, then they can only see accounts in the studies 
-            // sponsored by that organization. Note that this only applies now to enrollments, so admin 
-            // accounts are exempt.
-            if (!TRUE.equals(search.isAdminOnly()) && !IS_STUDY_TEAM_OR_WORKER.check()) {
-                Set<String> callerStudies = context.getOrgSponsoredStudies();
+            String enrolledInStudy = search.getEnrolledInStudyId();
+            if (search.getOrgMembership() != null) {
+                builder.orgMembership(search.getOrgMembership());
+            } else if (enrolledInStudy != null) { // this always takes precedence
+                Set<String> studies = ImmutableSet.of(search.getEnrolledInStudyId());
+                builder.append("AND enrollment.studyId IN (:studies)", "studies", studies);
+            } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, WORKER)) {
                 builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
             }
         }

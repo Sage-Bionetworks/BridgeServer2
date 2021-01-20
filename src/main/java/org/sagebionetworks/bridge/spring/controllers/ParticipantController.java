@@ -179,10 +179,15 @@ public class ParticipantController extends BaseController {
 
     
     @GetMapping("/v3/participants/{userId}/enrollments")
-    public List<EnrollmentDetail> getEnrollments(@PathVariable String userId) {
+    public PagedResourceList<EnrollmentDetail> getEnrollments(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(false, RESEARCHER);
         
-        return enrollmentService.getEnrollmentsForUser(session.getAppId(), userId);
+        // A limitation of Swagger as we use it is that we don't want different collection
+        // containers for the same kind of entity. Since some APIs can page enrollments, 
+        // this API returns a paged enrollment, despite the fact that there will probably
+        // never be more than one page of results returned from this API.
+        List<EnrollmentDetail> details = enrollmentService.getEnrollmentsForUser(session.getAppId(), null, userId);
+        return new PagedResourceList<>(details, details.size(), true);
     }
     
     @DeleteMapping("/v3/participants/{userId}")
