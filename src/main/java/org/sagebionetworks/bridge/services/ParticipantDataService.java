@@ -48,7 +48,7 @@ public class ParticipantDataService {
         participantDataDao.deleteParticipantDataRecord(userId, configId);
     }
 
-    //TODO: can participant data be updated?
+    //TODO: do we need a dedicated update function?
 
     //TODO: organize imports once more finalized
 }

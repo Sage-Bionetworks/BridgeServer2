@@ -10,7 +10,12 @@ import org.sagebionetworks.bridge.services.ReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 
 @CrossOrigin
 @RestController
@@ -24,10 +29,14 @@ public class ParticipantDataController extends BaseController {
     }
 
     @GetMapping("/v4/users/self/configs")
-    public ForwardCursorPagedResourceList<String> listParticipantConfigIds(String userId, String offsetKey, int pageSize) {
+    public ForwardCursorPagedResourceList<String> listParticipantConfigIds(@RequestParam(required = false) String offsetKey,
+                                                                           @RequestParam(required = false) String pageSize) {
         UserSession session = getAuthenticatedSession();
-        ForwardCursorPagedResourceList<ParticipantData> participantData = participantDataService.getParticipantDataV4(userId, offsetKey, pageSize);
-        return participantData.stream().map(ParticipantData::getConfigId).collect(Collectors.toList());
+
+        int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
+        ForwardCursorPagedResourceList<ParticipantData> participantData = participantDataService.getParticipantDataV4(session.getId(), offsetKey, pageSizeInt);
+        List<String> configIds = participantData.getItems().stream().map(ParticipantData::getConfigId).collect(Collectors.toList());
+        return new ForwardCursorPagedResourceList<String>(configIds, participantData.getNextPageOffsetKey());
     }
 
     //TODO: organize imports once more finalized

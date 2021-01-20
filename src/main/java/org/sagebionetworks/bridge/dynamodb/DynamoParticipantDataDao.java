@@ -52,6 +52,7 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
 
         int pageSizeWithIndicatorRecord = pageSize + 1; //TODO: what is indicatorRecord?
         DynamoParticipantData hashKey = new DynamoParticipantData();
+        hashKey.setUserId(userId);
 
         DynamoDBQueryExpression<DynamoParticipantData> query = new DynamoDBQueryExpression<DynamoParticipantData>()
                 .withHashKeyValues(hashKey)
