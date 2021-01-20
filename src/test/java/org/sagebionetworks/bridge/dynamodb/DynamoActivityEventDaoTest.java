@@ -33,8 +33,6 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
-
 public class DynamoActivityEventDaoTest extends Mockito {
     
     // timestamp is in milliseconds since the epoch, so use UTC here

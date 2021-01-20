@@ -1550,20 +1550,21 @@ public class ParticipantControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(false, RESEARCHER);
         
         List<EnrollmentDetail> list = ImmutableList.of();
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID, null)).thenReturn(list);
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, null, TEST_USER_ID)).thenReturn(list);
         
-        List<EnrollmentDetail> retValue = controller.getEnrollments(TEST_USER_ID);
-        assertSame(retValue, list);
+        PagedResourceList<EnrollmentDetail> retValue = controller.getEnrollments(TEST_USER_ID);
+        assertSame(retValue.getItems(), list);
     }
     
     @Test
-    public void getActivityEvents() {
+    public void getActivityEvents() throws Exception {
         List<ActivityEvent> events = ImmutableList.of(new DynamoActivityEvent(), new DynamoActivityEvent());
         when(mockParticipantService.getActivityEvents(app, TEST_USER_ID)).thenReturn(events);        
         
-        ResourceList<ActivityEvent> retValue = controller.getActivityEvents(TEST_USER_ID);
-        assertNotNull(retValue);
-        assertSame(retValue.getItems(), events);
+        String retValue = controller.getActivityEvents(TEST_USER_ID);
+        
+        ResourceList<ActivityEvent> retList = BridgeObjectMapper.get().readValue(retValue, new TypeReference<ResourceList<ActivityEvent>>() {});
+        assertEquals(retList.getItems().size(), 2);
         
         verify(mockParticipantService).getActivityEvents(app, TEST_USER_ID);
     }

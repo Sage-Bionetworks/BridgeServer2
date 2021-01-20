@@ -247,9 +247,8 @@ public class ParticipantService {
         notificationsService.createRegistration(app.getIdentifier(), criteriaContext, registration);
     }
 
-    public StudyParticipant getParticipant(App app, String userId, boolean includeHistory) {
-        // This parse method correctly deserializes formats such as externalId:XXXXXXXX.
-        AccountId accountId = BridgeUtils.parseAccountId(app.getIdentifier(), userId);
+    public StudyParticipant getParticipant(App app, String userIdToken, boolean includeHistory) {
+        AccountId accountId = BridgeUtils.parseAccountId(app.getIdentifier(), userIdToken);
         Account account = getAccountThrowingException(accountId);
         return getParticipant(app, account, includeHistory);
     }
@@ -412,10 +411,10 @@ public class ParticipantService {
             throwExceptionIfLimitMetOrExceeded(app);
         }
         
-        // Fix for studies that call sign up with an external ID: in these cases, tools are creating the participant
-        // before the sign up call (through the Bridge Study Manager). Check and if the account with an external ID
-        // exists, return quietly. Otherwise proceed as before.
-        if (participant.getExternalId() != null) {
+        // Fix for callers that include only externalId and not the new externalId map: in these cases, tools are 
+        // creating the participant before the sign up call (through the Bridge Study Manager). Check and if 
+        // the account with this external ID already exists, return quietly. Otherwise proceed as before.
+        if (participant.getExternalId() != null && participant.getExternalIds().isEmpty()) {
             AccountId accountId = AccountId.forExternalId(app.getIdentifier(), participant.getExternalId());
             Account account = accountService.getAccount(accountId); 
             if (account != null) {

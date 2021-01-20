@@ -341,7 +341,7 @@ public class AppService {
         study.setAppId(app.getIdentifier());
         study.setIdentifier(app.getIdentifier() + "-study");
         study.setName(app.getName() + " Study");
-        studyService.createStudy(app.getIdentifier(), study);
+        studyService.createStudy(app.getIdentifier(), study, false);
         subpopService.createDefaultSubpopulation(app, study);
         
         Map<String,String> map = new HashMap<>();

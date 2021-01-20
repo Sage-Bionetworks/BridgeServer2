@@ -72,7 +72,7 @@ public class UserManagementController extends BaseController {
      * This turned out to be useful... so useful we're opening it up to all administrative
      * users.
      * 
-     * @see org.sagebionetworks.bridge.spring.controllersAuthenticationController#changeStudy 
+     * @see org.sagebionetworks.bridge.spring.controllers.AuthenticationController#changeStudy 
      */
     @Deprecated
     @PostMapping(path = {"/v3/auth/admin/app", "/v3/auth/admin/study"})

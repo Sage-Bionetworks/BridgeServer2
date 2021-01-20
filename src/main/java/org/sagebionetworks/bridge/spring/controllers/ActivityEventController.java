@@ -56,7 +56,7 @@ public class ActivityEventController extends BaseController {
         
         // I do not like the fact we are serializing in the controller, but that's the only way to access
         // the ObjectWriter and that's currently how we suppress healthCode.
-        ResourceList<ActivityEvent> list = new ResourceList<>(activityEvents);
-        return ACTIVITY_EVENT_WRITER.writeValueAsString(list);
+        return ACTIVITY_EVENT_WRITER
+                .writeValueAsString(new ResourceList<>(activityEvents));
     }    
 }

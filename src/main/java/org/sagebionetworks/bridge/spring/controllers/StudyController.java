@@ -1,8 +1,12 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_DEV;
+import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_ORGADMIN;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -51,23 +55,30 @@ public class StudyController extends BaseController {
     @PostMapping(path = {"/v5/studies", "/v3/substudies"})
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudy() {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ORG_ADMIN, ADMIN);
 
+        // we don't check if the study coordinator is member of the study because it doesn't
+        // exist yet. If the caller is in an organization, that organization will sponsor the
+        // created study.
         Study study = parseJson(Study.class);
         
-        return service.createStudy(session.getAppId(), study);
+        return service.createStudy(session.getAppId(), study, true);
     }
 
     @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public Study getStudy(@PathVariable String id) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
-
+        UserSession session = getAdministrativeSession();
+        
+        IS_COORD_OR_ORGADMIN.checkAndThrow(STUDY_ID, id);
+        
         return service.getStudy(session.getAppId(), id, true);
     }
 
     @PostMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public VersionHolder updateStudy(@PathVariable String id) {
-        UserSession session = getAuthenticatedSession(ADMIN);
+        UserSession session = getAdministrativeSession();
+        
+        IS_COORD_OR_DEV.checkAndThrow(STUDY_ID, id);
 
         Study study = parseJson(Study.class);
         return service.updateStudy(session.getAppId(), study);
