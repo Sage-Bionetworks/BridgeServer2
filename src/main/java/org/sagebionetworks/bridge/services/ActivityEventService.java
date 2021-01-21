@@ -125,8 +125,8 @@ public class ActivityEventService {
             ActivityEvent studyEvent = new DynamoActivityEvent.Builder()
                     .withHealthCode(healthCode)
                     .withTimestamp(enrollment)
-                    .withStudyId(studyId)
-                    .withObjectType(ENROLLMENT).build();
+                    .withObjectType(ENROLLMENT)
+                    .withStudyId(studyId).build();
             if (activityEventDao.publishEvent(studyEvent)) {
                 createAutomaticCustomEvents(app, healthCode, studyEvent, studyId);
             }
@@ -150,8 +150,8 @@ public class ActivityEventService {
             ActivityEvent studyEvent = new DynamoActivityEvent.Builder()
                     .withHealthCode(healthCode)
                     .withTimestamp(timestamp)
-                    .withStudyId(studyId)
-                    .withObjectType(ACTIVITIES_RETRIEVED).build();
+                    .withObjectType(ACTIVITIES_RETRIEVED)
+                    .withStudyId(studyId).build();
             if (activityEventDao.publishEvent(studyEvent)) {
                 // Create automatic events, as defined in the app
                 createAutomaticCustomEvents(app, healthCode, studyEvent, studyId);
@@ -214,8 +214,8 @@ public class ActivityEventService {
             ActivityEvent studyEvent = new DynamoActivityEvent.Builder()
                     .withHealthCode(healthCode)
                     .withTimestamp(createdOn)
-                    .withStudyId(studyId)
-                    .withObjectType(CREATED_ON).build();
+                    .withObjectType(CREATED_ON)
+                    .withStudyId(studyId).build();
             activityEventDao.publishEvent(studyEvent);
         }
     }
@@ -223,7 +223,7 @@ public class ActivityEventService {
     /**
     * Gets the activity events times for a specific user in order to schedule against them.
     */
-    public Map<String, DateTime> getActivityEventMap(String appId, String healthCode, String studyId) {
+    public Map<String, DateTime> getActivityEventMap(String appId, String studyId, String healthCode) {
         checkNotNull(healthCode);
         Map<String, DateTime> activityMap = activityEventDao.getActivityEventMap(healthCode, studyId);
         
@@ -251,8 +251,8 @@ public class ActivityEventService {
         return builder.build();
     }
     
-    public List<ActivityEvent> getActivityEventList(String appId, String healthCode, String studyId) {
-        Map<String, DateTime> activityEvents = getActivityEventMap(appId, healthCode, studyId);
+    public List<ActivityEvent> getActivityEventList(String appId, String studyId, String healthCode) {
+        Map<String, DateTime> activityEvents = getActivityEventMap(appId, studyId, healthCode);
 
         List<ActivityEvent> activityEventList = Lists.newArrayList();
         for (Map.Entry<String, DateTime> entry : activityEvents.entrySet()) {
@@ -278,20 +278,18 @@ public class ActivityEventService {
         for (Map.Entry<String, String> oneAutomaticEvent : app.getAutomaticCustomEvents().entrySet()) {
             String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
             Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(oneAutomaticEvent.getValue()); // originEventId:Period
-            
             // enrollment, activities_retrieved, or any of the custom:* events defined by the user.
             if (event.getEventId().equals(autoEventSpec.getLeft()) || 
                 event.getEventId().startsWith("custom:"+autoEventSpec.getLeft())) {
                 
                 Period automaticEventDelay = Period.parse(autoEventSpec.getRight());
                 DateTime automaticEventTime = new DateTime(event.getTimestamp()).plus(automaticEventDelay);
-                
                 ActivityEvent automaticEvent = new DynamoActivityEvent.Builder()
                         .withHealthCode(healthCode)
                         .withObjectType(ActivityEventObjectType.CUSTOM)
                         .withObjectId(automaticEventKey)
-                        .withStudyId(studyId)
-                        .withTimestamp(automaticEventTime).build();
+                        .withTimestamp(automaticEventTime)
+                        .withStudyId(studyId).build();
                 activityEventDao.publishEvent(automaticEvent);
             }
         }        

@@ -360,7 +360,7 @@ public class StudyParticipantController extends BaseController {
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
-        List<ActivityEvent> events = participantService.getActivityEvents(app, userId);
+        List<ActivityEvent> events = participantService.getActivityEvents(app, studyId, userId);
         
         return ActivityEvent.ACTIVITY_EVENT_WRITER
                 .writeValueAsString(new ResourceList<>(events));
@@ -395,7 +395,7 @@ public class StudyParticipantController extends BaseController {
         checkAccountInStudy(session.getAppId(), studyId, session.getId());
         
         List<ActivityEvent> events = activityEventService.getActivityEventList(
-                session.getAppId(), session.getHealthCode(), studyId);
+                session.getAppId(), studyId, session.getHealthCode());
         
         return ActivityEvent.ACTIVITY_EVENT_WRITER
                 .writeValueAsString(new ResourceList<>(events));

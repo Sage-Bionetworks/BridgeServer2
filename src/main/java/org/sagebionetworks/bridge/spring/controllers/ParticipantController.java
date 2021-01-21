@@ -212,7 +212,7 @@ public class ParticipantController extends BaseController {
         getAuthenticatedSession(WORKER);
         App app = appService.getApp(appId);
 
-        return new ResourceList<>(participantService.getActivityEvents(app, userId));
+        return new ResourceList<>(participantService.getActivityEvents(app, null, userId));
     }
     
     @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/activities/{activityType}/{referentGuid}",
@@ -589,7 +589,7 @@ public class ParticipantController extends BaseController {
         IS_SELF_OR_RESEARCHER.checkAndThrow(USER_ID, userId);
         App app = appService.getApp(researcherSession.getAppId());
 
-        List<ActivityEvent> events = participantService.getActivityEvents(app, userId);
+        List<ActivityEvent> events = participantService.getActivityEvents(app, null, userId);
         return ActivityEvent.ACTIVITY_EVENT_WRITER
                 .writeValueAsString(new ResourceList<>(events));
     }

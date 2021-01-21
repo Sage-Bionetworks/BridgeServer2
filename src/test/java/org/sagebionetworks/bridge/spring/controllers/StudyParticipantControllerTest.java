@@ -202,7 +202,7 @@ public class StudyParticipantControllerTest extends Mockito {
           .withObjectType(ENROLLMENT)
           .withTimestamp(CREATED_ON)
           .withHealthCode(HEALTH_CODE).build());
-        when(mockParticipantService.getActivityEvents(app, TEST_USER_ID))
+        when(mockParticipantService.getActivityEvents(app, TEST_STUDY_ID, TEST_USER_ID))
             .thenReturn(events);
         
         String retValue = controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
@@ -275,7 +275,7 @@ public class StudyParticipantControllerTest extends Mockito {
                 .withObjectType(ENROLLMENT)
                 .withTimestamp(CREATED_ON)
                 .withHealthCode(HEALTH_CODE).build());
-        when(mockActivityEventService.getActivityEventList(TEST_APP_ID, HEALTH_CODE, TEST_STUDY_ID)).thenReturn(events);
+        when(mockActivityEventService.getActivityEventList(TEST_APP_ID, TEST_STUDY_ID, HEALTH_CODE)).thenReturn(events);
         
         String retValue = controller.getSelfActivityEvents(TEST_STUDY_ID);
         

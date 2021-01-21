@@ -1411,11 +1411,11 @@ public class ParticipantControllerTest extends Mockito {
         DynamoActivityEvent anEvent = new DynamoActivityEvent();
         anEvent.setEventId("event-id");
         List<ActivityEvent> events = ImmutableList.of(anEvent);
-        when(mockParticipantService.getActivityEvents(app, TEST_USER_ID)).thenReturn(events);
+        when(mockParticipantService.getActivityEvents(app, null, TEST_USER_ID)).thenReturn(events);
 
         ResourceList<ActivityEvent> result = controller.getActivityEventsForWorker(TEST_APP_ID, TEST_USER_ID);
 
-        verify(mockParticipantService).getActivityEvents(app, TEST_USER_ID);
+        verify(mockParticipantService).getActivityEvents(app, null, TEST_USER_ID);
         assertEquals(result.getItems().get(0).getEventId(), "event-id");
     }
 
@@ -1559,14 +1559,14 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void getActivityEvents() throws Exception {
         List<ActivityEvent> events = ImmutableList.of(new DynamoActivityEvent(), new DynamoActivityEvent());
-        when(mockParticipantService.getActivityEvents(app, TEST_USER_ID)).thenReturn(events);        
+        when(mockParticipantService.getActivityEvents(app, null, TEST_USER_ID)).thenReturn(events);        
         
         String retValue = controller.getActivityEvents(TEST_USER_ID);
         
         ResourceList<ActivityEvent> retList = BridgeObjectMapper.get().readValue(retValue, new TypeReference<ResourceList<ActivityEvent>>() {});
         assertEquals(retList.getItems().size(), 2);
         
-        verify(mockParticipantService).getActivityEvents(app, TEST_USER_ID);
+        verify(mockParticipantService).getActivityEvents(app, null, TEST_USER_ID);
     }
     
     @Test

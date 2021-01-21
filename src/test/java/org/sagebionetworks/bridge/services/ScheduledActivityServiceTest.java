@@ -962,7 +962,7 @@ public class ScheduledActivityServiceTest {
             
         Map<String,DateTime> events = Maps.newHashMap();
         events.put("enrollment", startsOn.withZone(DateTimeZone.UTC).minusDays(3));
-        when(activityEventService.getActivityEventMap(TEST_APP_ID, "AAA", null)).thenReturn(events);
+        when(activityEventService.getActivityEventMap(TEST_APP_ID, null, "AAA")).thenReturn(events);
         
         ClientInfo info = ClientInfo.fromUserAgentCache("Parkinson-QA/36 (iPhone 5S; iPhone OS/9.2.1) BridgeSDK/7");
         
@@ -1233,7 +1233,7 @@ public class ScheduledActivityServiceTest {
                 .put("activity:0c48dbe7-4091-4024-b199-e81a8f7327ed:finished", 
                         new DateTime(finishedActivity.getFinishedOn(), TIME_ZONE))
                 .build();
-        when(activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE, null)).thenReturn(eventsMap);
+        when(activityEventService.getActivityEventMap(TEST_APP_ID, null, HEALTH_CODE)).thenReturn(eventsMap);
         return createScheduleContext(ENDS_ON).withEvents(eventsMap).build();
     }
     
@@ -1324,7 +1324,7 @@ public class ScheduledActivityServiceTest {
         
         Map<String,DateTime> eventMap = Maps.newHashMap();
         eventMap.put("enrollment", enrollment);
-        when(activityEventService.getActivityEventMap(TEST_APP_ID, "healthCode", null)).thenReturn(eventMap);
+        when(activityEventService.getActivityEventMap(TEST_APP_ID, null, "healthCode")).thenReturn(eventMap);
 
         SchedulePlan plan = new DynamoSchedulePlan();
         plan.setGuid("BBB");
@@ -1344,7 +1344,7 @@ public class ScheduledActivityServiceTest {
         
         List<ScheduledActivity> activities = service.getScheduledActivities(app, context);
         
-        verify(activityEventService).getActivityEventMap(TEST_APP_ID, "healthCode", null);
+        verify(activityEventService).getActivityEventMap(TEST_APP_ID, null, "healthCode");
         verify(schedulePlanService).getSchedulePlans(ClientInfo.UNKNOWN_CLIENT, TEST_APP_ID, false);
         
         return activities.get(0).getScheduledOn().toString();

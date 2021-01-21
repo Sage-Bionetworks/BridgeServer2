@@ -111,7 +111,7 @@ public class ActivityEventControllerTest extends Mockito {
         event.setTimestamp(TIMESTAMP.getMillis());
         
         List<ActivityEvent> activityEvents = ImmutableList.of(event);
-        when(mockActivityEventService.getActivityEventList(TEST_APP_ID, HEALTH_CODE, null)).thenReturn(activityEvents);
+        when(mockActivityEventService.getActivityEventList(TEST_APP_ID, null, HEALTH_CODE)).thenReturn(activityEvents);
         String response = controller.getSelfActivityEvents();
         
         ResourceList<ActivityEvent> list = BridgeObjectMapper.get().readValue(response, 
@@ -121,6 +121,6 @@ public class ActivityEventControllerTest extends Mockito {
         assertEquals(new Long(TIMESTAMP.getMillis()), returnedEvent.getTimestamp());
         assertNull(returnedEvent.getHealthCode());
         
-        verify(mockActivityEventService).getActivityEventList(TEST_APP_ID, HEALTH_CODE, null);
+        verify(mockActivityEventService).getActivityEventList(TEST_APP_ID, null, HEALTH_CODE);
     }
 }

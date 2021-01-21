@@ -113,6 +113,9 @@ public class ActivityEventServiceTest {
     
     @Test
     public void canPublishCustomEventFromAutomaticEvents() {
+        DateTime timestamp1 = DateTime.now();
+        DateTime timestamp2 = timestamp1.plusDays(3);
+        
         App app = App.create();
         app.setActivityEventKeys(ImmutableSet.of("myEvent"));
         app.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "myEvent:P3D"));
@@ -120,15 +123,40 @@ public class ActivityEventServiceTest {
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
         when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(true);
 
-        DateTime timestamp = DateTime.now().plusDays(3);
-        activityEventService.publishCustomEvent(app, HEALTH_CODE, "3-days-after-enrollment",
-                timestamp, null);
+        activityEventService.publishCustomEvent(app, HEALTH_CODE, "myEvent", timestamp1, null);
 
-        ActivityEvent activityEvent = activityEventArgumentCaptor.getValue();
+        verify(activityEventDao, times(2)).publishEvent(any());
 
+        ActivityEvent activityEvent = activityEventArgumentCaptor.getAllValues().get(0);
+        assertEquals(activityEvent.getEventId(), "custom:myEvent");
+        assertEquals(activityEvent.getHealthCode(), HEALTH_CODE);
+        assertEquals(activityEvent.getTimestamp().longValue(), timestamp1.getMillis());
+
+        activityEvent = activityEventArgumentCaptor.getAllValues().get(1);
         assertEquals(activityEvent.getEventId(), "custom:3-days-after-enrollment");
         assertEquals(activityEvent.getHealthCode(), HEALTH_CODE);
-        assertEquals(activityEvent.getTimestamp().longValue(), timestamp.getMillis());
+        assertEquals(activityEvent.getTimestamp().longValue(), timestamp2.getMillis());
+    }
+    
+    @Test
+    public void canPublishCustomEventAutomaticEventsSkippedOnFailure() {
+        DateTime timestamp1 = DateTime.now();
+        
+        App app = App.create();
+        app.setActivityEventKeys(ImmutableSet.of("myEvent"));
+        app.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "myEvent:P3D"));
+
+        ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
+        when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(false);
+
+        activityEventService.publishCustomEvent(app, HEALTH_CODE, "myEvent", timestamp1, null);
+
+        verify(activityEventDao, times(1)).publishEvent(any());
+
+        ActivityEvent activityEvent = activityEventArgumentCaptor.getAllValues().get(0);
+        assertEquals(activityEvent.getEventId(), "custom:myEvent");
+        assertEquals(activityEvent.getHealthCode(), HEALTH_CODE);
+        assertEquals(activityEvent.getTimestamp().longValue(), timestamp1.getMillis());
     }
 
     @Test
@@ -185,7 +213,7 @@ public class ActivityEventServiceTest {
         map.put("created_on", CREATED_ON);
         when(activityEventDao.getActivityEventMap(HEALTH_CODE, null)).thenReturn(map);
         
-        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE, null);
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, null, HEALTH_CODE);
         assertEquals(results.get("activities_retrieved"), ACTIVITIES_RETRIEVED);
         assertEquals(results.get("enrollment"), ENROLLMENT);
         assertEquals(results.get("created_on"), CREATED_ON);
@@ -204,7 +232,7 @@ public class ActivityEventServiceTest {
         map.put("created_on", CREATED_ON);
         when(activityEventDao.getActivityEventMap(HEALTH_CODE, null)).thenReturn(map);
         
-        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE, null);
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, null, HEALTH_CODE);
         assertEquals(results.get("enrollment"), ENROLLMENT);
         assertEquals(results.get("created_on"), CREATED_ON);
         assertEquals(results.get("study_start_date"), ENROLLMENT);
@@ -221,7 +249,7 @@ public class ActivityEventServiceTest {
         map.put("created_on", CREATED_ON);
         when(activityEventDao.getActivityEventMap(HEALTH_CODE, TEST_STUDY_ID)).thenReturn(map);
         
-        activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE, TEST_STUDY_ID);
+        activityEventService.getActivityEventMap(TEST_APP_ID, TEST_STUDY_ID, HEALTH_CODE);
         
         verify(activityEventDao).getActivityEventMap(HEALTH_CODE, TEST_STUDY_ID);
         verify(mockAppService, never()).getApp(anyString());
@@ -236,7 +264,7 @@ public class ActivityEventServiceTest {
         map.put("activities_retrieved", ACTIVITIES_RETRIEVED);
         when(activityEventDao.getActivityEventMap(HEALTH_CODE, null)).thenReturn(map);
         
-        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE, null);
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, null, HEALTH_CODE);
         assertEquals(results.get("activities_retrieved"), ACTIVITIES_RETRIEVED);
         assertEquals(results.get("enrollment"), ENROLLMENT);
         assertEquals(results.get("created_on"), CREATED_ON);
@@ -260,7 +288,7 @@ public class ActivityEventServiceTest {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withCreatedOn(CREATED_ON).build();
         when(mockParticipantService.getParticipant(app, "healthcode:" + HEALTH_CODE, false)).thenReturn(studyParticipant);
         
-        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE, null);
+        Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, null, HEALTH_CODE);
         assertEquals(results.get("created_on"), CREATED_ON);
         assertEquals(results.get("study_start_date"), CREATED_ON);
         assertEquals(results.size(), 2);
@@ -327,6 +355,61 @@ public class ActivityEventServiceTest {
 
     @Test
     public void canPublishStudyScopedEnrollmentEvent() {
+        // Configure app with automatic custom events
+        App app = App.create();
+        // Note that these events include events that are implicitly and explicitly related to 
+        // enrollment, and some that are not applicable that should be ignored.
+        app.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "enrollment:P3D").build());
+        
+        DateTime now = DateTime.now();
+        DateTime now3DaysLater = now.plusDays(3);
+        ConsentSignature signature = new ConsentSignature.Builder()
+                .withBirthdate("1980-01-01")
+                .withName("A Name")
+                .withConsentCreatedOn(now.minusDays(10).getMillis())
+                .withSignedOn(now.getMillis()).build();
+        when(activityEventDao.publishEvent(any())).thenReturn(true);
+        
+        activityEventService.publishEnrollmentEvent(app, HEALTH_CODE, signature, TEST_STUDY_ID);
+        
+        ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
+        verify(activityEventDao, times(4)).publishEvent(argument.capture());
+        
+        System.out.println(argument.getAllValues());/*
+        DynamoActivityEvent [studyId=null, healthCode=oneHealthCode, answerValue=null, timestamp=1611261669421, eventId=enrollment], 
+        DynamoActivityEvent [studyId=null, healthCode=oneHealthCode, answerValue=null, timestamp=1611520869421, eventId=custom:3-days-after], 
+        DynamoActivityEvent [studyId=test-study, healthCode=oneHealthCode, answerValue=null, timestamp=1611261669421, eventId=enrollment], 
+        DynamoActivityEvent [studyId=test-study, healthCode=oneHealthCode, answerValue=null, timestamp=1611520869421, eventId=custom:3-days-after]]
+        */
+        
+        ActivityEvent event1 = argument.getAllValues().get(0);
+        assertEquals(event1.getEventId(), "enrollment");
+        assertEquals(event1.getTimestamp(), new Long(now.getMillis()));
+        assertNull(event1.getStudyId());
+        assertEquals(event1.getHealthCode(), HEALTH_CODE);
+
+        ActivityEvent event2 = argument.getAllValues().get(1);
+        assertEquals(event2.getEventId(), "custom:3-days-after");
+        assertEquals(event2.getTimestamp(), new Long(now3DaysLater.getMillis()));
+        assertNull(event2.getStudyId());
+        assertEquals(event2.getHealthCode(), HEALTH_CODE);
+
+        ActivityEvent event3 = argument.getAllValues().get(2);
+        assertEquals(event3.getEventId(), "enrollment");
+        assertEquals(event3.getTimestamp(), new Long(now.getMillis()));
+        assertEquals(event3.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event3.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
+
+        ActivityEvent event4 = argument.getAllValues().get(3);
+        assertEquals(event4.getEventId(), "custom:3-days-after");
+        assertEquals(event4.getTimestamp(), new Long(now3DaysLater.getMillis()));
+        assertEquals(event4.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event4.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void canPublishStudyScopedEnrollmentEventSkipsAutomaticEventsOnFailure() {
         DateTime now = DateTime.now();
         
         ConsentSignature signature = new ConsentSignature.Builder()
@@ -334,6 +417,7 @@ public class ActivityEventServiceTest {
                 .withName("A Name")
                 .withConsentCreatedOn(now.minusDays(10).getMillis())
                 .withSignedOn(now.getMillis()).build();
+        when(activityEventDao.publishEvent(any())).thenReturn(false);
 
         activityEventService.publishEnrollmentEvent(App.create(), HEALTH_CODE, signature, TEST_STUDY_ID);
         
@@ -344,11 +428,6 @@ public class ActivityEventServiceTest {
         assertEquals(argument.getAllValues().get(0).getTimestamp(), new Long(now.getMillis()));
         assertNull(argument.getAllValues().get(0).getStudyId());
         assertEquals(argument.getAllValues().get(0).getHealthCode(), HEALTH_CODE);
-
-        assertEquals(argument.getAllValues().get(1).getEventId(), "enrollment");
-        assertEquals(argument.getAllValues().get(1).getTimestamp(), new Long(now.getMillis()));
-        assertEquals(argument.getAllValues().get(1).getStudyId(), TEST_STUDY_ID);
-        assertEquals(argument.getAllValues().get(1).getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
     }
     
     @Test
@@ -536,11 +615,59 @@ public class ActivityEventServiceTest {
     public void canPublishStudyScopedActivitiesRetrievedEvent() {
         // Configure app with automatic custom events
         App app = App.create();
+        app.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "activities_retrieved:P3D").build());
+        
+        when(activityEventDao.publishEvent(any())).thenReturn(true);
 
         // Create consent signature
         DateTime retrieved = DateTime.parse("2018-04-04T16:00-0700");
+        DateTime retrievedAfter3Days = retrieved.plusDays(3);
         
-        when(activityEventDao.publishEvent(any())).thenReturn(true);
+        // Execute
+        activityEventService.publishActivitiesRetrieved(app, "AAA-BBB-CCC", retrieved, TEST_STUDY_ID);
+
+        ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
+        
+        verify(activityEventDao, times(4)).publishEvent(publishedEventCaptor.capture());
+        
+        ActivityEvent event1 = publishedEventCaptor.getAllValues().get(0);
+        ActivityEvent event2 = publishedEventCaptor.getAllValues().get(1);
+        ActivityEvent event3 = publishedEventCaptor.getAllValues().get(2);
+        ActivityEvent event4 = publishedEventCaptor.getAllValues().get(3);
+        
+        assertEquals(event1.getEventId(), "activities_retrieved");
+        assertEquals(event1.getTimestamp().longValue(), retrieved.getMillis());
+        assertEquals(event1.getHealthCode(), "AAA-BBB-CCC");
+        assertNull(event1.getStudyId());
+
+        assertEquals(event2.getEventId(), "custom:3-days-after");
+        assertEquals(event2.getTimestamp().longValue(), retrievedAfter3Days.getMillis());
+        assertEquals(event2.getHealthCode(), "AAA-BBB-CCC");
+        assertNull(event2.getStudyId());
+        
+        assertEquals(event3.getEventId(), "activities_retrieved");
+        assertEquals(event3.getTimestamp().longValue(), retrieved.getMillis());
+        assertEquals(event3.getHealthCode(), "AAA-BBB-CCC:" + TEST_STUDY_ID);
+        assertEquals(event3.getStudyId(), TEST_STUDY_ID);
+
+        assertEquals(event4.getEventId(), "custom:3-days-after");
+        assertEquals(event4.getTimestamp().longValue(), retrievedAfter3Days.getMillis());
+        assertEquals(event4.getHealthCode(), "AAA-BBB-CCC:" + TEST_STUDY_ID);
+        assertEquals(event4.getStudyId(), TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void canPublishStudyScopedActivitiesRetrievedEventNoAutoEventsOnFailrue() {
+        // Configure app with automatic custom events
+        App app = App.create();
+        app.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "activities_retrieved:P3D").build());
+        
+        when(activityEventDao.publishEvent(any())).thenReturn(false);
+
+        // Create consent signature
+        DateTime retrieved = DateTime.parse("2018-04-04T16:00-0700");
 
         // Execute
         activityEventService.publishActivitiesRetrieved(app, "AAA-BBB-CCC", retrieved, TEST_STUDY_ID);
@@ -548,17 +675,19 @@ public class ActivityEventServiceTest {
         ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
         
         verify(activityEventDao, times(2)).publishEvent(publishedEventCaptor.capture());
+        
+        ActivityEvent event1 = publishedEventCaptor.getAllValues().get(0);
+        ActivityEvent event2 = publishedEventCaptor.getAllValues().get(1);
+        
+        assertEquals(event1.getEventId(), "activities_retrieved");
+        assertEquals(event1.getTimestamp().longValue(), retrieved.getMillis());
+        assertEquals(event1.getHealthCode(), "AAA-BBB-CCC");
+        assertNull(event1.getStudyId());
 
-        List<ActivityEvent> publishedEventList = publishedEventCaptor.getAllValues();
-        assertEquals(publishedEventList.get(0).getEventId(), "activities_retrieved");
-        assertEquals(publishedEventList.get(0).getTimestamp().longValue(), retrieved.getMillis());
-        assertEquals(publishedEventList.get(0).getHealthCode(), "AAA-BBB-CCC");
-        assertNull(publishedEventList.get(0).getStudyId());
-
-        assertEquals(publishedEventList.get(1).getEventId(), "activities_retrieved");
-        assertEquals(publishedEventList.get(1).getTimestamp().longValue(), retrieved.getMillis());
-        assertEquals(publishedEventList.get(1).getHealthCode(), "AAA-BBB-CCC:" + TEST_STUDY_ID);
-        assertEquals(publishedEventList.get(1).getStudyId(), TEST_STUDY_ID);
+        assertEquals(event2.getEventId(), "activities_retrieved");
+        assertEquals(event2.getTimestamp().longValue(), retrieved.getMillis());
+        assertEquals(event2.getHealthCode(), "AAA-BBB-CCC:" + TEST_STUDY_ID);
+        assertEquals(event2.getStudyId(), TEST_STUDY_ID);
     }
     
     @Test
@@ -656,7 +785,7 @@ public class ActivityEventServiceTest {
         map.put("created_on", CREATED_ON);
         when(activityEventDao.getActivityEventMap(HEALTH_CODE, null)).thenReturn(map);
         
-        List<ActivityEvent> results = activityEventService.getActivityEventList(TEST_APP_ID, HEALTH_CODE, null);
+        List<ActivityEvent> results = activityEventService.getActivityEventList(TEST_APP_ID, null, HEALTH_CODE);
         
         ActivityEvent ar = getEventByKey(results, "activities_retrieved");
         assertEquals(ar.getTimestamp(), Long.valueOf(ACTIVITIES_RETRIEVED.getMillis()));
@@ -681,7 +810,7 @@ public class ActivityEventServiceTest {
         when(activityEventDao.getActivityEventMap(HEALTH_CODE, TEST_STUDY_ID)).thenReturn(map);
         
         List<ActivityEvent> results = activityEventService
-                .getActivityEventList(TEST_APP_ID, HEALTH_CODE, TEST_STUDY_ID);
+                .getActivityEventList(TEST_APP_ID, TEST_STUDY_ID, HEALTH_CODE);
         
         ActivityEvent ar = getEventByKey(results, "activities_retrieved");
         assertEquals(ar.getTimestamp(), Long.valueOf(ACTIVITIES_RETRIEVED.getMillis()));
