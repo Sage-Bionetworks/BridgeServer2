@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
+import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.Condition;
@@ -58,12 +59,11 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
                 .withHashKeyValues(hashKey)
                 .withLimit(pageSizeWithIndicatorRecord);
 
-        QueryResultPage<DynamoParticipantData> page = mapper.queryPage(DynamoParticipantData.class, query);
+        PaginatedQueryList<DynamoParticipantData> resultPage = mapper.query(DynamoParticipantData.class, query);
 
         List<ParticipantData> list = Lists.newArrayListWithCapacity(pageSizeWithIndicatorRecord);
-        for (int i = 0, len = page.getResults().size(); i < len; i++) {
-            ParticipantData oneParticipant = page.getResults().get(i);
-            list.add(i, oneParticipant);
+        for (ParticipantData pariticipantData : resultPage) {
+            list.add(pariticipantData);
         }
 
         String nextPageOffsetKey = null;
@@ -77,7 +77,7 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
 
     //TODO: is there a way to do this in the function above and make the configId optional?
     @Override
-    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataRecordV4(final String userId, final String configId,
+    public ParticipantData getParticipantDataRecordV4(final String userId, final String configId,
                                                                                       final String offsetKey, final int pageSize) {
         checkNotNull(userId);
         checkNotNull(configId);
@@ -94,21 +94,7 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
                 .withRangeKeyCondition("configId", rangeKeyCondition)
                 .withLimit(pageSizeWithIndicatorRecord);
 
-        QueryResultPage<DynamoParticipantData> page = mapper.queryPage(DynamoParticipantData.class, query);
-
-        List<ParticipantData> list = Lists.newArrayListWithCapacity(pageSizeWithIndicatorRecord);
-        for (int i = 0, len = page.getResults().size(); i < len; i++) {
-            ParticipantData oneParticipant = page.getResults().get(i);
-            list.add(i, oneParticipant);
-        }
-
-        String nextPageOffsetKey = null;
-        if (list.size() == pageSizeWithIndicatorRecord) {
-            nextPageOffsetKey = Iterables.getLast(list).getConfigId();
-        }
-
-        int limit = Math.min(list.size(), pageSize);
-        return new ForwardCursorPagedResourceList<ParticipantData>(list.subList(0, limit), nextPageOffsetKey);
+        return mapper.load(DynamoParticipantData.class, query);
     }
 
     @Override

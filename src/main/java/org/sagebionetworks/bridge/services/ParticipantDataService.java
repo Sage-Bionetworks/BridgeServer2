@@ -45,7 +45,7 @@ public class ParticipantDataService {
     /**
      * Return a participant data record based on the given configId.
      */
-    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataRecordV4(final String userId,
+    public ParticipantData getParticipantDataRecordV4(final String userId,
         final String configId, final String offsetKey, final int pageSize) {
         return participantDataDao.getParticipantDataRecordV4(userId, configId, offsetKey, pageSize);
     }

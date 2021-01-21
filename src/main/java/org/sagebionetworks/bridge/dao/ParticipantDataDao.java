@@ -31,7 +31,7 @@ public interface ParticipantDataDao {
      * @param pageSize
      * @return
      */
-    ForwardCursorPagedResourceList<ParticipantData> getParticipantDataRecordV4(String userId, String configId, String offsetKey, int pageSize);
+    ParticipantData getParticipantDataRecordV4(String userId, String configId, String offsetKey, int pageSize);
 
     /**
      * Writes a participant data to the backing store.
