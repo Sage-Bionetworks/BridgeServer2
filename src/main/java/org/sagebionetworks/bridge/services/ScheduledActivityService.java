@@ -187,7 +187,7 @@ public class ScheduledActivityService {
         Validate.nonEntityThrowingException(VALIDATOR, context);
 
         String healthCode = context.getCriteriaContext().getHealthCode();
-        activityEventService.publishActivitiesRetrieved(app, healthCode, DateUtils.getCurrentDateTime(), null);
+        activityEventService.publishActivitiesRetrieved(app, null, healthCode, DateUtils.getCurrentDateTime());
         
         // Add events for scheduling
         Map<String, DateTime> events = createEventsMap(context);
@@ -215,7 +215,7 @@ public class ScheduledActivityService {
         Validate.nonEntityThrowingException(VALIDATOR, context);
         
         String healthCode = context.getCriteriaContext().getHealthCode();
-        activityEventService.publishActivitiesRetrieved(app, healthCode, DateUtils.getCurrentDateTime(), null);
+        activityEventService.publishActivitiesRetrieved(app, null, healthCode, DateUtils.getCurrentDateTime());
         
         // Add events for scheduling
         Map<String, DateTime> events = createEventsMap(context);

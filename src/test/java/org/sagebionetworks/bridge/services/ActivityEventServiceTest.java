@@ -82,7 +82,7 @@ public class ActivityEventServiceTest {
         when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(true);
 
         DateTime timestamp = DateTime.now();
-        activityEventService.publishCustomEvent(app, HEALTH_CODE, "eventKey1", timestamp, null);
+        activityEventService.publishCustomEvent(app, null, HEALTH_CODE, "eventKey1", timestamp);
 
         ActivityEvent activityEvent = activityEventArgumentCaptor.getValue();
 
@@ -101,7 +101,7 @@ public class ActivityEventServiceTest {
         when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(true);
 
         DateTime timestamp = DateTime.now();
-        activityEventService.publishCustomEvent(app, HEALTH_CODE, "eventKey1", timestamp, TEST_STUDY_ID);
+        activityEventService.publishCustomEvent(app, TEST_STUDY_ID, HEALTH_CODE, "eventKey1", timestamp);
 
         ActivityEvent activityEvent = activityEventArgumentCaptor.getValue();
 
@@ -123,7 +123,7 @@ public class ActivityEventServiceTest {
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
         when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(true);
 
-        activityEventService.publishCustomEvent(app, HEALTH_CODE, "myEvent", timestamp1, null);
+        activityEventService.publishCustomEvent(app, null, HEALTH_CODE, "myEvent", timestamp1);
 
         verify(activityEventDao, times(2)).publishEvent(any());
 
@@ -149,7 +149,7 @@ public class ActivityEventServiceTest {
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
         when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(false);
 
-        activityEventService.publishCustomEvent(app, HEALTH_CODE, "myEvent", timestamp1, null);
+        activityEventService.publishCustomEvent(app, null, HEALTH_CODE, "myEvent", timestamp1);
 
         verify(activityEventDao, times(1)).publishEvent(any());
 
@@ -163,7 +163,7 @@ public class ActivityEventServiceTest {
     public void cannotPublishUnknownCustomEvent() throws Exception {
         App app = App.create();
         try {
-            activityEventService.publishCustomEvent(app, HEALTH_CODE, "eventKey5", DateTime.now(), null);
+            activityEventService.publishCustomEvent(app, null, HEALTH_CODE, "eventKey5", DateTime.now());
             fail("expected exception");
         } catch (BadRequestException e) {
             assertTrue(e.getMessage().endsWith("eventKey5"));
@@ -174,7 +174,7 @@ public class ActivityEventServiceTest {
     public void canPublishGlobalCreatedOn() {
         DateTime now = DateTime.now();
         
-        activityEventService.publishCreatedOnEvent(HEALTH_CODE, now, null);
+        activityEventService.publishCreatedOnEvent(null, HEALTH_CODE, now);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao).publishEvent(argument.capture());
@@ -189,7 +189,7 @@ public class ActivityEventServiceTest {
     public void canPublishStudyScopedCreatedOn() {
         DateTime now = DateTime.now();
         
-        activityEventService.publishCreatedOnEvent(HEALTH_CODE, now, TEST_STUDY_ID);
+        activityEventService.publishCreatedOnEvent(TEST_STUDY_ID, HEALTH_CODE, now);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao, times(2)).publishEvent(argument.capture());
@@ -300,7 +300,7 @@ public class ActivityEventServiceTest {
     
     @Test
     public void canDeleteGlobalActivityEvents() {
-        activityEventService.deleteActivityEvents(HEALTH_CODE, null);
+        activityEventService.deleteActivityEvents(null, HEALTH_CODE);
         
         verify(activityEventDao).deleteActivityEvents(HEALTH_CODE, null);
         verifyNoMoreInteractions(activityEventDao);
@@ -308,7 +308,7 @@ public class ActivityEventServiceTest {
     
     @Test
     public void canDeleteStudyScopedActivityEvents() {
-        activityEventService.deleteActivityEvents(HEALTH_CODE, TEST_STUDY_ID);
+        activityEventService.deleteActivityEvents(TEST_STUDY_ID, HEALTH_CODE);
         
         verify(activityEventDao).deleteActivityEvents(HEALTH_CODE, TEST_STUDY_ID);
         verifyNoMoreInteractions(activityEventDao);
@@ -342,7 +342,7 @@ public class ActivityEventServiceTest {
                 .withConsentCreatedOn(now.minusDays(10).getMillis())
                 .withSignedOn(now.getMillis()).build();
 
-        activityEventService.publishEnrollmentEvent(App.create(),"AAA-BBB-CCC", signature, null);
+        activityEventService.publishEnrollmentEvent(App.create(),null, "AAA-BBB-CCC", signature);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao).publishEvent(argument.capture());
@@ -371,7 +371,7 @@ public class ActivityEventServiceTest {
                 .withSignedOn(now.getMillis()).build();
         when(activityEventDao.publishEvent(any())).thenReturn(true);
         
-        activityEventService.publishEnrollmentEvent(app, HEALTH_CODE, signature, TEST_STUDY_ID);
+        activityEventService.publishEnrollmentEvent(app, TEST_STUDY_ID, HEALTH_CODE, signature);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao, times(4)).publishEvent(argument.capture());
@@ -419,7 +419,7 @@ public class ActivityEventServiceTest {
                 .withSignedOn(now.getMillis()).build();
         when(activityEventDao.publishEvent(any())).thenReturn(false);
 
-        activityEventService.publishEnrollmentEvent(App.create(), HEALTH_CODE, signature, TEST_STUDY_ID);
+        activityEventService.publishEnrollmentEvent(App.create(), TEST_STUDY_ID, HEALTH_CODE, signature);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao, times(2)).publishEvent(argument.capture());
@@ -454,7 +454,7 @@ public class ActivityEventServiceTest {
         when(activityEventDao.publishEvent(any())).thenReturn(true);
         
         // Execute
-        activityEventService.publishEnrollmentEvent(app,"AAA-BBB-CCC", signature, null);
+        activityEventService.publishEnrollmentEvent(app,null, "AAA-BBB-CCC", signature);
 
         // Verify published events (4)
         ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
@@ -497,7 +497,7 @@ public class ActivityEventServiceTest {
         
         when(activityEventDao.publishEvent(any())).thenReturn(false);
         
-        activityEventService.publishEnrollmentEvent(app,"AAA-BBB-CCC", new ConsentSignature.Builder().build(), null);
+        activityEventService.publishEnrollmentEvent(app,null, "AAA-BBB-CCC", new ConsentSignature.Builder().build());
         
         // Only happens once, none of the other custom events are published.
         verify(activityEventDao, times(1)).publishEvent(any());
@@ -518,7 +518,7 @@ public class ActivityEventServiceTest {
         
         when(activityEventDao.publishEvent(any())).thenReturn(false);
         
-        activityEventService.publishActivitiesRetrieved(app,"AAA-BBB-CCC", DateTime.now(), null);
+        activityEventService.publishActivitiesRetrieved(app,null, "AAA-BBB-CCC", DateTime.now());
         
         // Only happens once, none of the other custom events are published.
         verify(activityEventDao, times(1)).publishEvent(any());
@@ -539,7 +539,7 @@ public class ActivityEventServiceTest {
         
         when(activityEventDao.publishEvent(any())).thenReturn(false);
         
-        activityEventService.publishEnrollmentEvent(app,"AAA-BBB-CCC", new ConsentSignature.Builder().build(), null);
+        activityEventService.publishEnrollmentEvent(app,null, "AAA-BBB-CCC", new ConsentSignature.Builder().build());
         
         // Only happens once, none of the other custom events are published.
         verify(activityEventDao, times(1)).publishEvent(any());
@@ -558,7 +558,7 @@ public class ActivityEventServiceTest {
         
         when(activityEventDao.publishEvent(any())).thenReturn(false);
         
-        activityEventService.publishCustomEvent(app,"AAA-BBB-CCC", "myEvent", DateTime.now(), null);
+        activityEventService.publishCustomEvent(app,null, "AAA-BBB-CCC", "myEvent", DateTime.now());
         
         // Only happens once, none of the other custom events are published.
         verify(activityEventDao, times(1)).publishEvent(any());
@@ -583,7 +583,7 @@ public class ActivityEventServiceTest {
         when(activityEventDao.publishEvent(any())).thenReturn(true);
 
         // Execute
-        activityEventService.publishActivitiesRetrieved(app, "AAA-BBB-CCC", retrieved, null);
+        activityEventService.publishActivitiesRetrieved(app, null, "AAA-BBB-CCC", retrieved);
 
         // Verify published events (4)
         ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
@@ -625,7 +625,7 @@ public class ActivityEventServiceTest {
         DateTime retrievedAfter3Days = retrieved.plusDays(3);
         
         // Execute
-        activityEventService.publishActivitiesRetrieved(app, "AAA-BBB-CCC", retrieved, TEST_STUDY_ID);
+        activityEventService.publishActivitiesRetrieved(app, TEST_STUDY_ID, "AAA-BBB-CCC", retrieved);
 
         ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
         
@@ -670,7 +670,7 @@ public class ActivityEventServiceTest {
         DateTime retrieved = DateTime.parse("2018-04-04T16:00-0700");
 
         // Execute
-        activityEventService.publishActivitiesRetrieved(app, "AAA-BBB-CCC", retrieved, TEST_STUDY_ID);
+        activityEventService.publishActivitiesRetrieved(app, TEST_STUDY_ID, "AAA-BBB-CCC", retrieved);
 
         ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
         
@@ -703,7 +703,7 @@ public class ActivityEventServiceTest {
         when(activityEventDao.publishEvent(any())).thenReturn(true);
 
         // Execute
-        activityEventService.publishCustomEvent(app, "AAA-BBB-CCC", "myEvent", timestamp, null);
+        activityEventService.publishCustomEvent(app, null, "AAA-BBB-CCC", "myEvent", timestamp);
 
         // Verify published events (3)
         ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);

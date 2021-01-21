@@ -381,8 +381,8 @@ public class StudyParticipantController extends BaseController {
         CustomActivityEventRequest event = parseJson(CustomActivityEventRequest.class);
         
         App app = appService.getApp(session.getAppId());
-        activityEventService.publishCustomEvent(app, healthCode,
-                event.getEventKey(), event.getTimestamp(), studyId);
+        activityEventService.publishCustomEvent(app, studyId,
+                healthCode, event.getEventKey(), event.getTimestamp());
         
         return EVENT_RECORDED_MSG;
     }
@@ -411,8 +411,8 @@ public class StudyParticipantController extends BaseController {
         CustomActivityEventRequest event = parseJson(CustomActivityEventRequest.class);
         
         App app = appService.getApp(session.getAppId());
-        activityEventService.publishCustomEvent(app, session.getHealthCode(),
-                event.getEventKey(), event.getTimestamp(), studyId);
+        activityEventService.publishCustomEvent(app, studyId,
+                session.getHealthCode(), event.getEventKey(), event.getTimestamp());
         
         return EVENT_RECORDED_MSG;
     }    

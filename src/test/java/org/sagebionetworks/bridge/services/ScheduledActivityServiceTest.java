@@ -190,7 +190,7 @@ public class ScheduledActivityServiceTest {
         service.getScheduledActivities(app, context);
         
         verify(activityEventService).publishActivitiesRetrieved(
-                eq(app), eq(HEALTH_CODE), any(DateTime.class), eq(null));
+                eq(app), eq(null), eq(HEALTH_CODE), any(DateTime.class));
     }
     
     @Test
@@ -199,7 +199,7 @@ public class ScheduledActivityServiceTest {
         service.getScheduledActivitiesV4(app, context);
 
         verify(activityEventService).publishActivitiesRetrieved(
-                eq(app), eq(HEALTH_CODE), any(DateTime.class), eq(null));
+                eq(app), eq(null), eq(HEALTH_CODE), any(DateTime.class));
     }
     
     @Test

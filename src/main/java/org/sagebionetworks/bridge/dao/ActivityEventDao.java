@@ -24,9 +24,11 @@ public interface ActivityEventDao {
     Map<String, DateTime> getActivityEventMap(String healthCode, String studyId);
     
     /**
-     * Delete all activity events for this user. This should only be called when physically 
-     * deleting test users; users in production take too many server resources to completely 
-     * delete this way.
+     * Delete all activity events for this user (if no studyId is provided, delete all the 
+     * app-scoped events, if there is a studyId, delete all the study-scoped events; this 
+     * method will need to be called more than once during test cleanup). This should only 
+     * be called when physically deleting test users; users in production take too many 
+     * server resources to completely delete this way.
      */
     void deleteActivityEvents(String healthCode, String studyId);
 }

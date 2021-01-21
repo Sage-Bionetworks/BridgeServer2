@@ -209,8 +209,8 @@ public class UserAdminService {
             uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
             account.getEnrollments().forEach(
-                    en -> activityEventService.deleteActivityEvents(healthCode, en.getStudyId()));
-            activityEventService.deleteActivityEvents(healthCode, null);
+                    en -> activityEventService.deleteActivityEvents(en.getStudyId(), healthCode));
+            activityEventService.deleteActivityEvents(null, healthCode);
             // AccountSecret records and Enrollment records are are deleted on a 
             // cascading delete from Account
             accountService.deleteAccount(accountId);

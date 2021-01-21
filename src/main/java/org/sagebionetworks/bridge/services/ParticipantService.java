@@ -583,8 +583,8 @@ public class ParticipantService {
         
         Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
-        activityEventService.publishCustomEvent(app, account.getHealthCode(),
-                request.getEventKey(), request.getTimestamp(), null);
+        activityEventService.publishCustomEvent(app, null,
+                account.getHealthCode(), request.getEventKey(), request.getTimestamp());
     }
     
     public void requestResetPassword(App app, String userId) {

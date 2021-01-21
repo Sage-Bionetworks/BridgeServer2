@@ -89,7 +89,7 @@ public class ActivityEventControllerTest extends Mockito {
         StatusMessage message = controller.createCustomActivityEvent();
         assertEquals("Event recorded", message.getMessage());
         
-        verify(mockActivityEventService).publishCustomEvent(app, HEALTH_CODE, "foo", TIMESTAMP, null);
+        verify(mockActivityEventService).publishCustomEvent(app, null, HEALTH_CODE, "foo", TIMESTAMP);
     }
     
     @Test
@@ -100,7 +100,7 @@ public class ActivityEventControllerTest extends Mockito {
         StatusMessage message = controller.createCustomActivityEvent();
         assertEquals("Event recorded", message.getMessage());
         
-        verify(mockActivityEventService).publishCustomEvent(app, HEALTH_CODE, "foo", TIMESTAMP, null);
+        verify(mockActivityEventService).publishCustomEvent(app, null, HEALTH_CODE, "foo", TIMESTAMP);
     }
     
     @Test

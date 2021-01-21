@@ -254,8 +254,8 @@ public class StudyParticipantControllerTest extends Mockito {
         StatusMessage retValue = controller.createActivityEvent(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);
         
-        verify(mockActivityEventService).publishCustomEvent(app, HEALTH_CODE,
-                "eventKey", CREATED_ON, TEST_STUDY_ID);
+        verify(mockActivityEventService).publishCustomEvent(app, TEST_STUDY_ID,
+                HEALTH_CODE, "eventKey", CREATED_ON);
     }
     
     @Test
@@ -310,8 +310,8 @@ public class StudyParticipantControllerTest extends Mockito {
         StatusMessage retValue = controller.createSelfActivityEvent(TEST_STUDY_ID);
         assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);
         
-        verify(mockActivityEventService).publishCustomEvent(app, HEALTH_CODE,
-                "eventKey", CREATED_ON, TEST_STUDY_ID);
+        verify(mockActivityEventService).publishCustomEvent(app, TEST_STUDY_ID,
+                HEALTH_CODE, "eventKey", CREATED_ON);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 

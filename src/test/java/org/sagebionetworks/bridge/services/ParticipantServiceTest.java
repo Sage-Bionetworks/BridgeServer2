@@ -2430,7 +2430,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
         
-        verify(activityEventService).publishCustomEvent(APP, HEALTH_CODE, "anEvent", TIMESTAMP, null);
+        verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
     }
     
     @Test
@@ -2444,7 +2444,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
         
-        verify(activityEventService).publishCustomEvent(APP, HEALTH_CODE, "anEvent", TIMESTAMP, null);
+        verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 

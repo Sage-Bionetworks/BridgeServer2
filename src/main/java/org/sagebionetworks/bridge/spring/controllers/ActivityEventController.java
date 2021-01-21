@@ -41,8 +41,8 @@ public class ActivityEventController extends BaseController {
         CustomActivityEventRequest activityEvent = parseJson(CustomActivityEventRequest.class);
 
         App app = appService.getApp(session.getAppId());
-        activityEventService.publishCustomEvent(app, session.getHealthCode(),
-                activityEvent.getEventKey(), activityEvent.getTimestamp(), null);
+        activityEventService.publishCustomEvent(app, null,
+                session.getHealthCode(), activityEvent.getEventKey(), activityEvent.getTimestamp());
         
         return new StatusMessage("Event recorded");
     }

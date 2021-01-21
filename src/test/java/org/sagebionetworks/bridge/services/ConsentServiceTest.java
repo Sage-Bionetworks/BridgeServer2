@@ -240,8 +240,8 @@ public class ConsentServiceTest extends Mockito {
         assertNull(updatedConsentList.get(1).getWithdrewOn());
 
         // Consent we send to activityEventService is same as the second consent.
-        verify(activityEventService).publishEnrollmentEvent(app, PARTICIPANT.getHealthCode(),
-                updatedConsentList.get(1), TEST_STUDY_ID);
+        verify(activityEventService).publishEnrollmentEvent(app, TEST_STUDY_ID,
+                PARTICIPANT.getHealthCode(), updatedConsentList.get(1));
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
 

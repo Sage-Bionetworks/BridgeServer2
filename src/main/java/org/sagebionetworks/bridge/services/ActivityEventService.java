@@ -34,24 +34,20 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
 /**
- * Study participation is scheduled for each participant relative to their entrance 
- * into a study (since different participants start at different times). To manage 
- * these relative schedules, each individual is given scheduled activities or a 
- * timeline of sessions to perform that are triggered based on activity events 
- * for that user. Events are a DateTime instance mapped to a string key identifier.
+ * Scheduling is calculated relative to each user’s participation in a study, 
+ * which is recorded through activity events.
  * 
- * With the introduction of multi-study apps, events can be created and retrieved 
- * as global (app-scoped) or study-scoped events. The configuration of custom events 
- * still occurs through metadata at the app level on the App object instance. 
+ * Prior to multi-study apps, these events were global to an app. With the introduction
+ * of multiple studies, these events are now specific to a study. Custom event 
+ * definition is currently still at the app-level and not under the control of study 
+ * designers.
  * 
- * For backwards compatability, study-scoped `enrollment`, `activities_retrieved`, 
- * and `created_on` events will also create global equivalents (but these global 
- * events do not create study-specific variants). Since these are immutable, the 
- * first study to set a value will define the value for later studies as well. 
- * However, the global events should be retired in favor of the events retrieved 
- * through study-specific APIs (client apps should not mix-and-match the two APIs),
- * or we can expect scheduling between studies to work incorrectly.
- *
+ * For backwards compatibility, study-scoped `enrollment`, `activities_retrieved`, 
+ * and `created_on` events will also create global equivalents (global events do not 
+ * create study-specific variants). Since these are immutable, the first study to set 
+ * a value will define the value for later studies as well. However, the global events 
+ * should be retired in favor of the events retrieved through study-specific APIs (the
+ * v2 scheduler will only use study-scoped events).
  */
 @Component
 public class ActivityEventService {
@@ -80,7 +76,7 @@ public class ActivityEventService {
      * (eg, event key "studyBurstStart" becomes event ID "custom:studyBurstStart"). Also note that the event key must
      * defined in the app (either in activityEventKeys or in AutomaticCustomEvents).
      */
-    public void publishCustomEvent(App app, String healthCode, String eventKey, DateTime timestamp, String studyId) {
+    public void publishCustomEvent(App app, String studyId, String healthCode, String eventKey, DateTime timestamp) {
         checkNotNull(healthCode);
         checkNotNull(eventKey);
 
@@ -98,7 +94,7 @@ public class ActivityEventService {
         
         if (activityEventDao.publishEvent(event)) {
             // Create automatic events, as defined in the app
-            createAutomaticCustomEvents(app, healthCode, event, studyId);
+            createAutomaticCustomEvents(app, studyId, healthCode, event);
         }
     }
 
@@ -106,7 +102,7 @@ public class ActivityEventService {
      * Publishes the enrollment event for a user, as well as all of the automatic custom events that trigger on
      * enrollment time.
      */
-    public void publishEnrollmentEvent(App app, String healthCode, ConsentSignature signature, String studyId) {
+    public void publishEnrollmentEvent(App app, String studyId, String healthCode, ConsentSignature signature) {
         checkNotNull(signature);
 
         // Create enrollment event. Use UTC for the timezone. DateTimes are used for period calculations, but since we
@@ -119,7 +115,7 @@ public class ActivityEventService {
         
         if (activityEventDao.publishEvent(globalEvent)) {
             // Create automatic events, as defined in the app
-            createAutomaticCustomEvents(app, healthCode, globalEvent, null);
+            createAutomaticCustomEvents(app, null, healthCode, globalEvent);
         }
         if (studyId != null) {
             ActivityEvent studyEvent = new DynamoActivityEvent.Builder()
@@ -128,12 +124,12 @@ public class ActivityEventService {
                     .withObjectType(ENROLLMENT)
                     .withStudyId(studyId).build();
             if (activityEventDao.publishEvent(studyEvent)) {
-                createAutomaticCustomEvents(app, healthCode, studyEvent, studyId);
+                createAutomaticCustomEvents(app, studyId, healthCode, studyEvent);
             }
         }
     }
     
-    public void publishActivitiesRetrieved(App app, String healthCode, DateTime timestamp, String studyId) {
+    public void publishActivitiesRetrieved(App app, String studyId, String healthCode, DateTime timestamp) {
         checkNotNull(healthCode);
         checkNotNull(timestamp);
         
@@ -144,7 +140,7 @@ public class ActivityEventService {
         
         if (activityEventDao.publishEvent(globalEvent)) {
             // Create automatic events, as defined in the app
-            createAutomaticCustomEvents(app, healthCode, globalEvent, null);
+            createAutomaticCustomEvents(app, null, healthCode, globalEvent);
         }
         if (studyId != null) {
             ActivityEvent studyEvent = new DynamoActivityEvent.Builder()
@@ -154,7 +150,7 @@ public class ActivityEventService {
                     .withStudyId(studyId).build();
             if (activityEventDao.publishEvent(studyEvent)) {
                 // Create automatic events, as defined in the app
-                createAutomaticCustomEvents(app, healthCode, studyEvent, studyId);
+                createAutomaticCustomEvents(app, studyId, healthCode, studyEvent);
             }
         }
     }
@@ -201,7 +197,11 @@ public class ActivityEventService {
         }
     }
     
-    public void publishCreatedOnEvent(String healthCode, DateTime createdOn, String studyId) {
+    /**
+     * Publishes a created_on event for a user that essentially copies over the createdOn 
+     * timestamp of an Account.
+     */
+    public void publishCreatedOnEvent(String studyId, String healthCode, DateTime createdOn) {
         checkNotNull(healthCode);
         
         ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
@@ -236,7 +236,7 @@ public class ActivityEventService {
             App app = appService.getApp(appId);
             StudyParticipant studyParticipant = participantService.getParticipant(app, "healthcode:"+healthCode, false);
             createdOn = studyParticipant.getCreatedOn();
-            publishCreatedOnEvent(healthCode, createdOn, studyId);
+            publishCreatedOnEvent(studyId, healthCode, createdOn);
             builder.put(CREATED_ON.name().toLowerCase(), createdOn);
         }
         DateTime studyStartDate = createdOn;
@@ -269,12 +269,12 @@ public class ActivityEventService {
         return activityEventList;
     }
     
-    public void deleteActivityEvents(String healthCode, String studyId) {
+    public void deleteActivityEvents(String studyId, String healthCode) {
         checkNotNull(healthCode);
         activityEventDao.deleteActivityEvents(healthCode, studyId);
     }
 
-    private void createAutomaticCustomEvents(App app, String healthCode, ActivityEvent event, String studyId) {
+    private void createAutomaticCustomEvents(App app, String studyId, String healthCode, ActivityEvent event) {
         for (Map.Entry<String, String> oneAutomaticEvent : app.getAutomaticCustomEvents().entrySet()) {
             String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
             Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(oneAutomaticEvent.getValue()); // originEventId:Period
