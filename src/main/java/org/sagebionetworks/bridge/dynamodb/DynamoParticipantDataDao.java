@@ -77,8 +77,8 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
 
     //TODO: is there a way to do this in the function above and make the configId optional?
     @Override
-    public ParticipantData getParticipantDataRecordV4(final String userId, final String configId,
-                                                                                      final String offsetKey, final int pageSize) {
+    public ParticipantData getParticipantDataRecordV4(final String userId, final String configId, final String offsetKey,
+                                                      final int pageSize) {
         checkNotNull(userId);
         checkNotNull(configId);
 
@@ -87,14 +87,7 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
         hashKey.setUserId(userId);
         hashKey.setConfigId(configId);
 
-        Condition rangeKeyCondition = new Condition().withAttributeValueList(new AttributeValue().withS(configId));
-
-        DynamoDBQueryExpression<DynamoParticipantData> query = new DynamoDBQueryExpression<DynamoParticipantData>()
-                .withHashKeyValues(hashKey)
-                .withRangeKeyCondition("configId", rangeKeyCondition)
-                .withLimit(pageSizeWithIndicatorRecord);
-
-        return mapper.load(DynamoParticipantData.class, query);
+        return mapper.load(hashKey);
     }
 
     @Override

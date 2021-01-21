@@ -50,9 +50,15 @@ public class ParticipantDataService {
         return participantDataDao.getParticipantDataRecordV4(userId, configId, offsetKey, pageSize);
     }
 
-    public void saveParticipantData(ParticipantData data) {
-        checkNotNull(data);
-        participantDataDao.saveParticipantData(data);
+    public void saveParticipantData(String userId, String configId, ParticipantData participantData) {
+        checkNotNull(participantData);
+
+        participantData.setUserId(userId);
+        participantData.setData(configId);
+
+        //TODO: do I need a ParticipantDataValidator? I think so..
+
+        participantDataDao.saveParticipantData(participantData);
     }
 
     public void deleteParticipantData(String userId) { //TODO: why isn't there a checkNotNull() in the ReportService code?
