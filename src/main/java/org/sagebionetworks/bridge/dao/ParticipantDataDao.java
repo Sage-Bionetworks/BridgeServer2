@@ -7,20 +7,20 @@ public interface ParticipantDataDao {
 
     /**
      *
-     * @param userId
+     * @param healthCode
      * @param offsetKey
      * @param pageSize
      * @return
      */
-    public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String userId, String offsetKey, int pageSize);
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String healthCode, String offsetKey, int pageSize);
 
     /**
-     * Get participant data record for the given userId and configId
-     * @param userId
-     * @param configId
+     * Get participant data record for the given healthCode and identifier
+     * @param healthCode
+     * @param identifier
      * @return
      */
-    ParticipantData getParticipantDataRecord(String userId, String configId);
+    ParticipantData getParticipantDataRecord(String healthCode, String identifier);
 
     /**
      * Writes a participant data to the backing store.
@@ -30,16 +30,16 @@ public interface ParticipantDataDao {
 
     /**
      * Delete all records
-     * @param userId
-     *          userId to delete
+     * @param healthCode
+     *          healthCode to delete
      */
-    void deleteAllParticipantData(String userId);
+    void deleteAllParticipantData(String healthCode);
 
     /**
      * Delete a single participant data record.
-     * @param userId
-     * @param configId
+     * @param healthCode
+     * @param identifier
      */
-    void deleteParticipantData(String userId, String configId);
+    void deleteParticipantData(String healthCode, String identifier);
 }
 //TODO: finish javadoc

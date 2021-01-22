@@ -18,9 +18,6 @@ public class DynamoParticipantData implements ParticipantData {
     private JsonNode data;
     private Long version;
 
-    //TODO: figure out which methods require a @JsonIgnore annotation
-    //TODO: figure out which methods require a @DynamoDBIgnore annotation
-
     @JsonIgnore
     @DynamoDBHashKey
     @Override
@@ -84,8 +81,8 @@ public class DynamoParticipantData implements ParticipantData {
     @Override
     public String toString() {
         return "DynamoParticipantData{" +
-                "userId='" + healthCode +
-                ", configId='" + identifier +
+                "healthCode='" + healthCode +
+                ", identifier='" + identifier +
                 ", data='" + data +
                 ", version=" + version +
                 '}';

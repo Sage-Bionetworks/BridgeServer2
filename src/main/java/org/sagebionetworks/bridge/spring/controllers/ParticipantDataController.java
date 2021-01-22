@@ -52,7 +52,7 @@ public class ParticipantDataController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         ParticipantData participantData = parseJson(ParticipantData.class);
-        participantData.setHealthCode(null); // TODO: ask about "set in service, but just so no future use depends on it", ParticipantReportController: line 97
+        participantData.setHealthCode(null); // set in service, but just so non future use depends on it
 
         participantDataService.saveParticipantData(session.getId(), identifier, participantData);
 

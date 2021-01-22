@@ -33,7 +33,7 @@ public class ParticipantDataService {
      * Return a set of participant data records.
      */
     public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String healthCode, String offsetKey, int pageSize) {
-
+                                                                                    // TODO what actually is offsetKey?
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
@@ -41,7 +41,7 @@ public class ParticipantDataService {
     }
 
     /**
-     * Return a participant data record based on the given configId.
+     * Return a participant data record based on the given identifier.
      */
     public ParticipantData getParticipantDataRecord(String healthCode, String identifier) {
         return participantDataDao.getParticipantDataRecord(healthCode, identifier);
@@ -53,8 +53,6 @@ public class ParticipantDataService {
         participantData.setHealthCode(healthCode);
         participantData.setIdentifier(identifier);
 
-        //TODO: do I need a ParticipantDataValidator? I think so..
-
         participantDataDao.saveParticipantData(participantData);
     }
 
@@ -65,6 +63,4 @@ public class ParticipantDataService {
     public void deleteParticipantDataRecord(String healthCode, String identifier) {
         participantDataDao.deleteParticipantData(healthCode, identifier);
     }
-
-    //TODO: do we need a dedicated update function?
 }

@@ -1,5 +1,4 @@
 package org.sagebionetworks.bridge.models;
-// TODO: check if we need to refactor this into /models/reports/
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
