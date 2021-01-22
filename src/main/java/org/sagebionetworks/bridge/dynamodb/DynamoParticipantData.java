@@ -1,9 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.*;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.sagebionetworks.bridge.models.ParticipantData;
 
 import java.util.Objects;
@@ -14,9 +13,9 @@ import java.util.Objects;
 @DynamoDBTable(tableName = "ParticipantData")
 public class DynamoParticipantData implements ParticipantData {
 
-    private String userId;
-    private String configId;
-    private String data;
+    private String healthCode;
+    private String identifier;
+    private JsonNode data;
     private Long version;
 
     //TODO: figure out which methods require a @JsonIgnore annotation
@@ -25,37 +24,40 @@ public class DynamoParticipantData implements ParticipantData {
     @JsonIgnore
     @DynamoDBHashKey
     @Override
-    public String getUserId () {
-        return this.userId;
+    public String getHealthCode() {
+        return this.healthCode;
     }
 
     @Override
-    public void setUserId(String userId) {
-        this.userId = userId;
+    public void setHealthCode(String healthCode) {
+        this.healthCode = healthCode;
     }
 
     @DynamoDBRangeKey
     @Override
-    public String getConfigId() {
-        return this.configId;
+    public String getIdentifier() {
+        return this.identifier;
     }
 
     @Override
-    public void setConfigId(String configId) {
-        this.configId = configId;
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
     }
 
     @Override
-    public String getData() {
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    //TODO is this a @DynamoDBAttribute?
+    public JsonNode getData() {
         return this.data;
     }
 
     @Override
-    public void setData(String data) {
+    public void setData(JsonNode data) {
         this.data = data;
     }
 
     @Override
+    @DynamoDBVersionAttribute
     public Long getVersion() {
         return this.version;
     }
@@ -70,24 +72,22 @@ public class DynamoParticipantData implements ParticipantData {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DynamoParticipantData that = (DynamoParticipantData) o;
-        return Objects.equals(userId, that.userId) && Objects.equals(configId, that.configId) &&
+        return Objects.equals(healthCode, that.healthCode) && Objects.equals(identifier, that.identifier) &&
                 Objects.equals(data, that.data) && Objects.equals(version, that.version);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(userId, configId, data, version);
+        return Objects.hash(healthCode, identifier, data, version);
     }
 
     @Override
     public String toString() {
         return "DynamoParticipantData{" +
-                "userId='" + userId +
-                ", configId='" + configId +
+                "userId='" + healthCode +
+                ", configId='" + identifier +
                 ", data='" + data +
                 ", version=" + version +
                 '}';
     }
-
-    //TODO: organize imports once more finalized
 }

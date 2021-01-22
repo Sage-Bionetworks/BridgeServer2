@@ -5,7 +5,6 @@ import org.sagebionetworks.bridge.dao.ParticipantDataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
-import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -22,54 +21,50 @@ public class ParticipantDataService {
         this.participantDataDao = participantDataDao;
     }
 
-    /**
-     * Return a set of participant data records.
-     */
-    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId,
-                                                                                        String offsetKey, int pageSize) {
-        return participantDataDao.getParticipantData(userId, offsetKey, pageSize);
-    }
+//    /**
+//     * Return a set of participant data records.
+//     */
+//    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId,
+//                                                                                        String offsetKey, int pageSize) {
+//        return participantDataDao.getParticipantData(userId, offsetKey, pageSize);
+//    }
 
     /**
      * Return a set of participant data records.
      */
-    public ForwardCursorPagedResourceList<ParticipantData> getParticipantDataV4(final String userId, final String offsetKey,
-                                                                                final int pageSize) {
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String healthCode, String offsetKey, int pageSize) {
 
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
-        return participantDataDao.getParticipantDataV4(userId, offsetKey, pageSize);
+        return participantDataDao.getParticipantData(healthCode, offsetKey, pageSize);
     }
 
     /**
      * Return a participant data record based on the given configId.
      */
-    public ParticipantData getParticipantDataRecordV4(final String userId,
-        final String configId, final String offsetKey, final int pageSize) {
-        return participantDataDao.getParticipantDataRecordV4(userId, configId, offsetKey, pageSize);
+    public ParticipantData getParticipantDataRecord(String healthCode, String identifier) {
+        return participantDataDao.getParticipantDataRecord(healthCode, identifier);
     }
 
-    public void saveParticipantData(String userId, String configId, ParticipantData participantData) {
+    public void saveParticipantData(String healthCode, String identifier, ParticipantData participantData) {
         checkNotNull(participantData);
 
-        participantData.setUserId(userId);
-        participantData.setData(configId);
+        participantData.setHealthCode(healthCode);
+        participantData.setIdentifier(identifier);
 
         //TODO: do I need a ParticipantDataValidator? I think so..
 
         participantDataDao.saveParticipantData(participantData);
     }
 
-    public void deleteParticipantData(String userId) { //TODO: why isn't there a checkNotNull() in the ReportService code?
-        participantDataDao.deleteParticipantData(userId);
+    public void deleteParticipantData(String healthCode) { //TODO: why isn't there a checkNotNull() in the ReportService code?
+        participantDataDao.deleteAllParticipantData(healthCode);
     }
 
-    public void deleteParticipantDataRecord(String userId, String configId) {
-        participantDataDao.deleteParticipantDataRecord(userId, configId);
+    public void deleteParticipantDataRecord(String healthCode, String identifier) {
+        participantDataDao.deleteParticipantData(healthCode, identifier);
     }
 
     //TODO: do we need a dedicated update function?
-
-    //TODO: organize imports once more finalized
 }

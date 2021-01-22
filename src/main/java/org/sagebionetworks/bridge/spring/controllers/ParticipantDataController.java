@@ -1,18 +1,14 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoParticipantData;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
-import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.ParticipantDataService;
-import org.sagebionetworks.bridge.services.ReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -30,41 +26,38 @@ public class ParticipantDataController extends BaseController {
         this.participantDataService = participantDataService;
     }
 
-    @GetMapping("/v4/users/self/configs")
+    @GetMapping("/v3/users/self/configs")
     public ForwardCursorPagedResourceList<String> getAllDataForUser(@RequestParam(required = false) String offsetKey,
                                                                     @RequestParam(required = false) String pageSize) {
-        UserSession session = getAuthenticatedSession();
+        UserSession session = getAuthenticatedAndConsentedSession();
 
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         ForwardCursorPagedResourceList<ParticipantData> participantData = participantDataService
-                .getParticipantDataV4(session.getId(), offsetKey, pageSizeInt);
-        List<String> configIds = participantData.getItems().stream().map(ParticipantData::getConfigId).collect(Collectors.toList());
+                .getParticipantData(session.getId(), offsetKey, pageSizeInt);
+        List<String> identifiers = participantData.getItems().stream().map(ParticipantData::getIdentifier).collect(Collectors.toList());
 
-        return new ForwardCursorPagedResourceList<String>(configIds, participantData.getNextPageOffsetKey());
+        return new ForwardCursorPagedResourceList<String>(identifiers, participantData.getNextPageOffsetKey());
     }
 
     @GetMapping("/v4/users/self/configs/{identifier}")
-    public ParticipantData getDataByIdentifier(@PathVariable String identifier, @RequestParam(required = false) String offsetKey,
-                                               @RequestParam(required = false) String pageSize) {
-        UserSession session = getAuthenticatedSession();
+    public ParticipantData getDataByIdentifier(@PathVariable String identifier) {
+        UserSession session = getAuthenticatedAndConsentedSession();
 
-        int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
-        return participantDataService.getParticipantDataRecordV4(session.getId(), identifier, offsetKey, pageSizeInt);
+        return participantDataService.getParticipantDataRecord(session.getId(), identifier);
     }
 
     @PostMapping("/v4/users/self/configs/{identifier}")
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveParticipantDataRecordForSelf(@PathVariable String identifier) {
         UserSession session = getAuthenticatedAndConsentedSession();
-        //TODO: using authenticated AND consented session bc we don't want the user to write any data unless they're consented right?
 
         ParticipantData participantData = parseJson(ParticipantData.class);
-        participantData.setUserId(null); // TODO: ask about "set in service, but just so no future use depends on it", ParticipantReportController: line 97
+        participantData.setHealthCode(null); // TODO: ask about "set in service, but just so no future use depends on it", ParticipantReportController: line 97
 
         participantDataService.saveParticipantData(session.getId(), identifier, participantData);
 
         return new StatusMessage("Participant data saved.");
     }
 
-    //TODO: organize imports once more finalized
+    //@DeleteMapping("/v4/users/self/configs/{identifier}")
 }
