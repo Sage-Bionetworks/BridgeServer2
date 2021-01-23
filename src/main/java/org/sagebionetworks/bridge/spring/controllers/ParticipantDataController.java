@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -44,6 +45,7 @@ public class ParticipantDataController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         return participantDataService.getParticipantDataRecord(session.getId(), identifier);
+        // TODO now is it session.getHealthCode()?
     }
 
     @PostMapping("/v4/users/self/configs/{identifier}")
@@ -55,9 +57,20 @@ public class ParticipantDataController extends BaseController {
         participantData.setHealthCode(null); // set in service, but just so non future use depends on it
 
         participantDataService.saveParticipantData(session.getId(), identifier, participantData);
-
+        // TODO now is it session.getHealthCode()?
         return new StatusMessage("Participant data saved.");
     }
 
-    //@DeleteMapping("/v4/users/self/configs/{identifier}")
+    @DeleteMapping("/v4/users/self/configs/{identifier}")
+    public StatusMessage deleteParticipantDataByIdentifier(@PathVariable String identifier) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+
+        ParticipantData participantData = participantDataService.getParticipantDataRecord(session.getHealthCode(), identifier);
+        if (participantData == null) {
+            throw new EntityNotFoundException(ParticipantData.class);
+        }
+        participantDataService.deleteParticipantDataRecord(session.getHealthCode(), identifier);
+
+        return new StatusMessage("Participant data record deleted.");
+    }
 }
