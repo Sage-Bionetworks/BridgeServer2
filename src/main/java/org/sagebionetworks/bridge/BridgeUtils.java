@@ -190,7 +190,8 @@ public class BridgeUtils {
     
     /**
      * Callers only see the enrollment records they themselves are assigned to, unless they have no
-     * study memberships (then they are global and see everything).
+     * study memberships (then they are global and see everything). This call shows active enrollments
+     * only. 
      */
     public static StudyAssociations studyAssociationsVisibleToCaller(Account account) {
         if (account == null || account.getActiveEnrollments().isEmpty()) {
@@ -238,21 +239,21 @@ public class BridgeUtils {
         return Integer.toString(seconds) + " seconds";
     }
     
-    public static AccountId parseAccountId(String appId, String identifier) {
+    public static AccountId parseAccountId(String appId, String userIdToken) {
         checkNotNull(appId);
-        checkNotNull(identifier);
+        checkNotNull(userIdToken);
         
-        String id = identifier.toLowerCase();
+        String id = userIdToken.toLowerCase();
         if (id.startsWith("externalid:")) {
-            return AccountId.forExternalId(appId, identifier.substring(11));
+            return AccountId.forExternalId(appId, userIdToken.substring(11));
         } else if (id.startsWith("healthcode:")) {
-            return AccountId.forHealthCode(appId, identifier.substring(11));
+            return AccountId.forHealthCode(appId, userIdToken.substring(11));
         } else if (id.startsWith("synapseuserid:")) {
-            return AccountId.forSynapseUserId(appId, identifier.substring(14));
+            return AccountId.forSynapseUserId(appId, userIdToken.substring(14));
         } else if (id.startsWith("syn:")) {
-            return AccountId.forSynapseUserId(appId, identifier.substring(4));
+            return AccountId.forSynapseUserId(appId, userIdToken.substring(4));
         }
-        return AccountId.forId(appId, identifier);
+        return AccountId.forId(appId, userIdToken);
     }
     
     /**

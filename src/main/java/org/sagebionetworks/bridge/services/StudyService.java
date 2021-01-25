@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toSet;
-import static org.sagebionetworks.bridge.AuthUtils.IS_STUDY_SCOPED_ADMIN;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_ORG_SPONSORED_STUDIES;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -35,9 +35,16 @@ public class StudyService {
     
     private StudyDao studyDao;
     
+    private SponsorService sponsorService;
+    
     @Autowired
     final void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
+    }
+    
+    @Autowired
+    final void setSponsorService(SponsorService sponsorService) {
+        this.sponsorService = sponsorService;
     }
     
     public Study getStudy(String appId, String studyId, boolean throwsException) {
@@ -82,7 +89,7 @@ public class StudyService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         Set<String> studies = null;
-        if (scopeStudies && IS_STUDY_SCOPED_ADMIN.check()) {
+        if (scopeStudies && CAN_READ_ORG_SPONSORED_STUDIES.check()) {
             studies = RequestContext.get().getOrgSponsoredStudies();
         }
         return studyDao.getStudies(appId, studies, offsetBy, pageSize, includeDeleted)
@@ -91,7 +98,7 @@ public class StudyService {
                 .withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
     
-    public VersionHolder createStudy(String appId, Study study) {
+    public VersionHolder createStudy(String appId, Study study, boolean setStudySponsor) {
         checkNotNull(appId);
         checkNotNull(study);
         
@@ -108,7 +115,16 @@ public class StudyService {
         if (existing != null) {
             throw new EntityAlreadyExistsException(Study.class, ImmutableMap.of("id", existing.getIdentifier()));
         }
-        return studyDao.createStudy(study);
+        VersionHolder version = studyDao.createStudy(study);
+        // You cannot do this when creating an app because it will fail: the caller's organization will not 
+        // yet exist. After initial app creation when accounts are established in the app, it should be 
+        // possible to create studies that are associated to the caller's organization (so the caller can 
+        // access the study!).
+        String orgId = RequestContext.get().getCallerOrgMembership();
+        if (setStudySponsor && orgId != null) {
+            sponsorService.addStudySponsor(appId, study.getIdentifier(), orgId);    
+        }
+        return version;
     }
 
     public VersionHolder updateStudy(String appId, Study study) {

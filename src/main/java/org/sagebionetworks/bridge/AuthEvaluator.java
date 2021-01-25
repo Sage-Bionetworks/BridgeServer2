@@ -109,14 +109,17 @@ public class AuthEvaluator {
     public AuthEvaluator isSharedOwner() {
         predicates.add((factMap) -> {
             String ownerId = factMap.get(OWNER_ID);
+            if (ownerId == null) {
+                return false;
+            }
             String[] parts = ownerId.split(":", 2);
             if (parts.length != 2) {
                 return false;
             }
             String appId = parts[0];
             String orgId = parts[1];
-            return appId != null && appId.equals(RequestContext.get().getCallerAppId()) &&
-                orgId != null && orgId.equals(RequestContext.get().getCallerOrgMembership());
+            return appId.equals(RequestContext.get().getCallerAppId()) &&
+                orgId.equals(RequestContext.get().getCallerOrgMembership());
         });
         return this;
     }

@@ -1550,10 +1550,10 @@ public class ParticipantControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(false, RESEARCHER);
         
         List<EnrollmentDetail> list = ImmutableList.of();
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID)).thenReturn(list);
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, null, TEST_USER_ID)).thenReturn(list);
         
-        List<EnrollmentDetail> retValue = controller.getEnrollments(TEST_USER_ID);
-        assertSame(retValue, list);
+        PagedResourceList<EnrollmentDetail> retValue = controller.getEnrollments(TEST_USER_ID);
+        assertSame(retValue.getItems(), list);
     }
     
     @Test

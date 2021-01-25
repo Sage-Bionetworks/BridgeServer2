@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -48,6 +49,7 @@ public class AccountSummarySearchTest {
                 .withStartTime(startTime)
                 .withEndTime(endTime)
                 .withOrgMembership(TEST_ORG_ID)
+                .withEnrolledInStudyId(TEST_STUDY_ID)
                 .build();
         
         ObjectMapper mapper = BridgeObjectMapper.get();
@@ -74,8 +76,11 @@ public class AccountSummarySearchTest {
             .withLanguage("en")
             .withStartTime(startTime)
             .withEndTime(endTime)
+            // These three flags are not all set at the same time when in use
+            // but they can all be tested for serialization at one time.
             .withOrgMembership(TEST_ORG_ID)
-            .withAdminOnly(true).build();
+            .withAdminOnly(true)
+            .withEnrolledInStudyId(TEST_STUDY_ID).build();
         
         String json = BridgeObjectMapper.get().writeValueAsString(search);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -96,6 +101,7 @@ public class AccountSummarySearchTest {
         assertEquals(deser.getEndTime(), endTime);
         assertEquals(deser.getOrgMembership(), TEST_ORG_ID);
         assertTrue(deser.isAdminOnly());
+        assertEquals(deser.getEnrolledInStudyId(), TEST_STUDY_ID);
     }
     
     @Test
@@ -114,7 +120,8 @@ public class AccountSummarySearchTest {
             .withStartTime(startTime)
             .withEndTime(endTime)
             .withAdminOnly(false)
-            .withOrgMembership(TEST_ORG_ID).build();
+            .withOrgMembership(TEST_ORG_ID)
+            .withEnrolledInStudyId(TEST_STUDY_ID).build();
 
         AccountSummarySearch copy = new AccountSummarySearch.Builder().copyOf(search).build();
         assertEquals(copy.getOffsetBy(), 10);
@@ -128,6 +135,7 @@ public class AccountSummarySearchTest {
         assertEquals(copy.getEndTime(), endTime);
         assertEquals(copy.getOrgMembership(), TEST_ORG_ID);
         assertEquals(copy.isAdminOnly(), Boolean.FALSE);
+        assertEquals(copy.getEnrolledInStudyId(), TEST_STUDY_ID);
     }
     
     @Test

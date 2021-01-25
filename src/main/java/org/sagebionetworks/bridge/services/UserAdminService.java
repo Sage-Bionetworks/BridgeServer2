@@ -120,10 +120,15 @@ public class UserAdminService {
         checkNotNull(app, "App cannot be null");
         checkNotNull(participant, "Participant cannot be null");
         
-        // Validate app + email or phone. This is the minimum we need to create a functional account.
-        SignIn signIn = new SignIn.Builder().withAppId(app.getIdentifier()).withEmail(participant.getEmail())
-                .withPhone(participant.getPhone()).withPassword(participant.getPassword()).build();
-        Validate.entityThrowingException(SignInValidator.MINIMAL, signIn);
+        // Validate app + email or phone or external ID. This is the minimum we need to create a functional account.
+        // Note that some tests add email/phone and external ID which we need to catch for sign in (where only one
+        // credential is allowed).
+        SignIn.Builder signInBuilder = new SignIn.Builder().withAppId(app.getIdentifier()).withEmail(participant.getEmail())
+                .withPhone(participant.getPhone()).withPassword(participant.getPassword());
+        if (participant.getEmail() == null && participant.getPhone() == null) {
+            signInBuilder.withExternalId(participant.getExternalId());
+        }
+        Validate.entityThrowingException(SignInValidator.MINIMAL, signInBuilder.build());
         
         IdentifierHolder identifier = null;
         try {
@@ -156,7 +161,7 @@ public class UserAdminService {
                 // We do ignore consent state here as our intention may be to create a user who is signed in but not
                 // consented.
                 try {
-                    return authenticationService.signIn(app, context, signIn);    
+                    return authenticationService.signIn(app, context, signInBuilder.build());    
                 } catch(ConsentRequiredException e) {
                     return e.getUserSession();
                 }
