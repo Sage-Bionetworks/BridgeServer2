@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -28,19 +29,23 @@ public class HibernateStudyDao implements StudyDao {
     }
 
     @Override
-    public PagedResourceList<Study> getStudies(String appId, Integer offsetBy, Integer pageSize,
-            boolean includeDeleted) {
+    public PagedResourceList<Study> getStudies(String appId, Set<String> studyIds, 
+            Integer offsetBy, Integer pageSize, boolean includeDeleted) {
         checkNotNull(appId);
         
-        Map<String,Object> parameters = ImmutableMap.of("appId", appId);
-        String query = "from HibernateStudy as study where appId=:appId";
-        if (!includeDeleted) {
-            query += " and deleted != 1";
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("from HibernateStudy as study where appId = :appId", "appId", appId);
+        if (studyIds != null && !studyIds.isEmpty()) {
+            builder.append("and identifier in (:studies)", "studies", studyIds);
         }
-        int total = hibernateHelper.queryCount("select count(*) " + query, parameters);
-
-        List<HibernateStudy> hibStudies = hibernateHelper.queryGet(query, parameters, 
-                offsetBy, pageSize, HibernateStudy.class);
+        if (!includeDeleted) {
+            builder.append("and deleted != 1");
+        }
+        int total = hibernateHelper.queryCount("select count(*) " + 
+                builder.getQuery(), builder.getParameters());
+        
+        List<HibernateStudy> hibStudies = hibernateHelper.queryGet(builder.getQuery(), 
+                builder.getParameters(), offsetBy, pageSize, HibernateStudy.class);
         List<Study> studies = ImmutableList.copyOf(hibStudies);
         
         return new PagedResourceList<>(studies, total);
@@ -85,7 +90,7 @@ public class HibernateStudyDao implements StudyDao {
         checkNotNull(appId);
 
         Map<String,Object> parameters = ImmutableMap.of("appId", appId);
-        String query = "delete from HibernateStudy where appId=:appId";
+        String query = "delete from HibernateStudy where appId = :appId";
 
         hibernateHelper.queryUpdate(query, parameters);
     }
