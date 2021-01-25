@@ -371,7 +371,7 @@ public class ParticipantService {
     public DateTime getStudyStartTime(AccountId accountId) {
         Account account = getAccountThrowingException(accountId);
 
-        Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getAppId(), account.getHealthCode());
+        Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getAppId(), null, account.getHealthCode());
         DateTime activitiesRetrievedDateTime = activityMap.get(ACTIVITIES_RETRIEVED.name().toLowerCase());
         if (activitiesRetrievedDateTime != null) {
             return activitiesRetrievedDateTime;
@@ -583,8 +583,8 @@ public class ParticipantService {
         
         Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
-        activityEventService.publishCustomEvent(app, account.getHealthCode(),
-                request.getEventKey(), request.getTimestamp());
+        activityEventService.publishCustomEvent(app, null,
+                account.getHealthCode(), request.getEventKey(), request.getTimestamp());
     }
     
     public void requestResetPassword(App app, String userId) {
@@ -766,10 +766,10 @@ public class ParticipantService {
         smsService.sendSmsMessage(userId, builder.build());
     }
     
-    public List<ActivityEvent> getActivityEvents(App app, String userId) {
+    public List<ActivityEvent> getActivityEvents(App app, String studyId, String userId) {
         Account account = getAccountThrowingException(app.getIdentifier(), userId);
         
-        return activityEventService.getActivityEventList(app.getIdentifier(), account.getHealthCode());
+        return activityEventService.getActivityEventList(app.getIdentifier(), studyId, account.getHealthCode());
     }
     
     /**

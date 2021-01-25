@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -51,6 +52,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 
@@ -69,12 +71,15 @@ public class StudyParticipantController extends BaseController {
     static final StatusMessage CONSENT_RESENT_MSG = new StatusMessage("Consent agreement resent to user.");
     static final StatusMessage DELETE_MSG = new StatusMessage("User deleted.");
     static final StatusMessage NOTIFY_SUCCESS_MSG = new StatusMessage("Message has been sent to external notification service.");
+    static final StatusMessage EVENT_RECORDED_MSG = new StatusMessage("Event recorded");
 
     private ParticipantService participantService;
     
     private UserAdminService userAdminService;
     
     private EnrollmentService enrollmentService;
+    
+    private ActivityEventService activityEventService;
     
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
@@ -89,6 +94,11 @@ public class StudyParticipantController extends BaseController {
     @Autowired
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
+    }
+    
+    @Autowired
+    final void setActivityEventService(ActivityEventService activityEventService) {
+        this.activityEventService = activityEventService;
     }
 
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/enrollments")
@@ -136,7 +146,8 @@ public class StudyParticipantController extends BaseController {
         return keys;
     }
 
-    @GetMapping(path="/v5/studies/{studyId}/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v5/studies/{studyId}/participants/{userId}", 
+            produces={APPLICATION_JSON_UTF8_VALUE})
     public String getParticipant(@PathVariable String studyId, @PathVariable String userId,
             @RequestParam(defaultValue = "true") boolean consents) throws Exception {
         UserSession session = getAdministrativeSession();
@@ -340,16 +351,71 @@ public class StudyParticipantController extends BaseController {
         return DELETE_MSG;
     }    
     
-    @GetMapping("/v5/studies/{studyId}/participants/{userId}/activityEvents")
-    public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String studyId, @PathVariable String userId) {
+    @GetMapping(path = {"/v5/studies/{studyId}/participants/{userId}/activityEvents"},
+            produces={APPLICATION_JSON_UTF8_VALUE})
+    public String getActivityEvents(@PathVariable String studyId, @PathVariable String userId) throws JsonProcessingException {
         UserSession session = getAdministrativeSession();
 
         IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
         checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
-        return new ResourceList<>(participantService.getActivityEvents(app, userId));
+        List<ActivityEvent> events = participantService.getActivityEvents(app, studyId, userId);
+        
+        return ActivityEvent.ACTIVITY_EVENT_WRITER
+                .writeValueAsString(new ResourceList<>(events));
     }
+    
+    @PostMapping("/v5/studies/{studyId}/participants/{userId}/activityEvents")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StatusMessage createActivityEvent(@PathVariable String studyId, @PathVariable String userId) {
+        // TODO: Fix permissions with study coordinator stuff before merging
+        UserSession session = getAdministrativeSession();
+        
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        checkAccountInStudy(session.getAppId(), studyId, userId);
+        
+        AccountId accountId = AccountId.forId(session.getAppId(), userId);
+        String healthCode = accountService.getHealthCodeForAccount(accountId);
+        
+        CustomActivityEventRequest event = parseJson(CustomActivityEventRequest.class);
+        
+        App app = appService.getApp(session.getAppId());
+        activityEventService.publishCustomEvent(app, studyId,
+                healthCode, event.getEventKey(), event.getTimestamp());
+        
+        return EVENT_RECORDED_MSG;
+    }
+    
+    @GetMapping(path = {"/v5/studies/{studyId}/participants/self/activityEvents"},
+            produces={APPLICATION_JSON_UTF8_VALUE})
+    public String getSelfActivityEvents(@PathVariable String studyId) throws JsonProcessingException {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        checkAccountInStudy(session.getAppId(), studyId, session.getId());
+        
+        List<ActivityEvent> events = activityEventService.getActivityEventList(
+                session.getAppId(), studyId, session.getHealthCode());
+        
+        return ActivityEvent.ACTIVITY_EVENT_WRITER
+                .writeValueAsString(new ResourceList<>(events));
+    }
+
+    @PostMapping("/v5/studies/{studyId}/participants/self/activityEvents")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StatusMessage createSelfActivityEvent(@PathVariable String studyId) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+
+        checkAccountInStudy(session.getAppId(), studyId, session.getId());
+        
+        CustomActivityEventRequest event = parseJson(CustomActivityEventRequest.class);
+        
+        App app = appService.getApp(session.getAppId());
+        activityEventService.publishCustomEvent(app, studyId,
+                session.getHealthCode(), event.getEventKey(), event.getTimestamp());
+        
+        return EVENT_RECORDED_MSG;
+    }    
     
     /**
      * Verify that the account referenced is enrolled in the target study.

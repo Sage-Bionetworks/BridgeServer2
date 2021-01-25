@@ -1117,7 +1117,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getStudyStartTime_FromActivitiesRetrieved() {
         // Set up mocks.
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase(), ACTIVITIES_RETRIEVED_DATETIME));
 
         // Execute and validate.
@@ -1129,7 +1129,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getStudyStartTime_FromEnrollment() {
         // Set up mocks.
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), ENROLLMENT_DATETIME));
 
         // Execute and validate.
@@ -1142,7 +1142,7 @@ public class ParticipantServiceTest extends Mockito {
         // Set up mocks.
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         account.setCreatedOn(CREATED_ON_DATETIME);
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of());
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of());
 
         // Execute and validate.
         DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
@@ -2255,9 +2255,9 @@ public class ParticipantServiceTest extends Mockito {
     public void getActivityEvents() {
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.getActivityEvents(APP, ID);
+        participantService.getActivityEvents(APP, null, ID);
         
-        verify(activityEventService).getActivityEventList(APP.getIdentifier(), HEALTH_CODE);
+        verify(activityEventService).getActivityEventList(APP.getIdentifier(), null, HEALTH_CODE);
     }
     
     @Test
@@ -2271,11 +2271,11 @@ public class ParticipantServiceTest extends Mockito {
 
         // This directly calls getAccountThrowingException(); it should recognize and
         // handle the healthCode version of an ID.
-        participantService.getActivityEvents(APP, "healthcode:"+HEALTH_CODE);
+        participantService.getActivityEvents(APP, null, "healthcode:"+HEALTH_CODE);
         
         // still works
         verify(accountService).getAccount(accountId);
-        verify(activityEventService).getActivityEventList(APP.getIdentifier(), HEALTH_CODE);
+        verify(activityEventService).getActivityEventList(APP.getIdentifier(), null, HEALTH_CODE);
     }
     
     @Test
@@ -2420,7 +2420,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void createCustomActivityEvent() throws Exception {
+    public void createGlobalCustomActivityEvent() throws Exception {
         CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
                 .withEventKey("anEvent")
                 .withTimestamp(TIMESTAMP).build();
@@ -2430,7 +2430,21 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
         
-        verify(activityEventService).publishCustomEvent(APP, HEALTH_CODE, "anEvent", TIMESTAMP);
+        verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
+    }
+    
+    @Test
+    public void createStudyScopedCustomActivityEvent() throws Exception {
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withEventKey("anEvent")
+                .withTimestamp(TIMESTAMP).build();
+        
+        AccountId accountId = AccountId.forId(APP.getIdentifier(), TEST_USER_ID);
+        when(accountService.getAccount(accountId)).thenReturn(account);
+        
+        participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
+        
+        verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 

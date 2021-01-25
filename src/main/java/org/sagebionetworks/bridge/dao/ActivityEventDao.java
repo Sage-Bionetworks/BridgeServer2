@@ -15,16 +15,20 @@ public interface ActivityEventDao {
     
     /**
      * Get a map of events, where the string key is an event identifier, and the value 
-     * is the timestamp of the event.
+     * is the timestamp of the event. If studyId is null, only events that are not scoped
+     * to a study are returned; if a studyId is provided, only events that are scoped to
+     * that study are provided. 
      * 
      * @see org.sagebionetworks.bridge.models.activities.ActivityEventObjectType
      */
-    Map<String, DateTime> getActivityEventMap(String healthCode);
+    Map<String, DateTime> getActivityEventMap(String healthCode, String studyId);
     
     /**
-     * Delete all activity events for this user. This should only be called when physically 
-     * deleting test users; users in production take too many server resources to completely 
-     * delete this way.
+     * Delete all activity events for this user (if no studyId is provided, delete all the 
+     * app-scoped events, if there is a studyId, delete all the study-scoped events; this 
+     * method will need to be called more than once during test cleanup). This should only 
+     * be called when physically deleting test users; users in production take too many 
+     * server resources to completely delete this way.
      */
-    void deleteActivityEvents(String healthCode);
+    void deleteActivityEvents(String healthCode, String studyId);
 }

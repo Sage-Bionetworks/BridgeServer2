@@ -187,7 +187,7 @@ public class ScheduledActivityService {
         Validate.nonEntityThrowingException(VALIDATOR, context);
 
         String healthCode = context.getCriteriaContext().getHealthCode();
-        activityEventService.publishActivitiesRetrieved(app, healthCode, DateUtils.getCurrentDateTime());
+        activityEventService.publishActivitiesRetrieved(app, null, healthCode, DateUtils.getCurrentDateTime());
         
         // Add events for scheduling
         Map<String, DateTime> events = createEventsMap(context);
@@ -215,7 +215,7 @@ public class ScheduledActivityService {
         Validate.nonEntityThrowingException(VALIDATOR, context);
         
         String healthCode = context.getCriteriaContext().getHealthCode();
-        activityEventService.publishActivitiesRetrieved(app, healthCode, DateUtils.getCurrentDateTime());
+        activityEventService.publishActivitiesRetrieved(app, null, healthCode, DateUtils.getCurrentDateTime());
         
         // Add events for scheduling
         Map<String, DateTime> events = createEventsMap(context);
@@ -393,7 +393,7 @@ public class ScheduledActivityService {
 
     private Map<String, DateTime> createEventsMap(ScheduleContext context) {
         Map<String,DateTime> events = activityEventService.getActivityEventMap(context.getCriteriaContext().getAppId(),
-                context.getCriteriaContext().getHealthCode());
+                null, context.getCriteriaContext().getHealthCode());
         ImmutableMap.Builder<String,DateTime> builder = new ImmutableMap.Builder<String, DateTime>();
         if (!events.containsKey(ENROLLMENT)) {
             builder.put(ENROLLMENT, context.getAccountCreatedOn().withZone(context.getInitialTimeZone()));

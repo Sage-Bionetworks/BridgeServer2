@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
+import com.google.common.collect.Iterables;
 
 @JsonDeserialize(as=DynamoSubpopulation.class)
 public interface Subpopulation extends BridgeEntity, HasCriteria {
@@ -21,6 +22,15 @@ public interface Subpopulation extends BridgeEntity, HasCriteria {
 
     static Subpopulation create() {
         return new DynamoSubpopulation();
+    }
+    
+    /**
+     * Subpopulation validation has been changed so only one studyId can be provided
+     * for enrollment. This is a convenience method to get that one studyId.
+     */
+    default String getStudyId() {
+        Set<String> studyIds = getStudyIdsAssignedOnConsent();
+        return (studyIds == null) ? null : Iterables.getFirst(studyIds, null);
     }
     
     void setAppId(String appId);

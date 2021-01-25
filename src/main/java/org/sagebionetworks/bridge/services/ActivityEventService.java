@@ -2,6 +2,10 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_START_DATE;
 
 import java.util.List;
 import java.util.Map;
@@ -29,6 +33,22 @@ import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
+/**
+ * Scheduling is calculated relative to each user’s participation in a study, 
+ * which is recorded through activity events.
+ * 
+ * Prior to multi-study apps, these events were global to an app. With the introduction
+ * of multiple studies, these events are now specific to a study. Custom event 
+ * definition is currently still at the app-level and not under the control of study 
+ * designers.
+ * 
+ * For backwards compatibility, study-scoped `enrollment`, `activities_retrieved`, 
+ * and `created_on` events will also create global equivalents (global events do not 
+ * create study-specific variants). Since these are immutable, the first study to set 
+ * a value will define the value for later studies as well. However, the global events 
+ * should be retired in favor of the events retrieved through study-specific APIs (the
+ * v2 scheduler will only use study-scoped events).
+ */
 @Component
 public class ActivityEventService {
 
@@ -56,7 +76,7 @@ public class ActivityEventService {
      * (eg, event key "studyBurstStart" becomes event ID "custom:studyBurstStart"). Also note that the event key must
      * defined in the app (either in activityEventKeys or in AutomaticCustomEvents).
      */
-    public void publishCustomEvent(App app, String healthCode, String eventKey, DateTime timestamp) {
+    public void publishCustomEvent(App app, String studyId, String healthCode, String eventKey, DateTime timestamp) {
         checkNotNull(healthCode);
         checkNotNull(eventKey);
 
@@ -69,11 +89,12 @@ public class ActivityEventService {
                 .withHealthCode(healthCode)
                 .withObjectType(ActivityEventObjectType.CUSTOM)
                 .withObjectId(eventKey)
+                .withStudyId(studyId)
                 .withTimestamp(timestamp).build();
         
         if (activityEventDao.publishEvent(event)) {
             // Create automatic events, as defined in the app
-            createAutomaticCustomEvents(app, healthCode, event);
+            createAutomaticCustomEvents(app, studyId, healthCode, event);
         }
     }
 
@@ -81,38 +102,63 @@ public class ActivityEventService {
      * Publishes the enrollment event for a user, as well as all of the automatic custom events that trigger on
      * enrollment time.
      */
-    public void publishEnrollmentEvent(App app, String healthCode, ConsentSignature signature) {
+    public void publishEnrollmentEvent(App app, String studyId, String healthCode, ConsentSignature signature) {
         checkNotNull(signature);
 
         // Create enrollment event. Use UTC for the timezone. DateTimes are used for period calculations, but since we
         // store everything as epoch milliseconds, the timezone should have very little affect.
         DateTime enrollment = new DateTime(signature.getSignedOn(), DateTimeZone.UTC);
-        ActivityEvent event = new DynamoActivityEvent.Builder()
+        ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
             .withTimestamp(enrollment)
-            .withObjectType(ActivityEventObjectType.ENROLLMENT).build();
+            .withObjectType(ENROLLMENT).build();
         
-        if (activityEventDao.publishEvent(event)) {
+        if (activityEventDao.publishEvent(globalEvent)) {
             // Create automatic events, as defined in the app
-            createAutomaticCustomEvents(app, healthCode, event);
+            createAutomaticCustomEvents(app, null, healthCode, globalEvent);
+        }
+        if (studyId != null) {
+            ActivityEvent studyEvent = new DynamoActivityEvent.Builder()
+                    .withHealthCode(healthCode)
+                    .withTimestamp(enrollment)
+                    .withObjectType(ENROLLMENT)
+                    .withStudyId(studyId).build();
+            if (activityEventDao.publishEvent(studyEvent)) {
+                createAutomaticCustomEvents(app, studyId, healthCode, studyEvent);
+            }
         }
     }
     
-    public void publishActivitiesRetrieved(App app, String healthCode, DateTime timestamp) {
+    public void publishActivitiesRetrieved(App app, String studyId, String healthCode, DateTime timestamp) {
         checkNotNull(healthCode);
         checkNotNull(timestamp);
         
-        ActivityEvent event = new DynamoActivityEvent.Builder()
+        ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
             .withTimestamp(timestamp)
-            .withObjectType(ActivityEventObjectType.ACTIVITIES_RETRIEVED).build();
+            .withObjectType(ACTIVITIES_RETRIEVED).build();
         
-        if (activityEventDao.publishEvent(event)) {
+        if (activityEventDao.publishEvent(globalEvent)) {
             // Create automatic events, as defined in the app
-            createAutomaticCustomEvents(app, healthCode, event);
+            createAutomaticCustomEvents(app, null, healthCode, globalEvent);
+        }
+        if (studyId != null) {
+            ActivityEvent studyEvent = new DynamoActivityEvent.Builder()
+                    .withHealthCode(healthCode)
+                    .withTimestamp(timestamp)
+                    .withObjectType(ACTIVITIES_RETRIEVED)
+                    .withStudyId(studyId).build();
+            if (activityEventDao.publishEvent(studyEvent)) {
+                // Create automatic events, as defined in the app
+                createAutomaticCustomEvents(app, studyId, healthCode, studyEvent);
+            }
         }
     }
     
+    /**
+     * This method does not currently accept a studyId because we don’t anticipate a study-scoped
+     * API for this event (it has not been used).
+     */
     public void publishQuestionAnsweredEvent(String healthCode, SurveyAnswer answer) {
         checkNotNull(healthCode);
         checkNotNull(answer);
@@ -127,6 +173,10 @@ public class ActivityEventService {
         activityEventDao.publishEvent(event);
     }
     
+    /**
+     * This method does not currently accept a studyId because we don’t anticipate a study-scoped
+     * API for this event (activities are probably going to be replaced with assessments).
+     */
     public void publishActivityFinishedEvent(ScheduledActivity schActivity) {
         checkNotNull(schActivity);
         
@@ -147,44 +197,47 @@ public class ActivityEventService {
         }
     }
     
-    public void publishCreatedOnEvent(String healthCode, DateTime createdOn) {
+    /**
+     * Publishes a created_on event for a user that essentially copies over the createdOn 
+     * timestamp of an Account.
+     */
+    public void publishCreatedOnEvent(String studyId, String healthCode, DateTime createdOn) {
         checkNotNull(healthCode);
         
-        ActivityEvent event = new DynamoActivityEvent.Builder()
+        ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
                 .withHealthCode(healthCode)
                 .withTimestamp(createdOn)
-                .withObjectType(ActivityEventObjectType.CREATED_ON).build();
-        activityEventDao.publishEvent(event);
-    }
-    
-    /**
-     * ActivityEvents can be published directly, although all supported events have a more 
-     * specific service method that should be preferred. This method can be used for 
-     * edge cases (like answering a question or finishing a survey through the bulk import 
-     * system).
-     */
-    public void publishActivityEvent(ActivityEvent event) {
-        checkNotNull(event);
-        activityEventDao.publishEvent(event);
+                .withObjectType(CREATED_ON).build();
+        activityEventDao.publishEvent(globalEvent);
+
+        if (studyId != null) {
+            ActivityEvent studyEvent = new DynamoActivityEvent.Builder()
+                    .withHealthCode(healthCode)
+                    .withTimestamp(createdOn)
+                    .withObjectType(CREATED_ON)
+                    .withStudyId(studyId).build();
+            activityEventDao.publishEvent(studyEvent);
+        }
     }
     
     /**
     * Gets the activity events times for a specific user in order to schedule against them.
     */
-    public Map<String, DateTime> getActivityEventMap(String appId, String healthCode) {
+    public Map<String, DateTime> getActivityEventMap(String appId, String studyId, String healthCode) {
         checkNotNull(healthCode);
-        Map<String, DateTime> activityMap = activityEventDao.getActivityEventMap(healthCode);
+        Map<String, DateTime> activityMap = activityEventDao.getActivityEventMap(healthCode, studyId);
+        
         Builder<String, DateTime> builder = ImmutableMap.<String, DateTime>builder();
         
-        DateTime activitiesRetrieved = activityMap.get(ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase());
-        DateTime enrollment = activityMap.get(ActivityEventObjectType.ENROLLMENT.name().toLowerCase());
-        DateTime createdOn = activityMap.get(ActivityEventObjectType.CREATED_ON.name().toLowerCase());
+        DateTime activitiesRetrieved = activityMap.get(ACTIVITIES_RETRIEVED.name().toLowerCase());
+        DateTime enrollment = activityMap.get(ENROLLMENT.name().toLowerCase());
+        DateTime createdOn = activityMap.get(CREATED_ON.name().toLowerCase());
         if (createdOn == null) {
             App app = appService.getApp(appId);
             StudyParticipant studyParticipant = participantService.getParticipant(app, "healthcode:"+healthCode, false);
             createdOn = studyParticipant.getCreatedOn();
-            publishCreatedOnEvent(healthCode, createdOn);
-            builder.put(ActivityEventObjectType.CREATED_ON.name().toLowerCase(), createdOn);
+            publishCreatedOnEvent(studyId, healthCode, createdOn);
+            builder.put(CREATED_ON.name().toLowerCase(), createdOn);
         }
         DateTime studyStartDate = createdOn;
         if (activitiesRetrieved != null) {
@@ -192,14 +245,14 @@ public class ActivityEventService {
         } else if (enrollment != null) {
             studyStartDate = enrollment;
         }
-        builder.put(ActivityEventObjectType.STUDY_START_DATE.name().toLowerCase(), studyStartDate);
+        builder.put(STUDY_START_DATE.name().toLowerCase(), studyStartDate);
         builder.putAll(activityMap);
         
         return builder.build();
     }
     
-    public List<ActivityEvent> getActivityEventList(String appId, String healthCode) {
-        Map<String, DateTime> activityEvents = getActivityEventMap(appId, healthCode);
+    public List<ActivityEvent> getActivityEventList(String appId, String studyId, String healthCode) {
+        Map<String, DateTime> activityEvents = getActivityEventMap(appId, studyId, healthCode);
 
         List<ActivityEvent> activityEventList = Lists.newArrayList();
         for (Map.Entry<String, DateTime> entry : activityEvents.entrySet()) {
@@ -215,28 +268,28 @@ public class ActivityEventService {
         }
         return activityEventList;
     }
-    public void deleteActivityEvents(String healthCode) {
+    
+    public void deleteActivityEvents(String studyId, String healthCode) {
         checkNotNull(healthCode);
-        activityEventDao.deleteActivityEvents(healthCode);
+        activityEventDao.deleteActivityEvents(healthCode, studyId);
     }
 
-    private void createAutomaticCustomEvents(App app, String healthCode, ActivityEvent event) {
+    private void createAutomaticCustomEvents(App app, String studyId, String healthCode, ActivityEvent event) {
         for (Map.Entry<String, String> oneAutomaticEvent : app.getAutomaticCustomEvents().entrySet()) {
             String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
             Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(oneAutomaticEvent.getValue()); // originEventId:Period
-            
             // enrollment, activities_retrieved, or any of the custom:* events defined by the user.
             if (event.getEventId().equals(autoEventSpec.getLeft()) || 
                 event.getEventId().startsWith("custom:"+autoEventSpec.getLeft())) {
                 
                 Period automaticEventDelay = Period.parse(autoEventSpec.getRight());
                 DateTime automaticEventTime = new DateTime(event.getTimestamp()).plus(automaticEventDelay);
-                
                 ActivityEvent automaticEvent = new DynamoActivityEvent.Builder()
                         .withHealthCode(healthCode)
                         .withObjectType(ActivityEventObjectType.CUSTOM)
                         .withObjectId(automaticEventKey)
-                        .withTimestamp(automaticEventTime).build();
+                        .withTimestamp(automaticEventTime)
+                        .withStudyId(studyId).build();
                 activityEventDao.publishEvent(automaticEvent);
             }
         }        

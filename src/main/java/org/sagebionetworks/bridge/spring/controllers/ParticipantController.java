@@ -212,7 +212,7 @@ public class ParticipantController extends BaseController {
         getAuthenticatedSession(WORKER);
         App app = appService.getApp(appId);
 
-        return new ResourceList<>(participantService.getActivityEvents(app, userId));
+        return new ResourceList<>(participantService.getActivityEvents(app, null, userId));
     }
     
     @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/activities/{activityType}/{referentGuid}",
@@ -582,13 +582,16 @@ public class ParticipantController extends BaseController {
                 + BridgeUtils.COMMA_SPACE_JOINER.join(erroredNotifications) + ".");
     }
 
-    @GetMapping("/v3/participants/{userId}/activityEvents")
-    public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String userId) {
+    @GetMapping(path = {"/v3/participants/{userId}/activityEvents"}, produces = {
+            APPLICATION_JSON_UTF8_VALUE })
+    public String getActivityEvents(@PathVariable String userId) throws JsonProcessingException {
         UserSession researcherSession = getAdministrativeSession();
         IS_SELF_OR_RESEARCHER.checkAndThrow(USER_ID, userId);
         App app = appService.getApp(researcherSession.getAppId());
 
-        return new ResourceList<>(participantService.getActivityEvents(app, userId));
+        List<ActivityEvent> events = participantService.getActivityEvents(app, null, userId);
+        return ActivityEvent.ACTIVITY_EVENT_WRITER
+                .writeValueAsString(new ResourceList<>(events));
     }
 
     @PostMapping(path = {"/v1/apps/{appId}/participants/{userId}/sendSmsMessage",

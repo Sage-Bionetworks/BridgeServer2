@@ -4,11 +4,19 @@ import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestUtils.assertCreate;
+import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
+import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.NOTIFY_SUCCESS_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -21,6 +29,7 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -39,6 +48,8 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -55,6 +66,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -63,14 +75,16 @@ import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AccountService;
+import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.AppService;
+import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.UserAdminService;
-import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 
 public class StudyParticipantControllerTest extends Mockito {
+    private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);;
 
     @Mock
     AppService mockAppService;
@@ -84,6 +98,9 @@ public class StudyParticipantControllerTest extends Mockito {
     @Mock
     EnrollmentService mockEnrollmentService;
     
+    @Mock
+    ActivityEventService mockActivityEventService;
+
     @Mock
     RequestInfoService mockRequestInfoService;
     
@@ -112,26 +129,32 @@ public class StudyParticipantControllerTest extends Mockito {
     @Spy
     StudyParticipantController controller;
     
-    App app;
-    
     UserSession session;
+    
+    Account account;
+
+    App app;
     
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
         
-        app = App.create();
-        app.setIdentifier(TEST_APP_ID);
+        doReturn(mockResponse).when(controller).response();
+        doReturn(mockRequest).when(controller).request();
         
         session = new UserSession();
         session.setAppId(TEST_APP_ID);
+        session.setParticipant(new StudyParticipant.Builder()
+                .withHealthCode(HEALTH_CODE).build());
+        
+        account = Account.create();
+        
+        app = App.create();
+        app.setIdentifier(TEST_APP_ID);
         
         // These are pretty much the same for all calls
         doReturn(session).when(controller).getAdministrativeSession();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        
-        doReturn(mockRequest).when(controller).request();
-        doReturn(mockResponse).when(controller).response();
     }
     
     @AfterMethod
@@ -139,6 +162,175 @@ public class StudyParticipantControllerTest extends Mockito {
         RequestContext.set(NULL_INSTANCE);
     }
     
+    @Test
+    public void verifyAnnotations() throws Exception {
+        assertCrossOrigin(StudyParticipantController.class);
+        assertGet(StudyParticipantController.class, "getEnrollmentsForUser");
+        assertPost(StudyParticipantController.class, "searchForAccountSummaries");
+        assertCreate(StudyParticipantController.class, "createParticipant");
+        assertGet(StudyParticipantController.class, "getParticipant");
+        assertGet(StudyParticipantController.class, "getRequestInfo");
+        assertPost(StudyParticipantController.class, "updateParticipant");
+        assertPost(StudyParticipantController.class, "signOut");
+        assertPost(StudyParticipantController.class, "requestResetPassword");
+        assertPost(StudyParticipantController.class, "resendEmailVerification");
+        assertPost(StudyParticipantController.class, "resendPhoneVerification");
+        assertPost(StudyParticipantController.class, "resendConsentAgreement");
+        assertGet(StudyParticipantController.class, "getUploads");
+        assertGet(StudyParticipantController.class, "getNotificationRegistrations");
+        assertPost(StudyParticipantController.class, "sendNotification");
+        assertDelete(StudyParticipantController.class, "deleteTestParticipant");
+        assertGet(StudyParticipantController.class, "getActivityEvents");
+        assertCreate(StudyParticipantController.class, "createActivityEvent");
+        assertGet(StudyParticipantController.class, "getSelfActivityEvents");
+        assertPost(StudyParticipantController.class, "createSelfActivityEvent");
+    }
+    
+    @Test
+    public void getActivityEvents() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(list);
+        
+        List<ActivityEvent> events = ImmutableList.of(new DynamoActivityEvent.Builder()
+          .withObjectType(ENROLLMENT)
+          .withTimestamp(CREATED_ON)
+          .withHealthCode(HEALTH_CODE).build());
+        when(mockParticipantService.getActivityEvents(app, TEST_STUDY_ID, TEST_USER_ID))
+            .thenReturn(events);
+        
+        String retValue = controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
+        
+        ResourceList<ActivityEvent> retList = BridgeObjectMapper.get()
+                .readValue(retValue, new TypeReference<ResourceList<ActivityEvent>>() {});
+        assertEquals(retList.getItems().size(), 1);
+        assertEquals(retList.getItems().get(0).getEventId(), "enrollment");
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void getActivityEventsAccountNotFound() throws Exception { 
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        // No enrollment record, so it's going to appear as not found
+        List<EnrollmentDetail> list = ImmutableList.of();
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(list);
+        
+        controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
+    }
+
+    @Test
+    public void createActivityEvent() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        doReturn(session).when(controller).getAdministrativeSession();
+
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(list);
+        when(mockAccountService.getHealthCodeForAccount(ACCOUNT_ID)).thenReturn(HEALTH_CODE);
+        
+        CustomActivityEventRequest event = new CustomActivityEventRequest.Builder()
+                .withEventKey("eventKey")
+                .withTimestamp(CREATED_ON).build();
+        TestUtils.mockRequestBody(mockRequest, event);
+        
+        StatusMessage retValue = controller.createActivityEvent(TEST_STUDY_ID, TEST_USER_ID);
+        assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);
+        
+        verify(mockActivityEventService).publishCustomEvent(app, TEST_STUDY_ID,
+                HEALTH_CODE, "eventKey", CREATED_ON);
+    }
+    
+    @Test
+    public void getSelfActivityEvents() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID) // ID is drawn from the session so add it
+                .withHealthCode(HEALTH_CODE).build());
+        
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(list);
+        when(mockAccountService.getHealthCodeForAccount(ACCOUNT_ID)).thenReturn(HEALTH_CODE);
+        
+        List<ActivityEvent> events = ImmutableList.of(new DynamoActivityEvent.Builder()
+                .withObjectType(ENROLLMENT)
+                .withTimestamp(CREATED_ON)
+                .withHealthCode(HEALTH_CODE).build());
+        when(mockActivityEventService.getActivityEventList(TEST_APP_ID, TEST_STUDY_ID, HEALTH_CODE)).thenReturn(events);
+        
+        String retValue = controller.getSelfActivityEvents(TEST_STUDY_ID);
+        
+        ResourceList<ActivityEvent> retList = BridgeObjectMapper.get()
+                .readValue(retValue, new TypeReference<ResourceList<ActivityEvent>>() {});
+        assertEquals(retList.getItems().size(), 1);
+        assertEquals(retList.getItems().get(0).getEventId(), "enrollment");
+        assertNull(retList.getItems().get(0).getHealthCode());
+    }
+
+    @Test
+    public void createSelfActivityEvent() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID) // ID is drawn from the session so add it
+                .withHealthCode(HEALTH_CODE).build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(list);
+        when(mockAccountService.getHealthCodeForAccount(ACCOUNT_ID)).thenReturn(HEALTH_CODE);
+        
+        CustomActivityEventRequest event = new CustomActivityEventRequest.Builder()
+                .withEventKey("eventKey")
+                .withTimestamp(CREATED_ON).build();
+        TestUtils.mockRequestBody(mockRequest, event);
+        
+        StatusMessage retValue = controller.createSelfActivityEvent(TEST_STUDY_ID);
+        assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);
+        
+        verify(mockActivityEventService).publishCustomEvent(app, TEST_STUDY_ID,
+                HEALTH_CODE, "eventKey", CREATED_ON);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class, 
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void getActivityEventsForParticipantNotInStudy() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        List<EnrollmentDetail> enrollments = ImmutableList.of(new EnrollmentDetail(
+                Enrollment.create(TEST_APP_ID, "other-study", TEST_USER_ID), null, null, null));
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
+            .thenReturn(enrollments);
+        
+        controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
+    }
+
     @Test
     public void getEnrollmentsForUser() {
         RequestContext.set(new RequestContext.Builder()
@@ -855,26 +1047,9 @@ public class StudyParticipantControllerTest extends Mockito {
         
         controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }
-    
-    @Test
-    public void getActivityEvents() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN))
-                .build());
-        
-        mockAccountInStudy();
-        
-        List<ActivityEvent> list = ImmutableList.of();
-        when(mockParticipantService.getActivityEvents(app, TEST_USER_ID)).thenReturn(list);
-        
-        ResourceList<ActivityEvent> retValue = controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
-        assertSame(retValue.getItems(), list);
-        
-        verify(mockParticipantService).getActivityEvents(app, TEST_USER_ID);
-    }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getActivityEventsWrongStudy() {
+    public void getActivityEventsWrongStudy() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());

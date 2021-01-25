@@ -41,8 +41,8 @@ public class ActivityEventController extends BaseController {
         CustomActivityEventRequest activityEvent = parseJson(CustomActivityEventRequest.class);
 
         App app = appService.getApp(session.getAppId());
-        activityEventService.publishCustomEvent(app, session.getHealthCode(),
-                activityEvent.getEventKey(), activityEvent.getTimestamp());
+        activityEventService.publishCustomEvent(app, null,
+                session.getHealthCode(), activityEvent.getEventKey(), activityEvent.getTimestamp());
         
         return new StatusMessage("Event recorded");
     }
@@ -52,11 +52,11 @@ public class ActivityEventController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         List<ActivityEvent> activityEvents = activityEventService.getActivityEventList(session.getAppId(),
-                session.getHealthCode());
+                null, session.getHealthCode());
         
         // I do not like the fact we are serializing in the controller, but that's the only way to access
         // the ObjectWriter and that's currently how we suppress healthCode.
-        ResourceList<ActivityEvent> list = new ResourceList<>(activityEvents);
-        return ACTIVITY_EVENT_WRITER.writeValueAsString(list);
+        return ACTIVITY_EVENT_WRITER
+                .writeValueAsString(new ResourceList<>(activityEvents));
     }    
 }
