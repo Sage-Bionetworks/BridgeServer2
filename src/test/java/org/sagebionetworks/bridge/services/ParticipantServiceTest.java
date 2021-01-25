@@ -62,6 +62,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -471,22 +472,8 @@ public class ParticipantServiceTest extends Mockito {
         participantService.createParticipant(APP, participant, false);
     }
     
-    @Test(expectedExceptions = BadRequestException.class, 
-            expectedExceptionsMessageRegExp = ".*study2.*is not a study of the caller")
-    public void createParticipantWithExternalIdAndStudyCallerThatDontMatch() throws Exception {
-        
-        when(studyService.getStudy(TEST_APP_ID, "study2", false)).thenReturn(Study.create());
-        
-        // This is a study caller assigning an external ID, but the external ID is not in one of the 
-        // caller's studies.
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(RESEARCH_CALLER_ROLES)
-                .withOrgSponsoredStudies(ImmutableSet.of("study1")).build());
-
-        StudyParticipant participant = new StudyParticipant.Builder()
-                .withExternalIds(ImmutableMap.of("study2", EXTERNAL_ID)).build();
-        
-        participantService.createParticipant(APP, participant, false);
-    }
+    // Researchers are now global, so tests that researchers align with a study are removed.
+    // Use “study coordinator” role to limit access to specific studies.
     
     @Test
     public void createParticipantEmailDisabledNoVerificationWanted() {
@@ -672,10 +659,11 @@ public class ParticipantServiceTest extends Mockito {
         assertFalse(account.getEmailVerified());
     }
     
-    @Test(expectedExceptions = BadRequestException.class,
+    @Test(expectedExceptions = UnauthorizedException.class,
             expectedExceptionsMessageRegExp=".*is not a study of the caller.*")
     public void createParticipantMustIncludeCallerStudy() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("callerUserId")
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_ID)).build());
         
         when(studyService.getStudy(TEST_APP_ID, "inaccessible-study-to-caller", false)).thenReturn(Study.create());
@@ -905,6 +893,7 @@ public class ParticipantServiceTest extends Mockito {
         
         // The caller is not in studyA
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("callerUserId")
                 .withOrgSponsoredStudies(ImmutableSet.of("studyB")).build());
         
         participantService.getParticipant(APP, ID, true);
@@ -913,6 +902,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getSelfParticipantWithHistory() throws Exception {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("callerUserId")
                 .withOrgSponsoredStudies(TestConstants.USER_STUDY_IDS).build());
         
         // Some data to verify
@@ -950,8 +940,9 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void getSelfParticipantNoHistory() {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(USER_STUDY_IDS)
-                .build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("callerUserId")
+                .withOrgSponsoredStudies(USER_STUDY_IDS).build());
         
         // Some data to verify
         account.setId(ID);
@@ -1106,6 +1097,7 @@ public class ParticipantServiceTest extends Mockito {
         
         // Now, the caller only sees A and C
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("callerUserId")
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyC")).build());
         
         StudyParticipant participant = participantService.getParticipant(APP, ID, false);
@@ -1237,19 +1229,8 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateParticipant(APP, PARTICIPANT);
     }
     
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = "studyB is not a study of the caller")
-    public void enrollingAccountIntoInaccessibleStudies() { 
-        // Researcher has studyA and studyB access
-        Set<String> studies = ImmutableSet.of("studyA", "studyC");
-        mockStudiesInRequest(studies, ImmutableSet.of("studyB"), RESEARCHER).build();
-        
-        // Participant creation tries to enroll in study C
-        StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withExternalIds(ImmutableMap.of("studyB", "extIdB")).build();
-
-        participantService.createParticipant(APP, participant, false);
-    }
+    // Researchers are now global, so tests that researchers align with a study are removed.
+    // Use “study coordinator” role to limit access to specific studies.
     
     @Test
     public void updateParticipantWithoutStudyChangesForAdmins() {
@@ -2165,18 +2146,16 @@ public class ParticipantServiceTest extends Mockito {
         verify(accountService).createAccount(APP, account);
         verify(enrollmentService, never()).enroll(any(), any());
     }
-    @Test
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void normalUserCannotCreateParticipantWithExternalId() {
-        RequestContext.set(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("callerUserId").build());
         when(participantService.getAccount()).thenReturn(account);
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         StudyParticipant participant = withParticipant()
                 .withExternalIds(ENROLLMENT_MAP).build();
         participantService.createParticipant(APP, participant, false);
-        
-        verify(accountService).createAccount(APP, account);
-        verify(enrollmentService, never()).enroll(any(), any());
     }
     @Test
     public void updateParticipantNoExternalIdsNoneAddedDoesNothing() {
@@ -2192,9 +2171,10 @@ public class ParticipantServiceTest extends Mockito {
         assertTrue(account.getEnrollments().isEmpty());
     }
 
-    @Test
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void updateParticipantNoExternalIdsAreAdded() {
-        RequestContext.set(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("callerUserId").build());
         mockHealthCodeAndAccountRetrieval(EMAIL, null, null);
         
         StudyParticipant participant = withParticipant()
@@ -2278,9 +2258,10 @@ public class ParticipantServiceTest extends Mockito {
         verify(activityEventService).getActivityEventList(APP.getIdentifier(), HEALTH_CODE);
     }
     
-    @Test
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void normalUserCannotAddExternalIdOnUpdate() {
-        RequestContext.set(NULL_INSTANCE);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("callerUserId").build());
         mockHealthCodeAndAccountRetrieval();
         
         StudyParticipant participant = withParticipant()

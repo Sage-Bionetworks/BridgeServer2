@@ -6,12 +6,11 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_STUDY_TEAM_OR_WORKER;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_ORGADMIN_OR_WORKER;
-import static org.sagebionetworks.bridge.AuthUtils.IS_STUDY_TEAM_OR_WORKER;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -56,7 +55,6 @@ import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
@@ -171,7 +169,7 @@ public class BridgeUtils {
             // is an org admin, return the account. Callers that are not associated to an 
             // organization also gain access, but only while we migrate away from 
             // this kind of global account.
-            if (IS_SELF_ORGADMIN_OR_WORKER.check(ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
+            if (CAN_READ_PARTICIPANTS.check(ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
                 return account;
             }
             // If after removing all enrollments that are not visible to the caller, 
@@ -200,7 +198,7 @@ public class BridgeUtils {
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
         for (Enrollment enrollment : account.getActiveEnrollments()) {
-            if (IS_SELF_STUDY_TEAM_OR_WORKER.check(STUDY_ID, enrollment.getStudyId(), USER_ID, account.getId())) {
+            if (CAN_READ_STUDY_ASSOCIATIONS.check(STUDY_ID, enrollment.getStudyId(), USER_ID, account.getId())) {
                 studyIds.add(enrollment.getStudyId());
                 if (enrollment.getExternalId() != null) {
                     externalIds.put(enrollment.getStudyId(), enrollment.getExternalId());
@@ -208,13 +206,6 @@ public class BridgeUtils {
             }
         }
         return new StudyAssociations(studyIds.build(), externalIds.build()); 
-    }
-    
-    public static ExternalIdentifier filterForStudy(ExternalIdentifier externalId) {
-        if (externalId != null && IS_STUDY_TEAM_OR_WORKER.check(STUDY_ID, externalId.getStudyId())) {
-            return externalId;
-        }
-        return null;
     }
     
     /**

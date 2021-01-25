@@ -13,6 +13,8 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -1044,6 +1046,8 @@ public class AuthenticationServiceTest {
     
     @Test
     public void generatePasswordOK() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         doReturn(PASSWORD).when(service).generatePassword(anyInt());
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "account");
@@ -1084,6 +1088,8 @@ public class AuthenticationServiceTest {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void generatePasswordAccountMismatchesCallerStudies() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withCallerUserId("callerUserId")
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         
         when(accountService.getAccount(any())).thenReturn(account);
