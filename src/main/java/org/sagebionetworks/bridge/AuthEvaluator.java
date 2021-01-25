@@ -43,6 +43,16 @@ public class AuthEvaluator {
         return this;
     }
     /**
+     * 
+     */
+    public AuthEvaluator hasNoRole(Roles... roles) {
+        predicates.add((factMap) -> {
+            RequestContext context = RequestContext.get();
+            return (roles.length == 0) ? true : !context.isInRole(ImmutableSet.copyOf(roles));
+        });
+        return this;
+    }
+    /**
      * The caller is a member of an organization that sponsors the target study.
      */
     public AuthEvaluator canAccessStudy() {

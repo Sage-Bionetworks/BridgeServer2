@@ -17,6 +17,13 @@ import java.util.Set;
  * All methods throw UnauthorizedException if they fail.
  */
 public class AuthUtils {
+    /**
+     * Is this scoped to specific studies? It should have one of the study-scoped
+     * roles, and no roles that are app scoped that we would allow wider latitude
+     * when using the APIs.
+     */
+    public static final AuthEvaluator CAN_READ_ORG_SPONSORED_STUDIES = new AuthEvaluator()
+            .hasAnyRole(ORG_ADMIN, STUDY_COORDINATOR).hasNoRole(DEVELOPER, RESEARCHER, ADMIN, WORKER);
 
     /**
      * Is the caller an admin? 
