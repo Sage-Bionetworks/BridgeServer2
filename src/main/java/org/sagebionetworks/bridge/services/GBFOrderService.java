@@ -68,7 +68,6 @@ public class GBFOrderService {
             throw new BridgeServiceException(GBF_SERVICE_ERROR_MESSAGE);
         }
 
-        LOG.warn("orderXML " + orderXml);
         HttpResponse httpResponse = postJson(gbfOrderUrl, gbfApiKey, new PlaceOrderRequest(orderXml, isTest));
 
         PlaceOrderResponse response;

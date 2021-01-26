@@ -129,7 +129,7 @@ public class CRCController extends BaseController {
     static final String OBSERVATION_REPORT = "observation";
     static final String PROCEDURE_REPORT = "procedurerequest";
     static final String APPOINTMENT_REPORT = "appointment";
-    static final String SHIPMENT_REPORT = "shipmentrequest";
+    static final String SHIPMENT_REPORT = "shiprequest";
     static final String SHIPMENT_REPORT_KEY_ORDER_ID = "orderNumber";
     static final String CUIMC_USERNAME = "A5hfO-tdLP_eEjx9vf2orSd5";
     static final String SYN_USERNAME = "bridgeit+crc@sagebase.org";
@@ -205,8 +205,15 @@ public class CRCController extends BaseController {
 
     @PostMapping("v1/cuicm/participants/self/labshipments/request")
     public ResponseEntity<StatusMessage> postUserLabShipmentRequest() {
+        // caller enrolled studies
         UserSession session = getAuthenticatedSession();
         App app = appService.getApp(session.getAppId());
+        RequestContext requestContext = RequestContext.get();
+        Set<String> callerEnrolledStudies = requestContext.getCallerEnrolledStudies();
+        Set<String> orgSponsoredStudies = requestContext.getOrgSponsoredStudies();
+        RequestContext.set(requestContext.toBuilder().withOrgSponsoredStudies(callerEnrolledStudies)
+                .withCallerEnrolledStudies(
+                        orgSponsoredStudies).build());
 
         AccountId accountId = parseAccountId(app.getIdentifier(), session.getId());
         Account account = accountService.getAccount(accountId);
@@ -238,7 +245,7 @@ public class CRCController extends BaseController {
 
         LocalDate date = LocalDate.now();
         Order.ShippingInfo.Address address = validateAndGetAddress(account);
-        String orderNumber = account.getId() + ":" + date;
+        String orderNumber = account.getId() + "_" + date;
 
         Order o = new Order(isTestUser, orderNumber, account.getId(), date,
                 new Order.ShippingInfo(address, null), new Order.LineItem(GBF_TEST_KIT_PART_NUMBER, 1));
