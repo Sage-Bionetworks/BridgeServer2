@@ -19,9 +19,11 @@ import org.sagebionetworks.bridge.models.ParticipantData;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import javax.mail.Part;
 import java.util.List;
 
 import static org.testng.AssertJUnit.assertEquals;
+import static org.testng.AssertJUnit.assertSame;
 
 public class DynamoParticipantDataDaoTest extends Mockito {
 
@@ -101,24 +103,57 @@ public class DynamoParticipantDataDaoTest extends Mockito {
 
     @Test
     public void testSaveParticipantData() {
+        dao.saveParticipantData(participantData0);
+
+        verify(mockMapper).save(participantDataCaptor.capture());
+        ParticipantData participantData = participantDataCaptor.getValue();
+        assertSame(participantData, participantData0);
+        assertEquals(participantData.getUserId(), USER_ID);
     }
 
     @Test
     public void testDeleteAllParticipantData() {
+        when(mockMapper.query(eq(DynamoParticipantData.class), any())).thenReturn(mockQueryList);
+
+        dao.deleteAllParticipantData(participantData0.getUserId());
+
+        verify(mockMapper).query(eq(DynamoParticipantData.class), queryCaptor.capture());
+        DynamoDBQueryExpression<DynamoParticipantData> query = queryCaptor.getValue();
+        assertEquals(query.getHashKeyValues().getUserId(), participantData0.getUserId());
+
+        verify(mockMapper).batchDelete(dataListCaptor.capture());
+
+        assertEquals(dataListCaptor.getValue(), mockQueryList);
     }
 
     @Test
     public void deleteAllParticipantDataNoData() {
+        when(mockMapper.query(eq(DynamoParticipantData.class), any())).thenReturn(mockQueryList);
+        when(mockQueryList.isEmpty()).thenReturn(true);
 
+        dao.deleteAllParticipantData(participantData0.getUserId());
+
+        verify(mockMapper, never()).batchDelete(dataListCaptor.capture());
     }
 
     @Test
     public void testDeleteParticipantDataRecord() {
+        when(mockMapper.load(any())).thenReturn(participantData0);
+
+        String identifier = participantData0.getIdentifier();
+        dao.deleteParticipantData(participantData0.getUserId(), identifier);
+
+        verify(mockMapper).load(participantDataCaptor.capture());
+        assertEquals(participantDataCaptor.getValue().getUserId(), participantData0.getUserId());
+        assertEquals(participantDataCaptor.getValue().getIdentifier(), identifier);
     }
 
     @Test
-    public void testDeleteParticipantDataRecodNoRecord() {
+    public void testDeleteParticipantDataRecordNoRecord() {
+        String identifier = participantData0.getIdentifier();
+        dao.deleteParticipantData(participantData0.getUserId(), identifier);
 
+        verify(mockMapper, never()).delete(any());
     }
 
     private static DynamoParticipantData createParticipantData(String fieldValue1, String fieldValue2) {
