@@ -8,13 +8,17 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
+
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -93,6 +97,12 @@ public final class ConsentSignature implements BridgeEntity {
     @JsonSerialize(using = DateTimeToLongSerializer.class)
     public @Nonnull long getSignedOn() {
         return signedOn;
+    }
+    
+    @JsonIgnore
+    @DynamoDBIgnore
+    public DateTime getSignedOnAsDateTime() {
+        return new DateTime(signedOn, DateTimeZone.UTC);
     }
     
     /** The date and time the user withdrew this consent (can be null if active). */

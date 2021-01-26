@@ -121,8 +121,6 @@ public class ConsentServiceTest extends Mockito {
     @Mock
     private StudyConsentService studyConsentService;
     @Mock
-    private ActivityEventService activityEventService;
-    @Mock
     private SubpopulationService subpopService;
     @Mock
     private NotificationsService notificationsService;
@@ -239,10 +237,6 @@ public class ConsentServiceTest extends Mockito {
         assertEquals(updatedConsentList.get(1).getConsentCreatedOn(), CONSENT_CREATED_ON);
         assertNull(updatedConsentList.get(1).getWithdrewOn());
 
-        // Consent we send to activityEventService is same as the second consent.
-        verify(activityEventService).publishEnrollmentEvent(app, TEST_STUDY_ID,
-                PARTICIPANT.getHealthCode(), updatedConsentList.get(1));
-
         verify(sendMailService).sendEmail(emailCaptor.capture());
 
         // We notify the app administrator and send a copy to the user.
@@ -278,7 +272,6 @@ public class ConsentServiceTest extends Mockito {
                     false);
             fail("Exception expected.");
         } catch (InvalidEntityException e) {
-            verifyNoMoreInteractions(activityEventService);
             verifyNoMoreInteractions(accountService);
         }
     }
@@ -294,7 +287,6 @@ public class ConsentServiceTest extends Mockito {
                     SharingScope.NO_SHARING, false);
             fail("Exception expected.");
         } catch (EntityAlreadyExistsException e) {
-            verifyNoMoreInteractions(activityEventService);
             verify(accountService).getAccount(any());
             verifyNoMoreInteractions(accountService);
         }
@@ -307,7 +299,6 @@ public class ConsentServiceTest extends Mockito {
                     SharingScope.NO_SHARING, false);
             fail("Exception expected.");
         } catch (Throwable e) {
-            verifyNoMoreInteractions(activityEventService);
             verify(accountService).getAccount(any());
             verifyNoMoreInteractions(accountService);
         }
@@ -983,7 +974,7 @@ public class ConsentServiceTest extends Mockito {
 
         assertEquals(account.getDataGroups(), TestConstants.USER_DATA_GROUPS);
         
-        verify(mockEnrollmentService, times(2)).enroll(any(), enrollmentCaptor.capture());
+        verify(mockEnrollmentService, times(2)).addEnrollment(any(), enrollmentCaptor.capture());
         assertEquals(enrollmentCaptor.getAllValues().stream()
             .map(Enrollment::getStudyId)
             .collect(Collectors.toSet()), TestConstants.USER_STUDY_IDS);

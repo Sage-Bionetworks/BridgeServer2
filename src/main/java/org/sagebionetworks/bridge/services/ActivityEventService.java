@@ -15,7 +15,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.ImmutableMap.Builder;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -30,7 +29,6 @@ import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
-import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
 
 /**
@@ -102,15 +100,16 @@ public class ActivityEventService {
      * Publishes the enrollment event for a user, as well as all of the automatic custom events that trigger on
      * enrollment time.
      */
-    public void publishEnrollmentEvent(App app, String studyId, String healthCode, ConsentSignature signature) {
-        checkNotNull(signature);
-
+    public void publishEnrollmentEvent(App app, String studyId, String healthCode, DateTime enrolledOn) {
+        checkNotNull(app);
+        checkNotNull(healthCode);
+        checkNotNull(enrolledOn);
+        
         // Create enrollment event. Use UTC for the timezone. DateTimes are used for period calculations, but since we
         // store everything as epoch milliseconds, the timezone should have very little affect.
-        DateTime enrollment = new DateTime(signature.getSignedOn(), DateTimeZone.UTC);
         ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
-            .withTimestamp(enrollment)
+            .withTimestamp(enrolledOn)
             .withObjectType(ENROLLMENT).build();
         
         if (activityEventDao.publishEvent(globalEvent)) {
@@ -120,7 +119,7 @@ public class ActivityEventService {
         if (studyId != null) {
             ActivityEvent studyEvent = new DynamoActivityEvent.Builder()
                     .withHealthCode(healthCode)
-                    .withTimestamp(enrollment)
+                    .withTimestamp(enrolledOn)
                     .withObjectType(ENROLLMENT)
                     .withStudyId(studyId).build();
             if (activityEventDao.publishEvent(studyEvent)) {

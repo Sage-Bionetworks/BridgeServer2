@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.BridgeUtils.collectStudyIds;
 import static org.sagebionetworks.bridge.BridgeUtils.filterForStudy;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
@@ -16,7 +17,10 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
+
+import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -41,6 +45,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.time.DateUtils;
 
@@ -52,6 +57,8 @@ public class AccountService {
     
     private AccountDao accountDao;
     private AccountSecretDao accountSecretDao;
+    private AppService appService;
+    private ActivityEventService activityEventService;
 
     @Autowired
     public final void setAccountDao(AccountDao accountDao) {
@@ -61,6 +68,16 @@ public class AccountService {
     @Autowired
     public final void setAccountSecretDao(AccountSecretDao accountSecretDao) {
         this.accountSecretDao = accountSecretDao;
+    }
+    
+    @Autowired
+    public final void setAppService(AppService appService) {
+        this.appService = appService;
+    }
+    
+    @Autowired
+    public final void setActivityEventService(ActivityEventService activityEventService) {
+        this.activityEventService = activityEventService;
     }
     
     // Provided to override in tests
@@ -200,6 +217,11 @@ public class AccountService {
 
         // Create account. We don't verify studies because this is handled by validation
         accountDao.createAccount(app, account);
+        
+        for (Enrollment en : account.getEnrollments()) {
+            activityEventService.publishEnrollmentEvent(app, en.getStudyId(), 
+                    account.getHealthCode(), account.getCreatedOn());
+        }
     }
     
     /**
@@ -216,6 +238,7 @@ public class AccountService {
         // None of these values should be changeable by the user.
         account.setAppId(persistedAccount.getAppId());
         account.setCreatedOn(persistedAccount.getCreatedOn());
+        account.setHealthCode(persistedAccount.getHealthCode());
         account.setPasswordAlgorithm(persistedAccount.getPasswordAlgorithm());
         account.setPasswordHash(persistedAccount.getPasswordHash());
         account.setPasswordModifiedOn(persistedAccount.getPasswordModifiedOn());
@@ -225,7 +248,21 @@ public class AccountService {
         account.setModifiedOn(DateUtils.getCurrentDateTime());
 
         // Update. We don't verify studies because this is handled by validation
-        accountDao.updateAccount(account);         
+        accountDao.updateAccount(account);
+        
+        // If any enrollments have been added, then create an enrollment event for that enrollment.
+        // We want to create these events only after we're sure the account has been updated to 
+        // reflect the enrollments.
+        Set<String> newStudies = Sets.newHashSet(collectStudyIds(account));
+        newStudies.removeAll(collectStudyIds(persistedAccount));
+        
+        if (!newStudies.isEmpty()) {
+            App app = appService.getApp(account.getAppId());
+            for (String studyId : newStudies) {
+                activityEventService.publishEnrollmentEvent(app, studyId, 
+                        account.getHealthCode(), account.getModifiedOn());
+            }
+        }
     }
     
     /**

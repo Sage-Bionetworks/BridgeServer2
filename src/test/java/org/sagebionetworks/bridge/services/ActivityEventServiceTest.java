@@ -342,7 +342,7 @@ public class ActivityEventServiceTest {
                 .withConsentCreatedOn(now.minusDays(10).getMillis())
                 .withSignedOn(now.getMillis()).build();
 
-        activityEventService.publishEnrollmentEvent(App.create(),null, "AAA-BBB-CCC", signature);
+        activityEventService.publishEnrollmentEvent(App.create(), null, "AAA-BBB-CCC", signature.getSignedOnAsDateTime());
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao).publishEvent(argument.capture());
@@ -371,7 +371,7 @@ public class ActivityEventServiceTest {
                 .withSignedOn(now.getMillis()).build();
         when(activityEventDao.publishEvent(any())).thenReturn(true);
         
-        activityEventService.publishEnrollmentEvent(app, TEST_STUDY_ID, HEALTH_CODE, signature);
+        activityEventService.publishEnrollmentEvent(app, TEST_STUDY_ID, HEALTH_CODE, signature.getSignedOnAsDateTime());
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao, times(4)).publishEvent(argument.capture());
@@ -419,7 +419,7 @@ public class ActivityEventServiceTest {
                 .withSignedOn(now.getMillis()).build();
         when(activityEventDao.publishEvent(any())).thenReturn(false);
 
-        activityEventService.publishEnrollmentEvent(App.create(), TEST_STUDY_ID, HEALTH_CODE, signature);
+        activityEventService.publishEnrollmentEvent(App.create(), TEST_STUDY_ID, HEALTH_CODE, signature.getSignedOnAsDateTime());
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao, times(2)).publishEvent(argument.capture());
@@ -454,7 +454,7 @@ public class ActivityEventServiceTest {
         when(activityEventDao.publishEvent(any())).thenReturn(true);
         
         // Execute
-        activityEventService.publishEnrollmentEvent(app,null, "AAA-BBB-CCC", signature);
+        activityEventService.publishEnrollmentEvent(app,null, "AAA-BBB-CCC", signature.getSignedOnAsDateTime());
 
         // Verify published events (4)
         ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
@@ -497,7 +497,8 @@ public class ActivityEventServiceTest {
         
         when(activityEventDao.publishEvent(any())).thenReturn(false);
         
-        activityEventService.publishEnrollmentEvent(app,null, "AAA-BBB-CCC", new ConsentSignature.Builder().build());
+        // timestamp here does not matter
+        activityEventService.publishEnrollmentEvent(app, null, "AAA-BBB-CCC", CREATED_ON);
         
         // Only happens once, none of the other custom events are published.
         verify(activityEventDao, times(1)).publishEvent(any());
@@ -539,7 +540,8 @@ public class ActivityEventServiceTest {
         
         when(activityEventDao.publishEvent(any())).thenReturn(false);
         
-        activityEventService.publishEnrollmentEvent(app,null, "AAA-BBB-CCC", new ConsentSignature.Builder().build());
+        // timestamp here does not matter
+        activityEventService.publishEnrollmentEvent(app,null, "AAA-BBB-CCC", CREATED_ON);
         
         // Only happens once, none of the other custom events are published.
         verify(activityEventDao, times(1)).publishEvent(any());
