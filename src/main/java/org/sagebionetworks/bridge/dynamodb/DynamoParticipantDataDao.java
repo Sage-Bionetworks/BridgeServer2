@@ -16,6 +16,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
+import java.util.Collections;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -31,6 +32,7 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
 
     public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String userId, String offsetKey, int pageSize) {
         checkNotNull(userId);
+        checkNotNull(offsetKey);
 
         int pageSizeWithIndicatorRecord = pageSize + 1;
         DynamoParticipantData hashKey = new DynamoParticipantData();
@@ -41,12 +43,12 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
 
         DynamoDBQueryExpression<DynamoParticipantData> query = new DynamoDBQueryExpression<DynamoParticipantData>()
                 .withHashKeyValues(hashKey)
-                .withRangeKeyCondition("offsetKey", rangeKeyCondition) //TODO is the name "offsetKey" okay?
+                .withRangeKeyCondition("offsetKey", rangeKeyCondition)
                 .withLimit(pageSizeWithIndicatorRecord);
 
         PaginatedQueryList<DynamoParticipantData> resultPage = mapper.query(DynamoParticipantData.class, query);
 
-        List<ParticipantData> list = ImmutableList.copyOf(resultPage);
+        List<ParticipantData> list = Collections.unmodifiableList(resultPage);
 
         String nextPageOffsetKey = null;
         if (list.size() == pageSizeWithIndicatorRecord) {

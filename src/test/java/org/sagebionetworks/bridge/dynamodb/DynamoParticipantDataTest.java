@@ -46,48 +46,4 @@ public class DynamoParticipantDataTest {
         assertEquals(deser.getData().get("b").asText(), "string");
         assertEquals(deser.getData().get("c").asInt(), 10);
     }
-
-    @Test
-    public void testGetUserId() {
-    }
-
-    @Test
-    public void testSetUserId() {
-    }
-
-    @Test
-    public void testGetIdentifier() {
-    }
-
-    @Test
-    public void testSetIdentifier() {
-    }
-
-    @Test
-    public void testGetData() {
-    }
-
-    @Test
-    public void testSetData() {
-    }
-
-    @Test
-    public void testGetVersion() {
-    }
-
-    @Test
-    public void testSetVersion() {
-    }
-
-    @Test
-    public void testTestEquals() {
-    }
-
-    @Test
-    public void testTestHashCode() {
-    }
-
-    @Test
-    public void testTestToString() {
-    }
 }

@@ -25,7 +25,6 @@ public class ParticipantDataService {
      * Return a set of participant data records.
      */
     public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String userId, String offsetKey, int pageSize) {
-                                                                                    // TODO what actually is offsetKey?
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }

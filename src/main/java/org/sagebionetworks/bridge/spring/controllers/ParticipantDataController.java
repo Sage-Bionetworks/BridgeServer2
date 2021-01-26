@@ -126,15 +126,15 @@ public class ParticipantDataController extends BaseController {
     @PostMapping("/v1/apps/{appId}/participants/{userId}/data/{identifier}")
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveDataRecordForAdminWorker(@PathVariable String appId, @PathVariable String userId, @PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(ADMIN, WORKER); //TODO where do I use appId?
+        UserSession session = getAuthenticatedSession(ADMIN, WORKER);
+        App app = appService.getApp(appId); // TODO since I already have appId, do I still need to store the session var?
+        // TODO same with storing app var, since I already have appId?
 
-        JsonNode node = parseJson(JsonNode.class); //TODO are lines 131 through 135 necessary or only necessary in ParticipantReportController?
-        if (!node.has("healthCode")) {
-            throw new BadRequestException("A health code is required to save participant data");
+        Account account = accountService.getAccount(AccountId.forId(appId, userId));
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
         }
-        String healthCode = node.get("healthCode").asText(); //TODO I don't need a reportDataKey, so does that mean I don't need appId and healthCode?
-
-        ParticipantData participantData = parseJson(node, ParticipantData.class);
+        ParticipantData participantData = parseJson(ParticipantData.class);
         participantData.setUserId(null);
 
         participantDataService.saveParticipantData(userId, identifier, participantData);
