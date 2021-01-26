@@ -8,7 +8,6 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantDataDao;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -30,26 +29,12 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
         this.mapper = participantStateMapper;
     }
 
-//    @Override
-//    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String offsetKey, int pageSize) {
-//        checkNotNull(userId);
-//
-//        DynamoParticipantData hashKey = new DynamoParticipantData();
-//        hashKey.setUserId(userId);
-//
-//        DynamoDBQueryExpression<DynamoParticipantData> query =
-//                new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashKey);
-//        List<DynamoParticipantData> results = mapper.query(DynamoParticipantData.class, query);
-//
-//        return new ForwardCursorPagedResourceList<DynamoParticipantData>(results, offsetKey);
-//    }
-
-    public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String healthCode, String offsetKey, int pageSize) {
-        checkNotNull(healthCode);
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String userId, String offsetKey, int pageSize) {
+        checkNotNull(userId);
 
         int pageSizeWithIndicatorRecord = pageSize + 1;
         DynamoParticipantData hashKey = new DynamoParticipantData();
-        hashKey.setHealthCode(healthCode);
+        hashKey.setUserId(userId);
 
         Condition rangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.GE)
                 .withAttributeValueList(new AttributeValue().withS(offsetKey));
@@ -73,12 +58,12 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
     }
 
     @Override
-    public ParticipantData getParticipantDataRecord(final String healthCode, final String identifier) {
-        checkNotNull(healthCode);
+    public ParticipantData getParticipantDataRecord(final String userId, final String identifier) {
+        checkNotNull(userId);
         checkNotNull(identifier);
 
         DynamoParticipantData hashKey = new DynamoParticipantData();
-        hashKey.setHealthCode(healthCode);
+        hashKey.setUserId(userId);
         hashKey.setIdentifier(identifier);
 
         return mapper.load(hashKey);
@@ -91,11 +76,11 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
     }
 
     @Override
-    public void deleteAllParticipantData(String healthCode) {
-        checkNotNull(healthCode);
+    public void deleteAllParticipantData(String userId) {
+        checkNotNull(userId);
 
         DynamoParticipantData hashkey = new DynamoParticipantData();
-        hashkey.setHealthCode(healthCode);
+        hashkey.setUserId(userId);
 
         DynamoDBQueryExpression<DynamoParticipantData> query =
                 new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashkey);
@@ -108,9 +93,9 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
     }
 
     @Override
-    public void deleteParticipantData(String healthCode, String identifier) {
+    public void deleteParticipantData(String userId, String identifier) {
         DynamoParticipantData hashKey = new DynamoParticipantData();
-        hashKey.setHealthCode(healthCode);
+        hashKey.setUserId(userId);
         hashKey.setIdentifier(identifier);
 
         DynamoParticipantData participantDataRecord = mapper.load(hashKey);

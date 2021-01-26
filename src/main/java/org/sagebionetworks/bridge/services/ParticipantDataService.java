@@ -21,46 +21,38 @@ public class ParticipantDataService {
         this.participantDataDao = participantDataDao;
     }
 
-//    /**
-//     * Return a set of participant data records.
-//     */
-//    public ForwardCursorPagedResourceList<? extends ParticipantData> getParticipantData(String userId, String configId,
-//                                                                                        String offsetKey, int pageSize) {
-//        return participantDataDao.getParticipantData(userId, offsetKey, pageSize);
-//    }
-
     /**
      * Return a set of participant data records.
      */
-    public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String healthCode, String offsetKey, int pageSize) {
+    public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String userId, String offsetKey, int pageSize) {
                                                                                     // TODO what actually is offsetKey?
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
-        return participantDataDao.getParticipantData(healthCode, offsetKey, pageSize);
+        return participantDataDao.getParticipantData(userId, offsetKey, pageSize);
     }
 
     /**
      * Return a participant data record based on the given identifier.
      */
-    public ParticipantData getParticipantDataRecord(String healthCode, String identifier) {
-        return participantDataDao.getParticipantDataRecord(healthCode, identifier);
+    public ParticipantData getParticipantDataRecord(String userId, String identifier) {
+        return participantDataDao.getParticipantDataRecord(userId, identifier);
     }
 
-    public void saveParticipantData(String healthCode, String identifier, ParticipantData participantData) {
+    public void saveParticipantData(String userId, String identifier, ParticipantData participantData) {
         checkNotNull(participantData);
 
-        participantData.setHealthCode(healthCode);
+        participantData.setUserId(userId);
         participantData.setIdentifier(identifier);
 
         participantDataDao.saveParticipantData(participantData);
     }
 
-    public void deleteParticipantData(String healthCode) { //TODO: why isn't there a checkNotNull() in the ReportService code?
-        participantDataDao.deleteAllParticipantData(healthCode);
+    public void deleteParticipantData(String userId) { //TODO: why isn't there a checkNotNull() in the ReportService code?
+        participantDataDao.deleteAllParticipantData(userId);
     }
 
-    public void deleteParticipantDataRecord(String healthCode, String identifier) {
-        participantDataDao.deleteParticipantData(healthCode, identifier);
+    public void deleteParticipantDataRecord(String userId, String identifier) {
+        participantDataDao.deleteParticipantData(userId, identifier);
     }
 }

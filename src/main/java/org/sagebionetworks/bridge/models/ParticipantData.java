@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantData;
@@ -14,8 +13,8 @@ public interface ParticipantData extends BridgeEntity{
         return new DynamoParticipantData();
     }
 
-    String getHealthCode();
-    void setHealthCode(String healthCode);
+    String getUserId();
+    void setUserId(String userId);
 
     String getIdentifier();
     void setIdentifier(String identifier);

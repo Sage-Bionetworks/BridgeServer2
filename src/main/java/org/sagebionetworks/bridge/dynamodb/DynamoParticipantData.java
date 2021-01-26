@@ -1,6 +1,10 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.*;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.sagebionetworks.bridge.models.ParticipantData;
@@ -13,7 +17,7 @@ import java.util.Objects;
 @DynamoDBTable(tableName = "ParticipantData")
 public class DynamoParticipantData implements ParticipantData {
 
-    private String healthCode;
+    private String userId;
     private String identifier;
     private JsonNode data;
     private Long version;
@@ -21,13 +25,13 @@ public class DynamoParticipantData implements ParticipantData {
     @JsonIgnore
     @DynamoDBHashKey
     @Override
-    public String getHealthCode() {
-        return this.healthCode;
+    public String getUserId() {
+        return this.userId;
     }
 
     @Override
-    public void setHealthCode(String healthCode) {
-        this.healthCode = healthCode;
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 
     @DynamoDBRangeKey
@@ -69,19 +73,19 @@ public class DynamoParticipantData implements ParticipantData {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         DynamoParticipantData that = (DynamoParticipantData) o;
-        return Objects.equals(healthCode, that.healthCode) && Objects.equals(identifier, that.identifier) &&
+        return Objects.equals(userId, that.userId) && Objects.equals(identifier, that.identifier) &&
                 Objects.equals(data, that.data) && Objects.equals(version, that.version);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(healthCode, identifier, data, version);
+        return Objects.hash(userId, identifier, data, version);
     }
 
     @Override
     public String toString() {
         return "DynamoParticipantData{" +
-                "healthCode='" + healthCode +
+                "userId='" + userId +
                 ", identifier='" + identifier +
                 ", data='" + data +
                 ", version=" + version +
