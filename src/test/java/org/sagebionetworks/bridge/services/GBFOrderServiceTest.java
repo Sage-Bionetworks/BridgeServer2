@@ -1,11 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.services.GBFOrderService.GBF_API_KEY;
@@ -51,7 +49,7 @@ import org.sagebionetworks.bridge.models.crc.gbf.external.ShippingConfirmations;
 
 public class GBFOrderServiceTest {
 
-    private static final String CONFIRMATATION_URL = "https://example.com/conf";
+    private static final String CONFIRMATION_URL = "https://example.com/conf";
     private static final String PLACE_URL = "https://example.com/place";
     private static final String STATUS_URL = "https://example.com/status";
 
@@ -74,7 +72,7 @@ public class GBFOrderServiceTest {
         MockitoAnnotations.initMocks(this);
 
         when(mockBridgeConfig.get(GBF_PLACE_ORDER_URL)).thenReturn(PLACE_URL);
-        when(mockBridgeConfig.get(GBF_CONFIRMATION_URL)).thenReturn(CONFIRMATATION_URL);
+        when(mockBridgeConfig.get(GBF_CONFIRMATION_URL)).thenReturn(CONFIRMATION_URL);
         when(mockBridgeConfig.get(GBF_ORDER_STATUS_URL)).thenReturn(STATUS_URL);
 
         when(mockBridgeConfig.get(GBF_API_KEY)).thenReturn("apiKey");
@@ -168,7 +166,7 @@ public class GBFOrderServiceTest {
         ArgumentCaptor<ConfirmShippingRequest> confirmShippingRequestArgumentCaptor =
                 ArgumentCaptor.forClass(ConfirmShippingRequest.class);
 
-        doReturn(mockResponse).when(service).postJson(eq(CONFIRMATATION_URL), any(),
+        doReturn(mockResponse).when(service).postJson(eq(CONFIRMATION_URL), any(),
                 confirmShippingRequestArgumentCaptor.capture());
 
         LocalDate startDate = LocalDate.now().minusDays(20);
@@ -182,7 +180,7 @@ public class GBFOrderServiceTest {
         assertEquals(startDate, confirmShippingRequest.startDate);
         assertEquals(endDate, confirmShippingRequest.endDate);
 
-        verify(service).postJson(eq(CONFIRMATATION_URL), any(), any());
+        verify(service).postJson(eq(CONFIRMATION_URL), any(), any());
     }
 
 
@@ -205,7 +203,7 @@ public class GBFOrderServiceTest {
         doReturn(mockStatusLine).when(mockResponse).getStatusLine();
         doReturn(mockEntity).when(mockResponse).getEntity();
 
-        doReturn(mockResponse).when(service).postJson(eq(CONFIRMATATION_URL), any(), any());
+        doReturn(mockResponse).when(service).postJson(eq(CONFIRMATION_URL), any(), any());
         try {
             service.requestShippingConfirmations(
                     LocalDate.now().minusDays(2), LocalDate.now());
@@ -213,7 +211,7 @@ public class GBFOrderServiceTest {
         } catch (BadRequestException e) {
             assertEquals(errorMessage, e.getMessage());
         }
-        verify(service).postJson(eq(CONFIRMATATION_URL), any(), any());
+        verify(service).postJson(eq(CONFIRMATION_URL), any(), any());
     }
 
     @Test

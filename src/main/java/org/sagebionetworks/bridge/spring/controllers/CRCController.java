@@ -129,7 +129,7 @@ public class CRCController extends BaseController {
     static final String OBSERVATION_REPORT = "observation";
     static final String PROCEDURE_REPORT = "procedurerequest";
     static final String APPOINTMENT_REPORT = "appointment";
-    static final String SHIPMENT_REPORT = "shiprequest";
+    static final String SHIPMENT_REPORT = "shipmentrequest";
     static final String SHIPMENT_REPORT_KEY_ORDER_ID = "orderNumber";
     static final String CUIMC_USERNAME = "A5hfO-tdLP_eEjx9vf2orSd5";
     static final String SYN_USERNAME = "bridgeit+crc@sagebase.org";
@@ -208,26 +208,26 @@ public class CRCController extends BaseController {
         // caller enrolled studies
         UserSession session = getAuthenticatedSession();
         App app = appService.getApp(session.getAppId());
-        RequestContext requestContext = RequestContext.get();
-        Set<String> callerEnrolledStudies = requestContext.getCallerEnrolledStudies();
-        Set<String> orgSponsoredStudies = requestContext.getOrgSponsoredStudies();
-        RequestContext.set(requestContext.toBuilder().withOrgSponsoredStudies(callerEnrolledStudies)
-                .withCallerEnrolledStudies(
-                        orgSponsoredStudies).build());
-
+    
         AccountId accountId = parseAccountId(app.getIdentifier(), session.getId());
         Account account = accountService.getAccount(accountId);
-
+    
         return internalLabShipmentRequest(app, account);
     }
 
     @PostMapping("v1/cuicm/participants/{userId}/labshipments/request")
     public ResponseEntity<StatusMessage> postLabShipmentRequest(@PathVariable String userId) {
         App app = httpBasicAuthentication();
-
+    
+        // Participants will not have OrgSponsoredStudies which is used by writeReportAndUpdateState to set studies on
+        // ReportData. Remove studies
+        RequestContext requestContextWithoutOrgSponsoredStudies = RequestContext.get()
+                .toBuilder().withOrgSponsoredStudies(ImmutableSet.of()).build();
+        RequestContext.set(requestContextWithoutOrgSponsoredStudies);
+    
         AccountId accountId = parseAccountId(app.getIdentifier(), userId);
         Account account = accountService.getAccount(accountId);
-
+    
         return internalLabShipmentRequest(app, account);
     }
 
@@ -252,7 +252,9 @@ public class CRCController extends BaseController {
         gbfOrderService.placeOrder(o, true);
 
         JsonNode node = JsonNodeFactory.instance.objectNode().put(SHIPMENT_REPORT_KEY_ORDER_ID, orderNumber);
-        writeReportAndUpdateState(app, account.getId(), node, SHIPMENT_REPORT, SHIP_TESTS_REQUESTED);
+        
+        // participants will not have Org Sponsored Studies in RequestContext, so for lab shipment reports, don't set study IDs
+        writeReportAndUpdateState(app, account.getId(), node, SHIPMENT_REPORT, SHIP_TESTS_REQUESTED, false);
 
         return ResponseEntity.accepted()
                 .body(new StatusMessage("Test shipment requested."));
@@ -373,7 +375,7 @@ public class CRCController extends BaseController {
             addLocation(data, account, locationString);
         }
         
-        int status = writeReportAndUpdateState(app, userId, data, APPOINTMENT_REPORT, state);
+        int status = writeReportAndUpdateState(app, userId, data, APPOINTMENT_REPORT, state, true);
         if (status == 200) {
             return ResponseEntity.ok(new StatusMessage("Appointment updated (status = " + apptStatus + ")."));
         }
@@ -391,7 +393,7 @@ public class CRCController extends BaseController {
 
         String userId = findUserId(procedure.getSubject());
 
-        int status = writeReportAndUpdateState(app, userId, data, PROCEDURE_REPORT, AccountStates.TESTS_COLLECTED);
+        int status = writeReportAndUpdateState(app, userId, data, PROCEDURE_REPORT, AccountStates.TESTS_COLLECTED, true);
         if (status == 200) {
             return ResponseEntity.ok(new StatusMessage("ProcedureRequest updated."));
         }
@@ -420,7 +422,7 @@ public class CRCController extends BaseController {
 
         String userId = findUserId(observation.getSubject());
 
-        int status = writeReportAndUpdateState(app, userId, data, OBSERVATION_REPORT, state);
+        int status = writeReportAndUpdateState(app, userId, data, OBSERVATION_REPORT, state, true);
         if (status == 200) {
             return ResponseEntity.ok(new StatusMessage("Observation updated."));
         }
@@ -655,7 +657,7 @@ public class CRCController extends BaseController {
     }
 
     private int writeReportAndUpdateState(App app, String userId, JsonNode data, String reportName,
-            AccountStates state) {
+            AccountStates state, boolean useCallerStudyIds) {
         String appId = RequestContext.get().getCallerAppId();
         AccountId accountId = AccountId.forId(appId, userId);
         Account account = accountService.getAccount(accountId);
@@ -683,7 +685,7 @@ public class CRCController extends BaseController {
             throw new BridgeServiceException(e);
         }
 
-        Set<String> callerStudyIds = RequestContext.get().getOrgSponsoredStudies();
+        Set<String> callerStudyIds = useCallerStudyIds ? RequestContext.get().getOrgSponsoredStudies() : ImmutableSet.of();
         ReportData report = ReportData.create();
         report.setDate(JAN1.toString());
         report.setData(data);
