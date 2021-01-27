@@ -12,10 +12,12 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantDataDao;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
+import org.sagebionetworks.bridge.models.subpopulations.StudyConsent;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -48,7 +50,11 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
 
         PaginatedQueryList<DynamoParticipantData> resultPage = mapper.query(DynamoParticipantData.class, query);
 
-        List<ParticipantData> list = Collections.unmodifiableList(resultPage);
+        // List<ParticipantData> list = Collections.unmodifiableList(resultPage);
+        List<ParticipantData> list = new ArrayList<ParticipantData>();
+        for (ParticipantData participantData : resultPage) {
+            list.add(participantData);
+        }
 
         String nextPageOffsetKey = null;
         if (list.size() == pageSizeWithIndicatorRecord) {

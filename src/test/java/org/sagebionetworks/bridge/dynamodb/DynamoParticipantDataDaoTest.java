@@ -4,6 +4,8 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -16,12 +18,14 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import javax.mail.Part;
+import java.util.ArrayList;
 import java.util.List;
 
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertSame;
 
@@ -63,32 +67,44 @@ public class DynamoParticipantDataDaoTest extends Mockito {
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
 
-        participantData0 = createParticipantData("a", "b");
-        participantData1 = createParticipantData("c", "d");
-        participantData2 = createParticipantData("e", "f");
-        participantData3 = createParticipantData("g", "h");
-        participantDataList = ImmutableList.of(participantData0, participantData1, participantData2, participantData3);
+        // Create list with a size greater than PageSize
+        participantDataList = ImmutableList.of(
+            createParticipantData("a", "b"),
+            createParticipantData("c", "d"),
+            createParticipantData("e", "f"),
+            createParticipantData("g", "h"),
+            createParticipantData("i", "j"),
+            createParticipantData("k", "l"),
+            createParticipantData("m", "o"),
+            createParticipantData("p", "q"),
+            createParticipantData("r", "s"),
+            createParticipantData("t", "u"),
+            createParticipantData("v", "w")
+        );
     }
 
     @Test
     public void testGetParticipantData() {
         when(mockMapper.query(eq(DynamoParticipantData.class), any())).thenReturn(mockQueryList);
+        when(mockQueryList.iterator()).thenReturn(participantDataList.iterator());
+        ArgumentCaptor<DynamoDBQueryExpression<DynamoParticipantData>> queryCaptor = ArgumentCaptor.forClass(DynamoDBQueryExpression.class);
+        Condition expectedRangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.GE)
+                .withAttributeValueList(new AttributeValue().withS(OFFSET_KEY));
 
         ForwardCursorPagedResourceList<ParticipantData> result = dao.getParticipantData(USER_ID, OFFSET_KEY, PAGE_SIZE);
 
-        assertEquals(result.getRequestParams().get("userId"), USER_ID);
-        assertEquals(result.getRequestParams().get("offsetKey"), OFFSET_KEY);
-        assertEquals(result.getItems(), mockQueryList);
-
-        verify(mockMapper).query(eq(DynamoParticipantData.class), queryCaptor.capture());
-        DynamoDBQueryExpression<DynamoParticipantData> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getUserId(), USER_ID);
-        Condition rangeCondition = query.getRangeKeyConditions().get("identifier");
-        assertEquals(rangeCondition.getAttributeValueList().get(0).getS(), IDENTIFIER);
+        assertEquals(result.getItems(), participantDataList.subList(0, PAGE_SIZE));
+        assertEquals(result.getItems().get(0).getUserId(), USER_ID);
+        assertEquals(result.getNextPageOffsetKey(), result.getItems().get(PAGE_SIZE - 1).getIdentifier());
+        verify(mockMapper).query(any(), queryCaptor.capture());
+        assertEquals(queryCaptor.getValue().getRangeKeyConditions().get("offsetKey"), expectedRangeKeyCondition);
     }
+
+    //TODO another test with list less than 10 to assert that nextPageOffsetKey is null
 
     @Test
     public void testGetParticipantDataNoOffsetKey() {
+        when(mockMapper.query(eq(DynamoParticipantData.class), any())).thenReturn(mockQueryList);
 
     }
 
