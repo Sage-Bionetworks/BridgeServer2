@@ -46,9 +46,8 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
             query.withRangeKeyCondition("offsetKey", rangeKeyCondition);
         }
 
-        PaginatedQueryList<DynamoParticipantData> resultPage = mapper.query(DynamoParticipantData.class, query);
-
-        List<ParticipantData> list = ImmutableList.copyOf(resultPage);
+        List<DynamoParticipantData> dynamoList = queryHelper(query);
+        List<ParticipantData> list = ImmutableList.copyOf(dynamoList);
 
         String nextPageOffsetKey = null;
         if (list.size() == pageSizeWithIndicatorRecord) {
@@ -86,7 +85,7 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
 
         DynamoDBQueryExpression<DynamoParticipantData> query =
                 new DynamoDBQueryExpression<DynamoParticipantData>().withHashKeyValues(hashkey);
-        List<DynamoParticipantData> objectsToDelete = mapper.query(DynamoParticipantData.class, query);
+        List<DynamoParticipantData> objectsToDelete = queryHelper(query);
 
         if (!objectsToDelete.isEmpty()) {
             List<DynamoDBMapper.FailedBatch> failures = mapper.batchDelete(objectsToDelete);
@@ -104,5 +103,10 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
         if (participantDataRecord != null) {
             mapper.delete(participantDataRecord);
         }
+    }
+
+    // Helper method that wraps around mapper.query(). Because of typing issues, mapper.query() is hard to mock.
+    List<DynamoParticipantData> queryHelper(DynamoDBQueryExpression<DynamoParticipantData> query) {
+        return mapper.query(DynamoParticipantData.class, query);
     }
 }

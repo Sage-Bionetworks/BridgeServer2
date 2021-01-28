@@ -16,27 +16,27 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
+import org.sagebionetworks.bridge.models.ResourceList;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
 public class DynamoParticipantDataDaoTest extends Mockito {
 
-    static final String USER_ID = "aUserId";
-    static final String IDENTIFIER = "anIdentifier";
     static final String OFFSET_KEY = "anOffsetKey";
     static final int PAGE_SIZE = 10;
 
     DynamoParticipantData participantData0;
-    DynamoParticipantData participantData1;
-    DynamoParticipantData participantData2;
-    DynamoParticipantData participantData3;
     ImmutableList<DynamoParticipantData> participantDataList;
 
     @Mock
@@ -58,15 +58,18 @@ public class DynamoParticipantDataDaoTest extends Mockito {
     ArgumentCaptor<List<DynamoParticipantData>> dataListCaptor;
 
     @InjectMocks
+    @Spy
     DynamoParticipantDataDao dao;
 
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
 
+        participantData0 = createParticipantData("a", "b");
+
         // Create list with a size greater than PageSize
         participantDataList = ImmutableList.of(
-            createParticipantData("a", "b"),
+            participantData0,
             createParticipantData("c", "d"),
             createParticipantData("e", "f"),
             createParticipantData("g", "h"),
@@ -82,36 +85,71 @@ public class DynamoParticipantDataDaoTest extends Mockito {
 
     @Test
     public void testGetAllParticipantData() {
-        when(mockMapper.query(eq(DynamoParticipantData.class), any())).thenReturn(mockQueryList);
-        when(mockQueryList.iterator()).thenReturn(participantDataList.iterator());
-        ArgumentCaptor<DynamoDBQueryExpression<DynamoParticipantData>> queryCaptor = ArgumentCaptor.forClass(DynamoDBQueryExpression.class);
+        // Mock dependencies
+        DynamoParticipantData participantData = new DynamoParticipantData();
+        List<DynamoParticipantData> participantDataList = ImmutableList.of(participantData);
+        doReturn(participantDataList).when(dao).queryHelper(any());
+
+        // Execute
+        ForwardCursorPagedResourceList<ParticipantData> result =
+                dao.getAllParticipantData(TestConstants.TEST_USER_ID, OFFSET_KEY, PAGE_SIZE);
+        assertEquals(result.getItems().size(), 1);
+        assertSame(result.getItems().get(0), participantData);
+        assertNull(result.getNextPageOffsetKey());
+
+        //Validate
+        verify(dao).queryHelper(queryCaptor.capture());
+
+        DynamoDBQueryExpression<DynamoParticipantData> query = queryCaptor.getValue();
+        assertEquals(query.getHashKeyValues().getUserId(), TestConstants.TEST_USER_ID);
+        assertEquals(query.getLimit().intValue(), PAGE_SIZE + 1);
+        assertEquals(query.getRangeKeyConditions().size() , 1);
+
         Condition expectedRangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.GE)
                 .withAttributeValueList(new AttributeValue().withS(OFFSET_KEY));
-
-        ForwardCursorPagedResourceList<ParticipantData> result = dao.getAllParticipantData(USER_ID, OFFSET_KEY, PAGE_SIZE);
-
-        assertEquals(result.getItems(), participantDataList.subList(0, PAGE_SIZE));
-        assertEquals(result.getItems().get(0).getUserId(), USER_ID);
-        assertEquals(result.getNextPageOffsetKey(), result.getItems().get(PAGE_SIZE - 1).getIdentifier());
-        verify(mockMapper).query(any(), queryCaptor.capture());
-        assertEquals(queryCaptor.getValue().getRangeKeyConditions().get("offsetKey"), expectedRangeKeyCondition);
+        Condition actualRangeKeyCondition = query.getRangeKeyConditions().get("offsetKey");
+        assertEquals(actualRangeKeyCondition.getAttributeValueList().size(), 1);
+        assertEquals(actualRangeKeyCondition, expectedRangeKeyCondition);
     }
-
-    //TODO another test with list less than 10 to assert that nextPageOffsetKey is null
 
     @Test
     public void testGetParticipantDataNoOffsetKey() {
-        when(mockMapper.query(eq(DynamoParticipantData.class), any())).thenReturn(mockQueryList);
+        doReturn(participantDataList).when(dao).queryHelper(any());
 
+        ForwardCursorPagedResourceList<ParticipantData> result =
+                dao.getAllParticipantData(TestConstants.TEST_USER_ID, null, PAGE_SIZE);
+        assertEquals(result.getItems().size(), 10);
+        assertNull(result.getRequestParams().get(ResourceList.OFFSET_KEY));
+
+        verify(dao).queryHelper(queryCaptor.capture());
+
+        DynamoDBQueryExpression<DynamoParticipantData> query = queryCaptor.getValue();
+        assertNull(query.getRangeKeyConditions());
     }
 
     @Test
     public void getParticipantDataMultiplePages() {
+        List<DynamoParticipantData> list = new ArrayList<>(participantDataList);
 
+        doReturn(list).when(dao).queryHelper(any());
+
+        ForwardCursorPagedResourceList<ParticipantData> result=
+                dao.getAllParticipantData(TestConstants.TEST_USER_ID, OFFSET_KEY, PAGE_SIZE);
+        assertEquals(result.getItems().size(), PAGE_SIZE);
+        assertEquals(result.getNextPageOffsetKey(), list.get(PAGE_SIZE).getIdentifier());
     }
 
     @Test
     public void testGetParticipantData() {
+        doReturn(participantData0).when(mockMapper).load(any());
+
+        dao.getParticipantData(TestConstants.TEST_USER_ID, TestConstants.IDENTIFIER);
+
+        verify(mockMapper).load(participantDataCaptor.capture());
+        ParticipantData participantData = participantDataCaptor.getValue();
+        //assertSame(participantData, participantData0);
+        // TODO why does the line above not return participantData0 as specified in the first line of the method?
+        assertEquals(participantData.getIdentifier(), TestConstants.IDENTIFIER);
     }
 
     @Test
@@ -119,9 +157,10 @@ public class DynamoParticipantDataDaoTest extends Mockito {
         dao.saveParticipantData(participantData0);
 
         verify(mockMapper).save(participantDataCaptor.capture());
+        // TODO if I change the above lines to verify(mockMapper).save(participantData0), then how will I get the below participantData?
         ParticipantData participantData = participantDataCaptor.getValue();
         assertSame(participantData, participantData0);
-        assertEquals(participantData.getUserId(), USER_ID);
+        assertEquals(participantData.getUserId(), TestConstants.TEST_USER_ID);
     }
 
     @Test
@@ -174,8 +213,8 @@ public class DynamoParticipantDataDaoTest extends Mockito {
         node.put("field1", fieldValue1);
         node.put("field2", fieldValue2);
         DynamoParticipantData participantData = new DynamoParticipantData();
-        participantData.setUserId(USER_ID);
-        participantData.setIdentifier(IDENTIFIER);
+        participantData.setUserId(TestConstants.TEST_USER_ID);
+        participantData.setIdentifier(TestConstants.IDENTIFIER);
         participantData.setData(node);
         return participantData;
     }
