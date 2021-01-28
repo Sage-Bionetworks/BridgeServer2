@@ -90,7 +90,7 @@ public class ParticipantDataController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
 
-        checkAdminSessionAppId(session);
+        checkAdminSessionAppId(session, appId);
 
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         ForwardCursorPagedResourceList<ParticipantData> participantData = participantDataService.getAllParticipantData(
@@ -105,7 +105,7 @@ public class ParticipantDataController extends BaseController {
         UserSession session = getAuthenticatedSession(ADMIN);
 
         checkAccountExists(appId, userId);
-        checkAdminSessionAppId(session);
+        checkAdminSessionAppId(session, appId);
 
         participantDataService.deleteAllParticipantData(session.getId());
 
@@ -129,7 +129,7 @@ public class ParticipantDataController extends BaseController {
         UserSession session = getAuthenticatedSession(ADMIN, WORKER);
 
         checkAccountExists(appId, userId);
-        checkAdminSessionAppId(session);
+        checkAdminSessionAppId(session, appId);
 
         ParticipantData participantData = parseJson(ParticipantData.class);
         participantData.setUserId(null);
@@ -145,15 +145,15 @@ public class ParticipantDataController extends BaseController {
         UserSession session = getAuthenticatedSession(ADMIN);
 
         checkAccountExists(appId, userId);
-        checkAdminSessionAppId(session);
+        checkAdminSessionAppId(session, appId);
 
-        participantDataService.deleteParticipantData(userId, identifier); //TODO I also am not using appID here
+        participantDataService.deleteParticipantData(userId, identifier);
 
         return new StatusMessage("Participant data deleted");
     }
 
-    private void checkAdminSessionAppId(UserSession session) {
-        if (session.isInRole(ADMIN)) { //TODO: waiting to hear from dwayne if this is the correct exception
+    private void checkAdminSessionAppId(UserSession session, String appId) {
+        if (session.isInRole(ADMIN) && (!appId.equals(session.getAppId()))) { //TODO: waiting to hear from dwayne if this is the correct exception
             throw new UnauthorizedException("Caller does not have permission to access participant data.");
         }
     }

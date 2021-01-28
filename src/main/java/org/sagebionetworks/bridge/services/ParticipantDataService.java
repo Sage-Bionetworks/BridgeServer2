@@ -29,14 +29,26 @@ public class ParticipantDataService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
-        return participantDataDao.getAllParticipantData(userId, offsetKey, pageSize);
+
+        ForwardCursorPagedResourceList<ParticipantData> allParticipantData = participantDataDao.getAllParticipantData(userId, offsetKey, pageSize);
+        if (allParticipantData == null) {
+            throw new EntityNotFoundException(ParticipantData.class);
+        }
+
+        return allParticipantData;
     }
 
     /**
      * Return a participant data record based on the given identifier.
      */
     public ParticipantData getParticipantData(String userId, String identifier) {
-        return participantDataDao.getParticipantData(userId, identifier);
+        ParticipantData participantData = participantDataDao.getParticipantData(userId, identifier);
+
+        if (participantData == null) {
+            throw new EntityNotFoundException(ParticipantData.class);
+        }
+
+        return participantData;
     }
 
     public void saveParticipantData(String userId, String identifier, ParticipantData participantData) {
