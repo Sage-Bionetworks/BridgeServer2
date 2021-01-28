@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
-import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -19,7 +18,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.amazonaws.HttpMethod;
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -164,6 +162,8 @@ public class ConsentServiceTest extends Mockito {
 
         account = Account.create();
         account.setId(ID);
+        
+        when(subpopulation.getStudyId()).thenReturn(TEST_STUDY_ID);
 
         when(accountService.getAccount(any(AccountId.class))).thenReturn(account);
 
@@ -964,7 +964,6 @@ public class ConsentServiceTest extends Mockito {
     @Test
     public void consentToResearchAssignsDataGroupsAndStudies() throws Exception {
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(USER_DATA_GROUPS);
-        when(subpopulation.getStudyIdsAssignedOnConsent()).thenReturn(USER_STUDY_IDS);
 
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
         when(accountService.getAccount(any())).thenReturn(account);
@@ -974,10 +973,12 @@ public class ConsentServiceTest extends Mockito {
 
         assertEquals(account.getDataGroups(), TestConstants.USER_DATA_GROUPS);
         
-        verify(mockEnrollmentService, times(2)).addEnrollment(any(), enrollmentCaptor.capture());
-        assertEquals(enrollmentCaptor.getAllValues().stream()
-            .map(Enrollment::getStudyId)
-            .collect(Collectors.toSet()), TestConstants.USER_STUDY_IDS);
+        verify(mockEnrollmentService).addEnrollment(any(), enrollmentCaptor.capture());
+        
+        Enrollment en = enrollmentCaptor.getValue();
+        assertEquals(en.getStudyId(), TEST_STUDY_ID);
+        assertEquals(en.getAppId(), app.getIdentifier());
+        assertEquals(en.getAccountId(), ID);
     }
 
     @Test

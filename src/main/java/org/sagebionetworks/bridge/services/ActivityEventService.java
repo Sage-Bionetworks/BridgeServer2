@@ -75,8 +75,8 @@ public class ActivityEventService {
      * defined in the app (either in activityEventKeys or in AutomaticCustomEvents).
      */
     public void publishCustomEvent(App app, String studyId, String healthCode, String eventKey, DateTime timestamp) {
+        checkNotNull(app);
         checkNotNull(healthCode);
-        checkNotNull(eventKey);
 
         if (!app.getActivityEventKeys().contains(eventKey)
                 && !app.getAutomaticCustomEvents().containsKey(eventKey)) {
@@ -129,8 +129,8 @@ public class ActivityEventService {
     }
     
     public void publishActivitiesRetrieved(App app, String studyId, String healthCode, DateTime timestamp) {
+        checkNotNull(app);
         checkNotNull(healthCode);
-        checkNotNull(timestamp);
         
         ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
@@ -160,7 +160,6 @@ public class ActivityEventService {
      */
     public void publishQuestionAnsweredEvent(String healthCode, SurveyAnswer answer) {
         checkNotNull(healthCode);
-        checkNotNull(answer);
         
         ActivityEvent event = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
@@ -223,7 +222,9 @@ public class ActivityEventService {
     * Gets the activity events times for a specific user in order to schedule against them.
     */
     public Map<String, DateTime> getActivityEventMap(String appId, String studyId, String healthCode) {
+        checkNotNull(appId);
         checkNotNull(healthCode);
+        
         Map<String, DateTime> activityMap = activityEventDao.getActivityEventMap(healthCode, studyId);
         
         Builder<String, DateTime> builder = ImmutableMap.<String, DateTime>builder();
@@ -251,6 +252,9 @@ public class ActivityEventService {
     }
     
     public List<ActivityEvent> getActivityEventList(String appId, String studyId, String healthCode) {
+        checkNotNull(appId);
+        checkNotNull(healthCode);
+        
         Map<String, DateTime> activityEvents = getActivityEventMap(appId, studyId, healthCode);
 
         List<ActivityEvent> activityEventList = Lists.newArrayList();

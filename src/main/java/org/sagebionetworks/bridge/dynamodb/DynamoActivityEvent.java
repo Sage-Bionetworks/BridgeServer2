@@ -34,7 +34,10 @@ public class DynamoActivityEvent implements ActivityEvent {
     @DynamoDBHashKey
     @Override
     public String getHealthCode() {
-        return (studyId == null) ? healthCode : (healthCode + ":" + studyId);
+        if (studyId == null || healthCode == null) {
+            return healthCode;
+        }
+        return (healthCode + ":" + studyId);
     }
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;

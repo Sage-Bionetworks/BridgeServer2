@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITY;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.QUESTION;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SURVEY;
@@ -144,6 +145,19 @@ public class DynamoActivityEventDaoTest extends Mockito {
         assertFalse(result);
         
         verify(mockMapper, never()).save(any());
+    }
+    
+    @Test
+    public void publishEventDeletesCustomEvent() {
+        DynamoActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM).withObjectId("AAA").build();
+        
+        when(mockMapper.load(any())).thenReturn(event);
+        
+        boolean result = dao.publishEvent(event);
+        assertTrue(result);
+        
+        verify(mockMapper).delete(event);
     }
 
     @Test

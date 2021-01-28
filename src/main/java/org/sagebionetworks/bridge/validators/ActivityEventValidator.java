@@ -18,17 +18,19 @@ public class ActivityEventValidator implements Validator {
     @Override
     public void validate(Object object, Errors errors) {
         DynamoActivityEvent event = (DynamoActivityEvent)object;
+        
+        String eventId = event.getEventId(); 
 
         if (isBlank(event.getHealthCode())) {
             errors.rejectValue("healthCode", "cannot be null or blank");
         }
-        if (event.getTimestamp() == null) {
-            errors.rejectValue("timestamp", "cannot be null");
-        }
-        if (event.getEventId() == null) {
+        if (eventId == null) {
             errors.rejectValue("eventId", "cannot be null (may be missing object or event type)");
-        } else if (event.getEventId().endsWith(":answered") && isBlank(event.getAnswerValue())) {
+        } else if (eventId.endsWith(":answered") && isBlank(event.getAnswerValue())) {
             errors.rejectValue("answerValue", "cannot be null or blank if the event indicates the answer to a survey");
+        }
+        if (eventId != null && !eventId.startsWith("custom:") && event.getTimestamp() == null) {
+            errors.rejectValue("timestamp", "cannot be null");
         }
     }
 }

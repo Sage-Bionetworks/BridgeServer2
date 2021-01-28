@@ -52,7 +52,11 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         hashKey.setEventId(event.getEventId());
         
         ActivityEvent savedEvent = mapper.load(hashKey);
-        if (isNewOrMutable(savedEvent, event) && isLater(savedEvent, event)) {
+        
+        if (event.getTimestamp() == null) {
+            mapper.delete(event);
+            return true;
+        } else if (isNewOrMutable(savedEvent, event) && isLater(savedEvent, event)) {
             mapper.save(event);
             return true;
         }

@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.models.activities.ActivityEvent.ACTIVITY_EVENT_WRITER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
@@ -48,15 +47,12 @@ public class ActivityEventController extends BaseController {
     }
 
     @GetMapping(produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getSelfActivityEvents() throws Exception {
+    public ResourceList<ActivityEvent> getSelfActivityEvents() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         List<ActivityEvent> activityEvents = activityEventService.getActivityEventList(session.getAppId(),
                 null, session.getHealthCode());
         
-        // I do not like the fact we are serializing in the controller, but that's the only way to access
-        // the ObjectWriter and that's currently how we suppress healthCode.
-        return ACTIVITY_EVENT_WRITER
-                .writeValueAsString(new ResourceList<>(activityEvents));
+        return new ResourceList<>(activityEvents);
     }    
 }

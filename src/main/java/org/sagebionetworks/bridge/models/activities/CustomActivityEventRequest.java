@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.activities;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.joda.time.DateTime;
@@ -38,7 +39,11 @@ public class CustomActivityEventRequest {
         private String eventKey;
         private DateTime timestamp;
 
-        /** @see CustomActivityEventRequest#getEventKey */
+        /** 
+         * @see CustomActivityEventRequest#getEventKey. This is returned as eventId, so it's odd that
+         * it needs to be submitted as eventKey. Both are now supported with aliasing. 
+         */
+        @JsonAlias("eventId") 
         public Builder withEventKey(String eventKey) {
             this.eventKey = eventKey;
             return this;

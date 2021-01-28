@@ -584,14 +584,13 @@ public class ParticipantController extends BaseController {
 
     @GetMapping(path = {"/v3/participants/{userId}/activityEvents"}, produces = {
             APPLICATION_JSON_UTF8_VALUE })
-    public String getActivityEvents(@PathVariable String userId) throws JsonProcessingException {
+    public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String userId) throws JsonProcessingException {
         UserSession researcherSession = getAdministrativeSession();
         IS_SELF_OR_RESEARCHER.checkAndThrow(USER_ID, userId);
         App app = appService.getApp(researcherSession.getAppId());
 
         List<ActivityEvent> events = participantService.getActivityEvents(app, null, userId);
-        return ActivityEvent.ACTIVITY_EVENT_WRITER
-                .writeValueAsString(new ResourceList<>(events));
+        return new ResourceList<>(events);
     }
 
     @PostMapping(path = {"/v1/apps/{appId}/participants/{userId}/sendSmsMessage",
