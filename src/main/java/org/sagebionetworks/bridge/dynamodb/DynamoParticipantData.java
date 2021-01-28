@@ -9,8 +9,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.sagebionetworks.bridge.models.ParticipantData;
 
-import java.util.Objects;
-
 /**
  *
  */
@@ -47,7 +45,6 @@ public class DynamoParticipantData implements ParticipantData {
 
     @Override
     @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
-    //TODO is this a @DynamoDBAttribute?
     public JsonNode getData() {
         return this.data;
     }
@@ -66,20 +63,6 @@ public class DynamoParticipantData implements ParticipantData {
     @Override
     public void setVersion(Long version) {
         this.version = version;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        DynamoParticipantData that = (DynamoParticipantData) o;
-        return Objects.equals(userId, that.userId) && Objects.equals(identifier, that.identifier) &&
-                Objects.equals(data, that.data) && Objects.equals(version, that.version);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(userId, identifier, data, version);
     }
 
     @Override

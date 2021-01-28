@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
-
 public class ParticipantDataControllerTest extends Mockito {
 
     @Test

@@ -20,6 +20,7 @@ public class DynamoParticipantDataTest {
         DynamoParticipantData participantData = new DynamoParticipantData();
         String userId = "foo";
         String identifier = "baz";
+        Long version = 12345L;
 
         ObjectNode objectNode = JsonNodeFactory.instance.objectNode();
         objectNode.put("a", true);
@@ -29,21 +30,26 @@ public class DynamoParticipantDataTest {
         participantData.setUserId(userId);
         participantData.setIdentifier(identifier);
         participantData.setData(objectNode);
+        participantData.setVersion(version);
 
         String json = MAPPER.writeValueAsString(participantData);
 
         JsonNode node = MAPPER.readTree(json);
-        assertNull(node.get("userId")); // TODO a little confused here
-        assertEquals(node.get("identifier").asText(), identifier);
+
+        assertNull(node.get("userId"));
+        assertEquals(node.get("identifier").textValue(), identifier);
+        assertEquals(new Long(node.get("version").longValue()), version);
         assertTrue(node.get("data").get("a").booleanValue());
         assertEquals(node.get("data").get("b").textValue(), "string");
         assertEquals(node.get("data").get("c").intValue(), 10);
         assertEquals(node.get("type").textValue(), "ParticipantData");
-        assertEquals(node.size(), 3);
+        assertEquals(node.size(), 4);
 
         ParticipantData deser = MAPPER.readValue(json, ParticipantData.class);
         assertTrue(deser.getData().get("a").asBoolean());
-        assertEquals(deser.getData().get("b").asText(), "string");
-        assertEquals(deser.getData().get("c").asInt(), 10);
+        assertEquals(deser.getData().get("b").textValue(), "string");
+        assertEquals(deser.getData().get("c").intValue(), 10);
+        assertEquals(deser.getIdentifier(), identifier);
+        assertEquals(deser.getVersion(), version);
     }
 }

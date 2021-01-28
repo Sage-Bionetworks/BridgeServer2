@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
@@ -9,11 +7,18 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.ParticipantDataService;
+import org.sagebionetworks.repo.model.UnauthorizedException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,22 +46,22 @@ public class ParticipantDataController extends BaseController {
 
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         ForwardCursorPagedResourceList<ParticipantData> participantData = participantDataService
-                .getParticipantData(session.getId(), offsetKey, pageSizeInt);
+                .getAllParticipantData(session.getId(), offsetKey, pageSizeInt);
         List<String> identifiers = participantData.getItems().stream().map(ParticipantData::getIdentifier).collect(Collectors.toList());
 
         return new ForwardCursorPagedResourceList<String>(identifiers, participantData.getNextPageOffsetKey());
     }
 
-    @GetMapping("/v4/users/self/data/{identifier}")
+    @GetMapping("/v3/users/self/data/{identifier}")
     public ParticipantData getDataByIdentifierForSelf(@PathVariable String identifier) {
         UserSession session = getAuthenticatedAndConsentedSession();
 
-        return participantDataService.getParticipantDataRecord(session.getId(), identifier);
+        return participantDataService.getParticipantData(session.getId(), identifier);
     }
 
-    @PostMapping("/v4/users/self/data/{identifier}")
+    @PostMapping("/v3/users/self/data/{identifier}")
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage saveDataRecordForSelf(@PathVariable String identifier) {
+    public StatusMessage saveDataForSelf(@PathVariable String identifier) {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         ParticipantData participantData = parseJson(ParticipantData.class);
@@ -66,15 +71,11 @@ public class ParticipantDataController extends BaseController {
         return new StatusMessage("Participant data saved.");
     }
 
-    @DeleteMapping("/v4/users/self/data/{identifier}")
+    @DeleteMapping("/v3/users/self/data/{identifier}")
     public StatusMessage deleteDataByIdentifier(@PathVariable String identifier) {
         UserSession session = getAuthenticatedAndConsentedSession();
 
-        ParticipantData participantData = participantDataService.getParticipantDataRecord(session.getId(), identifier);
-        if (participantData == null) {
-            throw new EntityNotFoundException(ParticipantData.class);
-        }
-        participantDataService.deleteParticipantDataRecord(session.getId(), identifier);
+        participantDataService.deleteParticipantData(session.getId(), identifier);
 
         return new StatusMessage("Participant data record deleted.");
     }
@@ -82,15 +83,17 @@ public class ParticipantDataController extends BaseController {
     @GetMapping("/v1/apps/{appId}/participants/{userId}/data")
     public ForwardCursorPagedResourceList<String> getAllDataForAdminWorker(@PathVariable String appId, @PathVariable String userId,
                                                                            String offsetKey, String pageSize) {
-        getAuthenticatedSession(ADMIN, WORKER);
+        UserSession session = getAuthenticatedSession(ADMIN, WORKER);
 
         Account account = accountService.getAccount(AccountId.forId(appId, userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
 
+        checkAdminSessionAppId(session);
+
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
-        ForwardCursorPagedResourceList<ParticipantData> participantData = participantDataService.getParticipantData(
+        ForwardCursorPagedResourceList<ParticipantData> participantData = participantDataService.getAllParticipantData(
                 account.getId(), offsetKey, pageSizeInt);
         List<String> identifiers = participantData.getItems().stream().map(ParticipantData::getIdentifier).collect(Collectors.toList());
 
@@ -98,15 +101,13 @@ public class ParticipantDataController extends BaseController {
     }
 
     @DeleteMapping("/v1/apps/{appId}/participants/{userId}/data")
-    public StatusMessage deleteAllParticipantData(@PathVariable String appId, @PathVariable String userId) {
+    public StatusMessage deleteAllParticipantDataForAdmin(@PathVariable String appId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
-        App app = appService.getApp(session.getAppId());
 
-        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        participantDataService.deleteParticipantData(session.getId());
+        checkAccountExists(appId, userId);
+        checkAdminSessionAppId(session);
+
+        participantDataService.deleteAllParticipantData(session.getId());
 
         return new StatusMessage("Participant data deleted.");
     }
@@ -116,24 +117,20 @@ public class ParticipantDataController extends BaseController {
                                                              @PathVariable String identifier) {
         getAuthenticatedSession(ADMIN, WORKER);
 
-        Account account = accountService.getAccount(AccountId.forId(appId, userId));
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        return participantDataService.getParticipantDataRecord(userId, identifier);
+        checkAccountExists(appId, userId);
+        checkAccountExists(appId, userId);
+
+        return participantDataService.getParticipantData(userId, identifier);
     }
 
     @PostMapping("/v1/apps/{appId}/participants/{userId}/data/{identifier}")
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage saveDataRecordForAdminWorker(@PathVariable String appId, @PathVariable String userId, @PathVariable String identifier) {
+    public StatusMessage saveDataForAdminWorker(@PathVariable String appId, @PathVariable String userId, @PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(ADMIN, WORKER);
-        App app = appService.getApp(appId); // TODO since I already have appId, do I still need to store the session var?
-        // TODO same with storing app var, since I already have appId?
 
-        Account account = accountService.getAccount(AccountId.forId(appId, userId));
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        checkAccountExists(appId, userId);
+        checkAdminSessionAppId(session);
+
         ParticipantData participantData = parseJson(ParticipantData.class);
         participantData.setUserId(null);
 
@@ -143,12 +140,28 @@ public class ParticipantDataController extends BaseController {
     }
 
     @DeleteMapping("/v1/apps/{appId}/participants/{userId}/data/{identifier}")
-    public StatusMessage deleteDataRecordForAdmin(@PathVariable String appId, @PathVariable String userId,
+    public StatusMessage deleteDataForAdmin(@PathVariable String appId, @PathVariable String userId,
                                                   @PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(ADMIN);
 
-        participantDataService.deleteParticipantDataRecord(userId, identifier); //TODO I also am not using appID here
+        checkAccountExists(appId, userId);
+        checkAdminSessionAppId(session);
+
+        participantDataService.deleteParticipantData(userId, identifier); //TODO I also am not using appID here
 
         return new StatusMessage("Participant data deleted");
+    }
+
+    private void checkAdminSessionAppId(UserSession session) {
+        if (session.isInRole(ADMIN)) { //TODO: waiting to hear from dwayne if this is the correct exception
+            throw new UnauthorizedException("Caller does not have permission to access participant data.");
+        }
+    }
+
+    private void checkAccountExists(String appId, String userId) {
+        Account account = accountService.getAccount(AccountId.forId(appId, userId));
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
     }
 }

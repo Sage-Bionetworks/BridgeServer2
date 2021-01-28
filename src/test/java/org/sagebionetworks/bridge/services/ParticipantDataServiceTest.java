@@ -1,10 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
-import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
-import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
-import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
-import com.google.common.collect.ImmutableList;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -16,8 +12,6 @@ import org.sagebionetworks.bridge.models.ParticipantData;
 import org.testng.annotations.Test;
 
 import java.util.List;
-
-import static org.testng.Assert.*;
 
 public class ParticipantDataServiceTest {
 

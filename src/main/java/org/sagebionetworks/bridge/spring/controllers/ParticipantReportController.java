@@ -204,7 +204,7 @@ public class ParticipantReportController extends BaseController {
     public StatusMessage saveParticipantReport(@PathVariable String userId, @PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         App app = appService.getApp(session.getAppId());
-        
+
         Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.ParticipantDataDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,18 +25,18 @@ public class ParticipantDataService {
     /**
      * Return a set of participant data records.
      */
-    public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String userId, String offsetKey, int pageSize) {
+    public ForwardCursorPagedResourceList<ParticipantData> getAllParticipantData(String userId, String offsetKey, int pageSize) {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
-        return participantDataDao.getParticipantData(userId, offsetKey, pageSize);
+        return participantDataDao.getAllParticipantData(userId, offsetKey, pageSize);
     }
 
     /**
      * Return a participant data record based on the given identifier.
      */
-    public ParticipantData getParticipantDataRecord(String userId, String identifier) {
-        return participantDataDao.getParticipantDataRecord(userId, identifier);
+    public ParticipantData getParticipantData(String userId, String identifier) {
+        return participantDataDao.getParticipantData(userId, identifier);
     }
 
     public void saveParticipantData(String userId, String identifier, ParticipantData participantData) {
@@ -47,11 +48,17 @@ public class ParticipantDataService {
         participantDataDao.saveParticipantData(participantData);
     }
 
-    public void deleteParticipantData(String userId) { //TODO: why isn't there a checkNotNull() in the ReportService code?
+    public void deleteAllParticipantData(String userId) {
         participantDataDao.deleteAllParticipantData(userId);
     }
 
-    public void deleteParticipantDataRecord(String userId, String identifier) {
+    public void deleteParticipantData(String userId, String identifier) {
+        ParticipantData participantData = this.getParticipantData(userId, identifier);
+
+        if (participantData == null) {
+            throw new EntityNotFoundException(ParticipantData.class);
+        }
+
         participantDataDao.deleteParticipantData(userId, identifier);
     }
 }

@@ -18,16 +18,13 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
-import org.sagebionetworks.bridge.models.ResourceList;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.ArrayList;
 import java.util.List;
 
-import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.testng.AssertJUnit.assertEquals;
-import static org.testng.AssertJUnit.assertSame;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
 
 public class DynamoParticipantDataDaoTest extends Mockito {
 
@@ -84,14 +81,14 @@ public class DynamoParticipantDataDaoTest extends Mockito {
     }
 
     @Test
-    public void testGetParticipantData() {
+    public void testGetAllParticipantData() {
         when(mockMapper.query(eq(DynamoParticipantData.class), any())).thenReturn(mockQueryList);
         when(mockQueryList.iterator()).thenReturn(participantDataList.iterator());
         ArgumentCaptor<DynamoDBQueryExpression<DynamoParticipantData>> queryCaptor = ArgumentCaptor.forClass(DynamoDBQueryExpression.class);
         Condition expectedRangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.GE)
                 .withAttributeValueList(new AttributeValue().withS(OFFSET_KEY));
 
-        ForwardCursorPagedResourceList<ParticipantData> result = dao.getParticipantData(USER_ID, OFFSET_KEY, PAGE_SIZE);
+        ForwardCursorPagedResourceList<ParticipantData> result = dao.getAllParticipantData(USER_ID, OFFSET_KEY, PAGE_SIZE);
 
         assertEquals(result.getItems(), participantDataList.subList(0, PAGE_SIZE));
         assertEquals(result.getItems().get(0).getUserId(), USER_ID);
@@ -114,7 +111,7 @@ public class DynamoParticipantDataDaoTest extends Mockito {
     }
 
     @Test
-    public void testGetParticipantDataRecord() {
+    public void testGetParticipantData() {
     }
 
     @Test

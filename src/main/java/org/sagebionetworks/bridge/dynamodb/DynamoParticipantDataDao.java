@@ -32,29 +32,26 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
         this.mapper = participantStateMapper;
     }
 
-    public ForwardCursorPagedResourceList<ParticipantData> getParticipantData(String userId, String offsetKey, int pageSize) {
+    public ForwardCursorPagedResourceList<ParticipantData> getAllParticipantData(String userId, String offsetKey, int pageSize) {
         checkNotNull(userId);
-        checkNotNull(offsetKey);
 
         int pageSizeWithIndicatorRecord = pageSize + 1;
         DynamoParticipantData hashKey = new DynamoParticipantData();
         hashKey.setUserId(userId);
 
-        Condition rangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.GE)
-                .withAttributeValueList(new AttributeValue().withS(offsetKey));
-
         DynamoDBQueryExpression<DynamoParticipantData> query = new DynamoDBQueryExpression<DynamoParticipantData>()
                 .withHashKeyValues(hashKey)
-                .withRangeKeyCondition("offsetKey", rangeKeyCondition)
                 .withLimit(pageSizeWithIndicatorRecord);
+
+        if (offsetKey != null) {
+            Condition rangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.GE)
+                    .withAttributeValueList(new AttributeValue().withS(offsetKey));
+            query.withRangeKeyCondition("offsetKey", rangeKeyCondition);
+        }
 
         PaginatedQueryList<DynamoParticipantData> resultPage = mapper.query(DynamoParticipantData.class, query);
 
-        // List<ParticipantData> list = Collections.unmodifiableList(resultPage);
-        List<ParticipantData> list = new ArrayList<ParticipantData>();
-        for (ParticipantData participantData : resultPage) {
-            list.add(participantData);
-        }
+        List<ParticipantData> list = ImmutableList.copyOf(resultPage);
 
         String nextPageOffsetKey = null;
         if (list.size() == pageSizeWithIndicatorRecord) {
@@ -66,7 +63,7 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
     }
 
     @Override
-    public ParticipantData getParticipantDataRecord(final String userId, final String identifier) {
+    public ParticipantData getParticipantData(final String userId, final String identifier) {
         checkNotNull(userId);
         checkNotNull(identifier);
 
