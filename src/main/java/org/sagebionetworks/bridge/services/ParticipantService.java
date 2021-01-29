@@ -562,7 +562,7 @@ public class ParticipantService {
                 String externalId = entry.getValue();
                 
                 Enrollment enrollment = Enrollment.create(account.getAppId(), studyId, account.getId(), externalId);
-                enrollmentService.enroll(account, enrollment);
+                enrollmentService.addEnrollment(account, enrollment);
             }
         }
         

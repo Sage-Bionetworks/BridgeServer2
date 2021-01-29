@@ -1561,9 +1561,7 @@ public class ParticipantControllerTest extends Mockito {
         List<ActivityEvent> events = ImmutableList.of(new DynamoActivityEvent(), new DynamoActivityEvent());
         when(mockParticipantService.getActivityEvents(app, null, TEST_USER_ID)).thenReturn(events);        
         
-        String retValue = controller.getActivityEvents(TEST_USER_ID);
-        
-        ResourceList<ActivityEvent> retList = BridgeObjectMapper.get().readValue(retValue, new TypeReference<ResourceList<ActivityEvent>>() {});
+        ResourceList<ActivityEvent> retList = controller.getActivityEvents(TEST_USER_ID);
         assertEquals(retList.getItems().size(), 2);
         
         verify(mockParticipantService).getActivityEvents(app, null, TEST_USER_ID);

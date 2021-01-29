@@ -1,16 +1,14 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.models.activities.ActivityEvent.ACTIVITY_EVENT_WRITER;
-import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
-
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,7 +22,6 @@ import org.sagebionetworks.bridge.services.ActivityEventService;
 
 @CrossOrigin
 @RestController
-@RequestMapping("/v1/activityevents")
 public class ActivityEventController extends BaseController {
 
     private ActivityEventService activityEventService;
@@ -34,7 +31,7 @@ public class ActivityEventController extends BaseController {
         this.activityEventService = activityEventService;
     }
 
-    @PostMapping
+    @PostMapping("/v1/activityevents")
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage createCustomActivityEvent() {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -46,17 +43,24 @@ public class ActivityEventController extends BaseController {
         
         return new StatusMessage("Event recorded");
     }
+    
+    @DeleteMapping("/v1/activityevents/{eventId}")
+    public StatusMessage deleteCustomActivityEvent(@PathVariable String eventId) {
+        UserSession session = getAuthenticatedAndConsentedSession();
 
-    @GetMapping(produces={APPLICATION_JSON_UTF8_VALUE})
-    public String getSelfActivityEvents() throws Exception {
+        App app = appService.getApp(session.getAppId());
+        activityEventService.deleteCustomEvent(app, null, session.getHealthCode(), eventId);
+        
+        return new StatusMessage("Event recorded");
+    }
+
+    @GetMapping("/v1/activityevents")
+    public ResourceList<ActivityEvent> getSelfActivityEvents() throws Exception {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         List<ActivityEvent> activityEvents = activityEventService.getActivityEventList(session.getAppId(),
                 null, session.getHealthCode());
         
-        // I do not like the fact we are serializing in the controller, but that's the only way to access
-        // the ObjectWriter and that's currently how we suppress healthCode.
-        return ACTIVITY_EVENT_WRITER
-                .writeValueAsString(new ResourceList<>(activityEvents));
+        return new ResourceList<>(activityEvents);
     }    
 }

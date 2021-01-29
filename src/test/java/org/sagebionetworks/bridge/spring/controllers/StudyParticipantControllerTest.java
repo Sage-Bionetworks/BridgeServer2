@@ -29,7 +29,6 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -84,8 +83,6 @@ import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
 public class StudyParticipantControllerTest extends Mockito {
-    private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);;
-
     @Mock
     AppService mockAppService;
     
@@ -194,10 +191,6 @@ public class StudyParticipantControllerTest extends Mockito {
                 .build());
         doReturn(session).when(controller).getAdministrativeSession();
         
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(list);
-        
         List<ActivityEvent> events = ImmutableList.of(new DynamoActivityEvent.Builder()
           .withObjectType(ENROLLMENT)
           .withTimestamp(CREATED_ON)
@@ -205,10 +198,9 @@ public class StudyParticipantControllerTest extends Mockito {
         when(mockParticipantService.getActivityEvents(app, TEST_STUDY_ID, TEST_USER_ID))
             .thenReturn(events);
         
-        String retValue = controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
+        mockAccountInStudy();
         
-        ResourceList<ActivityEvent> retList = BridgeObjectMapper.get()
-                .readValue(retValue, new TypeReference<ResourceList<ActivityEvent>>() {});
+        ResourceList<ActivityEvent> retList = controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retList.getItems().size(), 1);
         assertEquals(retList.getItems().get(0).getEventId(), "enrollment");
     }
@@ -241,21 +233,43 @@ public class StudyParticipantControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAdministrativeSession();
 
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(list);
-        when(mockAccountService.getHealthCodeForAccount(ACCOUNT_ID)).thenReturn(HEALTH_CODE);
-        
         CustomActivityEventRequest event = new CustomActivityEventRequest.Builder()
                 .withEventKey("eventKey")
                 .withTimestamp(CREATED_ON).build();
         TestUtils.mockRequestBody(mockRequest, event);
+        
+        mockAccountInStudy();
         
         StatusMessage retValue = controller.createActivityEvent(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);
         
         verify(mockActivityEventService).publishCustomEvent(app, TEST_STUDY_ID,
                 HEALTH_CODE, "eventKey", CREATED_ON);
+    }
+    
+    @Test
+    public void deleteActivityEvent() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        doReturn(session).when(controller).getAdministrativeSession();
+
+        CustomActivityEventRequest event = new CustomActivityEventRequest.Builder()
+                .withEventKey("eventKey")
+                .withTimestamp(CREATED_ON).build();
+        TestUtils.mockRequestBody(mockRequest, event);
+        
+        mockAccountInStudy();
+        
+        StatusMessage retValue = controller.deleteActivityEvent(TEST_STUDY_ID, TEST_USER_ID, "eventKey");
+        assertEquals(retValue, StudyParticipantController.EVENT_DELETED_MSG);
+        
+        verify(mockActivityEventService).deleteCustomEvent(app, TEST_STUDY_ID, HEALTH_CODE, "eventKey");
     }
     
     @Test
@@ -266,24 +280,17 @@ public class StudyParticipantControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
 
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(list);
-        when(mockAccountService.getHealthCodeForAccount(ACCOUNT_ID)).thenReturn(HEALTH_CODE);
-        
         List<ActivityEvent> events = ImmutableList.of(new DynamoActivityEvent.Builder()
                 .withObjectType(ENROLLMENT)
                 .withTimestamp(CREATED_ON)
                 .withHealthCode(HEALTH_CODE).build());
         when(mockActivityEventService.getActivityEventList(TEST_APP_ID, TEST_STUDY_ID, HEALTH_CODE)).thenReturn(events);
         
-        String retValue = controller.getSelfActivityEvents(TEST_STUDY_ID);
+        mockAccountInStudy();
         
-        ResourceList<ActivityEvent> retList = BridgeObjectMapper.get()
-                .readValue(retValue, new TypeReference<ResourceList<ActivityEvent>>() {});
+        ResourceList<ActivityEvent> retList = controller.getSelfActivityEvents(TEST_STUDY_ID);
         assertEquals(retList.getItems().size(), 1);
         assertEquals(retList.getItems().get(0).getEventId(), "enrollment");
-        assertNull(retList.getItems().get(0).getHealthCode());
     }
 
     @Test
@@ -297,21 +304,37 @@ public class StudyParticipantControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
 
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(list);
-        when(mockAccountService.getHealthCodeForAccount(ACCOUNT_ID)).thenReturn(HEALTH_CODE);
-        
         CustomActivityEventRequest event = new CustomActivityEventRequest.Builder()
                 .withEventKey("eventKey")
                 .withTimestamp(CREATED_ON).build();
         TestUtils.mockRequestBody(mockRequest, event);
+        
+        mockAccountInStudy();
         
         StatusMessage retValue = controller.createSelfActivityEvent(TEST_STUDY_ID);
         assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);
         
         verify(mockActivityEventService).publishCustomEvent(app, TEST_STUDY_ID,
                 HEALTH_CODE, "eventKey", CREATED_ON);
+    }
+    
+    @Test
+    public void deleteSelfActivityEvent() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID) // ID is drawn from the session so add it
+                .withHealthCode(HEALTH_CODE).build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+
+        mockAccountInStudy();
+        
+        StatusMessage retValue = controller.deleteSelfActivityEvent(TEST_STUDY_ID, "eventKey");
+        assertEquals(retValue, StudyParticipantController.EVENT_DELETED_MSG);
+        
+        verify(mockActivityEventService).deleteCustomEvent(app, TEST_STUDY_ID, HEALTH_CODE, "eventKey");
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -338,14 +361,16 @@ public class StudyParticipantControllerTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .build());
         
-        // this mocks both the main call, and the way we check to verify the user is in 
-        // the target study.
         mockAccountInStudy();
+        
+        EnrollmentDetail detail = new EnrollmentDetail(null, null, null, null);
+        List<EnrollmentDetail> list = ImmutableList.of(detail);
+        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(list);
         
         PagedResourceList<EnrollmentDetail> page = controller.getEnrollmentsForUser(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(page.getItems().size(), 1);
         
-        verify(mockEnrollmentService, times(2)).getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        verify(mockEnrollmentService).getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -419,7 +444,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withLastName("lastName").build();
-        when(mockParticipantService.getParticipant(app, TEST_USER_ID, true)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, account, true)).thenReturn(participant);
         
         mockAccountInStudy();
 
@@ -427,7 +452,7 @@ public class StudyParticipantControllerTest extends Mockito {
         StudyParticipant deser = BridgeObjectMapper.get().readValue(retValue, StudyParticipant.class);
         assertEquals(deser.getLastName(), participant.getLastName());
         
-        verify(mockParticipantService).getParticipant(app, TEST_USER_ID, true);
+        verify(mockParticipantService).getParticipant(app, account, true);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -455,7 +480,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         controller.getParticipant(TEST_STUDY_ID, TEST_USER_ID, false);
         
-        verify(mockParticipantService).getParticipant(app, TEST_USER_ID, false);
+        verify(mockParticipantService).getParticipant(app, account, false);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -482,7 +507,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode").build();
-        when(mockParticipantService.getParticipant(app, "healthcode:"+TEST_USER_ID, true)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, account, true)).thenReturn(participant);
         
         mockAccountInStudy("healthcode:"+TEST_USER_ID);
 
@@ -502,7 +527,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode").build();
-        when(mockParticipantService.getParticipant(app, TEST_USER_ID, true)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, account, true)).thenReturn(participant);
         
         mockAccountInStudy();
 
@@ -569,12 +594,9 @@ public class StudyParticipantControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode").build();
-        when(mockParticipantService.getParticipant(app, "healthcode:"+TEST_USER_ID, true)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, account, true)).thenReturn(participant);
         
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "healthcode:"+TEST_USER_ID);
-        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, "healthcode:"+TEST_USER_ID))
-            .thenReturn(list);
+        mockAccountInStudy("healthcode:"+TEST_USER_ID);
 
         String retValue = controller.getParticipant(TEST_STUDY_ID, "healthcode:"+TEST_USER_ID, true);
         assertNotNull(retValue);
@@ -591,7 +613,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode").build();
-        when(mockParticipantService.getParticipant(app, TEST_USER_ID, true)).thenReturn(participant);
+        when(mockParticipantService.getParticipant(app, account, true)).thenReturn(participant);
         
         mockAccountInStudy();
 
@@ -988,14 +1010,12 @@ public class StudyParticipantControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());
+
+        mockAccountInStudy();
         
-        Account account = Account.create();
         Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(en));
         account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
-        
-        AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
-        when(mockAccountService.getAccount(accountId)).thenReturn(account);
         
         StatusMessage retValue = controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getMessage(), "User deleted.");
@@ -1064,16 +1084,17 @@ public class StudyParticipantControllerTest extends Mockito {
     }
     
     private void mockAccountInStudy(String userIdToken) {
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, userIdToken);
-        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, userIdToken))
-            .thenReturn(list);
+        AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, userIdToken);
+        when(mockAccountService.getAccount(accountId)).thenReturn(account);
+        
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        account.getEnrollments().add(en);
+        account.setHealthCode(HEALTH_CODE);
+        account.setId(TEST_USER_ID);
+        account.setAppId(TEST_APP_ID);
     }
     
     private void mockAccountNotInStudy() {
-        Enrollment en = Enrollment.create(TEST_APP_ID, "some other study", TEST_USER_ID);
-        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
-        when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
-            .thenReturn(list);
+        mockAccountInStudy("some other study");
     }
 }

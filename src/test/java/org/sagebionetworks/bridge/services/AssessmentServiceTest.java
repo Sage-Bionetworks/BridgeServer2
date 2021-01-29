@@ -220,7 +220,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*identifier cannot be missing.*")
+            expectedExceptionsMessageRegExp = ".*identifier cannot be null or blank.*")
     public void createAssessmentInvalid() {
         when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
             .thenReturn(mockOrganization);
@@ -310,7 +310,7 @@ public class AssessmentServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*identifier cannot be missing.*")
+            expectedExceptionsMessageRegExp = ".*identifier cannot be null or blank.*")
     public void createAssessmentRevisionInvalid() {
         when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
             .thenReturn(mockOrganization);

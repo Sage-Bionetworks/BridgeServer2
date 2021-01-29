@@ -10,8 +10,6 @@ import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
-import org.sagebionetworks.bridge.validators.ActivityEventValidator;
-import org.sagebionetworks.bridge.validators.Validate;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -34,7 +32,10 @@ public class DynamoActivityEvent implements ActivityEvent {
     @DynamoDBHashKey
     @Override
     public String getHealthCode() {
-        return (studyId == null) ? healthCode : (healthCode + ":" + studyId);
+        if (studyId == null || healthCode == null || healthCode.endsWith(":" + studyId)) {
+            return healthCode;
+        }
+        return (healthCode + ":" + studyId);
     }
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
@@ -132,9 +133,6 @@ public class DynamoActivityEvent implements ActivityEvent {
             event.setTimestamp(timestamp);
             event.setEventId(getEventId());
             event.setAnswerValue(answerValue);
-
-            Validate.entityThrowingException(ActivityEventValidator.INSTANCE, event);
-            
             return event;
         }
     }

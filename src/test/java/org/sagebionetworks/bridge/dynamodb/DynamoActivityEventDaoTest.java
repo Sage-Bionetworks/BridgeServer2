@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITY;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.QUESTION;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SURVEY;
@@ -108,19 +109,6 @@ public class DynamoActivityEventDaoTest extends Mockito {
     }
     
     @Test
-    public void publishEventIsImmutableFails() {
-        when(mockMapper.load(any())).thenReturn(ENROLLMENT_EVENT);
-        
-        DynamoActivityEvent laterEvent = new DynamoActivityEvent.Builder().withHealthCode(HEALTH_CODE)
-                .withObjectType(ENROLLMENT).withTimestamp(TIMESTAMP.plusHours(1)).build();
-        
-        boolean result = dao.publishEvent(laterEvent);
-        assertFalse(result);
-        
-        verify(mockMapper, never()).save(any());
-    }
-    
-    @Test
     public void publishEventWithStudyId() {
         boolean result = dao.publishEvent(ENROLLMENT_EVENT_WITH_STUDY_ID);
         assertTrue(result);
@@ -145,7 +133,33 @@ public class DynamoActivityEventDaoTest extends Mockito {
         
         verify(mockMapper, never()).save(any());
     }
+    
+    @Test
+    public void deletesCustomEvent() {
+        DynamoActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM).withObjectId("AAA").build();
+        
+        when(mockMapper.load(any())).thenReturn(event);
+        
+        boolean result = dao.deleteCustomEvent(event);
+        assertTrue(result);
+        
+        verify(mockMapper).delete(event);
+    }
 
+    @Test
+    public void deletesCustomEventEventNotFound() {
+        DynamoActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM).withObjectId("AAA").build();
+        
+        when(mockMapper.load(any())).thenReturn(null);
+        
+        boolean result = dao.deleteCustomEvent(event);
+        assertFalse(result);
+        
+        verify(mockMapper, never()).delete(any());
+    }
+    
     @Test
     public void getActivityEventMap() {
         List<DynamoActivityEvent> savedEvents = ImmutableList.of(ENROLLMENT_EVENT, SURVEY_FINISHED_EVENT,
