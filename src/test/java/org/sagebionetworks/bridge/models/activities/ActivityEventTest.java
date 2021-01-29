@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.models.activities;
 
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
+import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
-import static org.testng.Assert.fail;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import org.joda.time.DateTime;
@@ -13,42 +13,11 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public class ActivityEventTest {
 
-    @Test
-    public void cannotConstructBadActivityEvent() {
-        try {
-            new DynamoActivityEvent.Builder().withObjectType(ACTIVITIES_RETRIEVED).build();
-            fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
-            assertEquals(e.getErrors().get("healthCode").get(0), "healthCode cannot be null or blank");
-        }
-        try {
-            new DynamoActivityEvent.Builder().withObjectType(ActivityEventObjectType.QUESTION).build();
-            fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
-            assertEquals(e.getErrors().get("healthCode").get(0), "healthCode cannot be null or blank");
-        }
-        try {
-            new DynamoActivityEvent.Builder().withTimestamp(DateTime.now()).build();
-            fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
-            assertEquals(e.getErrors().get("healthCode").get(0), "healthCode cannot be null or blank");
-        }
-        try {
-            new DynamoActivityEvent.Builder().withHealthCode("BBB").withTimestamp(DateTime.now()).build();
-            fail("Should have thrown an exception");
-        } catch(InvalidEntityException e) {
-            assertEquals(e.getErrors().get("eventId").get(0),
-                    "eventId cannot be null (may be missing object or event type)");
-        }
-        
-    }
-    
     @Test
     public void canConstructSimpleEventId() {
         DateTime now = DateTime.now();
@@ -205,5 +174,21 @@ public class ActivityEventTest {
                 .withHealthCode("AAA")
                 .withStudyId("BBB").build();
         assertEquals(event.getHealthCode(), "AAA:BBB");
+    }
+    
+    @Test
+    public void compoundHealthCodeKeyCanBeCopiedMultipleTimes() {
+        DynamoActivityEvent event1 = new DynamoActivityEvent.Builder()
+                .withHealthCode(HEALTH_CODE).withStudyId(TEST_STUDY_ID).build();
+        
+        DynamoActivityEvent event2 = new DynamoActivityEvent.Builder()
+                .withHealthCode(event1.getHealthCode()).withStudyId(event1.getStudyId()).build();
+
+        DynamoActivityEvent event3 = new DynamoActivityEvent();
+        event3.setHealthCode(event2.getHealthCode());
+        event3.setStudyId(event2.getStudyId());
+        
+        assertEquals(event3.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
+        assertEquals(event3.getStudyId(), TEST_STUDY_ID);
     }
 }

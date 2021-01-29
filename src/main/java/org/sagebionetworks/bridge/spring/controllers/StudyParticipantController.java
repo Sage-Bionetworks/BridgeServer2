@@ -71,7 +71,8 @@ public class StudyParticipantController extends BaseController {
     static final StatusMessage CONSENT_RESENT_MSG = new StatusMessage("Consent agreement resent to user.");
     static final StatusMessage DELETE_MSG = new StatusMessage("User deleted.");
     static final StatusMessage NOTIFY_SUCCESS_MSG = new StatusMessage("Message has been sent to external notification service.");
-    static final StatusMessage EVENT_RECORDED_MSG = new StatusMessage("Event recorded");
+    static final StatusMessage EVENT_RECORDED_MSG = new StatusMessage("Event recorded.");
+    static final StatusMessage EVENT_DELETED_MSG = new StatusMessage("Event deleted.");
 
     private ParticipantService participantService;
     
@@ -372,10 +373,25 @@ public class StudyParticipantController extends BaseController {
         
         return EVENT_RECORDED_MSG;
     }
+
+    @DeleteMapping("/v5/studies/{studyId}/participants/{userId}/activityEvents/{eventId}")
+    public StatusMessage deleteActivityEvent(@PathVariable String studyId, @PathVariable String userId,
+            @PathVariable String eventId) {
+        UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
+        
+        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        
+        App app = appService.getApp(session.getAppId());
+        activityEventService.deleteCustomEvent(app, studyId, account.getHealthCode(), eventId);
+        
+        return EVENT_DELETED_MSG;
+    }
     
     @GetMapping(path = {"/v5/studies/{studyId}/participants/self/activityEvents"},
             produces={APPLICATION_JSON_UTF8_VALUE})
-    public ResourceList<ActivityEvent> getSelfActivityEvents(@PathVariable String studyId) throws JsonProcessingException {
+    public ResourceList<ActivityEvent> getSelfActivityEvents(@PathVariable String studyId)
+            throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         getValidAccountInStudy(session.getAppId(), studyId, session.getId());
@@ -394,13 +410,25 @@ public class StudyParticipantController extends BaseController {
         getValidAccountInStudy(session.getAppId(), studyId, session.getId());
         
         CustomActivityEventRequest event = parseJson(CustomActivityEventRequest.class);
-        
+
         App app = appService.getApp(session.getAppId());
         activityEventService.publishCustomEvent(app, studyId,
                 session.getHealthCode(), event.getEventKey(), event.getTimestamp());
         
         return EVENT_RECORDED_MSG;
-    }    
+    }   
+    
+    @DeleteMapping("/v5/studies/{studyId}/participants/self/activityEvents/{eventId}")
+    public StatusMessage deleteSelfActivityEvent(@PathVariable String studyId, @PathVariable String eventId) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+
+        getValidAccountInStudy(session.getAppId(), studyId, session.getId());
+        
+        App app = appService.getApp(session.getAppId());
+        activityEventService.deleteCustomEvent(app, studyId, session.getHealthCode(), eventId);
+        
+        return EVENT_DELETED_MSG;
+    }   
     
     /**
      * Get the account no matter what identifier is used (in particular, externalId:<externalId> can be

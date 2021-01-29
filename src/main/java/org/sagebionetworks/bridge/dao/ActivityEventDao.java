@@ -6,6 +6,11 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 
 public interface ActivityEventDao {
+    
+    /**
+     * Remove a custom event.
+     */
+    boolean deleteCustomEvent(ActivityEvent event);
 
     /**
      * Publish an event into this user's event stream. This event becomes available 

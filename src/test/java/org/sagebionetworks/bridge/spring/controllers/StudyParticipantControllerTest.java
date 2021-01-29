@@ -248,6 +248,31 @@ public class StudyParticipantControllerTest extends Mockito {
     }
     
     @Test
+    public void deleteActivityEvent() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        doReturn(session).when(controller).getAdministrativeSession();
+
+        CustomActivityEventRequest event = new CustomActivityEventRequest.Builder()
+                .withEventKey("eventKey")
+                .withTimestamp(CREATED_ON).build();
+        TestUtils.mockRequestBody(mockRequest, event);
+        
+        mockAccountInStudy();
+        
+        StatusMessage retValue = controller.deleteActivityEvent(TEST_STUDY_ID, TEST_USER_ID, "eventKey");
+        assertEquals(retValue, StudyParticipantController.EVENT_DELETED_MSG);
+        
+        verify(mockActivityEventService).deleteCustomEvent(app, TEST_STUDY_ID, HEALTH_CODE, "eventKey");
+    }
+    
+    @Test
     public void getSelfActivityEvents() throws Exception {
         session.setParticipant(new StudyParticipant.Builder()
                 .withId(TEST_USER_ID) // ID is drawn from the session so add it
@@ -291,6 +316,25 @@ public class StudyParticipantControllerTest extends Mockito {
         
         verify(mockActivityEventService).publishCustomEvent(app, TEST_STUDY_ID,
                 HEALTH_CODE, "eventKey", CREATED_ON);
+    }
+    
+    @Test
+    public void deleteSelfActivityEvent() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID) // ID is drawn from the session so add it
+                .withHealthCode(HEALTH_CODE).build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+
+        mockAccountInStudy();
+        
+        StatusMessage retValue = controller.deleteSelfActivityEvent(TEST_STUDY_ID, "eventKey");
+        assertEquals(retValue, StudyParticipantController.EVENT_DELETED_MSG);
+        
+        verify(mockActivityEventService).deleteCustomEvent(app, TEST_STUDY_ID, HEALTH_CODE, "eventKey");
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 

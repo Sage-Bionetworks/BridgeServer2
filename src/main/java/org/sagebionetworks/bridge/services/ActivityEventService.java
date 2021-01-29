@@ -30,6 +30,8 @@ import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
+import org.sagebionetworks.bridge.validators.ActivityEventValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 
 /**
  * Scheduling is calculated relative to each user’s participation in a study, 
@@ -70,6 +72,24 @@ public class ActivityEventService {
     }
     
     /**
+     * Delete a custom event.
+     */
+    public void deleteCustomEvent(App app, String studyId, String healthCode, String eventKey) {
+        if (!app.getActivityEventKeys().contains(eventKey)
+                && !app.getAutomaticCustomEvents().containsKey(eventKey)) {
+            throw new BadRequestException("App's ActivityEventKeys does not contain eventKey: " + eventKey);
+        }
+        
+        ActivityEvent event = new DynamoActivityEvent.Builder()
+                .withHealthCode(healthCode)
+                .withObjectType(ActivityEventObjectType.CUSTOM)
+                .withObjectId(eventKey)
+                .withStudyId(studyId).build();
+
+        activityEventDao.deleteCustomEvent(event);
+    }
+    
+    /**
      * Publishes a custom event. Note that this automatically prepends "custom:" to the event key to form the event ID
      * (eg, event key "studyBurstStart" becomes event ID "custom:studyBurstStart"). Also note that the event key must
      * defined in the app (either in activityEventKeys or in AutomaticCustomEvents).
@@ -89,6 +109,9 @@ public class ActivityEventService {
                 .withObjectId(eventKey)
                 .withStudyId(studyId)
                 .withTimestamp(timestamp).build();
+        
+        // If the globalEvent is valid, all other derivations are valid 
+        Validate.entityThrowingException(ActivityEventValidator.INSTANCE, event);
         
         if (activityEventDao.publishEvent(event)) {
             // Create automatic events, as defined in the app
@@ -111,6 +134,9 @@ public class ActivityEventService {
             .withHealthCode(healthCode)
             .withTimestamp(enrolledOn)
             .withObjectType(ENROLLMENT).build();
+        
+        // If the globalEvent is valid, all other derivations are valid 
+        Validate.entityThrowingException(ActivityEventValidator.INSTANCE, globalEvent);
         
         if (activityEventDao.publishEvent(globalEvent)) {
             // Create automatic events, as defined in the app
@@ -136,6 +162,9 @@ public class ActivityEventService {
             .withHealthCode(healthCode)
             .withTimestamp(timestamp)
             .withObjectType(ACTIVITIES_RETRIEVED).build();
+
+        // If the globalEvent is valid, all other derivations are valid 
+        Validate.entityThrowingException(ActivityEventValidator.INSTANCE, globalEvent);
         
         if (activityEventDao.publishEvent(globalEvent)) {
             // Create automatic events, as defined in the app
@@ -168,6 +197,9 @@ public class ActivityEventService {
             .withObjectId(answer.getQuestionGuid())
             .withEventType(ActivityEventType.ANSWERED)
             .withAnswerValue(COMMA_JOINER.join(answer.getAnswers())).build();
+        
+        Validate.entityThrowingException(ActivityEventValidator.INSTANCE, event);
+        
         activityEventDao.publishEvent(event);
     }
     
@@ -191,6 +223,9 @@ public class ActivityEventService {
                 .withTimestamp(schActivity.getFinishedOn())
                 .build();
 
+            // If the globalEvent is valid, all other derivations are valid 
+            Validate.entityThrowingException(ActivityEventValidator.INSTANCE, event);
+            
             activityEventDao.publishEvent(event);
         }
     }
@@ -207,6 +242,9 @@ public class ActivityEventService {
                 .withTimestamp(createdOn)
                 .withObjectType(CREATED_ON).build();
         activityEventDao.publishEvent(globalEvent);
+        
+        // If the globalEvent is valid, all other derivations are valid 
+        Validate.entityThrowingException(ActivityEventValidator.INSTANCE, globalEvent);
 
         if (studyId != null) {
             ActivityEvent studyEvent = new DynamoActivityEvent.Builder()

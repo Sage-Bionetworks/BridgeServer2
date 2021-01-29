@@ -26,6 +26,7 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDateTime;
 import org.joda.time.Period;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
@@ -62,6 +63,9 @@ public class ActivityEventServiceTest {
     
     @Mock
     private ParticipantService mockParticipantService;
+    
+    @Captor
+    private ArgumentCaptor<ActivityEvent> eventCaptor;
     
     @BeforeMethod
     public void before() {
@@ -375,13 +379,6 @@ public class ActivityEventServiceTest {
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao, times(4)).publishEvent(argument.capture());
-        
-        System.out.println(argument.getAllValues());/*
-        DynamoActivityEvent [studyId=null, healthCode=oneHealthCode, answerValue=null, timestamp=1611261669421, eventId=enrollment], 
-        DynamoActivityEvent [studyId=null, healthCode=oneHealthCode, answerValue=null, timestamp=1611520869421, eventId=custom:3-days-after], 
-        DynamoActivityEvent [studyId=test-study, healthCode=oneHealthCode, answerValue=null, timestamp=1611261669421, eventId=enrollment], 
-        DynamoActivityEvent [studyId=test-study, healthCode=oneHealthCode, answerValue=null, timestamp=1611520869421, eventId=custom:3-days-after]]
-        */
         
         ActivityEvent event1 = argument.getAllValues().get(0);
         assertEquals(event1.getEventId(), "enrollment");
@@ -837,6 +834,21 @@ public class ActivityEventServiceTest {
         Period automaticEventDelay = Period.parse("P0D"); // no difference
         DateTime automaticEventTime = CREATED_ON.plus(automaticEventDelay);
         assertEquals(automaticEventTime, CREATED_ON); // no difference
+    }
+    
+    @Test
+    public void canDeleteCustomEvent() {
+        App app = App.create();
+        app.setActivityEventKeys(ImmutableSet.of("eventKey"));
+        
+        activityEventService.deleteCustomEvent(app, TEST_STUDY_ID, HEALTH_CODE, "eventKey");
+        
+        verify(activityEventDao).deleteCustomEvent(eventCaptor.capture());
+        
+        ActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getEventId(), "custom:eventKey");
+        assertEquals(event.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
     }
     
     private ActivityEvent getEventByKey(List<ActivityEvent> results, String key) {
