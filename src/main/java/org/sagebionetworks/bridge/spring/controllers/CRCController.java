@@ -73,6 +73,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -292,6 +293,8 @@ public class CRCController extends BaseController {
         Phone phone = new Phone(atts.get("home_phone"), "US");
         if (Phone.isValid(phone)) {
             phoneString = phone.getNationalFormat();
+        } else {
+            throw new BadRequestException(("Missing a valid shipping contact phone number"));
         }
 
         return new Order.ShippingInfo.Address(
@@ -307,16 +310,17 @@ public class CRCController extends BaseController {
     }
 
     // Waiting for integration workflow to be finalized
-    //@GetMapping(path = "v1/cuicm/labshipments/{orderId}/status", produces = {APPLICATION_JSON_UTF8_VALUE})
-    public String getLabShipmentStatus(@PathVariable String orderId) throws JsonProcessingException {
+    //@GetMapping(path = "v1/cuicm/labshipments/{orderId}/status")
+    public CheckOrderStatusResponse getLabShipmentStatus(@PathVariable String orderId) throws JsonProcessingException {
         App app = httpBasicAuthentication();
         CheckOrderStatusResponse response = gbfOrderService.checkOrderStatus(orderId);
-        return MAPPER.writeValueAsString(response);
+        //return MAPPER.writeValueAsString(response);
+    return response;
     }
 
     // Waiting for integration workflow to be finalized
-    //@GetMapping(path = "v1/cuicm/participants/labshipments/confirmations", produces = {APPLICATION_JSON_UTF8_VALUE})
-    public String getLabShipmentConfirmations(@RequestParam String startDate,
+    //@GetMapping(path = "v1/cuicm/participants/labshipments/confirmations")
+    public ShippingConfirmations getLabShipmentConfirmations(@RequestParam String startDate,
                                               @RequestParam String endDate) throws JsonProcessingException {
         App app = httpBasicAuthentication();
 
@@ -324,8 +328,8 @@ public class CRCController extends BaseController {
         LocalDate endDateObj = getLocalDateOrDefault(endDate, null);
 
         ShippingConfirmations shippingConfirmations = gbfOrderService.requestShippingConfirmations(startDateObj, endDateObj);
-
-        return MAPPER.writeValueAsString(shippingConfirmations);
+return shippingConfirmations;
+        //return MAPPER.writeValueAsString(shippingConfirmations);
     }
 
     @PostMapping("/v1/cuimc/participants/{userId}/laborders")

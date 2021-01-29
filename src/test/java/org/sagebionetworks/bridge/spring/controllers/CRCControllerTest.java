@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APPOINTMENT_REPORT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.APP_ID;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.SHIP_TESTS_REQUESTED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.CUIMC_USERNAME;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.FHIR_CONTEXT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.OBSERVATION_REPORT;
@@ -35,6 +36,7 @@ import static org.testng.Assert.fail;
 import java.io.IOException;
 import java.util.Base64;
 import java.util.Set;
+import java.util.stream.Stream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -81,6 +83,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.LimitExceededException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
@@ -1435,9 +1438,10 @@ public class CRCControllerTest extends Mockito {
                 APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         controller.postUserLabShipmentRequest();
-        
+    
         verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(SHIPMENT_REPORT), eq(HEALTH_CODE),
                 reportCaptor.capture());
+        verify(controller).internalLabShipmentRequest(any(), any());
         
         ReportData capturedReport = reportCaptor.getValue();
         String orderId = capturedReport.getData().get(SHIPMENT_REPORT_KEY_ORDER_ID).asText();
@@ -1457,24 +1461,72 @@ public class CRCControllerTest extends Mockito {
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
                 APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
-        
-        
+    
+    
         controller.postLabShipmentRequest("healthcode:" + HEALTH_CODE);
-        
+    
         verify(mockAccountService).authenticate(any(), any());
-        
+    
         verify(mockAccountService, atLeastOnce()).getAccount(accountIdCaptor.capture());
         assertTrue(accountIdCaptor.getAllValues().stream()
                 .anyMatch(accountId -> accountId.getHealthCode().equals(HEALTH_CODE)));
-        
+    
         verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(SHIPMENT_REPORT), eq(HEALTH_CODE),
                 reportCaptor.capture());
-        
+        verify(controller).internalLabShipmentRequest(any(), any());
+    
         ReportData capturedReport = reportCaptor.getValue();
         String orderId = capturedReport.getData().get(SHIPMENT_REPORT_KEY_ORDER_ID).asText();
         assertTrue(orderId.startsWith(ACCOUNT_ID.getId()));
     }
     
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void internalLabShipmentRequestAccountNotFound() {
+        controller.internalLabShipmentRequest(mockApp, null);
+    }
+    
+    @Test
+    public void internalLabShipmentSetsShipTestRequestedState() {
+        setupParticipantAuthentication();
+        setupShippingAddress();
+    
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+    
+        controller.postUserLabShipmentRequest();
+        
+        assertTrue(account.getDataGroups().contains(SHIP_TESTS_REQUESTED.name().toLowerCase()));
+    }
+    
+    @Test(expectedExceptions = LimitExceededException.class)
+    public void internalLabShipmentRequestLimitedToOne() {
+        setupParticipantAuthentication();
+        setupShippingAddress();
+    
+        account.setDataGroups(ImmutableSet.of(
+                TEST_USER_GROUP,
+                SHIP_TESTS_REQUESTED.name().toLowerCase()
+        ));
+    
+        controller.internalLabShipmentRequest(mockApp, account);
+    }
+    
+    @Test
+    public void internalLabShipmentValidatesAddress() {
+        setupParticipantAuthentication();
+        setupShippingAddress();
+        
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+        
+        controller.postUserLabShipmentRequest();
+        
+        verify(controller).validateAndGetAddress(any());
+    }
+    
+    // somewhat redundant test
     @Test(expectedExceptions = BadRequestException.class)
     public void placeOrderMissingCity() {
         setupParticipantAuthentication();
@@ -1482,6 +1534,44 @@ public class CRCControllerTest extends Mockito {
         account.getAttributes().remove("city");
         
         controller.postUserLabShipmentRequest();
+    }
+    
+    @Test
+    public void validateAndGetAddressChecksRequiredFields() {
+        ImmutableList.of("address1", "city", "state", "zip_code", "home_phone")
+                .forEach(requiredField -> {
+                    setupShippingAddress();
+                    account.getAttributes().remove(requiredField);
+                    
+                    try {
+                        controller.validateAndGetAddress(account);
+                        fail("Expected BadRequestException when account does not contain " + requiredField);
+                    } catch (BadRequestException e) {
+                        assertTrue(true, "Got BadRequestException due to missing field " + requiredField);
+                    }
+                });
+        
+        Stream.of("", null).forEach(firstName -> {
+            setupShippingAddress();
+            account.setFirstName(firstName);
+            try {
+                controller.validateAndGetAddress(account);
+                fail("Expected BadRequestException when account does not contain First Name");
+            } catch (BadRequestException e) {
+                assertTrue(true, "Got BadRequestException due to missing First Name");
+            }
+        });
+        
+        Stream.of("", null).forEach(lastName -> {
+            setupShippingAddress();
+            account.setLastName(lastName);
+            try {
+                controller.validateAndGetAddress(account);
+                fail("Expected BadRequestException when account does not contain Last Name");
+            } catch (BadRequestException e) {
+                assertTrue(true, "Got BadRequestException due to missing Last Name");
+            }
+        });
     }
     
     private void setupParticipantAuthentication() {

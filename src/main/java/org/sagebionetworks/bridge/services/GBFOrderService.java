@@ -7,14 +7,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
+import com.google.common.annotations.Beta;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
+import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
 import org.sagebionetworks.bridge.models.crc.gbf.external.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,66 +74,71 @@ public class GBFOrderService {
 
         HttpResponse httpResponse = postJson(gbfOrderUrl, gbfApiKey, new PlaceOrderRequest(orderXml, isTest));
 
+        handleGbfHttpStatusErrors(httpResponse);
+        
         PlaceOrderResponse response;
+        
         try {
-            if (httpResponse.getStatusLine().getStatusCode() > 400) {
-                LOG.warn("placeOrder received {} error with contents: {}", httpResponse.getStatusLine().getStatusCode(),
-                        IOUtils.toString(httpResponse.getEntity().getContent(), StandardCharsets.UTF_8));
-                throw new BridgeServiceException(GBF_SERVICE_ERROR_MESSAGE);
-            }
-
             response = jsonMapper.readValue(httpResponse.getEntity().getContent(), PlaceOrderResponse.class);
         } catch (IOException e) {
             LOG.error("placeOrder failed to read contents of HttpResponse", e);
             throw new BridgeServiceException(GBF_SERVICE_ERROR_MESSAGE);
         }
-
+    
         if (!response.success) {
             LOG.warn("placeOrder received error from remote service: {}", response.message);
             throw new BridgeServiceException(GBF_SERVICE_ERROR_MESSAGE);
         }
+    
     }
 
+    @Beta
     public CheckOrderStatusResponse checkOrderStatus(String... orderIds) {
         CheckOrderStatusRequest request = new CheckOrderStatusRequest(Arrays.asList(orderIds));
 
         HttpResponse httpResponse = postJson(getGbfOrderStatusUrl, gbfApiKey, request);
-
+    
+        handleGbfHttpStatusErrors(httpResponse);
+    
         try {
-            if (httpResponse.getStatusLine().getStatusCode() > 400) {
-                LOG.warn("placeOrder checkOrderStatus {} error with contents: {}", httpResponse.getStatusLine().getStatusCode(),
-                        IOUtils.toString(httpResponse.getEntity().getContent(), StandardCharsets.UTF_8));
-                throw new BridgeServiceException(GBF_SERVICE_ERROR_MESSAGE);
-            }
-
             return jsonMapper.readValue(httpResponse.getEntity().getContent(), CheckOrderStatusResponse.class);
         } catch (IOException e) {
             LOG.error("checkOrderStatus could not parse response Json", e);
             throw new BridgeServiceException(GBF_SERVICE_ERROR_MESSAGE);
         }
     }
-
+    
+    @Beta
     public ShippingConfirmations requestShippingConfirmations(LocalDate startDate, LocalDate endDate) {
         ConfirmShippingRequest requestBody = new ConfirmShippingRequest(startDate, endDate);
 
         HttpResponse response = postJson(gbfConfirmationUrl, gbfApiKey, requestBody);
-
-        int statusCode = response.getStatusLine().getStatusCode();
-        if (statusCode > 400) {
-            BridgeServiceException e;
-            try {
-                String resBody = IOUtils.toString(response.getEntity().getContent(), StandardCharsets.UTF_8.name());
-                LOG.warn("Received exception with code: {} and response body: {}", statusCode, resBody);
-
-                e = new BridgeServiceException(resBody, statusCode);
-            } catch (Exception exception) {
-                LOG.error("Unknown remote exception with code: {}", statusCode);
-                e = new BridgeServiceException("Unknown Remote Exception", 500);
-            }
-            throw e;
-        }
+    
+        handleGbfHttpStatusErrors(response);
 
         return parseShippingConfirmations(response);
+    }
+    
+    void handleGbfHttpStatusErrors(HttpResponse httpResponse) {
+        int statusCode = httpResponse.getStatusLine().getStatusCode();
+        
+        if (statusCode >= 400 && statusCode < 500) {
+            logGbfHttpStatusError(statusCode, httpResponse.getEntity());
+            throw new BadRequestException(GBF_SERVICE_ERROR_MESSAGE);
+        }
+        if (statusCode >=500) {
+            logGbfHttpStatusError(statusCode, httpResponse.getEntity());
+            throw new BridgeServiceException(GBF_SERVICE_ERROR_MESSAGE);
+        }
+    }
+    
+    private void logGbfHttpStatusError(int statusCode, HttpEntity entity) {
+        try {
+            LOG.warn("GBF Api responded with error code {} error with contents: {}", statusCode,
+                    IOUtils.toString(entity.getContent(), StandardCharsets.UTF_8));
+        } catch (IOException e) {
+            LOG.error("GBF Api responded with error code {} but could not parse contents", statusCode, e);
+        }
     }
 
     ShippingConfirmations parseShippingConfirmations(HttpResponse response) {

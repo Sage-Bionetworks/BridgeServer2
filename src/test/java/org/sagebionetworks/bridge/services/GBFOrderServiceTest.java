@@ -37,6 +37,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.crc.gbf.external.CheckOrderStatusRequest;
 import org.sagebionetworks.bridge.models.crc.gbf.external.CheckOrderStatusResponse;
@@ -85,28 +86,45 @@ public class GBFOrderServiceTest {
         Order mockOrder = mock(Order.class);
 
         PlaceOrderResponse response = new PlaceOrderResponse(true, null);
-
-        HttpEntity mockEntity = mock(HttpEntity.class);
-        doReturn(IOUtils.toInputStream(jsonMapper.writeValueAsString(response)))
-                .when(mockEntity).getContent();
-
-        StatusLine mockStatusLine = mock(StatusLine.class);
-        doReturn(200).when(mockStatusLine).getStatusCode();
-
-        HttpResponse mockResponse = mock(HttpResponse.class);
-        doReturn(mockStatusLine).when(mockResponse).getStatusLine();
-        doReturn(mockEntity).when(mockResponse).getEntity();
+        HttpResponse mockResponse = createMockResponse(response);
 
         doReturn(mockResponse).when(service).postJson(eq(PLACE_URL), any(), any());
 
         service.placeOrder(mockOrder, true);
-
+    
         verify(service).postJson(eq(PLACE_URL), any(), any());
+        verify(service).handleGbfHttpStatusErrors(any());
+    }
+    
+    @Test(expectedExceptions = BridgeServiceException.class)
+    public void placeOrderThrowsExceptionOnGbfResponseObjectSuccessFalse() throws IOException {
+        Order mockOrder = mock(Order.class);
+    
+        PlaceOrderResponse response = new PlaceOrderResponse(false, null);
+        HttpResponse mockResponse = createMockResponse(response);
+    
+        doReturn(mockResponse).when(service).postJson(eq(PLACE_URL), any(), any());
+    
+        service.placeOrder(mockOrder, true);
+    }
+    
+    private HttpResponse createMockResponse(PlaceOrderResponse placeOrderResponse) throws IOException {
+        HttpEntity mockEntity = mock(HttpEntity.class);
+        doReturn(IOUtils.toInputStream(jsonMapper.writeValueAsString(placeOrderResponse)))
+                .when(mockEntity).getContent();
+    
+        StatusLine mockStatusLine = mock(StatusLine.class);
+        doReturn(200).when(mockStatusLine).getStatusCode();
+    
+        HttpResponse mockResponse = mock(HttpResponse.class);
+        doReturn(mockStatusLine).when(mockResponse).getStatusLine();
+        doReturn(mockEntity).when(mockResponse).getEntity();
+        
+        return mockResponse;
     }
 
     @Test
     public void checkOrder() throws IOException {
-
         String order1 = "id1";
         String order2 = "id2";
 
@@ -118,19 +136,51 @@ public class GBFOrderServiceTest {
 
         StatusLine mockStatusLine = mock(StatusLine.class);
         doReturn(200).when(mockStatusLine).getStatusCode();
-
+    
         HttpResponse mockResponse = mock(HttpResponse.class);
         doReturn(mockStatusLine).when(mockResponse).getStatusLine();
         doReturn(mockEntity).when(mockResponse).getEntity();
-
+    
         ArgumentCaptor<CheckOrderStatusRequest> captor = ArgumentCaptor.forClass(CheckOrderStatusRequest.class);
         doReturn(mockResponse).when(service).postJson(eq(STATUS_URL), any(), captor.capture());
-
+    
         CheckOrderStatusResponse result = service.checkOrderStatus(order1, order2);
-
+    
+        verify(service).handleGbfHttpStatusErrors(any());
+    
         assertEquals(Lists.newArrayList(order1, order2), captor.getValue().orderNumbers);
     }
-
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void handleGbfHttpStatusErrorsClientErrors() throws IOException {
+        StatusLine statusLine = mock(StatusLine.class);
+        when(statusLine.getStatusCode()).thenReturn(400);
+        
+        HttpEntity entity = mock(HttpEntity.class);
+        when(entity.getContent()).thenReturn(IOUtils.toInputStream("Message"));
+        
+        HttpResponse httpResponse = mock(HttpResponse.class);
+        when(httpResponse.getStatusLine()).thenReturn(statusLine);
+        when(httpResponse.getEntity()).thenReturn(entity);
+        
+        service.handleGbfHttpStatusErrors(httpResponse);
+    }
+    
+    @Test(expectedExceptions = BridgeServiceException.class)
+    public void handleGbfHttpStatusErrorsServerErrors() throws IOException {
+        StatusLine statusLine = mock(StatusLine.class);
+        when(statusLine.getStatusCode()).thenReturn(500);
+        
+        HttpEntity entity = mock(HttpEntity.class);
+        when(entity.getContent()).thenReturn(IOUtils.toInputStream("Message"));
+        
+        HttpResponse httpResponse = mock(HttpResponse.class);
+        when(httpResponse.getStatusLine()).thenReturn(statusLine);
+        when(httpResponse.getEntity()).thenReturn(entity);
+        
+        service.handleGbfHttpStatusErrors(httpResponse);
+    }
+    
     @Test
     public void getShippingConfirmations() throws IOException {
         ShippingConfirmation shippingConfirmation1 = new ShippingConfirmation();
@@ -138,7 +188,7 @@ public class GBFOrderServiceTest {
         ShippingConfirmation.Item item1a = new ShippingConfirmation.Item();
         item1a.ItemNumber = "Item 1a";
         shippingConfirmation1.Item = Lists.newArrayList(item1a);
-
+        
         ShippingConfirmation shippingConfirmation2 = new ShippingConfirmation();
         shippingConfirmation1.OrderNumber = "2";
         ShippingConfirmation.Item item2a = new ShippingConfirmation.Item();
@@ -168,18 +218,19 @@ public class GBFOrderServiceTest {
 
         doReturn(mockResponse).when(service).postJson(eq(CONFIRMATION_URL), any(),
                 confirmShippingRequestArgumentCaptor.capture());
-
+        
         LocalDate startDate = LocalDate.now().minusDays(20);
         LocalDate endDate = LocalDate.now().plusDays(3);
         ShippingConfirmations shippingConfirmationsResult = service.requestShippingConfirmations(
                 startDate, endDate);
         assertEquals(shippingConfirmation1, shippingConfirmationsResult.ShippingConfirmation.get(0));
         assertEquals(shippingConfirmation2, shippingConfirmationsResult.ShippingConfirmation.get(1));
-
+        
         ConfirmShippingRequest confirmShippingRequest = confirmShippingRequestArgumentCaptor.getValue();
         assertEquals(startDate, confirmShippingRequest.startDate);
         assertEquals(endDate, confirmShippingRequest.endDate);
-
+        
+        verify(service).handleGbfHttpStatusErrors(any());
         verify(service).postJson(eq(CONFIRMATION_URL), any(), any());
     }
 
