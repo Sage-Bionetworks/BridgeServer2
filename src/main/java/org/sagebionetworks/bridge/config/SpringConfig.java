@@ -24,6 +24,7 @@ import com.amazonaws.ClientConfiguration;
 import com.amazonaws.PredefinedClientConfigurations;
 import com.amazonaws.auth.AWSStaticCredentialsProvider;
 import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.regions.Regions;
 import com.amazonaws.services.datapipeline.DataPipelineClient;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClient;
@@ -31,6 +32,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.AmazonS3ClientBuilder;
+import com.amazonaws.services.s3.S3ClientOptions;
 import com.amazonaws.services.securitytoken.AWSSecurityTokenServiceClient;
 import com.amazonaws.services.simpleemail.AmazonSimpleEmailServiceClient;
 import com.amazonaws.services.sns.AmazonSNSClient;
@@ -254,7 +256,8 @@ public class SpringConfig {
     @Bean(name = "s3Client")
     @Resource(name = "awsCredentials")
     public AmazonS3Client s3Client(BasicAWSCredentials awsCredentials) {
-        return new AmazonS3Client(awsCredentials);
+        // Setting region is necessary to prevent bug BRIDGE-2910. Don't remove.
+        return new AmazonS3Client(awsCredentials).withRegion(US_EAST_1);
     }
 
     @Bean(name = "s3UploadClient")
