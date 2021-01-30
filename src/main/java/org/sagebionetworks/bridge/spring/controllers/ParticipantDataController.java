@@ -40,7 +40,7 @@ public class ParticipantDataController extends BaseController {
     }
 
     @GetMapping("/v3/users/self/data")
-    public ForwardCursorPagedResourceList<String> getAllDataForUser(@RequestParam(required = false) String offsetKey,
+    public ForwardCursorPagedResourceList<String> getAllDataForSelf(@RequestParam(required = false) String offsetKey,
                                                                     @RequestParam(required = false) String pageSize) {
         UserSession session = getAuthenticatedAndConsentedSession();
 

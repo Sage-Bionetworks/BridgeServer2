@@ -7,7 +7,6 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantDataDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantData;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -24,12 +23,14 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 
 public class ParticipantDataServiceTest {
 
-    static final String OFFSET_KEY = "anOffsetKey";
-    static final int PAGE_SIZE = 10;
+    private static final String OFFSET_KEY = "anOffsetKey";
+    private static final int PAGE_SIZE = 10;
 
     @Mock
     ParticipantDataDao mockDao;
@@ -59,73 +60,73 @@ public class ParticipantDataServiceTest {
 
     @Test
     public void testGetAllParticipantData() {
-        doReturn(results).when(mockDao).getAllParticipantData(TestConstants.TEST_USER_ID, OFFSET_KEY, PAGE_SIZE);
+        doReturn(results).when(mockDao).getAllParticipantData(TEST_USER_ID, OFFSET_KEY, PAGE_SIZE);
 
         ForwardCursorPagedResourceList<ParticipantData> retrieved = service.getAllParticipantData(
-                TestConstants.TEST_USER_ID, OFFSET_KEY, PAGE_SIZE);
+                TEST_USER_ID, OFFSET_KEY, PAGE_SIZE);
 
-        verify(mockDao).getAllParticipantData(TestConstants.TEST_USER_ID, OFFSET_KEY, PAGE_SIZE);
+        verify(mockDao).getAllParticipantData(TEST_USER_ID, OFFSET_KEY, PAGE_SIZE);
         assertEquals(retrieved, results);
     }
 
     @Test
     public void testGetParticipantData() {
-        doReturn(result).when(mockDao).getParticipantData(TestConstants.TEST_USER_ID, TestConstants.IDENTIFIER);
+        doReturn(result).when(mockDao).getParticipantData(TEST_USER_ID, IDENTIFIER);
 
-        ParticipantData retrieved = service.getParticipantData(TestConstants.TEST_USER_ID, TestConstants.IDENTIFIER);
+        ParticipantData retrieved = service.getParticipantData(TEST_USER_ID, IDENTIFIER);
 
-        verify(mockDao).getParticipantData(TestConstants.TEST_USER_ID, TestConstants.IDENTIFIER);
+        verify(mockDao).getParticipantData(TEST_USER_ID, IDENTIFIER);
         assertEquals(retrieved, result);
     }
 
     @Test
     public void testSaveParticipantData() {
         ParticipantData participantData = createParticipantData("c", "d");
-        service.saveParticipantData(TestConstants.TEST_USER_ID, TestConstants.IDENTIFIER, participantData);
+        service.saveParticipantData(TEST_USER_ID, IDENTIFIER, participantData);
 
         verify(mockDao).saveParticipantData(participantDataCaptor.capture());
         ParticipantData retrieved = participantDataCaptor.getValue();
         assertEquals(retrieved, participantData);
-        assertEquals(retrieved.getUserId(), TestConstants.TEST_USER_ID);
-        assertEquals(retrieved.getIdentifier(), TestConstants.IDENTIFIER);
+        assertEquals(retrieved.getUserId(), TEST_USER_ID);
+        assertEquals(retrieved.getIdentifier(), IDENTIFIER);
         assertEquals(retrieved.getData().get("field1").textValue(), "c");
         assertEquals(retrieved.getData().get("field2").textValue(), "d");
     }
 
     @Test
     public void testDeleteAllParticipantData() {
-        service.deleteAllParticipantData(TestConstants.TEST_USER_ID);
+        service.deleteAllParticipantData(TEST_USER_ID);
 
-        verify(mockDao).deleteAllParticipantData(TestConstants.TEST_USER_ID);
+        verify(mockDao).deleteAllParticipantData(TEST_USER_ID);
     }
 
     @Test
     public void testDeleteParticipantData() {
-        doReturn(result).when(mockDao).getParticipantData(TestConstants.TEST_USER_ID, TestConstants.IDENTIFIER);
+        doReturn(result).when(mockDao).getParticipantData(TEST_USER_ID, IDENTIFIER);
 
-        service.deleteParticipantData(TestConstants.TEST_USER_ID, TestConstants.IDENTIFIER);
+        service.deleteParticipantData(TEST_USER_ID, IDENTIFIER);
 
-        verify(mockDao).deleteParticipantData(TestConstants.TEST_USER_ID, TestConstants.IDENTIFIER);
+        verify(mockDao).deleteParticipantData(TEST_USER_ID, IDENTIFIER);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void testDeleteParticipantDataValidatesUserId() {
-        service.deleteParticipantData("", TestConstants.IDENTIFIER);
+        service.deleteParticipantData("", IDENTIFIER);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void testDeleteParticipantDataValidatesIdentifier() {
-        service.deleteParticipantData(TestConstants.TEST_USER_ID, "");
+        service.deleteParticipantData(TEST_USER_ID, "");
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void testGetAllDataPageSizeTooSmall() {
-        service.getAllParticipantData(TestConstants.TEST_USER_ID, TestConstants.IDENTIFIER, API_MINIMUM_PAGE_SIZE - 1);
+        service.getAllParticipantData(TEST_USER_ID, IDENTIFIER, API_MINIMUM_PAGE_SIZE - 1);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void testGetAllDataPageSizeTooLarge() {
-        service.getAllParticipantData(TestConstants.TEST_USER_ID, TestConstants.IDENTIFIER, API_MAXIMUM_PAGE_SIZE + 1);
+        service.getAllParticipantData(TEST_USER_ID, IDENTIFIER, API_MAXIMUM_PAGE_SIZE + 1);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -138,8 +139,8 @@ public class ParticipantDataServiceTest {
         node.put("field1", fieldValue1);
         node.put("field2", fieldValue2);
         DynamoParticipantData participantData = new DynamoParticipantData();
-        participantData.setUserId(TestConstants.TEST_USER_ID);
-        participantData.setIdentifier(TestConstants.IDENTIFIER);
+        participantData.setUserId(TEST_USER_ID);
+        participantData.setIdentifier(IDENTIFIER);
         participantData.setData(node);
         return participantData;
     }
