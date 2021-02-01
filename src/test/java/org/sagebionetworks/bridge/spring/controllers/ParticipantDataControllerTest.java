@@ -14,6 +14,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantData;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -47,8 +48,8 @@ import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.ResourceList.NEXT_PAGE_OFFSET_KEY;
-import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
 public class ParticipantDataControllerTest extends Mockito {
@@ -145,11 +146,15 @@ public class ParticipantDataControllerTest extends Mockito {
     }
 
     @Test
-    public void testGetDataByIdentifierForSelf() { // TODO come back to this.. why null???
-        doReturn(participantData).when(mockParticipantDataService).getParticipantData(TEST_APP_ID, IDENTIFIER);
+    public void testGetDataByIdentifierForSelf() {
+        doReturn(participantData).when(mockParticipantDataService).getParticipantData(session.getId(), IDENTIFIER);
 
         ParticipantData result = controller.getDataByIdentifierForSelf(IDENTIFIER);
 
+        assertEquals(result.getUserId(), participantData.getUserId());
+        assertEquals(result.getIdentifier(), participantData.getIdentifier());
+        assertEquals(result.getData(), participantData.getData());
+        assertEquals(result.getVersion(), participantData.getVersion());
         assertSame(result, participantData);
     }
 
@@ -167,8 +172,10 @@ public class ParticipantDataControllerTest extends Mockito {
         ParticipantData capture = participantDataCaptor.getValue();
         System.out.println(capture);
 
-        assertEquals(TEST_USER_ID, capture.getUserId());
-        // TODO captured ParticipantData = {userId=null, identifier=hull, data={'field1':'a', 'field2':'b"}} why the nulls ???????
+        assertNull(capture.getUserId());
+        assertNull(capture.getIdentifier());
+        assertNull(capture.getVersion());
+        assertEquals(capture.getData(), participantData.getData());
     }
 
     @Test
@@ -193,6 +200,46 @@ public class ParticipantDataControllerTest extends Mockito {
 
     @Test
     public void testDeleteDataRecordForAdmin() {
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = ".*Account not found.*")
+    public void testGetAllDataForAdminWorkerAccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        reset(mockAccountService);
+        controller.getAllDataForAdminWorker(TEST_APP_ID, TEST_USER_ID, OFFSET_KEY, PAGE_SIZE_STRING);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = ".*Account not found.*")
+    public void testDeleteAllParticipantDataAccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+        reset(mockAccountService);
+        controller.deleteAllParticipantDataForAdmin(TEST_APP_ID, TEST_USER_ID);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = ".*Account not found.*")
+    public void testGetDataByIdentifierForAdminWorkerAccountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        reset(mockAccountService);
+        controller.getDataByIdentifierForAdminWorker(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
+    }
+
+    @Test(expectedExceptions =  EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = ".*Account not found.*")
+    public void testSaveDataForAdminWorker() {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        reset(mockAccountService);
+        controller.saveDataForAdminWorker(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
+    }
+
+    @Test(expectedExceptions =  EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = ".*Account not found.*")
+    public void testDeleteDataForAdmin() {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+        reset(mockAccountService);
+        controller.deleteDataForAdmin(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
     }
 
     private ForwardCursorPagedResourceList<ParticipantData> makeResults() {
