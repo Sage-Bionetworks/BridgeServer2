@@ -15,6 +15,7 @@ import org.mockito.Spy;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantData;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantData;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -48,6 +49,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.ResourceList.NEXT_PAGE_OFFSET_KEY;
+import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -136,7 +138,8 @@ public class ParticipantDataControllerTest extends Mockito {
 
     @Test
     public void testGetAllDataForSelf() {
-        doReturn(makeResults()).when(mockParticipantDataService).getAllParticipantData(TEST_USER_ID, OFFSET_KEY, PAGE_SIZE_INT);
+        doReturn(makeResults(OFFSET_KEY, PAGE_SIZE_INT)).when(mockParticipantDataService)
+                .getAllParticipantData(TEST_USER_ID, OFFSET_KEY, PAGE_SIZE_INT);
 
         ForwardCursorPagedResourceList<String> result = controller.getAllDataForSelf(OFFSET_KEY, PAGE_SIZE_STRING);
 
@@ -170,7 +173,6 @@ public class ParticipantDataControllerTest extends Mockito {
                 participantDataCaptor.capture());
 
         ParticipantData capture = participantDataCaptor.getValue();
-        System.out.println(capture);
 
         assertNull(capture.getUserId());
         assertNull(capture.getIdentifier());
@@ -180,26 +182,83 @@ public class ParticipantDataControllerTest extends Mockito {
 
     @Test
     public void testDeleteDataByIdentifier() {
+        StatusMessage result = controller.deleteDataByIdentifier(IDENTIFIER);
+        assertEquals(result.getMessage(), "Participant data record deleted.");
+
+        verify(mockParticipantDataService).deleteParticipantData(session.getId(), IDENTIFIER);
     }
 
     @Test
     public void testGetAllDataForAdminWorker() {
+        when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+
+        ForwardCursorPagedResourceList<ParticipantData> expected = makeResults(OFFSET_KEY, PAGE_SIZE_INT);
+        doReturn(expected).when(mockParticipantDataService).getAllParticipantData(session.getId(), OFFSET_KEY, PAGE_SIZE_INT);
+
+        ForwardCursorPagedResourceList<String> result = controller.getAllDataForAdminWorker(session.getAppId(),
+                session.getId(), OFFSET_KEY, PAGE_SIZE_STRING);
+
+        assertEquals(expected.getItems().get(0).getIdentifier(), result.getItems().get(0));
+        assertEquals(expected.getItems().size(), result.getItems().size());
+
+        verify(mockParticipantDataService).getAllParticipantData(TEST_USER_ID, OFFSET_KEY, PAGE_SIZE_INT);
     }
 
     @Test
-    public void testDeleteAllParticipantData() {
+    public void testDeleteAllParticipantDataForAdmin() {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+
+        StatusMessage result = controller.deleteAllParticipantDataForAdmin(session.getAppId(), session.getId());
+        assertEquals(result.getMessage(), "Participant data deleted.");
+
+        verify(mockParticipantDataService).deleteAllParticipantData(TEST_USER_ID);
+    }
+
+    @Test (expectedExceptions = UnauthorizedException.class)
+    public void testDeleteAllParticipantDataForAdminUnAuthorizedException() {
+        controller.deleteAllParticipantDataForAdmin(TEST_APP_ID, TEST_USER_ID);
     }
 
     @Test
     public void testGetDataByIdentifierForAdminWorker() {
+        doReturn(participantData).when(mockParticipantDataService).getParticipantData(session.getId(), IDENTIFIER);
+
+        ParticipantData result = controller.getDataByIdentifierForAdminWorker(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
+
+        assertEquals(result.getUserId(), participantData.getUserId());
+        assertEquals(result.getIdentifier(), participantData.getIdentifier());
+        assertEquals(result.getData(), participantData.getData());
+        assertEquals(result.getVersion(), participantData.getVersion());
+        assertSame(result, participantData);
     }
 
     @Test
-    public void testSaveDataRecordForAdminWorker() {
+    public void testSaveDataRecordForAdminWorker() throws Exception {
+        String json = createJson("{'userId':'aUserId', 'data':{'field1':'a','field2':'b'}}");
+        mockRequestBody(mockRequest, json);
+
+        StatusMessage result = controller.saveDataForAdminWorker(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
+        assertEquals(result.getMessage(), "Participant data saved.");
+
+        verify(mockParticipantDataService).saveParticipantData(anyString(), anyString(),
+                participantDataCaptor.capture());
+
+        ParticipantData capture = participantDataCaptor.getValue();
+
+        assertNull(capture.getUserId());
+        assertNull(capture.getIdentifier());
+        assertNull(capture.getVersion());
+        assertEquals(capture.getData(), participantData.getData());
     }
 
     @Test
     public void testDeleteDataRecordForAdmin() {
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+
+        StatusMessage result = controller.deleteDataForAdmin(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
+        assertEquals(result.getMessage(), "Participant data deleted.");
+
+        verify(mockParticipantDataService).deleteParticipantData(TEST_USER_ID, IDENTIFIER);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -242,12 +301,14 @@ public class ParticipantDataControllerTest extends Mockito {
         controller.deleteDataForAdmin(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
     }
 
-    private ForwardCursorPagedResourceList<ParticipantData> makeResults() {
+    private ForwardCursorPagedResourceList<ParticipantData> makeResults(String offsetKey, int pageSize) {
         List<ParticipantData> list = Lists.newArrayList();
         list.add(createParticipantData("a", "b"));
         list.add(createParticipantData("c", "d"));
 
-        return new ForwardCursorPagedResourceList<>(list, NEXT_PAGE_OFFSET_KEY);
+        return new ForwardCursorPagedResourceList<>(list, NEXT_PAGE_OFFSET_KEY)
+                .withRequestParam(OFFSET_KEY, offsetKey)
+                .withRequestParam(PAGE_SIZE, pageSize);
     }
 
     private static DynamoParticipantData createParticipantData(String fieldValue1, String fieldValue2) {

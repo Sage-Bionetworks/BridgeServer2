@@ -144,8 +144,7 @@ public class DynamoParticipantDataDaoTest extends Mockito {
 
         verify(mockMapper).load(participantDataCaptor.capture());
         ParticipantData participantData = participantDataCaptor.getValue();
-        //assertSame(participantData, participantData0);
-        // TODO why does the line above not return participantData0 as specified in the first line of the method?
+        assertEquals(participantData.getUserId(), TEST_USER_ID);
         assertEquals(participantData.getIdentifier(), IDENTIFIER);
     }
 

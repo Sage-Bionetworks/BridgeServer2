@@ -149,7 +149,7 @@ public class ParticipantDataController extends BaseController {
 
         participantDataService.deleteParticipantData(userId, identifier);
 
-        return new StatusMessage("Participant data deleted");
+        return new StatusMessage("Participant data deleted.");
     }
 
     private void checkAdminSessionAppId(UserSession session, String appId) {
