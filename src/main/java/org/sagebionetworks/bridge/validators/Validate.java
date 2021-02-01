@@ -22,7 +22,7 @@ import com.google.common.collect.Maps;
 
 public class Validate {
     
-    public static final String CANNOT_BE_BLANK = "%s cannot be missing, null, or blank";
+    public static final String CANNOT_BE_BLANK = "%s cannot be null or blank";
     public static final String CANNOT_BE_EMPTY = "%s cannot be empty";
     public static final String CANNOT_BE_EMPTY_STRING = "%s cannot be an empty string";
     public static final String CANNOT_BE_NEGATIVE = "%s cannot be negative";

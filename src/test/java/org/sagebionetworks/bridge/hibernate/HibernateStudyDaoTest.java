@@ -57,14 +57,14 @@ public class HibernateStudyDaoTest extends Mockito {
                 .thenReturn(STUDIES.getItems());
         when(hibernateHelper.queryCount(any(), any())).thenReturn(10);
         
-        PagedResourceList<Study> list = dao.getStudies(TEST_APP_ID, 5, 10, true);
+        PagedResourceList<Study> list = dao.getStudies(TEST_APP_ID, null, 5, 10, true);
         assertEquals(list.getItems(), STUDIES.getItems());
         assertEquals(list.getTotal(), (Integer)10);
         
         verify(hibernateHelper).queryGet(queryCaptor.capture(), paramsCaptor.capture(), 
                 eq(5), eq(10), eq(HibernateStudy.class));
         
-        assertEquals(queryCaptor.getValue(), "from HibernateStudy as study where appId=:appId");
+        assertEquals(queryCaptor.getValue(), "from HibernateStudy as study where appId = :appId");
         Map<String,Object> parameters = paramsCaptor.getValue();
         assertEquals(parameters.get("appId"), TEST_APP_ID);
     }
@@ -75,7 +75,7 @@ public class HibernateStudyDaoTest extends Mockito {
             .thenReturn(STUDIES.getItems());
         when(hibernateHelper.queryCount(any(), any())).thenReturn(10);
         
-        PagedResourceList<Study> list = dao.getStudies(TEST_APP_ID, 0, 100, false);
+        PagedResourceList<Study> list = dao.getStudies(TEST_APP_ID, null, 0, 100, false);
         assertEquals(list.getItems(), STUDIES.getItems());
         assertEquals(list.getTotal(), (Integer)10);
         
@@ -83,7 +83,7 @@ public class HibernateStudyDaoTest extends Mockito {
                 eq(0), eq(100), eq(HibernateStudy.class));
         
         assertEquals(queryCaptor.getValue(),
-                "from HibernateStudy as study where appId=:appId and deleted != 1");
+                "from HibernateStudy as study where appId = :appId and deleted != 1");
         Map<String,Object> parameters = paramsCaptor.getValue();
         assertEquals(parameters.get("appId"), TEST_APP_ID);
     }
@@ -155,7 +155,7 @@ public class HibernateStudyDaoTest extends Mockito {
         dao.deleteAllStudies(TEST_APP_ID);
         
         verify(hibernateHelper).queryUpdate(queryCaptor.capture(), paramsCaptor.capture());
-        assertEquals(queryCaptor.getValue(), "delete from HibernateStudy where appId=:appId");
+        assertEquals(queryCaptor.getValue(), "delete from HibernateStudy where appId = :appId");
         assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
     }
 }

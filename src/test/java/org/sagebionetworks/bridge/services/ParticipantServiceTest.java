@@ -320,7 +320,7 @@ public class ParticipantServiceTest extends Mockito {
         // suppress email (true) == sendEmail (false)
         verify(accountService).createAccount(eq(APP), accountCaptor.capture());
         verify(accountWorkflowService).sendEmailVerificationToken(APP, ID, EMAIL);
-        verify(enrollmentService).enroll(eq(accountCaptor.getValue()), enrollmentCaptor.capture());
+        verify(enrollmentService).addEnrollment(eq(accountCaptor.getValue()), enrollmentCaptor.capture());
         
         Account account = accountCaptor.getValue();
         assertEquals(account.getId(), ID);
@@ -633,7 +633,7 @@ public class ParticipantServiceTest extends Mockito {
         mockHealthCodeAndAccountRetrieval(null, null, null);
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         
-        when(enrollmentService.enroll(any(), any())).thenAnswer(args -> {
+        when(enrollmentService.addEnrollment(any(), any())).thenAnswer(args -> {
             account.getEnrollments().add(args.getArgument(1));
             return args.getArgument(1);
         });
@@ -1109,7 +1109,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getStudyStartTime_FromActivitiesRetrieved() {
         // Set up mocks.
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase(), ACTIVITIES_RETRIEVED_DATETIME));
 
         // Execute and validate.
@@ -1121,7 +1121,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getStudyStartTime_FromEnrollment() {
         // Set up mocks.
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), ENROLLMENT_DATETIME));
 
         // Execute and validate.
@@ -1134,7 +1134,7 @@ public class ParticipantServiceTest extends Mockito {
         // Set up mocks.
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         account.setCreatedOn(CREATED_ON_DATETIME);
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of());
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of());
 
         // Execute and validate.
         DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
@@ -1216,7 +1216,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.updateParticipant(APP, PARTICIPANT);
         
-        verify(enrollmentService, never()).enroll(any(), any());
+        verify(enrollmentService, never()).addEnrollment(any(), any());
     }
     
     // The exception here results from the fact that the caller can't see the existance of the 
@@ -2037,7 +2037,7 @@ public class ParticipantServiceTest extends Mockito {
         StudyParticipant participant = withParticipant().build();
         
         participantService.createParticipant(APP, participant, false);
-        verify(enrollmentService, never()).enroll(any(), any());
+        verify(enrollmentService, never()).addEnrollment(any(), any());
     }
     
     @Test
@@ -2049,7 +2049,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withExternalIds(ENROLLMENT_MAP).build();
         
         participantService.updateParticipant(APP, participant);
-        verify(enrollmentService, never()).enroll(any(), any());
+        verify(enrollmentService, never()).addEnrollment(any(), any());
         
         assertEquals(Iterables.getFirst(account.getEnrollments(), null).getExternalId(), EXTERNAL_ID);
     }
@@ -2061,7 +2061,7 @@ public class ParticipantServiceTest extends Mockito {
         // Participant has no external ID, so externalIdService is not called
         StudyParticipant participant = withParticipant().withExternalId(null).build();
         participantService.updateParticipant(APP, participant);
-        verify(enrollmentService, never()).enroll(any(), any());
+        verify(enrollmentService, never()).addEnrollment(any(), any());
         assertEquals(Iterables.getFirst(account.getEnrollments(),  null).getExternalId(), EXTERNAL_ID);
     }
 
@@ -2072,7 +2072,7 @@ public class ParticipantServiceTest extends Mockito {
         StudyParticipant participant = withParticipant().withExternalIds(ENROLLMENT_MAP).build();
         participantService.updateParticipant(APP, participant);
         
-        verify(enrollmentService, never()).enroll(any(), any());
+        verify(enrollmentService, never()).addEnrollment(any(), any());
     }
     
     // Removed because you can no longer simply remove an external ID
@@ -2144,7 +2144,7 @@ public class ParticipantServiceTest extends Mockito {
         participantService.createParticipant(APP, participant, false);
         
         verify(accountService).createAccount(APP, account);
-        verify(enrollmentService, never()).enroll(any(), any());
+        verify(enrollmentService, never()).addEnrollment(any(), any());
     }
     @Test(expectedExceptions = UnauthorizedException.class)
     public void normalUserCannotCreateParticipantWithExternalId() {
@@ -2156,6 +2156,9 @@ public class ParticipantServiceTest extends Mockito {
         StudyParticipant participant = withParticipant()
                 .withExternalIds(ENROLLMENT_MAP).build();
         participantService.createParticipant(APP, participant, false);
+        
+        verify(accountService).createAccount(APP, account);
+        verify(enrollmentService, never()).addEnrollment(any(), any());
     }
     @Test
     public void updateParticipantNoExternalIdsNoneAddedDoesNothing() {
@@ -2166,7 +2169,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.updateParticipant(APP, participant);
         
-        verify(enrollmentService, never()).enroll(any(), any());
+        verify(enrollmentService, never()).addEnrollment(any(), any());
         verify(accountService).updateAccount(account);
         assertTrue(account.getEnrollments().isEmpty());
     }
@@ -2182,7 +2185,7 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateParticipant(APP, participant);
         
         verify(accountService).updateAccount(account);
-        verify(enrollmentService, never()).enroll(any(), any());
+        verify(enrollmentService, never()).addEnrollment(any(), any());
     }
 
     @Test
@@ -2235,9 +2238,9 @@ public class ParticipantServiceTest extends Mockito {
     public void getActivityEvents() {
         mockHealthCodeAndAccountRetrieval();
         
-        participantService.getActivityEvents(APP, ID);
+        participantService.getActivityEvents(APP, null, ID);
         
-        verify(activityEventService).getActivityEventList(APP.getIdentifier(), HEALTH_CODE);
+        verify(activityEventService).getActivityEventList(APP.getIdentifier(), null, HEALTH_CODE);
     }
     
     @Test
@@ -2251,11 +2254,11 @@ public class ParticipantServiceTest extends Mockito {
 
         // This directly calls getAccountThrowingException(); it should recognize and
         // handle the healthCode version of an ID.
-        participantService.getActivityEvents(APP, "healthcode:"+HEALTH_CODE);
+        participantService.getActivityEvents(APP, null, "healthcode:"+HEALTH_CODE);
         
         // still works
         verify(accountService).getAccount(accountId);
-        verify(activityEventService).getActivityEventList(APP.getIdentifier(), HEALTH_CODE);
+        verify(activityEventService).getActivityEventList(APP.getIdentifier(), null, HEALTH_CODE);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -2269,7 +2272,7 @@ public class ParticipantServiceTest extends Mockito {
         participantService.updateParticipant(APP, participant);
         
         verify(accountService).updateAccount(accountCaptor.capture());
-        verify(enrollmentService, never()).enroll(any(), any());
+        verify(enrollmentService, never()).addEnrollment(any(), any());
     }
     
     @Test
@@ -2317,7 +2320,7 @@ public class ParticipantServiceTest extends Mockito {
         
         verify(accountService).createAccount(eq(APP), any(Account.class));
         
-        verify(enrollmentService).enroll(any(Account.class), enrollmentCaptor.capture());
+        verify(enrollmentService).addEnrollment(any(Account.class), enrollmentCaptor.capture());
         Enrollment enrollment = enrollmentCaptor.getValue();
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
         assertEquals(enrollment.getStudyId(), STUDY_ID);
@@ -2335,7 +2338,7 @@ public class ParticipantServiceTest extends Mockito {
         participantService.createParticipant(APP, participant, false);
         
         verify(accountService).createAccount(eq(APP), accountCaptor.capture());
-        verify(enrollmentService).enroll(any(), enrollmentCaptor.capture());
+        verify(enrollmentService).addEnrollment(any(), enrollmentCaptor.capture());
         
         Enrollment enrollment = enrollmentCaptor.getValue();
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
@@ -2373,7 +2376,7 @@ public class ParticipantServiceTest extends Mockito {
         participantService.createParticipant(APP, participant, false);
         
         verify(accountService).createAccount(eq(APP), accountCaptor.capture());
-        verify(enrollmentService).enroll(any(), enrollmentCaptor.capture());
+        verify(enrollmentService).addEnrollment(any(), enrollmentCaptor.capture());
         
         Enrollment enrollment = enrollmentCaptor.getValue();
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
@@ -2401,7 +2404,7 @@ public class ParticipantServiceTest extends Mockito {
     }
     
     @Test
-    public void createCustomActivityEvent() throws Exception {
+    public void createGlobalCustomActivityEvent() throws Exception {
         CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
                 .withEventKey("anEvent")
                 .withTimestamp(TIMESTAMP).build();
@@ -2411,7 +2414,21 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
         
-        verify(activityEventService).publishCustomEvent(APP, HEALTH_CODE, "anEvent", TIMESTAMP);
+        verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
+    }
+    
+    @Test
+    public void createStudyScopedCustomActivityEvent() throws Exception {
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withEventKey("anEvent")
+                .withTimestamp(TIMESTAMP).build();
+        
+        AccountId accountId = AccountId.forId(APP.getIdentifier(), TEST_USER_ID);
+        when(accountService.getAccount(accountId)).thenReturn(account);
+        
+        participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
+        
+        verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 

@@ -38,7 +38,7 @@ public class SubpopulationValidatorTest {
         subpop.setVersion(3L);
         subpop.setGuidString("AAA");
         subpop.setDataGroupsAssignedWhileConsented(USER_DATA_GROUPS);
-        subpop.setStudyIdsAssignedOnConsent(USER_STUDY_IDS);
+        subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of("studyA"));
         
         Criteria criteria = TestUtils.createCriteria(2, 4, ImmutableSet.of("group1"), ImmutableSet.of("group2"));
         criteria.setAllOfStudyIds(ImmutableSet.of("studyA"));
@@ -85,7 +85,8 @@ public class SubpopulationValidatorTest {
         subpop.setGuidString("AAA");
         subpop.setStudyIdsAssignedOnConsent(ImmutableSet.of());
         
-        assertValidatorMessage(validator, subpop, "studyIdsAssignedOnConsent", "cannot be empty");
+        assertValidatorMessage(validator, subpop, "studyIdsAssignedOnConsent", 
+                "must contain one (and only one) study identifier");
     }
     
     @Test

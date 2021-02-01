@@ -76,7 +76,6 @@ public class ConsentService {
     private SmsService smsService;
     private NotificationsService notificationsService;
     private StudyConsentService studyConsentService;
-    private ActivityEventService activityEventService;
     private SubpopulationService subpopService;
     private String xmlTemplateWithSignatureBlock;
     private S3Helper s3Helper;
@@ -110,10 +109,6 @@ public class ConsentService {
     @Autowired
     final void setStudyConsentService(StudyConsentService studyConsentService) {
         this.studyConsentService = studyConsentService;
-    }
-    @Autowired
-    final void setActivityEventService(ActivityEventService activityEventService) {
-        this.activityEventService = activityEventService;
     }
     @Autowired
     final void setSubpopulationService(SubpopulationService subpopService) {
@@ -206,14 +201,10 @@ public class ConsentService {
         account.setSharingScope(sharingScope);
         
         account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());
-        for (String studyId : subpop.getStudyIdsAssignedOnConsent()) {
-            Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), studyId, account.getId());
-            enrollmentService.enroll(account, newEnrollment);
-        }
+        Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), subpop.getStudyId(), account.getId());
+        enrollmentService.addEnrollment(account, newEnrollment);
+
         accountService.updateAccount(account);
-        
-        // Publish an enrollment event, set sharing scope 
-        activityEventService.publishEnrollmentEvent(app, participant.getHealthCode(), withConsentCreatedOnSignature);
 
         // Administrative actions, almost exclusively for testing, will send no consent documents
         if (sendSignedConsent) {

@@ -50,6 +50,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
+import org.sagebionetworks.bridge.dynamodb.DynamoParticipantFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
@@ -253,7 +254,8 @@ public class SpringConfig {
     @Bean(name = "s3Client")
     @Resource(name = "awsCredentials")
     public AmazonS3Client s3Client(BasicAWSCredentials awsCredentials) {
-        return new AmazonS3Client(awsCredentials);
+        // Setting region is necessary to prevent bug BRIDGE-2910. Don't remove.
+        return new AmazonS3Client(awsCredentials).withRegion(US_EAST_1);
     }
 
     @Bean(name = "s3UploadClient")
@@ -574,6 +576,12 @@ public class SpringConfig {
     @Autowired
     public DynamoDBMapper externalIdDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoExternalIdentifier.class);
+    }
+
+    @Bean(name = "participantFileDdbMapper")
+    @Autowired
+    public DynamoDBMapper participantFileDdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoParticipantFile.class);
     }
     
     @Bean(name = "uploadValidationHandlerList")

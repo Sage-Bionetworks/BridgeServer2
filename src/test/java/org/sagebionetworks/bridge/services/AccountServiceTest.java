@@ -98,6 +98,12 @@ public class AccountServiceTest extends Mockito {
 
     @Mock
     AccountSecretDao mockAccountSecretDao;
+    
+    @Mock
+    AppService appService;
+    
+    @Mock
+    ActivityEventService activityEventService;
 
     @Mock
     PagedResourceList<AccountSummary> mockAccountSummaries;
@@ -804,6 +810,29 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(createdAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
+        
+        verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any(), any());
+    }
+    
+    @Test
+    public void createAccountPublishesEnrollmentEvent() throws Exception {
+        // App passed into createAccount() takes precedence over appId in the Account object. To test this, make
+        // the account have a different app.
+        Account account = mockGetAccountById(ACCOUNT_ID, true);
+        account.setAppId("wrong-app");
+        
+        Enrollment enA = Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID);
+        Enrollment enB = Enrollment.create(TEST_APP_ID, STUDY_B, TEST_USER_ID);
+        account.getEnrollments().add(enA);
+        account.getEnrollments().add(enB);
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+
+        service.createAccount(app, account);
+
+        verify(mockAccountDao).createAccount(app, account);
+        verify(activityEventService).publishEnrollmentEvent(eq(app), eq(STUDY_A), eq(HEALTH_CODE), any(DateTime.class));
+        verify(activityEventService).publishEnrollmentEvent(eq(app), eq(STUDY_A), eq(HEALTH_CODE), any(DateTime.class));
     }
 
     @Test
@@ -860,8 +889,42 @@ public class AccountServiceTest extends Mockito {
         assertEquals(updatedAccount.getPasswordHash(), hash);
         assertEquals(updatedAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(updatedAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
+        
+        verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any(), any());
     }
 
+    @Test
+    public void updateAccountPublishesEnrollmentEvent() throws Exception {
+        // Some fields can't be modified. Create the persisted account and set the base fields so we can verify they
+        // weren't modified.
+        Account persistedAccount = Account.create();
+        persistedAccount.setAppId(TEST_APP_ID);
+        persistedAccount.setId(TEST_USER_ID);
+        persistedAccount.setHealthCode(HEALTH_CODE);
+        persistedAccount.setModifiedOn(MOCK_DATETIME);
+        
+        Enrollment enA = Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID);
+        persistedAccount.getEnrollments().add(enA);
+        
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(persistedAccount));
+
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.getEnrollments().add(enA);
+        Enrollment enB = Enrollment.create(TEST_APP_ID, STUDY_B, TEST_USER_ID);
+        account.getEnrollments().add(enB);
+        
+        App app = App.create();
+        when(appService.getApp(TEST_APP_ID)).thenReturn(app);
+
+        // Execute. Identifiers not allows to change.
+        service.updateAccount(account);
+
+        verify(activityEventService, times(1)).publishEnrollmentEvent(
+                eq(app), eq(STUDY_B), eq(HEALTH_CODE), any(DateTime.class));
+    }
+    
     @Test
     public void updateDoesNotChangePassword() throws Exception {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);

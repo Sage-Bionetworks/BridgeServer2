@@ -112,15 +112,16 @@ public class EnrollmentService {
         Account account = accountService.getAccountNoFilter(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
-        enrollment = enroll(account, enrollment);
+        enrollment = addEnrollment(account, enrollment);
         accountService.updateAccount(account);
         return enrollment;
     }
     
     /**
-     * For methods that are going to save the account, this method handles enrollment but does not persist it.
+     * For methods that are going to save the account, this method adds an enrollment correctly
+     * to an account, but does not persist it or fire an enrollment event.
      */
-    public Enrollment enroll(Account account, Enrollment newEnrollment) {
+    public Enrollment addEnrollment(Account account, Enrollment newEnrollment) {
         checkNotNull(account);
         checkNotNull(newEnrollment);
         

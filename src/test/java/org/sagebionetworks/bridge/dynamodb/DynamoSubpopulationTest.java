@@ -41,6 +41,13 @@ public class DynamoSubpopulationTest {
     }
     
     @Test
+    public void accessStudyId() {
+        Subpopulation subpop = makeSubpopulation();
+        // This accessor gets one of the values
+        assertTrue(subpop.getStudyIdsAssignedOnConsent().contains(subpop.getStudyId()));
+    }
+    
+    @Test
     public void canSerialize() throws Exception {
         Subpopulation subpop = makeSubpopulation();
         

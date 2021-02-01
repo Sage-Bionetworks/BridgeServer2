@@ -4,7 +4,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -14,7 +13,6 @@ import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.springframework.stereotype.Component;
 
@@ -24,21 +22,34 @@ import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 @Component
 public class DynamoActivityEventDao implements ActivityEventDao {
 
     private static final String ANSWERED_EVENT_POSTFIX = ":"+ActivityEventType.ANSWERED.name().toLowerCase();
-    private static final Set<String> IMMUTABLE_EVENTS = ImmutableSet.of(
-            ActivityEventObjectType.ENROLLMENT.name().toLowerCase(),
-            ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase());
     private DynamoDBMapper mapper;
 
     @Resource(name = "activityEventDdbMapper")
     public final void setDdbMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
+    }
+
+    @Override
+    public boolean deleteCustomEvent(ActivityEvent event) {
+        checkNotNull(event);
+        
+        DynamoActivityEvent hashKey = new DynamoActivityEvent();
+        hashKey.setHealthCode(event.getHealthCode());
+        hashKey.setStudyId(event.getStudyId());
+        hashKey.setEventId(event.getEventId());
+
+        ActivityEvent savedEvent = mapper.load(hashKey);
+        if (savedEvent != null) {
+            mapper.delete(savedEvent);
+            return true;
+        }
+        return false;
     }
     
     @Override
@@ -47,10 +58,11 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
         hashKey.setHealthCode(event.getHealthCode());
+        hashKey.setStudyId(event.getStudyId());
         hashKey.setEventId(event.getEventId());
         
         ActivityEvent savedEvent = mapper.load(hashKey);
-        if (isNewOrMutable(savedEvent, event) && isLater(savedEvent, event)) {
+        if (savedEvent == null || isLater(savedEvent, event)) {
             mapper.save(event);
             return true;
         }
@@ -58,11 +70,12 @@ public class DynamoActivityEventDao implements ActivityEventDao {
     }
 
     @Override
-    public Map<String, DateTime> getActivityEventMap(String healthCode) {
+    public Map<String, DateTime> getActivityEventMap(String healthCode, String studyId) {
         checkNotNull(healthCode);
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
         hashKey.setHealthCode(healthCode);
+        hashKey.setStudyId(studyId);
         DynamoDBQueryExpression<DynamoActivityEvent> query = new DynamoDBQueryExpression<DynamoActivityEvent>()
             .withHashKeyValues(hashKey);
 
@@ -76,11 +89,12 @@ public class DynamoActivityEventDao implements ActivityEventDao {
     }
     
     @Override
-    public void deleteActivityEvents(String healthCode) {
+    public void deleteActivityEvents(String healthCode, String studyId) {
         checkNotNull(healthCode);
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
         hashKey.setHealthCode(healthCode);
+        hashKey.setStudyId(studyId);
         DynamoDBQueryExpression<DynamoActivityEvent> query = new DynamoDBQueryExpression<DynamoActivityEvent>()
             .withHashKeyValues(hashKey);
 
@@ -95,20 +109,11 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         }
     }
     
-    // Some events can only be recorded once. 
-    private boolean isNewOrMutable(ActivityEvent savedEvent, ActivityEvent event) {
-        if (savedEvent == null) {
-            return true;
-        }
-        return (!IMMUTABLE_EVENTS.contains(event.getEventId()));
-    }
-    
-    // Events cannot be recorded unless the timestamp submitted is later than the currently
-    // recorded timestamp.
+    /**
+     * Events cannot be recorded unless the timestamp submitted is later than the currently
+     * recorded timestamp.
+     */
     private boolean isLater(ActivityEvent savedEvent, ActivityEvent event) {
-        if (savedEvent == null) {
-            return true;
-        }
         return event.getTimestamp() > savedEvent.getTimestamp();
     }
 

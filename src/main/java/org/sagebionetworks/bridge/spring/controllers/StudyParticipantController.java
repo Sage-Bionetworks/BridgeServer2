@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -51,6 +52,7 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 
@@ -69,12 +71,16 @@ public class StudyParticipantController extends BaseController {
     static final StatusMessage CONSENT_RESENT_MSG = new StatusMessage("Consent agreement resent to user.");
     static final StatusMessage DELETE_MSG = new StatusMessage("User deleted.");
     static final StatusMessage NOTIFY_SUCCESS_MSG = new StatusMessage("Message has been sent to external notification service.");
+    static final StatusMessage EVENT_RECORDED_MSG = new StatusMessage("Event recorded.");
+    static final StatusMessage EVENT_DELETED_MSG = new StatusMessage("Event deleted.");
 
     private ParticipantService participantService;
     
     private UserAdminService userAdminService;
     
     private EnrollmentService enrollmentService;
+    
+    private ActivityEventService activityEventService;
     
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
@@ -90,15 +96,20 @@ public class StudyParticipantController extends BaseController {
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
     }
+    
+    @Autowired
+    final void setActivityEventService(ActivityEventService activityEventService) {
+        this.activityEventService = activityEventService;
+    }
 
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/enrollments")
     public PagedResourceList<EnrollmentDetail> getEnrollmentsForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
-        List<EnrollmentDetail> list = enrollmentService.getEnrollmentsForUser(session.getAppId(), studyId, userId); 
+        List<EnrollmentDetail> list = enrollmentService.getEnrollmentsForUser(session.getAppId(), studyId, account.getId()); 
         return new PagedResourceList<>(list, list.size(), true);
     }
     
@@ -136,13 +147,14 @@ public class StudyParticipantController extends BaseController {
         return keys;
     }
 
-    @GetMapping(path="/v5/studies/{studyId}/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
+    @GetMapping(path="/v5/studies/{studyId}/participants/{userId}", 
+            produces={APPLICATION_JSON_UTF8_VALUE})
     public String getParticipant(@PathVariable String studyId, @PathVariable String userId,
             @RequestParam(defaultValue = "true") boolean consents) throws Exception {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
 
         App app = appService.getApp(session.getAppId());
 
@@ -153,7 +165,7 @@ public class StudyParticipantController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
         
-        StudyParticipant participant = participantService.getParticipant(app, userId, consents);
+        StudyParticipant participant = participantService.getParticipant(app, account, consents);
         
         ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(ADMIN)) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
@@ -165,13 +177,13 @@ public class StudyParticipantController extends BaseController {
             APPLICATION_JSON_UTF8_VALUE })
     public String getRequestInfo(@PathVariable String studyId, @PathVariable String userId) throws JsonProcessingException {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
         // Verify it's in the same app as the researcher.
-        RequestInfo requestInfo = requestInfoService.getRequestInfo(userId);
+        RequestInfo requestInfo = requestInfoService.getRequestInfo(account.getId());
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
         } else if (!app.getIdentifier().equals(requestInfo.getAppId())) {
@@ -183,14 +195,14 @@ public class StudyParticipantController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants/{userId}")
     public StatusMessage updateParticipant(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         StudyParticipant participant = parseJson(StudyParticipant.class);
  
         // Force userId of the URL
-        participant = new StudyParticipant.Builder().copyOf(participant).withId(userId).build();
+        participant = new StudyParticipant.Builder().copyOf(participant).withId(account.getId()).build();
         
         App app = appService.getApp(session.getAppId());
         participantService.updateParticipant(app, participant);
@@ -202,12 +214,12 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage signOut(@PathVariable String studyId, @PathVariable String userId,
             @RequestParam(required = false) boolean deleteReauthToken) {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
-        participantService.signUserOut(app, userId, deleteReauthToken);
+        participantService.signUserOut(app, account.getId(), deleteReauthToken);
 
         return SIGN_OUT_MSG;
     }
@@ -215,12 +227,12 @@ public class StudyParticipantController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/requestResetPassword")
     public StatusMessage requestResetPassword(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
-        participantService.requestResetPassword(app, userId);
+        participantService.requestResetPassword(app, account.getId());
         
         return RESET_PWD_MSG;
     }
@@ -228,12 +240,12 @@ public class StudyParticipantController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/resendEmailVerification")
     public StatusMessage resendEmailVerification(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
-        participantService.resendVerification(app, ChannelType.EMAIL, userId);
+        participantService.resendVerification(app, ChannelType.EMAIL, account.getId());
         
         return EMAIL_VERIFY_MSG;
     }
@@ -241,12 +253,12 @@ public class StudyParticipantController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/resendPhoneVerification")
     public StatusMessage resendPhoneVerification(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
-        participantService.resendVerification(app, ChannelType.PHONE, userId);
+        participantService.resendVerification(app, ChannelType.PHONE, account.getId());
         
         return PHONE_VERIFY_MSG;
     }
@@ -255,13 +267,13 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage resendConsentAgreement(@PathVariable String studyId, @PathVariable String userId,
             @PathVariable String guid) {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
-        participantService.resendConsentAgreement(app, subpopGuid, userId);
+        participantService.resendConsentAgreement(app, subpopGuid, account.getId());
         
         return CONSENT_RESENT_MSG;
     }
@@ -272,27 +284,27 @@ public class StudyParticipantController extends BaseController {
             @RequestParam(required = false) String endTime, @RequestParam(required = false) Integer pageSize,
             @RequestParam(required = false) String offsetKey) {
         UserSession session = getAdministrativeSession();
-
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
+        
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
         DateTime startTimeDate = getDateTimeOrDefault(startTime, null);
         DateTime endTimeDate = getDateTimeOrDefault(endTime, null);
 
-        return participantService.getUploads(app, userId, startTimeDate, endTimeDate, pageSize, offsetKey);
+        return participantService.getUploads(app, account.getId(), startTimeDate, endTimeDate, pageSize, offsetKey);
     }
 
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/notifications")
     public ResourceList<NotificationRegistration> getNotificationRegistrations(@PathVariable String studyId,
             @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
-        List<NotificationRegistration> registrations = participantService.listRegistrations(app, userId);
+        List<NotificationRegistration> registrations = participantService.listRegistrations(app, account.getId());
         return new ResourceList<>(registrations);
     }
 
@@ -300,13 +312,13 @@ public class StudyParticipantController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage sendNotification(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         NotificationMessage message = parseJson(NotificationMessage.class);
         App app = appService.getApp(session.getAppId());
-        Set<String> erroredNotifications = participantService.sendNotification(app, userId, message);
+        Set<String> erroredNotifications = participantService.sendNotification(app, account.getId(), message);
         
         if (erroredNotifications.isEmpty()) {
             return NOTIFY_SUCCESS_MSG;                    
@@ -318,49 +330,121 @@ public class StudyParticipantController extends BaseController {
     @DeleteMapping("/v5/studies/{studyId}/participants/{userId}")
     public StatusMessage deleteTestParticipant(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
-        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        boolean inStudy = account.getEnrollments().stream()
-                .anyMatch(en -> studyId.equals(en.getStudyId()));
-        if (!inStudy) {
-            throw new EntityNotFoundException(Account.class);
-        }
         if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
             throw new UnauthorizedException("Account is not a test account.");
         }
         App app = appService.getApp(session.getAppId());
-        userAdminService.deleteUser(app, userId);
+        userAdminService.deleteUser(app, account.getId());
         
         return DELETE_MSG;
     }    
     
-    @GetMapping("/v5/studies/{studyId}/participants/{userId}/activityEvents")
-    public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String studyId, @PathVariable String userId) {
+    @GetMapping(path = {"/v5/studies/{studyId}/participants/{userId}/activityEvents"},
+            produces={APPLICATION_JSON_UTF8_VALUE})
+    public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String studyId, @PathVariable String userId) throws JsonProcessingException {
         UserSession session = getAdministrativeSession();
-
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
+        
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        checkAccountInStudy(session.getAppId(), studyId, userId);
         
         App app = appService.getApp(session.getAppId());
-        return new ResourceList<>(participantService.getActivityEvents(app, userId));
+        List<ActivityEvent> events = participantService.getActivityEvents(app, studyId, account.getId());
+        
+        return new ResourceList<>(events);
     }
     
+    @PostMapping("/v5/studies/{studyId}/participants/{userId}/activityEvents")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StatusMessage createActivityEvent(@PathVariable String studyId, @PathVariable String userId) {
+        UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
+        
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+        
+        CustomActivityEventRequest event = parseJson(CustomActivityEventRequest.class);
+        
+        App app = appService.getApp(session.getAppId());
+        activityEventService.publishCustomEvent(app, studyId,
+                account.getHealthCode(), event.getEventKey(), event.getTimestamp());
+        
+        return EVENT_RECORDED_MSG;
+    }
+
+    @DeleteMapping("/v5/studies/{studyId}/participants/{userId}/activityEvents/{eventId}")
+    public StatusMessage deleteActivityEvent(@PathVariable String studyId, @PathVariable String userId,
+            @PathVariable String eventId) {
+        UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
+        
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+        
+        App app = appService.getApp(session.getAppId());
+        activityEventService.deleteCustomEvent(app, studyId, account.getHealthCode(), eventId);
+        
+        return EVENT_DELETED_MSG;
+    }
+    
+    @GetMapping(path = {"/v5/studies/{studyId}/participants/self/activityEvents"},
+            produces={APPLICATION_JSON_UTF8_VALUE})
+    public ResourceList<ActivityEvent> getSelfActivityEvents(@PathVariable String studyId)
+            throws JsonProcessingException {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        getValidAccountInStudy(session.getAppId(), studyId, session.getId());
+        
+        List<ActivityEvent> events = activityEventService.getActivityEventList(
+                session.getAppId(), studyId, session.getHealthCode());
+        
+        return new ResourceList<>(events);
+    }
+
+    @PostMapping("/v5/studies/{studyId}/participants/self/activityEvents")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StatusMessage createSelfActivityEvent(@PathVariable String studyId) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+
+        getValidAccountInStudy(session.getAppId(), studyId, session.getId());
+        
+        CustomActivityEventRequest event = parseJson(CustomActivityEventRequest.class);
+
+        App app = appService.getApp(session.getAppId());
+        activityEventService.publishCustomEvent(app, studyId,
+                session.getHealthCode(), event.getEventKey(), event.getTimestamp());
+        
+        return EVENT_RECORDED_MSG;
+    }   
+    
+    @DeleteMapping("/v5/studies/{studyId}/participants/self/activityEvents/{eventId}")
+    public StatusMessage deleteSelfActivityEvent(@PathVariable String studyId, @PathVariable String eventId) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+
+        getValidAccountInStudy(session.getAppId(), studyId, session.getId());
+        
+        App app = appService.getApp(session.getAppId());
+        activityEventService.deleteCustomEvent(app, studyId, session.getHealthCode(), eventId);
+        
+        return EVENT_DELETED_MSG;
+    }   
+    
     /**
-     * Verify that the account referenced is enrolled in the target study.
-     * 
-     * @throws EntityNotFoundException
+     * Get the account no matter what identifier is used (in particular, externalId:<externalId> can be
+     * useful for the client), and throw an exception if the account does not exists, or it is not 
+     * enrolled in the target study.
      */
-    void checkAccountInStudy(String appId, String studyId, String userId) {
-        List<EnrollmentDetail> enrollments = enrollmentService.getEnrollmentsForUser(appId, studyId, userId);
-        boolean matches = enrollments.stream().anyMatch(en -> studyId.equals(en.getStudyId()));
+    private Account getValidAccountInStudy(String appId, String studyId, String idToken) {
+        AccountId accountId = BridgeUtils.parseAccountId(appId, idToken);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+        boolean matches = account.getEnrollments().stream().anyMatch(en -> studyId.equals(en.getStudyId()));
         if (!matches) {
             throw new EntityNotFoundException(Account.class);
         }
+        return account;
     }
 }

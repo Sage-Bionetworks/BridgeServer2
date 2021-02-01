@@ -41,5 +41,15 @@ public class CustomActivityEventRequestTest {
         assertEquals(node.size(), 3);
         assertEquals(node.get("eventKey").textValue(), EVENT_KEY);
         TestUtils.assertDatesWithTimeZoneEqual(EVENT_TIMESTAMP, DateTime.parse(node.get("timestamp").textValue()));
+        
+        // test alias of eventKey to eventId
+        jsonText = "{\n" +
+                "   \"eventId\":\"" + EVENT_KEY + "\",\n" +
+                "   \"timestamp\":\"" + EVENT_TIMESTAMP_STRING + "\"\n" +
+                "}";
+
+        // Convert to POJO
+        req = BridgeObjectMapper.get().readValue(jsonText, CustomActivityEventRequest.class);
+        assertEquals(req.getEventKey(), EVENT_KEY);
     }
 }
