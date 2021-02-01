@@ -56,7 +56,8 @@ public class ShippingConfirmation {
                 .add("Item", Item)
                 .toString();
     }
-
+    
+    @JsonDeserialize
     public static class Item {
         @JacksonXmlProperty(isAttribute = true)
         public String ItemNumber;
@@ -69,10 +70,19 @@ public class ShippingConfirmation {
 
         @JacksonXmlProperty(isAttribute = true)
         public int ShippedQty;
-
+    
         public String TubeSerial;
+    
         public String ReturnTracking;
-
+    
+        public void setTubeSerial(String tubeSerial) {
+            TubeSerial = tubeSerial;
+        }
+    
+        public void setReturnTracking(String returnTracking) {
+            ReturnTracking = returnTracking;
+        }
+    
         @Override public boolean equals(Object o) {
             if (this == o) {
                 return true;

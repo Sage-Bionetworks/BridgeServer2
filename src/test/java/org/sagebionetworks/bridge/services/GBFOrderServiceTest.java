@@ -197,7 +197,7 @@ public class GBFOrderServiceTest {
 
 
         ShippingConfirmations shippingConfirmations = new ShippingConfirmations();
-        shippingConfirmations.ShippingConfirmation = Lists.newArrayList(shippingConfirmation1, shippingConfirmation2);
+        shippingConfirmations.shippingConfirmation = Lists.newArrayList(shippingConfirmation1, shippingConfirmation2);
 
         ConfirmShippingResponse confirmShippingResponse = new ConfirmShippingResponse(
                 xmlMapper.writeValueAsString(shippingConfirmations));
@@ -223,8 +223,8 @@ public class GBFOrderServiceTest {
         LocalDate endDate = LocalDate.now().plusDays(3);
         ShippingConfirmations shippingConfirmationsResult = service.requestShippingConfirmations(
                 startDate, endDate);
-        assertEquals(shippingConfirmation1, shippingConfirmationsResult.ShippingConfirmation.get(0));
-        assertEquals(shippingConfirmation2, shippingConfirmationsResult.ShippingConfirmation.get(1));
+        assertEquals(shippingConfirmation1, shippingConfirmationsResult.shippingConfirmation.get(0));
+        assertEquals(shippingConfirmation2, shippingConfirmationsResult.shippingConfirmation.get(1));
         
         ConfirmShippingRequest confirmShippingRequest = confirmShippingRequestArgumentCaptor.getValue();
         assertEquals(startDate, confirmShippingRequest.startDate);

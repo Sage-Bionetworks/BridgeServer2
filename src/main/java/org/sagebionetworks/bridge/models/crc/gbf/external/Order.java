@@ -1,14 +1,16 @@
 package org.sagebionetworks.bridge.models.crc.gbf.external;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlElementWrapper;
 import com.fasterxml.jackson.dataformat.xml.annotation.JacksonXmlProperty;
 import org.joda.time.LocalDate;
 
 import java.util.List;
 
+@SuppressWarnings("unused")
 public class Order {
-    @JacksonXmlProperty(isAttribute = true)
-    private boolean Test;
+    @JacksonXmlProperty(isAttribute = true, localName = "Test")
+    public final boolean test;
 
     public final String OrderNumber;
 
@@ -26,7 +28,7 @@ public class Order {
         OrderDate = orderDate.toString("MM/dd/yyyy");
         ShippingInfo = shippingInfo;
         LineItem = lineItem;
-        Test = test;
+        this.test = test;
     }
 
     public static class LineItem {

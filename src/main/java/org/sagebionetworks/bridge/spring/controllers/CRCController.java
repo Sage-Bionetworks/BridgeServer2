@@ -312,24 +312,23 @@ public class CRCController extends BaseController {
     // Waiting for integration workflow to be finalized
     //@GetMapping(path = "v1/cuicm/labshipments/{orderId}/status")
     public CheckOrderStatusResponse getLabShipmentStatus(@PathVariable String orderId) throws JsonProcessingException {
-        App app = httpBasicAuthentication();
+        httpBasicAuthentication();
         CheckOrderStatusResponse response = gbfOrderService.checkOrderStatus(orderId);
-        //return MAPPER.writeValueAsString(response);
-    return response;
+        return response;
     }
-
+    
     // Waiting for integration workflow to be finalized
     //@GetMapping(path = "v1/cuicm/participants/labshipments/confirmations")
     public ShippingConfirmations getLabShipmentConfirmations(@RequestParam String startDate,
-                                              @RequestParam String endDate) throws JsonProcessingException {
-        App app = httpBasicAuthentication();
-
+            @RequestParam String endDate) throws JsonProcessingException {
+        httpBasicAuthentication();
+        
         LocalDate startDateObj = getLocalDateOrDefault(startDate, null);
         LocalDate endDateObj = getLocalDateOrDefault(endDate, null);
-
-        ShippingConfirmations shippingConfirmations = gbfOrderService.requestShippingConfirmations(startDateObj, endDateObj);
-return shippingConfirmations;
-        //return MAPPER.writeValueAsString(shippingConfirmations);
+        
+        ShippingConfirmations shippingConfirmations = gbfOrderService.requestShippingConfirmations(startDateObj,
+                endDateObj);
+        return shippingConfirmations;
     }
 
     @PostMapping("/v1/cuimc/participants/{userId}/laborders")

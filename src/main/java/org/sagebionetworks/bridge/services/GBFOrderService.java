@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.fasterxml.jackson.datatype.joda.JodaModule;
 import com.google.common.annotations.Beta;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
@@ -18,7 +17,6 @@ import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.ServiceUnavailableException;
 import org.sagebionetworks.bridge.models.crc.gbf.external.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,13 +33,13 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 public class GBFOrderService {
     private static Logger LOG = LoggerFactory.getLogger(GBFOrderService.class);
 
-    public static String GBF_API_KEY = "gbf.api.key";
-    public static String GBF_PLACE_ORDER_URL = "gbf.order.place.url";
-    public static String GBF_ORDER_STATUS_URL = "gbf.order.status.url";
-    public static String GBF_CONFIRMATION_URL = "gbf.ship.confirmation.url";
+    public static final String GBF_API_KEY = "gbf.api.key";
+    public static final String GBF_PLACE_ORDER_URL = "gbf.order.place.url";
+    public static final String GBF_ORDER_STATUS_URL = "gbf.order.status.url";
+    public static final String GBF_CONFIRMATION_URL = "gbf.ship.confirmation.url";
 
-    public static String GBF_SHIPPING_ERROR_KEY = "Error";
-    public static String GBF_SERVICE_ERROR_MESSAGE = "Error calling order service";
+    public static final String GBF_SHIPPING_ERROR_KEY = "Error";
+    public static final String GBF_SERVICE_ERROR_MESSAGE = "Error calling order service";
 
     private String gbfOrderUrl;
     private String getGbfOrderStatusUrl;
@@ -53,7 +51,7 @@ public class GBFOrderService {
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
             .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
-    private ObjectMapper xmlMapper = new XmlMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+    public static final ObjectMapper XML_MAPPER = new XmlMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
     @Autowired
     final void setBridgeConfig(BridgeConfig config) {
@@ -66,7 +64,7 @@ public class GBFOrderService {
     public void placeOrder(Order order, boolean isTest) {
         String orderXml;
         try {
-            orderXml = xmlMapper.writeValueAsString(new Order.Orders(Lists.newArrayList(order)));
+            orderXml = XML_MAPPER.writeValueAsString(new Order.Orders(Lists.newArrayList(order)));
         } catch (JsonProcessingException e) {
             LOG.error("placeOrder failed to serialize Order XML", e);
             throw new BridgeServiceException(GBF_SERVICE_ERROR_MESSAGE);
@@ -157,7 +155,7 @@ public class GBFOrderService {
     ShippingConfirmations parseShippingConfirmations(String responseXml) {
         LOG.debug("responseXml: " + responseXml);
         try {
-            JsonNode root = xmlMapper.readTree(responseXml);
+            JsonNode root = XML_MAPPER.readTree(responseXml);
             if (root.has(GBF_SHIPPING_ERROR_KEY)) {
                 throw new BadRequestException(root.get(GBF_SHIPPING_ERROR_KEY).asText());
             }
@@ -167,7 +165,7 @@ public class GBFOrderService {
         }
 
         try {
-            return xmlMapper.readValue(responseXml, ShippingConfirmations.class);
+            return XML_MAPPER.readValue(responseXml, ShippingConfirmations.class);
         } catch (JsonProcessingException e) {
             LOG.error("parseShippingConfirmations failed while parsing ShippingConfirmations XML", e);
             throw new BridgeServiceException("Error parsing ShippingConfirmations XML.");
