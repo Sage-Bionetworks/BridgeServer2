@@ -27,7 +27,6 @@ public class OAuthController extends BaseController {
     
     private static final String AUTH_TOKEN = "authToken";
     private OAuthService service;
-    
     @Autowired
     final void setOAuthService(OAuthService service) {
         this.service = service;
