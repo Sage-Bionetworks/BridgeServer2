@@ -204,7 +204,7 @@ public class CRCController extends BaseController {
         return (userAgent == null) ? "<Unknown>" : userAgent;
     }
 
-    @PostMapping("v1/cuicm/participants/self/labshipments/request")
+    @PostMapping("v1/cuimc/participants/self/labshipments/request")
     public ResponseEntity<StatusMessage> postUserLabShipmentRequest() {
         // caller enrolled studies
         UserSession session = getAuthenticatedSession();
@@ -216,7 +216,7 @@ public class CRCController extends BaseController {
         return internalLabShipmentRequest(app, account);
     }
 
-    @PostMapping("v1/cuicm/participants/{userId}/labshipments/request")
+    @PostMapping("v1/cuimc/participants/{userId}/labshipments/request")
     public ResponseEntity<StatusMessage> postLabShipmentRequest(@PathVariable String userId) {
         App app = httpBasicAuthentication();
     
@@ -310,7 +310,7 @@ public class CRCController extends BaseController {
     }
 
     // Waiting for integration workflow to be finalized
-    //@GetMapping(path = "v1/cuicm/labshipments/{orderId}/status")
+    //@GetMapping(path = "v1/cuimc/labshipments/{orderId}/status")
     public CheckOrderStatusResponse getLabShipmentStatus(@PathVariable String orderId) throws JsonProcessingException {
         httpBasicAuthentication();
         CheckOrderStatusResponse response = gbfOrderService.checkOrderStatus(orderId);
@@ -318,7 +318,7 @@ public class CRCController extends BaseController {
     }
     
     // Waiting for integration workflow to be finalized
-    //@GetMapping(path = "v1/cuicm/participants/labshipments/confirmations")
+    //@GetMapping(path = "v1/cuimc/participants/labshipments/confirmations")
     public ShippingConfirmations getLabShipmentConfirmations(@RequestParam String startDate,
             @RequestParam String endDate) throws JsonProcessingException {
         httpBasicAuthentication();
