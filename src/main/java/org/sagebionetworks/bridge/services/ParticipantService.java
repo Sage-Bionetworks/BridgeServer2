@@ -19,6 +19,7 @@ import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAU
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.validators.IdentifierUpdateValidator.INSTANCE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.accountHasValidIdentifier;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -468,7 +469,14 @@ public class ParticipantService {
         }
         account.setSynapseUserId(participant.getSynapseUserId());
         
-        accountService.createAccount(app, account);
+        // BRIDGE-2913: Sign up can include an externalId, which passes validation, but does not add
+        // an external ID because the caller is not an admin, leaving an inaccessible and useless 
+        // account record. We should handle this with validation, but it would break existing
+        // clients that are known to submit an external ID during sign up. So we check again and do 
+        // not save if the account is inaccessible after construction.
+        if (accountHasValidIdentifier(account)) {
+            accountService.createAccount(app, account);    
+        }
         
         // send verify email
         if (sendEmailVerification && !app.isAutoVerificationEmailSuppressed()) {
