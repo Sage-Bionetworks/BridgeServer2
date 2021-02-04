@@ -1587,7 +1587,7 @@ public class CRCControllerTest extends Mockito {
     
     @Test
     public void validateAndGetAddressAllowOptionalFields() {
-        ImmutableList.of("home_phone").forEach(optionalField -> {
+        ImmutableList.of("home_phone", "address2", "emp_address2").forEach(optionalField -> {
             setupShippingAddress();
             account.getAttributes().remove(optionalField);
             
@@ -1623,6 +1623,7 @@ public class CRCControllerTest extends Mockito {
                         .put("city", "Seattle")
                         .put("state", "Washington")
                         .put("zip_code", "98119")
+                        .put("home_phone", "206.547.2600")
                         .put("occupation", "Self-Employed")
                         .put("emp_name", "Test User")
                         .put("emp_address1", "123 Abc St")
