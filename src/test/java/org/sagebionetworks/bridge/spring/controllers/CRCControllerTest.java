@@ -1538,19 +1538,6 @@ public class CRCControllerTest extends Mockito {
     
     @Test
     public void validateAndGetAddressChecksRequiredFields() {
-        ImmutableList.of("address1", "city", "state", "zip_code", "home_phone")
-                .forEach(requiredField -> {
-                    setupShippingAddress();
-                    account.getAttributes().remove(requiredField);
-                    
-                    try {
-                        controller.validateAndGetAddress(account);
-                        fail("Expected BadRequestException when account does not contain " + requiredField);
-                    } catch (BadRequestException e) {
-                        assertTrue(true, "Got BadRequestException due to missing field " + requiredField);
-                    }
-                });
-        
         Stream.of("", null).forEach(firstName -> {
             setupShippingAddress();
             account.setFirstName(firstName);
@@ -1561,7 +1548,7 @@ public class CRCControllerTest extends Mockito {
                 assertTrue(true, "Got BadRequestException due to missing First Name");
             }
         });
-        
+    
         Stream.of("", null).forEach(lastName -> {
             setupShippingAddress();
             account.setLastName(lastName);
@@ -1571,6 +1558,40 @@ public class CRCControllerTest extends Mockito {
             } catch (BadRequestException e) {
                 assertTrue(true, "Got BadRequestException due to missing Last Name");
             }
+        });
+    
+        ImmutableList.of(
+                // shipping preconditions
+                "address1", "city", "state", "zip_code",
+                // employment preconditions
+                "occupation",
+                "emp_name",
+                "emp_address1",
+                "emp_city",
+                "emp_state",
+                "emp_zip_code",
+                "emp_phone"
+        )
+                .forEach(requiredField -> {
+                    setupShippingAddress();
+                    account.getAttributes().remove(requiredField);
+                
+                    try {
+                        controller.validateAndGetAddress(account);
+                        fail("Expected BadRequestException when account does not contain " + requiredField);
+                    } catch (BadRequestException e) {
+                        assertTrue(true, "Got BadRequestException due to missing field " + requiredField);
+                    }
+                });
+    }
+    
+    @Test
+    public void validateAndGetAddressAllowOptionalFields() {
+        ImmutableList.of("home_phone").forEach(optionalField -> {
+            setupShippingAddress();
+            account.getAttributes().remove(optionalField);
+            
+            controller.validateAndGetAddress(account);
         });
     }
     
@@ -1602,7 +1623,14 @@ public class CRCControllerTest extends Mockito {
                         .put("city", "Seattle")
                         .put("state", "Washington")
                         .put("zip_code", "98119")
-                        .put("home_phone", "206.547.2600")
+                        .put("occupation", "Self-Employed")
+                        .put("emp_name", "Test User")
+                        .put("emp_address1", "123 Abc St")
+                        .put("emp_address2", "Unit 456")
+                        .put("emp_city", "Seattle")
+                        .put("emp_state", "Washington")
+                        .put("emp_zip_code", "98119")
+                        .put("emp_phone", "206.547.2600")
                         .build()
         );
     }
