@@ -21,7 +21,4 @@ public interface ParticipantData extends BridgeEntity{
 
     JsonNode getData();
     void setData(JsonNode data);
-
-    Long getVersion();
-    void setVersion(Long version);
 }

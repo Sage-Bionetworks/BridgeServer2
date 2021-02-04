@@ -18,7 +18,6 @@ public class DynamoParticipantData implements ParticipantData {
     private String userId;
     private String identifier;
     private JsonNode data;
-    private Long version;
 
     @JsonIgnore
     @DynamoDBHashKey
@@ -55,23 +54,11 @@ public class DynamoParticipantData implements ParticipantData {
     }
 
     @Override
-    @DynamoDBVersionAttribute
-    public Long getVersion() {
-        return this.version;
-    }
-
-    @Override
-    public void setVersion(Long version) {
-        this.version = version;
-    }
-
-    @Override
     public String toString() {
         return "DynamoParticipantData{" +
                 "userId='" + userId +
                 ", identifier='" + identifier +
                 ", data='" + data +
-                ", version=" + version +
                 '}';
     }
 }

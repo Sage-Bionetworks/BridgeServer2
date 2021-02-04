@@ -157,7 +157,6 @@ public class ParticipantDataControllerTest extends Mockito {
         assertEquals(result.getUserId(), participantData.getUserId());
         assertEquals(result.getIdentifier(), participantData.getIdentifier());
         assertEquals(result.getData(), participantData.getData());
-        assertEquals(result.getVersion(), participantData.getVersion());
         assertSame(result, participantData);
     }
 
@@ -176,7 +175,6 @@ public class ParticipantDataControllerTest extends Mockito {
 
         assertNull(capture.getUserId());
         assertNull(capture.getIdentifier());
-        assertNull(capture.getVersion());
         assertEquals(capture.getData(), participantData.getData());
     }
 
@@ -228,7 +226,6 @@ public class ParticipantDataControllerTest extends Mockito {
         assertEquals(result.getUserId(), participantData.getUserId());
         assertEquals(result.getIdentifier(), participantData.getIdentifier());
         assertEquals(result.getData(), participantData.getData());
-        assertEquals(result.getVersion(), participantData.getVersion());
         assertSame(result, participantData);
     }
 
@@ -247,7 +244,6 @@ public class ParticipantDataControllerTest extends Mockito {
 
         assertNull(capture.getUserId());
         assertNull(capture.getIdentifier());
-        assertNull(capture.getVersion());
         assertEquals(capture.getData(), participantData.getData());
     }
 
