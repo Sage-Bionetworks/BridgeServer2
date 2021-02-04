@@ -154,7 +154,7 @@ public class ParticipantDataController extends BaseController {
 
     private void checkAdminSessionAppId(UserSession session, String appId) {
         if (session.isInRole(ADMIN) && (!appId.equals(session.getAppId()))) { //TODO: waiting to hear from dwayne if this is the correct exception
-            throw new UnauthorizedException("Caller does not have permission to access participant data.");
+            throw new EntityNotFoundException(Account.class);
         }
     }
 
