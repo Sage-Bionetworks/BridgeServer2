@@ -114,10 +114,10 @@ public class ParticipantDataController extends BaseController {
     @GetMapping("/v1/apps/{appId}/participants/{userId}/data/{identifier}")
     public ParticipantData getDataByIdentifierForAdminWorker(@PathVariable String appId, @PathVariable String userId,
                                                              @PathVariable String identifier) {
-        getAuthenticatedSession(ADMIN, WORKER);
+        UserSession session = getAuthenticatedSession(ADMIN, WORKER);
 
         checkAccountExists(appId, userId);
-        checkAccountExists(appId, userId);
+        checkAdminSessionAppId(session, userId);
 
         return participantDataService.getParticipantData(userId, identifier);
     }
@@ -152,7 +152,7 @@ public class ParticipantDataController extends BaseController {
     }
 
     private void checkAdminSessionAppId(UserSession session, String appId) {
-        if (session.isInRole(ADMIN) && (!appId.equals(session.getAppId()))) { //TODO: waiting to hear from dwayne if this is the correct exception
+        if (session.isInRole(ADMIN) && (!appId.equals(session.getAppId()))) {
             throw new EntityNotFoundException(Account.class);
         }
     }
