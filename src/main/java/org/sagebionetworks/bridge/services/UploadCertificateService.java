@@ -42,12 +42,12 @@ public class UploadCertificateService {
         certificateFactory = new BcCertificateFactory();
     }
 
-    @Resource(name = "s3CmsClient")
+    @Resource(name = "s3Client")
     public final void setS3CmsClient(AmazonS3 s3CmsClient) {
         this.s3CmsClient = s3CmsClient;
     }
 
-    @Resource(name = "s3CmsHelper")
+    @Resource(name = "s3Helper")
     public final void setS3CmsHelper(S3Helper s3CmsHelper) {
         this.s3CmsHelper = s3CmsHelper;
     }

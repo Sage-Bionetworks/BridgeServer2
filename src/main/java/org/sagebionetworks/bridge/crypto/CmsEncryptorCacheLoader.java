@@ -31,7 +31,7 @@ public class CmsEncryptorCacheLoader extends CacheLoader<String, CmsEncryptor> {
     private S3Helper s3CmsHelper;
 
     /** S3 helper, configured by Spring. */
-    @Resource(name = "s3CmsHelper")
+    @Resource(name = "s3Helper")
     public void setS3CmsHelper(S3Helper s3CmsHelper) {
         this.s3CmsHelper = s3CmsHelper;
     }

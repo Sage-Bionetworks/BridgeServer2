@@ -126,12 +126,12 @@ public class StudyConsentService {
      * S3 client. We need to use the S3 client to call writeBytesToPublicS3(), which wasn't migrated to bridge-base
      * because it references BridgePF-specific classes.
      */
-    @Resource(name = "s3ConsentsClient")
+    @Resource(name = "s3Client")
     final void setS3Client(AmazonS3Client s3Client) {
         this.s3Client = s3Client;
     }
 
-    @Resource(name = "s3ConsentsHelper")
+    @Resource(name = "s3Helper")
     final void setS3Helper(S3Helper helper) {
         this.s3Helper = helper;
     }
