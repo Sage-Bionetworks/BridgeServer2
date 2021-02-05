@@ -141,7 +141,7 @@ public class S3InitializerTest extends Mockito {
     }
     
     @Test
-    public void createBucketWithCrsSupport() {
+    public void createBucketWithCORSSupport() {
         Map<String,S3Initializer.BucketType> props = ImmutableMap.of(
                 "bucket.prop", S3Initializer.BucketType.INTERNAL_UPLOAD_ACCESSIBLE);
         
