@@ -8,8 +8,10 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
+import java.util.List;
 import java.util.Set;
 
+import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -76,8 +78,8 @@ public class DefaultAppBootstrapper implements ApplicationListener<ContextRefres
 
     @Override
     public void onApplicationEvent(ContextRefreshedEvent event) {
-//        List<TableDescription> tables = annotationBasedTableCreator.getTables("org.sagebionetworks.bridge.dynamodb");
-//        dynamoInitializer.init(tables);
+        List<TableDescription> tables = annotationBasedTableCreator.getTables("org.sagebionetworks.bridge.dynamodb");
+        dynamoInitializer.init(tables);
         
         s3Initializer.initBuckets();
         
