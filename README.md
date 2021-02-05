@@ -24,6 +24,9 @@ Jacoco report will be in target/site/jacoco/index.html
 To run this locally, run
 mvn spring-boot:run
 
+To run this locally without executing boostrapping framework (which improves start-up time):
+mvn spring-boot:run -Dspring.profiles.active=noinit
+
 To debug remotely, run:
 mvn spring-boot:run -Dspring-boot.run.jvmArguments="-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5005"
 

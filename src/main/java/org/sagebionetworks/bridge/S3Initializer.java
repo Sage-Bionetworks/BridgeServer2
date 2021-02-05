@@ -72,7 +72,7 @@ public class S3Initializer {
             .withAllowedHeaders(ImmutableList.of("*"))
             .withAllowedMethods(ImmutableList.of(AllowedMethods.PUT))
             .withAllowedOrigins(ImmutableList.of("*"))
-            .withMaxAgeSeconds(30000);
+            .withMaxAgeSeconds(3000);
     
     public static enum BucketType {
         INTERNAL(null, null),

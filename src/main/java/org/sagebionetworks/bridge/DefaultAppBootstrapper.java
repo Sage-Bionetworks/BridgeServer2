@@ -8,10 +8,8 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
-import java.util.List;
 import java.util.Set;
 
-import com.amazonaws.services.dynamodbv2.model.TableDescription;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -33,10 +31,11 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 /**
- * Bootstrapping only occurs if you run Spring Boot with the "init" profile. You should run
- * Spring Boot with the "init" profile the first time you run it, or any time you want the 
- * system to re-check and updated the resources we manage dynamically at start-up. This 
- * includes database migrations; DynamoDB table/index creation; and S3 bucket creation. 
+ * Bootstrapping occurs on startup by default unless you start the Spring Boot application 
+ * with the "nonit" profile enabled (mvn spring-boot:run -Dspring.profiles.active=noinit).
+ * This bootstrapper creates DynamoDB and S3 buckets that are needed by Bridge, as well as
+ * two initial apps and administrative accounts. The "noinit" profile will also disable the 
+ * database migrations that we run through Liquibase. 
  */
 @Component
 @Profile("default")

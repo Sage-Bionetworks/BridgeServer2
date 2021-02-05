@@ -5,7 +5,11 @@ import static org.testng.Assert.assertEquals;
 import java.util.Map;
 
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
+import com.amazonaws.services.s3.model.CORSRule;
+import com.amazonaws.services.s3.model.CORSRule.AllowedMethods;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.mockito.ArgumentCaptor;
@@ -38,6 +42,9 @@ public class S3InitializerTest extends Mockito {
     
     @Captor
     ArgumentCaptor<String> stringCaptor;
+    
+    @Captor
+    ArgumentCaptor<BucketCrossOriginConfiguration> corsConfigCaptor;
     
     @BeforeMethod
     public void beforeMethod() {
@@ -131,5 +138,29 @@ public class S3InitializerTest extends Mockito {
         when(mockS3Client.doesBucketExistV2(BUCKET_NAME)).thenReturn(true);
         
         initializer.initBuckets();
+    }
+    
+    @Test
+    public void createBucketWithCrsSupport() {
+        Map<String,S3Initializer.BucketType> props = ImmutableMap.of(
+                "bucket.prop", S3Initializer.BucketType.INTERNAL_UPLOAD_ACCESSIBLE);
+        
+        when(initializer.getBucketNames()).thenReturn(props);
+        when(mockBridgeConfig.get("bucket.prop")).thenReturn(BUCKET_NAME);
+        when(mockS3Client.doesBucketExistV2(BUCKET_NAME)).thenReturn(false);
+        
+        initializer.initBuckets();
+        
+        verify(mockS3Client).createBucket(requestCaptor.capture());
+        verify(mockS3Client, never()).setBucketPolicy(any(), any());
+        verify(mockS3Client).setBucketCrossOriginConfiguration(eq(BUCKET_NAME), corsConfigCaptor.capture());
+        
+        assertEquals(requestCaptor.getValue().getBucketName(), BUCKET_NAME);
+        
+        CORSRule rule = corsConfigCaptor.getValue().getRules().get(0);
+        assertEquals(rule.getAllowedHeaders(), ImmutableList.of("*"));
+        assertEquals(rule.getAllowedOrigins(), ImmutableList.of("*"));
+        assertEquals(rule.getAllowedMethods(), ImmutableList.of(AllowedMethods.PUT));
+        assertEquals(rule.getMaxAgeSeconds(), 3000);
     }
 }
