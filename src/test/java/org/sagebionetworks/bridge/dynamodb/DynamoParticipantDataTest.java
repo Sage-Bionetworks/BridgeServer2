@@ -31,7 +31,6 @@ public class DynamoParticipantDataTest {
         participantData.setUserId(TEST_USER_ID);
         participantData.setIdentifier(IDENTIFIER);
         participantData.setData(objectNode);
-        participantData.setVersion(VERSION);
 
         String json = MAPPER.writeValueAsString(participantData);
 
@@ -51,6 +50,5 @@ public class DynamoParticipantDataTest {
         assertEquals(deser.getData().get("b").textValue(), "string");
         assertEquals(deser.getData().get("c").intValue(), 10);
         assertEquals(deser.getIdentifier(), IDENTIFIER);
-        assertEquals(deser.getVersion(), VERSION);
     }
 }
