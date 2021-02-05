@@ -8,7 +8,6 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.dao.ParticipantDataDao;
-import org.sagebionetworks.bridge.dynamodb.DynamoParticipantData;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -19,6 +18,7 @@ import org.testng.annotations.Test;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
@@ -26,6 +26,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class ParticipantDataServiceTest {
 
@@ -41,7 +42,7 @@ public class ParticipantDataServiceTest {
     @Spy
     ParticipantDataService service;
 
-    ForwardCursorPagedResourceList<DynamoParticipantData> results;
+    ForwardCursorPagedResourceList<ParticipantData> results;
     ParticipantData result;
 
     @BeforeMethod
@@ -50,10 +51,10 @@ public class ParticipantDataServiceTest {
 
         service.setParticipantDataDao(mockDao);
 
-        List<DynamoParticipantData> list = new ArrayList<>();
+        List<ParticipantData> list = new ArrayList<>();
         list.add(createParticipantData("a", "b"));
         list.add(createParticipantData("c", "d"));
-        results = new ForwardCursorPagedResourceList<DynamoParticipantData>(list, OFFSET_KEY);
+        results = new ForwardCursorPagedResourceList<ParticipantData>(list, OFFSET_KEY);
 
         result = createParticipantData("a", "b");
     }
@@ -81,14 +82,17 @@ public class ParticipantDataServiceTest {
 
     @Test
     public void testSaveParticipantData() {
+        String userId = "aDifferentUserId";
+        String identifier = "aDifferentIdentifier";
+
         ParticipantData participantData = createParticipantData("c", "d");
-        service.saveParticipantData(TEST_USER_ID, IDENTIFIER, participantData);
+        service.saveParticipantData(userId, identifier, participantData);
 
         verify(mockDao).saveParticipantData(participantDataCaptor.capture());
         ParticipantData retrieved = participantDataCaptor.getValue();
         assertEquals(retrieved, participantData);
-        assertEquals(retrieved.getUserId(), TEST_USER_ID);
-        assertEquals(retrieved.getIdentifier(), IDENTIFIER);
+        assertEquals(retrieved.getUserId(), userId);
+        assertEquals(retrieved.getIdentifier(), identifier);
         assertEquals(retrieved.getData().get("field1").textValue(), "c");
         assertEquals(retrieved.getData().get("field2").textValue(), "d");
     }
@@ -129,16 +133,19 @@ public class ParticipantDataServiceTest {
         service.getAllParticipantData(TEST_USER_ID, IDENTIFIER, API_MAXIMUM_PAGE_SIZE + 1);
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test
     public void testGetAllDataNoData() {
-        service.getAllParticipantData("", "", PAGE_SIZE);
+        doReturn(new ForwardCursorPagedResourceList<ParticipantData>(new ArrayList<ParticipantData>(), OFFSET_KEY))
+                .when(mockDao).getAllParticipantData("", "", PAGE_SIZE);
+        ForwardCursorPagedResourceList<ParticipantData> result = service.getAllParticipantData("", "", PAGE_SIZE);
+        assertTrue(result.getItems().isEmpty());
     }
 
-    private static DynamoParticipantData createParticipantData(String fieldValue1, String fieldValue2) {
+    private static ParticipantData createParticipantData(String fieldValue1, String fieldValue2) {
         ObjectNode node = JsonNodeFactory.instance.objectNode();
         node.put("field1", fieldValue1);
         node.put("field2", fieldValue2);
-        DynamoParticipantData participantData = new DynamoParticipantData();
+        ParticipantData participantData = ParticipantData.create();
         participantData.setUserId(TEST_USER_ID);
         participantData.setIdentifier(IDENTIFIER);
         participantData.setData(node);

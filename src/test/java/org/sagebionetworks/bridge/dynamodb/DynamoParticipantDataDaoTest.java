@@ -152,11 +152,7 @@ public class DynamoParticipantDataDaoTest extends Mockito {
     public void testSaveParticipantData() {
         dao.saveParticipantData(participantData0);
 
-        verify(mockMapper).save(participantDataCaptor.capture());
-        // TODO if I change the above lines to verify(mockMapper).save(participantData0), then how will I get the below participantData?
-        ParticipantData participantData = participantDataCaptor.getValue();
-        assertSame(participantData, participantData0);
-        assertEquals(participantData.getUserId(), TEST_USER_ID);
+        verify(mockMapper).save(participantData0);
     }
 
     @Test
@@ -169,9 +165,7 @@ public class DynamoParticipantDataDaoTest extends Mockito {
         DynamoDBQueryExpression<DynamoParticipantData> query = queryCaptor.getValue();
         assertEquals(query.getHashKeyValues().getUserId(), participantData0.getUserId());
 
-        verify(mockMapper).batchDelete(dataListCaptor.capture());
-
-        assertEquals(dataListCaptor.getValue(), mockQueryList);
+        verify(mockMapper).batchDelete(mockQueryList);
     }
 
     @Test

@@ -85,9 +85,7 @@ public class ParticipantDataController extends BaseController {
         UserSession session = getAuthenticatedSession(ADMIN, WORKER);
 
         Account account = accountService.getAccount(AccountId.forId(appId, userId));
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        checkAccountExists(appId, userId);
 
         checkAdminSessionAppId(session, appId);
 

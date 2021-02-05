@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AppService;
@@ -93,7 +94,7 @@ public class ParticipantDataControllerTest extends Mockito {
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
 
-        DynamoApp app = new DynamoApp();
+        App app = App.create();
         app.setIdentifier(TEST_APP_ID);
 
         StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID)
@@ -149,14 +150,16 @@ public class ParticipantDataControllerTest extends Mockito {
     }
 
     @Test
+    public void testGetAllDataForSelfPageSizeInService() {
+
+    }
+
+    @Test
     public void testGetDataByIdentifierForSelf() {
         doReturn(participantData).when(mockParticipantDataService).getParticipantData(session.getId(), IDENTIFIER);
 
         ParticipantData result = controller.getDataByIdentifierForSelf(IDENTIFIER);
 
-        assertEquals(result.getUserId(), participantData.getUserId());
-        assertEquals(result.getIdentifier(), participantData.getIdentifier());
-        assertEquals(result.getData(), participantData.getData());
         assertSame(result, participantData);
     }
 
@@ -223,9 +226,6 @@ public class ParticipantDataControllerTest extends Mockito {
 
         ParticipantData result = controller.getDataByIdentifierForAdminWorker(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
 
-        assertEquals(result.getUserId(), participantData.getUserId());
-        assertEquals(result.getIdentifier(), participantData.getIdentifier());
-        assertEquals(result.getData(), participantData.getData());
         assertSame(result, participantData);
     }
 

@@ -30,12 +30,7 @@ public class ParticipantDataService {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
 
-        ForwardCursorPagedResourceList<ParticipantData> allParticipantData = participantDataDao.getAllParticipantData(userId, offsetKey, pageSize);
-        if (allParticipantData == null) {
-            throw new EntityNotFoundException(ParticipantData.class);
-        }
-
-        return allParticipantData;
+        return participantDataDao.getAllParticipantData(userId, offsetKey, pageSize);
     }
 
     /**
