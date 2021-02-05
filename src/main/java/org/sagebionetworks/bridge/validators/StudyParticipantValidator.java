@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_ORG_MEMBER;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ASSESSMENTS;
 
 import java.util.Map;
 import java.util.Optional;
@@ -84,7 +84,7 @@ public class StudyParticipantValidator implements Validator {
                 Optional<Organization> opt = organizationService.getOrganizationOpt(app.getIdentifier(), orgId);
                 if (!opt.isPresent()) {
                     errors.rejectValue("orgMembership", "is not a valid organization");
-                } else if (!IS_ORG_MEMBER.check(ORG_ID, orgId)) {
+                } else if (!CAN_EDIT_ASSESSMENTS.check(ORG_ID, orgId)) {
                     errors.rejectValue("orgMembership", "cannot be set by caller");
                 }
             }

@@ -12,7 +12,10 @@ import java.util.Set;
 
 /**
  * Utility methods to check caller authorization in service methods. Given the way the code and the 
- * authorization rules are written, ADMIN and SUPERADMIN roles will currently always pass.
+ * authorization rules are written, ADMIN and SUPERADMIN roles will currently always pass. They
+ * are tested differently because there are some cases where APIs can only be used by superadmins, 
+ * so event app-scoped admins have one or two API limitations that must be declared in rules and 
+ * not special-cased in the `inInRole` methods.
  * 
  * All methods throw UnauthorizedException if they fail.
  */
@@ -26,125 +29,118 @@ public class AuthUtils {
             .hasAnyRole(ORG_ADMIN, STUDY_COORDINATOR).hasNoRole(DEVELOPER, RESEARCHER, ADMIN, WORKER);
 
     /**
-     * Is the caller an admin? 
+     * Can the caller delete an organization?
      */
-    public static final AuthEvaluator IS_ADMIN = new AuthEvaluator().hasAnyRole(ADMIN);
-    
-    /**
-     * Is caller a member of the target organization? This does not verify the orgId itself...
-     * this can only be done by trying to load the organization with this ID.
-     */
-    public static final AuthEvaluator IS_ORG_MEMBER = new AuthEvaluator().isInOrg().or()
+    public static final AuthEvaluator CAN_DELETE_ORG = new AuthEvaluator()
             .hasAnyRole(ADMIN);
     
     /**
-     * Is the caller an organization admin of the target organization?
+     * Can the caller edit assessments? Must be a member of the organization.
      */
-    public static final AuthEvaluator IS_ORGADMIN = new AuthEvaluator()
+    public static final AuthEvaluator CAN_EDIT_ASSESSMENTS = new AuthEvaluator().isInOrg().or()
+            .hasAnyRole(ADMIN);
+    
+    /**
+     * Can the caller and/remove organization members? Must be the organizations's admin.
+     */
+    public static final AuthEvaluator CAN_EDIT_MEMBERS = new AuthEvaluator()
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
             .hasAnyRole(ADMIN);
 
     /**
-     * Is the caller operating on themselves and a member of the target organization, or an 
-     * organization admin of the target organization? This allows a person to call many of
-     * the same APIs an administrator can call on their behalf.
+     * Can the caller edit accounts? For the APIs to work with administrative accounts, 
+     * the caller must be operating on self (and in the correct organization), or an 
+     * administrator of the organization.
      */
-    public static final AuthEvaluator IS_SELF_AND_ORG_MEMBER_OR_ORGADMIN = new AuthEvaluator()
+    public static final AuthEvaluator CAN_EDIT_ACCOUNTS = new AuthEvaluator()
             .isInOrg().isSelf().or()
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
             .hasAnyRole(ADMIN);
     
     /**
-     * Does this caller have access to the study, or is the caller a worker? 
+     * Can the caller see that the account is enrolled in a study? Must be reading one's
+     * own account, must have access to the study, or be a worker. 
      */
-    public static final AuthEvaluator IS_STUDY_TEAM_OR_WORKER = new AuthEvaluator().canAccessStudy().or()
-            .hasAnyRole(WORKER, ADMIN).or()
-            .callerConsideredGlobal();
-    
-    /**
-     * Is the caller referring to their account, do they have access to the study, or are they a worker?
-     * (NOTE: this is suspiciously broad).
-     */
-    public static final AuthEvaluator IS_SELF_STUDY_TEAM_OR_WORKER = new AuthEvaluator().isSelf().or()
+    public static final AuthEvaluator CAN_READ_STUDY_ASSOCIATIONS = new AuthEvaluator().isSelf().or()
             .canAccessStudy().or()
             .hasAnyRole(WORKER, ADMIN).or()
             .callerConsideredGlobal();
     
     /**
-     * Is the caller referring to their own account, an organization admin, or a worker account? 
+     * Can the caller view participants (through the origin Participants API)? Must be reading self,
+     * be an organization admin, or be a worker.
      */
-    public static final AuthEvaluator IS_SELF_ORGADMIN_OR_WORKER = new AuthEvaluator().isSelf().or()
+    public static final AuthEvaluator CAN_READ_PARTICIPANTS = new AuthEvaluator().isSelf().or()
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
             .hasAnyRole(WORKER, ADMIN).or()
             .callerConsideredGlobal();
     
     /**
-     * Is the caller operating on their own account, or a person with the researcher role and access
-     * to the indicated study? 
+     * Can the caller edit participants? Must be editing one’s own account, or be a study coordinator
+     * with access to the participant’s study, or be a researcher, or a worker.
      */
-    public static final AuthEvaluator IS_SELF_COORD_OR_RESEARCHER = new AuthEvaluator().isSelf().or()
+    public static final AuthEvaluator CAN_EDIT_PARTICIPANTS = new AuthEvaluator().isSelf().or()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
+    
+    /**
+     * Can the caller enroll or withdraw participants from a study? Must be enrolling self, or 
+     * be a study coordinator with access to the study involved, or be a researcher. 
+     */
+    public static final AuthEvaluator CAN_EDIT_ENROLLMENTS = new AuthEvaluator().isSelf().or()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(RESEARCHER, ADMIN);
 
     /**
-     * Is the caller a study coordinator?
+     * Can the caller view external IDs? Must be a study coordinator, developer, or researcher
+     * (external IDs are pretty lax because in theory, they are not identifying).
      */
-    public static final AuthEvaluator IS_COORD = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(ADMIN);
-
-    /**
-     * Is the caller a study coordinator, researcher, or developer?
-     */
-    public static final AuthEvaluator IS_COORD_DEV_OR_RESEARCHER = new AuthEvaluator()
+    public static final AuthEvaluator CAN_READ_EXTERNAL_IDS = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
-    
-    public static final AuthEvaluator IS_COORD_OR_DEV = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(DEVELOPER, ADMIN);
-    
-    /**
-     * Is the caller a study coordinator or researcher?
-     */
-    public static final AuthEvaluator IS_COORD_OR_RESEARCHER = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(RESEARCHER, ADMIN);
-    
-    /**
-     * Is the caller operating on their own account, or a researcher?
-     * 
-     */
-    public static final AuthEvaluator IS_SELF_OR_RESEARCHER = new AuthEvaluator().isSelf().or()
-            .hasAnyRole(RESEARCHER, ADMIN);
-    
-    /**
-     * The caller must be a member of an organization expressed in the shared organization ID format, 
-     * or "appId:orgId" (which is used in shared assessments so that organization IDs do not collide
-     * between applications). 
-     */
-    public static final AuthEvaluator IS_ORG_MEMBER_IN_APP = new AuthEvaluator().isSharedOwner().or()
-            .hasAnyRole(ADMIN);
 
     /**
-     * Is the caller a study coordinator or an organization admin?
+     * Can the caller view Studies? Must be associated to the organization that owns the 
+     * study.
      */
-    public static final AuthEvaluator IS_COORD_OR_ORGADMIN = new AuthEvaluator()
+    public static final AuthEvaluator CAN_READ_STUDIES = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, ORG_ADMIN).or()
             .hasAnyRole(ADMIN);
     
     /**
-     * Is the caller in the required role? Superadmins always pass this check, but admins 
-     * have to be expressed in the rules (which is weird and might change).
+     * Can the caller edit studies? Caller must be a study coordinator, or a developer.
+     */
+    public static final AuthEvaluator CAN_UPDATE_STUDIES = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, ADMIN);
+    
+    /**
+     * Can the caller edit study participants (these are participants via the newer, study-scoped
+     * participant APIs). Must be a study coordinator with access to the study, or a researcher. 
+     */
+    public static final AuthEvaluator CAN_EDIT_STUDY_PARTICIPANTS = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, ADMIN);
+    
+    /**
+     * Can the caller edit shared assessments? The caller must be a member of an organization 
+     * expressed in the shared organization ID format, or "appId:orgId" (which is used in 
+     * shared assessments so that organization IDs do not collide between applications). 
+     */
+    public static final AuthEvaluator CAN_EDIT_SHARED_ASSESSMENTS = new AuthEvaluator()
+            .isSharedOwner().or()
+            .hasAnyRole(ADMIN);
+    
+    /**
+     * Is the caller in the provided role? Superadmins always pass this test.
      */
     public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
-        return (callerRoles != null && requiredRole != null && 
-            (callerRoles.contains(SUPERADMIN) || callerRoles.contains(requiredRole)));
+        return callerRoles != null && requiredRole != null && 
+                (callerRoles.contains(SUPERADMIN) || callerRoles.contains(requiredRole));
     }
     
     /**
-     * Is the caller in the required role? Superadmins always pass this check, but admins 
-     * have to be expressed in the rules (which is weird and might change).
+     * Is the caller in any of the provided roles? Superadmins always pass this test.
      */
     public static boolean isInRole(Set<Roles> callerRoles, Set<Roles> requiredRoles) {
         return callerRoles != null && requiredRoles != null && 

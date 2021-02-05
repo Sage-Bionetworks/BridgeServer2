@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_RESEARCHER;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,7 +42,7 @@ public class EnrollmentController extends BaseController {
             @RequestParam(required = false) String includeTesters) {
         UserSession session = getAdministrativeSession();
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         EnrollmentFilter filter = BridgeUtils.getEnumOrDefault(enrollmentFilter, EnrollmentFilter.class, null);
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
@@ -58,7 +58,7 @@ public class EnrollmentController extends BaseController {
     public Enrollment enroll(@PathVariable String studyId) {
         UserSession session = getAdministrativeSession();
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         Enrollment enrollment = parseJson(Enrollment.class);
         enrollment.setAppId(session.getAppId());
@@ -72,7 +72,7 @@ public class EnrollmentController extends BaseController {
             @RequestParam(required = false) String withdrawalNote) {
         UserSession session = getAdministrativeSession();
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         Enrollment enrollment = Enrollment.create(session.getAppId(), studyId, userId);
         enrollment.setWithdrawalNote(withdrawalNote);

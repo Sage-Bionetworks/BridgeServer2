@@ -7,8 +7,9 @@ import static java.lang.Boolean.TRUE;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_ORGADMIN;
-import static org.sagebionetworks.bridge.AuthUtils.IS_STUDY_TEAM_OR_WORKER;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeUtils.studyAssociationsVisibleToCaller;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
@@ -49,6 +50,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.LimitExceededException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
@@ -439,7 +441,7 @@ public class ParticipantService {
         account.setStatus(UNVERIFIED);
         // Organizational admins create accounts in their organization.
         // Otherwise this field is ignored on create.
-        if (IS_ORGADMIN.check(ORG_ID, participant.getOrgMembership())) {
+        if (CAN_EDIT_MEMBERS.check(ORG_ID, participant.getOrgMembership())) {
             account.setOrgMembership(participant.getOrgMembership());
         }
 
@@ -542,10 +544,10 @@ public class ParticipantService {
     }
     
     private void updateAccountAndRoles(App app, Account account, StudyParticipant participant, boolean isNew) {
-        // Do this much earlier in the call and avoid some expensive operations like password hashing.
+        String targetAccountId = isNew ? null : account.getId();
         for (String studyId : participant.getExternalIds().keySet()) {
-            if (!IS_STUDY_TEAM_OR_WORKER.check(STUDY_ID, studyId)) {
-                throw new BadRequestException(studyId + " is not a study of the caller");
+            if (!CAN_EDIT_PARTICIPANTS.check(STUDY_ID, studyId, USER_ID, targetAccountId)) {
+                throw new UnauthorizedException(studyId + " is not a study of the caller");
             }
         }
         account.setFirstName(participant.getFirstName());

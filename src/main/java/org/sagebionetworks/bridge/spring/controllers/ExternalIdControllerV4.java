@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_DEV_OR_RESEARCHER;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_EXTERNAL_IDS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -59,7 +59,7 @@ public class ExternalIdControllerV4 extends BaseController {
             @RequestParam(required = false) String idFilter) {
         UserSession session = getAdministrativeSession();
 
-        IS_COORD_DEV_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_READ_EXTERNAL_IDS.checkAndThrow(STUDY_ID, studyId);
         
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
