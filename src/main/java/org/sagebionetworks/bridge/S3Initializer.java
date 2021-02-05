@@ -5,8 +5,12 @@ import static org.sagebionetworks.bridge.BridgeUtils.resolveTemplate;
 import java.util.Map;
 
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
+import com.amazonaws.services.s3.model.CORSRule;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.model.Region;
+import com.amazonaws.services.s3.model.CORSRule.AllowedMethods;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.apache.commons.lang3.StringUtils;
@@ -63,15 +67,24 @@ public class S3Initializer {
             + "        }"
             + "    ]"
             + "}";
-
+    
+    private static final CORSRule ALLOW_PUT_RULE = new CORSRule()
+            .withAllowedHeaders(ImmutableList.of("*"))
+            .withAllowedMethods(ImmutableList.of(AllowedMethods.PUT))
+            .withAllowedOrigins(ImmutableList.of("*"))
+            .withMaxAgeSeconds(30000);
+    
     public static enum BucketType {
-        INTERNAL(null),
-        SYNAPSE_ACCESSIBLE(SYNAPSE_ACCESS_POLICY),
-        PUBLIC_ACCESSIBLE(PUBLIC_ACCESS_POLICY);
+        INTERNAL(null, null),
+        INTERNAL_UPLOAD_ACCESSIBLE(null, ALLOW_PUT_RULE),
+        SYNAPSE_ACCESSIBLE(SYNAPSE_ACCESS_POLICY, null),
+        PUBLIC_ACCESSIBLE(PUBLIC_ACCESS_POLICY, null);
         
         String policy;
-        private BucketType(String policy) {
+        CORSRule corsSupport;
+        private BucketType(String policy, CORSRule corsSupport) {
             this.policy = policy;
+            this.corsSupport = corsSupport;
         }
     }
     
@@ -93,7 +106,7 @@ public class S3Initializer {
             .put("attachment.bucket", BucketType.SYNAPSE_ACCESSIBLE)
             .put("health.data.bucket.raw", BucketType.SYNAPSE_ACCESSIBLE)
             .put("health.data.bucket.processed", BucketType.SYNAPSE_ACCESSIBLE)
-            .put("upload.bucket", BucketType.INTERNAL)
+            .put("upload.bucket", BucketType.INTERNAL_UPLOAD_ACCESSIBLE)
             .put("upload.cms.cert.bucket", BucketType.INTERNAL)
             .put("upload.cms.priv.bucket", BucketType.INTERNAL)
             .put("consents.bucket", BucketType.INTERNAL)
@@ -124,6 +137,11 @@ public class S3Initializer {
                 if (type.policy != null) {
                     String policy = resolveTemplate(type.policy, ImmutableMap.of("bucketName", bucketName));
                     s3Client.setBucketPolicy(bucketName, policy);
+                }
+                if (type.corsSupport != null) {
+                    BucketCrossOriginConfiguration config = new BucketCrossOriginConfiguration()
+                            .withRules(type.corsSupport);
+                    s3Client.setBucketCrossOriginConfiguration(bucketName, config);
                 }
             }
         }

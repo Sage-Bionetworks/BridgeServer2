@@ -109,6 +109,7 @@ public class AppService {
     private static final String APP_EMAIL_VERIFICATION_EXPIRATION_PERIOD = "appEmailVerificationExpirationPeriod";
     private static final String IDENTIFIER_PROPERTY = "identifier";
     public static final Set<ACCESS_TYPE> READ_DOWNLOAD_ACCESS = ImmutableSet.of(ACCESS_TYPE.READ, ACCESS_TYPE.DOWNLOAD);
+    private static final Set<String> BOOTSTRAP_STUDY_IDS = ImmutableSet.of("shared", "api");
 
     private Set<String> appWhitelist;
     private String bridgeSupportEmailPlain;
@@ -339,7 +340,12 @@ public class AppService {
         
         Study study = Study.create();
         study.setAppId(app.getIdentifier());
-        study.setIdentifier(app.getIdentifier() + "-study");
+        // For legacy reasons, these two default apps use non-standard initial study IDs. 
+        if (BOOTSTRAP_STUDY_IDS.contains(app.getIdentifier())) {
+            study.setIdentifier(app.getIdentifier());
+        } else {
+            study.setIdentifier(app.getIdentifier() + "-study");    
+        }
         study.setName(app.getName() + " Study");
         studyService.createStudy(app.getIdentifier(), study, false);
         subpopService.createDefaultSubpopulation(app, study);
