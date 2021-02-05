@@ -9,8 +9,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-import com.google.common.collect.Iterables;
-
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -51,15 +49,11 @@ public class StudyParticipantValidator implements Validator {
         StudyParticipant participant = (StudyParticipant)object;
         
         if (isNew) {
-            Phone phone = participant.getPhone();
-            String email = participant.getEmail();
-            String anyExternalId = participant.getExternalIds().isEmpty() ? null : 
-                Iterables.getFirst(participant.getExternalIds().entrySet(), null).getValue();
-            String synapseUserId = participant.getSynapseUserId();
-            if (email == null && isBlank(anyExternalId) && phone == null && isBlank(synapseUserId)) {
+            if (!ValidatorUtils.participantHasValidIdentifier(participant)) {
                 errors.reject("email, phone, synapseUserId or externalId is required");
             }
             // If provided, phone must be valid
+            Phone phone = participant.getPhone();
             if (phone != null && !Phone.isValid(phone)) {
                 errors.rejectValue("phone", "does not appear to be a phone number");
             }
@@ -67,6 +61,7 @@ public class StudyParticipantValidator implements Validator {
             // fail because the word "test" appears in the user name, for reasons I could not 
             // deduce from their code. So we have switched to using OWASP regular expression to 
             // match valid email addresses.
+            String email = participant.getEmail();
             if (email != null && !email.matches(OWASP_REGEXP_VALID_EMAIL)) {
                 errors.rejectValue("email", "does not appear to be an email address");
             }
