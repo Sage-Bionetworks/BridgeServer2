@@ -68,29 +68,30 @@ public class S3Initializer {
             + "    ]"
             + "}";
     
-    private static final CORSRule ALLOW_PUT_RULE = new CORSRule()
-            .withAllowedHeaders(ImmutableList.of("*"))
-            .withAllowedMethods(ImmutableList.of(AllowedMethods.PUT))
-            .withAllowedOrigins(ImmutableList.of("*"))
-            .withMaxAgeSeconds(3000);
+    private static final BucketCrossOriginConfiguration ALLOW_PUT = new BucketCrossOriginConfiguration()
+            .withRules(new CORSRule()
+                    .withAllowedHeaders(ImmutableList.of("*"))
+                    .withAllowedMethods(ImmutableList.of(AllowedMethods.PUT))
+                    .withAllowedOrigins(ImmutableList.of("*"))
+                    .withMaxAgeSeconds(3000));
     
     public static enum BucketType {
         INTERNAL(null, null),
-        INTERNAL_UPLOAD_ACCESSIBLE(null, ALLOW_PUT_RULE),
+        INTERNAL_UPLOAD_ACCESSIBLE(null, ALLOW_PUT),
         SYNAPSE_ACCESSIBLE(SYNAPSE_ACCESS_POLICY, null),
         PUBLIC_ACCESSIBLE(PUBLIC_ACCESS_POLICY, null);
         
         String policy;
-        CORSRule corsSupport;
-        private BucketType(String policy, CORSRule corsSupport) {
+        BucketCrossOriginConfiguration corsConfig;
+        private BucketType(String policy, BucketCrossOriginConfiguration corsConfig) {
             this.policy = policy;
-            this.corsSupport = corsSupport;
+            this.corsConfig = corsConfig;
         }
     }
     
-    BridgeConfig bridgeConfig;
+    private BridgeConfig bridgeConfig;
     
-    AmazonS3Client s3Client;
+    private AmazonS3Client s3Client;
     
     @Autowired
     public final void setBridgeConfig(BridgeConfig bridgeConfig) {
@@ -138,10 +139,8 @@ public class S3Initializer {
                     String policy = resolveTemplate(type.policy, ImmutableMap.of("bucketName", bucketName));
                     s3Client.setBucketPolicy(bucketName, policy);
                 }
-                if (type.corsSupport != null) {
-                    BucketCrossOriginConfiguration config = new BucketCrossOriginConfiguration()
-                            .withRules(type.corsSupport);
-                    s3Client.setBucketCrossOriginConfiguration(bucketName, config);
+                if (type.corsConfig != null) {
+                    s3Client.setBucketCrossOriginConfiguration(bucketName, type.corsConfig);
                 }
             }
         }
