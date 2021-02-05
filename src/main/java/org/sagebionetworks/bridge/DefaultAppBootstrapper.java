@@ -31,11 +31,11 @@ import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.stereotype.Component;
 
 /**
- * Bootstrapping occurs on startup by default unless you start the Spring Boot application 
- * with the "nonit" profile enabled (mvn spring-boot:run -Dspring.profiles.active=noinit).
  * This bootstrapper creates DynamoDB and S3 buckets that are needed by Bridge, as well as
- * two initial apps and administrative accounts. The "noinit" profile will also disable the 
- * database migrations that we run through Liquibase. 
+ * two initial apps and administrative accounts. Bootstrapping occurs on startup by default 
+ * unless you start the Spring Boot application with the "nonit" profile enabled 
+ * (mvn spring-boot:run -Dspring.profiles.active=noinit). The "noinit" profile will also 
+ * disable the database migrations that we run through Liquibase. 
  */
 @Component
 @Profile("default")
