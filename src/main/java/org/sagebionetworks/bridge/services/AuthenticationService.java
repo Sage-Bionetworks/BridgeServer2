@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_STUDY_TEAM_OR_WORKER;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
@@ -345,7 +345,7 @@ public class AuthenticationService {
                 .findAny()
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        IS_STUDY_TEAM_OR_WORKER.checkAndThrow(STUDY_ID, en.getStudyId());
+        CAN_EDIT_PARTICIPANTS.checkAndThrow(STUDY_ID, en.getStudyId());
 
         String password = generatePassword(app.getPasswordPolicy().getMinLength());
         accountService.changePassword(account, null, password);

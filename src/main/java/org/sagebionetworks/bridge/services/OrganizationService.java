@@ -4,8 +4,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_ADMIN;
-import static org.sagebionetworks.bridge.AuthUtils.IS_ORGADMIN;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_DELETE_ORG;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -129,7 +129,7 @@ public class OrganizationService {
     public Organization updateOrganization(Organization organization) {
         checkNotNull(organization);
 
-        IS_ORGADMIN.checkAndThrow(ORG_ID, organization.getIdentifier());
+        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, organization.getIdentifier());
         
         Validate.entityThrowingException(INSTANCE, organization);
         
@@ -173,7 +173,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
-        IS_ADMIN.checkAndThrow();
+        CAN_DELETE_ORG.checkAndThrow();
         
         Organization existing = orgDao.getOrganization(appId, identifier)
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
@@ -195,7 +195,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(search);
         
-        IS_ORGADMIN.checkAndThrow(ORG_ID, identifier);
+        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
         
         AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
                 .copyOf(search)
@@ -226,7 +226,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        IS_ORGADMIN.checkAndThrow(ORG_ID, identifier);
+        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
@@ -246,7 +246,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkNotNull(accountId);
         
-        IS_ORGADMIN.checkAndThrow(ORG_ID, identifier);
+        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));

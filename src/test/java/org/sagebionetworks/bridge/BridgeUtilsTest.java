@@ -46,7 +46,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
@@ -133,7 +132,9 @@ public class BridgeUtilsTest {
     @Test
     public void studyIdsVisibleToCallerFilters() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("callerUserId")
+                .withOrgSponsoredStudies(callerStudies).build());
 
         Enrollment enA = Enrollment.create(TEST_APP_ID, "studyA", "id");
         Enrollment enB = Enrollment.create(TEST_APP_ID, "studyB", "id");
@@ -362,35 +363,6 @@ public class BridgeUtilsTest {
         assertNull(BridgeUtils.filterForStudy(account));
     }
     
-    @Test
-    public void filterForStudyExtIdNullReturnsNull() {
-        assertNull(BridgeUtils.filterForStudy((ExternalIdentifier)null));
-    }
-    
-    @Test
-    public void filterForStudyExtIdNoContextReturnsExtId() {
-        assertNotNull(BridgeUtils.filterForStudy(getExternalIdentifierWithStudy("studyA")));
-    }
-    
-    @Test
-    public void filterForStudyExtIdWithStudiesHidesNormalExtId() {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
-        assertNull(BridgeUtils.filterForStudy(getExternalIdentifierWithStudy(null)));
-        RequestContext.set(null);
-    }
-
-    @Test
-    public void filterForStudyExtIdWithMatchingStudiesReturnsExtId() {
-        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyA")).build());
-        assertNotNull(BridgeUtils.filterForStudy(getExternalIdentifierWithStudy("studyA")));
-    }
-    
-    @Test
-    public void filterForStudyExtIdWithMismatchedStudiesHidesExtId() {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
-        assertNull(BridgeUtils.filterForStudy(getExternalIdentifierWithStudy("studyB")));
-    }
-    
     private Account getAccountWithStudy(String... studyIds) {
         Account account = Account.create();
         account.setId("id");
@@ -400,12 +372,6 @@ public class BridgeUtilsTest {
                 .collect(toSet());
         account.setEnrollments(enrollments);
         return account;
-    }
-    
-    private ExternalIdentifier getExternalIdentifierWithStudy(String studyId) {
-        ExternalIdentifier id = ExternalIdentifier.create(TEST_APP_ID, "identifier");
-        id.setStudyId(studyId);
-        return id;
     }
     
     @Test

@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_AND_ORG_MEMBER_OR_ORGADMIN;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ACCOUNTS;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
@@ -247,7 +247,7 @@ public class AccountsController extends BaseController  {
             throw new UnauthorizedException();
         }
         // The caller needs to have permissions to manipulate the account
-        if (!IS_SELF_AND_ORG_MEMBER_OR_ORGADMIN.check(ORG_ID, callerOrgId, USER_ID, account.getId())) {
+        if (!CAN_EDIT_ACCOUNTS.check(ORG_ID, callerOrgId, USER_ID, account.getId())) {
             throw new EntityNotFoundException(Account.class);
         }
         return account;

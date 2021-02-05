@@ -203,7 +203,7 @@ public class CRCController extends BaseController {
         return (userAgent == null) ? "<Unknown>" : userAgent;
     }
 
-    @PostMapping("v1/cuicm/participants/self/labshipments/request")
+    @PostMapping("v1/cuimc/participants/self/labshipments/request")
     public ResponseEntity<StatusMessage> postUserLabShipmentRequest() {
         // caller enrolled studies
         UserSession session = getAuthenticatedSession();
@@ -215,7 +215,7 @@ public class CRCController extends BaseController {
         return internalLabShipmentRequest(app, account);
     }
 
-    @PostMapping("v1/cuicm/participants/{userId}/labshipments/request")
+    @PostMapping("v1/cuimc/participants/{userId}/labshipments/request")
     public ResponseEntity<StatusMessage> postLabShipmentRequest(@PathVariable String userId) {
         App app = httpBasicAuthentication();
     
@@ -271,45 +271,49 @@ public class CRCController extends BaseController {
         String recipientName = account.getFirstName() + " " + account.getLastName();
 
         Map<String, String> atts = account.getAttributes();
-        String address1 = atts.get("address1");
-        if (Strings.isNullOrEmpty(address1)) {
-            throw new BadRequestException("Missing shipping address1");
-        }
-        String city = atts.get("city");
-        if (Strings.isNullOrEmpty(city)) {
-            throw new BadRequestException("Missing shipping city");
-        }
-        String state = atts.get("state");
-        if (Strings.isNullOrEmpty(state)) {
-            throw new BadRequestException("Missing shipping state");
-        }
-        String zip = atts.get("zip_code");
-        if (Strings.isNullOrEmpty(zip)) {
-            throw new BadRequestException("Missing shipping zip code");
-        }
-
-        String phoneString = atts.get("home_phone");
-        Phone phone = new Phone(atts.get("home_phone"), "US");
+        
+        // required for shipping
+        requiredAttributesHelper(atts,"address1", "shipping address");
+        requiredAttributesHelper(atts,"city", "shipping city");
+        requiredAttributesHelper(atts,"state", "shipping state");
+        requiredAttributesHelper(atts,"zip_code", "shipping zip code");
+    
+        // required employer info preconditions
+        requiredAttributesHelper(atts, "occupation", "occupation");
+        requiredAttributesHelper(atts, "emp_name", "employer name");
+        requiredAttributesHelper(atts, "emp_address1", "employer address");
+        requiredAttributesHelper(atts, "emp_city", "employer city");
+        requiredAttributesHelper(atts, "emp_state", "employer state");
+        requiredAttributesHelper(atts, "emp_zip_code", "employer zip code");
+        
+        String phoneString;
+        Phone phone = new Phone(atts.get("emp_phone"), "US");
         if (Phone.isValid(phone)) {
             phoneString = phone.getNationalFormat();
         } else {
-            throw new BadRequestException(("Missing a valid shipping contact phone number"));
+            throw new BadRequestException(("Missing a valid employer phone number"));
         }
 
         return new Order.ShippingInfo.Address(
                 recipientName,
-                address1,
+                atts.get("address1"),
                 atts.get("address2"),
-                city,
-                state,
-                zip,
+                atts.get("city"),
+                atts.get("state"),
+                atts.get("zip_code"),
                 "United States",
                 phoneString
         );
     }
+    
+    private void requiredAttributesHelper(Map<String,String> attributes, String attributeKey, String attributeName) {
+        if(Strings.isNullOrEmpty(attributes.get(attributeKey))) {
+            throw new BadRequestException("Missing " + attributeName);
+        }
+    }
 
     // Waiting for integration workflow to be finalized
-    //@GetMapping(path = "v1/cuicm/labshipments/{orderId}/status")
+    //@GetMapping(path = "v1/cuimc/labshipments/{orderId}/status")
     public CheckOrderStatusResponse getLabShipmentStatus(@PathVariable String orderId) throws JsonProcessingException {
         httpBasicAuthentication();
         CheckOrderStatusResponse response = gbfOrderService.checkOrderStatus(orderId);
@@ -317,7 +321,7 @@ public class CRCController extends BaseController {
     }
     
     // Waiting for integration workflow to be finalized
-    //@GetMapping(path = "v1/cuicm/participants/labshipments/confirmations")
+    //@GetMapping(path = "v1/cuimc/participants/labshipments/confirmations")
     public ShippingConfirmations getLabShipmentConfirmations(@RequestParam String startDate,
             @RequestParam String endDate) throws JsonProcessingException {
         httpBasicAuthentication();

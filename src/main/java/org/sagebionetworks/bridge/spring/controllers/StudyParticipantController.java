@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_RESEARCHER;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -107,7 +107,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         List<EnrollmentDetail> list = enrollmentService.getEnrollmentsForUser(session.getAppId(), studyId, account.getId()); 
         return new PagedResourceList<>(list, list.size(), true);
@@ -117,7 +117,7 @@ public class StudyParticipantController extends BaseController {
     public PagedResourceList<AccountSummary> searchForAccountSummaries(@PathVariable String studyId) {
         UserSession session = getAdministrativeSession();
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
@@ -133,7 +133,7 @@ public class StudyParticipantController extends BaseController {
     public IdentifierHolder createParticipant(@PathVariable String studyId) {
         UserSession session = getAdministrativeSession();
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         StudyParticipant participant = parseJson(StudyParticipant.class);
@@ -154,7 +154,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
 
         App app = appService.getApp(session.getAppId());
 
@@ -179,7 +179,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         // Verify it's in the same app as the researcher.
@@ -196,8 +196,8 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage updateParticipant(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
-        
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         StudyParticipant participant = parseJson(StudyParticipant.class);
  
@@ -216,7 +216,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         participantService.signUserOut(app, account.getId(), deleteReauthToken);
@@ -229,7 +229,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         participantService.requestResetPassword(app, account.getId());
@@ -241,8 +241,8 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage resendEmailVerification(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
-        
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         participantService.resendVerification(app, ChannelType.EMAIL, account.getId());
@@ -254,8 +254,8 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage resendPhoneVerification(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
-        
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         participantService.resendVerification(app, ChannelType.PHONE, account.getId());
@@ -268,8 +268,8 @@ public class StudyParticipantController extends BaseController {
             @PathVariable String guid) {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
-        
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         SubpopulationGuid subpopGuid = SubpopulationGuid.create(guid);
@@ -286,7 +286,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         DateTime startTimeDate = getDateTimeOrDefault(startTime, null);
@@ -300,8 +300,8 @@ public class StudyParticipantController extends BaseController {
             @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
-        
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         List<NotificationRegistration> registrations = participantService.listRegistrations(app, account.getId());
@@ -314,7 +314,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         NotificationMessage message = parseJson(NotificationMessage.class);
         App app = appService.getApp(session.getAppId());
@@ -332,7 +332,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
             throw new UnauthorizedException("Account is not a test account.");
@@ -349,7 +349,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         List<ActivityEvent> events = participantService.getActivityEvents(app, studyId, account.getId());
@@ -363,7 +363,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         CustomActivityEventRequest event = parseJson(CustomActivityEventRequest.class);
         
@@ -380,7 +380,7 @@ public class StudyParticipantController extends BaseController {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        IS_COORD_OR_RESEARCHER.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
         App app = appService.getApp(session.getAppId());
         activityEventService.deleteCustomEvent(app, studyId, account.getHealthCode(), eventId);

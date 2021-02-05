@@ -401,6 +401,7 @@ public class AccountsControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = "Account not found.")
     public void verifyOrgAdminIsActingOnOrgMemberFailsNotOrgAdmin() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("callerUserId")
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
