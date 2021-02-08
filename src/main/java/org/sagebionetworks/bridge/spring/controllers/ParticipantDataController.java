@@ -104,7 +104,7 @@ public class ParticipantDataController extends BaseController {
         checkAccountExists(appId, userId);
         checkAdminSessionAppId(session, appId);
 
-        participantDataService.deleteAllParticipantData(session.getId());
+        participantDataService.deleteAllParticipantData(userId);
 
         return new StatusMessage("Participant data deleted.");
     }

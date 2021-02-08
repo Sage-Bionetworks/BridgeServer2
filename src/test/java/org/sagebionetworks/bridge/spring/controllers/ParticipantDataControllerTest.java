@@ -220,6 +220,9 @@ public class ParticipantDataControllerTest extends Mockito {
         controller.deleteAllParticipantDataForAdmin(TEST_APP_ID, TEST_USER_ID);
     }
 
+    // TODO: test checkAdminSessionAppId() logic
+
+
     @Test
     public void testGetDataByIdentifierForAdminWorker() {
         doReturn(participantData).when(mockParticipantDataService).getParticipantData(session.getId(), IDENTIFIER);
