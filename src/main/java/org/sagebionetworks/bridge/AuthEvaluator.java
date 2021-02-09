@@ -16,6 +16,9 @@ import java.util.function.Predicate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 
 /**
@@ -23,6 +26,8 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
  * by the AuthUtils class, but could be used elsewhere.
  */
 public class AuthEvaluator {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(AuthEvaluator.class);
     
     private final Set<Predicate<Map<AuthEvaluatorField,String>>> predicates;
     
@@ -36,9 +41,14 @@ public class AuthEvaluator {
     public AuthEvaluator hasAnyRole(Roles...roles) {
         predicates.add((factMap) -> {
             RequestContext context = RequestContext.get();
-            return (roles.length == 0) ?
+            boolean result = (roles.length == 0) ?
                     context.isAdministrator() :
                     context.isInRole(ImmutableSet.copyOf(roles));
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("hasAnyRole, roles = " + roles + ", context.roles = " + context.getCallerRoles() + 
+                        ", result = " + result);
+            }
+            return result;
         });
         return this;
     }
@@ -48,7 +58,12 @@ public class AuthEvaluator {
     public AuthEvaluator hasNoRole(Roles... roles) {
         predicates.add((factMap) -> {
             RequestContext context = RequestContext.get();
-            return (roles.length == 0) ? true : !context.isInRole(ImmutableSet.copyOf(roles));
+            boolean result = (roles.length == 0) ? true : !context.isInRole(ImmutableSet.copyOf(roles));
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("hasNoRole, roles = " + roles + ", context.callerRoles = " + 
+                        context.getCallerRoles() + ", result = " + result);
+            }
+            return result;
         });
         return this;
     }
@@ -57,8 +72,14 @@ public class AuthEvaluator {
      */
     public AuthEvaluator canAccessStudy() {
         predicates.add((factMap) -> {
+            RequestContext context = RequestContext.get();
             String studyId = factMap.get(STUDY_ID);
-            return RequestContext.get().getOrgSponsoredStudies().contains(studyId);
+            boolean result = context.getOrgSponsoredStudies().contains(studyId);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("canAccessStudy, studyId = " + studyId + ", context.orgSponsoredStudies = " + 
+                        context.getOrgSponsoredStudies() + ", result = " + result);
+            }
+            return result;
         });
         return this;
     }
@@ -69,20 +90,33 @@ public class AuthEvaluator {
      * callerEnrolledStudies, instead of making exceptions for the empty study
      * array.
      */
+    /*
     public AuthEvaluator callerConsideredGlobal() {
         predicates.add((factMap) -> {
-            return RequestContext.get().getOrgSponsoredStudies().isEmpty();
+            RequestContext context = RequestContext.get();
+            boolean result = context.getOrgSponsoredStudies().isEmpty();
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("callerConsideredGlobal, context.orgSponsoredStudies = " + 
+                        context.getOrgSponsoredStudies() + ", result = " + result);
+            }
+            return result;
         });
         return this;
-    }
+    }*/
     
     /**
      * The caller’s session is bound to the target app.
      */
     public AuthEvaluator isInApp() {
         predicates.add((factMap) -> {
+            RequestContext context = RequestContext.get();
             String appId = factMap.get(APP_ID);
-            return appId != null && appId.equals(RequestContext.get().getCallerAppId()); 
+            boolean result = appId != null && appId.equals(context.getCallerAppId());
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("isInApp, appId = " + appId + ", context.callerAppId = " + 
+                        context.getCallerAppId() + ", result = " + result);
+            }
+            return result;
         });
         return this;
     }
@@ -91,24 +125,51 @@ public class AuthEvaluator {
      */
     public AuthEvaluator isInOrg() {
         predicates.add((factMap) -> {
+            RequestContext context = RequestContext.get();
             String orgId = factMap.get(ORG_ID);
-            return orgId != null && orgId.equals(RequestContext.get().getCallerOrgMembership()); 
+            boolean result = orgId != null && orgId.equals(context.getCallerOrgMembership());
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("isInOrg, orgId = " + orgId + ", context.callerOrgMembership = " + 
+                        context.getCallerOrgMembership() + ", result = " + result);
+            }
+            return result;
         });
         return this;
     }
+    
+    public AuthEvaluator isEnrolledInStudy() {
+        predicates.add((factMap) -> {
+            RequestContext context = RequestContext.get();
+            String studyId = factMap.get(STUDY_ID);
+            boolean result = studyId != null && context.getCallerEnrolledStudies().contains(studyId);
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("isEnrolledInStudy, studyId = " + studyId + ", context.callerEnrolledStudies = " + 
+                        context.getCallerEnrolledStudies() + ", result = " + result);
+            }
+            return result;
+        });
+        return this;        
+    }
+    
     /**
      * The caller is operating on their own account (the target user ID).
      */
     public AuthEvaluator isSelf() {
         predicates.add((factMap) -> {
+            RequestContext context = RequestContext.get();
             String userId = factMap.get(USER_ID);
-            String callerUserId = RequestContext.get().getCallerUserId();
+            String callerUserId = context.getCallerUserId();
             // Calls like signUp happen without a session so there is no caller user ID in the 
             // request context. In this case, if we’re also not comparing the user ID to a 
             // known ID, allow this test to pass. This removes some special case code elsewhere
             // in the system.
-            return (userId == null && callerUserId == null) ||
-                   (userId != null && userId.equals(callerUserId)); 
+            boolean result = (userId == null && callerUserId == null) ||
+                   (userId != null && userId.equals(callerUserId));
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("isSelf, userId = " + userId + ", context.callerUserId = " + 
+                        context.getCallerUserId() + ", result = " + result);
+            }
+            return result;
         });
         return this;
     }

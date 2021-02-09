@@ -3,6 +3,9 @@ package org.sagebionetworks.bridge.services;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.joda.time.DateTimeZone.UTC;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -45,6 +48,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -134,6 +138,13 @@ public class AccountServiceTest extends Mockito {
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        RequestContext.set(NULL_INSTANCE);
     }
 
     @Test
@@ -1053,7 +1064,8 @@ public class AccountServiceTest extends Mockito {
         persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
         
         RequestContext.set(new RequestContext.Builder()
-                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_A)).build());
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(STUDY_A)).build());
 
         Account account = service.getAccount(ACCOUNT_ID);
         assertEquals(persistedAccount, account);

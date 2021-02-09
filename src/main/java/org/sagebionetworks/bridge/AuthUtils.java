@@ -62,18 +62,17 @@ public class AuthUtils {
      * own account, must have access to the study, or be a worker. 
      */
     public static final AuthEvaluator CAN_READ_STUDY_ASSOCIATIONS = new AuthEvaluator().isSelf().or()
-            .canAccessStudy().or()
-            .hasAnyRole(WORKER, ADMIN).or()
-            .callerConsideredGlobal();
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
     
     /**
-     * Can the caller view participants (through the origin Participants API)? Must be reading self,
+     * Can the caller view participants (through the original Participants API)? Must be reading self,
      * be an organization admin, or be a worker.
      */
     public static final AuthEvaluator CAN_READ_PARTICIPANTS = new AuthEvaluator().isSelf().or()
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
-            .hasAnyRole(WORKER, ADMIN).or()
-            .callerConsideredGlobal();
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
     
     /**
      * Can the caller edit participants? Must be editing one’s own account, or be a study coordinator
