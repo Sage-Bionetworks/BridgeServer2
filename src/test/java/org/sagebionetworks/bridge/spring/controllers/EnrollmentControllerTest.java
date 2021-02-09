@@ -1,11 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
-import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -20,7 +18,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
-import java.util.List;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -172,49 +169,6 @@ public class EnrollmentControllerTest extends Mockito {
         assertEquals(value.getAppId(), TEST_APP_ID);
         assertEquals(value.getStudyId(), TEST_STUDY_ID);
         assertEquals(value.getAccountId(), TEST_USER_ID);
-    }
-    
-    @Test
-    public void getUserEnrollments() throws Exception {
-        UserSession session = new UserSession();
-        session.setAppId(TEST_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
-        
-        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-        
-        AccountService mockAccountService = mock(AccountService.class);
-        controller.setAccountService(mockAccountService);
-        
-        Account account = Account.create();
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, "externalId");
-        Enrollment en2 = Enrollment.create(TEST_APP_ID, "anotherStudy", TEST_USER_ID);
-        en2.setConsentRequired(true);
-        en2.setEnrolledOn(CREATED_ON);
-        en2.setWithdrawnOn(MODIFIED_ON);
-        en2.setEnrolledBy("enrolledBy");
-        en2.setWithdrawnBy("withdrawnBy");
-        en2.setWithdrawalNote("withdrawal note");
-        account.setEnrollments(ImmutableSet.of(en1, en2));
-        when(mockAccountService.getAccount(accountId)).thenReturn(account);
-        
-        List<EnrollmentMigration> returnValue = controller.getUserEnrollments(TEST_USER_ID);
-        assertEquals(returnValue.size(), 2);
-        assertEquals(returnValue.stream().map(m -> m.getStudyId()).collect(toSet()), 
-                ImmutableSet.of(TEST_STUDY_ID, "anotherStudy"));
-    }
-    
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getUserEnrollmentsAccountNotFound() throws Exception {
-        UserSession session = new UserSession();
-        session.setAppId(TEST_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
-        
-        AccountService mockAccountService = mock(AccountService.class);
-        controller.setAccountService(mockAccountService);
-        
-        when(mockAccountService.getAccount(any())).thenReturn(null);
-        
-        controller.getUserEnrollments(TEST_USER_ID);
     }
     
     @Test

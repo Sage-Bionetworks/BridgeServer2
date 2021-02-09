@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
@@ -90,20 +89,6 @@ public class EnrollmentController extends BaseController {
         enrollment.setWithdrawalNote(withdrawalNote);
         
         return service.unenroll(enrollment);
-    }
-    
-    @GetMapping("/v3/participants/{userId}/enrollments")
-    public List<EnrollmentMigration> getUserEnrollments(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
-        
-        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
-        
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        return account.getEnrollments().stream()
-                .map(EnrollmentMigration::create).collect(toList());
     }
     
     @PostMapping("/v3/participants/{userId}/enrollments")
