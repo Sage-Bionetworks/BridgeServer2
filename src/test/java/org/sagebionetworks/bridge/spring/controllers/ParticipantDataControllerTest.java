@@ -37,6 +37,7 @@ import javax.servlet.http.HttpServletRequest;
 import java.util.List;
 import java.util.Map;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -79,6 +80,9 @@ public class ParticipantDataControllerTest extends Mockito {
 
     @Mock
     HttpServletRequest mockRequest;
+
+    @Mock
+    UserSession mockSession;
 
     @Captor
     ArgumentCaptor<ParticipantData> participantDataCaptor;
@@ -126,7 +130,7 @@ public class ParticipantDataControllerTest extends Mockito {
     @Test
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(ParticipantDataController.class);
-        assertGet(ParticipantDataController.class, "getAllDataForUser");
+        assertGet(ParticipantDataController.class, "getAllDataForSelf");
         assertGet(ParticipantDataController.class, "getDataByIdentifierForSelf");
         assertGet(ParticipantDataController.class, "getAllDataForAdminWorker");
         assertGet(ParticipantDataController.class, "getDataByIdentifierForAdminWorker");
@@ -151,7 +155,13 @@ public class ParticipantDataControllerTest extends Mockito {
 
     @Test
     public void testGetAllDataForSelfPageSizeInService() {
+        ArgumentCaptor<Integer> integerCaptor = ArgumentCaptor.forClass(Integer.class);
+        doReturn(makeResults(null, null)).when(mockParticipantDataService)
+                .getAllParticipantData(eq(TEST_USER_ID), eq(null), integerCaptor.capture());
 
+        controller.getAllDataForSelf(null, null);
+
+        assertEquals(API_DEFAULT_PAGE_SIZE, integerCaptor.getValue().intValue());
     }
 
     @Test
@@ -206,6 +216,17 @@ public class ParticipantDataControllerTest extends Mockito {
     }
 
     @Test
+    public void testGetAllDataForAdminWorkerDefaultPageSizeInService() {
+        ArgumentCaptor<Integer> integerCaptor = ArgumentCaptor.forClass(Integer.class);
+        doReturn(makeResults(null, null)).when(mockParticipantDataService)
+                .getAllParticipantData(eq(TEST_USER_ID), eq(null), integerCaptor.capture());
+
+        controller.getAllDataForAdminWorker(TEST_APP_ID, TEST_USER_ID, null, null);
+
+        assertEquals(API_DEFAULT_PAGE_SIZE, integerCaptor.getValue().intValue());
+    }
+
+    @Test
     public void testDeleteAllParticipantDataForAdmin() {
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
 
@@ -215,13 +236,55 @@ public class ParticipantDataControllerTest extends Mockito {
         verify(mockParticipantDataService).deleteAllParticipantData(TEST_USER_ID);
     }
 
-    @Test (expectedExceptions = UnauthorizedException.class)
-    public void testDeleteAllParticipantDataForAdminUnAuthorizedException() {
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void testGetAllDataForAdminWorkerEntityNotFound() {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(true).when(mockSession).isInRole(ADMIN);
+        doReturn("notSameAppId").when(mockSession).getAppId();
+
+        controller.getAllDataForAdminWorker(TEST_APP_ID, TEST_USER_ID, OFFSET_KEY, PAGE_SIZE_STRING);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void testDeleteAllParticipantDataForAdminEntityNotFound() {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(true).when(mockSession).isInRole(ADMIN);
+        doReturn("notSameAppId").when(mockSession).getAppId();
+
         controller.deleteAllParticipantDataForAdmin(TEST_APP_ID, TEST_USER_ID);
     }
 
-    // TODO: test checkAdminSessionAppId() logic
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void testGetDataByIdentifierForAdminWorkerEntityNotFound() {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(true).when(mockSession).isInRole(ADMIN);
+        doReturn("notSameAppId").when(mockSession).getAppId();
 
+        controller.getDataByIdentifierForAdminWorker(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void testSaveDataForAdminWorkerEntityNotFound() {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(true).when(mockSession).isInRole(ADMIN);
+        doReturn("notSameAppId").when(mockSession).getAppId();
+
+        controller.saveDataForAdminWorker(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp=".*Account not found.*")
+    public void testDeleteDataForAdminEntityNotFound() {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(true).when(mockSession).isInRole(ADMIN);
+        doReturn("notSameAppId").when(mockSession).getAppId();
+
+        controller.deleteDataForAdmin(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
+    }
 
     @Test
     public void testGetDataByIdentifierForAdminWorker() {
@@ -300,7 +363,7 @@ public class ParticipantDataControllerTest extends Mockito {
         controller.deleteDataForAdmin(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
     }
 
-    private ForwardCursorPagedResourceList<ParticipantData> makeResults(String offsetKey, int pageSize) {
+    private ForwardCursorPagedResourceList<ParticipantData> makeResults(String offsetKey, Integer pageSize) {
         List<ParticipantData> list = Lists.newArrayList();
         list.add(createParticipantData("a", "b"));
         list.add(createParticipantData("c", "d"));

@@ -84,14 +84,12 @@ public class ParticipantDataController extends BaseController {
                                                                            String offsetKey, String pageSize) {
         UserSession session = getAuthenticatedSession(ADMIN, WORKER);
 
-        Account account = accountService.getAccount(AccountId.forId(appId, userId));
         checkAccountExists(appId, userId);
-
         checkAdminSessionAppId(session, appId);
 
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         ForwardCursorPagedResourceList<ParticipantData> participantData = participantDataService.getAllParticipantData(
-                account.getId(), offsetKey, pageSizeInt);
+                userId, offsetKey, pageSizeInt);
         List<String> identifiers = participantData.getItems().stream().map(ParticipantData::getIdentifier).collect(Collectors.toList());
 
         return new ForwardCursorPagedResourceList<String>(identifiers, participantData.getNextPageOffsetKey());

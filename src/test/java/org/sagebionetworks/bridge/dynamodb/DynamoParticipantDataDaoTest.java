@@ -186,6 +186,7 @@ public class DynamoParticipantDataDaoTest extends Mockito {
         dao.deleteParticipantData(participantData0.getUserId(), identifier);
 
         verify(mockMapper).load(participantDataCaptor.capture());
+        verify(mockMapper).delete(participantData0);
         assertEquals(participantDataCaptor.getValue().getUserId(), participantData0.getUserId());
         assertEquals(participantDataCaptor.getValue().getIdentifier(), identifier);
     }
