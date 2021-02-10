@@ -18,11 +18,13 @@ import static org.sagebionetworks.bridge.validators.SignInValidator.EMAIL_SIGNIN
 import static org.sagebionetworks.bridge.validators.SignInValidator.PHONE_SIGNIN_REQUEST;
 
 import java.io.IOException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -54,12 +56,16 @@ import org.sagebionetworks.bridge.validators.Validate;
 import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Validator;
 
 @Component
 public class AccountWorkflowService {
+    private static final Logger LOG = LoggerFactory.getLogger(AccountWorkflowService.class);
+    
     private static final String BASE_URL = BridgeConfigFactory.getConfig().get("webservices.url");
     static final String CONFIG_KEY_CHANNEL_THROTTLE_MAX_REQUESTS = "channel.throttle.max.requests";
     static final String CONFIG_KEY_CHANNEL_THROTTLE_TIMEOUT_SECONDS = "channel.throttle.timeout.seconds";
@@ -244,22 +250,30 @@ public class AccountWorkflowService {
     }
         
     /**
-     * Send another verification token via email or phone. This creates and sends a new verification token 
-     * using the specified channel (an email or SMS message).
+     * Send another verification token via email or phone, if that credential has not yet been verified.
+     * This creates and sends a new verification token using the specified channel (an email or SMS 
+     * message).
      */
     public void resendVerificationToken(ChannelType type, AccountId accountId) {
         checkNotNull(accountId);
         
         App app = appService.getApp(accountId.getAppId());
-        Account account = accountService.getAccount(accountId);
-        if (account != null) {
-            if (type == ChannelType.EMAIL) {
-                sendEmailVerificationToken(app, account.getId(), account.getEmail());
-            } else if (type == ChannelType.PHONE) {
-                sendPhoneVerificationToken(app, account.getId(), account.getPhone());
-            } else {
-                throw new UnsupportedOperationException("Channel type not implemented");
-            }
+        Optional<Account> opt = accountService.getAccountNoFilter(accountId);
+        
+        if (!opt.isPresent()) {
+            LOG.info("Resend " + type.name() + " verification for unregistered email in app '"
+                    + accountId.getAppId() + "'");
+            return;
+        }
+        Account account = opt.get();
+        RequestContext.set(RequestContext.get().toBuilder().withCallerUserId(account.getId()).build());
+        
+        // TODO: Don't love that these fire even after the credential has been verified, as this
+        // call doesn't require authentication.
+        if (type == ChannelType.EMAIL) {
+            sendEmailVerificationToken(app, account.getId(), account.getEmail());
+        } else if (type == ChannelType.PHONE) {
+            sendPhoneVerificationToken(app, account.getId(), account.getPhone());
         }
     }
     

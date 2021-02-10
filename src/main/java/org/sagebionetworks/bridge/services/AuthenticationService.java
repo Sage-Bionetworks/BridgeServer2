@@ -296,13 +296,8 @@ public class AuthenticationService {
         checkNotNull(accountId);
 
         Validate.entityThrowingException(AccountIdValidator.getInstance(type), accountId);
-        try {
-            accountWorkflowService.resendVerificationToken(type, accountId);    
-        } catch(EntityNotFoundException e) {
-            // Suppress this. Otherwise it reveals if the account does not exist
-            LOG.info("Resend " + type.name() + " verification for unregistered email in app '"
-                    + accountId.getAppId() + "'");
-        }
+        
+        accountWorkflowService.resendVerificationToken(type, accountId);    
     }
     
     public void requestResetPassword(App app, boolean isAppAdmin, SignIn signIn) throws BridgeServiceException {
@@ -439,6 +434,10 @@ public class AuthenticationService {
      * APIs, which creates the session. Package-scoped for unit tests.
      */
     public UserSession getSessionFromAccount(App app, CriteriaContext context, Account account) {
+        
+        // TODO: Note why this needs to happen
+        RequestContext.set(RequestContext.get().toBuilder().withCallerUserId(account.getId()).build());
+        
         StudyParticipant participant = participantService.getParticipant(app, account, false);
 
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 

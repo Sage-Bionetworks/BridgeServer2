@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.OWNER_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -45,8 +46,9 @@ public class AuthEvaluator {
                     context.isAdministrator() :
                     context.isInRole(ImmutableSet.copyOf(roles));
             if (LOG.isTraceEnabled()) {
-                LOG.trace("hasAnyRole, roles = " + roles + ", context.roles = " + context.getCallerRoles() + 
-                        ", result = " + result);
+                LOG.trace("hasAnyRole, roles = " + roles + ", context.roles = " 
+                        + COMMA_SPACE_JOINER.join(context.getCallerRoles()) 
+                        + ", result = " + result);
             }
             return result;
         });
@@ -60,8 +62,9 @@ public class AuthEvaluator {
             RequestContext context = RequestContext.get();
             boolean result = (roles.length == 0) ? true : !context.isInRole(ImmutableSet.copyOf(roles));
             if (LOG.isTraceEnabled()) {
-                LOG.trace("hasNoRole, roles = " + roles + ", context.callerRoles = " + 
-                        context.getCallerRoles() + ", result = " + result);
+                LOG.trace("hasNoRole, roles = " + COMMA_SPACE_JOINER.join(roles) 
+                    + ", context.callerRoles = " + context.getCallerRoles() 
+                    + ", result = " + result);
             }
             return result;
         });
@@ -144,7 +147,7 @@ public class AuthEvaluator {
             boolean result = studyId != null && context.getCallerEnrolledStudies().contains(studyId);
             if (LOG.isTraceEnabled()) {
                 LOG.trace("isEnrolledInStudy, studyId = " + studyId + ", context.callerEnrolledStudies = " + 
-                        context.getCallerEnrolledStudies() + ", result = " + result);
+                        COMMA_SPACE_JOINER.join(context.getCallerEnrolledStudies()) + ", result = " + result);
             }
             return result;
         });
