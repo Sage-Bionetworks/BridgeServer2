@@ -241,4 +241,17 @@ public class DynamoActivityEventDaoTest extends Mockito {
         List<DynamoActivityEvent> eventsToDelete = listCaptor.getValue();
         assertEquals(eventsToDelete, savedEvents);
     }
+    
+    @Test
+    public void publishEventIsImmutableFails() {
+        when(mockMapper.load(any())).thenReturn(ENROLLMENT_EVENT);
+
+        DynamoActivityEvent laterEvent = new DynamoActivityEvent.Builder().withHealthCode(HEALTH_CODE)
+                .withObjectType(ENROLLMENT).withTimestamp(TIMESTAMP.plusHours(1)).build();
+
+        boolean result = dao.publishEvent(laterEvent);
+        assertFalse(result);
+
+        verify(mockMapper, never()).save(any());
+    }
 }    
