@@ -1,9 +1,13 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -21,6 +25,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.PaginatedQueryList;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Lists;
 
@@ -28,6 +33,12 @@ import com.google.common.collect.Lists;
 public class DynamoActivityEventDao implements ActivityEventDao {
 
     private static final String ANSWERED_EVENT_POSTFIX = ":"+ActivityEventType.ANSWERED.name().toLowerCase();
+    
+    public static final Set<String> IMMUTABLE_EVENTS = ImmutableSet.of(
+            ENROLLMENT.name().toLowerCase(),
+            ACTIVITIES_RETRIEVED.name().toLowerCase(),
+            CREATED_ON.name().toLowerCase());
+
     private DynamoDBMapper mapper;
 
     @Resource(name = "activityEventDdbMapper")
@@ -62,7 +73,7 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         hashKey.setEventId(event.getEventId());
         
         ActivityEvent savedEvent = mapper.load(hashKey);
-        if (savedEvent == null || isLater(savedEvent, event)) {
+        if (isNewOrMutable(savedEvent, event) && isLater(savedEvent, event)) {
             mapper.save(event);
             return true;
         }
@@ -109,11 +120,21 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         }
     }
     
+    private boolean isNewOrMutable(ActivityEvent savedEvent, ActivityEvent event) {
+        if (savedEvent == null) {
+            return true;
+        }
+        return (!IMMUTABLE_EVENTS.contains(event.getEventId()));
+    }
+    
     /**
      * Events cannot be recorded unless the timestamp submitted is later than the currently
      * recorded timestamp.
      */
     private boolean isLater(ActivityEvent savedEvent, ActivityEvent event) {
+        if (savedEvent == null) {
+            return true;
+        }        
         return event.getTimestamp() > savedEvent.getTimestamp();
     }
 
