@@ -155,13 +155,12 @@ public class ParticipantDataControllerTest extends Mockito {
 
     @Test
     public void testGetAllDataForSelfPageSizeInService() {
-        ArgumentCaptor<Integer> integerCaptor = ArgumentCaptor.forClass(Integer.class);
         doReturn(makeResults(null, null)).when(mockParticipantDataService)
-                .getAllParticipantData(eq(TEST_USER_ID), eq(null), integerCaptor.capture());
+                .getAllParticipantData(TEST_USER_ID, null, API_DEFAULT_PAGE_SIZE);
 
         controller.getAllDataForSelf(null, null);
 
-        assertEquals(API_DEFAULT_PAGE_SIZE, integerCaptor.getValue().intValue());
+        verify(mockParticipantDataService).getAllParticipantData(TEST_USER_ID, null, API_DEFAULT_PAGE_SIZE);
     }
 
     @Test
@@ -217,13 +216,12 @@ public class ParticipantDataControllerTest extends Mockito {
 
     @Test
     public void testGetAllDataForAdminWorkerDefaultPageSizeInService() {
-        ArgumentCaptor<Integer> integerCaptor = ArgumentCaptor.forClass(Integer.class);
         doReturn(makeResults(null, null)).when(mockParticipantDataService)
-                .getAllParticipantData(eq(TEST_USER_ID), eq(null), integerCaptor.capture());
+                .getAllParticipantData(TEST_USER_ID, null, API_DEFAULT_PAGE_SIZE);
 
         controller.getAllDataForAdminWorker(TEST_APP_ID, TEST_USER_ID, null, null);
 
-        assertEquals(API_DEFAULT_PAGE_SIZE, integerCaptor.getValue().intValue());
+        verify(mockParticipantDataService).getAllParticipantData(TEST_USER_ID, null, API_DEFAULT_PAGE_SIZE);
     }
 
     @Test
