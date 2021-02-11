@@ -6,11 +6,9 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
 import static org.sagebionetworks.bridge.validators.ActivityEventValidator.ANSWER_VALUE_ERROR;
 import static org.sagebionetworks.bridge.validators.ActivityEventValidator.EVENT_ID_ERROR;
-import static org.sagebionetworks.bridge.validators.ActivityEventValidator.EVENT_ID_IMMUTABLE_ERROR;
 import static org.sagebionetworks.bridge.validators.ActivityEventValidator.INSTANCE;
 
 import org.joda.time.DateTime;
@@ -51,19 +49,6 @@ public class ActivityEventValidatorTest {
         assertValidatorMessage(INSTANCE, event, "eventId", EVENT_ID_ERROR);
     }
 
-    @Test
-    public void immutableEventProhibitiedEnrollment() {
-        ActivityEvent event = getEvent().withObjectType(ENROLLMENT).build();
-        assertValidatorMessage(INSTANCE, event, "eventId", EVENT_ID_IMMUTABLE_ERROR);
-    }
-
-    @Test
-    public void immutableEventProhibitiedActivitiesRetrieved() {
-        ActivityEvent event = getEvent().withObjectType(ACTIVITIES_RETRIEVED).build();
-        assertValidatorMessage(INSTANCE, event, "eventId", EVENT_ID_IMMUTABLE_ERROR);
-    }
-    
-    @Test
     public void answerValueRequired() {
         ActivityEvent event = getEvent().withEventType(ActivityEventType.ANSWERED)
                 .withAnswerValue(null).build();

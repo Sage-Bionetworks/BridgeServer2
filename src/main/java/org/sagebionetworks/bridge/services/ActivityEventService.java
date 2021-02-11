@@ -163,7 +163,7 @@ public class ActivityEventService {
             .withTimestamp(timestamp)
             .withObjectType(ACTIVITIES_RETRIEVED).build();
 
-        // If the globalEvent is valid, all other derivations are valid 
+        // If the globalEvent is valid, all other derivations are valid
         Validate.entityThrowingException(ActivityEventValidator.INSTANCE, globalEvent);
         
         if (activityEventDao.publishEvent(globalEvent)) {
