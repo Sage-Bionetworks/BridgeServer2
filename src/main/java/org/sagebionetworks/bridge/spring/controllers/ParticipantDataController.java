@@ -74,8 +74,6 @@ public class ParticipantDataController extends BaseController {
     public StatusMessage deleteDataByIdentifier(@PathVariable String identifier) {
         UserSession session = getAuthenticatedAndConsentedSession();
 
-        //participantDataService.deleteAllParticipantData(session.getId()); //TODO just trying this bc this works in deleteAllParticipantDataForAdmin() but not here?!?!?
-
         participantDataService.deleteParticipantData(session.getId(), identifier);
 
         return new StatusMessage("Participant data record deleted.");
