@@ -40,14 +40,14 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
                 .withLimit(pageSizeWithIndicatorRecord);
 
         if (offsetKey != null) {
-            Condition rangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.GE)
+            Condition identifierCondition = new Condition().withComparisonOperator(ComparisonOperator.GE)
                     .withAttributeValueList(new AttributeValue().withS(offsetKey));
-            query.withRangeKeyCondition("offsetKey", rangeKeyCondition);
+            query.withRangeKeyCondition("identifier", identifierCondition);
         }
 
         List<DynamoParticipantData> dynamoList = queryHelper(query);
         List<ParticipantData> list = ImmutableList.copyOf(dynamoList);
-        list = list.subList(0, pageSizeWithIndicatorRecord);
+        list = list.size() <= pageSizeWithIndicatorRecord ? list : list.subList(0, pageSizeWithIndicatorRecord);
 
         String nextPageOffsetKey = null;
         if (list.size() == pageSizeWithIndicatorRecord) {
