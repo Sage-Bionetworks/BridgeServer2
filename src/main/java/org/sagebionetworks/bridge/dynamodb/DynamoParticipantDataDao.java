@@ -47,6 +47,7 @@ public class DynamoParticipantDataDao implements ParticipantDataDao {
 
         List<DynamoParticipantData> dynamoList = queryHelper(query);
         List<ParticipantData> list = ImmutableList.copyOf(dynamoList);
+        list = list.subList(0, pageSizeWithIndicatorRecord);
 
         String nextPageOffsetKey = null;
         if (list.size() == pageSizeWithIndicatorRecord) {
