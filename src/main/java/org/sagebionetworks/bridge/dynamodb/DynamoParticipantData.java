@@ -8,9 +8,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.sagebionetworks.bridge.models.ParticipantData;
 
-/**
- *
- */
 @DynamoDBTable(tableName = "ParticipantData")
 public class DynamoParticipantData implements ParticipantData {
 

@@ -13,6 +13,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 
+/**
+ * A service for creating and retrieving non time-series participant data.
+ */
 @Component
 public class ParticipantDataService {
     private ParticipantDataDao participantDataDao;
@@ -23,7 +26,7 @@ public class ParticipantDataService {
     }
 
     /**
-     * Return a set of participant data records.
+     * Return a list of participant data records.
      */
     public ForwardCursorPagedResourceList<ParticipantData> getAllParticipantData(String userId, String offsetKey, int pageSize) {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
@@ -46,6 +49,9 @@ public class ParticipantDataService {
         return participantData;
     }
 
+    /**
+     * Save a participant data based on the given userId and identifier.
+     */
     public void saveParticipantData(String userId, String identifier, ParticipantData participantData) {
         checkNotNull(participantData);
 
@@ -55,10 +61,16 @@ public class ParticipantDataService {
         participantDataDao.saveParticipantData(participantData);
     }
 
+    /**
+     * Delete all participant data associated with the given userId.
+     */
     public void deleteAllParticipantData(String userId) {
         participantDataDao.deleteAllParticipantData(userId);
     }
 
+    /**
+     * Delete a single participant data based on the given userId and identifier.
+     */
     public void deleteParticipantData(String userId, String identifier) {
         ParticipantData participantData = this.getParticipantData(userId, identifier);
 

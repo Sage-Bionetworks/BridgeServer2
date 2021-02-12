@@ -5,6 +5,9 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantData;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 
+/**
+ * Non time-series participant data.
+ */
 @BridgeTypeName("ParticipantData")
 @JsonDeserialize(as= DynamoParticipantData.class)
 public interface ParticipantData extends BridgeEntity{

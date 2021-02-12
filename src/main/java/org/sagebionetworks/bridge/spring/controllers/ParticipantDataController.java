@@ -38,6 +38,9 @@ public class ParticipantDataController extends BaseController {
         this.participantDataService = participantDataService;
     }
 
+    /**
+     * User API to get a list identifiers for all of the user's participant data.
+     */
     @GetMapping("/v3/users/self/data")
     public ForwardCursorPagedResourceList<String> getAllDataForSelf(@RequestParam(required = false) String offsetKey,
                                                                     @RequestParam(required = false) String pageSize) {
@@ -51,6 +54,9 @@ public class ParticipantDataController extends BaseController {
         return new ForwardCursorPagedResourceList<String>(identifiers, participantData.getNextPageOffsetKey());
     }
 
+    /**
+     * User API to get a single participant data with the given identifier.
+     */
     @GetMapping("/v3/users/self/data/{identifier}")
     public ParticipantData getDataByIdentifierForSelf(@PathVariable String identifier) {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -58,6 +64,9 @@ public class ParticipantDataController extends BaseController {
         return participantDataService.getParticipantData(session.getId(), identifier);
     }
 
+    /**
+     * User API to save a single participant data with the given identifier.
+     */
     @PostMapping("/v3/users/self/data/{identifier}")
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveDataForSelf(@PathVariable String identifier) {
@@ -70,6 +79,9 @@ public class ParticipantDataController extends BaseController {
         return new StatusMessage("Participant data saved.");
     }
 
+    /**
+     * User API to delete a participant data with the given identifier.
+     */
     @DeleteMapping("/v3/users/self/data/{identifier}")
     public StatusMessage deleteDataByIdentifier(@PathVariable String identifier) {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -79,6 +91,9 @@ public class ParticipantDataController extends BaseController {
         return new StatusMessage("Participant data record deleted.");
     }
 
+    /**
+     * Admin or Worker API to get a list of identifiers of all the participant data associated with the given userId.
+     */
     @GetMapping("/v1/apps/{appId}/participants/{userId}/data")
     public ForwardCursorPagedResourceList<String> getAllDataForAdminWorker(@PathVariable String appId, @PathVariable String userId,
                                                                            String offsetKey, String pageSize) {
@@ -95,6 +110,9 @@ public class ParticipantDataController extends BaseController {
         return new ForwardCursorPagedResourceList<String>(identifiers, participantData.getNextPageOffsetKey());
     }
 
+    /**
+     * Admin API to delete all participant data associated with the given userId.
+     */
     @DeleteMapping("/v1/apps/{appId}/participants/{userId}/data")
     public StatusMessage deleteAllParticipantDataForAdmin(@PathVariable String appId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ADMIN);
@@ -107,6 +125,9 @@ public class ParticipantDataController extends BaseController {
         return new StatusMessage("Participant data deleted.");
     }
 
+    /**
+     * Admin or Worker API to get a participant data associated with the given identifier.
+     */
     @GetMapping("/v1/apps/{appId}/participants/{userId}/data/{identifier}")
     public ParticipantData getDataByIdentifierForAdminWorker(@PathVariable String appId, @PathVariable String userId,
                                                              @PathVariable String identifier) {
@@ -118,6 +139,9 @@ public class ParticipantDataController extends BaseController {
         return participantDataService.getParticipantData(userId, identifier);
     }
 
+    /**
+     * Admin or Worker API to save a participant data with the given userId and identifier.
+     */
     @PostMapping("/v1/apps/{appId}/participants/{userId}/data/{identifier}")
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveDataForAdminWorker(@PathVariable String appId, @PathVariable String userId, @PathVariable String identifier) {
@@ -134,6 +158,9 @@ public class ParticipantDataController extends BaseController {
         return new StatusMessage("Participant data saved.");
     }
 
+    /**
+     * Admin API to delete a participant data for the given userId and identifier.
+     */
     @DeleteMapping("/v1/apps/{appId}/participants/{userId}/data/{identifier}")
     public StatusMessage deleteDataForAdmin(@PathVariable String appId, @PathVariable String userId,
                                                   @PathVariable String identifier) {
