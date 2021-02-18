@@ -75,7 +75,7 @@ public class S3Initializer {
                     .withAllowedOrigins(ImmutableList.of("*"))
                     .withMaxAgeSeconds(3000));
     
-    public static enum BucketType {
+    private static enum BucketType {
         INTERNAL(null, null),
         INTERNAL_UPLOAD_ACCESSIBLE(null, ALLOW_PUT),
         SYNAPSE_ACCESSIBLE(SYNAPSE_ACCESS_POLICY, null),
@@ -88,7 +88,7 @@ public class S3Initializer {
             this.corsConfig = corsConfig;
         }
     }
-    
+
     private BridgeConfig bridgeConfig;
     
     private AmazonS3Client s3Client;
@@ -103,7 +103,7 @@ public class S3Initializer {
         this.s3Client = s3Client;
     }
     
-    private static Map<String, BucketType> S3_BUCKET_PROP_NAMES = new ImmutableMap.Builder<String, BucketType>()
+    private Map<String, BucketType> S3_BUCKET_PROP_NAMES = new ImmutableMap.Builder<String, BucketType>()
             .put("attachment.bucket", BucketType.SYNAPSE_ACCESSIBLE)
             .put("upload.bucket", BucketType.INTERNAL_UPLOAD_ACCESSIBLE)
             .put("upload.cms.cert.bucket", BucketType.INTERNAL)
