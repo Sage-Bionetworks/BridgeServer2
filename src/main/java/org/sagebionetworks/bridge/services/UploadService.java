@@ -96,7 +96,7 @@ public class UploadService {
         this.healthDataService = healthDataService;
     }
 
-    @Resource(name = "s3UploadClient")
+    @Resource(name = "s3Client")
     public void setS3UploadClient(AmazonS3 s3UploadClient) {
         this.s3UploadClient = s3UploadClient;
     }

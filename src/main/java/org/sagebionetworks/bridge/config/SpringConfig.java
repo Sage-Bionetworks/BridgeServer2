@@ -58,6 +58,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 
 import org.sagebionetworks.bridge.BridgeConstants;
@@ -209,27 +210,6 @@ public class SpringConfig {
                 bridgeConfig.getProperty("aws.secret.key"));
     }
 
-    @Bean(name = "snsCredentials")
-    public BasicAWSCredentials snsCredentials() {
-        BridgeConfig bridgeConfig = bridgeConfig();
-        return new BasicAWSCredentials(bridgeConfig.getProperty("sns.key"),
-                bridgeConfig.getProperty("sns.secret.key"));
-    }
-    
-    @Bean(name = "s3UploadCredentials")
-    @Resource(name = "bridgeConfig")
-    public BasicAWSCredentials s3UploadCredentials(BridgeConfig bridgeConfig) {
-        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.upload"),
-                bridgeConfig.getProperty("aws.secret.key.upload"));
-    }
-
-    @Bean(name = "s3CmsCredentials")
-    @Resource(name = "bridgeConfig")
-    public BasicAWSCredentials s3CmsCredentials(BridgeConfig bridgeConfig) {
-        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.upload.cms"),
-                bridgeConfig.getProperty("aws.secret.key.upload.cms"));
-    }
-
     @Bean(name = "dynamoDbClient")
     @Resource(name = "awsCredentials")
     public AmazonDynamoDBClient dynamoDbClient() {
@@ -240,9 +220,9 @@ public class SpringConfig {
     }
     
     @Bean(name = "snsClient")
-    @Resource(name = "snsCredentials")
+    @Resource(name = "awsCredentials")
     public AmazonSNSClient snsClient() {
-        return new AmazonSNSClient(snsCredentials());
+        return new AmazonSNSClient(awsCredentials());
     }
 
     @Bean(name = "dataPipelineClient")
@@ -258,18 +238,6 @@ public class SpringConfig {
         return new AmazonS3Client(awsCredentials).withRegion(US_EAST_1);
     }
 
-    @Bean(name = "s3UploadClient")
-    @Resource(name = "s3UploadCredentials")
-    public AmazonS3Client s3UploadClient(BasicAWSCredentials s3UploadCredentials) {
-        return new AmazonS3Client(s3UploadCredentials);
-    }
-
-    @Bean(name = "s3CmsClient")
-    @Resource(name = "s3CmsCredentials")
-    public AmazonS3Client s3CmsClient(BasicAWSCredentials s3CmsCredentials) {
-        return new AmazonS3Client(s3CmsCredentials);
-    }
-    
     // This client needs to be configured to handle S3 file paths differently, so we can use bucket
     // names with periods in them (and we need these in turn so they can be fronted with CloudFront).
     @Bean(name = "fileUploadS3Client")
@@ -280,9 +248,9 @@ public class SpringConfig {
     }
     
     @Bean(name ="uploadTokenServiceClient")
-    @Resource(name = "s3UploadCredentials")
-    public AWSSecurityTokenServiceClient uploadTokenServiceClient(BasicAWSCredentials s3UploadCredentials) {
-        return new AWSSecurityTokenServiceClient(s3UploadCredentials);
+    @Resource(name = "awsCredentials")
+    public AWSSecurityTokenServiceClient uploadTokenServiceClient(BasicAWSCredentials awsCredentials) {
+        return new AWSSecurityTokenServiceClient(awsCredentials);
     }
 
     @Bean(name = "md5DigestUtils")
@@ -290,38 +258,9 @@ public class SpringConfig {
         return new DigestUtils(DigestUtils.getMd5Digest());
     }
 
-    @Bean(name = "s3CmsHelper")
-    @Resource(name = "s3CmsClient")
-    public S3Helper s3CmsHelper(AmazonS3Client s3CmsClient) {
-        S3Helper s3CmsHelper = new S3Helper();
-        s3CmsHelper.setS3Client(s3CmsClient);
-        return s3CmsHelper;
-    }
-
     @Bean(name = "s3Helper")
     @Resource(name = "s3Client")
     public S3Helper s3Helper(AmazonS3Client s3Client) {
-        S3Helper s3Helper = new S3Helper();
-        s3Helper.setS3Client(s3Client);
-        return s3Helper;
-    }
-
-    @Bean(name = "s3ConsentsCredentials")
-    @Resource(name = "bridgeConfig")
-    public BasicAWSCredentials s3ConsentsCredentials(BridgeConfig bridgeConfig) {
-        return new BasicAWSCredentials(bridgeConfig.getProperty("aws.key.consents"),
-                bridgeConfig.getProperty("aws.secret.key.consents"));
-    }
-
-    @Bean(name = "s3ConsentsClient")
-    @Resource(name = "s3ConsentsCredentials")
-    public AmazonS3Client s3ConsentsClient(BasicAWSCredentials awsCredentials) {
-        return new AmazonS3Client(awsCredentials);
-    }
-
-    @Bean(name = "s3ConsentsHelper")
-    @Resource(name = "s3ConsentsClient")
-    public S3Helper s3ConsentsHelper(AmazonS3Client s3Client) {
         S3Helper s3Helper = new S3Helper();
         s3Helper.setS3Client(s3Client);
         return s3Helper;
@@ -697,6 +636,19 @@ public class SpringConfig {
     }
     
     @Bean
+    @Profile("noinit")
+    public DataSource primaryDataSource() {
+        BridgeConfig config = bridgeConfig();
+        DriverManagerDataSource dataSource = new DriverManagerDataSource();
+        dataSource.setDriverClass("com.mysql.jdbc.Driver");
+        dataSource.setJdbcUrl(databaseURL());
+        dataSource.setUser(config.get("hibernate.connection.username"));
+        dataSource.setPassword(config.get("hibernate.connection.password"));
+        return dataSource;
+    }
+    
+    @Bean
+    @Profile("default")
     @LiquibaseDataSource
     public DataSource dataSource() {
         BridgeConfig config = bridgeConfig();
