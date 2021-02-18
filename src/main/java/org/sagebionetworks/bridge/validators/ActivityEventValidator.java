@@ -1,13 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
-
-import java.util.Set;
-
-import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 
@@ -22,11 +15,6 @@ public class ActivityEventValidator implements Validator {
     static final String EVENT_ID_IMMUTABLE_ERROR = "is immutable and cannot be changed or deleted";
     static final String ANSWER_VALUE_ERROR = "cannot be null or blank if the event indicates the answer to a survey";
     
-    private static final Set<String> IMMUTABLE_EVENTS = ImmutableSet.of(
-            ENROLLMENT.name().toLowerCase() + ":",
-            ACTIVITIES_RETRIEVED.name().toLowerCase() + ":",
-            CREATED_ON.name().toLowerCase() + ":" );
-    
     @Override
     public boolean supports(Class<?> clazz) {
         return DynamoActivityEvent.class.isAssignableFrom(clazz);
@@ -40,8 +28,6 @@ public class ActivityEventValidator implements Validator {
         
         if (eventId == null) {
             errors.rejectValue("eventId", EVENT_ID_ERROR);
-        } else if ( IMMUTABLE_EVENTS.stream().anyMatch(str -> eventId.startsWith(str))) {
-            errors.rejectValue("eventId", EVENT_ID_IMMUTABLE_ERROR);
         } else if (eventId.endsWith(":answered") && isBlank(event.getAnswerValue())) {
             errors.rejectValue("answerValue", ANSWER_VALUE_ERROR);
         }

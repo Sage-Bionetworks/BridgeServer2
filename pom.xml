@@ -11,7 +11,7 @@
     <properties>
         <apache.http.version>4.5.6</apache.http.version>
         <aws.version>1.11.944</aws.version>
-        <hibernate.version>5.2.9.Final</hibernate.version>
+        <hibernate.version>5.4.27.Final</hibernate.version>
         <jackson.version>2.10.0</jackson.version>
         <java.version>1.8</java.version>
         <logback.version>1.2.3</logback.version>
@@ -152,12 +152,6 @@
             <groupId>commons-validator</groupId>
             <artifactId>commons-validator</artifactId>
             <version>1.7</version>
-        </dependency>
-        <dependency>
-            <!-- Needed to resolve dependency conflicts for Hibernate -->
-            <groupId>dom4j</groupId>
-            <artifactId>dom4j</artifactId>
-            <version>1.6.1</version>
         </dependency>
         <dependency>
             <groupId>javax.mail</groupId>
