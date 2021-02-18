@@ -75,7 +75,7 @@ public class S3Initializer {
                     .withAllowedOrigins(ImmutableList.of("*"))
                     .withMaxAgeSeconds(3000));
     
-    private static enum BucketType {
+    public static enum BucketType {
         INTERNAL(null, null),
         INTERNAL_UPLOAD_ACCESSIBLE(null, ALLOW_PUT),
         SYNAPSE_ACCESSIBLE(SYNAPSE_ACCESS_POLICY, null),
