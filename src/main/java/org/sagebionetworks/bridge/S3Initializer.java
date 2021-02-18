@@ -105,8 +105,6 @@ public class S3Initializer {
     
     private static Map<String, BucketType> S3_BUCKET_PROP_NAMES = new ImmutableMap.Builder<String, BucketType>()
             .put("attachment.bucket", BucketType.SYNAPSE_ACCESSIBLE)
-            .put("health.data.bucket.raw", BucketType.SYNAPSE_ACCESSIBLE)
-            .put("health.data.bucket.processed", BucketType.SYNAPSE_ACCESSIBLE)
             .put("upload.bucket", BucketType.INTERNAL_UPLOAD_ACCESSIBLE)
             .put("upload.cms.cert.bucket", BucketType.INTERNAL)
             .put("upload.cms.priv.bucket", BucketType.INTERNAL)

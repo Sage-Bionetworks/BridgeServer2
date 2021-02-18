@@ -210,13 +210,6 @@ public class SpringConfig {
                 bridgeConfig.getProperty("aws.secret.key"));
     }
 
-    @Bean(name = "snsCredentials")
-    public BasicAWSCredentials snsCredentials() {
-        BridgeConfig bridgeConfig = bridgeConfig();
-        return new BasicAWSCredentials(bridgeConfig.getProperty("sns.key"),
-                bridgeConfig.getProperty("sns.secret.key"));
-    }
-    
     @Bean(name = "dynamoDbClient")
     @Resource(name = "awsCredentials")
     public AmazonDynamoDBClient dynamoDbClient() {
@@ -227,9 +220,9 @@ public class SpringConfig {
     }
     
     @Bean(name = "snsClient")
-    @Resource(name = "snsCredentials")
+    @Resource(name = "awsCredentials")
     public AmazonSNSClient snsClient() {
-        return new AmazonSNSClient(snsCredentials());
+        return new AmazonSNSClient(awsCredentials());
     }
 
     @Bean(name = "dataPipelineClient")

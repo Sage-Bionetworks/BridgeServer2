@@ -41,9 +41,6 @@ public class S3InitializerTest extends Mockito {
     ArgumentCaptor<CreateBucketRequest> requestCaptor;
     
     @Captor
-    ArgumentCaptor<String> stringCaptor;
-    
-    @Captor
     ArgumentCaptor<BucketCrossOriginConfiguration> corsConfigCaptor;
     
     @BeforeMethod
@@ -82,10 +79,9 @@ public class S3InitializerTest extends Mockito {
                 ImmutableMap.of("bucketName", BUCKET_NAME));
         
         verify(mockS3Client).createBucket(requestCaptor.capture());
-        verify(mockS3Client).setBucketPolicy(eq(BUCKET_NAME), stringCaptor.capture());
+        verify(mockS3Client).setBucketPolicy(BUCKET_NAME, resolvedPolicy);
         
         assertEquals(requestCaptor.getValue().getBucketName(), BUCKET_NAME);
-        assertEquals(resolvedPolicy, stringCaptor.getValue());
     }
     
     @Test
@@ -104,10 +100,9 @@ public class S3InitializerTest extends Mockito {
                 ImmutableMap.of("bucketName", BUCKET_NAME));
         
         verify(mockS3Client).createBucket(requestCaptor.capture());
-        verify(mockS3Client).setBucketPolicy(eq(BUCKET_NAME), stringCaptor.capture());
+        verify(mockS3Client).setBucketPolicy(BUCKET_NAME, resolvedPolicy);
         
         assertEquals(requestCaptor.getValue().getBucketName(), BUCKET_NAME);
-        assertEquals(resolvedPolicy, stringCaptor.getValue());
     }
     
     @Test
