@@ -196,8 +196,6 @@ public class AccountService {
         Account account = getAccount(accountId);
         if (account != null) {
             accountSecretDao.removeSecrets(REAUTH, account.getId());
-        } else {
-            System.out.println("####################### DID NOT FIND ACCOUNT");
         }
     }
     

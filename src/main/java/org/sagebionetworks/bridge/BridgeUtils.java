@@ -198,10 +198,6 @@ public class BridgeUtils {
         ImmutableSet.Builder<String> studyIds = new ImmutableSet.Builder<>();
         ImmutableMap.Builder<String,String> externalIds = new ImmutableMap.Builder<>();
         for (Enrollment enrollment : account.getActiveEnrollments()) {
-            
-            System.out.println("CAN_READ_STUDY_ASSOCIATIONS, studyId = " + enrollment.getStudyId() + ", userId = "
-                    + account.getId() + ", roles = " + account.getRoles());
-            
             if (CAN_READ_STUDY_ASSOCIATIONS.check(STUDY_ID, enrollment.getStudyId(), USER_ID, account.getId())) {
                 studyIds.add(enrollment.getStudyId());
                 if (enrollment.getExternalId() != null) {

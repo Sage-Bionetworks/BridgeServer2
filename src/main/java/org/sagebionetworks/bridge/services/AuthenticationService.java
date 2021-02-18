@@ -493,14 +493,11 @@ public class AuthenticationService {
         if (accountId == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         if (account.getRoles().isEmpty()) {
             throw new UnauthorizedException("Only administrative accounts can sign in via OAuth.");
         }
-        
         clearSession(authToken.getAppId(), account.getId());
         App app = appService.getApp(authToken.getAppId());
         UserSession session = getSessionFromAccount(app, context, account);

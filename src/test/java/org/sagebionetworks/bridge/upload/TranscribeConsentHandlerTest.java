@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.upload;
 
+import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -8,6 +9,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
@@ -68,8 +70,8 @@ public class TranscribeConsentHandlerTest {
         MockitoAnnotations.initMocks(this);
 
         // Set up mocks.
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(mockAccount);
-        when(participantService.getStudyStartTime(ACCOUNT_ID)).thenReturn(STUDY_START_TIME);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(mockAccount));
+        when(participantService.getStudyStartTime(mockAccount)).thenReturn(STUDY_START_TIME);
 
         // Set up input record and context. Handler expects Health Code and RecordBuilder.
         inputRecord = HealthDataRecord.create();
@@ -108,7 +110,7 @@ public class TranscribeConsentHandlerTest {
     @Test
     public void testNoParticipantOptions() {
         // account is null
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(null);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.empty());
 
         handler.handle(context);
         HealthDataRecord outputRecord = context.getHealthDataRecord();

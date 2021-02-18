@@ -56,7 +56,6 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
             // The specific error message is buried in the root MySQLIntegrityConstraintViolationException
             Throwable cause = Throwables.getRootCause(exception);
             String message = cause.getMessage();
-            System.out.println(message);
             if (message != null && entity != null) {
                 HibernateAccount account = (HibernateAccount)entity;
                 // These are the constraint violation messages. To ensure we don't log credentials, we look

@@ -206,7 +206,6 @@ public class AuthenticationController extends BaseController {
     @Deprecated
     @PostMapping("/v3/auth/signOut")
     public StatusMessage signOut() {
-        System.out.println("----> signOut");
         final UserSession session = getSessionIfItExists();
         // Always set, even if we eventually decide to return an error code when there's no session
         if (session != null) {
@@ -352,7 +351,8 @@ public class AuthenticationController extends BaseController {
             throw new BadRequestException("Account has not been assigned a Synapse user ID");
         }
         AccountId accountId = AccountId.forSynapseUserId(targetAppId, participant.getSynapseUserId());
-        Account account = accountService.getAccount(accountId);
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         if (account == null) {
             throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
         }

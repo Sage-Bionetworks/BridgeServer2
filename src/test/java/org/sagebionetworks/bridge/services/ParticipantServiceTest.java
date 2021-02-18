@@ -1111,36 +1111,33 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getStudyStartTime_FromActivitiesRetrieved() {
         // Set up mocks.
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase(), ACTIVITIES_RETRIEVED_DATETIME));
 
         // Execute and validate.
-        DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
+        DateTime result = participantService.getStudyStartTime(account);
         assertEquals(result, ACTIVITIES_RETRIEVED_DATETIME);
     }
 
     @Test
     public void getStudyStartTime_FromEnrollment() {
         // Set up mocks.
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), ENROLLMENT_DATETIME));
 
         // Execute and validate.
-        DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
+        DateTime result = participantService.getStudyStartTime(account);
         assertEquals(result, ENROLLMENT_DATETIME);
     }
 
     @Test
     public void getStudyStartTime_FromAccountCreatedOn() {
         // Set up mocks.
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         account.setCreatedOn(CREATED_ON_DATETIME);
         when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of());
 
         // Execute and validate.
-        DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
+        DateTime result = participantService.getStudyStartTime(account);
         assertEquals(result, CREATED_ON_DATETIME);
     }
 
