@@ -31,6 +31,7 @@ import static org.testng.Assert.fail;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.mockito.ArgumentCaptor;
@@ -1424,7 +1425,7 @@ public class AuthenticationServiceTest {
        when(oauthProviderService.oauthSignIn(token)).thenReturn(accountId);
        
        account.setRoles(ImmutableSet.of(DEVELOPER));
-       when(accountService.getAccount(accountId)).thenReturn(account);
+       when(accountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(account));
        
        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId("12345").build();
        when(participantService.getParticipant(any(), eq(account), eq(false))).thenReturn(participant);
@@ -1462,7 +1463,7 @@ public class AuthenticationServiceTest {
        AccountId accountId = AccountId.forSynapseUserId(TEST_APP_ID, "12345");
        when(oauthProviderService.oauthSignIn(token)).thenReturn(accountId);
        
-       when(accountService.getAccount(accountId)).thenReturn(account);
+       when(accountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(account));
        
        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId("12345").build();
        when(participantService.getParticipant(any(), eq(account), eq(false))).thenReturn(participant);

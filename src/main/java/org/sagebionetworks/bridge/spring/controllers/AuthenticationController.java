@@ -21,7 +21,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -209,10 +208,6 @@ public class AuthenticationController extends BaseController {
         final UserSession session = getSessionIfItExists();
         // Always set, even if we eventually decide to return an error code when there's no session
         if (session != null) {
-            // This does not happen in getAuthgetSessionIfItExists(), which we call to bypass some
-            // things like the consent required response. Still we need to call this in order to 
-            // find the account correctly.
-            RequestContext.updateFromSession(session, sponsorService);
             authenticationService.signOut(session);
         }
         // Servlet API has no way to delete cookies. strange but true. Set it "blank" to remove
@@ -235,10 +230,6 @@ public class AuthenticationController extends BaseController {
         response().addCookie(cookie);
         response().setHeader(CLEAR_SITE_DATA_HEADER, CLEAR_SITE_DATA_VALUE);
         if (session != null) {
-            // This does not happen in getAuthgetSessionIfItExists(), which we call to bypass some
-            // things like the consent required response. Still we need to call this in order to 
-            // find the account correctly.
-            RequestContext.updateFromSession(session, sponsorService);
             authenticationService.signOut(session);
         } else {
             throw new BadRequestException("Not signed in");
@@ -352,7 +343,7 @@ public class AuthenticationController extends BaseController {
         }
         AccountId accountId = AccountId.forSynapseUserId(targetAppId, participant.getSynapseUserId());
         Account account = accountService.getAccountNoFilter(accountId)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+                .orElseThrow(() -> new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG));
         if (account == null) {
             throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
         }

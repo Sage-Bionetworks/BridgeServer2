@@ -372,8 +372,6 @@ public class ParticipantService {
      * back to account creation time (for studies that use neither scheduling nor consent).
      */
     public DateTime getStudyStartTime(Account account) {
-        // NOTE: This doesn't take a studyId which is an issue. We want the start time for the study from which the
-        // upload came, and we don't know that.
         Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getAppId(), null, account.getHealthCode());
         DateTime activitiesRetrievedDateTime = activityMap.get(ACTIVITIES_RETRIEVED.name().toLowerCase());
         if (activitiesRetrievedDateTime != null) {

@@ -300,8 +300,10 @@ public class AccountService {
     
     /**
      * This is used when enrolling a user, since the account itself is not yet in a study
-     * that is visible to the caller. There may be similar cases where study access 
-     * permissions need to be bypassed.
+     * that is visible to the caller. Another use case for bypassing filtering is when an 
+     * unauthenticated request is in the process of authenticating the caller as the 
+     * account that is being retrieved (we have a bootstrapping issue here, since the caller
+     * has no ID and the account does). 
      */
     public Optional<Account> getAccountNoFilter(AccountId accountId) {
         checkNotNull(accountId);

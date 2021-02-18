@@ -88,26 +88,6 @@ public class AuthEvaluator {
     }
     
     /**
-     * This remains a huge loophole that we have to eliminate. We might want to
-     * verify that the study they are manipulating/reading is in their list of
-     * callerEnrolledStudies, instead of making exceptions for the empty study
-     * array.
-     */
-    /*
-    public AuthEvaluator callerConsideredGlobal() {
-        predicates.add((factMap) -> {
-            RequestContext context = RequestContext.get();
-            boolean result = context.getOrgSponsoredStudies().isEmpty();
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("callerConsideredGlobal, context.orgSponsoredStudies = " + 
-                        context.getOrgSponsoredStudies() + ", result = " + result);
-            }
-            return result;
-        });
-        return this;
-    }*/
-    
-    /**
      * The caller’s session is bound to the target app.
      */
     public AuthEvaluator isInApp() {

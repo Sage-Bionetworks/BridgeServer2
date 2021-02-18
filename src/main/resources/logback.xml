@@ -10,7 +10,7 @@
         <appender-ref ref="STDOUT" />
     </root>
 
-    <logger name="org.sagebionetworks.bridge" level="TRACE" />
+    <logger name="org.sagebionetworks.bridge" level="INFO" />
 
     <!-- Hibernate logs are noisy and they also leak email addresses. Disable this logging completely. -->
     <logger name="org.hibernate" level="OFF" />

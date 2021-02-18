@@ -11,6 +11,7 @@ import com.google.common.collect.Sets;
 
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -77,7 +78,21 @@ public class RequestContext {
         RequestContext reqContext = builder.build();
         set(reqContext);
         return reqContext;
-    }        
+    }     
+    
+    /**
+     * An unauthenticated request is becoming an authenticated request, and subsequent security
+     * checks are going to verify that the caller is operating on their own account. This method
+     * should not be called until some form of authentication occurs of the request, and it does
+     * not create a completely initialized request context. All it does it identify the caller.
+     */
+    public static RequestContext updateFromAcquiredAccount(Account account) {
+        RequestContext.Builder builder = get().toBuilder();
+        builder.withCallerUserId(account.getId());
+        RequestContext reqContext = builder.build();
+        set(reqContext);
+        return reqContext;
+    }
     
     private final String requestId;
     private final String callerAppId;

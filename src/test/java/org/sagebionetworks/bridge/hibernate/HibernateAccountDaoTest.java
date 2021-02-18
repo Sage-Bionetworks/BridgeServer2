@@ -650,7 +650,7 @@ public class HibernateAccountDaoTest extends Mockito {
                 + "acct.appId = :appId AND enrollment.studyId IN (:studies)";
         Set<String> studyIds = ImmutableSet.of("studyA", "studyB");
         try {
-            RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER))
+            RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                     .withOrgSponsoredStudies(studyIds).build());
 
             AccountSummarySearch search = new AccountSummarySearch.Builder().build();
@@ -748,7 +748,7 @@ public class HibernateAccountDaoTest extends Mockito {
                 + "enrollment.studyId IN (:studies) GROUP BY acct.id";
         
         RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of("A", "B")).build());
         
         AccountSummarySearch search = new AccountSummarySearch.Builder().build();

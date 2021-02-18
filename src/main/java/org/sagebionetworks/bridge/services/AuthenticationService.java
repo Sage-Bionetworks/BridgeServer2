@@ -297,7 +297,13 @@ public class AuthenticationService {
 
         Validate.entityThrowingException(AccountIdValidator.getInstance(type), accountId);
         
-        accountWorkflowService.resendVerificationToken(type, accountId);    
+        try {
+            accountWorkflowService.resendVerificationToken(type, accountId);    
+        } catch(EntityNotFoundException e) {
+            // Suppress this. Otherwise it reveals if the account does not exist
+            LOG.info("Resend " + type.name() + " verification for unregistered email in app '"
+                    + accountId.getAppId() + "'");
+        }        
     }
     
     public void requestResetPassword(App app, boolean isAppAdmin, SignIn signIn) throws BridgeServiceException {
@@ -435,8 +441,10 @@ public class AuthenticationService {
      */
     public UserSession getSessionFromAccount(App app, CriteriaContext context, Account account) {
         
-        // TODO: Note why this needs to happen
-        RequestContext.set(RequestContext.get().toBuilder().withCallerUserId(account.getId()).build());
+        // We are about to retrieve a participant and the security check must pass. In this case,
+        // an authenticating users is retrieving their own account, and we want the IDs to match,
+        // so account initializes the context.
+        RequestContext.updateFromAcquiredAccount(account);
         
         StudyParticipant participant = participantService.getParticipant(app, account, false);
 
@@ -495,6 +503,7 @@ public class AuthenticationService {
         }
         Account account = accountService.getAccountNoFilter(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        RequestContext.updateFromAcquiredAccount(account);
         if (account.getRoles().isEmpty()) {
             throw new UnauthorizedException("Only administrative accounts can sign in via OAuth.");
         }

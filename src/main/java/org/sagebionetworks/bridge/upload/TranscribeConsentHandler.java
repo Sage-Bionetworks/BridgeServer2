@@ -61,8 +61,9 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
             // Snap to a calendar date in the local time zone. For example, a participant has an
             // activities_retrieved with calendar date 2019-07-24. Therefore, 2019-07-24 would be day 1, 2019-07-25
             // would be day 2, etc.
-            // This must be a self call.
-            RequestContext.set(RequestContext.get().toBuilder().withCallerUserId(account.getId()).build());
+            // Note that this call must pass the isSelf() call.
+            RequestContext.updateFromAcquiredAccount(account);
+            
             DateTime studyStartTime = participantService.getStudyStartTime(account);
             LocalDate studyStartDate = studyStartTime.withZone(BridgeConstants.LOCAL_TIME_ZONE).toLocalDate();
             LocalDate todayLocalDate = DateUtils.getCurrentCalendarDateInLocalTime();
