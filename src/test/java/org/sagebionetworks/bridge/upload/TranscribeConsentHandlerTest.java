@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.upload;
 
-import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;

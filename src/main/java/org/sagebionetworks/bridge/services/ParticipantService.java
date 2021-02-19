@@ -394,7 +394,7 @@ public class ParticipantService {
         Account account = getAccountThrowingException(accountId);
 
         if (deleteReauthToken) {
-            accountService.deleteReauthToken(accountId);
+            accountService.deleteReauthToken(account);
         }
         
         cacheProvider.removeSessionByUserId(account.getId());

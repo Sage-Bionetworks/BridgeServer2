@@ -149,11 +149,7 @@ public abstract class BaseController {
         }
         final UserSession session = authenticationService.getSession(sessionToken);
         // Raise a "flag" in the request to let MetricsFilter record the metrics.
-        // not clear if this is, in some cases, intended to set the session to null.
         request().setAttribute(USER_SESSION_FLAG, session);
-        if (session != null) {
-            RequestContext.updateFromSession(session, sponsorService);    
-        }
         return session;
     }
 

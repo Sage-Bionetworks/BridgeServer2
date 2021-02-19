@@ -1178,11 +1178,8 @@ public class ParticipantServiceTest extends Mockito {
 
         // Verify
         verify(accountService).getAccount(accountId);
-        verify(accountService).deleteReauthToken(accountIdCaptor.capture());
+        verify(accountService).deleteReauthToken(account);
         verify(cacheProvider).removeSessionByUserId(ID);
-
-        assertEquals(accountIdCaptor.getValue().getAppId(), TEST_APP_ID);
-        assertEquals(accountIdCaptor.getValue().getId(), ID);
     }
 
     @Test

@@ -241,7 +241,7 @@ public class AuthenticationServiceTest {
         UserSession session = service.signIn(app, context, EMAIL_PASSWORD_SIGN_IN);
         
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
-        inOrder.verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(accountService).deleteReauthToken(account);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
         inOrder.verify(cacheProvider).setUserSession(session);
         
@@ -321,7 +321,7 @@ public class AuthenticationServiceTest {
             session = e.getUserSession();
         }
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
-        inOrder.verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(accountService).deleteReauthToken(account);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
         inOrder.verify(cacheProvider).setUserSession(session);
         
@@ -431,9 +431,12 @@ public class AuthenticationServiceTest {
         session.setAppId(TEST_APP_ID);
         session.setReauthToken(TOKEN);
         session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").withId(USER_ID).build());
+        
+        when(accountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        
         service.signOut(session);
         
-        verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        verify(accountService).deleteReauthToken(account);
         verify(cacheProvider).removeSession(session);
     }
     
@@ -462,7 +465,7 @@ public class AuthenticationServiceTest {
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
         inOrder.verify(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
         inOrder.verify(accountService).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
-        inOrder.verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(accountService).deleteReauthToken(account);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
         inOrder.verify(cacheProvider).setUserSession(retSession);
         inOrder.verify(cacheProvider).setExpiration(CACHE_KEY_EMAIL_SIGNIN,
@@ -493,7 +496,7 @@ public class AuthenticationServiceTest {
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
         inOrder.verify(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
         inOrder.verify(accountService).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
-        inOrder.verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(accountService).deleteReauthToken(account);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
         inOrder.verify(cacheProvider).setUserSession(retSession);
         inOrder.verify(cacheProvider).setExpiration(CACHE_KEY_EMAIL_SIGNIN,
@@ -822,7 +825,7 @@ public class AuthenticationServiceTest {
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
         inOrder.verify(accountService).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
         inOrder.verify(accountService).verifyChannel(ChannelType.PHONE, account);
-        inOrder.verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(accountService).deleteReauthToken(account);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
         inOrder.verify(cacheProvider).setUserSession(session);
         inOrder.verify(cacheProvider).setExpiration(CACHE_KEY_PHONE_SIGNIN,
@@ -1433,7 +1436,7 @@ public class AuthenticationServiceTest {
        UserSession session = service.oauthSignIn(CONTEXT, token);
        
        assertEquals(session.getParticipant().getSynapseUserId(), "12345");
-       verify(accountService).deleteReauthToken(ACCOUNT_ID);
+       verify(accountService).deleteReauthToken(account);
        verify(cacheProvider).removeSessionByUserId(USER_ID);
        verify(cacheProvider).setUserSession(session);
    }

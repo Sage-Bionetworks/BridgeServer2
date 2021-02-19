@@ -30,7 +30,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.SponsorService;
@@ -301,30 +300,5 @@ public class RequestContextTest extends Mockito {
         
         RequestContext threadValue = RequestContext.get();
         assertSame(retValue, threadValue);
-    }
-    
-    @Test
-    public void updateFromExternalId() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerEnrolledStudies(ImmutableSet.of("study1")).build());
-        
-        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, "anIdentifier");
-        externalId.setStudyId("study2");
-        
-        RequestContext.updateFromExternalId(externalId);
-        
-        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of("study1", "study2"));
-    }
-
-    @Test
-    public void updateFromExternalIdSkipsNull() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerEnrolledStudies(ImmutableSet.of("study1")).build());
-        
-        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, "anIdentifier");
-        
-        RequestContext.updateFromExternalId(externalId);
-        
-        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of("study1"));
     }
 }

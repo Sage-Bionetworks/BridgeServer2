@@ -190,13 +190,10 @@ public class AccountService {
     /**
      * This clears the user's reauthentication token.
      */
-    public void deleteReauthToken(AccountId accountId) {
-        checkNotNull(accountId);
+    public void deleteReauthToken(Account account) {
+        checkNotNull(account);
 
-        Account account = getAccount(accountId);
-        if (account != null) {
-            accountSecretDao.removeSecrets(REAUTH, account.getId());
-        }
+        accountSecretDao.removeSecrets(REAUTH, account.getId());
     }
     
     /**

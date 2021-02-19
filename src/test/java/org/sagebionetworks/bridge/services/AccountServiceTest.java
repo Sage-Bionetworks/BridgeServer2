@@ -64,7 +64,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSecret;
-import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -221,9 +220,11 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void deleteReauthToken() throws Exception {
-        mockGetAccountById(ACCOUNT_ID, false);
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
 
-        service.deleteReauthToken(ACCOUNT_ID);
+        service.deleteReauthToken(account);
+        
         verify(mockAccountSecretDao).removeSecrets(REAUTH, TEST_USER_ID);
     }
 
@@ -767,37 +768,6 @@ public class AccountServiceTest extends Mockito {
         Account account = service.getAccount(ACCOUNT_ID_WITH_EMAIL);
 
         assertEquals(account, persistedAccount);
-    }
-
-    @Test
-    public void deleteReauthTokenWithEmail() throws Exception {
-        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
-
-        service.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
-
-        verify(mockAccountSecretDao).removeSecrets(REAUTH, TEST_USER_ID);
-    }
-
-    @Test
-    public void deleteReauthTokenNoToken() throws Exception {
-        // Return an account with no reauth token.
-        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
-
-        // Just quietly succeeds without doing any account update.
-        service.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
-        verify(mockAccountDao, never()).updateAccount(any());
-
-        // But we do always call this.
-        verify(mockAccountSecretDao).removeSecrets(REAUTH, TEST_USER_ID);
-    }
-
-    @Test
-    public void deleteReauthTokenAccountNotFound() throws Exception {
-        // Just quietly succeeds without doing any work.
-        service.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
-
-        verify(mockAccountDao, never()).updateAccount(any());
-        verify(mockAccountSecretDao, never()).removeSecrets(AccountSecretType.REAUTH, TEST_USER_ID);
     }
 
     @Test

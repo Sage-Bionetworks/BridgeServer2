@@ -12,7 +12,6 @@ import com.google.common.collect.Sets;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.SponsorService;
@@ -63,28 +62,9 @@ public class RequestContext {
     }
     
     /**
-     * To see any new association to a study in the session that we return from the update identifiers call, 
-     * we need to allow it in the permission structure of the call, which means we need to update the request 
-     * context.
-     */
-    public static RequestContext updateFromExternalId(ExternalIdentifier externalId) {
-        RequestContext context = get();
-        RequestContext.Builder builder = context.toBuilder();
-        if (externalId.getStudyId() != null) {
-            builder.withCallerEnrolledStudies(new ImmutableSet.Builder<String>()
-                .addAll(context.getCallerEnrolledStudies())
-                .add(externalId.getStudyId()).build());
-        }
-        RequestContext reqContext = builder.build();
-        set(reqContext);
-        return reqContext;
-    }     
-    
-    /**
-     * An unauthenticated request is becoming an authenticated request, and subsequent security
-     * checks are going to verify that the caller is operating on their own account. This method
-     * should not be called until some form of authentication occurs of the request, and it does
-     * not create a completely initialized request context. All it does it identify the caller.
+     * Due mostly to code complexity, we have cases where requests need to acquire the identity 
+     * of the account they are going to manipulate. This happens on unauthenticated calls to 
+     * resent email/phone verification, for example. 
      */
     public static RequestContext acquireAccountIdentity(Account account) {
         RequestContext.Builder builder = get().toBuilder();
