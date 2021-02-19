@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
+import static org.sagebionetworks.bridge.hibernate.HibernateAccountDao.FULL_QUERY;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
@@ -18,6 +19,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 import java.util.HashMap;
 import java.util.List;
@@ -45,6 +47,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -1064,6 +1067,24 @@ public class HibernateAccountDaoTest extends Mockito {
 
         assertEquals(builder.getQuery(), finalQuery);
         assertEquals(builder.getParameters().get("studies"), ImmutableSet.of(TEST_STUDY_ID));
+    }
+    
+    @Test
+    public void researcherQueryCorrect() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyB")).build());
+        
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, 
+               new AccountSummarySearch.Builder().build(), false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct " 
+                + "LEFT JOIN acct.enrollments AS enrollment WITH acct.id = " 
+                + "enrollment.accountId WHERE acct.appId = :appId GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+        assertNull(builder.getParameters().get("studies"));
+
     }
     
     @Test

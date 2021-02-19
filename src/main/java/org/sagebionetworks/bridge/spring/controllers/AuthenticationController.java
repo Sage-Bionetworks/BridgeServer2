@@ -343,9 +343,6 @@ public class AuthenticationController extends BaseController {
         AccountId accountId = AccountId.forSynapseUserId(targetAppId, participant.getSynapseUserId());
         Account account = accountService.getAccountNoFilter(accountId)
                 .orElseThrow(() -> new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG));
-        if (account == null) {
-            throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
-        }
         
         // Make the switch
         authenticationService.signOut(session);

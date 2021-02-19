@@ -57,9 +57,8 @@ public class AuthEvaluator {
      */
     public AuthEvaluator canAccessStudy() {
         predicates.add((factMap) -> {
-            RequestContext context = RequestContext.get();
             String studyId = factMap.get(STUDY_ID);
-            return context.getOrgSponsoredStudies().contains(studyId);
+            return RequestContext.get().getOrgSponsoredStudies().contains(studyId);
         });
         return this;
     }
@@ -69,9 +68,8 @@ public class AuthEvaluator {
      */
     public AuthEvaluator isInApp() {
         predicates.add((factMap) -> {
-            RequestContext context = RequestContext.get();
             String appId = factMap.get(APP_ID);
-            return appId != null && appId.equals(context.getCallerAppId());
+            return appId != null && appId.equals(RequestContext.get().getCallerAppId());
         });
         return this;
     }
@@ -80,20 +78,10 @@ public class AuthEvaluator {
      */
     public AuthEvaluator isInOrg() {
         predicates.add((factMap) -> {
-            RequestContext context = RequestContext.get();
             String orgId = factMap.get(ORG_ID);
-            return orgId != null && orgId.equals(context.getCallerOrgMembership());
+            return orgId != null && orgId.equals(RequestContext.get().getCallerOrgMembership());
         });
         return this;
-    }
-    
-    public AuthEvaluator isEnrolledInStudy() {
-        predicates.add((factMap) -> {
-            RequestContext context = RequestContext.get();
-            String studyId = factMap.get(STUDY_ID);
-            return studyId != null && context.getCallerEnrolledStudies().contains(studyId);
-        });
-        return this;        
     }
     
     /**
@@ -101,9 +89,8 @@ public class AuthEvaluator {
      */
     public AuthEvaluator isSelf() {
         predicates.add((factMap) -> {
-            RequestContext context = RequestContext.get();
             String userId = factMap.get(USER_ID);
-            String callerUserId = context.getCallerUserId();
+            String callerUserId = RequestContext.get().getCallerUserId();
             // Calls like signUp happen without a session so there is no caller user ID in the 
             // request context. In this case, if we’re also not comparing the user ID to a 
             // known ID, allow this test to pass. This removes some special case code elsewhere

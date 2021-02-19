@@ -447,6 +447,21 @@ public class AuthenticationServiceTest {
         verify(accountService, never()).deleteReauthToken(any());
         verify(cacheProvider, never()).removeSession(any());
     }
+    
+    @Test
+    public void signOutNoAccount() {
+        UserSession session = new UserSession();
+        session.setAppId(TEST_APP_ID);
+        session.setReauthToken(TOKEN);
+        session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").withId(USER_ID).build());
+
+        when(accountService.getAccountNoFilter(any())).thenReturn(Optional.empty());
+        
+        service.signOut(session);
+        
+        verify(accountService, never()).deleteReauthToken(any());
+        verify(cacheProvider, never()).removeSession(any());
+    }
 
     @Test
     public void emailSignIn() {
@@ -1324,8 +1339,23 @@ public class AuthenticationServiceTest {
     }
 
     @Test
-    public void getSession() {
-        service.getSession(TOKEN);
+    public void getSessionSucceeds() {
+        UserSession session = new UserSession();
+        when(cacheProvider.getUserSession(TOKEN)).thenReturn(session);
+        
+        UserSession retValue = service.getSession(TOKEN);
+        assertEquals(retValue, session);
+        
+        verify(cacheProvider).getUserSession(TOKEN);
+    }
+    
+    @Test
+    public void getSessionFails() {
+        when(cacheProvider.getUserSession(TOKEN)).thenReturn(null);
+        
+        UserSession retValue = service.getSession(TOKEN);
+        assertNull(retValue);
+        
         verify(cacheProvider).getUserSession(TOKEN);
     }
     

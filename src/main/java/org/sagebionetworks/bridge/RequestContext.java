@@ -125,7 +125,7 @@ public class RequestContext {
         return callerRoles;
     }
     public boolean isAdministrator() { 
-        return callerRoles != null && !callerRoles.isEmpty();
+        return !callerRoles.isEmpty();
     }
     public boolean isInRole(Roles... roles) {
         return AuthUtils.isInRole(callerRoles, Sets.newHashSet(roles));
