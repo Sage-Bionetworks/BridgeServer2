@@ -444,7 +444,7 @@ public class AuthenticationService {
         // We are about to retrieve a participant and the security check must pass. In this case,
         // an authenticating users is retrieving their own account, and we want the IDs to match,
         // so account initializes the context.
-        RequestContext.updateFromAcquiredAccount(account);
+        RequestContext.acquireAccountIdentity(account);
         
         StudyParticipant participant = participantService.getParticipant(app, account, false);
 
@@ -503,7 +503,7 @@ public class AuthenticationService {
         }
         Account account = accountService.getAccountNoFilter(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        RequestContext.updateFromAcquiredAccount(account);
+        RequestContext.acquireAccountIdentity(account);
         if (account.getRoles().isEmpty()) {
             throw new UnauthorizedException("Only administrative accounts can sign in via OAuth.");
         }

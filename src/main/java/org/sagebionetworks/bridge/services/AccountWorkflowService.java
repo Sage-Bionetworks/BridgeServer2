@@ -254,7 +254,7 @@ public class AccountWorkflowService {
         App app = appService.getApp(accountId.getAppId());
         Account account = accountService.getAccountNoFilter(accountId).orElse(null);
         if (account != null) {
-            // RequestContext.updateFromAcquiredAccount(account);
+            RequestContext.acquireAccountIdentity(account);
             
             if (type == ChannelType.EMAIL) {
                 sendEmailVerificationToken(app, account.getId(), account.getEmail());

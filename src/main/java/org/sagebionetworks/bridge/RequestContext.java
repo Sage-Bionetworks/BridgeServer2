@@ -86,7 +86,7 @@ public class RequestContext {
      * should not be called until some form of authentication occurs of the request, and it does
      * not create a completely initialized request context. All it does it identify the caller.
      */
-    public static RequestContext updateFromAcquiredAccount(Account account) {
+    public static RequestContext acquireAccountIdentity(Account account) {
         RequestContext.Builder builder = get().toBuilder();
         builder.withCallerUserId(account.getId());
         RequestContext reqContext = builder.build();

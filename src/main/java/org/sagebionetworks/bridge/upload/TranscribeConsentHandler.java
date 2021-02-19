@@ -62,7 +62,7 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
             // activities_retrieved with calendar date 2019-07-24. Therefore, 2019-07-24 would be day 1, 2019-07-25
             // would be day 2, etc.
             // Note that this call must pass the isSelf() call.
-            RequestContext.updateFromAcquiredAccount(account);
+            RequestContext.acquireAccountIdentity(account);
             
             DateTime studyStartTime = participantService.getStudyStartTime(account);
             LocalDate studyStartDate = studyStartTime.withZone(BridgeConstants.LOCAL_TIME_ZONE).toLocalDate();
