@@ -263,7 +263,6 @@ public class AuthenticationController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage resendEmailVerification() {
         AccountId accountId = parseJson(AccountId.class);
-        
         getAppOrThrowException(accountId.getUnguardedAccountId().getAppId());
         
         authenticationService.resendVerification(ChannelType.EMAIL, accountId);

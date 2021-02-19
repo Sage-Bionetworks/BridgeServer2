@@ -248,7 +248,7 @@ public class AuthenticationService {
     public void signOut(final UserSession session) {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
-            Account account = accountService.getAccountNoFilter(accountId).orElseGet(null);
+            Account account = accountService.getAccountNoFilter(accountId).orElse(null);
             if (account != null) {
                 accountService.deleteReauthToken(account);
                 // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
@@ -303,14 +303,13 @@ public class AuthenticationService {
         checkNotNull(accountId);
 
         Validate.entityThrowingException(AccountIdValidator.getInstance(type), accountId);
-        
         try {
             accountWorkflowService.resendVerificationToken(type, accountId);    
         } catch(EntityNotFoundException e) {
             // Suppress this. Otherwise it reveals if the account does not exist
             LOG.info("Resend " + type.name() + " verification for unregistered email in app '"
                     + accountId.getAppId() + "'");
-        }        
+        }
     }
     
     public void requestResetPassword(App app, boolean isAppAdmin, SignIn signIn) throws BridgeServiceException {
@@ -449,8 +448,8 @@ public class AuthenticationService {
     public UserSession getSessionFromAccount(App app, CriteriaContext context, Account account) {
         
         // We are about to retrieve a participant and the security check must pass. In this case,
-        // an authenticating users is retrieving their own account, and we want the IDs to match,
-        // so account initializes the context.
+        // an authenticating user is retrieving their own account, and we want the IDs to match
+        // during the authentication check.
         RequestContext.acquireAccountIdentity(account);
         
         StudyParticipant participant = participantService.getParticipant(app, account, false);
