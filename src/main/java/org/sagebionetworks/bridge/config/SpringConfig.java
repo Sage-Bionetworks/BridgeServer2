@@ -85,6 +85,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoNamingHelper;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
 import org.sagebionetworks.bridge.dynamodb.DynamoOAuthAccessGrant;
+import org.sagebionetworks.bridge.dynamodb.DynamoParticipantData;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -330,6 +331,12 @@ public class SpringConfig {
     @Autowired
     public DynamoDBMapper reportDataMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoReportData.class);
+    }
+
+    @Bean(name = "participantDataMapper")
+    @Autowired
+    public DynamoDBMapper participantDataMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper((DynamoParticipantData.class));
     }
     
     @Bean(name = "reportIndexMapper")
