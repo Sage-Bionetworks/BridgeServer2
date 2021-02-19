@@ -23,7 +23,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dynamodb.AnnotationBasedTableCreator;
 import org.sagebionetworks.bridge.dynamodb.DynamoInitializer;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -49,7 +48,13 @@ public class DefaultStudyBootstrapperTest extends Mockito {
     AnnotationBasedTableCreator mockTableCreator; 
     
     @Mock
-    DynamoInitializer mockDynamoInitializer; 
+    DynamoInitializer mockDynamoInitializer;
+    
+    @Mock
+    S3Initializer mockS3Initializer;
+    
+    @Mock
+    BridgeConfig mockBridgeConfig;
 
     @InjectMocks
     DefaultAppBootstrapper defaultStudyBootstrapper;
@@ -65,13 +70,31 @@ public class DefaultStudyBootstrapperTest extends Mockito {
     
     @BeforeMethod
     public void before() {
+        // The boostrapper doesn't seem to fully initialize between test methods. It 
+        // might be due to the constructor-based dependency injection. Nulling the 
+        // field forces full re-initialization
+        defaultStudyBootstrapper = null;
         MockitoAnnotations.initMocks(this);
+        
         when(mockAppService.getApp(any(String.class))).thenThrow(EntityNotFoundException.class);
         when(mockAppService.createApp(any())).thenAnswer(invocation -> invocation.getArgument(0));
+    }
+    
+    @Test
+    public void callsS3Initialization() {
+        defaultStudyBootstrapper.onApplicationEvent(null);
+        verify(mockS3Initializer).initBuckets();
     }
 
     @Test
     public void createsDefaultStudyWhenMissing() {
+        when(mockBridgeConfig.get("admin.email")).thenReturn("admin@email");
+        when(mockBridgeConfig.get("admin.password")).thenReturn("adminPassword");
+        when(mockBridgeConfig.get("api.developer.email")).thenReturn("dev@email");
+        when(mockBridgeConfig.get("api.developer.password")).thenReturn("devPassword");
+        when(mockBridgeConfig.get("shared.developer.email")).thenReturn("shared@email");
+        when(mockBridgeConfig.get("shared.developer.password")).thenReturn("sharedPassword");
+
         defaultStudyBootstrapper.onApplicationEvent(null);
 
         verify(mockAppService, times(2)).createApp(appCaptor.capture());
@@ -107,8 +130,6 @@ public class DefaultStudyBootstrapperTest extends Mockito {
             assertEquals(e.getErrors().get("resetPasswordTemplate").size(), 1);
         }
         
-        BridgeConfig config = BridgeConfigFactory.getConfig();
-        
         verify(mockUserAdminService, times(3)).createUser(any(), participantCaptor.capture(),
                 subpopCaptor.capture(), eq(false), eq(false));
         
@@ -122,17 +143,17 @@ public class DefaultStudyBootstrapperTest extends Mockito {
         
         StudyParticipant admin = participantCaptor.getAllValues().get(0);
         assertEquals(admin.getRoles(), ImmutableSet.of(SUPERADMIN));
-        assertEquals(admin.getEmail(), config.get("admin.email"));
-        assertEquals(admin.getPassword(), config.get("admin.password"));
+        assertEquals(admin.getEmail(), "admin@email");
+        assertEquals(admin.getPassword(), "adminPassword");
         
         StudyParticipant apiDev = participantCaptor.getAllValues().get(1);
         assertEquals(apiDev.getRoles(), ImmutableSet.of(DEVELOPER));
-        assertEquals(apiDev.getEmail(), config.get("api.developer.email"));
-        assertEquals(apiDev.getPassword(), config.get("api.developer.password"));
+        assertEquals(apiDev.getEmail(), "dev@email");
+        assertEquals(apiDev.getPassword(), "devPassword");
         
         StudyParticipant sharedDev = participantCaptor.getAllValues().get(2);
         assertEquals(sharedDev.getRoles(), ImmutableSet.of(DEVELOPER));
-        assertEquals(sharedDev.getEmail(), config.get("shared.developer.email"));
-        assertEquals(sharedDev.getPassword(), config.get("shared.developer.password"));
+        assertEquals(sharedDev.getEmail(), "shared@email");
+        assertEquals(sharedDev.getPassword(), "sharedPassword");
     }
 }

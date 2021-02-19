@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_DEV;
-import static org.sagebionetworks.bridge.AuthUtils.IS_COORD_OR_ORGADMIN;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_UPDATE_STUDIES;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDIES;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
@@ -69,7 +69,7 @@ public class StudyController extends BaseController {
     public Study getStudy(@PathVariable String id) {
         UserSession session = getAdministrativeSession();
         
-        IS_COORD_OR_ORGADMIN.checkAndThrow(STUDY_ID, id);
+        CAN_READ_STUDIES.checkAndThrow(STUDY_ID, id);
         
         return service.getStudy(session.getAppId(), id, true);
     }
@@ -78,7 +78,7 @@ public class StudyController extends BaseController {
     public VersionHolder updateStudy(@PathVariable String id) {
         UserSession session = getAdministrativeSession();
         
-        IS_COORD_OR_DEV.checkAndThrow(STUDY_ID, id);
+        CAN_UPDATE_STUDIES.checkAndThrow(STUDY_ID, id);
 
         Study study = parseJson(Study.class);
         return service.updateStudy(session.getAppId(), study);

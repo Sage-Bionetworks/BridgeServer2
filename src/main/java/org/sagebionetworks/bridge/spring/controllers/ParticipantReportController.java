@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
-import static org.sagebionetworks.bridge.AuthUtils.IS_SELF_OR_RESEARCHER;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
@@ -129,7 +129,7 @@ public class ParticipantReportController extends BaseController {
             @PathVariable String identifier, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate) {
         UserSession session = getAdministrativeSession();
-        IS_SELF_OR_RESEARCHER.checkAndThrow(USER_ID, userId);
+        CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
         
         return getParticipantReportInternal(session.getAppId(), userId, identifier, startDate, endDate);
     }
@@ -163,7 +163,7 @@ public class ParticipantReportController extends BaseController {
             @RequestParam(required = false) String endTime, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) {
         UserSession session = getAdministrativeSession();
-        IS_SELF_OR_RESEARCHER.checkAndThrow(USER_ID, userId);
+        CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
         
         return getParticipantReportInternalV4(session.getAppId(), userId, identifier, 
                 startTime, endTime, offsetKey, pageSize);
@@ -204,7 +204,7 @@ public class ParticipantReportController extends BaseController {
     public StatusMessage saveParticipantReport(@PathVariable String userId, @PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         App app = appService.getApp(session.getAppId());
-        
+
         Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
