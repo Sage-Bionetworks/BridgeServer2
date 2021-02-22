@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.hibernate.HibernateStudyDao.FROM_PHRASE;
+import static org.sagebionetworks.bridge.hibernate.HibernateStudyDao.SELECT_PHRASE;
 import static org.testng.Assert.assertEquals;
 
 import java.util.Map;
@@ -64,7 +66,7 @@ public class HibernateStudyDaoTest extends Mockito {
         verify(hibernateHelper).queryGet(queryCaptor.capture(), paramsCaptor.capture(), 
                 eq(5), eq(10), eq(HibernateStudy.class));
         
-        assertEquals(queryCaptor.getValue(), "from HibernateStudy as study where appId = :appId");
+        assertEquals(queryCaptor.getValue(), SELECT_PHRASE + FROM_PHRASE);
         Map<String,Object> parameters = paramsCaptor.getValue();
         assertEquals(parameters.get("appId"), TEST_APP_ID);
     }
@@ -82,8 +84,7 @@ public class HibernateStudyDaoTest extends Mockito {
         verify(hibernateHelper).queryGet(queryCaptor.capture(), paramsCaptor.capture(), 
                 eq(0), eq(100), eq(HibernateStudy.class));
         
-        assertEquals(queryCaptor.getValue(),
-                "from HibernateStudy as study where appId = :appId and deleted != 1");
+        assertEquals(queryCaptor.getValue(), SELECT_PHRASE + FROM_PHRASE + " and deleted != 1");
         Map<String,Object> parameters = paramsCaptor.getValue();
         assertEquals(parameters.get("appId"), TEST_APP_ID);
     }

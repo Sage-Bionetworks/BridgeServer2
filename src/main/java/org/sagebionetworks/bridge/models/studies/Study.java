@@ -4,6 +4,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.hibernate.HibernateStudy;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
 @JsonDeserialize(as=HibernateStudy.class)
@@ -30,6 +31,9 @@ public interface Study extends BridgeEntity {
     
     DateTime getModifiedOn();
     void setModifiedOn(DateTime modifiedOn);
+    
+    JsonNode getClientData();
+    void setClientData(JsonNode clientData);
     
     Long getVersion();
     void setVersion(Long version);

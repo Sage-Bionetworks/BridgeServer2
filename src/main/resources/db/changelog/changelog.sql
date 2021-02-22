@@ -428,3 +428,10 @@ MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','ORG_ADMIN','WORKER',
 
 ALTER TABLE `AccountRoles`
 MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','ORG_ADMIN','WORKER','SUPERADMIN','STUDY_COORDINATOR') NOT NULL;
+
+-- changeset bridge:24
+
+ALTER TABLE `Substudies`
+ADD COLUMN `clientData` mediumtext COLLATE utf8_unicode_ci;
+
+
