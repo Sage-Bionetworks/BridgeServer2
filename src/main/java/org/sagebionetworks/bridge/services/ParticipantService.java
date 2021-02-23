@@ -27,11 +27,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.SendMessageResult;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,6 +97,14 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class ParticipantService {
     private static final Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
+    static final String CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL = "udd.sqs.queue.url"; //TODO this isn't right but need placeholder
+    static final String REQUEST_KEY_BODY = "body";
+    static final String REQUEST_KEY_SERVICE = "service";
+    static final String REQUEST_KEY_APP_ID = "appId";
+    static final String REQUEST_KEY_USER_ID = "userId";
+    static final String REQUEST_KEY_PASSWORD = "password";
+    static final String REQUEST_KEY_STUDY_ID = "studyId";
+    static final String DOWNLOAD_ROSTER_SERVICE_TITLE = "DownloadParticipantRosterWorker";
 
     private AccountService accountService;
 
@@ -120,6 +135,10 @@ public class ParticipantService {
     private OrganizationService organizationService;
     
     private EnrollmentService enrollmentService;
+
+    private BridgeConfig bridgeConfig;
+
+    private AmazonSQSClient sqsClient;
 
     @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -823,6 +842,31 @@ public class ParticipantService {
         }
         // return updated StudyParticipant to update and return session
         return getParticipant(app, account.getId(), false);
+    }
+
+    // TODO check that password matches these requirements:
+    // TODO at least 8 characters, at least 1 upper case, 1 lower case, and 1 number
+    public void downloadParticipantRoster(String appId, String userId, String password) throws JsonProcessingException {
+        ObjectMapper jsonObjectMapper = new ObjectMapper();
+
+        // wrap message as nested json node
+        ObjectNode requestNode = jsonObjectMapper.createObjectNode();
+        requestNode.put(REQUEST_KEY_APP_ID, appId);
+        requestNode.put(REQUEST_KEY_USER_ID, userId);
+        requestNode.put(REQUEST_KEY_PASSWORD, password);
+        // requestNode.put(REQUEST_KEY_STUDY_ID, studyId); TODO stretch goal
+
+        ObjectNode requestMsg = jsonObjectMapper.createObjectNode();
+        requestMsg.put(REQUEST_KEY_SERVICE, DOWNLOAD_ROSTER_SERVICE_TITLE);
+        requestMsg.set(REQUEST_KEY_BODY, requestNode);
+
+        String requestJson = jsonObjectMapper.writeValueAsString(requestMsg);
+
+        // sent to SQS
+        String queueUrl = bridgeConfig.getProperty(CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL); //TODO ask about the url
+        SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJson);
+        LOG.info("Sent request to SQS for userId=" + userId + ", app=" + appId +
+                "; receipted message ID=" + sqsResult.getMessageId());
     }
     
     private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {

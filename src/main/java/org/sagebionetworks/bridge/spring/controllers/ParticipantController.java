@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -601,6 +602,24 @@ public class ParticipantController extends BaseController {
         
         participantService.sendSmsMessage(app, userId, template);
         return new StatusMessage("Message sent.");
+    }
+
+    @PostMapping("/v3/participants/emailRoster")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public StatusMessage downloadParticipantRosterForWorker() {
+        UserSession session = getAuthenticatedSession(WORKER);
+        String appId = session.getAppId();
+
+        StudyParticipant participant = session.getParticipant();
+        if (!participant.getEmailVerified() && !participant.getPhoneVerified()) {
+            throw new BadRequestException("Cannot request user data, ");
+        }
+
+        // participant service logic
+
+        return new StatusMessage("Download initiated.");
+        // TODO once I understand what's going on better, I'll be able to return a more meaningful message.
+        // TODO "Download complete." ?? Don't know yet.
     }
     
     private JsonNode getParticipantsInternal(App app, String offsetByString, String pageSizeString,
