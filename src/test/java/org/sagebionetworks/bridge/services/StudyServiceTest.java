@@ -226,7 +226,7 @@ public class StudyServiceTest {
         assertNotEquals(persisted.getCreatedOn(), timestamp);
         assertNotEquals(persisted.getModifiedOn(), timestamp);
         
-        verify(sponsorService).addStudySponsor(TEST_APP_ID, "oneId", TEST_ORG_ID);
+        verify(sponsorService).createStudyWithSponsorship(TEST_APP_ID, "oneId", TEST_ORG_ID);
     }
     
     @Test
