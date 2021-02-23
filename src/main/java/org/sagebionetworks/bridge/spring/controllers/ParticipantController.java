@@ -606,7 +606,7 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/emailRoster")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public StatusMessage downloadParticipantRosterForWorker() {
+    public StatusMessage downloadParticipantRosterForWorker() throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(WORKER);
         String appId = session.getAppId();
 
@@ -615,11 +615,11 @@ public class ParticipantController extends BaseController {
             throw new BadRequestException("Cannot request user data, ");
         }
 
-        // participant service logic
+        String password = parseJson(String.class); // TODO placeholder; this ain't right
+        participantService.downloadParticipantRoster(appId, session.getId(), password);
 
         return new StatusMessage("Download initiated.");
-        // TODO once I understand what's going on better, I'll be able to return a more meaningful message.
-        // TODO "Download complete." ?? Don't know yet.
+        // TODO or return Download complete? More meaningful message
     }
     
     private JsonNode getParticipantsInternal(App app, String offsetByString, String pageSizeString,
