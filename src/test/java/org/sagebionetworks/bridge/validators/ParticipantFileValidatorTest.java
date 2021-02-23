@@ -23,6 +23,8 @@ public class ParticipantFileValidatorTest {
     public void fileIdRequired() {
         ParticipantFile file = ParticipantFile.create();
         file.setUserId("user");
+        file.setMimeType("dummy");
+        file.setAppId("api");
 
         assertValidatorMessage(INSTANCE, file, "fileId", "is required");
     }
@@ -32,6 +34,7 @@ public class ParticipantFileValidatorTest {
         ParticipantFile file = ParticipantFile.create();
         file.setUserId("user");
         file.setFileId("file");
+        file.setMimeType("dummy");
 
         assertValidatorMessage(INSTANCE, file, "appId", "is required");
     }
@@ -40,8 +43,19 @@ public class ParticipantFileValidatorTest {
     public void userIdRequired() {
         ParticipantFile file = ParticipantFile.create();
         file.setFileId("file");
+        file.setMimeType("dummy");
         file.setAppId("api");
 
         assertValidatorMessage(INSTANCE, file, "userId", "is required");
+    }
+    
+    @Test
+    public void mimeTypeRequired() {
+        ParticipantFile file = ParticipantFile.create();
+        file.setUserId("user");
+        file.setFileId("file");
+        file.setAppId("api");
+
+        assertValidatorMessage(INSTANCE, file, "mimeType", "is required");
     }
 }

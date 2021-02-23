@@ -104,7 +104,7 @@ public class DynamoParticipantDataDaoTest extends Mockito {
 
         Condition expectedRangeKeyCondition = new Condition().withComparisonOperator(ComparisonOperator.GE)
                 .withAttributeValueList(new AttributeValue().withS(OFFSET_KEY));
-        Condition actualRangeKeyCondition = query.getRangeKeyConditions().get("offsetKey");
+        Condition actualRangeKeyCondition = query.getRangeKeyConditions().get("identifier");
         assertEquals(actualRangeKeyCondition.getAttributeValueList().size(), 1);
         assertEquals(actualRangeKeyCondition, expectedRangeKeyCondition);
     }

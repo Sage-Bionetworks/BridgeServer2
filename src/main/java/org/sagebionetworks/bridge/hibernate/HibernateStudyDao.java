@@ -21,6 +21,12 @@ import com.google.common.collect.ImmutableMap;
 
 @Component
 public class HibernateStudyDao implements StudyDao {
+    
+    static final String COUNT_PHRASE = "select count(*) ";
+    static final String SELECT_PHRASE = "select new org.sagebionetworks.bridge.hibernate."
+            + "HibernateStudy(study.name, study.identifier, study.appId, study.deleted) ";
+    static final String FROM_PHRASE = "from HibernateStudy as study where appId = :appId"; 
+    
     private HibernateHelper hibernateHelper;
     
     @Resource(name = "studyHibernateHelper")
@@ -34,21 +40,20 @@ public class HibernateStudyDao implements StudyDao {
         checkNotNull(appId);
         
         QueryBuilder builder = new QueryBuilder();
-        builder.append("from HibernateStudy as study where appId = :appId", "appId", appId);
+        builder.append(FROM_PHRASE, "appId", appId);
         if (studyIds != null && !studyIds.isEmpty()) {
             builder.append("and identifier in (:studies)", "studies", studyIds);
         }
         if (!includeDeleted) {
             builder.append("and deleted != 1");
         }
-        int total = hibernateHelper.queryCount("select count(*) " + 
-                builder.getQuery(), builder.getParameters());
+        int total = hibernateHelper.queryCount(COUNT_PHRASE + builder.getQuery(), builder.getParameters());
         
-        List<HibernateStudy> hibStudies = hibernateHelper.queryGet(builder.getQuery(), 
+        List<HibernateStudy> hibStudies = hibernateHelper.queryGet(SELECT_PHRASE + builder.getQuery(), 
                 builder.getParameters(), offsetBy, pageSize, HibernateStudy.class);
         List<Study> studies = ImmutableList.copyOf(hibStudies);
         
-        return new PagedResourceList<>(studies, total);
+        return new PagedResourceList<>(studies, total, true);
     }
 
     @Override

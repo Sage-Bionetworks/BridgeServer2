@@ -4,6 +4,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -29,15 +30,19 @@ public class HibernateStudyTest {
         study.setDeleted(true);
         study.setCreatedOn(CREATED_ON);
         study.setModifiedOn(MODIFIED_ON);
+        study.setClientData(TestUtils.getClientData());
         study.setVersion(3L);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        assertEquals(node.size(), 7);
+        assertEquals(node.size(), 8);
         assertEquals(node.get("identifier").textValue(), "oneId");
         assertEquals(node.get("name").textValue(), "name");
         assertTrue(node.get("deleted").booleanValue());
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("modifiedOn").textValue(), MODIFIED_ON.toString());
+        assertTrue(node.get("clientData").get("booleanFlag").booleanValue());
+        assertEquals(node.get("clientData").get("stringValue").textValue(), "testString");
+        assertEquals(node.get("clientData").get("intValue").intValue(), 4);
         assertEquals(node.get("version").longValue(), 3L);
         assertEquals(node.get("type").textValue(), "Study");
         assertNull(node.get("studyId"));
@@ -50,6 +55,11 @@ public class HibernateStudyTest {
         assertEquals(deser.getCreatedOn(), CREATED_ON);
         assertEquals(deser.getModifiedOn(), MODIFIED_ON);
         assertEquals(deser.getVersion(), new Long(3));
+        
+        JsonNode deserClientData = deser.getClientData();
+        assertTrue(deserClientData.get("booleanFlag").booleanValue());
+        assertEquals(deserClientData.get("stringValue").textValue(), "testString");
+        assertEquals(deserClientData.get("intValue").intValue(), 4);
 
         ((ObjectNode)node).remove("id");
         ((ObjectNode)node).put("identifier", "oneId");
