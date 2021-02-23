@@ -38,12 +38,11 @@ public class DynamoParticipantDataTest {
 
         assertNull(node.get("userId"));
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
-        assertEquals(new Long(node.get("version").longValue()), VERSION);
         assertTrue(node.get("data").get("a").booleanValue());
         assertEquals(node.get("data").get("b").textValue(), "string");
         assertEquals(node.get("data").get("c").intValue(), 10);
         assertEquals(node.get("type").textValue(), "ParticipantData");
-        assertEquals(node.size(), 4);
+        assertEquals(node.size(), 3);
 
         ParticipantData deser = MAPPER.readValue(json, ParticipantData.class);
         assertTrue(deser.getData().get("a").asBoolean());

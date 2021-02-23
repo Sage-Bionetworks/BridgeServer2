@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.models.studies.StudyId;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
 
 @Entity
 @Table(name = "Substudies")
@@ -32,8 +33,26 @@ public class HibernateStudy implements Study {
     private DateTime createdOn;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime modifiedOn;
+    @Column(columnDefinition = "mediumtext", name = "clientData", nullable = true)
+    @Convert(converter = JsonNodeAttributeConverter.class)
+    private JsonNode clientData;
     @Version
     private Long version;
+    
+    /**
+     * For full construction of object by Hibernate.
+     */
+    public HibernateStudy() {}
+    
+    /**
+     * For partial construction of object by Hibernate, excluding expensive fields like clientData.
+     */
+    public HibernateStudy(String name, String identifier, String appId, boolean deleted) {
+        this.name = name;
+        this.identifier = identifier;
+        this.appId = appId;
+        this.deleted = deleted;
+    }
     
     @Override
     @JsonAlias("id")
@@ -77,10 +96,20 @@ public class HibernateStudy implements Study {
     }
     
     @Override
+    public JsonNode getClientData() {
+        return clientData;
+    }
+    
+    @Override
+    public void setClientData(JsonNode clientData) {
+        this.clientData = clientData;
+    }
+    
+    @Override
     public Long getVersion() {
         return version;
     }
-
+    
     @Override
     public void setVersion(Long version) {
         this.version = version;
