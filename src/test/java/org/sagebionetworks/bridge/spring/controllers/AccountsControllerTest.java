@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
@@ -212,7 +211,7 @@ public class AccountsControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -226,7 +225,7 @@ public class AccountsControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         session.setParticipant(new StudyParticipant.Builder().withOrgMembership(TEST_ORG_ID).build());
         
@@ -278,7 +277,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -296,7 +295,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -314,7 +313,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -331,7 +330,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -347,7 +346,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
@@ -363,7 +362,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);

@@ -101,14 +101,14 @@ public class AccountsController extends BaseController  {
     
     @GetMapping("/v1/accounts/{userId}")
     public Account getAccount(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         return verifyOrgAdminIsActingOnOrgMember(session, userId);
     }
     
     @PostMapping("/v1/accounts/{userId}")
     public StatusMessage updateAccount(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         Account account = verifyOrgAdminIsActingOnOrgMember(session, userId);
         App app = appService.getApp(session.getAppId());
@@ -145,7 +145,7 @@ public class AccountsController extends BaseController  {
             produces = { APPLICATION_JSON_UTF8_VALUE })
     public String getRequestInfo(@PathVariable String userId) 
             throws JsonProcessingException {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         verifyOrgAdminIsActingOnOrgMember(session, userId);
         
@@ -161,7 +161,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/requestResetPassword")
     @ResponseStatus(code = ACCEPTED)
     public StatusMessage requestResetPassword(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         verifyOrgAdminIsActingOnOrgMember(session, userId);
 
@@ -174,7 +174,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/resendEmailVerification")
     @ResponseStatus(code = ACCEPTED)
     public StatusMessage resendEmailVerification(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         verifyOrgAdminIsActingOnOrgMember(session, userId);
 
@@ -187,7 +187,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/resendPhoneVerification")
     @ResponseStatus(code = ACCEPTED)
     public StatusMessage resendPhoneVerification(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         verifyOrgAdminIsActingOnOrgMember(session, userId);
 
@@ -215,7 +215,7 @@ public class AccountsController extends BaseController  {
     @PostMapping("/v1/accounts/{userId}/signOut")
     public StatusMessage signOut(@PathVariable String userId,
             @RequestParam(required = false) boolean deleteReauthToken) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         verifyOrgAdminIsActingOnOrgMember(session, userId);
 
