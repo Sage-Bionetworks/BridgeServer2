@@ -409,6 +409,14 @@ public class ParticipantControllerTest extends Mockito {
         verify(mockParticipantService).getParticipant(app, "aUser", true);
     }
     
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getParticipantDeveloperIsNotSelf() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
+
+        controller.getParticipant("aUser", true);
+    }
+    
     @Test
     public void getParticipantWithNoHealthCode() throws Exception {
         app.setHealthCodeExportEnabled(false);

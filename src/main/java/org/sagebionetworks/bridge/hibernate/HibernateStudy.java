@@ -47,11 +47,12 @@ public class HibernateStudy implements Study {
     /**
      * For partial construction of object by Hibernate, excluding expensive fields like clientData.
      */
-    public HibernateStudy(String name, String identifier, String appId, boolean deleted) {
+    public HibernateStudy(String name, String identifier, String appId, boolean deleted, Long version) {
         this.name = name;
         this.identifier = identifier;
         this.appId = appId;
         this.deleted = deleted;
+        this.version = version;
     }
     
     @Override

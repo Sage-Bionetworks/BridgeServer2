@@ -24,7 +24,7 @@ public class HibernateStudyDao implements StudyDao {
     
     static final String COUNT_PHRASE = "select count(*) ";
     static final String SELECT_PHRASE = "select new org.sagebionetworks.bridge.hibernate."
-            + "HibernateStudy(study.name, study.identifier, study.appId, study.deleted) ";
+            + "HibernateStudy(study.name, study.identifier, study.appId, study.deleted, study.version) ";
     static final String FROM_PHRASE = "from HibernateStudy as study where appId = :appId"; 
     
     private HibernateHelper hibernateHelper;
@@ -41,7 +41,7 @@ public class HibernateStudyDao implements StudyDao {
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(FROM_PHRASE, "appId", appId);
-        if (studyIds != null && !studyIds.isEmpty()) {
+        if (studyIds != null) {
             builder.append("and identifier in (:studies)", "studies", studyIds);
         }
         if (!includeDeleted) {

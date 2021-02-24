@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyId;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 public class HibernateStudyDaoTest extends Mockito {
     private static final PagedResourceList<HibernateStudy> STUDIES = new PagedResourceList<>(
@@ -89,6 +90,44 @@ public class HibernateStudyDaoTest extends Mockito {
         assertEquals(parameters.get("appId"), TEST_APP_ID);
     }
     
+    @Test
+    public void getStudiesWithStudyScoping() {
+        when(hibernateHelper.queryGet(any(), any(), eq(5), eq(10), eq(HibernateStudy.class)))
+            .thenReturn(STUDIES.getItems());
+        when(hibernateHelper.queryCount(any(), any())).thenReturn(10);
+        
+        PagedResourceList<Study> list = dao.getStudies(TEST_APP_ID, ImmutableSet.of("studyA"), 5, 10, true);
+        assertEquals(list.getItems(), STUDIES.getItems());
+        assertEquals(list.getTotal(), (Integer)10);
+        
+        verify(hibernateHelper).queryGet(queryCaptor.capture(), paramsCaptor.capture(), 
+                eq(5), eq(10), eq(HibernateStudy.class));
+        
+        assertEquals(queryCaptor.getValue(), SELECT_PHRASE + FROM_PHRASE + " and identifier in (:studies)");
+        Map<String,Object> parameters = paramsCaptor.getValue();
+        assertEquals(parameters.get("appId"), TEST_APP_ID);
+        assertEquals(parameters.get("studies"), ImmutableSet.of("studyA"));
+    }
+    
+    @Test
+    public void getStudiesWithEmptyStudyScoping() {
+        when(hibernateHelper.queryGet(any(), any(), eq(5), eq(10), eq(HibernateStudy.class)))
+            .thenReturn(STUDIES.getItems());
+        when(hibernateHelper.queryCount(any(), any())).thenReturn(10);
+        
+        PagedResourceList<Study> list = dao.getStudies(TEST_APP_ID, ImmutableSet.of(), 5, 10, true);
+        assertEquals(list.getItems(), STUDIES.getItems());
+        assertEquals(list.getTotal(), (Integer)10);
+        
+        verify(hibernateHelper).queryGet(queryCaptor.capture(), paramsCaptor.capture(), 
+                eq(5), eq(10), eq(HibernateStudy.class));
+        
+        assertEquals(queryCaptor.getValue(), SELECT_PHRASE + FROM_PHRASE + " and identifier in (:studies)");
+        Map<String,Object> parameters = paramsCaptor.getValue();
+        assertEquals(parameters.get("appId"), TEST_APP_ID);
+        assertEquals(parameters.get("studies"), ImmutableSet.of());
+    }
+
     @Test
     public void getStudy() {
         HibernateStudy study = new HibernateStudy();

@@ -137,6 +137,19 @@ public class SponsorService {
         cacheProvider.removeObject( CacheKey.orgSponsoredStudies(appId, orgId) );
     }
 
+    /**
+     * Similar to adding a sponsor to a study, but this is done without further security
+     * checks as part of study creation.
+     */
+    public void createStudyWithSponsorship(String appId, String studyId, String orgId) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(orgId);
+        
+        sponsorDao.addStudySponsor(appId, studyId, orgId);
+        cacheProvider.removeObject( CacheKey.orgSponsoredStudies(appId, orgId) );
+    }
+    
     public void removeStudySponsor(String appId, String studyId, String orgId) {
         checkNotNull(appId);
         checkNotNull(studyId);

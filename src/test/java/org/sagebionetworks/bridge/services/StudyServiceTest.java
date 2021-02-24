@@ -180,6 +180,22 @@ public class StudyServiceTest {
     }
     
     @Test
+    public void getStudiesScopesSearchForScopedRolesWhenTheyAreNull() {
+        Set<String> studies = ImmutableSet.of();
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .withOrgSponsoredStudies(studies)
+                .build());
+        
+        when(studyDao.getStudies(TEST_APP_ID, studies, null, null, false))
+            .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
+
+        service.getStudies(TEST_APP_ID, null, null, false);
+    
+        verify(studyDao).getStudies(TEST_APP_ID, studies, null, null, false);
+    }
+    
+    @Test
     public void getStudiesDoesNotScopeSearchForUnscopedRoles() {
         Set<String> studies = ImmutableSet.of("studyA", "studyB");
         RequestContext.set(new RequestContext.Builder()
@@ -226,7 +242,7 @@ public class StudyServiceTest {
         assertNotEquals(persisted.getCreatedOn(), timestamp);
         assertNotEquals(persisted.getModifiedOn(), timestamp);
         
-        verify(sponsorService).addStudySponsor(TEST_APP_ID, "oneId", TEST_ORG_ID);
+        verify(sponsorService).createStudyWithSponsorship(TEST_APP_ID, "oneId", TEST_ORG_ID);
     }
     
     @Test
