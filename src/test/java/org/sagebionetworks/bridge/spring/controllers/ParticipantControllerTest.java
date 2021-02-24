@@ -44,6 +44,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 import java.util.HashMap;
 import java.util.List;
@@ -407,6 +408,14 @@ public class ParticipantControllerTest extends Mockito {
         assertFalse(node.has("encryptedHealthCode"));
 
         verify(mockParticipantService).getParticipant(app, "aUser", true);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getParticipantDeveloperIsNotSelf() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
+
+        controller.getParticipant("aUser", true);
     }
     
     @Test
