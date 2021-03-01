@@ -250,7 +250,7 @@ public class CRCController extends BaseController {
 
         Order o = new Order(isTestUser, orderNumber, account.getId(), date,
                 new Order.ShippingInfo(address, GBF_TEST_KIT_SHIP_METHOD), new Order.LineItem(GBF_TEST_KIT_PART_NUMBER, 1));
-        gbfOrderService.placeOrder(o, true);
+        gbfOrderService.placeOrder(o, isTestUser);
 
         JsonNode node = JsonNodeFactory.instance.objectNode().put(SHIPMENT_REPORT_KEY_ORDER_ID, orderNumber);
         

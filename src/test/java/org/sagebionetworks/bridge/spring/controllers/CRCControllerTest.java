@@ -1521,6 +1521,47 @@ public class CRCControllerTest extends Mockito {
         assertTrue(account.getDataGroups().contains(SHIP_TESTS_REQUESTED.name().toLowerCase()));
     }
     
+    @Test
+    public void internalLabShipmentRequestForTestUser() {
+        setupParticipantAuthentication();
+        setupShippingAddress();
+    
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+    
+        account.setDataGroups(ImmutableSet.of(
+                TEST_USER_GROUP
+        ));
+        
+        controller.internalLabShipmentRequest(mockApp, account);
+    
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(mockGBFOrderService).placeOrder(orderCaptor.capture(),eq(true));
+        
+        assertTrue(orderCaptor.getValue().test);
+    }
+    
+    @Test
+    public void internalLabShipmentRequestForNonTestUser() {
+        setupParticipantAuthentication();
+        setupShippingAddress();
+    
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+    
+        account.setDataGroups(ImmutableSet.of(
+        ));
+        
+        controller.internalLabShipmentRequest(mockApp, account);
+    
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(mockGBFOrderService).placeOrder(orderCaptor.capture(),eq(false));
+    
+        assertFalse(orderCaptor.getValue().test);
+    }
+    
     @Test(expectedExceptions = LimitExceededException.class)
     public void internalLabShipmentRequestLimitedToOne() {
         setupParticipantAuthentication();
