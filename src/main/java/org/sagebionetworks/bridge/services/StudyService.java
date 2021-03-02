@@ -118,11 +118,11 @@ public class StudyService {
         VersionHolder version = studyDao.createStudy(study);
         // You cannot do this when creating an app because it will fail: the caller's organization will not 
         // yet exist. After initial app creation when accounts are established in the app, it should be 
-        // possible to create studies that are associated to the caller's organization (so the caller can 
-        // access the study!).
+        // possible to create studies that are associated to the caller's organization (so the study 
+        // creator can access the study!).
         String orgId = RequestContext.get().getCallerOrgMembership();
         if (setStudySponsor && orgId != null) {
-            sponsorService.addStudySponsor(appId, study.getIdentifier(), orgId);    
+            sponsorService.createStudyWithSponsorship(appId, study.getIdentifier(), orgId);    
         }
         return version;
     }

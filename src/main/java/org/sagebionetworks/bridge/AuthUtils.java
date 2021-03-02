@@ -41,7 +41,8 @@ public class AuthUtils {
             .hasAnyRole(ADMIN);
     
     /**
-     * Can the caller and/remove organization members? Must be the organizations's admin.
+     * Can the caller and/remove organization members? Must be the organizations's admin. Note 
+     * that this check is currently also used for sponsors...which are not members.
      */
     public static final AuthEvaluator CAN_EDIT_MEMBERS = new AuthEvaluator()
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
@@ -105,7 +106,7 @@ public class AuthUtils {
      */
     public static final AuthEvaluator CAN_READ_STUDIES = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, ORG_ADMIN).or()
-            .hasAnyRole(ADMIN);
+            .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
      * Can the caller edit studies? Caller must be a study coordinator, or a developer.

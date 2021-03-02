@@ -149,6 +149,7 @@ public class CRCController extends BaseController {
     static final Set<String> SERUM_TEST_CODES = ImmutableSet.of("484670513");
     static final Set<String> SERUM_TEST_STATES = ImmutableSet.of("Negative", "Positive", "Indeterminate");
     static final String GBF_TEST_KIT_PART_NUMBER = "FM-00049";
+    static final String GBF_TEST_KIT_SHIP_METHOD = "USPS First Class Mail";
 
     static enum AccountStates {
         ENROLLED,
@@ -248,8 +249,8 @@ public class CRCController extends BaseController {
         String orderNumber = account.getId() + "_" + date;
 
         Order o = new Order(isTestUser, orderNumber, account.getId(), date,
-                new Order.ShippingInfo(address, null), new Order.LineItem(GBF_TEST_KIT_PART_NUMBER, 1));
-        gbfOrderService.placeOrder(o, true);
+                new Order.ShippingInfo(address, GBF_TEST_KIT_SHIP_METHOD), new Order.LineItem(GBF_TEST_KIT_PART_NUMBER, 1));
+        gbfOrderService.placeOrder(o, isTestUser);
 
         JsonNode node = JsonNodeFactory.instance.objectNode().put(SHIPMENT_REPORT_KEY_ORDER_ID, orderNumber);
         
