@@ -434,4 +434,42 @@ MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','ORG_ADMIN','WORKER',
 ALTER TABLE `Substudies`
 ADD COLUMN `clientData` mediumtext COLLATE utf8_unicode_ci;
 
+-- changeset bridge:25
+
+CREATE TABLE IF NOT EXISTS `Schedules` (
+  `appId` varchar(255) NOT NULL,
+  `ownerId` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `guid` varchar(60) NOT NULL,
+  `duration` varchar(60) NOT NULL,
+  `durationStartEventId` varchar(255) NOT NULL,
+  `createdOn` bigint(20) unsigned DEFAULT NULL,
+  `modifiedOn` bigint(20) unsigned DEFAULT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `version` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`guid`),
+  KEY `Schedules_appId_guid_idx` (`appId`,`guid`),
+  KEY `Schedules_ownerId_guid_idx` (`ownerId`,`guid`),
+  CONSTRAINT `Organization-Constraint` FOREIGN KEY (`appId`, `ownerId`) REFERENCES `Organizations` (`appId`, `identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ScheduleSessions` (
+  `scheduleGuid` varchar(60) NOT NULL,
+  `guid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `name` varchar(255) NOT NULL,
+  `startEventId` varchar(255) NOT NULL,
+  `bundled` tinyint(1) NOT NULL DEFAULT '0',
+  `randomized` tinyint(1) NOT NULL DEFAULT '0',
+  `delayPeriod` varchar(60),
+  `occurrences` int(10) unsigned,
+  `intervalPeriod` varchar(60),
+  `remindMinBefore` int(10) unsigned,
+  `notifyAt` enum('AT_START_OF_WINDOW','AT_TIME_SPECIFIED','AT_RANDOM'),
+  `remindAt` enum('AFTER_WINDOW_START','BEFORE_WINDOW_END'),
+  `allowSnooze` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`guid`),
+  UNIQUE KEY `Schedule-Index` (`guid`,`scheduleGuid`),
+  CONSTRAINT `Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
