@@ -135,6 +135,7 @@ public class DefaultAppBootstrapper implements ApplicationListener<ContextRefres
             app.setSupportEmail(bridgeConfig.get("admin.email"));
             app.setTechnicalEmail(bridgeConfig.get("admin.email"));
             app.setConsentNotificationEmail(bridgeConfig.get("admin.email"));
+            app.setPasswordPolicy(new PasswordPolicy(2, false, false, false, false));
             app.setEmailVerificationEnabled(true);
             app.setVerifyChannelOnSignInEnabled(true);
             app = appService.createApp(app);
