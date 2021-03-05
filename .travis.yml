@@ -25,7 +25,10 @@ deploy:
   region: us-east-1
   app: BridgeServer2-application
   env: bridgeserver2-$TRAVIS_BRANCH
-  bucket_name: org-sagebridge-bridgeserver2-deployment-$TRAVIS_BRANCH
+  bucket_name:
+    develop: org-sagebridge-bridgeserver2-deployment-devdevelop
+    uat: org-sagebridge-bridgeserver2-deployment-devstaging
+    prod: org-sagebridge-bridgeserver2-deployment-prod
   zip-file: target/BridgeServer2-2.0.war
   on:
     all_branches: true
