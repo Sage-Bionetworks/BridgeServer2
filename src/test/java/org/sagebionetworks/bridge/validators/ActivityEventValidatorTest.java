@@ -47,6 +47,7 @@ public class ActivityEventValidatorTest {
         assertValidatorMessage(INSTANCE, event, "eventId", EVENT_ID_ERROR);
     }
 
+    @Test
     public void answerValueRequired() {
         ActivityEvent event = getEvent().withEventType(ActivityEventType.ANSWERED)
                 .withAnswerValue(null).build();
