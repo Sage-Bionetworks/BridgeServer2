@@ -20,6 +20,7 @@ import javax.persistence.Version;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.hibernate.CustomizationFieldsConverter;
 import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
@@ -30,10 +31,13 @@ import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
  */
 @Entity
 @Table(name = "Assessments")
+// Needed to clean up SQL constraint violation exceptions (not JSON serialization)
+@BridgeTypeName("Assessment")
 public class HibernateAssessment {
     
     public static HibernateAssessment create(String appId, Assessment dto) {
         HibernateAssessment assessment = new HibernateAssessment();
+        assessment.setAppId(appId);
         assessment.setGuid(dto.getGuid());
         assessment.setAppId(appId);
         assessment.setIdentifier(dto.getIdentifier());

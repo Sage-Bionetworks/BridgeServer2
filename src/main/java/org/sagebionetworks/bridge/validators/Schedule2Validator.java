@@ -6,6 +6,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.Session;
 
 public class Schedule2Validator implements Validator {
     
@@ -46,6 +47,12 @@ public class Schedule2Validator implements Validator {
         }
         if (schedule.getModifiedOn() == null) {
             errors.rejectValue("modifiedOn", Validate.CANNOT_BE_NULL);
+        }
+        for (int i=0; i < schedule.getSessions().size(); i++) {
+            errors.pushNestedPath("sessions[" + i + "]");
+            Session session = schedule.getSessions().get(i);
+            SessionValidator.INSTANCE.validate(session, errors);
+            errors.popNestedPath();
         }
     }
 }

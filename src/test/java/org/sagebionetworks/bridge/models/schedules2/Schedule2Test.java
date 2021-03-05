@@ -10,6 +10,8 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.google.common.collect.ImmutableList;
 
 import org.joda.time.Period;
 import org.testng.annotations.Test;
@@ -32,8 +34,12 @@ public class Schedule2Test {
         schedule.setDeleted(true);
         schedule.setVersion(10L);
         
+        Session session = new Session();
+        session.setGuid("sessionGuid");
+        schedule.setSessions(ImmutableList.of(session));
+        
         JsonNode node = BridgeObjectMapper.get().valueToTree(schedule);
-        assertEquals(node.size(), 10);
+        assertEquals(node.size(), 11);
         assertNull(node.get("appId"));
         assertEquals(node.get("ownerId").textValue(), TEST_ORG_ID);
         assertEquals(node.get("name").textValue(), "Schedule name");
@@ -45,6 +51,9 @@ public class Schedule2Test {
         assertTrue(node.get("deleted").booleanValue());
         assertEquals(node.get("version").longValue(), 10L);
         assertEquals(node.get("type").textValue(), "Schedule");
+        
+        ArrayNode arrayNode = (ArrayNode)node.get("sessions");
+        assertEquals(arrayNode.get(0).get("guid").textValue(), "sessionGuid");
         
         Schedule2 deser = BridgeObjectMapper.get().readValue(node.toString(), Schedule2.class);
         assertNull(deser.getAppId());

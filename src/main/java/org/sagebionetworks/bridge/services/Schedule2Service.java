@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Sets.toImmutableEnumSet;
-import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SCHEDULES;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_SCHEDULES;
@@ -18,9 +16,6 @@ import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 
 import java.util.Optional;
 import java.util.Set;
-import java.util.stream.Collectors;
-
-import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -35,8 +30,10 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.organizations.Organization;
+import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
@@ -147,8 +144,6 @@ public class Schedule2Service {
         schedule.setGuid(generateGuid());
         schedule.setVersion(0L);
         schedule.setDeleted(false);
-        schedule.setDurationStartEventId(
-                formatActivityEventId(app.getActivityEventKeys(), schedule.getDurationStartEventId()));
         if (callerOrgMembership == null) {
             Optional<Organization> opt = organizationService.getOrganizationOpt(callerAppId, schedule.getOwnerId());
             if (opt.isPresent()) {
@@ -156,13 +151,8 @@ public class Schedule2Service {
             }
         }
         schedule.setOwnerId(callerOrgMembership);
+        preValidationCleanup(app, schedule);
         
-        for (Session session : schedule.getSessions()) {
-            if (session.getGuid() == null) {
-                session.setGuid(generateGuid());
-            }
-            session.setSchedule(schedule);
-        }
         Validate.entityThrowingException(INSTANCE, schedule);
         
         return dao.createSchedule(schedule);
@@ -181,16 +171,13 @@ public class Schedule2Service {
         if (existing.isDeleted() && schedule.isDeleted()) {
             throw new EntityNotFoundException(Schedule2.class);
         }
+        
+        App app = appService.getApp(existing.getAppId());
+        
         schedule.setCreatedOn(existing.getCreatedOn());
         schedule.setModifiedOn(getModifiedOn());
         schedule.setOwnerId(existing.getOwnerId());
-        
-        for (Session session : schedule.getSessions()) {
-            if (session.getGuid() == null) {
-                session.setGuid(generateGuid());
-            }
-            session.setSchedule(schedule);
-        }
+        preValidationCleanup(app, schedule);
 
         Validate.entityThrowingException(INSTANCE, schedule);
         
@@ -222,5 +209,34 @@ public class Schedule2Service {
         
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
         dao.deleteSchedulePermanently(existing);
+    }
+    
+    /**
+     * Set guids on objects that don't have guids; clean up event keys or set
+     * them to null if they're not valid, so they fail validation.
+     */
+    public void preValidationCleanup(App app, Schedule2 schedule) {
+        Set<String> keys = app.getActivityEventKeys();
+        schedule.setDurationStartEventId(
+                formatActivityEventId(keys,schedule.getDurationStartEventId()));
+
+        for (Session session : schedule.getSessions()) {
+            if (session.getGuid() == null) {
+                session.setGuid(generateGuid());
+            }
+            session.setSchedule(schedule);
+            for (TimeWindow window : session.getTimeWindows()) {
+                if (window.getGuid() == null) {
+                    window.setGuid(generateGuid());
+                }
+            }
+            for (AssessmentReference ref : session.getAssessments()) {
+                if (ref.getGuid() == null) {
+                    ref.setGuid(generateGuid());
+                }
+            }
+            session.setStartEventId(
+                    formatActivityEventId(keys, session.getStartEventId()));
+        }
     }
 }

@@ -35,7 +35,8 @@ public class AuthUtils {
             .hasAnyRole(ADMIN);
     
     /**
-     * Can the caller edit assessments? Must be a member of the organization.
+     * Can the caller edit assessments? Must be a member of the organization. Probably should be
+     * some kind of developer role as well!
      */
     public static final AuthEvaluator CAN_EDIT_ASSESSMENTS = new AuthEvaluator().isInOrg().or()
             .hasAnyRole(ADMIN);

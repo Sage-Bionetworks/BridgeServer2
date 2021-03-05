@@ -1,12 +1,19 @@
 package org.sagebionetworks.bridge.validators;
 
+import static java.time.temporal.ChronoUnit.DAYS;
+import static java.time.temporal.ChronoUnit.HOURS;
+import static java.time.temporal.ChronoUnit.MINUTES;
+import static java.time.temporal.ChronoUnit.WEEKS;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DurationFieldType;
+import org.joda.time.Period;
 import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -16,6 +23,11 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 
 public class ValidatorUtils {
+    
+    private static final Set<DurationFieldType> PROHIBITED_DURATIONS = ImmutableSet.of(DurationFieldType.centuries(),
+            DurationFieldType.eras(), DurationFieldType.halfdays(), DurationFieldType.millis(),
+            DurationFieldType.months(), DurationFieldType.seconds(), DurationFieldType.weekyears(),
+            DurationFieldType.years());
     
     public static boolean participantHasValidIdentifier(StudyParticipant participant) {
         Phone phone = participant.getPhone();
@@ -52,6 +64,15 @@ public class ValidatorUtils {
             }
             if (passwordPolicy.isUpperCaseRequired() && !password.matches(".*[A-Z]+.*")) {
                 errors.rejectValue("password", "must contain at least one uppercase letter (A-Z)");
+            }
+        }
+    }
+    
+    public static void validatePeriod(Period period, String fieldName, Errors errors) {
+        for (DurationFieldType type : PROHIBITED_DURATIONS) {
+            if (PROHIBITED_DURATIONS.contains(type) && period.get(type) > 0) {
+                errors.rejectValue(fieldName, 
+                        "can only specify minute, hour, day, or week duration units");
             }
         }
     }

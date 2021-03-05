@@ -469,7 +469,38 @@ CREATE TABLE IF NOT EXISTS `ScheduleSessions` (
   `remindAt` enum('AFTER_WINDOW_START','BEFORE_WINDOW_END'),
   `allowSnooze` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`guid`),
-  UNIQUE KEY `Schedule-Index` (`guid`,`scheduleGuid`),
-  CONSTRAINT `Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`)
+  UNIQUE KEY `Schedule-Unique-Index` (`guid`,`scheduleGuid`),
+  CONSTRAINT `Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ScheduleSessionTimeWindows` (
+  `sessionGuid` varchar(60) NOT NULL,
+  `guid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `startTime` varchar(60) NOT NULL,
+  `expirationPeriod` varchar(60),
+  `persistent` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`guid`),
+  UNIQUE KEY `Session-Unique-Index` (`guid`,`sessionGuid`),
+  CONSTRAINT `TimeWindow-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `ScheduleSessions` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `ScheduleSessionMessages` (
+  `sessionGuid` varchar(60) NOT NULL,
+  `language` varchar(2) NOT NULL,
+  `subject` varchar(255),
+  `body` varchar(255) NOT NULL,
+  CONSTRAINT `Message-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `ScheduleSessions` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `AssessmentReferences` (
+  `sessionGuid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `guid` varchar(60) NOT NULL,
+  `assessmentAppId` varchar(255) NOT NULL,
+  `assessmentGuid` varchar(60) NOT NULL,
+  PRIMARY KEY (`guid`),
+  CONSTRAINT `AssessmentRef-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `ScheduleSessions` (`guid`) ON DELETE CASCADE,
+  CONSTRAINT `AssessmentRef-Constraint` FOREIGN KEY (`assessmentGuid`) REFERENCES `Assessments` (`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 

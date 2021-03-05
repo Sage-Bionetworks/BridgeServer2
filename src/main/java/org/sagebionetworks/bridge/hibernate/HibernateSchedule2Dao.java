@@ -17,13 +17,20 @@ import org.hibernate.query.NativeQuery;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 
 @Component
 public class HibernateSchedule2Dao implements Schedule2Dao {
+    
+    static final String SELECT_COUNT = "SELECT count(*) ";
+    static final String GET_ALL_SCHEDULES = "FROM Schedule2 WHERE appId=:appId";
+    static final String GET_ORG_SCHEDULES = GET_ALL_SCHEDULES + " AND ownerId=:ownerId";
+    static final String GET_SCHEDULE = "FROM Schedule2 WHERE appId=:appId and guid=:guid";
+    static final String DELETE_SESSIONS = "DELETE FROM ScheduleSessions where scheduleGuid = :guid";
+    static final String DELETE_ORPHANED_SESSIONS = "DELETE FROM ScheduleSessions where scheduleGuid = :guid AND guid NOT IN (:guids)";
+    static final String AND_DELETED = "AND deleted = 0"; 
     
     private HibernateHelper hibernateHelper;
     
@@ -37,14 +44,14 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         checkNotNull(appId);
         
         QueryBuilder query = new QueryBuilder();
-        query.append("FROM Schedule2 WHERE appId=:appId", "appId", appId);
+        query.append(GET_ALL_SCHEDULES, "appId", appId);
         if (!includeDeleted) {
-            query.append("AND deleted = 0");
+            query.append(AND_DELETED);
         }
-        List<Schedule2> results = hibernateHelper.queryGet(
-                query.getQuery(), query.getParameters(), offsetBy, pageSize, Schedule2.class);
+        List<Schedule2> results = hibernateHelper.queryGet(query.getQuery(), 
+                query.getParameters(), offsetBy, pageSize, Schedule2.class);
         
-        int total = hibernateHelper.queryCount("SELECT count(*) " + query.getQuery(), query.getParameters());
+        int total = hibernateHelper.queryCount(SELECT_COUNT + query.getQuery(), query.getParameters());
         
         return new PagedResourceList<>(ImmutableList.copyOf(results), total);
     }
@@ -56,16 +63,15 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         checkNotNull(ownerId);
         
         QueryBuilder query = new QueryBuilder();
-        query.append("FROM Schedule2 WHERE appId=:appId AND ownerId=:ownerId", 
-                "appId", appId, "ownerId", ownerId);
+        query.append(GET_ORG_SCHEDULES, "appId", appId, "ownerId", ownerId);
         if (!includeDeleted) {
-            query.append("AND deleted = 0");
+            query.append(AND_DELETED);
         }
         
-        List<Schedule2> results = hibernateHelper.queryGet(
-                query.getQuery(), query.getParameters(), offsetBy, pageSize, Schedule2.class);
+        List<Schedule2> results = hibernateHelper.queryGet(query.getQuery(), 
+                query.getParameters(), offsetBy, pageSize, Schedule2.class);
         
-        int total = hibernateHelper.queryCount("SELECT count(*) " + query.getQuery(), query.getParameters());
+        int total = hibernateHelper.queryCount(SELECT_COUNT + query.getQuery(), query.getParameters());
         
         return new PagedResourceList<>(ImmutableList.copyOf(results), total);
     }
@@ -75,8 +81,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         checkNotNull(appId);
         checkNotNull(guid);
         
-        List<Schedule2> results = hibernateHelper.queryGet(
-                "FROM Schedule2 WHERE appId=:appId and guid=:guid", 
+        List<Schedule2> results = hibernateHelper.queryGet(GET_SCHEDULE, 
                 ImmutableMap.of("appId", appId, "guid", guid), null, null, Schedule2.class);
         if (results.isEmpty()) {
             return Optional.empty();
@@ -101,8 +106,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
 
         hibernateHelper.executeWithExceptionHandling(schedule, (session) -> {
             QueryBuilder builder = new QueryBuilder();
-            builder.append("DELETE FROM ScheduleSessions WHERE scheduleGuid = :scheduleGuid",
-                    "scheduleGuid", schedule.getGuid());
+            builder.append(DELETE_SESSIONS, "guid", schedule.getGuid());
             if (!sessionGuids.isEmpty()) {
                 builder.append("AND guid NOT IN (:guids)", "guids", sessionGuids);
             }
@@ -131,7 +135,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         checkNotNull(schedule);
         
         hibernateHelper.executeWithExceptionHandling(schedule, (session) -> {
-            NativeQuery<?> query = session.createNativeQuery("DELETE FROM ScheduleSessions where scheduleGuid = :guid");
+            NativeQuery<?> query = session.createNativeQuery(DELETE_SESSIONS);
             query.setParameter("guid", schedule.getGuid());
             query.executeUpdate();
             

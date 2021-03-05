@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -7,8 +8,8 @@ import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
+import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
@@ -41,9 +42,12 @@ public class Schedule2 implements BridgeEntity {
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime modifiedOn;
     private boolean deleted;
-    // orphanRemoval = true just does not work, and I'm not sure why.
-    @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    // @OrderBy("position")
+    // orphanRemoval = true just does not work, and I'm not sure why. We need to treat
+    // sessions as entities so we can have embedded collections in them (embeddables
+    // can't embed further embeddable collections). 
+    @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL,
+            orphanRemoval = true, fetch = FetchType.EAGER)
+    @OrderColumn(name = "position")
     private List<Session> sessions;
     @Version
     private long version;
@@ -111,7 +115,10 @@ public class Schedule2 implements BridgeEntity {
         this.deleted = deleted;
     }
     
-    public List<Session> getSessions() { 
+    public List<Session> getSessions() {
+        if (sessions == null) {
+            sessions = new ArrayList<>();
+        }
         return sessions;
     }
     public void setSessions(List<Session> sessions) {
