@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.models.schedules2;
 
-import java.util.Objects;
-
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
@@ -16,7 +14,7 @@ import org.sagebionetworks.bridge.hibernate.LocalTimeToStringConverter;
 import org.sagebionetworks.bridge.hibernate.PeriodToStringConverter;
 
 @Embeddable
-@Table(name = "ScheduleSessionTimeWindows")
+@Table(name = "SessionTimeWindows")
 public class TimeWindow {
     
     private String guid;
@@ -51,21 +49,5 @@ public class TimeWindow {
     }
     public void setPersistent(boolean persistent) {
         this.persistent = persistent;
-    }
-    @Override
-    public int hashCode() {
-        return Objects.hash(expiration, guid, persistent, startTime);
-    }
-    @Override
-    public boolean equals(Object obj) {
-        if (this == obj)
-            return true;
-        if (obj == null || getClass() != obj.getClass())
-            return false;
-        TimeWindow other = (TimeWindow) obj;
-        return Objects.equals(expiration, other.expiration) &&
-                Objects.equals(guid, other.guid) &&
-                Objects.equals(persistent, other.persistent) &&
-                Objects.equals(startTime, other.startTime);
     }
 }

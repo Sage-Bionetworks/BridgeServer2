@@ -28,13 +28,13 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     static final String GET_ALL_SCHEDULES = "FROM Schedule2 WHERE appId=:appId";
     static final String GET_ORG_SCHEDULES = GET_ALL_SCHEDULES + " AND ownerId=:ownerId";
     static final String GET_SCHEDULE = "FROM Schedule2 WHERE appId=:appId and guid=:guid";
-    static final String DELETE_SESSIONS = "DELETE FROM ScheduleSessions where scheduleGuid = :guid";
-    static final String DELETE_ORPHANED_SESSIONS = "DELETE FROM ScheduleSessions where scheduleGuid = :guid AND guid NOT IN (:guids)";
+    static final String DELETE_SESSIONS = "DELETE FROM Sessions where scheduleGuid = :guid";
+    static final String DELETE_ORPHANED_SESSIONS = "DELETE FROM Sessions where scheduleGuid = :guid AND guid NOT IN (:guids)";
     static final String AND_DELETED = "AND deleted = 0"; 
     
     private HibernateHelper hibernateHelper;
     
-    @Resource(name = "basicHibernateHelper")
+    @Resource(name = "mysqlHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }

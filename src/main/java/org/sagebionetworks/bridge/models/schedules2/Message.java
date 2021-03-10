@@ -3,30 +3,32 @@ package org.sagebionetworks.bridge.models.schedules2;
 import javax.persistence.Embeddable;
 import javax.persistence.Table;
 
-@Embeddable
-@Table(name = "ScheduleSessionMessages")
-public class Message {
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-    private String language;
-    private String subject;
-    private String body;
+@Embeddable
+@Table(name = "SessionMessages")
+public class Message implements Localized {
+
+    private final String lang;
+    private final String subject;
+    private final String body;
     
-    public String getLanguage() {
-        return language;
+    @JsonCreator
+    public Message(@JsonProperty("lang") String lang, @JsonProperty("subject") String subject,
+            @JsonProperty("body") String body) {
+        this.lang = lang;
+        this.subject = subject;
+        this.body = body;
     }
-    public void setLanguage(String language) {
-        this.language = language;
+    
+    public String getLang() {
+        return lang;
     }
     public String getSubject() {
         return subject;
     }
-    public void setSubject(String subject) {
-        this.subject = subject;
-    }
     public String getBody() {
         return body;
-    }
-    public void setBody(String body) {
-        this.body = body;
     }
 }

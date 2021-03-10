@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+
 import org.springframework.validation.Errors;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.MapBindingResult;
@@ -22,14 +23,17 @@ import com.google.common.collect.Maps;
 
 public class Validate {
     
-    public static final String CANNOT_BE_BLANK = "%s cannot be null or blank";
-    public static final String CANNOT_BE_EMPTY = "%s cannot be empty";
-    public static final String CANNOT_BE_EMPTY_STRING = "%s cannot be an empty string";
-    public static final String CANNOT_BE_NEGATIVE = "%s cannot be negative";
-    public static final String CANNOT_BE_NULL = "%s cannot be null";
-    public static final String CANNOT_BE_NULL_OR_EMPTY = "%s cannot be null or empty";
-    public static final String CANNOT_BE_ZERO_OR_NEGATIVE = "%s cannot be negative";
-    public static final String WRONG_TYPE = "%s is the wrong type";
+    public static final String CANNOT_BE_BLANK = "cannot be null or blank";
+    public static final String CANNOT_BE_EMPTY = "cannot be empty";
+    public static final String CANNOT_BE_EMPTY_STRING = "cannot be an empty string";
+    public static final String CANNOT_BE_NEGATIVE = "cannot be negative";
+    public static final String CANNOT_BE_NULL = "cannot be null";
+    public static final String CANNOT_BE_NULL_OR_EMPTY = "cannot be null or empty";
+    public static final String CANNOT_BE_ZERO_OR_NEGATIVE = "cannot be negative";
+    public static final String WRONG_TYPE = "is the wrong type";
+    public static final String WRONG_PERIOD = "can only specify minute, hour, day, or week duration units";
+    public static final String DUPLICATE_LANG = "is a duplicate message under the same language code";
+    public static final String INVALID_LANG = "is not a valid ISO 639 alpha-2 or alpha-3 language code";
     
     public static Errors getErrorsFor(Object object) {
         String entityName = BridgeUtils.getTypeName(object.getClass());

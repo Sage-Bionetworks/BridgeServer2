@@ -12,16 +12,8 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
-import nl.jqno.equalsverifier.EqualsVerifier;
-import nl.jqno.equalsverifier.Warning;
-
 public class TimeWindowTest {
     
-    @Test
-    public void hashCodeEquals() {
-        EqualsVerifier.forClass(TimeWindow.class).suppress(Warning.NONFINAL_FIELDS).verify();
-    }
-
     @Test
     public void canSerialize() throws Exception {
         

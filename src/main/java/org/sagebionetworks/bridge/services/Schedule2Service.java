@@ -30,7 +30,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.organizations.Organization;
-import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
@@ -212,10 +211,13 @@ public class Schedule2Service {
     }
     
     /**
-     * Set guids on objects that don't have guids; clean up event keys or set
+     * Set guids on objects that don't have them; clean up event keys or set
      * them to null if they're not valid, so they fail validation.
      */
     public void preValidationCleanup(App app, Schedule2 schedule) {
+        checkNotNull(app);
+        checkNotNull(schedule);
+        
         Set<String> keys = app.getActivityEventKeys();
         schedule.setDurationStartEventId(
                 formatActivityEventId(keys,schedule.getDurationStartEventId()));
@@ -228,11 +230,6 @@ public class Schedule2Service {
             for (TimeWindow window : session.getTimeWindows()) {
                 if (window.getGuid() == null) {
                     window.setGuid(generateGuid());
-                }
-            }
-            for (AssessmentReference ref : session.getAssessments()) {
-                if (ref.getGuid() == null) {
-                    ref.setGuid(generateGuid());
                 }
             }
             session.setStartEventId(

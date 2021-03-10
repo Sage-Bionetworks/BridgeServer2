@@ -1,60 +1,60 @@
 package org.sagebionetworks.bridge.models.schedules2;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
+import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.Table;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
-
+import org.sagebionetworks.bridge.hibernate.LabelListConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 
-/**
- * This object has some code to convert to/from a nested JSON structure, since we're
- * collapsing some fields here to make persistence easier and to add a foreign key
- * constraint to the assessment GUID.
- */
 @Embeddable
-@Table(name = "AssessmentReferences")
-@BridgeTypeName("AssessmentRef")
+@Table(name = "SessionAssessments")
+@BridgeTypeName("AssessmentReference")
 public class AssessmentReference {
-
+    
     private String guid;
-    private String assessmentAppId;
-    private String assessmentGuid;
-    
-    @JsonProperty("assessment")
-    public void setAssessment(Map<String, Object> amtMap) {
-        this.assessmentAppId = (String)amtMap.get("appId");
-        this.assessmentGuid = (String)amtMap.get("guid");
+    private String appId;
+    private String title;
+    @Column(columnDefinition = "text", name = "labels", nullable = true)
+    @Convert(converter = LabelListConverter.class)
+    private List<Label> labels;
+    private Integer minutesToComplete;
+
+    public String getAppId() {
+        return appId;
     }
-    public Map<String, String> getAssessment() {
-        Map<String, String> map = new HashMap<>();
-        map.put("appId", assessmentAppId);
-        map.put("guid", assessmentGuid);
-        return map;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
-    
     public String getGuid() {
         return guid;
     }
     public void setGuid(String guid) {
         this.guid = guid;
     }
-    @JsonIgnore
-    public String getAssessmentAppId() {
-        return assessmentAppId;
+    public String getTitle() {
+        return title;
     }
-    public void setAssessmentAppId(String assessmentAppId) {
-        this.assessmentAppId = assessmentAppId;
+    public void setTitle(String title) {
+        this.title = title;
     }
-    @JsonIgnore
-    public String getAssessmentGuid() {
-        return assessmentGuid;
+    public List<Label> getLabels() {
+        if (labels == null) {
+            labels = new ArrayList<>();
+        }
+        return labels;
     }
-    public void setAssessmentGuid(String assessmentGuid) {
-        this.assessmentGuid = assessmentGuid;
+    public void setLabels(List<Label> labels) {
+        this.labels = labels;
+    }
+    public Integer getMinutesToComplete() {
+        return minutesToComplete;
+    }
+    public void setMinutesToComplete(Integer minutesToComplete) {
+        this.minutesToComplete = minutesToComplete;
     }
 }

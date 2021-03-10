@@ -21,12 +21,14 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import org.joda.time.Period;
 
+import org.sagebionetworks.bridge.hibernate.LabelListConverter;
+import org.sagebionetworks.bridge.hibernate.MessageListConverter;
 import org.sagebionetworks.bridge.hibernate.PeriodToStringConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 @Entity
-@Table(name = "ScheduleSessions")
+@Table(name = "Sessions")
 @BridgeTypeName("Session")
 public class Session implements BridgeEntity {
     
@@ -48,32 +50,34 @@ public class Session implements BridgeEntity {
     @Convert(converter = PeriodToStringConverter.class)
     @Column(name = "intervalPeriod")
     private Period interval;
-    private boolean bundled;
-    private boolean randomized;
+    @Enumerated(EnumType.STRING)
+    private PerformanceOrder performanceOrder;
     @Enumerated(EnumType.STRING)
     private NotificationType notifyAt;
     @Enumerated(EnumType.STRING)
     private ReminderType remindAt;
     private Integer remindMinBefore;
     private boolean allowSnooze;
-    
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "AssessmentReferences", 
+    @CollectionTable(name = "SessionAssessments", 
         joinColumns = @JoinColumn(name = "sessionGuid", nullable = false))
     @OrderColumn(name = "position")
     private List<AssessmentReference> assessments;
     
     @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "ScheduleSessionTimeWindows", 
+    @CollectionTable(name = "SessionTimeWindows", 
         joinColumns = @JoinColumn(name = "sessionGuid", nullable = false))
     @OrderColumn(name = "position")
     private List<TimeWindow> timeWindows;
     
-    @ElementCollection(fetch = FetchType.EAGER)
-    @CollectionTable(name = "ScheduleSessionMessages", 
-        joinColumns = @JoinColumn(name = "sessionGuid", nullable = false))
+    @Column(columnDefinition = "text", name = "messages", nullable = true)
+    @Convert(converter = MessageListConverter.class)
     private List<Message> messages;
     
+    @Column(columnDefinition = "text", name = "labels", nullable = true)
+    @Convert(converter = LabelListConverter.class)
+    private List<Label> labels;
+
     public Schedule2 getSchedule() {
         return schedule;
     }
@@ -97,6 +101,15 @@ public class Session implements BridgeEntity {
     }
     public void setName(String name) {
         this.name = name;
+    }
+    public List<Label> getLabels() {
+        if (labels == null) {
+            labels = new ArrayList<>();
+        }
+        return labels;
+    }
+    public void setLabels(List<Label> labels) {
+        this.labels = labels;
     }
     public String getStartEventId() {
         return startEventId;
@@ -122,17 +135,11 @@ public class Session implements BridgeEntity {
     public void setInterval(Period interval) {
         this.interval = interval;
     }
-    public boolean isBundled() {
-        return bundled;
+    public PerformanceOrder getPerformanceOrder() {
+        return performanceOrder;
     }
-    public void setBundled(boolean bundled) {
-        this.bundled = bundled;
-    }
-    public boolean isRandomized() {
-        return randomized;
-    }
-    public void setRandomized(boolean randomized) {
-        this.randomized = randomized;
+    public void setPerformanceOrder(PerformanceOrder performanceOrder) {
+        this.performanceOrder = performanceOrder;
     }
     public NotificationType getNotifyAt() {
         return notifyAt;

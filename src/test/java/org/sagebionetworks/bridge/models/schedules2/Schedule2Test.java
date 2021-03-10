@@ -20,9 +20,26 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class Schedule2Test {
     
+    public static final Schedule2 createValidSchedule() {
+        Schedule2 schedule = new Schedule2();
+        schedule.setAppId(TEST_APP_ID);
+        schedule.setOwnerId(TEST_ORG_ID);
+        schedule.setName("Schedule name");
+        schedule.setGuid(GUID);
+        schedule.setDuration(Period.parse("P8W"));
+        schedule.setDurationStartEventId("activities_retrieved");
+        schedule.setCreatedOn(CREATED_ON);
+        schedule.setModifiedOn(MODIFIED_ON);
+        schedule.setDeleted(true);
+        schedule.setVersion(10L);
+        
+        schedule.setSessions(ImmutableList.of(SessionTest.createValidSession()));
+        return schedule;
+    }
+    
     @Test
     public void canSerialize() throws Exception {
-        Schedule2 schedule = new Schedule2();
+        Schedule2 schedule = createValidSchedule();
         schedule.setAppId(TEST_APP_ID);
         schedule.setOwnerId(TEST_ORG_ID);
         schedule.setName("Schedule name");

@@ -228,7 +228,7 @@ public class HibernateSchedule2DaoTest extends Mockito {
         
         verify(mockSession).createNativeQuery(queryCaptor.capture());
         assertEquals(queryCaptor.getValue(), DELETE_ORPHANED_SESSIONS);
-        verify(mockQuery).setParameter("scheduleGuid", "ScheduleGuid");
+        verify(mockQuery).setParameter("guid", "ScheduleGuid");
         verify(mockQuery).setParameter("guids", ImmutableSet.of("session1guid", "session2guid"));
         verify(mockQuery).executeUpdate();
         verify(mockSession).update(schedule);
@@ -244,7 +244,7 @@ public class HibernateSchedule2DaoTest extends Mockito {
         
         verify(mockSession).createNativeQuery(queryCaptor.capture());
         assertEquals(queryCaptor.getValue(), DELETE_SESSIONS);
-        verify(mockQuery).setParameter("scheduleGuid", "ScheduleGuid");
+        verify(mockQuery).setParameter("guid", "ScheduleGuid");
         verify(mockQuery).executeUpdate();
         verify(mockSession).update(schedule);
     }

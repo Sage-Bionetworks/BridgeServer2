@@ -1,16 +1,19 @@
 package org.sagebionetworks.bridge.validators;
 
-import static java.time.temporal.ChronoUnit.DAYS;
-import static java.time.temporal.ChronoUnit.HOURS;
-import static java.time.temporal.ChronoUnit.MINUTES;
-import static java.time.temporal.ChronoUnit.WEEKS;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.validators.Validate.DUPLICATE_LANG;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_LANG;
 
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
+import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Period;
@@ -21,6 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.schedules2.Localized;
 
 public class ValidatorUtils {
     
@@ -67,13 +71,41 @@ public class ValidatorUtils {
             }
         }
     }
+
+    public static void validateLanguageSet(List<? extends Localized> items, String fieldName, Errors errors) {
+        if (items.isEmpty()) {
+            return;
+        }
+        Set<String> visited = new HashSet<>();
+        for (int i=0; i < items.size(); i++) {
+            Localized item = items.get(i);
+            errors.pushNestedPath(fieldName + "[" + i + "]");
+            
+            if (isBlank(item.getLang())) {
+                errors.rejectValue("lang", Validate.CANNOT_BE_BLANK);
+            } else {
+                if (visited.contains(item.getLang())) {
+                    errors.rejectValue("lang", DUPLICATE_LANG);
+                }
+                visited.add(item.getLang());
+                
+                Locale locale = new Locale.Builder().setLanguageTag(item.getLang()).build();
+                if (!LocaleUtils.isAvailableLocale(locale)) {
+                    errors.rejectValue("lang", INVALID_LANG);
+                }
+            }
+            errors.popNestedPath();
+        }
+    }
     
-    public static void validatePeriod(Period period, String fieldName, Errors errors) {
-        for (DurationFieldType type : PROHIBITED_DURATIONS) {
-            if (PROHIBITED_DURATIONS.contains(type) && period.get(type) > 0) {
-                errors.rejectValue(fieldName, 
-                        "can only specify minute, hour, day, or week duration units");
+    public static boolean validatePeriod(Period period) {
+        if (period != null) {
+            for (DurationFieldType type : PROHIBITED_DURATIONS) {
+                if (PROHIBITED_DURATIONS.contains(type) && period.get(type) > 0) {
+                    return false;
+                }
             }
         }
+        return true;
     }
 }

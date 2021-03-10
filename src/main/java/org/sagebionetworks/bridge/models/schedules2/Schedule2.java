@@ -58,63 +58,54 @@ public class Schedule2 implements BridgeEntity {
     public void setAppId(String appId) {
         this.appId = appId;
     }
-
     public String getOwnerId() {
         return ownerId;
     }
     public void setOwnerId(String ownerId) {
         this.ownerId = ownerId;
     }
-
     public String getName() {
         return name;
     }
     public void setName(String name) {
         this.name = name;
     }
-
     public String getGuid() {
         return guid;
     }
     public void setGuid(String guid) {
         this.guid = guid;
     }
-    
     public Period getDuration() {
         return duration;
     }
     public void setDuration(Period duration) {
         this.duration = duration;
     }
-    
     public String getDurationStartEventId() {
         return durationStartEventId;
     }
     public void setDurationStartEventId(String durationStartEventId) {
         this.durationStartEventId = durationStartEventId;
     }
-    
     public DateTime getCreatedOn() {
         return createdOn;
     }
     public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
     }
-    
     public DateTime getModifiedOn() {
         return modifiedOn;
     }
     public void setModifiedOn(DateTime modifiedOn) {
         this.modifiedOn = modifiedOn;
     }
-    
     public boolean isDeleted() {
         return deleted;
     }
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }
-    
     public List<Session> getSessions() {
         if (sessions == null) {
             sessions = new ArrayList<>();
@@ -124,7 +115,6 @@ public class Schedule2 implements BridgeEntity {
     public void setSessions(List<Session> sessions) {
         this.sessions = sessions;
     }
-    
     public long getVersion() {
         return version;
     }

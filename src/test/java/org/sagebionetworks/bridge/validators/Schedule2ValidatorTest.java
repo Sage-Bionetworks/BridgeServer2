@@ -5,7 +5,11 @@ import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+import static org.sagebionetworks.bridge.validators.Validate.WRONG_PERIOD;
 
 import com.google.common.collect.ImmutableList;
 
@@ -16,6 +20,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 
 public class Schedule2ValidatorTest extends Mockito {
 
@@ -25,7 +30,7 @@ public class Schedule2ValidatorTest extends Mockito {
         schedule.setOwnerId(TEST_ORG_ID);
         schedule.setName("NAME");
         schedule.setGuid(GUID);
-        schedule.setDuration(Period.parse("P3Y"));
+        schedule.setDuration(Period.parse("P100W"));
         schedule.setDurationStartEventId("activities_retrieved");
         schedule.setCreatedOn(CREATED_ON);
         schedule.setModifiedOn(MODIFIED_ON);
@@ -40,44 +45,39 @@ public class Schedule2ValidatorTest extends Mockito {
         Validate.entityThrowingException(INSTANCE, schedule);
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*name cannot be null or blank.*")
+    @Test
     public void nameBlank() {
         Schedule2 schedule = createValidSchedule();
         schedule.setName(" ");
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "name", CANNOT_BE_BLANK);
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*name cannot be null or blank.*")
+    @Test
     public void nameNull() {
         Schedule2 schedule = createValidSchedule();
         schedule.setName(null);
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "name", CANNOT_BE_BLANK);
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*ownerId is not a valid organization ID.*")
+    @Test
     public void ownerIdBlank() {
         Schedule2 schedule = createValidSchedule();
         schedule.setOwnerId(" ");
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "ownerId", "is not a valid organization ID");
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*ownerId is not a valid organization ID.*")
+    @Test
     public void ownerIdNull() {
         Schedule2 schedule = createValidSchedule();
         schedule.setOwnerId(null);
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "ownerId", "is not a valid organization ID");
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*appId cannot be null or blank.*")
+    @Test
     public void appIdBlank() {
         Schedule2 schedule = createValidSchedule();
         schedule.setAppId(" ");
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "appId", CANNOT_BE_BLANK);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class,
@@ -88,68 +88,68 @@ public class Schedule2ValidatorTest extends Mockito {
         Validate.entityThrowingException(INSTANCE, schedule);
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*guid cannot be null or blank.*")
+    @Test
     public void guidBlank() {
         Schedule2 schedule = createValidSchedule();
         schedule.setGuid(" ");
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "guid", CANNOT_BE_BLANK);
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*guid cannot be null or blank.*")
+    @Test
     public void guidNull() {
         Schedule2 schedule = createValidSchedule();
         schedule.setGuid(null);
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "guid", CANNOT_BE_BLANK);
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*duration cannot be null.*")
+    @Test
     public void durationNull() {
         Schedule2 schedule = createValidSchedule();
         schedule.setDuration(null);
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "duration", CANNOT_BE_NULL);
+    }
+
+    @Test
+    public void durationInvalidValue() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.setDuration(Period.parse("P3Y"));
+        assertValidatorMessage(INSTANCE, schedule, "duration", WRONG_PERIOD);
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*durationStartEventId is not a valid event ID.*")
+    @Test
     public void durationStartEventIdBlank() {
         Schedule2 schedule = createValidSchedule();
         schedule.setDurationStartEventId(" ");
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "durationStartEventId", "is not a valid event ID");
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*durationStartEventId is not a valid event ID.*")
+    @Test
     public void durationStartEventIdNull() {
         Schedule2 schedule = createValidSchedule();
         schedule.setDurationStartEventId(null);
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "durationStartEventId", "is not a valid event ID");
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*createdOn cannot be null.*")
+    @Test
     public void createdOnNull() {
         Schedule2 schedule = createValidSchedule();
         schedule.setCreatedOn(null);
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "createdOn", CANNOT_BE_NULL);
     }
 
-    @Test(expectedExceptions = InvalidEntityException.class,
-            expectedExceptionsMessageRegExp = ".*modifiedOn cannot be null.*")
+    @Test
     public void modifiedOnNull() {
         Schedule2 schedule = createValidSchedule();
         schedule.setModifiedOn(null);
-        Validate.entityThrowingException(INSTANCE, schedule);
+        assertValidatorMessage(INSTANCE, schedule, "modifiedOn", CANNOT_BE_NULL);
     }
     
     @Test
     public void validatesSessions() {
         Schedule2 schedule = createValidSchedule();
-        Session session1 = spy(SessionValidatorTest.createValidSession());
+        Session session1 = spy(SessionTest.createValidSession());
         session1.setName("Session 1");
-        Session session2 = spy(SessionValidatorTest.createValidSession());
+        Session session2 = spy(SessionTest.createValidSession());
         session2.setName("Session 2");
         schedule.setSessions(ImmutableList.of(session1, session2));
         

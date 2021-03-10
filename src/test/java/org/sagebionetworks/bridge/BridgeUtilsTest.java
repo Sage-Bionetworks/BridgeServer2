@@ -1003,7 +1003,7 @@ public class BridgeUtilsTest {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), null);
         assertNull(retValue);
     }
-    
+
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
         assertEquals(second.size(), first.size());

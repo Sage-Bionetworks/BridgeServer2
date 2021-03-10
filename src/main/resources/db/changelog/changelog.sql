@@ -436,7 +436,7 @@ ADD COLUMN `clientData` mediumtext COLLATE utf8_unicode_ci;
 
 -- changeset bridge:25
 
-CREATE TABLE IF NOT EXISTS `Schedules` (
+CREATE TABLE `Schedules` (
   `appId` varchar(255) NOT NULL,
   `ownerId` varchar(255) NOT NULL,
   `name` varchar(255) NOT NULL,
@@ -450,30 +450,31 @@ CREATE TABLE IF NOT EXISTS `Schedules` (
   PRIMARY KEY (`guid`),
   KEY `Schedules_appId_guid_idx` (`appId`,`guid`),
   KEY `Schedules_ownerId_guid_idx` (`ownerId`,`guid`),
-  CONSTRAINT `Organization-Constraint` FOREIGN KEY (`appId`, `ownerId`) REFERENCES `Organizations` (`appId`, `identifier`)
+  CONSTRAINT `Schedule-Organization-Constraint` FOREIGN KEY (`appId`, `ownerId`) REFERENCES `Organizations` (`appId`, `identifier`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `ScheduleSessions` (
+CREATE TABLE `Sessions` (
   `scheduleGuid` varchar(60) NOT NULL,
   `guid` varchar(60) NOT NULL,
   `position` int(10) signed,
   `name` varchar(255) NOT NULL,
   `startEventId` varchar(255) NOT NULL,
-  `bundled` tinyint(1) NOT NULL DEFAULT '0',
-  `randomized` tinyint(1) NOT NULL DEFAULT '0',
   `delayPeriod` varchar(60),
   `occurrences` int(10) unsigned,
   `intervalPeriod` varchar(60),
   `remindMinBefore` int(10) unsigned,
-  `notifyAt` enum('AT_START_OF_WINDOW','AT_TIME_SPECIFIED','AT_RANDOM'),
+  `messages` text DEFAULT NULL,
+  `labels` text DEFAULT NULL,
+  `performanceOrder` enum('PARTICIPANT_CHOICE','SEQUENTIAL','RANDOMIZED'),
+  `notifyAt` enum('START_OF_WINDOW','TIME_SPECIFIED','RANDOM'),
   `remindAt` enum('AFTER_WINDOW_START','BEFORE_WINDOW_END'),
   `allowSnooze` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`guid`),
-  UNIQUE KEY `Schedule-Unique-Index` (`guid`,`scheduleGuid`),
-  CONSTRAINT `Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`) ON DELETE CASCADE
+  UNIQUE KEY `Session-guid-scheduleGuid-idx` (`guid`,`scheduleGuid`),
+  CONSTRAINT `Session-Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `ScheduleSessionTimeWindows` (
+CREATE TABLE `SessionTimeWindows` (
   `sessionGuid` varchar(60) NOT NULL,
   `guid` varchar(60) NOT NULL,
   `position` int(10) signed,
@@ -481,26 +482,19 @@ CREATE TABLE IF NOT EXISTS `ScheduleSessionTimeWindows` (
   `expirationPeriod` varchar(60),
   `persistent` tinyint(1) NOT NULL DEFAULT '0',
   PRIMARY KEY (`guid`),
-  UNIQUE KEY `Session-Unique-Index` (`guid`,`sessionGuid`),
-  CONSTRAINT `TimeWindow-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `ScheduleSessions` (`guid`) ON DELETE CASCADE
+  UNIQUE KEY `TimeWindow-guid-sessionGuid-idx` (`guid`,`sessionGuid`),
+  CONSTRAINT `TimeWindow-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
-CREATE TABLE IF NOT EXISTS `ScheduleSessionMessages` (
-  `sessionGuid` varchar(60) NOT NULL,
-  `language` varchar(2) NOT NULL,
-  `subject` varchar(255),
-  `body` varchar(255) NOT NULL,
-  CONSTRAINT `Message-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `ScheduleSessions` (`guid`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
-CREATE TABLE IF NOT EXISTS `AssessmentReferences` (
+CREATE TABLE `SessionAssessments` (
   `sessionGuid` varchar(60) NOT NULL,
   `position` int(10) signed,
+  `appId` varchar(255) NOT NULL,
   `guid` varchar(60) NOT NULL,
-  `assessmentAppId` varchar(255) NOT NULL,
-  `assessmentGuid` varchar(60) NOT NULL,
-  PRIMARY KEY (`guid`),
-  CONSTRAINT `AssessmentRef-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `ScheduleSessions` (`guid`) ON DELETE CASCADE,
-  CONSTRAINT `AssessmentRef-Constraint` FOREIGN KEY (`assessmentGuid`) REFERENCES `Assessments` (`guid`)
+  `title` varchar(255) NOT NULL,
+  `minutesToComplete` int(10) DEFAULT NULL,
+  `labels` text DEFAULT NULL,
+  PRIMARY KEY (`sessionGuid`, `position`),
+  CONSTRAINT `AssessmentRef-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE,
+  CONSTRAINT `AssessmentRef-Assessment-Constraint` FOREIGN KEY (`guid`) REFERENCES `Assessments` (`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-

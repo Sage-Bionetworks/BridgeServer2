@@ -1,6 +1,10 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+import static org.sagebionetworks.bridge.validators.Validate.WRONG_PERIOD;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validatePeriod;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -22,31 +26,33 @@ public class Schedule2Validator implements Validator {
         Schedule2 schedule = (Schedule2)object;
         
         if (isBlank(schedule.getName())) {
-            errors.rejectValue("name", Validate.CANNOT_BE_BLANK);
+            errors.rejectValue("name", CANNOT_BE_BLANK);
         }
         if (isBlank(schedule.getOwnerId())) {
             errors.rejectValue("ownerId", "is not a valid organization ID");
         }
         if (isBlank(schedule.getAppId())) {
-            errors.rejectValue("appId", Validate.CANNOT_BE_BLANK);
+            errors.rejectValue("appId", CANNOT_BE_BLANK);
         }
         if (isBlank(schedule.getGuid())) {
-            errors.rejectValue("guid", Validate.CANNOT_BE_BLANK);
+            errors.rejectValue("guid", CANNOT_BE_BLANK);
         }
         // Right now this parsing is happening during deserialization, which
         // is odd for validation. We might prefer to validate this as a string
         // but persist it as a Period to provide better error feedback.
         if (schedule.getDuration() == null) {
-            errors.rejectValue("duration", Validate.CANNOT_BE_NULL);
+            errors.rejectValue("duration", CANNOT_BE_NULL);
+        } else if (!validatePeriod(schedule.getDuration())) {
+            errors.rejectValue("duration", WRONG_PERIOD);
         }
         if (isBlank(schedule.getDurationStartEventId())) {
             errors.rejectValue("durationStartEventId", "is not a valid event ID");
         }
         if (schedule.getCreatedOn() == null) {
-            errors.rejectValue("createdOn", Validate.CANNOT_BE_NULL);
+            errors.rejectValue("createdOn", CANNOT_BE_NULL);
         }
         if (schedule.getModifiedOn() == null) {
-            errors.rejectValue("modifiedOn", Validate.CANNOT_BE_NULL);
+            errors.rejectValue("modifiedOn", CANNOT_BE_NULL);
         }
         for (int i=0; i < schedule.getSessions().size(); i++) {
             errors.pushNestedPath("sessions[" + i + "]");

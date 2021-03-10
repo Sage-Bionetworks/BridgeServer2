@@ -27,6 +27,8 @@ import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules.Activity;
+import org.sagebionetworks.bridge.models.schedules2.Label;
+import org.sagebionetworks.bridge.models.schedules2.Message;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -195,4 +197,8 @@ public class TestConstants {
             .withExternalIds(ImmutableMap.of("study2", "externalId2")).withId("id2")
             .withStudyIds(ImmutableSet.of("study1", "study2")).withCreatedOn(TIMESTAMP).withStatus(ENABLED)
             .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
+    
+    public static final List<Label> LABELS = ImmutableList.of(new Label("en", "English"), new Label("fr", "French"));
+    public static final List<Message> MESSAGES = ImmutableList.of(new Message("en", "English", "Body"),
+            new Message("fr", "French", "Body"));
 }

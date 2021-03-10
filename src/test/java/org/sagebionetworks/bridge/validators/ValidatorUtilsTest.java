@@ -6,12 +6,14 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validatePeriod;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.joda.time.Period;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -103,5 +105,55 @@ public class ValidatorUtilsTest {
         account = Account.create();
         account.setEnrollments(ImmutableSet.of());
         assertFalse(ValidatorUtils.accountHasValidIdentifier(account));
+    }
+    
+    /* Note that these are the only legal values in an ISO 8601 Duration unit, so that's
+     * what we're testing here. For completeness I put some stranger values in the prohibition
+     * list, like centuries and eras, that should not be triggerable from a Joda Period 
+     * deserialization.
+        Y is the year - prohibited
+        M is the month - prohibited
+        W is the week
+        D is the day
+        T is the time designator that precedes the time components of the representation.
+        H is the hour
+        M is the minute
+        S is the second - prohibited
+     */
+    
+    @Test
+    public void monthsProhibitied() {
+        Period period = Period.parse("P3M");
+        assertFalse(validatePeriod(period));
+    }
+
+    @Test
+    public void secondsProhibitied() {
+        Period period = Period.parse("PT180S");
+        assertFalse(validatePeriod(period));
+    }
+
+    @Test
+    public void yearsProhibitied() {
+        Period period = Period.parse("P3Y");
+        assertFalse(validatePeriod(period));
+    }
+    
+    @Test
+    public void validPeriod() {
+        Period period = Period.parse("P2W");
+        assertTrue(validatePeriod(period));
+    }
+    
+    @Test
+    public void mixedWorks() {
+        Period period = Period.parse("P2W3DT30M");
+        assertTrue(validatePeriod(period));
+    }
+
+    @Test
+    public void mixedFails() {
+        Period period = Period.parse("P3Y2W3DT30M");
+        assertFalse(validatePeriod(period));
     }
 }
