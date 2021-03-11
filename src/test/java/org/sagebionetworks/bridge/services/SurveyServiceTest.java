@@ -44,7 +44,7 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.exceptions.PublishedSurveyException;
+import org.sagebionetworks.bridge.exceptions.PublishedEntityException;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
@@ -588,7 +588,7 @@ public class SurveyServiceTest {
         service.updateSurvey(TEST_APP_ID, update);
     }
     
-    @Test(expectedExceptions = PublishedSurveyException.class)
+    @Test(expectedExceptions = PublishedEntityException.class)
     public void updateSurveyAlreadyPublishedThrowsException() {
         Survey existing = Survey.create();
         existing.setAppId(TEST_APP_ID);

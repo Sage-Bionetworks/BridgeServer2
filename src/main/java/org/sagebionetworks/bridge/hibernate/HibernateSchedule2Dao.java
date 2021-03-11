@@ -30,8 +30,14 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     static final String GET_SCHEDULE = "FROM Schedule2 WHERE appId=:appId and guid=:guid";
     static final String DELETE_SESSIONS = "DELETE FROM Sessions where scheduleGuid = :guid";
     static final String DELETE_ORPHANED_SESSIONS = "DELETE FROM Sessions where scheduleGuid = :guid AND guid NOT IN (:guids)";
-    static final String AND_DELETED = "AND deleted = 0"; 
+    static final String AND_DELETED = "AND deleted = 0";
+    static final String AND_NOT_IN_GUIDS = "AND guid NOT IN (:guids)";
     
+    static final String APP_ID = "appId";
+    static final String OWNER_ID = "ownerId";
+    static final String GUID = "guid";
+    static final String GUIDS = "guids";
+
     private HibernateHelper hibernateHelper;
     
     @Resource(name = "mysqlHibernateHelper")
@@ -44,7 +50,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         checkNotNull(appId);
         
         QueryBuilder query = new QueryBuilder();
-        query.append(GET_ALL_SCHEDULES, "appId", appId);
+        query.append(GET_ALL_SCHEDULES, APP_ID, appId);
         if (!includeDeleted) {
             query.append(AND_DELETED);
         }
@@ -63,7 +69,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         checkNotNull(ownerId);
         
         QueryBuilder query = new QueryBuilder();
-        query.append(GET_ORG_SCHEDULES, "appId", appId, "ownerId", ownerId);
+        query.append(GET_ORG_SCHEDULES, APP_ID, appId, OWNER_ID, ownerId);
         if (!includeDeleted) {
             query.append(AND_DELETED);
         }
@@ -82,7 +88,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         checkNotNull(guid);
         
         List<Schedule2> results = hibernateHelper.queryGet(GET_SCHEDULE, 
-                ImmutableMap.of("appId", appId, "guid", guid), null, null, Schedule2.class);
+                ImmutableMap.of(APP_ID, appId, GUID, guid), null, null, Schedule2.class);
         if (results.isEmpty()) {
             return Optional.empty();
         }
@@ -106,13 +112,13 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
 
         hibernateHelper.executeWithExceptionHandling(schedule, (session) -> {
             QueryBuilder builder = new QueryBuilder();
-            builder.append(DELETE_SESSIONS, "guid", schedule.getGuid());
+            builder.append(DELETE_SESSIONS, GUID, schedule.getGuid());
             if (!sessionGuids.isEmpty()) {
-                builder.append("AND guid NOT IN (:guids)", "guids", sessionGuids);
+                builder.append(AND_NOT_IN_GUIDS, GUIDS, sessionGuids);
             }
             NativeQuery<?> query = session.createNativeQuery(builder.getQuery());
             for (Map.Entry<String,Object> entry : builder.getParameters().entrySet()) {
-                query.setParameter(entry.getKey(), entry.getValue());    
+                query.setParameter(entry.getKey(), entry.getValue());
             }
             query.executeUpdate();
             
@@ -136,7 +142,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         
         hibernateHelper.executeWithExceptionHandling(schedule, (session) -> {
             NativeQuery<?> query = session.createNativeQuery(DELETE_SESSIONS);
-            query.setParameter("guid", schedule.getGuid());
+            query.setParameter(GUID, schedule.getGuid());
             query.executeUpdate();
             
             session.remove(schedule);

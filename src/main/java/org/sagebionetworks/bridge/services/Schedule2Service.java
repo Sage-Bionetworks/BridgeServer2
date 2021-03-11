@@ -23,7 +23,6 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
@@ -189,7 +188,7 @@ public class Schedule2Service {
         Schedule2 existing = dao.getSchedule(schedule.getAppId(), schedule.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
-        CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());    
+        CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
         if (existing.isDeleted() && schedule.isDeleted()) {
             throw new EntityNotFoundException(Schedule2.class);
         } 
