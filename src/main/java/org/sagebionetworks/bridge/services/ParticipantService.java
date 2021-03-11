@@ -371,9 +371,7 @@ public class ParticipantService {
      * activities_retrieved event time, then fall back to enrollment (for studies that don't use scheduling), then fall
      * back to account creation time (for studies that use neither scheduling nor consent).
      */
-    public DateTime getStudyStartTime(AccountId accountId) {
-        Account account = getAccountThrowingException(accountId);
-
+    public DateTime getStudyStartTime(Account account) {
         Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getAppId(), null, account.getHealthCode());
         DateTime activitiesRetrievedDateTime = activityMap.get(ACTIVITIES_RETRIEVED.name().toLowerCase());
         if (activitiesRetrievedDateTime != null) {
@@ -396,7 +394,7 @@ public class ParticipantService {
         Account account = getAccountThrowingException(accountId);
 
         if (deleteReauthToken) {
-            accountService.deleteReauthToken(accountId);
+            accountService.deleteReauthToken(account);
         }
         
         cacheProvider.removeSessionByUserId(account.getId());

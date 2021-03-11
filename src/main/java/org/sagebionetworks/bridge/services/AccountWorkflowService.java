@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -251,8 +252,10 @@ public class AccountWorkflowService {
         checkNotNull(accountId);
         
         App app = appService.getApp(accountId.getAppId());
-        Account account = accountService.getAccount(accountId);
+        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
         if (account != null) {
+            RequestContext.acquireAccountIdentity(account);
+            
             if (type == ChannelType.EMAIL) {
                 sendEmailVerificationToken(app, account.getId(), account.getEmail());
             } else if (type == ChannelType.PHONE) {

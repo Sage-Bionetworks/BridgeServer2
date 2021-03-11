@@ -64,25 +64,12 @@ public class AuthEvaluator {
     }
     
     /**
-     * This remains a huge loophole that we have to eliminate. We might want to
-     * verify that the study they are manipulating/reading is in their list of
-     * callerEnrolledStudies, instead of making exceptions for the empty study
-     * array.
-     */
-    public AuthEvaluator callerConsideredGlobal() {
-        predicates.add((factMap) -> {
-            return RequestContext.get().getOrgSponsoredStudies().isEmpty();
-        });
-        return this;
-    }
-    
-    /**
      * The caller’s session is bound to the target app.
      */
     public AuthEvaluator isInApp() {
         predicates.add((factMap) -> {
             String appId = factMap.get(APP_ID);
-            return appId != null && appId.equals(RequestContext.get().getCallerAppId()); 
+            return appId != null && appId.equals(RequestContext.get().getCallerAppId());
         });
         return this;
     }
@@ -92,10 +79,11 @@ public class AuthEvaluator {
     public AuthEvaluator isInOrg() {
         predicates.add((factMap) -> {
             String orgId = factMap.get(ORG_ID);
-            return orgId != null && orgId.equals(RequestContext.get().getCallerOrgMembership()); 
+            return orgId != null && orgId.equals(RequestContext.get().getCallerOrgMembership());
         });
         return this;
     }
+    
     /**
      * The caller is operating on their own account (the target user ID).
      */
@@ -108,7 +96,7 @@ public class AuthEvaluator {
             // known ID, allow this test to pass. This removes some special case code elsewhere
             // in the system.
             return (userId == null && callerUserId == null) ||
-                   (userId != null && userId.equals(callerUserId)); 
+                   (userId != null && userId.equals(callerUserId));
         });
         return this;
     }

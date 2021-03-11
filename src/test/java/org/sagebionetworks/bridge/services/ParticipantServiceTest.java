@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
@@ -902,7 +903,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getSelfParticipantWithHistory() throws Exception {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("callerUserId")
+                .withCallerUserId(ID)
                 .withOrgSponsoredStudies(TestConstants.USER_STUDY_IDS).build());
         
         // Some data to verify
@@ -930,7 +931,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(retrieved.getId(), CONTEXT.getUserId());
         assertEquals(retrieved.getLastName(), "lastName");
         // These have been filtered
-        assertEquals(retrieved.getStudyIds(), TestConstants.USER_STUDY_IDS);
+        assertEquals(retrieved.getStudyIds(), ImmutableSet.of("studyA", "studyB", "studyC"));
         // Consent was calculated
         assertTrue(retrieved.isConsented());
         // There is history
@@ -941,7 +942,8 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getSelfParticipantNoHistory() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("callerUserId")
+                .withCallerUserId(ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(USER_STUDY_IDS).build());
         
         // Some data to verify
@@ -964,7 +966,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(retrieved.getId(), CONTEXT.getUserId());
         assertEquals(retrieved.getSynapseUserId(), SYNAPSE_USER_ID);
         // These have been filtered
-        assertEquals(retrieved.getStudyIds(), TestConstants.USER_STUDY_IDS);
+        assertEquals(retrieved.getStudyIds(), ImmutableSet.of("studyA", "studyB", "studyC"));
         // Consent was calculated
         assertTrue(retrieved.isConsented());
         // There is no history
@@ -1098,6 +1100,7 @@ public class ParticipantServiceTest extends Mockito {
         // Now, the caller only sees A and C
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("callerUserId")
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyC")).build());
         
         StudyParticipant participant = participantService.getParticipant(APP, ID, false);
@@ -1108,36 +1111,33 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getStudyStartTime_FromActivitiesRetrieved() {
         // Set up mocks.
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase(), ACTIVITIES_RETRIEVED_DATETIME));
 
         // Execute and validate.
-        DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
+        DateTime result = participantService.getStudyStartTime(account);
         assertEquals(result, ACTIVITIES_RETRIEVED_DATETIME);
     }
 
     @Test
     public void getStudyStartTime_FromEnrollment() {
         // Set up mocks.
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), ENROLLMENT_DATETIME));
 
         // Execute and validate.
-        DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
+        DateTime result = participantService.getStudyStartTime(account);
         assertEquals(result, ENROLLMENT_DATETIME);
     }
 
     @Test
     public void getStudyStartTime_FromAccountCreatedOn() {
         // Set up mocks.
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         account.setCreatedOn(CREATED_ON_DATETIME);
         when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of());
 
         // Execute and validate.
-        DateTime result = participantService.getStudyStartTime(ACCOUNT_ID);
+        DateTime result = participantService.getStudyStartTime(account);
         assertEquals(result, CREATED_ON_DATETIME);
     }
 
@@ -1178,11 +1178,8 @@ public class ParticipantServiceTest extends Mockito {
 
         // Verify
         verify(accountService).getAccount(accountId);
-        verify(accountService).deleteReauthToken(accountIdCaptor.capture());
+        verify(accountService).deleteReauthToken(account);
         verify(cacheProvider).removeSessionByUserId(ID);
-
-        assertEquals(accountIdCaptor.getValue().getAppId(), TEST_APP_ID);
-        assertEquals(accountIdCaptor.getValue().getId(), ID);
     }
 
     @Test

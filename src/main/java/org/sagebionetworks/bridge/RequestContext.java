@@ -11,7 +11,7 @@ import com.google.common.collect.Sets;
 
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.SponsorService;
@@ -62,22 +62,17 @@ public class RequestContext {
     }
     
     /**
-     * To see any new association to a study in the session that we return from the update identifiers call, 
-     * we need to allow it in the permission structure of the call, which means we need to update the request 
-     * context.
+     * Due mostly to code complexity, we have cases where requests need to acquire the identity 
+     * of the account they are going to manipulate. This happens on unauthenticated calls to 
+     * resent email/phone verification, for example. 
      */
-    public static RequestContext updateFromExternalId(ExternalIdentifier externalId) {
-        RequestContext context = get();
-        RequestContext.Builder builder = context.toBuilder();
-        if (externalId.getStudyId() != null) {
-            builder.withCallerEnrolledStudies(new ImmutableSet.Builder<String>()
-                .addAll(context.getCallerEnrolledStudies())
-                .add(externalId.getStudyId()).build());
-        }
+    public static RequestContext acquireAccountIdentity(Account account) {
+        RequestContext.Builder builder = get().toBuilder();
+        builder.withCallerUserId(account.getId());
         RequestContext reqContext = builder.build();
         set(reqContext);
         return reqContext;
-    }        
+    }
     
     private final String requestId;
     private final String callerAppId;
@@ -130,7 +125,7 @@ public class RequestContext {
         return callerRoles;
     }
     public boolean isAdministrator() { 
-        return callerRoles != null && !callerRoles.isEmpty();
+        return !callerRoles.isEmpty();
     }
     public boolean isInRole(Roles... roles) {
         return AuthUtils.isInRole(callerRoles, Sets.newHashSet(roles));

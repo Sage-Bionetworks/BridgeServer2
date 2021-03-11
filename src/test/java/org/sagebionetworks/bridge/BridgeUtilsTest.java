@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge;
 
 import static java.util.stream.Collectors.toSet;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -134,6 +136,7 @@ public class BridgeUtilsTest {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("callerUserId")
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(callerStudies).build());
 
         Enrollment enA = Enrollment.create(TEST_APP_ID, "studyA", "id");
@@ -191,7 +194,9 @@ public class BridgeUtilsTest {
     @Test
     public void externalIdsVisibleToCaller() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(callerStudies).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(callerStudies).build());
 
         Enrollment enA = Enrollment.create(TEST_APP_ID, "studyA", "id", "extA");
         Enrollment enB = Enrollment.create(TEST_APP_ID, "studyB", "id", "extB");
@@ -302,7 +307,9 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void filterForStudyAccountReturnsAllUnsharedStudyIdsForNonStudyCaller() {
+    public void filterForStudyAccountReturnsAllUnsharedStudyIdsForNonStudyResearcher() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        
         Account account = BridgeUtils.filterForStudy(getAccountWithStudy("studyB", "studyA"));
         assertEquals(account.getEnrollments().size(), 2);
     }
@@ -313,13 +320,13 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void filterForStudyAccountNoContextReturnsNormalAccount() {
-        assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
+    public void filterForStudyAccountNoContextNoStudyDoesNotReturnAccount() {
+        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
     }
     
     @Test
-    public void filterForStudyAccountNoContextReturnsStudyAccount() {
-        assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
+    public void filterForStudyAccountNoContextWithStudyDoesNotReturnAccount() {
+        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
     
     @Test
@@ -330,8 +337,9 @@ public class BridgeUtilsTest {
     }
 
     @Test
-    public void filterForStudyAccountWithMatchingStudiesReturnsStudyAccount() {
-        RequestContext.set(new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyA")).build());
+    public void filterForStudyAccountWhichIsSelfReturnsStudyAccount() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id").build());
         assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
     

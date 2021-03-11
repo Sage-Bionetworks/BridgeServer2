@@ -16,6 +16,7 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
@@ -294,7 +295,7 @@ public class UploadHandlersEndToEndTest {
         account.setEnrollments(ImmutableSet.of(enrollment));
 
         AccountService mockAccountService = mock(AccountService.class);
-        when(mockAccountService.getAccount(any())).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(any())).thenReturn(Optional.of(account));
 
         ParticipantService mockParticipantService = mock(ParticipantService.class);
         when(mockParticipantService.getStudyStartTime(any())).thenReturn(STUDY_START_TIME);
