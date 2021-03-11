@@ -63,13 +63,13 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     }
 
     @Override
-    public PagedResourceList<Schedule2> getSchedulesForOrganization(String appId, String ownerId, int offsetBy,
+    public PagedResourceList<Schedule2> getSchedulesForOrganization(String appId, String orgId, int offsetBy,
             int pageSize, boolean includeDeleted) {
         checkNotNull(appId);
-        checkNotNull(ownerId);
+        checkNotNull(orgId);
         
         QueryBuilder query = new QueryBuilder();
-        query.append(GET_ORG_SCHEDULES, APP_ID, appId, OWNER_ID, ownerId);
+        query.append(GET_ORG_SCHEDULES, APP_ID, appId, OWNER_ID, orgId);
         if (!includeDeleted) {
             query.append(AND_DELETED);
         }

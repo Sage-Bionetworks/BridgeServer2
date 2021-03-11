@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_LANG;
 
@@ -72,7 +73,7 @@ public class ValidatorUtils {
         }
     }
 
-    public static void validateLanguageSet(List<? extends Localized> items, String fieldName, Errors errors) {
+    public static void validateLanguageSet(Errors errors, List<? extends Localized> items, String fieldName) {
         if (items.isEmpty()) {
             return;
         }
@@ -82,7 +83,7 @@ public class ValidatorUtils {
             errors.pushNestedPath(fieldName + "[" + i + "]");
             
             if (isBlank(item.getLang())) {
-                errors.rejectValue("lang", Validate.CANNOT_BE_BLANK);
+                errors.rejectValue("lang", CANNOT_BE_BLANK);
             } else {
                 if (visited.contains(item.getLang())) {
                     errors.rejectValue("lang", DUPLICATE_LANG);

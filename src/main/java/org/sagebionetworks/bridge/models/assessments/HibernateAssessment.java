@@ -31,7 +31,6 @@ import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
  */
 @Entity
 @Table(name = "Assessments")
-@BridgeTypeName("Assessment")
 public class HibernateAssessment {
     
     public static HibernateAssessment create(String appId, Assessment dto) {

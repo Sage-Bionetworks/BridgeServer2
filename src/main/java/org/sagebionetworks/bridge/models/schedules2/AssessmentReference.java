@@ -11,6 +11,14 @@ import javax.persistence.Table;
 import org.sagebionetworks.bridge.hibernate.LabelListConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 
+/**
+ * When a session is created it can include display metadata about the assessments, and this
+ * information will be carried over to the Timeline. If it's not included, it won't be
+ * in the timeline, so this is a responsibility of the schedule design API consumers. 
+ * The only information that is required is the appId and GUID of the assessment (because
+ * schedules can link to shared assessments as well as local assessments, the appId is
+ * required and not implied).
+ */
 @Embeddable
 @Table(name = "SessionAssessments")
 @BridgeTypeName("AssessmentReference")

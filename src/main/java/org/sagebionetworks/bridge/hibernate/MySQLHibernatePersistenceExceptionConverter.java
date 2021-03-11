@@ -84,18 +84,18 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
             // including foreign key and duplicate entry violations
             if (rawMessage.contains("Duplicate entry")) {
                 displayMessage = selectMsg(
-                        displayMessage, rawMessage, UNIQUE_KEY_CONSTRAINTS, UNIQUE_CONSTRAINT_MSG, name);
+                        rawMessage, UNIQUE_KEY_CONSTRAINTS, UNIQUE_CONSTRAINT_MSG, name, displayMessage);
             } else if (rawMessage.contains("a foreign key constraint fails")) {
                 displayMessage = selectMsg(
-                        displayMessage, rawMessage, FOREIGN_KEY_CONSTRAINTS, FK_CONSTRAINT_MSG, name);
+                        rawMessage, FOREIGN_KEY_CONSTRAINTS, FK_CONSTRAINT_MSG, name, displayMessage);
             }
             return new ConstraintViolationException.Builder().withMessage(displayMessage).build();
         }
         return exception;
     }
     
-    private String selectMsg(String displayMessage, String rawMessage, Map<String, String> constraintNames,
-            String message, String name) {
+    private String selectMsg(String rawMessage, Map<String, String> constraintNames, String message,
+            String name, String defaultMessage) {
         for (Map.Entry<String, String> entry : constraintNames.entrySet()) {
             String key = entry.getKey();
             String value = entry.getValue();
@@ -103,7 +103,7 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
                 return String.format(message, name.toLowerCase(), value); 
             }
         }
-        return displayMessage;
+        return defaultMessage;
     }
     
 }

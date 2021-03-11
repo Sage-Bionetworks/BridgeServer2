@@ -107,19 +107,10 @@ public class ValidatorUtilsTest {
         assertFalse(ValidatorUtils.accountHasValidIdentifier(account));
     }
     
-    /* Note that these are the only legal values in an ISO 8601 Duration unit, so that's
-     * what we're testing here. For completeness I put some stranger values in the prohibition
-     * list, like centuries and eras, that should not be triggerable from a Joda Period 
-     * deserialization.
-        Y is the year - prohibited
-        M is the month - prohibited
-        W is the week
-        D is the day
-        T is the time designator that precedes the time components of the representation.
-        H is the hour
-        M is the minute
-        S is the second - prohibited
-     */
+    // There are more duration units in Joda than there are specified in the ISO 8601 Duration 
+    // specification, so we're only testing ISO 8601 units here. There are values in the 
+    // prohibition list that I don't think you can trigger from a Joda Period. Only minutes, 
+    // hours, days, and weeks are allowed.
     
     @Test
     public void monthsProhibitied() {

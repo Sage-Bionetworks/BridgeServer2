@@ -11,7 +11,7 @@ public interface Schedule2Dao {
             int offsetBy, int pageSize, boolean includeDeleted);
     
     public PagedResourceList<Schedule2> getSchedulesForOrganization(String appId, 
-            String ownerId, int offsetBy, int pageSize, boolean includeDeleted);
+            String orgId, int offsetBy, int pageSize, boolean includeDeleted);
 
     public Optional<Schedule2> getSchedule(String appId, String guid);
     

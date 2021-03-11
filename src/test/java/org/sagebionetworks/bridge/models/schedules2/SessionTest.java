@@ -48,11 +48,15 @@ public class SessionTest {
         AssessmentReference asmt1 = new AssessmentReference();
         asmt1.setGuid("asmtRef1Guid");
         asmt1.setAppId("local");
+        asmt1.setTitle("Assessment 1");
+        asmt1.setMinutesToComplete(3);
         asmt1.setLabels(LABELS);
         
         AssessmentReference asmt2 = new AssessmentReference();
         asmt2.setGuid("asmtRef2Guid");
         asmt2.setAppId("shared");
+        asmt2.setTitle("Assessment 2");
+        asmt2.setMinutesToComplete(5);
         asmt2.setLabels(LABELS);
         session.setAssessments(ImmutableList.of(asmt1, asmt2));
         session.setMessages(MESSAGES);
@@ -91,9 +95,11 @@ public class SessionTest {
         
         ArrayNode asmtsArray = (ArrayNode)node.get("assessments");
         assertEquals(asmtsArray.size(), 2);
-        assertEquals(asmtsArray.get(0).size(), 4);
+        assertEquals(asmtsArray.get(0).size(), 6);
         assertEquals(asmtsArray.get(0).get("guid").textValue(), "asmtRef1Guid");
         assertEquals(asmtsArray.get(0).get("appId").textValue(), "local");
+        assertEquals(asmtsArray.get(0).get("title").textValue(), "Assessment 1");
+        assertEquals(asmtsArray.get(0).get("minutesToComplete").intValue(), 3);
         assertEquals(asmtsArray.get(0).get("type").textValue(), "AssessmentReference");
         assertEquals(asmtsArray.get(0).get("labels").size(), 2);
         
@@ -136,6 +142,8 @@ public class SessionTest {
         assertEquals(deser.getAssessments().size(), 2);
         List<AssessmentReference> assessments = deser.getAssessments();
         assertEquals(assessments.get(0).getGuid(), "asmtRef1Guid");
+        assertEquals(assessments.get(0).getTitle(), "Assessment 1");
+        assertEquals(assessments.get(0).getMinutesToComplete(), Integer.valueOf(3));
         assertEquals(assessments.get(0).getAppId(), "local");
         
         assertEquals(deser.getTimeWindows().size(), 1);

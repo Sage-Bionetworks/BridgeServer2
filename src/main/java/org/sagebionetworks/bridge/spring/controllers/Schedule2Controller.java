@@ -42,7 +42,7 @@ public class Schedule2Controller extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         boolean includeDeletedBool = Boolean.valueOf(includeDeleted);
         
-        if (session.isInRole(DEVELOPER) || !session.isInRole(STUDY_COORDINATOR)) {
+        if (session.isInRole(DEVELOPER)) {
             return service.getSchedules(session.getAppId(), offsetByInt, pageSizeInt, includeDeletedBool);
         }
         return service.getSchedulesForOrganization(session.getAppId(), session.getParticipant().getOrgMembership(), 

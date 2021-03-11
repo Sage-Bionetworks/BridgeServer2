@@ -1,11 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
-import static org.sagebionetworks.bridge.TestConstants.GUID;
-import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
-import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.models.schedules2.Schedule2Test.createValidSchedule;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
@@ -24,21 +20,6 @@ import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 
 public class Schedule2ValidatorTest extends Mockito {
 
-    public static Schedule2 createValidSchedule() {
-        Schedule2 schedule = new Schedule2();
-        schedule.setAppId(TEST_APP_ID);
-        schedule.setOwnerId(TEST_ORG_ID);
-        schedule.setName("NAME");
-        schedule.setGuid(GUID);
-        schedule.setDuration(Period.parse("P100W"));
-        schedule.setDurationStartEventId("activities_retrieved");
-        schedule.setCreatedOn(CREATED_ON);
-        schedule.setModifiedOn(MODIFIED_ON);
-        schedule.setDeleted(true);
-        schedule.setVersion(10L);
-        return schedule;
-    }
-    
     @Test
     public void passes() {
         Schedule2 schedule = createValidSchedule();

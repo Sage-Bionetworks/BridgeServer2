@@ -103,7 +103,7 @@ public class SessionValidator implements Validator {
         if (session.getNotifyAt() != null && session.getMessages().isEmpty()) {
             errors.rejectValue("messages", CANNOT_BE_NULL_OR_EMPTY);
         }
-        validateLanguageSet(session.getMessages(), "messages", errors);
+        validateLanguageSet(errors, session.getMessages(), "messages");
         validateMessageContents(session, errors);
     }
 
@@ -127,7 +127,7 @@ public class SessionValidator implements Validator {
     }
     
     private void validateLabels(List<Label> labels, Errors errors) {
-        validateLanguageSet(labels, "labels", errors);    
+        validateLanguageSet(errors, labels, "labels");    
         for (int j=0; j < labels.size(); j++) {
             Label label = labels.get(j);
             

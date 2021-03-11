@@ -105,11 +105,11 @@ public class Schedule2Service {
             int pageSize, boolean includeDeleted) {
         checkNotNull(appId);
         
-        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, ownerId);
-
         if (StringUtils.isBlank(ownerId)) {
             throw new BadRequestException("Caller is not a member of an organization");
         }
+        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, ownerId);
+
         if (offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
@@ -166,11 +166,17 @@ public class Schedule2Service {
         schedule.setPublished(false);
         schedule.setDeleted(false);
         
+        // If no id was provided, or the caller is not an administrator, than use the 
+        // caller’s organization as the owning organization (schedule must have an 
+        // owner, though admins can specify a different organization than their own).
         if (schedule.getOwnerId() == null || !isAdmin) {
             schedule.setOwnerId(callerOrgMembership);    
-        } else {
-            organizationService.getOrganization(schedule.getAppId(), schedule.getOwnerId());
         }
+
+        // Verify the owner ID (this is also caught by the database, but reports the 
+        // error differently than we'd like).
+        organizationService.getOrganization(schedule.getAppId(), schedule.getOwnerId());
+
         preValidationCleanup(app, schedule);
         
         Validate.entityThrowingException(INSTANCE, schedule);

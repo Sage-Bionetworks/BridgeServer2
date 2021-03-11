@@ -87,6 +87,7 @@ public class Schedule2ControllerTest extends Mockito {
         assertGet(Schedule2Controller.class, "getSchedule");
         assertPost(Schedule2Controller.class, "createSchedule");
         assertPost(Schedule2Controller.class, "updateSchedule");
+        assertPost(Schedule2Controller.class, "publishSchedule");
         assertDelete(Schedule2Controller.class, "deleteSchedule");
     }
     
@@ -143,8 +144,7 @@ public class Schedule2ControllerTest extends Mockito {
         PagedResourceList<Schedule2> retValue = controller.getSchedules("100", "50", "true");
         assertEquals(retValue, page);
         
-        verify(mockService).getSchedulesForOrganization(
-                TEST_APP_ID, TEST_ORG_ID, 100, 50, true);
+        verify(mockService).getSchedulesForOrganization(TEST_APP_ID, TEST_ORG_ID, 100, 50, true);
     }
     
     @Test
