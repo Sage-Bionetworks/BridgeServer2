@@ -1,6 +1,10 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
+import static org.sagebionetworks.bridge.validators.Validate.WRONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLanguageSet;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validatePeriod;
 
@@ -29,57 +33,57 @@ public class SessionValidator implements Validator {
         Session session = (Session)obj;
         
         if (isBlank(session.getGuid())) {
-            errors.rejectValue("guid", Validate.CANNOT_BE_BLANK);
+            errors.rejectValue("guid", CANNOT_BE_BLANK);
         }
         if (isBlank(session.getName())) {
-            errors.rejectValue("name", Validate.CANNOT_BE_BLANK);
+            errors.rejectValue("name", CANNOT_BE_BLANK);
         }
         if (isBlank(session.getStartEventId())) {
-            errors.rejectValue("startEventId", Validate.CANNOT_BE_BLANK);
+            errors.rejectValue("startEventId", CANNOT_BE_BLANK);
         }
         if (!validatePeriod(session.getDelay())) {
-            errors.rejectValue("delay", Validate.WRONG_PERIOD);
+            errors.rejectValue("delay", WRONG_PERIOD);
         }
         if (!validatePeriod(session.getInterval())) {
-            errors.rejectValue("interval", Validate.WRONG_PERIOD);
+            errors.rejectValue("interval", WRONG_PERIOD);
         }
         if (session.getPerformanceOrder() == null) {
-            errors.rejectValue("performanceOrder", Validate.CANNOT_BE_NULL);
+            errors.rejectValue("performanceOrder", CANNOT_BE_NULL);
         }
         if (!session.getLabels().isEmpty()) {
             validateLabels(session.getLabels(), errors);
         }
         if (session.getTimeWindows().isEmpty()) {
-            errors.rejectValue("timeWindows", Validate.CANNOT_BE_NULL_OR_EMPTY);
+            errors.rejectValue("timeWindows", CANNOT_BE_NULL_OR_EMPTY);
         } else {
             for (int i=0; i < session.getTimeWindows().size(); i++) {
                 TimeWindow window = session.getTimeWindows().get(i);
                 errors.pushNestedPath("timeWindows["+i+"]");
                 
                 if (isBlank(window.getGuid())) {
-                    errors.rejectValue("guid", Validate.CANNOT_BE_BLANK);
+                    errors.rejectValue("guid", CANNOT_BE_BLANK);
                 }
                 if (window.getStartTime() == null) {
-                    errors.rejectValue("startTime", Validate.CANNOT_BE_NULL);
+                    errors.rejectValue("startTime", CANNOT_BE_NULL);
                 }
                 if (!validatePeriod(window.getExpiration())) {
-                    errors.rejectValue("expiration", Validate.WRONG_PERIOD);   
+                    errors.rejectValue("expiration", WRONG_PERIOD);   
                 }
                 errors.popNestedPath();
             }
         }
         if (session.getAssessments().isEmpty()) {
-            errors.rejectValue("assessments", Validate.CANNOT_BE_NULL_OR_EMPTY);
+            errors.rejectValue("assessments", CANNOT_BE_NULL_OR_EMPTY);
         } else {
             for (int i=0; i < session.getAssessments().size(); i++) {
                 AssessmentReference asmt = session.getAssessments().get(i);
                 
                 errors.pushNestedPath("assessments["+i+"]");
                 if (isBlank(asmt.getGuid())) {
-                    errors.rejectValue("guid", Validate.CANNOT_BE_BLANK);
+                    errors.rejectValue("guid", CANNOT_BE_BLANK);
                 }
                 if (isBlank(asmt.getAppId())) {
-                    errors.rejectValue("appId", Validate.CANNOT_BE_BLANK);
+                    errors.rejectValue("appId", CANNOT_BE_BLANK);
                 }
                 validateLabels(asmt.getLabels(), errors);
                 errors.popNestedPath();
@@ -97,7 +101,7 @@ public class SessionValidator implements Validator {
         // notifications enabled, you must have messages. Either way, message contents and 
         // language constraints must always be correct.
         if (session.getNotifyAt() != null && session.getMessages().isEmpty()) {
-            errors.rejectValue("messages", Validate.CANNOT_BE_NULL_OR_EMPTY);
+            errors.rejectValue("messages", CANNOT_BE_NULL_OR_EMPTY);
         }
         validateLanguageSet(session.getMessages(), "messages", errors);
         validateMessageContents(session, errors);
@@ -109,12 +113,12 @@ public class SessionValidator implements Validator {
             
             errors.pushNestedPath("messages[" + j + "]");
             if (isBlank(message.getSubject())) {
-                errors.rejectValue("subject", Validate.CANNOT_BE_BLANK);
+                errors.rejectValue("subject", CANNOT_BE_BLANK);
             } else if (message.getSubject().length() > 40) {
                 errors.rejectValue("subject", "must be 40 characters or less");
             }
             if (isBlank(message.getBody())) {
-                errors.rejectValue("body", Validate.CANNOT_BE_BLANK);
+                errors.rejectValue("body", CANNOT_BE_BLANK);
             } else if (message.getBody().length() > 60) {
                 errors.rejectValue("body", "must be 60 characters or less");
             }
@@ -129,7 +133,7 @@ public class SessionValidator implements Validator {
             
             if (isBlank(label.getLabel())) {
                 errors.pushNestedPath("labels[" + j + "]");
-                errors.rejectValue("label", Validate.CANNOT_BE_BLANK);
+                errors.rejectValue("label", CANNOT_BE_BLANK);
                 errors.popNestedPath();
             }
         }

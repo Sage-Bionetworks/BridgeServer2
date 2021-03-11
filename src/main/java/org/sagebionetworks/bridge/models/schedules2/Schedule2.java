@@ -41,10 +41,12 @@ public class Schedule2 implements BridgeEntity {
     private DateTime createdOn;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime modifiedOn;
+    private boolean published;
     private boolean deleted;
     // orphanRemoval = true just does not work, and I'm not sure why. We need to treat
     // sessions as entities so we can have embedded collections in them (embeddables
-    // can't embed further embeddable collections). 
+    // can't embed further embeddable collections). Deletion code in the DAO handles
+    // cleanup of removed sessions. 
     @OneToMany(mappedBy = "schedule", cascade = CascadeType.ALL,
             orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderColumn(name = "position")
@@ -99,6 +101,12 @@ public class Schedule2 implements BridgeEntity {
     }
     public void setModifiedOn(DateTime modifiedOn) {
         this.modifiedOn = modifiedOn;
+    }
+    public boolean isPublished() {
+        return published;
+    }
+    public void setPublished(boolean published) {
+        this.published = published;
     }
     public boolean isDeleted() {
         return deleted;

@@ -9,13 +9,6 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 
-/**
- * The current exception converter model is difficult to maintain because a new table with 
- * new foreign-key constraints needs to update the exception handling of all those foreign
- * key models, because the new dependency will throw exceptions their converters will have 
- * to handle. There is a method to the madness of foreign key constraint exceptions, what 
- * we need is one converter that will work for all Hibernate + MySQL persisted models.
- */
 @Component
 public class BasicPersistenceExceptionConverter implements PersistenceExceptionConverter {
     @Override

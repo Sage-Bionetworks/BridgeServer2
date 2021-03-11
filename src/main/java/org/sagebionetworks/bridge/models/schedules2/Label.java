@@ -9,8 +9,7 @@ public class Label implements Localized {
     private final String label;
     
     @JsonCreator
-    public Label(@JsonProperty("lang") String lang, 
-            @JsonProperty("label") String label) {
+    public Label(@JsonProperty("lang") String lang, @JsonProperty("label") String label) {
         this.lang = lang;
         this.label = label;
     }

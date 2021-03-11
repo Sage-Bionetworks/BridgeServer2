@@ -9,12 +9,13 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 
-import java.util.Optional;
 import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
@@ -22,19 +23,23 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.PublishedEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 import org.sagebionetworks.bridge.validators.Validate;
 
+/**
+ * Bridge v2 schedules. These replace the older SchedulePlans and their APIs.
+ */
 @Component
 public class Schedule2Service {
     
@@ -71,8 +76,11 @@ public class Schedule2Service {
         return BridgeUtils.generateGuid();
     }
     
-    public PagedResourceList<Schedule2> getSchedules(
-            String appId, int offsetBy, int pageSize, boolean includeDeleted) {
+    /**
+     * Get all schedules in the system, paged, irrespective of their owning organizations. Schedules are primary
+     * entities and can be manipulated independently of other entities in the system.
+     */
+    public PagedResourceList<Schedule2> getSchedules(String appId, int offsetBy, int pageSize, boolean includeDeleted) {
         checkNotNull(appId);
         
         // Cannot match on organization; this call has to be made by a developer or admin
@@ -90,8 +98,12 @@ public class Schedule2Service {
                 .withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
     
-    public PagedResourceList<Schedule2> getSchedulesForOrganization(
-            String appId, String ownerId, int offsetBy, int pageSize, boolean includeDeleted) {
+    /**
+     * Get all the schedules for an organization, paged. Schedules are primary entities and can be 
+     * manipulated independently of other entities in the system.
+     */
+    public PagedResourceList<Schedule2> getSchedulesForOrganization(String appId, String ownerId, int offsetBy,
+            int pageSize, boolean includeDeleted) {
         checkNotNull(appId);
         
         CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, ownerId);
@@ -111,19 +123,28 @@ public class Schedule2Service {
                 .withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
 
+    /**
+     * Get an individual schedule. There are no special criteria for being able to see a 
+     * schedule because they are visible to all organization members that sponsor a study, 
+     * as well as any study participants who need them. Basic role-based access applies for
+     * some APIs. 
+     */
     public Schedule2 getSchedule(String appId, String guid) {
         checkNotNull(appId);
         checkNotNull(guid);
+        
+        Schedule2 schedule = dao.getSchedule(appId, guid)
+                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
+        
+        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, schedule.getOwnerId());
 
-        Schedule2 schedule = dao.getSchedule(appId, guid).orElse(null);
-        if (schedule != null) {
-            CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, schedule.getOwnerId());
-        } else {
-            throw new EntityNotFoundException(Schedule2.class);
-        }
         return schedule;
     }
     
+    /**
+     * Create a schedule. The schedule will be owned by the caller’s organization (unless
+     * an admin or superadmin is making the call and they have specified an organization).
+     */
     public Schedule2 createSchedule(Schedule2 schedule) {
         checkNotNull(schedule);
         
@@ -133,6 +154,7 @@ public class Schedule2Service {
         
         String callerAppId = RequestContext.get().getCallerAppId();
         String callerOrgMembership = RequestContext.get().getCallerOrgMembership();
+        boolean isAdmin = RequestContext.get().isInRole(ADMIN, SUPERADMIN);
         App app = appService.getApp(callerAppId);
         
         DateTime createdOn = getCreatedOn();
@@ -142,14 +164,14 @@ public class Schedule2Service {
         schedule.setModifiedOn(createdOn);
         schedule.setGuid(generateGuid());
         schedule.setVersion(0L);
+        schedule.setPublished(false);
         schedule.setDeleted(false);
-        if (callerOrgMembership == null) {
-            Optional<Organization> opt = organizationService.getOrganizationOpt(callerAppId, schedule.getOwnerId());
-            if (opt.isPresent()) {
-                callerOrgMembership = schedule.getOwnerId();
-            }
+        
+        if (schedule.getOwnerId() == null || !isAdmin) {
+            schedule.setOwnerId(callerOrgMembership);    
+        } else {
+            organizationService.getOrganization(schedule.getAppId(), schedule.getOwnerId());
         }
-        schedule.setOwnerId(callerOrgMembership);
         preValidationCleanup(app, schedule);
         
         Validate.entityThrowingException(INSTANCE, schedule);
@@ -157,18 +179,22 @@ public class Schedule2Service {
         return dao.createSchedule(schedule);
     }
     
+    /**
+     * Update a schedule. Will throw an exception once the schedule is published. Ownership
+     * cannot be changed once a schedule is created.
+     */
     public Schedule2 updateSchedule(Schedule2 schedule) {
         checkNotNull(schedule);
         
-        Schedule2 existing = dao.getSchedule(schedule.getAppId(), schedule.getGuid()).orElse(null);
+        Schedule2 existing = dao.getSchedule(schedule.getAppId(), schedule.getGuid())
+                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
-        if (existing != null) {
-            CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());    
-        } else {
-            throw new EntityNotFoundException(Schedule2.class);
-        }
+        CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());    
         if (existing.isDeleted() && schedule.isDeleted()) {
             throw new EntityNotFoundException(Schedule2.class);
+        } 
+        if (existing.isPublished()) {
+            throw new PublishedEntityException(existing);
         }
         
         App app = appService.getApp(existing.getAppId());
@@ -176,6 +202,7 @@ public class Schedule2Service {
         schedule.setCreatedOn(existing.getCreatedOn());
         schedule.setModifiedOn(getModifiedOn());
         schedule.setOwnerId(existing.getOwnerId());
+        schedule.setPublished(false);
         preValidationCleanup(app, schedule);
 
         Validate.entityThrowingException(INSTANCE, schedule);
@@ -183,6 +210,30 @@ public class Schedule2Service {
         return dao.updateSchedule(schedule);
     }
     
+    /**
+     * Publish this schedule so it can no longer be modified. 
+     */
+    public Schedule2 publishSchedule(String appId, String guid) {
+        
+        Schedule2 existing = dao.getSchedule(appId, guid)
+                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
+        
+        CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());    
+        if (existing.isDeleted()) {
+            throw new EntityNotFoundException(Schedule2.class);
+        }
+        if (existing.isPublished()) {
+            throw new PublishedEntityException(existing);
+        }
+        existing.setPublished(true);
+        existing.setModifiedOn(getModifiedOn());
+        return dao.updateSchedule(existing);
+    }
+    
+    /**
+     * Logically delete this schedule. It is still available to callers who have a 
+     * reference to the schedule.
+     */
     public void deleteSchedule(String appId, String guid) {
         checkNotNull(appId);
         checkNotNull(guid);
@@ -196,13 +247,15 @@ public class Schedule2Service {
         dao.deleteSchedule(existing);
     }
     
+    /**
+     * Physically delete a schedule. Currently there is no protection against 
+     * breaking the integrity fo the system by permanently deleting a schedule; 
+     * this is for integration tests and admin cleanup.
+     */
     public void deleteSchedulePermanently(String appId, String guid) {
         checkNotNull(appId);
         checkNotNull(guid);
 
-        // If the schedule is being used, we don't want to delete it. However, we 
-        // don't have an object that refers to it yet...we need a protocol.
-        
         Schedule2 existing = dao.getSchedule(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         

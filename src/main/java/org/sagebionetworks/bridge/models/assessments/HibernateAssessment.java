@@ -31,7 +31,6 @@ import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
  */
 @Entity
 @Table(name = "Assessments")
-// Needed to clean up SQL constraint violation exceptions (not JSON serialization)
 @BridgeTypeName("Assessment")
 public class HibernateAssessment {
     

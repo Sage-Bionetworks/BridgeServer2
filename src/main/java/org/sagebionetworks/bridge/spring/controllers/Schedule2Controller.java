@@ -55,7 +55,6 @@ public class Schedule2Controller extends BaseController {
         
         Schedule2 schedule = parseJson(Schedule2.class);
         schedule.setAppId(session.getAppId());
-        schedule.setOwnerId(session.getParticipant().getOrgMembership());
         
         return service.createSchedule(schedule);
     }
@@ -74,9 +73,15 @@ public class Schedule2Controller extends BaseController {
         Schedule2 schedule = parseJson(Schedule2.class);
         schedule.setGuid(guid);
         schedule.setAppId(session.getAppId());
-        schedule.setOwnerId(session.getParticipant().getOrgMembership());
         
         return service.updateSchedule(schedule);
+    }
+    
+    @PostMapping("/v5/schedules/{guid}/publish")
+    public Schedule2 publishSchedule(@PathVariable String guid) {
+        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, DEVELOPER);
+        
+        return service.publishSchedule(session.getAppId(), guid);
     }
     
     @DeleteMapping("/v5/schedules/{guid}")

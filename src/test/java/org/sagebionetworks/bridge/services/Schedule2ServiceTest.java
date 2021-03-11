@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
@@ -36,6 +37,7 @@ import org.sagebionetworks.bridge.dao.Schedule2Dao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.exceptions.PublishedEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -250,6 +252,7 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setCreatedOn(CREATED_ON.minusDays(1));
         schedule.setModifiedOn(MODIFIED_ON.minusDays(1));
         schedule.setDeleted(true);
+        schedule.setPublished(true);
         schedule.setVersion(1L);
         
         Schedule2 retValue = service.createSchedule(schedule);
@@ -266,6 +269,7 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(captured.getCreatedOn(), CREATED_ON);
         assertEquals(captured.getModifiedOn(), CREATED_ON);
         assertFalse(captured.isDeleted());
+        assertFalse(captured.isPublished());
         assertEquals(captured.getVersion(), 0L);
     }
     
@@ -290,6 +294,7 @@ public class Schedule2ServiceTest extends Mockito {
     public void createScheduleVerifiesOwnerIdForNonOrgCaller() { 
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
                 .build());
         
@@ -304,7 +309,7 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setName("Name");
         schedule.setDuration(Period.parse("P2W"));
         schedule.setDurationStartEventId("activities_retrieved");
-        schedule.setOwnerId(TEST_ORG_ID);
+        schedule.setOwnerId("this-will-be-ignored");
         
         service.createSchedule(schedule);        
     }
@@ -346,6 +351,7 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setCreatedOn(CREATED_ON.minusDays(1));
         schedule.setModifiedOn(MODIFIED_ON);
         schedule.setDeleted(false);
+        schedule.setPublished(true);
         schedule.setVersion(2L);
         
         Schedule2 existing = new Schedule2();
@@ -358,6 +364,7 @@ public class Schedule2ServiceTest extends Mockito {
         existing.setCreatedOn(CREATED_ON);
         existing.setModifiedOn(MODIFIED_ON.minusDays(1));
         existing.setDeleted(false);
+        existing.setPublished(false);
         existing.setVersion(1L);
         
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
@@ -380,7 +387,25 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(captured.getCreatedOn(), CREATED_ON);
         assertEquals(captured.getModifiedOn(), MODIFIED_ON);
         assertFalse(captured.isDeleted());
+        assertFalse(captured.isPublished());
         assertEquals(captured.getVersion(), 2L);
+    }
+    
+    @Test(expectedExceptions = PublishedEntityException.class)
+    public void updateScheduledLockedForUpdates() {
+        permitToAccess();
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setAppId(TEST_APP_ID);
+        schedule.setGuid(GUID);
+        
+        Schedule2 existing = new Schedule2();
+        existing.setPublished(true);
+        
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
+        when(mockDao.updateSchedule(any())).thenReturn(existing);
+        
+        service.updateSchedule(schedule);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -533,6 +558,7 @@ public class Schedule2ServiceTest extends Mockito {
     @Test
     public void setsAllGuidsOnCreate() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
                 .withCallerAppId(TEST_APP_ID)
                 .build());
 

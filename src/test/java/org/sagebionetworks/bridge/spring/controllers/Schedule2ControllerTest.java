@@ -198,7 +198,6 @@ public class Schedule2ControllerTest extends Mockito {
         
         verify(mockService).createSchedule(scheduleCaptor.capture());
         assertEquals(scheduleCaptor.getValue().getAppId(), TEST_APP_ID);
-        assertEquals(scheduleCaptor.getValue().getOwnerId(), TEST_ORG_ID);
     }
     
     @Test
@@ -233,7 +232,6 @@ public class Schedule2ControllerTest extends Mockito {
         Schedule2 persisted = scheduleCaptor.getValue();
         assertEquals(persisted.getGuid(), GUID);
         assertEquals(persisted.getAppId(), TEST_APP_ID);
-        assertEquals(persisted.getOwnerId(), TEST_ORG_ID);
     }
     
     @Test

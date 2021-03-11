@@ -37,9 +37,6 @@ public class Schedule2Validator implements Validator {
         if (isBlank(schedule.getGuid())) {
             errors.rejectValue("guid", CANNOT_BE_BLANK);
         }
-        // Right now this parsing is happening during deserialization, which
-        // is odd for validation. We might prefer to validate this as a string
-        // but persist it as a Period to provide better error feedback.
         if (schedule.getDuration() == null) {
             errors.rejectValue("duration", CANNOT_BE_NULL);
         } else if (!validatePeriod(schedule.getDuration())) {

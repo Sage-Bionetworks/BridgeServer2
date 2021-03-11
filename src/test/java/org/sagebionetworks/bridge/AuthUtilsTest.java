@@ -12,7 +12,6 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_EXTERNAL_IDS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_SCHEDULES;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SCHEDULES;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
@@ -540,47 +539,6 @@ public class AuthUtilsTest extends Mockito {
                 .build());
         
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
-    }
-    
-    @Test
-    public void canReadSchedulesSucceedsForStudyCoordinator() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(TEST_ORG_ID)
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
-                
-        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, TEST_ORG_ID);
-    }
-
-    @Test
-    public void canReadSchedulesSucceedsForDeveloper() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
-                
-        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, TEST_ORG_ID);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void canReadSchedulesFailsForAnon() {
-        RequestContext.set(NULL_INSTANCE);
-                
-        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, TEST_ORG_ID);
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void canReadSchedulesFailsForStudyCoordinatorNotInOrg() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership("wrongOrganization")
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
-                
-        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, TEST_ORG_ID);
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void canReadSchedulesFailsForNonDeveloper() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-                
-        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }
     
     @Test

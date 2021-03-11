@@ -135,13 +135,12 @@ public class AuthUtils {
 
     /**
      * Can the caller read the schedules? They must be enrolled in the study, a study-scoped
-     * role that can view schedules, or a developer.
+     * role that can view schedules, or a developer. Note that when schedules are used in 
+     * studies, additional people will have read access, but this hasn't been implemented
+     * yet. 
      */
     public static final AuthEvaluator CAN_READ_SCHEDULES = new AuthEvaluator()
             .isInOrg().hasAnyRole(STUDY_COORDINATOR).or()
-            // TODO: actually all sponsors of a study have to be able to see the schedule
-            // If they can see the study. Add this, add it to the tests.
-            // .canAccessStudy().or()
             .hasAnyRole(DEVELOPER, ADMIN);
 
     /**
