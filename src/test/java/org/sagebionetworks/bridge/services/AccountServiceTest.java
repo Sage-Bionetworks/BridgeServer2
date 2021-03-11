@@ -3,6 +3,9 @@ package org.sagebionetworks.bridge.services;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.joda.time.DateTimeZone.UTC;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -45,6 +48,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -60,7 +64,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSecret;
-import org.sagebionetworks.bridge.models.accounts.AccountSecretType;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -134,6 +137,13 @@ public class AccountServiceTest extends Mockito {
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        RequestContext.set(NULL_INSTANCE);
     }
 
     @Test
@@ -210,9 +220,11 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void deleteReauthToken() throws Exception {
-        mockGetAccountById(ACCOUNT_ID, false);
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
 
-        service.deleteReauthToken(ACCOUNT_ID);
+        service.deleteReauthToken(account);
+        
         verify(mockAccountSecretDao).removeSecrets(REAUTH, TEST_USER_ID);
     }
 
@@ -759,37 +771,6 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void deleteReauthTokenWithEmail() throws Exception {
-        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
-
-        service.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
-
-        verify(mockAccountSecretDao).removeSecrets(REAUTH, TEST_USER_ID);
-    }
-
-    @Test
-    public void deleteReauthTokenNoToken() throws Exception {
-        // Return an account with no reauth token.
-        mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
-
-        // Just quietly succeeds without doing any account update.
-        service.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
-        verify(mockAccountDao, never()).updateAccount(any());
-
-        // But we do always call this.
-        verify(mockAccountSecretDao).removeSecrets(REAUTH, TEST_USER_ID);
-    }
-
-    @Test
-    public void deleteReauthTokenAccountNotFound() throws Exception {
-        // Just quietly succeeds without doing any work.
-        service.deleteReauthToken(ACCOUNT_ID_WITH_EMAIL);
-
-        verify(mockAccountDao, never()).updateAccount(any());
-        verify(mockAccountSecretDao, never()).removeSecrets(AccountSecretType.REAUTH, TEST_USER_ID);
-    }
-
-    @Test
     public void createAccountSuccess() throws Exception {
         // App passed into createAccount() takes precedence over appId in the Account object. To test this, make
         // the account have a different app.
@@ -1053,7 +1034,8 @@ public class AccountServiceTest extends Mockito {
         persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
         
         RequestContext.set(new RequestContext.Builder()
-                .withCallerEnrolledStudies(ImmutableSet.of(STUDY_A)).build());
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(STUDY_A)).build());
 
         Account account = service.getAccount(ACCOUNT_ID);
         assertEquals(persistedAccount, account);

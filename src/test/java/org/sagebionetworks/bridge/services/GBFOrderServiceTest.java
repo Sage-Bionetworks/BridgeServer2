@@ -270,11 +270,5 @@ public class GBFOrderServiceTest {
         String phone = "206.547.2600";
         Phone p = new Phone(phone, "US");
         assertTrue(Phone.isValid(p));
-        System.out.println(p.getNumber());
-        System.out.println(p.getRegionCode());
-        System.out.println(p.getNationalFormat());
-
-        System.out.println(p);
-
     }
 }

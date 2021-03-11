@@ -782,7 +782,10 @@ public class BaseControllerTest extends Mockito {
         app.setIdentifier(TEST_APP_ID);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
-        doReturn(session).when(controller).getSessionIfItExists();
+        doAnswer((ans) -> {
+            RequestContext.updateFromSession(session, mockSponsorService);
+            return session;
+        }).when(controller).getSessionIfItExists();
         
         Set<String> orgStudies = ImmutableSet.of("study1", "study2");
         when(mockSponsorService.getSponsoredStudyIds(TEST_APP_ID, TEST_ORG_ID)).thenReturn(orgStudies);

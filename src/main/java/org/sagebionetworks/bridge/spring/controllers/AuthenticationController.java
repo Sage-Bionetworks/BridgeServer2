@@ -341,10 +341,8 @@ public class AuthenticationController extends BaseController {
             throw new BadRequestException("Account has not been assigned a Synapse user ID");
         }
         AccountId accountId = AccountId.forSynapseUserId(targetAppId, participant.getSynapseUserId());
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG));
         
         // Make the switch
         authenticationService.signOut(session);

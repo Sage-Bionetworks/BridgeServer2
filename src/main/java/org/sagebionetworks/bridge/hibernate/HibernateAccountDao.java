@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.List;
@@ -169,7 +170,7 @@ public class HibernateAccountDao implements AccountDao {
             } else if (enrolledInStudy != null) { // this always takes precedence
                 Set<String> studies = ImmutableSet.of(search.getEnrolledInStudyId());
                 builder.append("AND enrollment.studyId IN (:studies)", "studies", studies);
-            } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, WORKER)) {
+            } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, RESEARCHER, WORKER)) {
                 builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
             }
         }

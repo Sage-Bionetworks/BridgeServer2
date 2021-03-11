@@ -1,17 +1,25 @@
 package org.sagebionetworks.bridge;
 
+import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.ClientInfo.UNKNOWN_CLIENT;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
+import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.BCRYPT;
+import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -21,6 +29,7 @@ import static org.testng.Assert.assertTrue;
 
 import java.util.Set;
 
+import org.joda.time.DateTimeZone;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -28,14 +37,16 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.SponsorService;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 public class RequestContextTest extends Mockito {
@@ -304,27 +315,22 @@ public class RequestContextTest extends Mockito {
     }
     
     @Test
-    public void updateFromExternalId() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerEnrolledStudies(ImmutableSet.of("study1")).build());
+    public void acquireAccountIdentity() {
+        RequestContext initialContext = new RequestContext.Builder()
+                .withCallerUserId("old-id")
+                .withCallerAppId("old-app-id").build();
+        RequestContext.set(initialContext);
         
-        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, "anIdentifier");
-        externalId.setStudyId("study2");
+        Account account = Account.create();
+        account.setId("id");
+        account.setAppId(TEST_APP_ID);
+        account.setOrgMembership("orgId");
+        account.setEmail("email");
         
-        RequestContext.updateFromExternalId(externalId);
+        RequestContext.acquireAccountIdentity(account);
         
-        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of("study1", "study2"));
-    }
-
-    @Test
-    public void updateFromExternalIdSkipsNull() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerEnrolledStudies(ImmutableSet.of("study1")).build());
-        
-        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, "anIdentifier");
-        
-        RequestContext.updateFromExternalId(externalId);
-        
-        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of("study1"));
+        RequestContext updatedContext = RequestContext.get();
+        assertEquals(updatedContext.getCallerUserId(), "id");
+        assertEquals(updatedContext.getCallerAppId(), "old-app-id");
     }
 }
