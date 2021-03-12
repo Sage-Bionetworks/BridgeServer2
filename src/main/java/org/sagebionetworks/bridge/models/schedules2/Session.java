@@ -22,10 +22,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.joda.time.Period;
 
 import org.sagebionetworks.bridge.hibernate.LabelListConverter;
-import org.sagebionetworks.bridge.hibernate.MessageListConverter;
+import org.sagebionetworks.bridge.hibernate.NotificationMessageListConverter;
 import org.sagebionetworks.bridge.hibernate.PeriodToStringConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 
 @Entity
 @Table(name = "Sessions")
@@ -72,8 +73,8 @@ public class Session implements BridgeEntity, HasGuid {
     private List<TimeWindow> timeWindows;
     
     @Column(columnDefinition = "text", name = "messages", nullable = true)
-    @Convert(converter = MessageListConverter.class)
-    private List<Message> messages;
+    @Convert(converter = NotificationMessageListConverter.class)
+    private List<NotificationMessage> messages;
     
     @Column(columnDefinition = "text", name = "labels", nullable = true)
     @Convert(converter = LabelListConverter.class)
@@ -184,13 +185,13 @@ public class Session implements BridgeEntity, HasGuid {
     public void setTimeWindows(List<TimeWindow> timeWindows) {
         this.timeWindows = timeWindows;
     }
-    public List<Message> getMessages() {
+    public List<NotificationMessage> getMessages() {
         if (messages == null) {
             messages = new ArrayList<>();
         }
         return messages;
     }
-    public void setMessages(List<Message> messages) {
+    public void setMessages(List<NotificationMessage> messages) {
         this.messages = messages;
     }
 }

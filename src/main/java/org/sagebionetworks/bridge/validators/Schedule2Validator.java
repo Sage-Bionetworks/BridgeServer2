@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
-import static org.sagebionetworks.bridge.validators.Validate.WRONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validatePeriod;
 
 import org.springframework.validation.Errors;

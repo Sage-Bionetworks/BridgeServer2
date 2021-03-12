@@ -32,10 +32,10 @@ public class AssessmentReferenceTest {
         
         ArrayNode arrayNode = (ArrayNode)node.get("labels");
         assertEquals(arrayNode.get(0).get("lang").textValue(), "en");
-        assertEquals(arrayNode.get(0).get("label").textValue(), "English");
+        assertEquals(arrayNode.get(0).get("value").textValue(), "English");
         
         assertEquals(arrayNode.get(1).get("lang").textValue(), "fr");
-        assertEquals(arrayNode.get(1).get("label").textValue(), "French");
+        assertEquals(arrayNode.get(1).get("value").textValue(), "French");
         
         AssessmentReference deser = BridgeObjectMapper.get()
                 .readValue(node.toString(), AssessmentReference.class);
@@ -43,8 +43,8 @@ public class AssessmentReferenceTest {
         assertEquals(deser.getAppId(), "shared");
         assertEquals(deser.getTitle(), "Title");
         assertEquals(deser.getMinutesToComplete(), Integer.valueOf(10));
-        assertEquals(deser.getLabels().get(0).getLabel(), LABELS.get(0).getLabel());
-        assertEquals(deser.getLabels().get(1).getLabel(), LABELS.get(1).getLabel());
+        assertEquals(deser.getLabels().get(0).getValue(), LABELS.get(0).getValue());
+        assertEquals(deser.getLabels().get(1).getValue(), LABELS.get(1).getValue());
     }
     
     @Test

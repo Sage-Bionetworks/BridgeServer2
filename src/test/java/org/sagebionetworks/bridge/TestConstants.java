@@ -28,7 +28,6 @@ import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules2.Label;
-import org.sagebionetworks.bridge.models.schedules2.Message;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
@@ -199,6 +198,7 @@ public class TestConstants {
             .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
     
     public static final List<Label> LABELS = ImmutableList.of(new Label("en", "English"), new Label("fr", "French"));
-    public static final List<Message> MESSAGES = ImmutableList.of(new Message("en", "English", "Body"),
-            new Message("fr", "French", "Body"));
+    public static final List<NotificationMessage> MESSAGES = ImmutableList.of(
+            new NotificationMessage.Builder().withLang("en").withSubject("English").withMessage("Body").build(),
+            new NotificationMessage.Builder().withLang("fr").withSubject("French").withMessage("Body").build());
 }

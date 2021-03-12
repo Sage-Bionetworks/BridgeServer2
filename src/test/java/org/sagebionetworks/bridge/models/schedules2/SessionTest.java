@@ -20,6 +20,7 @@ import org.joda.time.Period;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 
 public class SessionTest {
 
@@ -90,7 +91,7 @@ public class SessionTest {
         assertEquals(labelsArray.size(), 2);
         assertEquals(labelsArray.get(0).size(), 3);
         assertEquals(labelsArray.get(0).get("lang").textValue(), "en");
-        assertEquals(labelsArray.get(0).get("label").textValue(), "English");
+        assertEquals(labelsArray.get(0).get("value").textValue(), "English");
         assertEquals(labelsArray.get(0).get("type").textValue(), "Label");
         
         ArrayNode asmtsArray = (ArrayNode)node.get("assessments");
@@ -117,8 +118,8 @@ public class SessionTest {
         assertEquals(messagesArray.get(0).size(), 4);
         assertEquals(messagesArray.get(0).get("lang").textValue(), "en");
         assertEquals(messagesArray.get(0).get("subject").textValue(), "English");
-        assertEquals(messagesArray.get(0).get("body").textValue(), "Body");
-        assertEquals(messagesArray.get(0).get("type").textValue(), "Message");
+        assertEquals(messagesArray.get(0).get("message").textValue(), "Body");
+        assertEquals(messagesArray.get(0).get("type").textValue(), "NotificationMessage");
         
         Session deser = BridgeObjectMapper.get().readValue(node.toString(), Session.class);
         
@@ -137,7 +138,7 @@ public class SessionTest {
         assertEquals(deser.getLabels().size(), 2);
         List<Label> labels = deser.getLabels();
         assertEquals(labels.get(0).getLang(), "en");
-        assertEquals(labels.get(0).getLabel(), "English");
+        assertEquals(labels.get(0).getValue(), "English");
    
         assertEquals(deser.getAssessments().size(), 2);
         List<AssessmentReference> assessments = deser.getAssessments();
@@ -154,10 +155,10 @@ public class SessionTest {
         assertTrue(windows.get(0).isPersistent());
 
         assertEquals(deser.getMessages().size(), 2);
-        List<Message> messages = deser.getMessages();
+        List<NotificationMessage> messages = deser.getMessages();
         assertEquals(messages.get(0).getLang(), "en");
         assertEquals(messages.get(0).getSubject(), "English");
-        assertEquals(messages.get(0).getBody(), "Body");
+        assertEquals(messages.get(0).getMessage(), "Body");
     }
     
     @Test

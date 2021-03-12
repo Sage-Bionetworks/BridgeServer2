@@ -12,9 +12,9 @@ import java.util.List;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Label;
-import org.sagebionetworks.bridge.models.schedules2.Message;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
@@ -104,7 +104,7 @@ public class SessionValidator implements Validator {
 
     public void validateMessageContents(Session session, Errors errors) {
         for (int j=0; j < session.getMessages().size(); j++) {
-            Message message = session.getMessages().get(j);
+            NotificationMessage message = session.getMessages().get(j);
             
             errors.pushNestedPath("messages[" + j + "]");
             if (isBlank(message.getSubject())) {
@@ -112,10 +112,10 @@ public class SessionValidator implements Validator {
             } else if (message.getSubject().length() > 40) {
                 errors.rejectValue("subject", "must be 40 characters or less");
             }
-            if (isBlank(message.getBody())) {
-                errors.rejectValue("body", CANNOT_BE_BLANK);
-            } else if (message.getBody().length() > 60) {
-                errors.rejectValue("body", "must be 60 characters or less");
+            if (isBlank(message.getMessage())) {
+                errors.rejectValue("message", CANNOT_BE_BLANK);
+            } else if (message.getMessage().length() > 60) {
+                errors.rejectValue("message", "must be 60 characters or less");
             }
             errors.popNestedPath();
         }
@@ -126,7 +126,7 @@ public class SessionValidator implements Validator {
         for (int j=0; j < labels.size(); j++) {
             Label label = labels.get(j);
             
-            if (isBlank(label.getLabel())) {
+            if (isBlank(label.getValue())) {
                 errors.pushNestedPath("labels[" + j + "]");
                 errors.rejectValue("label", CANNOT_BE_BLANK);
                 errors.popNestedPath();

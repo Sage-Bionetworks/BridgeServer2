@@ -20,8 +20,8 @@ import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules2.Label;
-import org.sagebionetworks.bridge.models.schedules2.Message;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 
 public class SessionValidatorTest extends Mockito {
@@ -276,7 +276,8 @@ public class SessionValidatorTest extends Mockito {
     
     @Test
     public void messsageLanguageCodeInvalid() {
-        Message message = new Message("yyy", "Subject", "Body");
+        NotificationMessage message = new NotificationMessage.Builder()
+                .withLang("yyy").withSubject("Subject").withMessage("Body").build();
 
         Session session = createValidSession();
         session.setMessages(ImmutableList.of(session.getMessages().get(0), message));
@@ -305,38 +306,41 @@ public class SessionValidatorTest extends Mockito {
     }
     
     @Test
-    public void messageBodyBlank() {
+    public void messageBlank() {
         Session session = createValidSession();
-        session.setMessages(updateBody(session.getMessages(), "\t\n"));
-        assertValidatorMessage(INSTANCE, session, "messages[0].body", CANNOT_BE_BLANK);
+        session.setMessages(updateMessage(session.getMessages(), "\t\n"));
+        assertValidatorMessage(INSTANCE, session, "messages[0].message", CANNOT_BE_BLANK);
     }
     
     @Test
-    public void messageBodyNull() {
+    public void messageNull() {
         Session session = createValidSession();
-        session.setMessages(updateBody(session.getMessages(), null));
-        assertValidatorMessage(INSTANCE, session, "messages[0].body", CANNOT_BE_BLANK);
+        session.setMessages(updateMessage(session.getMessages(), null));
+        assertValidatorMessage(INSTANCE, session, "messages[0].message", CANNOT_BE_BLANK);
     }
     
     @Test
-    public void messageBodyTooLong() {
+    public void messageTooLong() {
         Session session = createValidSession();
-        session.setMessages(updateBody(session.getMessages(), StringUtils.repeat("X", 100)));
-        assertValidatorMessage(INSTANCE, session, "messages[0].body", "must be 60 characters or less");
+        session.setMessages(updateMessage(session.getMessages(), StringUtils.repeat("X", 100)));
+        assertValidatorMessage(INSTANCE, session, "messages[0].message", "must be 60 characters or less");
     }
     
-    private List<Message> updateLanguage(List<Message> messages, String lang) {
-        Message msg = messages.get(0);
-        return ImmutableList.of(new Message(lang, msg.getSubject(), msg.getBody()), messages.get(1));
+    private List<NotificationMessage> updateLanguage(List<NotificationMessage> messages, String lang) {
+        NotificationMessage msg = messages.get(0);
+        return ImmutableList.of(new NotificationMessage.Builder().withLang(lang).withSubject(msg.getSubject())
+                .withMessage(msg.getMessage()).build(), messages.get(1));
     }
     
-    private List<Message> updateSubject(List<Message> messages, String subject) {
-        Message msg = messages.get(0);
-        return ImmutableList.of(new Message(msg.getLang(), subject, msg.getBody()), messages.get(1));
+    private List<NotificationMessage> updateSubject(List<NotificationMessage> messages, String subject) {
+        NotificationMessage msg = messages.get(0);
+        return ImmutableList.of(new NotificationMessage.Builder().withLang(msg.getLang()).withSubject(subject)
+                .withMessage(msg.getMessage()).build(), messages.get(1));
     }
     
-    private List<Message> updateBody(List<Message> messages, String body) {
-        Message msg = messages.get(0);
-        return ImmutableList.of(new Message(msg.getLang(), msg.getSubject(), body), messages.get(1));
+    private List<NotificationMessage> updateMessage(List<NotificationMessage> messages, String message) {
+        NotificationMessage msg = messages.get(0);
+        return ImmutableList.of(new NotificationMessage.Builder().withLang(msg.getLang()).withSubject(msg.getSubject())
+                .withMessage(message).build(), messages.get(1));
     }
 }

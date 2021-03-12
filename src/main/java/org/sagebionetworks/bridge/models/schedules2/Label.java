@@ -6,18 +6,18 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public class Label implements HasLang {
 
     private final String lang;
-    private final String label;
+    private final String value;
     
     @JsonCreator
-    public Label(@JsonProperty("lang") String lang, @JsonProperty("label") String label) {
+    public Label(@JsonProperty("lang") String lang, @JsonProperty("value") String value) {
         this.lang = lang;
-        this.label = label;
+        this.value = value;
     }
 
     public String getLang() {
         return lang;
     }
-    public String getLabel() {
-        return label;
+    public String getValue() {
+        return value;
     }
 }
