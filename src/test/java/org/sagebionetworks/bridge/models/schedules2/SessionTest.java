@@ -35,7 +35,7 @@ public class SessionTest {
         session.setPerformanceOrder(RANDOMIZED);
         session.setNotifyAt(START_OF_WINDOW);
         session.setRemindAt(BEFORE_WINDOW_END);
-        session.setRemindMinBefore(10);
+        session.setReminderPeriod(Period.parse("PT10M"));
         session.setAllowSnooze(true);
         
         TimeWindow window = new TimeWindow();
@@ -80,7 +80,7 @@ public class SessionTest {
         assertEquals(node.get("performanceOrder").textValue(), "randomized");
         assertEquals(node.get("notifyAt").textValue(), "start_of_window");
         assertEquals(node.get("remindAt").textValue(), "before_window_end");
-        assertEquals(node.get("remindMinBefore").intValue(), 10);
+        assertEquals(node.get("reminderPeriod").textValue(), "PT10M");
         assertTrue(node.get("allowSnooze").booleanValue());
         assertEquals(node.get("type").textValue(), "Session");
         
@@ -131,7 +131,7 @@ public class SessionTest {
         assertEquals(deser.getPerformanceOrder(), PerformanceOrder.RANDOMIZED);
         assertEquals(deser.getNotifyAt(), NotificationType.START_OF_WINDOW);
         assertEquals(deser.getRemindAt(), ReminderType.BEFORE_WINDOW_END);
-        assertEquals(deser.getRemindMinBefore(), Integer.valueOf(10));
+        assertEquals(deser.getReminderPeriod(), Period.parse("PT10M"));
         assertTrue(deser.isAllowSnooze());
         
         assertEquals(deser.getLabels().size(), 2);

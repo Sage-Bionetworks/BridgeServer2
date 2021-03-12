@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 @Embeddable
 @Table(name = "SessionMessages")
-public class Message implements Localized {
+public class Message implements HasLang {
 
     private final String lang;
     private final String subject;

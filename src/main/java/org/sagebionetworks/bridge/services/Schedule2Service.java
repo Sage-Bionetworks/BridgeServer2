@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -31,6 +32,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.schedules2.HasGuid;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
@@ -177,7 +179,7 @@ public class Schedule2Service {
         // error differently than we'd like).
         organizationService.getOrganization(schedule.getAppId(), schedule.getOwnerId());
 
-        preValidationCleanup(app, schedule);
+        preValidationCleanup(app, schedule, (hasGuid) -> hasGuid.setGuid(generateGuid()));
         
         Validate.entityThrowingException(INSTANCE, schedule);
         
@@ -208,7 +210,11 @@ public class Schedule2Service {
         schedule.setModifiedOn(getModifiedOn());
         schedule.setOwnerId(existing.getOwnerId());
         schedule.setPublished(false);
-        preValidationCleanup(app, schedule);
+        preValidationCleanup(app, schedule, (hasGuid) -> {
+          if (hasGuid.getGuid() == null) {
+              hasGuid.setGuid(generateGuid());
+          }
+        });
 
         Validate.entityThrowingException(INSTANCE, schedule);
         
@@ -272,23 +278,23 @@ public class Schedule2Service {
      * Set guids on objects that don't have them; clean up event keys or set
      * them to null if they're not valid, so they fail validation.
      */
-    public void preValidationCleanup(App app, Schedule2 schedule) {
+    public void preValidationCleanup(App app, Schedule2 schedule, Consumer<HasGuid> consumer) {
         checkNotNull(app);
         checkNotNull(schedule);
         
         Set<String> keys = app.getActivityEventKeys();
-        schedule.setDurationStartEventId(
-                formatActivityEventId(keys,schedule.getDurationStartEventId()));
 
         for (Session session : schedule.getSessions()) {
-            if (session.getGuid() == null) {
-                session.setGuid(generateGuid());
-            }
+            consumer.accept(session);
+//            if (session.getGuid() == null) {
+//                session.setGuid(generateGuid());
+//            }
             session.setSchedule(schedule);
             for (TimeWindow window : session.getTimeWindows()) {
-                if (window.getGuid() == null) {
-                    window.setGuid(generateGuid());
-                }
+                consumer.accept(window);
+//                if (window.getGuid() == null) {
+//                    window.setGuid(generateGuid());
+//                }
             }
             session.setStartEventId(
                     formatActivityEventId(keys, session.getStartEventId()));

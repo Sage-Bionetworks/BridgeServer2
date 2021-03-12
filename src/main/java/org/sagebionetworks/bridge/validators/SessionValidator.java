@@ -4,7 +4,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
-import static org.sagebionetworks.bridge.validators.Validate.WRONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLanguageSet;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validatePeriod;
 
@@ -41,12 +40,8 @@ public class SessionValidator implements Validator {
         if (isBlank(session.getStartEventId())) {
             errors.rejectValue("startEventId", CANNOT_BE_BLANK);
         }
-        if (!validatePeriod(session.getDelay())) {
-            errors.rejectValue("delay", WRONG_PERIOD);
-        }
-        if (!validatePeriod(session.getInterval())) {
-            errors.rejectValue("interval", WRONG_PERIOD);
-        }
+        validatePeriod(errors, session.getDelay(), "delay", false);
+        validatePeriod(errors, session.getInterval(), "interval", false);
         if (session.getPerformanceOrder() == null) {
             errors.rejectValue("performanceOrder", CANNOT_BE_NULL);
         }
@@ -66,9 +61,7 @@ public class SessionValidator implements Validator {
                 if (window.getStartTime() == null) {
                     errors.rejectValue("startTime", CANNOT_BE_NULL);
                 }
-                if (!validatePeriod(window.getExpiration())) {
-                    errors.rejectValue("expiration", WRONG_PERIOD);   
-                }
+                validatePeriod(errors, window.getExpiration(), "expiration", false);
                 errors.popNestedPath();
             }
         }
@@ -89,14 +82,16 @@ public class SessionValidator implements Validator {
                 errors.popNestedPath();
             }
         }
-        if (session.getRemindAt() != null && session.getRemindMinBefore() == null) {
-            errors.rejectValue("remindMinBefore", "must be set if remindAt is set");
-        } else if (session.getRemindAt() == null && session.getRemindMinBefore() != null) {
-            errors.rejectValue("remindAt", "must be set if remindMinBefore is set");
+        if (session.getRemindAt() != null && session.getReminderPeriod() == null) {
+            errors.rejectValue("reminderPeriod", "must be set if remindAt is set");
+        } else if (session.getRemindAt() == null && session.getReminderPeriod() != null) {
+            errors.rejectValue("remindAt", "must be set if reminderPeriod is set");
         }
-        if (session.getRemindMinBefore() != null && session.getRemindMinBefore() < 0) {
-            errors.rejectValue("remindMinBefore", "cannot be negative");
+        if (session.getNotifyAt() == null && session.isAllowSnooze()) {
+            errors.rejectValue("allowSnooze", "cannot be true if notifications are disabled");
         }
+        validatePeriod(errors, session.getReminderPeriod(), "reminderPeriod", false);
+
         // If notifications are turned off, you do not need to provide messages. If you have 
         // notifications enabled, you must have messages. Either way, message contents and 
         // language constraints must always be correct.

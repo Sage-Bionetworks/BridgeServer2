@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.validators.Validate.WRONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validatePeriod;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -14,13 +15,15 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.Period;
+import org.mockito.Mockito;
+import org.springframework.validation.Errors;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 
-public class ValidatorUtilsTest {
+public class ValidatorUtilsTest extends Mockito {
     
     @Test
     public void participantHasValidIdentifierValidEmail() {
@@ -113,38 +116,75 @@ public class ValidatorUtilsTest {
     // hours, days, and weeks are allowed.
     
     @Test
-    public void monthsProhibitied() {
+    public void monthsProhibited() {
+        Errors errors = mock(Errors.class);
         Period period = Period.parse("P3M");
-        assertFalse(validatePeriod(period));
+        
+        validatePeriod(errors, period, "period", false);
+        
+        verify(errors).rejectValue("period", WRONG_PERIOD);
     }
 
     @Test
-    public void secondsProhibitied() {
+    public void secondsProhibited() {
+        Errors errors = mock(Errors.class);
         Period period = Period.parse("PT180S");
-        assertFalse(validatePeriod(period));
+        
+        validatePeriod(errors, period, "period", false);
+        
+        verify(errors).rejectValue("period", WRONG_PERIOD);
     }
 
     @Test
-    public void yearsProhibitied() {
+    public void yearsProhibited() {
+        Errors errors = mock(Errors.class);
         Period period = Period.parse("P3Y");
-        assertFalse(validatePeriod(period));
+        
+        validatePeriod(errors, period, "period", false);
+        
+        verify(errors).rejectValue("period", WRONG_PERIOD);
     }
     
     @Test
     public void validPeriod() {
+        Errors errors = mock(Errors.class);
         Period period = Period.parse("P2W");
-        assertTrue(validatePeriod(period));
+        
+        validatePeriod(errors, period, "period", false);
+        
+        verify(errors, never()).rejectValue(any(), any());
+    }
+    
+    @Test
+    public void validMinutesPeriod() {
+        Errors errors = mock(Errors.class);
+        Period period = Period.parse("PT30M");
+
+        validatePeriod(errors, period, "period", false);
+        
+        verify(errors, never()).rejectValue(any(), any());
     }
     
     @Test
     public void mixedWorks() {
+        Errors errors = mock(Errors.class);
         Period period = Period.parse("P2W3DT30M");
-        assertTrue(validatePeriod(period));
+
+        validatePeriod(errors, period, "period", false);
+        
+        verify(errors, never()).rejectValue(any(), any());
     }
 
     @Test
     public void mixedFails() {
+        Errors errors = mock(Errors.class);
         Period period = Period.parse("P3Y2W3DT30M");
-        assertFalse(validatePeriod(period));
+
+        validatePeriod(errors, period, "period", false);
+        
+        verify(errors).rejectValue("period", WRONG_PERIOD);
     }
+    
+    // TODO: tests for required, and for negative values. No, we don't allow mixed
+    // positive and negative that add up to a positive value.
 }

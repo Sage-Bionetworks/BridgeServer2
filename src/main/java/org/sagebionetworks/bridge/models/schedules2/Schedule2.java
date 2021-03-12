@@ -14,11 +14,13 @@ import javax.persistence.Table;
 import javax.persistence.Version;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
+import org.sagebionetworks.bridge.hibernate.JsonNodeAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.PeriodToStringConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -36,7 +38,8 @@ public class Schedule2 implements BridgeEntity {
     private String guid;
     @Convert(converter = PeriodToStringConverter.class)
     private Period duration;
-    private String durationStartEventId;
+    @Convert(converter = JsonNodeAttributeConverter.class)
+    private JsonNode clientData;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
@@ -84,11 +87,11 @@ public class Schedule2 implements BridgeEntity {
     public void setDuration(Period duration) {
         this.duration = duration;
     }
-    public String getDurationStartEventId() {
-        return durationStartEventId;
+    public JsonNode getClientData() {
+        return clientData;
     }
-    public void setDurationStartEventId(String durationStartEventId) {
-        this.durationStartEventId = durationStartEventId;
+    public void setClientData(JsonNode clientData) {
+        this.clientData = clientData;
     }
     public DateTime getCreatedOn() {
         return createdOn;

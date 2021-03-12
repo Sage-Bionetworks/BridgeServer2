@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestUtils.getClientData;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -44,7 +45,9 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2Test;
+import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.SessionTest;
+import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
 public class Schedule2ServiceTest extends Mockito {
     
@@ -248,7 +251,7 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setName("Name");
         schedule.setGuid("wrong-guid");
         schedule.setDuration(Period.parse("P3W"));
-        schedule.setDurationStartEventId("activities_retrieved");
+        schedule.setClientData(getClientData());
         schedule.setCreatedOn(CREATED_ON.minusDays(1));
         schedule.setModifiedOn(MODIFIED_ON.minusDays(1));
         schedule.setDeleted(true);
@@ -265,7 +268,7 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(captured.getName(), "Name");
         assertEquals(captured.getGuid(), GUID);
         assertEquals(captured.getDuration(), Period.parse("P3W"));
-        assertEquals(captured.getDurationStartEventId(), "activities_retrieved");
+        assertEquals(captured.getClientData().toString(), getClientData().toString());
         assertEquals(captured.getCreatedOn(), CREATED_ON);
         assertEquals(captured.getModifiedOn(), CREATED_ON);
         assertFalse(captured.isDeleted());
@@ -308,7 +311,7 @@ public class Schedule2ServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setName("Name");
         schedule.setDuration(Period.parse("P2W"));
-        schedule.setDurationStartEventId("activities_retrieved");
+        schedule.setClientData(getClientData());
         schedule.setOwnerId("this-will-be-ignored");
         
         service.createSchedule(schedule);        
@@ -331,7 +334,7 @@ public class Schedule2ServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setName("Name");
         schedule.setDuration(Period.parse("P2Y"));
-        schedule.setDurationStartEventId("activities_retrieved");
+        schedule.setClientData(getClientData());
         schedule.setOwnerId(TEST_ORG_ID);
         
         service.createSchedule(schedule);        
@@ -347,7 +350,7 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setName("Name");
         schedule.setGuid(GUID);
         schedule.setDuration(Period.parse("P3W"));
-        schedule.setDurationStartEventId("enrollment");
+        schedule.setClientData(getClientData());
         schedule.setCreatedOn(CREATED_ON.minusDays(1));
         schedule.setModifiedOn(MODIFIED_ON);
         schedule.setDeleted(false);
@@ -360,7 +363,7 @@ public class Schedule2ServiceTest extends Mockito {
         existing.setName("Old Name");
         existing.setGuid(GUID);
         existing.setDuration(Period.parse("P4W"));
-        existing.setDurationStartEventId("activities_retrieved");
+        existing.setClientData(getClientData());
         existing.setCreatedOn(CREATED_ON);
         existing.setModifiedOn(MODIFIED_ON.minusDays(1));
         existing.setDeleted(false);
@@ -383,7 +386,7 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(captured.getName(), "Name");
         assertEquals(captured.getGuid(), GUID);
         assertEquals(captured.getDuration(), Period.parse("P3W"));
-        assertEquals(captured.getDurationStartEventId(), "enrollment");
+        assertEquals(captured.getClientData().toString(), getClientData().toString());
         assertEquals(captured.getCreatedOn(), CREATED_ON);
         assertEquals(captured.getModifiedOn(), MODIFIED_ON);
         assertFalse(captured.isDeleted());
@@ -448,7 +451,7 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setName("Name");
         schedule.setGuid(GUID);
         schedule.setDuration(Period.parse("P3Y"));
-        schedule.setDurationStartEventId("enrollment");
+        schedule.setClientData(getClientData());
         schedule.setCreatedOn(CREATED_ON.minusDays(1));
         schedule.setModifiedOn(MODIFIED_ON);
         schedule.setDeleted(true);
@@ -460,7 +463,7 @@ public class Schedule2ServiceTest extends Mockito {
         existing.setName("Old Name");
         existing.setGuid(GUID);
         existing.setDuration(Period.parse("P4Y"));
-        existing.setDurationStartEventId("activities_retrieved");
+        existing.setClientData(getClientData());
         existing.setCreatedOn(CREATED_ON);
         existing.setModifiedOn(MODIFIED_ON.minusDays(1));
         existing.setDeleted(true);
@@ -567,28 +570,29 @@ public class Schedule2ServiceTest extends Mockito {
         
         when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
             .thenReturn(Optional.of(Organization.create()));
-
+        
+        // test valid schedule has GUID set on all the fields. for this test,
+        // let's set something else and verify that all fields are set, despite not
+        // being blank (allowing for a copy to be made).
+        
+        doReturn("otherGuid").when(service).generateGuid();
+        
         Schedule2 schedule = Schedule2Test.createValidSchedule();
-        schedule.setGuid(null);
-        schedule.getSessions().forEach(session -> {
-            session.setGuid(null);
-            session.getTimeWindows().forEach(window -> window.setGuid(null));
-        });
         
         service.createSchedule(schedule);
         
-        assertEquals(schedule.getGuid(), GUID);
+        assertEquals(schedule.getGuid(), "otherGuid");
         schedule.getSessions().forEach(session -> {
-            assertEquals(session.getGuid(), GUID);
+            assertEquals(session.getGuid(), "otherGuid");
             assertEquals(session.getSchedule(), schedule);
             session.getTimeWindows().forEach(window -> {
-                assertEquals(window.getGuid(), GUID);
+                assertEquals(window.getGuid(), "otherGuid");
             });
         });
     }
     
     @Test
-    public void setsAllGuidsOnUpdate() {
+    public void setsBlankGuidsOnUpdate() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
@@ -607,26 +611,31 @@ public class Schedule2ServiceTest extends Mockito {
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
 
         Schedule2 schedule = Schedule2Test.createValidSchedule();
-        schedule.setSessions(ImmutableList.of(SessionTest.createValidSession(), 
-                SessionTest.createValidSession()));
         
-        schedule.setDeleted(false);
-        schedule.getSessions().forEach(session -> {
-            session.setGuid(null);
-            session.getTimeWindows().forEach(window -> window.setGuid(null));
-        });
-        // but set one session and verify it is unchanged
-        schedule.getSessions().get(1).setGuid("oldGuid");
-        schedule.getSessions().get(1).getTimeWindows().get(0).setGuid("oldGuid");
+        Session session1 = SessionTest.createValidSession();
+        
+        Session session2 = SessionTest.createValidSession();
+        session2.setGuid(null);
+        
+        TimeWindow window1 = SessionTest.createValidSession().getTimeWindows().get(0);
+        TimeWindow window2 = SessionTest.createValidSession().getTimeWindows().get(0);
+        window2.setGuid(null);
+        session1.setTimeWindows(ImmutableList.of(window1, window2));
+        
+        schedule.setSessions(ImmutableList.of(session1, session2));
+        
+        // test valid schedule has GUID set on all the fields. for this test,
+        // let's set something else and verify that only blank GUID fields are set, 
+        // allowing for copies and new items to be added to the schedule.
+
+        doReturn("otherGuid").when(service).generateGuid();
         
         service.updateSchedule(schedule);
         
-        assertEquals(schedule.getGuid(), GUID);
         assertEquals(schedule.getSessions().get(0).getGuid(), GUID);
         assertEquals(schedule.getSessions().get(0).getTimeWindows().get(0).getGuid(), GUID);
-        
-        // These GUIDs, which were set, were not overwritten
-        assertEquals(schedule.getSessions().get(1).getGuid(), "oldGuid");
-        assertEquals(schedule.getSessions().get(1).getTimeWindows().get(0).getGuid(), "oldGuid");
+        assertEquals(schedule.getSessions().get(0).getTimeWindows().get(1).getGuid(), "otherGuid");
+        assertEquals(schedule.getSessions().get(1).getGuid(), "otherGuid");
+        assertEquals(schedule.getSessions().get(1).getTimeWindows().get(0).getGuid(), GUID);
     }
 }

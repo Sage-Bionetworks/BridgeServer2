@@ -3,8 +3,11 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_LANG;
+import static org.sagebionetworks.bridge.validators.Validate.WRONG_PERIOD;
 
 import java.util.HashSet;
 import java.util.List;
@@ -25,7 +28,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
-import org.sagebionetworks.bridge.models.schedules2.Localized;
+import org.sagebionetworks.bridge.models.schedules2.HasLang;
 
 public class ValidatorUtils {
     
@@ -73,13 +76,13 @@ public class ValidatorUtils {
         }
     }
 
-    public static void validateLanguageSet(Errors errors, List<? extends Localized> items, String fieldName) {
+    public static void validateLanguageSet(Errors errors, List<? extends HasLang> items, String fieldName) {
         if (items.isEmpty()) {
             return;
         }
         Set<String> visited = new HashSet<>();
         for (int i=0; i < items.size(); i++) {
-            Localized item = items.get(i);
+            HasLang item = items.get(i);
             errors.pushNestedPath(fieldName + "[" + i + "]");
             
             if (isBlank(item.getLang())) {
@@ -99,14 +102,25 @@ public class ValidatorUtils {
         }
     }
     
-    public static boolean validatePeriod(Period period) {
-        if (period != null) {
-            for (DurationFieldType type : PROHIBITED_DURATIONS) {
-                if (PROHIBITED_DURATIONS.contains(type) && period.get(type) > 0) {
-                    return false;
-                }
+    public static void validatePeriod(Errors errors, Period period, String fieldName, boolean required) {
+        if (period == null) {
+            if (required) {
+                errors.rejectValue(fieldName, CANNOT_BE_NULL);
+            }
+            return;
+        }
+        for (DurationFieldType type : PROHIBITED_DURATIONS) {
+            if (PROHIBITED_DURATIONS.contains(type) && period.get(type) > 0) {
+                errors.rejectValue(fieldName, WRONG_PERIOD);
+                break;
             }
         }
-        return true;
+        int[] values = period.getValues();
+        for (int i=0; i < values.length; i++) {
+            if (values[i] < 0) {
+                errors.rejectValue(fieldName, CANNOT_BE_NEGATIVE);
+                break;
+            }
+        }
     }
 }

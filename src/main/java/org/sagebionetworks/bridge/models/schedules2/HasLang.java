@@ -1,5 +1,5 @@
 package org.sagebionetworks.bridge.models.schedules2;
 
-public interface Localized {
+public interface HasLang {
     String getLang();
 }

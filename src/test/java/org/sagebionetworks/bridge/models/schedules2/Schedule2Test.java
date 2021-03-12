@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestUtils.getClientData;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -27,7 +28,7 @@ public class Schedule2Test {
         schedule.setName("Schedule name");
         schedule.setGuid(GUID);
         schedule.setDuration(Period.parse("P8W"));
-        schedule.setDurationStartEventId("activities_retrieved");
+        schedule.setClientData(getClientData());
         schedule.setCreatedOn(CREATED_ON);
         schedule.setModifiedOn(MODIFIED_ON);
         schedule.setDeleted(true);
@@ -53,7 +54,6 @@ public class Schedule2Test {
         assertEquals(node.get("name").textValue(), "Schedule name");
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("duration").textValue(), "P8W");
-        assertEquals(node.get("durationStartEventId").textValue(), "activities_retrieved");
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("modifiedOn").textValue(), MODIFIED_ON.toString());
         assertTrue(node.get("deleted").booleanValue());
@@ -70,7 +70,7 @@ public class Schedule2Test {
         assertEquals(deser.getName(), "Schedule name");
         assertEquals(deser.getGuid(), GUID);
         assertEquals(deser.getDuration(), Period.parse("P8W"));
-        assertEquals(deser.getDurationStartEventId(), "activities_retrieved");
+        assertEquals(deser.getClientData().toString(), getClientData().toString());
         assertEquals(deser.getCreatedOn(), CREATED_ON);
         assertEquals(deser.getModifiedOn(), MODIFIED_ON);
         assertTrue(deser.isDeleted());

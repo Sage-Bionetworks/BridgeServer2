@@ -37,14 +37,7 @@ public class Schedule2Validator implements Validator {
         if (isBlank(schedule.getGuid())) {
             errors.rejectValue("guid", CANNOT_BE_BLANK);
         }
-        if (schedule.getDuration() == null) {
-            errors.rejectValue("duration", CANNOT_BE_NULL);
-        } else if (!validatePeriod(schedule.getDuration())) {
-            errors.rejectValue("duration", WRONG_PERIOD);
-        }
-        if (isBlank(schedule.getDurationStartEventId())) {
-            errors.rejectValue("durationStartEventId", "is not a valid event ID");
-        }
+        validatePeriod(errors, schedule.getDuration(), "duration", true);
         if (schedule.getCreatedOn() == null) {
             errors.rejectValue("createdOn", CANNOT_BE_NULL);
         }

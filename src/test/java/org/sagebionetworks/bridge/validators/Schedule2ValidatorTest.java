@@ -98,20 +98,6 @@ public class Schedule2ValidatorTest extends Mockito {
     }
     
     @Test
-    public void durationStartEventIdBlank() {
-        Schedule2 schedule = createValidSchedule();
-        schedule.setDurationStartEventId(" ");
-        assertValidatorMessage(INSTANCE, schedule, "durationStartEventId", "is not a valid event ID");
-    }
-    
-    @Test
-    public void durationStartEventIdNull() {
-        Schedule2 schedule = createValidSchedule();
-        schedule.setDurationStartEventId(null);
-        assertValidatorMessage(INSTANCE, schedule, "durationStartEventId", "is not a valid event ID");
-    }
-    
-    @Test
     public void createdOnNull() {
         Schedule2 schedule = createValidSchedule();
         schedule.setCreatedOn(null);

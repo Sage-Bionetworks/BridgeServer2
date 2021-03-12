@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.models.schedules2;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class Label implements Localized {
+public class Label implements HasLang {
 
     private final String lang;
     private final String label;

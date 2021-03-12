@@ -26,6 +26,7 @@ public class AssessmentReference {
     
     private String guid;
     private String appId;
+    private String identifier;
     private String title;
     @Column(columnDefinition = "text", name = "labels", nullable = true)
     @Convert(converter = LabelListConverter.class)
@@ -43,6 +44,12 @@ public class AssessmentReference {
     }
     public void setGuid(String guid) {
         this.guid = guid;
+    }
+    public String getIdentifier() {
+        return identifier;
+    }
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
     }
     public String getTitle() {
         return title;

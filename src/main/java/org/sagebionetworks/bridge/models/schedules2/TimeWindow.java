@@ -15,7 +15,7 @@ import org.sagebionetworks.bridge.hibernate.PeriodToStringConverter;
 
 @Embeddable
 @Table(name = "SessionTimeWindows")
-public class TimeWindow {
+public class TimeWindow implements HasGuid {
     
     private String guid;
     @Convert(converter = LocalTimeToStringConverter.class)

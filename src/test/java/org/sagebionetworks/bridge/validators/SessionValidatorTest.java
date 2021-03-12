@@ -203,31 +203,38 @@ public class SessionValidatorTest extends Mockito {
     @Test
     public void remindAtSetButReminMinBeforeNotSet() {
         Session session = createValidSession();
-        session.setRemindMinBefore(null);
-        assertValidatorMessage(INSTANCE, session, "remindMinBefore", "must be set if remindAt is set");
+        session.setReminderPeriod(null);
+        assertValidatorMessage(INSTANCE, session, "reminderPeriod", "must be set if remindAt is set");
     }
     
     @Test
     public void remindMinBeforeSetButRemindAtNotSet() {
         Session session = createValidSession();
         session.setRemindAt(null);
-        assertValidatorMessage(INSTANCE, session, "remindAt", "must be set if remindMinBefore is set");
+        assertValidatorMessage(INSTANCE, session, "remindAt", "must be set if reminderPeriod is set");
     }
     
     @Test
-    public void remindMinBeforeAndRemindAtNullOK() {
-        // No reminder (second notifiaction) should be shown. This is valid
+    public void reminderPeriodAndRemindAtNullOK() {
+        // No reminder (second notification) should be shown. This is valid
         Session session = createValidSession();
-        session.setRemindMinBefore(null);
+        session.setReminderPeriod(null);
         session.setRemindAt(null);
         Validate.entityThrowingException(INSTANCE, session);
     }
     
     @Test
-    public void remindMinBeforeNegative() {
+    public void reminderPeriodNegative() {
         Session session = createValidSession();
-        session.setRemindMinBefore(-10);
-        assertValidatorMessage(INSTANCE, session, "remindMinBefore", CANNOT_BE_NEGATIVE);
+        session.setReminderPeriod(Period.parse("PT-10M"));
+        assertValidatorMessage(INSTANCE, session, "reminderPeriod", CANNOT_BE_NEGATIVE);
+    }
+
+    @Test
+    public void allowSnoozeCannotBeTrueWhenNotificationsDisabled() {
+        Session session = createValidSession();
+        session.setNotifyAt(null);
+        assertValidatorMessage(INSTANCE, session, "allowSnooze", "cannot be true if notifications are disabled");
     }
     
     @Test
@@ -241,6 +248,7 @@ public class SessionValidatorTest extends Mockito {
     public void messagesNullOrEmptyOKIfNoNotifications() {
         Session session = createValidSession();
         session.setNotifyAt(null);
+        session.setAllowSnooze(false);
         Validate.entityThrowingException(INSTANCE, session);
     }
     

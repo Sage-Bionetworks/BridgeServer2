@@ -30,7 +30,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 @Entity
 @Table(name = "Sessions")
 @BridgeTypeName("Session")
-public class Session implements BridgeEntity {
+public class Session implements BridgeEntity, HasGuid {
     
     @ManyToOne
     @JoinColumn(name = "scheduleGuid", nullable = false)
@@ -56,7 +56,8 @@ public class Session implements BridgeEntity {
     private NotificationType notifyAt;
     @Enumerated(EnumType.STRING)
     private ReminderType remindAt;
-    private Integer remindMinBefore;
+    @Convert(converter = PeriodToStringConverter.class)
+    private Period reminderPeriod;
     private boolean allowSnooze;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "SessionAssessments", 
@@ -153,11 +154,11 @@ public class Session implements BridgeEntity {
     public void setRemindAt(ReminderType remindAt) {
         this.remindAt = remindAt;
     }
-    public Integer getRemindMinBefore() {
-        return remindMinBefore;
+    public Period getReminderPeriod() {
+        return reminderPeriod;
     }
-    public void setRemindMinBefore(Integer remindMinBefore) {
-        this.remindMinBefore = remindMinBefore;
+    public void setReminderPeriod(Period reminderPeriod) {
+        this.reminderPeriod = reminderPeriod;
     }
     public boolean isAllowSnooze() {
         return allowSnooze;
