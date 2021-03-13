@@ -6,20 +6,27 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_HEX_TRIPLET;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLanguageSet;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
+import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.services.OrganizationService;
 
 public class AssessmentValidator implements Validator {
 
+    private static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$";
+    
     private final String appId;
     private final OrganizationService organizationService;
     
@@ -75,6 +82,26 @@ public class AssessmentValidator implements Validator {
                 }
             }
         }
+        if (assessment.getColorScheme() != null) {
+            errors.pushNestedPath("colorScheme");
+            ColorScheme cs = assessment.getColorScheme();
+            if (cs.getBackground() != null && !cs.getBackground().matches(HEX_TRIPLET_FORMAT)) {
+                errors.rejectValue("background", INVALID_HEX_TRIPLET);
+            }
+            if (cs.getForeground() != null && !cs.getForeground().matches(HEX_TRIPLET_FORMAT)) {
+                errors.rejectValue("foreground", INVALID_HEX_TRIPLET);
+            }
+            if (cs.getActivated() != null && !cs.getActivated().matches(HEX_TRIPLET_FORMAT)) {
+                errors.rejectValue("activated", INVALID_HEX_TRIPLET);
+            }
+            if (cs.getInactivated() != null && !cs.getInactivated().matches(HEX_TRIPLET_FORMAT)) {
+                errors.rejectValue("inactivated", INVALID_HEX_TRIPLET);
+            }
+            errors.popNestedPath();
+        }
+        if (!assessment.getLabels().isEmpty()) {
+            validateLabels(assessment.getLabels(), errors);
+        }
         
         // ownerId == studyId except in the shared assessments app, where it must include
         // the app as a namespace prefix, e.g. "appId:orgId". Assessments are always 
@@ -98,6 +125,19 @@ public class AssessmentValidator implements Validator {
         }
         if (assessment.getMinutesToComplete() != null && assessment.getMinutesToComplete() < 0) {
             errors.rejectValue("minutesToComplete", CANNOT_BE_NEGATIVE);
+        }
+    }
+    
+    private void validateLabels(List<Label> labels, Errors errors) {
+        validateLanguageSet(errors, labels, "labels");    
+        for (int j=0; j < labels.size(); j++) {
+            Label label = labels.get(j);
+
+            if (isBlank(label.getValue())) {
+                errors.pushNestedPath("labels[" + j + "]");
+                errors.rejectValue("value", CANNOT_BE_BLANK);
+                errors.popNestedPath();
+            }
         }
     }
 }

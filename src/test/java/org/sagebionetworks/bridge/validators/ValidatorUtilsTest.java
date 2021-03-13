@@ -9,16 +9,22 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.mockito.Mockito;
+import org.springframework.validation.Errors;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 
-public class ValidatorUtilsTest {
+public class ValidatorUtilsTest extends Mockito {
     
     @Test
     public void participantHasValidIdentifierValidEmail() {
@@ -103,5 +109,48 @@ public class ValidatorUtilsTest {
         account = Account.create();
         account.setEnrollments(ImmutableSet.of());
         assertFalse(ValidatorUtils.accountHasValidIdentifier(account));
+    }
+    
+    @Test
+    public void validateLanguageSet_Null() {
+        Errors errors = mock(Errors.class);
+        List<Label> labels = null;
+        
+        ValidatorUtils.validateLanguageSet(errors, labels, "fields");
+        
+        verifyNoMoreInteractions(errors);
+    }
+
+    @Test
+    public void validateLanguageSet_LangBlank() {
+        Errors errors = mock(Errors.class);
+        List<Label> labels = ImmutableList.of();
+        
+        ValidatorUtils.validateLanguageSet(errors, labels, "fields");
+        
+        verifyNoMoreInteractions(errors);
+    }
+
+    @Test
+    public void validateLanguageSet_LangInvalid() {
+        Errors errors = mock(Errors.class);
+        List<Label> labels = ImmutableList.of(new Label("yyy", "Bad label"));
+        
+        ValidatorUtils.validateLanguageSet(errors, labels, "fields");
+        
+        verify(errors).pushNestedPath("fields[0]");
+        verify(errors).rejectValue("lang", Validate.INVALID_LANG);
+    }
+
+    @Test
+    public void validateLanguageSet_LangDuplicated() {
+        Errors errors = mock(Errors.class);
+        List<Label> labels = ImmutableList.of(new Label("en", "First label"), 
+                new Label("en", "Duplicate label"));
+        
+        ValidatorUtils.validateLanguageSet(errors, labels, "fields");
+        
+        verify(errors).pushNestedPath("fields[1]");
+        verify(errors).rejectValue("lang", Validate.DUPLICATE_LANG);
     }
 }
