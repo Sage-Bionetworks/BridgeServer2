@@ -10,6 +10,7 @@ public enum Roles {
     DEVELOPER,
     RESEARCHER,
     STUDY_COORDINATOR,
+    STUDY_DESIGNER,
     ORG_ADMIN,
     ADMIN,
     WORKER,
@@ -19,7 +20,8 @@ public enum Roles {
      * This user has a role that marks the user as a user of the non-participant APIs (they have 
      * a role assigned to human administrative accounts).
      */
-    public static final Set<Roles> ADMINISTRATIVE_ROLES = EnumSet.of(DEVELOPER, RESEARCHER, STUDY_COORDINATOR, ORG_ADMIN, ADMIN);
+    public static final Set<Roles> ADMINISTRATIVE_ROLES = EnumSet.of(DEVELOPER, RESEARCHER, STUDY_COORDINATOR, 
+            STUDY_DESIGNER, ORG_ADMIN, ADMIN);
     
     /**
      * To assess if an API caller can add or remove a role to/from an account, the caller must 
@@ -37,5 +39,6 @@ public enum Roles {
         // so they can bootstrap these roles, including other organization administrators.
         .put(ORG_ADMIN, EnumSet.of(SUPERADMIN, ADMIN, ORG_ADMIN))
         .put(STUDY_COORDINATOR, EnumSet.of(SUPERADMIN, ADMIN, ORG_ADMIN))
+        .put(STUDY_DESIGNER, EnumSet.of(SUPERADMIN, ADMIN, ORG_ADMIN))
         .build();
 }

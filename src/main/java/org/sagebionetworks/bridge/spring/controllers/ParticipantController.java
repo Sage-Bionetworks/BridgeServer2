@@ -176,7 +176,6 @@ public class ParticipantController extends BaseController {
         
         return UserSessionInfo.toJSON(session);
     }
-
     
     @GetMapping("/v3/participants/{userId}/enrollments")
     public PagedResourceList<EnrollmentDetail> getEnrollments(@PathVariable String userId) {
