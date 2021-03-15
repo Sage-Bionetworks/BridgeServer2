@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
 import static org.sagebionetworks.bridge.validators.Validate.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_LANG;
+import static org.sagebionetworks.bridge.validators.Validate.WRONG_LONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.Validate.WRONG_PERIOD;
 
 import java.util.List;
@@ -85,7 +86,15 @@ public class SessionValidatorTest extends Mockito {
     public void intervalInvalidPeriod() { 
         Session session = createValidSession();
         session.setInterval(Period.parse("P3Y"));
-        assertValidatorMessage(INSTANCE, session, "interval", WRONG_PERIOD);
+        assertValidatorMessage(INSTANCE, session, "interval", WRONG_LONG_PERIOD);
+    }
+    
+    
+    @Test
+    public void intervalInvalidShortPeriod() { 
+        Session session = createValidSession();
+        session.setInterval(Period.parse("PT3H"));
+        assertValidatorMessage(INSTANCE, session, "interval", WRONG_LONG_PERIOD);
     }
 
     @Test
@@ -103,17 +112,17 @@ public class SessionValidatorTest extends Mockito {
     }
     
     @Test
-    public void labelsLabelBlank() {
+    public void labelsValueBlank() {
         Session session = createValidSession();
         session.setLabels(ImmutableList.of(new Label("en", "")));
-        assertValidatorMessage(INSTANCE, session, "labels[0].label", CANNOT_BE_BLANK);
+        assertValidatorMessage(INSTANCE, session, "labels[0].value", CANNOT_BE_BLANK);
     }
     
     @Test
-    public void labelsLabelNull() {
+    public void labelsValueNull() {
         Session session = createValidSession();
         session.setLabels(ImmutableList.of(new Label("en", null)));
-        assertValidatorMessage(INSTANCE, session, "labels[0].label", CANNOT_BE_BLANK);
+        assertValidatorMessage(INSTANCE, session, "labels[0].value", CANNOT_BE_BLANK);
     }
     
     @Test
@@ -256,7 +265,10 @@ public class SessionValidatorTest extends Mockito {
     public void messagesNullOrEmptyOKIfNoNotifications() {
         Session session = createValidSession();
         session.setNotifyAt(null);
+        session.setRemindAt(null);
         session.setAllowSnooze(false);
+        session.setReminderPeriod(null);
+        session.setMessages(null);
         Validate.entityThrowingException(INSTANCE, session);
     }
     

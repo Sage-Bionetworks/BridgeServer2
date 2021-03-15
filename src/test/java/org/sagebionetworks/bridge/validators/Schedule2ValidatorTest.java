@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.models.schedules2.Schedule2Test.createV
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
-import static org.sagebionetworks.bridge.validators.Validate.WRONG_PERIOD;
+import static org.sagebionetworks.bridge.validators.Validate.WRONG_LONG_PERIOD;
 
 import com.google.common.collect.ImmutableList;
 
@@ -94,7 +94,14 @@ public class Schedule2ValidatorTest extends Mockito {
     public void durationInvalidValue() {
         Schedule2 schedule = createValidSchedule();
         schedule.setDuration(Period.parse("P3Y"));
-        assertValidatorMessage(INSTANCE, schedule, "duration", WRONG_PERIOD);
+        assertValidatorMessage(INSTANCE, schedule, "duration", WRONG_LONG_PERIOD);
+    }
+    
+    @Test
+    public void durationInvalidShortValue() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.setDuration(Period.parse("PT30M"));
+        assertValidatorMessage(INSTANCE, schedule, "duration", WRONG_LONG_PERIOD);
     }
     
     @Test

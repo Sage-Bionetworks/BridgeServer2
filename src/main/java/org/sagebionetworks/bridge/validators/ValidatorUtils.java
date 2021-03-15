@@ -129,9 +129,7 @@ public class ValidatorUtils {
             return;
         }
         DurationFieldType[] fields = period.getFieldTypes();
-        
         for (DurationFieldType type : fields) {
-            System.out.println(type);
             if (!durations.contains(type) && period.get(type) != 0) {
                 errors.rejectValue(fieldName, error);
                 break;
