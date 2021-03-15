@@ -42,7 +42,8 @@ public class AuthUtils {
             .hasAnyRole(ADMIN);
     
     /**
-     * Can the caller and/remove organization members? Must be the organizations's admin.
+     * Can the caller and/remove organization members? Must be the organizations's admin. Note 
+     * that this check is currently also used for sponsors...which are not members.
      */
     public static final AuthEvaluator CAN_EDIT_MEMBERS = new AuthEvaluator()
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
@@ -63,18 +64,17 @@ public class AuthUtils {
      * own account, must have access to the study, or be a worker. 
      */
     public static final AuthEvaluator CAN_READ_STUDY_ASSOCIATIONS = new AuthEvaluator().isSelf().or()
-            .canAccessStudy().or()
-            .hasAnyRole(WORKER, ADMIN).or()
-            .callerConsideredGlobal();
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
     
     /**
-     * Can the caller view participants (through the origin Participants API)? Must be reading self,
+     * Can the caller view participants (through the original Participants API)? Must be reading self,
      * be an organization admin, or be a worker.
      */
     public static final AuthEvaluator CAN_READ_PARTICIPANTS = new AuthEvaluator().isSelf().or()
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
-            .hasAnyRole(WORKER, ADMIN).or()
-            .callerConsideredGlobal();
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
     
     /**
      * Can the caller edit participants? Must be editing one’s own account, or be a study coordinator
@@ -106,7 +106,7 @@ public class AuthUtils {
      */
     public static final AuthEvaluator CAN_READ_STUDIES = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER, ORG_ADMIN).or()
-            .hasAnyRole(ADMIN);
+            .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
      * Can the caller edit studies? Caller must be a study coordinator, or a developer.

@@ -22,6 +22,8 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
+import java.util.Optional;
+
 import javax.servlet.ServletInputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -1235,7 +1237,7 @@ public class AuthenticationControllerTest extends Mockito {
         
         Account account = Account.create();
         AccountId accountId = AccountId.forSynapseUserId("my-new-study", SYNAPSE_USER_ID);
-        when(mockAccountService.getAccount(accountId)).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(account));
         
         App newApp = App.create();
         newApp.setIdentifier("my-new-study");

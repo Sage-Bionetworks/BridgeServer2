@@ -260,7 +260,11 @@ public class ParticipantControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
 
-        doReturn(session).when(controller).getSessionIfItExists();
+        doAnswer((ans) -> {
+            RequestContext.updateFromSession(session, null);
+            return session;
+        }).when(controller).getSessionIfItExists();
+        
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         List<AccountSummary> summaries = ImmutableList.of(SUMMARY1, SUMMARY1, SUMMARY1);
@@ -407,6 +411,14 @@ public class ParticipantControllerTest extends Mockito {
         assertFalse(node.has("encryptedHealthCode"));
 
         verify(mockParticipantService).getParticipant(app, "aUser", true);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getParticipantDeveloperIsNotSelf() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
+
+        controller.getParticipant("aUser", true);
     }
     
     @Test

@@ -31,6 +31,7 @@ import static org.testng.Assert.fail;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.mail.internet.MimeBodyPart;
 
@@ -337,7 +338,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void resendEmailVerificationToken() {
         when(service.getNextToken()).thenReturn(TOKEN);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getId()).thenReturn(USER_ID);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         
@@ -350,7 +351,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test(expectedExceptions = UnsupportedOperationException.class)
     public void resendEmailVerificationTokenUnsupportedType() {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(mockAccount));
         
         // Use null so we don't have to create an unsupported channel type
         service.resendVerificationToken(null, ACCOUNT_ID_WITH_EMAIL);
@@ -384,7 +385,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void resendPhoneVerificationToken() {
         when(service.getNextPhoneToken()).thenReturn(PHONE_TOKEN);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getId()).thenReturn(USER_ID);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         

@@ -181,6 +181,14 @@ public class SponsorServiceTest extends Mockito {
     }
     
     @Test
+    public void createStudyWithSponsorship() {
+        service.createStudyWithSponsorship(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
+        
+        verify(mockSponsorDao).addStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
+        verify(mockCacheProvider).removeObject( CacheKey.orgSponsoredStudies(TEST_APP_ID, TEST_ORG_ID) );
+    }
+    
+    @Test
     public void removeStudySponsorAsAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());

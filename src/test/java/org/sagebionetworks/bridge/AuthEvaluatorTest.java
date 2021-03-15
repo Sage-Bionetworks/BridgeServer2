@@ -45,13 +45,6 @@ public class AuthEvaluatorTest {
         assertFalse(evaluator.check(USER_ID, "user"));
     }
     
-    // This does need to go away
-    @Test
-    public void callerConsideredGlobal() {
-        AuthEvaluator evaluator = new AuthEvaluator().callerConsideredGlobal();
-        assertTrue(evaluator.check(STUDY_ID, "study2"));
-    }
-    
     @Test
     public void hasAnyRole() {
         RequestContext.set(new RequestContext.Builder()

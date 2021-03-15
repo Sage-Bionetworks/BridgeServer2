@@ -179,7 +179,8 @@ public class ParticipantController extends BaseController {
     
     @GetMapping("/v3/participants/{userId}/enrollments")
     public PagedResourceList<EnrollmentDetail> getEnrollments(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(false, RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
         
         // A limitation of Swagger as we use it is that we don't want different collection
         // containers for the same kind of entity. Since some APIs can page enrollments, 
@@ -333,7 +334,8 @@ public class ParticipantController extends BaseController {
     @GetMapping(path="/v3/participants/{userId}", produces={APPLICATION_JSON_UTF8_VALUE})
     public String getParticipant(@PathVariable String userId, @RequestParam(defaultValue = "true") boolean consents)
             throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAdministrativeSession();
+        CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
 
         App app = appService.getApp(session.getAppId());
 

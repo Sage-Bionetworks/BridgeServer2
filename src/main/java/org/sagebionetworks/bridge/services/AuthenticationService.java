@@ -152,7 +152,11 @@ public class AuthenticationService {
         if (sessionToken == null) {
             return null;
         }
-        return cacheProvider.getUserSession(sessionToken);
+        UserSession session = cacheProvider.getUserSession(sessionToken);
+        if (session != null) {
+            RequestContext.updateFromSession(session, sponsorService);    
+        }
+        return session;
     }
     
     /**
@@ -186,7 +190,7 @@ public class AuthenticationService {
         
         Account account = accountService.authenticate(app, signIn);
         
-        clearSession(app.getIdentifier(), account.getId());
+        clearSession(app.getIdentifier(), account);
         UserSession session = getSessionFromAccount(app, context, account);
 
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
@@ -244,11 +248,14 @@ public class AuthenticationService {
     public void signOut(final UserSession session) {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
-            accountService.deleteReauthToken(accountId);
-            // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
-            // removed, but once the reauth token is removed from the user table, the reauth token will no 
-            // longer work (and is short-lived in the cache).
-            cacheProvider.removeSession(session);
+            Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+            if (account != null) {
+                accountService.deleteReauthToken(account);
+                // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
+                // removed, but once the reauth token is removed from the user table, the reauth token will no 
+                // longer work (and is short-lived in the cache).
+                cacheProvider.removeSession(session);
+            }
         } 
     }
 
@@ -397,7 +404,7 @@ public class AuthenticationService {
         } else {
             // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
             // Then, create a new session.
-            clearSession(context.getAppId(), account.getId());
+            clearSession(context.getAppId(), account);
             App app = appService.getApp(signIn.getAppId());
             session = getSessionFromAccount(app, context, account);
 
@@ -439,6 +446,12 @@ public class AuthenticationService {
      * APIs, which creates the session. Package-scoped for unit tests.
      */
     public UserSession getSessionFromAccount(App app, CriteriaContext context, Account account) {
+        
+        // We are about to retrieve a participant and the security check must pass. In this case,
+        // an authenticating user is retrieving their own account, and we want the IDs to match
+        // during the authentication check.
+        RequestContext.acquireAccountIdentity(account);
+        
         StudyParticipant participant = participantService.getParticipant(app, account, false);
 
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
@@ -494,15 +507,12 @@ public class AuthenticationService {
         if (accountId == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         if (account.getRoles().isEmpty()) {
             throw new UnauthorizedException("Only administrative accounts can sign in via OAuth.");
         }
-        
-        clearSession(authToken.getAppId(), account.getId());
+        clearSession(authToken.getAppId(), account);
         App app = appService.getApp(authToken.getAppId());
         UserSession session = getSessionFromAccount(app, context, account);
         cacheProvider.setUserSession(session);
@@ -514,10 +524,9 @@ public class AuthenticationService {
     // (old session tokens should not be usable to retrieve the session) and we are deleting all outstanding 
     // reauthentication tokens. Call this after successfully authenticating, but before creating a session which 
     // also includes creating a new (valid) reauth token.
-    private void clearSession(String appId, String userId) {
-        AccountId accountId = AccountId.forId(appId, userId);
-        accountService.deleteReauthToken(accountId);
-        cacheProvider.removeSessionByUserId(userId);
+    private void clearSession(String appId, Account account) {
+        accountService.deleteReauthToken(account);
+        cacheProvider.removeSessionByUserId(account.getId());
     }
 
     // Sign-in methods contain a criteria context that includes no user information. After signing in, we need to
