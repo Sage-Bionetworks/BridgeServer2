@@ -23,16 +23,18 @@ public class Label implements HasLang {
         return value;
     }
 
+    // hashCode and equals are necessary for Hibernate to correctly identify embedded instances; very
+    // strange behavior occurs if they are not present.
+    
     @Override
     public int hashCode() {
         return Objects.hash(lang, value);
     }
-
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null || getClass() != obj.getClass())
+        if (obj == null || !(obj instanceof Label))
             return false;
         Label other = (Label) obj;
         return Objects.equals(lang, other.lang) && Objects.equals(value, other.value);

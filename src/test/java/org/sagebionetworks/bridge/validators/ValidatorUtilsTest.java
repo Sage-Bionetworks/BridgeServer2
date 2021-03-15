@@ -6,6 +6,9 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.DUPLICATE_LANG;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_LANG;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -122,7 +125,7 @@ public class ValidatorUtilsTest extends Mockito {
     }
 
     @Test
-    public void validateLanguageSet_LangBlank() {
+    public void validateLanguageSet_Empty() {
         Errors errors = mock(Errors.class);
         List<Label> labels = ImmutableList.of();
         
@@ -139,9 +142,20 @@ public class ValidatorUtilsTest extends Mockito {
         ValidatorUtils.validateLanguageSet(errors, labels, "fields");
         
         verify(errors).pushNestedPath("fields[0]");
-        verify(errors).rejectValue("lang", Validate.INVALID_LANG);
+        verify(errors).rejectValue("lang", INVALID_LANG);
     }
 
+    @Test
+    public void validateLanguageSet_LangMissing() {
+        Errors errors = mock(Errors.class);
+        List<Label> labels = ImmutableList.of(new Label("", "Bad label"));
+        
+        ValidatorUtils.validateLanguageSet(errors, labels, "fields");
+        
+        verify(errors).pushNestedPath("fields[0]");
+        verify(errors).rejectValue("lang", CANNOT_BE_BLANK);
+    }
+    
     @Test
     public void validateLanguageSet_LangDuplicated() {
         Errors errors = mock(Errors.class);
@@ -151,6 +165,6 @@ public class ValidatorUtilsTest extends Mockito {
         ValidatorUtils.validateLanguageSet(errors, labels, "fields");
         
         verify(errors).pushNestedPath("fields[1]");
-        verify(errors).rejectValue("lang", Validate.DUPLICATE_LANG);
+        verify(errors).rejectValue("lang", DUPLICATE_LANG);
     }
 }

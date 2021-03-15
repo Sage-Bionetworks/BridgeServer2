@@ -9,9 +9,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * Colors to differentiate this assessment in a UI. The colors include:
  * <ul>
  *   <li>background - background color</li>
- *   <li>foreground - text, icon, border colors</li>
- *   <li>activated - enabled, active, hover, focus, completed</li>
- *   <li>inactivated - disabled, inactive, incomplete</li>
+ *   <li>foreground - text, icon, line and border color</li>
+ *   <li>activated - enabled, active, hover, focus, completed color</li>
+ *   <li>inactivated - disabled, inactive, incomplete color</li>
  * </ul>
  */
 public class ColorScheme {
@@ -40,6 +40,10 @@ public class ColorScheme {
     public String getInactivated() {
         return inactivated;
     }
+    
+    // hashCode and equals are necessary for Hibernate to correctly identify embedded instances; very
+    // strange behavior occurs if they are not present.
+
     @Override
     public int hashCode() {
         return Objects.hash(activated, background, foreground, inactivated);
@@ -48,7 +52,7 @@ public class ColorScheme {
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null || getClass() != obj.getClass())
+        if (obj == null || !(obj instanceof ColorScheme))
             return false;
         ColorScheme other = (ColorScheme) obj;
         return Objects.equals(activated, other.activated) &&

@@ -9,8 +9,15 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
 public class ColorSchemeTest {
 
+    @Test
+    public void equalsHashCode() {
+        EqualsVerifier.forClass(ColorScheme.class).allFieldsShouldBeUsed().verify();
+    }
+    
     @Test
     public void canSerialize() throws Exception {
         JsonNode node = BridgeObjectMapper.get().valueToTree(COLOR_SCHEME);

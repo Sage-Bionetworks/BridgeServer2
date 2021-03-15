@@ -8,8 +8,16 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
 public class LabelTest {
 
+    @Test
+    public void equalsHashCode() {
+        EqualsVerifier.forClass(Label.class).allFieldsShouldBeUsed()
+            .verify();
+    }
+    
     @Test
     public void canSerialize() throws Exception {
         Label label = new Label("en", "Value");

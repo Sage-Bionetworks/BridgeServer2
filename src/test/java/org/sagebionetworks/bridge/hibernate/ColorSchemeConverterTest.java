@@ -42,11 +42,11 @@ public class ColorSchemeConverterTest extends Mockito {
     
     @Test
     public void convertToDatabaseColumn_handlesNull() {
-        
+        assertNull( converter.convertToDatabaseColumn(null) );
     }
     
     @Test
     public void convertToEntityAttribute_handlesNull() {
-        
+        assertNull( converter.convertToEntityAttribute(null) );
     }
 }

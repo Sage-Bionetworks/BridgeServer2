@@ -64,7 +64,7 @@ public class AssessmentValidator implements Validator {
         if (assessment.getRevision() < 0) {
             errors.rejectValue("revision", "cannot be negative");   
         }
-        if (assessment.getCustomizationFields() != null && !assessment.getCustomizationFields().isEmpty()) {
+        if (!assessment.getCustomizationFields().isEmpty()) {
             for (Map.Entry<String, Set<PropertyInfo>> entry : assessment.getCustomizationFields().entrySet()) {
                 String key = entry.getKey();
                 

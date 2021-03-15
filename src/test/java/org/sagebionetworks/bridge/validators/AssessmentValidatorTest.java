@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
+import static org.sagebionetworks.bridge.validators.Validate.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_HEX_TRIPLET;
 
 import java.util.HashMap;
@@ -24,6 +25,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.dao.AssessmentDao;
+import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
@@ -60,6 +62,17 @@ public class AssessmentValidatorTest extends Mockito {
         when(mockOrganizationService.getOrganization(TEST_APP_ID, assessment.getOwnerId()))
             .thenReturn(Organization.create());
         
+        Validate.entityThrowingException(validator, assessment);
+    }
+    @Test
+    public void validAssessmentWithNoOptionalFields() {
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Organization.create());
+        assessment.setColorScheme(null);
+        assessment.setLabels(null);
+        assessment.setMinutesToComplete(null);
+        assessment.setCustomizationFields(null);
+    
         Validate.entityThrowingException(validator, assessment);
     }
     @Test
@@ -197,5 +210,32 @@ public class AssessmentValidatorTest extends Mockito {
         ColorScheme scheme = new ColorScheme(null, null, null, "cccccc");
         assessment.setColorScheme(scheme);
         assertValidatorMessage(validator, assessment, "colorScheme.inactivated", INVALID_HEX_TRIPLET);
+    }
+    
+    @Test
+    public void labelsEmptyIsValid() {
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Organization.create());
+        
+        assessment.setLabels(ImmutableList.of());
+        Validate.entityThrowingException(validator, assessment);
+    }
+
+    @Test
+    public void labelsInvalid() {
+        assessment.setLabels(ImmutableList.of(new Label("en", "foo"), new Label("en", "bar")));
+        assertValidatorMessage(validator, assessment, "labels[1].lang", DUPLICATE_LANG);
+    }
+
+    @Test
+    public void labelsValueBlank() {
+        assessment.setLabels(ImmutableList.of(new Label("en", "")));
+        assertValidatorMessage(validator, assessment, "labels[0].value", CANNOT_BE_BLANK);
+    }
+
+    @Test
+    public void labelsValueNull() {
+        assessment.setLabels(ImmutableList.of(new Label("en", null)));
+        assertValidatorMessage(validator, assessment, "labels[0].value", CANNOT_BE_BLANK);
     }
 }

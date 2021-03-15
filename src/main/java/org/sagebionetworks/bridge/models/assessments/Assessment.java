@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.assessments;
 import static org.sagebionetworks.bridge.models.TagUtils.toStringSet;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,6 @@ public class Assessment implements BridgeEntity {
         dto.setTags(toStringSet(assessment.getTags()));    
         dto.setCustomizationFields(assessment.getCustomizationFields());
         dto.setColorScheme(assessment.getColorScheme());
-        dto.getLabels().addAll(assessment.getLabels());
         dto.setLabels(assessment.getLabels());
         dto.setCreatedOn(assessment.getCreatedOn());
         dto.setModifiedOn(assessment.getModifiedOn());
@@ -137,6 +137,9 @@ public class Assessment implements BridgeEntity {
         this.tags = tags;
     }
     public Map<String, Set<PropertyInfo>> getCustomizationFields() {
+        if (customizationFields == null) {
+            customizationFields = new HashMap<>();
+        }
         return customizationFields;
     }
     public void setCustomizationFields(Map<String, Set<PropertyInfo>> customizationFields) {
