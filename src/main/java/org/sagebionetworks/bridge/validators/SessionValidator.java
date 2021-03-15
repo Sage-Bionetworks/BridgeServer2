@@ -64,16 +64,22 @@ public class SessionValidator implements Validator {
                     errors.rejectValue("startTime", CANNOT_BE_NULL);
                 }
                 validateFixedPeriod(errors, window.getExpiration(), "expiration", false);
-                if (session.getInterval() != null && window.getExpiration() != null) {
-                    int intervalMin = periodInMinutes(session.getInterval());
-                    int expMin = periodInMinutes(window.getExpiration());
-                    if (expMin > intervalMin) {
-                        errors.rejectValue("expiration", "cannot be longer in duration than the session’s interval");
+                if (session.getInterval() != null) {
+                    if (window.getExpiration() == null) {
+                        errors.rejectValue("expiration", "is required when a session has an interval");
+                    } else if (window.getExpiration() != null) {
+                        int intervalMin = periodInMinutes(session.getInterval());
+                        int expMin = periodInMinutes(window.getExpiration());
+                        if (expMin > intervalMin) {
+                            errors.rejectValue("expiration", "cannot be longer in duration than the session’s interval");
+                        }
                     }
                 }
                 errors.popNestedPath();
             }
         }
+        // Note however that an easy way to schedule a notification would be to create a session
+        // with notification info, but no assessments. So we might allow this at a later time.
         if (session.getAssessments().isEmpty()) {
             errors.rejectValue("assessments", CANNOT_BE_NULL_OR_EMPTY);
         } else {

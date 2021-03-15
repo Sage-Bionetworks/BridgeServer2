@@ -168,10 +168,20 @@ public class SessionValidatorTest extends Mockito {
     }
     
     @Test
-    public void timeWindowExpirationEmptyIsValid( ) {
+    public void timeWindowExpirationEmptyIsValidForNotRepeatingSchedule() {
         Session session = createValidSession();
+        session.setInterval(null);
         session.getTimeWindows().get(0).setExpiration(null);
         Validate.entityThrowingException(INSTANCE, session);
+    }
+    
+    @Test
+    public void timeWindowExpirationEmptyInvalidForRepeatingSchedule() {
+        Session session = createValidSession();
+        session.getTimeWindows().get(0).setExpiration(null);
+        
+        assertValidatorMessage(INSTANCE, session, "timeWindows[0].expiration",
+                "is required when a session has an interval");
     }
     
     @Test
