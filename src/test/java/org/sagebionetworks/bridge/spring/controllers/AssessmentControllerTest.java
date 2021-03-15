@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -47,6 +48,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -111,7 +113,7 @@ public class AssessmentControllerTest extends Mockito {
     
     @Test
     public void getAssessments() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100)
                 .withRequestParam(OFFSET_BY, 100)
@@ -133,7 +135,7 @@ public class AssessmentControllerTest extends Mockito {
 
     @Test
     public void getAssessmentsNullArguments() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 0);
         when(mockService.getAssessments(TEST_APP_ID, 0, 50, null, false)).thenReturn(page);
@@ -147,7 +149,7 @@ public class AssessmentControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentsRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.getAssessments(null, null, null, null);
     }
@@ -227,7 +229,7 @@ public class AssessmentControllerTest extends Mockito {
 
     @Test
     public void getAssessmentByGuid() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getAssessmentByGuid(TEST_APP_ID, GUID)).thenReturn(assessment);
         
@@ -255,14 +257,14 @@ public class AssessmentControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentByGuidRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.getAssessmentByGuid(GUID);
     }
     
     @Test
     public void getAssessmentById() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getAssessmentById(TEST_APP_ID, IDENTIFIER, 10)).thenReturn(assessment);
         
@@ -288,20 +290,20 @@ public class AssessmentControllerTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = NONPOSITIVE_REVISION_ERROR)
     public void getAssessmentByIdZeroRevision() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.getAssessmentById(IDENTIFIER, "0");
     }
     
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = NONPOSITIVE_REVISION_ERROR)
     public void getAssessmentByIdNegativeRevision() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.getAssessmentById(IDENTIFIER, "-1");
     }
 
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = "nonsense is not an integer")
     public void getAssessmentByIdNonsenseRevision() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.getAssessmentById(IDENTIFIER, "nonsense");
     }
 
@@ -309,14 +311,14 @@ public class AssessmentControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentByIdRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.getAssessmentById(IDENTIFIER, "3");
     }
     
     @Test
     public void getLatestAssessment() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.getLatestAssessment(TEST_APP_ID, IDENTIFIER)).thenReturn(assessment);
 
@@ -328,14 +330,14 @@ public class AssessmentControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getLatestAssessmentRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.getLatestAssessment(IDENTIFIER);
     }    
     
     @Test
     public void getAssessmentRevisionsById() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsById(
@@ -347,7 +349,7 @@ public class AssessmentControllerTest extends Mockito {
 
     @Test
     public void getAssessmentRevisionsByIdWithNullParameters() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsById(
@@ -361,14 +363,14 @@ public class AssessmentControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentRevisionsByIdRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.getAssessmentRevisionsById(IDENTIFIER, null, null, null);
     }
     
     @Test
     public void getAssessmentRevisionsByGuid() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsByGuid(
@@ -380,7 +382,7 @@ public class AssessmentControllerTest extends Mockito {
     
     @Test
     public void getAssessmentRevisionsByGuidWithNullParameters() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsByGuid(
@@ -394,7 +396,7 @@ public class AssessmentControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentRevisionsByGuidRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.getAssessmentRevisionsByGuid(GUID, null, null, null);
     }
