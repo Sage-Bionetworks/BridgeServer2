@@ -4,8 +4,10 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLongPeriod;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLanguageSet;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validatePeriod;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedPeriod;
 
 import java.util.List;
 
@@ -40,8 +42,8 @@ public class SessionValidator implements Validator {
         if (isBlank(session.getStartEventId())) {
             errors.rejectValue("startEventId", CANNOT_BE_BLANK);
         }
-        validatePeriod(errors, session.getDelay(), "delay", false);
-        validatePeriod(errors, session.getInterval(), "interval", false);
+        validateFixedPeriod(errors, session.getDelay(), "delay", false);
+        validateFixedLongPeriod(errors, session.getInterval(), "interval", false);
         if (session.getPerformanceOrder() == null) {
             errors.rejectValue("performanceOrder", CANNOT_BE_NULL);
         }
@@ -61,7 +63,14 @@ public class SessionValidator implements Validator {
                 if (window.getStartTime() == null) {
                     errors.rejectValue("startTime", CANNOT_BE_NULL);
                 }
-                validatePeriod(errors, window.getExpiration(), "expiration", false);
+                validateFixedPeriod(errors, window.getExpiration(), "expiration", false);
+                if (session.getInterval() != null && window.getExpiration() != null) {
+                    int intervalMin = periodInMinutes(session.getInterval());
+                    int expMin = periodInMinutes(window.getExpiration());
+                    if (expMin > intervalMin) {
+                        errors.rejectValue("expiration", "cannot be longer in duration than the session’s interval");
+                    }
+                }
                 errors.popNestedPath();
             }
         }
@@ -82,30 +91,47 @@ public class SessionValidator implements Validator {
                 errors.popNestedPath();
             }
         }
-        if (session.getRemindAt() != null && session.getReminderPeriod() == null) {
-            errors.rejectValue("reminderPeriod", "must be set if remindAt is set");
-        } else if (session.getRemindAt() == null && session.getReminderPeriod() != null) {
-            errors.rejectValue("remindAt", "must be set if reminderPeriod is set");
+        // Notifications are off. We don't want any of the fields set so the designer isn't
+        // confused about what will happen.
+        if (session.getNotifyAt() == null) {
+            if (session.getRemindAt() != null) {
+                errors.rejectValue("remindAt", "cannot be set if notifications are disabled");
+            }
+            if (session.getReminderPeriod() != null) {
+                errors.rejectValue("reminderPeriod", "cannot be set if notifications are disabled");
+            }
+            if (session.isAllowSnooze()) {
+                errors.rejectValue("allowSnooze", "cannot be true if notifications are disabled");
+            }
+            if (!session.getMessages().isEmpty()) {
+                errors.rejectValue("messages", "cannot be set if notifications are disabled");
+            }
+        } else {
+            if (session.getRemindAt() != null && session.getReminderPeriod() == null) {
+                errors.rejectValue("reminderPeriod", "must be set if remindAt is set");
+            } else if (session.getRemindAt() == null && session.getReminderPeriod() != null) {
+                errors.rejectValue("remindAt", "must be set if reminderPeriod is set");
+            }
+            if (session.getNotifyAt() != null && session.getMessages().isEmpty()) {
+                errors.rejectValue("messages", CANNOT_BE_NULL_OR_EMPTY);
+            }
+            validateLanguageSet(errors, session.getMessages(), "messages");
+            validateMessageContents(session, errors);
+            validateFixedPeriod(errors, session.getReminderPeriod(), "reminderPeriod", false);
         }
-        if (session.getNotifyAt() == null && session.isAllowSnooze()) {
-            errors.rejectValue("allowSnooze", "cannot be true if notifications are disabled");
-        }
-        validatePeriod(errors, session.getReminderPeriod(), "reminderPeriod", false);
-
-        // If notifications are turned off, you do not need to provide messages. If you have 
-        // notifications enabled, you must have messages. Either way, message contents and 
-        // language constraints must always be correct.
-        if (session.getNotifyAt() != null && session.getMessages().isEmpty()) {
-            errors.rejectValue("messages", CANNOT_BE_NULL_OR_EMPTY);
-        }
-        validateLanguageSet(errors, session.getMessages(), "messages");
-        validateMessageContents(session, errors);
     }
-
+    
     public void validateMessageContents(Session session, Errors errors) {
+        if (session.getMessages().isEmpty()) {
+            return;
+        }
+        boolean englishDefault = false;
         for (int j=0; j < session.getMessages().size(); j++) {
             NotificationMessage message = session.getMessages().get(j);
             
+            if ("en".equalsIgnoreCase(message.getLang())) {
+                englishDefault = true;
+            }
             errors.pushNestedPath("messages[" + j + "]");
             if (isBlank(message.getSubject())) {
                 errors.rejectValue("subject", CANNOT_BE_BLANK);
@@ -119,6 +145,9 @@ public class SessionValidator implements Validator {
             }
             errors.popNestedPath();
         }
+        if (!englishDefault) {
+            errors.rejectValue("messages", "must include an English-language message as a default");
+        }
     }
     
     private void validateLabels(List<Label> labels, Errors errors) {
@@ -128,7 +157,7 @@ public class SessionValidator implements Validator {
             
             if (isBlank(label.getValue())) {
                 errors.pushNestedPath("labels[" + j + "]");
-                errors.rejectValue("label", CANNOT_BE_BLANK);
+                errors.rejectValue("value", CANNOT_BE_BLANK);
                 errors.popNestedPath();
             }
         }

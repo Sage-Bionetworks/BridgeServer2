@@ -25,6 +25,9 @@ import org.sagebionetworks.bridge.services.Schedule2Service;
 @RestController
 public class Schedule2Controller extends BaseController {
 
+    static final StatusMessage DELETED_MSG = new StatusMessage("Schedule deleted.");
+    static final StatusMessage PUBLISHED_MSG = new StatusMessage("Schedule published.");
+    
     private Schedule2Service service;
     
     @Autowired
@@ -78,10 +81,12 @@ public class Schedule2Controller extends BaseController {
     }
     
     @PostMapping("/v5/schedules/{guid}/publish")
-    public Schedule2 publishSchedule(@PathVariable String guid) {
+    public StatusMessage publishSchedule(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, DEVELOPER);
         
-        return service.publishSchedule(session.getAppId(), guid);
+        service.publishSchedule(session.getAppId(), guid);
+        
+        return PUBLISHED_MSG;
     }
     
     @DeleteMapping("/v5/schedules/{guid}")
@@ -93,6 +98,6 @@ public class Schedule2Controller extends BaseController {
         } else {
             service.deleteSchedule(session.getAppId(), guid);
         }
-        return new StatusMessage("Schedule deleted.");
+        return DELETED_MSG;
     }
 }

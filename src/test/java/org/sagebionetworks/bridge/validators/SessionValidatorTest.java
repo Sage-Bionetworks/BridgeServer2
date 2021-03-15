@@ -166,6 +166,14 @@ public class SessionValidatorTest extends Mockito {
     }
     
     @Test
+    public void timeWindowExpirationDurationTooLong() {
+        Session session = createValidSession();
+        session.getTimeWindows().get(0).setExpiration(Period.parse("P7DT1H"));
+        assertValidatorMessage(INSTANCE, session, "timeWindows[0].expiration",
+                "cannot be longer in duration than the session’s interval");
+    }
+    
+    @Test
     public void assessmentsNullOrEmpty() {
         Session session = createValidSession();
         session.setAssessments(null);
@@ -250,6 +258,17 @@ public class SessionValidatorTest extends Mockito {
         session.setNotifyAt(null);
         session.setAllowSnooze(false);
         Validate.entityThrowingException(INSTANCE, session);
+    }
+    
+    @Test
+    public void messagesMustContainEnglishDefault() {
+        Session session = createValidSession();
+        session.setMessages(ImmutableList.of(
+            new NotificationMessage.Builder().withLang("fr").build(),
+            new NotificationMessage.Builder().withLang("de").build()
+        ));
+        
+        assertValidatorMessage(INSTANCE, session, "messages", "must include an English-language message as a default");
     }
     
     @Test

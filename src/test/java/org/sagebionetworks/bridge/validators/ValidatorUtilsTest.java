@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.validators.Validate.WRONG_PERIOD;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validatePeriod;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedPeriod;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -120,7 +120,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P3M");
         
-        validatePeriod(errors, period, "period", false);
+        validateFixedPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_PERIOD);
     }
@@ -130,7 +130,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("PT180S");
         
-        validatePeriod(errors, period, "period", false);
+        validateFixedPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_PERIOD);
     }
@@ -140,7 +140,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P3Y");
         
-        validatePeriod(errors, period, "period", false);
+        validateFixedPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_PERIOD);
     }
@@ -150,7 +150,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P2W");
         
-        validatePeriod(errors, period, "period", false);
+        validateFixedPeriod(errors, period, "period", false);
         
         verify(errors, never()).rejectValue(any(), any());
     }
@@ -160,7 +160,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("PT30M");
 
-        validatePeriod(errors, period, "period", false);
+        validateFixedPeriod(errors, period, "period", false);
         
         verify(errors, never()).rejectValue(any(), any());
     }
@@ -170,7 +170,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P2W3DT30M");
 
-        validatePeriod(errors, period, "period", false);
+        validateFixedPeriod(errors, period, "period", false);
         
         verify(errors, never()).rejectValue(any(), any());
     }
@@ -180,7 +180,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P3Y2W3DT30M");
 
-        validatePeriod(errors, period, "period", false);
+        validateFixedPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_PERIOD);
     }

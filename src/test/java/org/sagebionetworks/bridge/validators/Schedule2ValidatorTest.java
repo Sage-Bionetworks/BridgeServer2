@@ -126,4 +126,18 @@ public class Schedule2ValidatorTest extends Mockito {
         verify(session1).getName();
         verify(session2).getName();
     }
+    
+    @Test
+    public void sessionDelayCannotBeLongerThanScheduleDuration() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getSessions().get(0).setDelay(Period.parse("P8WT2M"));
+        assertValidatorMessage(INSTANCE, schedule, "sessions[0].delay", "cannot be longer than the schedule’s duration");
+    }
+
+    @Test
+    public void sessionIntervalCannotBeLongerThanScheduleDuration() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getSessions().get(0).setInterval(Period.parse("P9W"));
+        assertValidatorMessage(INSTANCE, schedule, "sessions[0].interval", "cannot be longer than the schedule’s duration");
+    }
 }

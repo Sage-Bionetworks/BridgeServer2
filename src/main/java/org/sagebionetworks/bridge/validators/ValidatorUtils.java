@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_LANG;
+import static org.sagebionetworks.bridge.validators.Validate.WRONG_LONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.Validate.WRONG_PERIOD;
 
 import java.util.HashSet;
@@ -32,10 +33,11 @@ import org.sagebionetworks.bridge.models.schedules2.HasLang;
 
 public class ValidatorUtils {
     
-    private static final Set<DurationFieldType> PROHIBITED_DURATIONS = ImmutableSet.of(DurationFieldType.centuries(),
-            DurationFieldType.eras(), DurationFieldType.halfdays(), DurationFieldType.millis(),
-            DurationFieldType.months(), DurationFieldType.seconds(), DurationFieldType.weekyears(),
-            DurationFieldType.years());
+    private static final Set<DurationFieldType> ALL_FIXED_DURATIONS = ImmutableSet.of(DurationFieldType.minutes(),
+            DurationFieldType.hours(), DurationFieldType.days(), DurationFieldType.weeks());
+    
+    private static final Set<DurationFieldType> ALL_FIXED_LONG_DURATIONS = ImmutableSet.of(DurationFieldType.days(),
+            DurationFieldType.weeks());
     
     public static boolean participantHasValidIdentifier(StudyParticipant participant) {
         Phone phone = participant.getPhone();
@@ -101,17 +103,37 @@ public class ValidatorUtils {
             errors.popNestedPath();
         }
     }
+
+    public static final int periodInMinutes(Period period) {
+        int minutes = period.getMinutes();
+        minutes += (period.getHours() * 60);
+        minutes += (period.getDays() * 24 * 60);
+        minutes += (period.getWeeks() * 7 * 24 * 60);
+        return minutes;
+    }
     
-    public static void validatePeriod(Errors errors, Period period, String fieldName, boolean required) {
+    public static void validateFixedPeriod(Errors errors, Period period, String fieldName, boolean required) {
+        validateNotOfDuration(ALL_FIXED_DURATIONS, errors, period, fieldName, WRONG_PERIOD, required);
+    }
+
+    public static void validateFixedLongPeriod(Errors errors, Period period, String fieldName, boolean required) {
+        validateNotOfDuration(ALL_FIXED_LONG_DURATIONS, errors, period, fieldName, WRONG_LONG_PERIOD, required);
+    }
+
+    private static void validateNotOfDuration(Set<DurationFieldType> durations, Errors errors,
+            Period period, String fieldName, String error, boolean required) {
         if (period == null) {
             if (required) {
                 errors.rejectValue(fieldName, CANNOT_BE_NULL);
             }
             return;
         }
-        for (DurationFieldType type : PROHIBITED_DURATIONS) {
-            if (PROHIBITED_DURATIONS.contains(type) && period.get(type) > 0) {
-                errors.rejectValue(fieldName, WRONG_PERIOD);
+        DurationFieldType[] fields = period.getFieldTypes();
+        
+        for (DurationFieldType type : fields) {
+            System.out.println(type);
+            if (!durations.contains(type) && period.get(type) != 0) {
+                errors.rejectValue(fieldName, error);
                 break;
             }
         }
@@ -123,4 +145,5 @@ public class ValidatorUtils {
             }
         }
     }
+    
 }

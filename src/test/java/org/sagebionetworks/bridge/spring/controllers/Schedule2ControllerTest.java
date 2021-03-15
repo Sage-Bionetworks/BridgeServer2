@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
 
 import java.util.List;
 
@@ -36,6 +37,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
@@ -138,7 +140,6 @@ public class Schedule2ControllerTest extends Mockito {
         
         List<Schedule2> list = ImmutableList.of(new Schedule2(), new Schedule2());
         PagedResourceList<Schedule2> page = new PagedResourceList<>(list, 10, true);
-        
         when(mockService.getSchedulesForOrganization(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(page);
         
         PagedResourceList<Schedule2> retValue = controller.getSchedules("100", "50", "true");
@@ -151,7 +152,12 @@ public class Schedule2ControllerTest extends Mockito {
     public void getSchedulesDefaultsValuesForDeveloper() {
         permitAsDeveloper();
         
-        controller.getSchedules(null, null, null);
+        List<Schedule2> list = ImmutableList.of(new Schedule2(), new Schedule2());
+        PagedResourceList<Schedule2> page = new PagedResourceList<>(list, 10, true);
+        when(mockService.getSchedules(any(), anyInt(), anyInt(), anyBoolean())).thenReturn(page);
+        
+        PagedResourceList<Schedule2> retValue = controller.getSchedules(null, null, null);
+        assertSame(retValue, page);
         
         verify(mockService).getSchedules(TEST_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false);
     }
@@ -160,7 +166,12 @@ public class Schedule2ControllerTest extends Mockito {
     public void getSchedulesDefaultsValuesForStudyCoordinator() {
         permitAsStudyCoordinator();
         
-        controller.getSchedules(null, null, null);
+        List<Schedule2> list = ImmutableList.of(new Schedule2(), new Schedule2());
+        PagedResourceList<Schedule2> page = new PagedResourceList<>(list, 10, true);
+        when(mockService.getSchedulesForOrganization(any(), any(), anyInt(), anyInt(), anyBoolean())).thenReturn(page);
+
+        PagedResourceList<Schedule2> retValue = controller.getSchedules(null, null, null);
+        assertSame(retValue, page);
         
         verify(mockService).getSchedulesForOrganization(
                 TEST_APP_ID, TEST_ORG_ID, 0, API_DEFAULT_PAGE_SIZE, false);
@@ -184,8 +195,6 @@ public class Schedule2ControllerTest extends Mockito {
     
     @Test
     public void createSchedule() throws Exception {
-        permitAsStudyCoordinator();
-        
         Schedule2 schedule = new Schedule2();
         mockRequestBody(mockRequest, schedule);
         
@@ -202,8 +211,6 @@ public class Schedule2ControllerTest extends Mockito {
     
     @Test
     public void getSchedule() {
-        permitAsStudyCoordinator();
-        
         Schedule2 schedule = new Schedule2();
         when(mockService.getSchedule(TEST_APP_ID, GUID)).thenReturn(schedule);
         
@@ -215,8 +222,6 @@ public class Schedule2ControllerTest extends Mockito {
     
     @Test
     public void updateSchedule() throws Exception {
-        permitAsStudyCoordinator();
-        
         Schedule2 existing = new Schedule2();
         existing.setVersion(100L);
         when(mockService.updateSchedule(any())).thenReturn(existing);
@@ -235,10 +240,17 @@ public class Schedule2ControllerTest extends Mockito {
     }
     
     @Test
-    public void deleteScheduleLogically() {
-        permitAsStudyCoordinator();
+    public void publishSchedule() {
+        StatusMessage retValue = controller.publishSchedule(GUID);
+        assertSame(retValue, Schedule2Controller.PUBLISHED_MSG);
         
-        controller.deleteSchedule(GUID, "false");
+        verify(mockService).publishSchedule(TEST_APP_ID, GUID);
+    }
+    
+    @Test
+    public void deleteScheduleLogically() {
+        StatusMessage retValue = controller.deleteSchedule(GUID, "false");
+        assertSame(retValue, Schedule2Controller.DELETED_MSG);
         
         verify(mockService).deleteSchedule(TEST_APP_ID, GUID);
     }
@@ -254,8 +266,6 @@ public class Schedule2ControllerTest extends Mockito {
     
     @Test
     public void deleteSchedulePhysicallyInsufficientPermissions() {
-        permitAsStudyCoordinator();
-        
         controller.deleteSchedule(GUID, "true");
         
         verify(mockService).deleteSchedule(TEST_APP_ID, GUID);

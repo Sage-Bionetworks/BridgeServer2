@@ -32,6 +32,7 @@ public class Validate {
     public static final String CANNOT_BE_ZERO_OR_NEGATIVE = "%s cannot be negative";
     public static final String WRONG_TYPE = "%s is the wrong type";
     public static final String WRONG_PERIOD = "%s can only specify minute, hour, day, or week duration units";
+    public static final String WRONG_LONG_PERIOD = "%s can only specify day or week duration units";
     public static final String DUPLICATE_LANG = "%s is a duplicate message under the same language code";
     public static final String INVALID_LANG = "%s is not a valid ISO 639 alpha-2 or alpha-3 language code";
     

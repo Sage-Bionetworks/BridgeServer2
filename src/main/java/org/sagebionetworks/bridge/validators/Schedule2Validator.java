@@ -3,7 +3,8 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validatePeriod;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLongPeriod;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -36,7 +37,7 @@ public class Schedule2Validator implements Validator {
         if (isBlank(schedule.getGuid())) {
             errors.rejectValue("guid", CANNOT_BE_BLANK);
         }
-        validatePeriod(errors, schedule.getDuration(), "duration", true);
+        validateFixedLongPeriod(errors, schedule.getDuration(), "duration", true);
         if (schedule.getCreatedOn() == null) {
             errors.rejectValue("createdOn", CANNOT_BE_NULL);
         }
@@ -46,6 +47,22 @@ public class Schedule2Validator implements Validator {
         for (int i=0; i < schedule.getSessions().size(); i++) {
             errors.pushNestedPath("sessions[" + i + "]");
             Session session = schedule.getSessions().get(i);
+            
+            if (schedule.getDuration() != null) {
+                int durationMin = periodInMinutes(schedule.getDuration());
+                if (session.getDelay() != null) {
+                    int delayMin = periodInMinutes(session.getDelay());
+                    if (delayMin >= durationMin) {
+                        errors.rejectValue("delay", "cannot be longer than the schedule’s duration");
+                    }
+                }
+                if (session.getInterval() != null) {
+                    int intervalMin = periodInMinutes(session.getInterval());
+                    if (intervalMin >= durationMin) {
+                        errors.rejectValue("interval", "cannot be longer than the schedule’s duration");
+                    }
+                }
+            }
             SessionValidator.INSTANCE.validate(session, errors);
             errors.popNestedPath();
         }
