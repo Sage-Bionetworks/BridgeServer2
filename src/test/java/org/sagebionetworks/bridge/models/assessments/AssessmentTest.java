@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableSet;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.Label;
 
 public class AssessmentTest {
     @Test

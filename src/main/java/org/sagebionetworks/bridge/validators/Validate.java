@@ -32,7 +32,6 @@ public class Validate {
     public static final String WRONG_TYPE = "%s is the wrong type";
     public static final String DUPLICATE_LANG = "%s is a duplicate message under the same language code";
     public static final String INVALID_LANG = "%s is not a valid ISO 639 alpha-2 or alpha-3 language code";
-    public static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFF or #FFFFF format)";
     
     public static Errors getErrorsFor(Object object) {
         String entityName = BridgeUtils.getTypeName(object.getClass());

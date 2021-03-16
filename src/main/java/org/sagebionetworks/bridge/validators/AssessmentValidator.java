@@ -6,17 +6,14 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
-import static org.sagebionetworks.bridge.validators.Validate.INVALID_HEX_TRIPLET;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLanguageSet;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
@@ -25,6 +22,7 @@ import org.sagebionetworks.bridge.services.OrganizationService;
 
 public class AssessmentValidator implements Validator {
 
+    static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFF or #FFFFF format)";
     private static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$";
     
     private final String appId;
@@ -100,7 +98,7 @@ public class AssessmentValidator implements Validator {
             errors.popNestedPath();
         }
         if (!assessment.getLabels().isEmpty()) {
-            validateLabels(assessment.getLabels(), errors);
+            validateLabels(errors, assessment.getLabels());
         }
         
         // ownerId == studyId except in the shared assessments app, where it must include
@@ -125,19 +123,6 @@ public class AssessmentValidator implements Validator {
         }
         if (assessment.getMinutesToComplete() != null && assessment.getMinutesToComplete() < 0) {
             errors.rejectValue("minutesToComplete", CANNOT_BE_NEGATIVE);
-        }
-    }
-    
-    private void validateLabels(List<Label> labels, Errors errors) {
-        validateLanguageSet(errors, labels, "labels");    
-        for (int j=0; j < labels.size(); j++) {
-            Label label = labels.get(j);
-
-            if (isBlank(label.getValue())) {
-                errors.pushNestedPath("labels[" + j + "]");
-                errors.rejectValue("value", CANNOT_BE_BLANK);
-                errors.popNestedPath();
-            }
         }
     }
 }

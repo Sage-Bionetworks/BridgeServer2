@@ -19,6 +19,7 @@ import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.HasLang;
+import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -88,6 +89,25 @@ public class ValidatorUtils {
                 }
             }
             errors.popNestedPath();
+        }
+    }
+    
+    /**
+     * Language is validated as part of the validateLanguageSet because there are multiple value objects
+     * that implement the HasLang interface. They all verify the languages are valid...then there is 
+     * validation of other fields specific to subtypes. Luckily the Spring Errors object groups these 
+     * all together for the consumer.
+     */
+    public static void validateLabels(Errors errors, List<Label> labels) {
+        validateLanguageSet(errors, labels, "labels");    
+        for (int j=0; j < labels.size(); j++) {
+            Label label = labels.get(j);
+
+            if (isBlank(label.getValue())) {
+                errors.pushNestedPath("labels[" + j + "]");
+                errors.rejectValue("value", CANNOT_BE_BLANK);
+                errors.popNestedPath();
+            }
         }
     }
 }
