@@ -27,11 +27,11 @@ public class Label implements HasLang {
     // strange behavior occurs if they are not present.
     
     @Override
-    public int hashCode() {
+    public final int hashCode() {
         return Objects.hash(lang, value);
     }
     @Override
-    public boolean equals(Object obj) {
+    public final boolean equals(Object obj) {
         if (this == obj)
             return true;
         if (obj == null || !(obj instanceof Label))

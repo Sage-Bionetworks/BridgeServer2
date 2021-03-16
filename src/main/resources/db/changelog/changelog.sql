@@ -436,6 +436,11 @@ ADD COLUMN `clientData` mediumtext COLLATE utf8_unicode_ci;
 
 -- changeset bridge:25
 
+ALTER TABLE `AccountRoles`
+MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','ORG_ADMIN','WORKER','SUPERADMIN','STUDY_COORDINATOR','STUDY_DESIGNER') NOT NULL;
+
+-- changeset bridge:26
+
 ALTER TABLE `Assessments`
 ADD COLUMN `labels` text DEFAULT NULL,
 ADD COLUMN `colorScheme` text DEFAULT NULL;

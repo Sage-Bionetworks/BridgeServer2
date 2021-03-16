@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
@@ -88,7 +89,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     
     @Test
     public void getAssessmentResources() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         PagedResourceList<AssessmentResource> page = new PagedResourceList<>(
                 ImmutableList.of(AssessmentResourceTest.createAssessmentResource()), 100);
@@ -106,7 +107,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     
     @Test
     public void getAssessmentResourcesNoArguments() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         PagedResourceList<AssessmentResource> page = new PagedResourceList<>(
                 ImmutableList.of(AssessmentResourceTest.createAssessmentResource()), 100);
@@ -124,13 +125,13 @@ public class AssessmentResourceControllerTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void getAssessmentResourcesInvalidMinRevision() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.getAssessmentResources(ASSESSMENT_ID, null, null, null, "junk", null, null);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void getAssessmentResourcesInvalidMaxRevision() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.getAssessmentResources(ASSESSMENT_ID, null, null, null, null, "junk", null);
     }
     
@@ -149,7 +150,7 @@ public class AssessmentResourceControllerTest extends Mockito {
 
     @Test
     public void getAssessmentResource() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         when(mockService.getResource(TEST_APP_ID, ASSESSMENT_ID, GUID)).thenReturn(resource);
@@ -211,7 +212,7 @@ public class AssessmentResourceControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentResourcesRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.getAssessmentResources(ASSESSMENT_ID, null, null, null, null, null, null);
     }
@@ -229,7 +230,7 @@ public class AssessmentResourceControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void getAssessmentResourceRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.getAssessmentResource(ASSESSMENT_ID, GUID);
     }

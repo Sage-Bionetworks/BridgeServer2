@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERRO
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.UPDATES_TYPEREF;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 
 import java.util.Map;
 
@@ -55,7 +56,7 @@ public class AssessmentConfigController extends BaseController {
     
     @PostMapping("/v1/assessments/{guid}/config/customize")
     public AssessmentConfig customizeAssessmentConfig(@PathVariable String guid) throws Exception {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
         
         if (SHARED_APP_ID.equals(appId)) {

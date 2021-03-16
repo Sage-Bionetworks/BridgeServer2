@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -55,7 +56,7 @@ public class StudyController extends BaseController {
     @PostMapping(path = {"/v5/studies", "/v3/substudies"})
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createStudy() {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, STUDY_DESIGNER, ORG_ADMIN, ADMIN);
 
         // we don't check if the study coordinator is member of the study because it doesn't
         // exist yet. If the caller is in an organization, that organization will sponsor the

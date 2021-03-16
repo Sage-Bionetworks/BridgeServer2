@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
@@ -96,7 +97,7 @@ public class AuthUtils {
      * (external IDs are pretty lax because in theory, they are not identifying).
      */
     public static final AuthEvaluator CAN_READ_EXTERNAL_IDS = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
 
     /**
@@ -104,14 +105,14 @@ public class AuthUtils {
      * study.
      */
     public static final AuthEvaluator CAN_READ_STUDIES = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, ORG_ADMIN).or()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER, ORG_ADMIN).or()
             .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
      * Can the caller edit studies? Caller must be a study coordinator, or a developer.
      */
     public static final AuthEvaluator CAN_UPDATE_STUDIES = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, ADMIN);
     
     /**

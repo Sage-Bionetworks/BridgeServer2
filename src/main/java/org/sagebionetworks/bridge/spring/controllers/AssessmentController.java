@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERRO
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 
 import java.util.Set;
 
@@ -45,7 +46,7 @@ public class AssessmentController extends BaseController {
             @RequestParam(required = false) String pageSize,
             @RequestParam(name = "tag", required = false) Set<String> tags,
             @RequestParam(required = false) String includeDeleted) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         String appId = session.getAppId();
         if (SHARED_APP_ID.equals(appId)) {
@@ -75,7 +76,7 @@ public class AssessmentController extends BaseController {
 
     @GetMapping("/v1/assessments/{guid}")
     public Assessment getAssessmentByGuid(@PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
         if (SHARED_APP_ID.equals(appId)) {
@@ -102,7 +103,7 @@ public class AssessmentController extends BaseController {
     public PagedResourceList<Assessment> getAssessmentRevisionsByGuid(@PathVariable String guid,
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize,
             @RequestParam(required = false) String includeDeleted) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
         if (SHARED_APP_ID.equals(appId)) {
@@ -172,7 +173,7 @@ public class AssessmentController extends BaseController {
         
     @GetMapping("/v1/assessments/identifier:{identifier}")
     public Assessment getLatestAssessment(@PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
         if (SHARED_APP_ID.equals(appId)) {
@@ -186,7 +187,7 @@ public class AssessmentController extends BaseController {
     public PagedResourceList<Assessment> getAssessmentRevisionsById(@PathVariable String identifier,
             @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize,
             @RequestParam(required = false) String includeDeleted) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
         if (SHARED_APP_ID.equals(appId)) {
@@ -203,7 +204,7 @@ public class AssessmentController extends BaseController {
     
     @GetMapping("/v1/assessments/identifier:{identifier}/revisions/{revision}")
     public Assessment getAssessmentById(@PathVariable String identifier, @PathVariable String revision) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
         if (SHARED_APP_ID.equals(appId)) {
