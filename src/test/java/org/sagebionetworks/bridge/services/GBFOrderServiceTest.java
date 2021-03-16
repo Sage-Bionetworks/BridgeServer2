@@ -144,7 +144,7 @@ public class GBFOrderServiceTest {
         ArgumentCaptor<CheckOrderStatusRequest> captor = ArgumentCaptor.forClass(CheckOrderStatusRequest.class);
         doReturn(mockResponse).when(service).postJson(eq(STATUS_URL), any(), captor.capture());
     
-        CheckOrderStatusResponse result = service.checkOrderStatus(order1, order2);
+        service.checkOrderStatus(order1, order2);
     
         verify(service).handleGbfHttpStatusErrors(any());
     

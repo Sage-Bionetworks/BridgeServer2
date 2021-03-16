@@ -9,7 +9,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.AssessmentValidator.INVALID_HEX_TRIPLET;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
-import static org.sagebionetworks.bridge.validators.Validate.DUPLICATE_LANG;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
 
 import java.util.HashMap;
 import java.util.Map;

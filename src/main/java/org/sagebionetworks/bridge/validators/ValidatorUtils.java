@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
-import static org.sagebionetworks.bridge.validators.Validate.DUPLICATE_LANG;
-import static org.sagebionetworks.bridge.validators.Validate.INVALID_LANG;
 
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +25,9 @@ import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 
 public class ValidatorUtils {
     
+    public static final String DUPLICATE_LANG = "%s is a duplicate message under the same language code";
+    public static final String INVALID_LANG = "%s is not a valid ISO 639 alpha-2 or alpha-3 language code";
+
     public static boolean participantHasValidIdentifier(StudyParticipant participant) {
         Phone phone = participant.getPhone();
         String email = participant.getEmail();
@@ -66,7 +67,7 @@ public class ValidatorUtils {
         }
     }
     
-    public static void validateLanguageSet(Errors errors, List<? extends HasLang> items, String fieldName) {
+    private static void validateLanguageSet(Errors errors, List<? extends HasLang> items, String fieldName) {
         if (BridgeUtils.isEmpty(items)) {
             return;
         }
@@ -92,13 +93,10 @@ public class ValidatorUtils {
         }
     }
     
-    /**
-     * Language is validated as part of the validateLanguageSet because there are multiple value objects
-     * that implement the HasLang interface. They all verify the languages are valid...then there is 
-     * validation of other fields specific to subtypes. Luckily the Spring Errors object groups these 
-     * all together for the consumer.
-     */
     public static void validateLabels(Errors errors, List<Label> labels) {
+        if (labels == null || labels.isEmpty()) {
+            return;
+        }
         validateLanguageSet(errors, labels, "labels");    
         for (int j=0; j < labels.size(); j++) {
             Label label = labels.get(j);
