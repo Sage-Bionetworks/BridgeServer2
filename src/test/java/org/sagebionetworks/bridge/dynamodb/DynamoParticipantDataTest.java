@@ -15,8 +15,6 @@ import static org.testng.Assert.assertTrue;
 
 public class DynamoParticipantDataTest {
 
-    private static final Long VERSION = 12345L;
-
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
 
     @Test

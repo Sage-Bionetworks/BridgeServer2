@@ -2,12 +2,16 @@ package org.sagebionetworks.bridge.models.assessments;
 
 import static org.sagebionetworks.bridge.models.TagUtils.toStringSet;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 
 public class Assessment implements BridgeEntity {
@@ -27,6 +31,8 @@ public class Assessment implements BridgeEntity {
         dto.setOwnerId(assessment.getOwnerId());
         dto.setTags(toStringSet(assessment.getTags()));    
         dto.setCustomizationFields(assessment.getCustomizationFields());
+        dto.setColorScheme(assessment.getColorScheme());
+        dto.setLabels(assessment.getLabels());
         dto.setCreatedOn(assessment.getCreatedOn());
         dto.setModifiedOn(assessment.getModifiedOn());
         dto.setDeleted(assessment.isDeleted());
@@ -51,6 +57,8 @@ public class Assessment implements BridgeEntity {
     private Integer minutesToComplete;
     private Set<String> tags;
     private Map<String, Set<PropertyInfo>> customizationFields;
+    private ColorScheme colorScheme;
+    private List<Label> labels;
     private DateTime createdOn;
     private DateTime modifiedOn;
     private boolean deleted;
@@ -129,10 +137,28 @@ public class Assessment implements BridgeEntity {
         this.tags = tags;
     }
     public Map<String, Set<PropertyInfo>> getCustomizationFields() {
+        if (customizationFields == null) {
+            customizationFields = new HashMap<>();
+        }
         return customizationFields;
     }
     public void setCustomizationFields(Map<String, Set<PropertyInfo>> customizationFields) {
         this.customizationFields = customizationFields;
+    }
+    public ColorScheme getColorScheme() {
+        return colorScheme;
+    }
+    public void setColorScheme(ColorScheme colorScheme) {
+        this.colorScheme = colorScheme;
+    }
+    public List<Label> getLabels() {
+        if (labels == null) {
+            labels = new ArrayList<>();
+        }
+        return labels;
+    }
+    public void setLabels(List<Label> labels) {
+        this.labels = labels;
     }
     public DateTime getCreatedOn() {
         return createdOn;

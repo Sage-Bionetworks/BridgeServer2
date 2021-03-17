@@ -33,7 +33,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.TestUtils.CustomServletInputStream;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
