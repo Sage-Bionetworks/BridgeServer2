@@ -22,12 +22,12 @@ import org.sagebionetworks.bridge.services.OrganizationService;
 
 public class AssessmentValidator implements Validator {
 
-    static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFF or #FFFFF format)";
-    private static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{3}([0-9a-fA-F]{3})?$";
+    static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFFFF format)";
+    private static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{6}$";
     
     private final String appId;
     private final OrganizationService organizationService;
-    
+
     public AssessmentValidator(String appId, OrganizationService organizationService) {
         this.appId = appId;
         this.organizationService = organizationService;

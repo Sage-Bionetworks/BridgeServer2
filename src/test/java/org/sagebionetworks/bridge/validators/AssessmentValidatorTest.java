@@ -195,7 +195,7 @@ public class AssessmentValidatorTest extends Mockito {
     }
     @Test
     public void foregroundColorInValid() {
-        ColorScheme scheme = new ColorScheme(null, "#FFFF", null, null);
+        ColorScheme scheme = new ColorScheme(null, "#FFF", null, null);
         assessment.setColorScheme(scheme);
         assertValidatorMessage(validator, assessment, "colorScheme.foreground", INVALID_HEX_TRIPLET);
     }
