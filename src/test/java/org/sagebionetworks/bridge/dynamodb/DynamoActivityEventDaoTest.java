@@ -9,6 +9,8 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SURVEY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
@@ -33,6 +35,8 @@ import org.mockito.MockitoAnnotations;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 
 public class DynamoActivityEventDaoTest extends Mockito {
     
@@ -136,8 +140,11 @@ public class DynamoActivityEventDaoTest extends Mockito {
     
     @Test
     public void deletesCustomEvent() {
-        DynamoActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode(HEALTH_CODE)
-                .withObjectType(CUSTOM).withObjectId("AAA").build();
+        DynamoActivityEvent event = new DynamoActivityEvent.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM)
+                .withUpdateType(MUTABLE)
+                .withObjectId("AAA").build();
         
         when(mockMapper.load(any())).thenReturn(event);
         

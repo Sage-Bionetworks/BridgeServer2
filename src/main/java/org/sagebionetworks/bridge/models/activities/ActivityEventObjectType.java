@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.models.activities;
 
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
+
 import java.util.EnumSet;
 
 public enum ActivityEventObjectType {
@@ -9,19 +12,19 @@ public enum ActivityEventObjectType {
      * the user, so if consent is required, it will have to be provided first. This event does 
      * not update after creation.
      */
-    ACTIVITIES_RETRIEVED,
+    ACTIVITIES_RETRIEVED(IMMUTABLE),
     /**
      * An enrollment event. The eventId will be "enrollment". This event does not update after 
      * creation.
      */
-    ENROLLMENT,
+    ENROLLMENT(IMMUTABLE),
     /**
      * Event for when a question has been answered. An event record is created for each answer 
      * submitted to the survey response API (NOTE: No application as of 2/9/2016 uses this 
      * API for historical reasons, so we can't schedule based on the answers to survey questions).
      * Event IDs take the format "question:<guid>:answered=<answer_values>".
      */
-    QUESTION,
+    QUESTION(FUTURE_ONLY),
     /**
      * Event for when a survey has been finished. This event is recorded when we have received an 
      * answer (or a declined-to-answer) for every question in a survey through the survey response 
@@ -29,7 +32,7 @@ public enum ActivityEventObjectType {
      * schedule based on users finishing a survey). Event IDs take the format 
      * "survey:<guid>:finished".
      */
-    SURVEY,
+    SURVEY(FUTURE_ONLY),
     /**
      * Event for when any activity has been finished. An event is published every time the client 
      * updates a scheduled activity record with a finishedOn timestamp. Clients that use the scheduled 
@@ -37,21 +40,33 @@ public enum ActivityEventObjectType {
      * Event IDs take the format "activity:<guid>:finished" (The guid is the guid of the activity as 
      * saved in a schedule plan).
      */
-    ACTIVITY,
+    ACTIVITY(FUTURE_ONLY),
     /**
-     * A custom event defined at the app level.
+     * A custom event defined at the app level. Automatic custom events are immutable and so that’s the
+     * update type given here. Other custom events get this value from the App configuration, not the 
+     * enum type.
      */
-    CUSTOM,
+    CUSTOM(IMMUTABLE),
     /**
      * Event records the date the account was created on. This event does not update after creation.
      */
-    CREATED_ON,
+    CREATED_ON(IMMUTABLE),
     /**
      * A study start date event determined by the date the activities_retrieved or enrollment event are
      * received. If neither event exists then this event records the date the account was created on. 
      * Event is not persisted.
      */
-    STUDY_START_DATE;
+    STUDY_START_DATE(IMMUTABLE);
     
     public static final EnumSet<ActivityEventObjectType> UNARY_EVENTS = EnumSet.of(ENROLLMENT, ACTIVITIES_RETRIEVED);
+    
+    private final ActivityEventUpdateType updateType;
+    
+    private ActivityEventObjectType(ActivityEventUpdateType updateType) {
+        this.updateType = updateType;
+    }
+    
+    public ActivityEventUpdateType getUpdateType() {
+        return updateType;
+    }
 }

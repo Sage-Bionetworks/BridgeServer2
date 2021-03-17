@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import org.joda.time.DateTime;
 
@@ -10,8 +11,10 @@ import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -28,6 +31,8 @@ public class DynamoActivityEvent implements ActivityEvent {
     private String answerValue;
     private Long timestamp;
     private String eventId;
+    @DynamoDBIgnore
+    private ActivityEventUpdateType updateType;
     
     @DynamoDBHashKey
     @Override
@@ -71,6 +76,10 @@ public class DynamoActivityEvent implements ActivityEvent {
     public void setEventId(String eventId) {
         this.eventId = eventId;
     }
+    @JsonIgnore
+    public ActivityEventUpdateType getUpdateType() {
+        return updateType;
+    }
     
     public static class Builder {
         private String healthCode;
@@ -80,6 +89,7 @@ public class DynamoActivityEvent implements ActivityEvent {
         private String objectId;
         private ActivityEventType eventType;
         private String answerValue;
+        private ActivityEventUpdateType updateType;
         
         public Builder withHealthCode(String healthCode) {
             this.healthCode = healthCode;
@@ -99,6 +109,9 @@ public class DynamoActivityEvent implements ActivityEvent {
         }
         public Builder withObjectType(ActivityEventObjectType type) {
             this.objectType = type;
+            if (type != null) {
+                this.updateType = type.getUpdateType();    
+            }
             return this;
         }
         public Builder withObjectId(String objectId) {
@@ -111,6 +124,10 @@ public class DynamoActivityEvent implements ActivityEvent {
         }
         public Builder withAnswerValue(String answerValue) {
             this.answerValue = answerValue;
+            return this;
+        }
+        public Builder withUpdateType(ActivityEventUpdateType updateType) {
+            this.updateType = updateType;
             return this;
         }
         private String getEventId() {
@@ -133,6 +150,7 @@ public class DynamoActivityEvent implements ActivityEvent {
             event.setTimestamp(timestamp);
             event.setEventId(getEventId());
             event.setAnswerValue(answerValue);
+            event.updateType = updateType;
             return event;
         }
     }

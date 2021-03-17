@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -124,14 +125,14 @@ public class AppValidatorTest {
 
     @Test
     public void rejectEventKeysWithColons() {
-        app.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, app, "activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+        app.setCustomEvents(ImmutableMap.of("a-1", FUTURE_ONLY, "b:2", FUTURE_ONLY));
+        assertValidatorMessage(INSTANCE, app, "customEvents", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
     public void cannotCreateIdentifierWithColons() {
-        app.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, app, "activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+        app.setCustomEvents(ImmutableMap.of("a-1", FUTURE_ONLY, "b:2", FUTURE_ONLY));
+        assertValidatorMessage(INSTANCE, app, "customEvents", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
@@ -547,7 +548,7 @@ public class AppValidatorTest {
     
     @Test
     public void validAutomaticCustomEventWithCustomOriginEvent() {
-        app.setActivityEventKeys(ImmutableSet.of("externalEvent"));
+        app.setCustomEvents(ImmutableMap.of("externalEvent", FUTURE_ONLY));
         app.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "externalEvent:P-14D"));
         Validate.entityThrowingException(INSTANCE, app);
     }

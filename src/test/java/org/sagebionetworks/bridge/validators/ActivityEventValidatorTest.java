@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.validators.ActivityEventValidator.ANSWER_VALUE_ERROR;
 import static org.sagebionetworks.bridge.validators.ActivityEventValidator.EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.validators.ActivityEventValidator.INSTANCE;
@@ -16,6 +17,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 
 public class ActivityEventValidatorTest {
     
@@ -26,6 +28,7 @@ public class ActivityEventValidatorTest {
                 .withStudyId(TEST_STUDY_ID)
                 .withTimestamp(CREATED_ON)
                 .withObjectType(CUSTOM)
+                .withUpdateType(FUTURE_ONLY)
                 .withObjectId("fooboo")
                 .withEventType(ANSWERED) // irrelevant here
                 .withAnswerValue("anAnswer");
@@ -42,6 +45,7 @@ public class ActivityEventValidatorTest {
                 .withObjectType(null)
                 .withObjectId(null)
                 .withEventType(null)
+                .withUpdateType(null)
                 .withAnswerValue(null)
                 .build();
         assertValidatorMessage(INSTANCE, event, "eventId", EVENT_ID_ERROR);

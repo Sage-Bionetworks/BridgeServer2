@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +67,8 @@ public class DynamoAppDao implements AppDao {
         if (app == null) {
             throw new EntityNotFoundException(App.class, "App '"+appId+"' not found.");
         }
+        updateCustomEvents(app);
+        
         return app;
     }
     
@@ -75,8 +78,18 @@ public class DynamoAppDao implements AppDao {
 
         // get all apps including deactivated ones
         List<DynamoApp> mappings = mapper.scan(DynamoApp.class, scan);
+        
+        for(DynamoApp oneApp : mappings) {
+            updateCustomEvents(oneApp);
+        }
 
         return new ArrayList<App>(mappings);
+    }
+    
+    private void updateCustomEvents(DynamoApp app) {
+        for (String eventKey : app.getActivityEventKeys()) {
+            app.getCustomEvents().putIfAbsent(eventKey, FUTURE_ONLY);
+        }
     }
 
     @Override

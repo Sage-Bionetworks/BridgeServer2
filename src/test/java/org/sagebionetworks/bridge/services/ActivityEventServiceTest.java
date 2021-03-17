@@ -12,6 +12,7 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -21,7 +22,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDateTime;
 import org.joda.time.Period;
@@ -80,7 +80,7 @@ public class ActivityEventServiceTest {
     @Test
     public void canPublishGlobalCustomEvent() throws Exception {
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of("eventKey1", "eventKey2"));
+        app.setCustomEvents(ImmutableMap.of("eventKey1", FUTURE_ONLY, "eventKey2", FUTURE_ONLY));
 
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
         when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(true);
@@ -99,7 +99,7 @@ public class ActivityEventServiceTest {
     @Test
     public void canPublishStudyScopedCustomEvent() throws Exception {
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of("eventKey1", "eventKey2"));
+        app.setCustomEvents(ImmutableMap.of("eventKey1", FUTURE_ONLY, "eventKey2", FUTURE_ONLY));
 
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
         when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(true);
@@ -121,7 +121,7 @@ public class ActivityEventServiceTest {
         DateTime timestamp2 = timestamp1.plusDays(3);
         
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of("myEvent"));
+        app.setCustomEvents(ImmutableMap.of("myEvent", FUTURE_ONLY));
         app.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "myEvent:P3D"));
 
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
@@ -147,7 +147,7 @@ public class ActivityEventServiceTest {
         DateTime timestamp1 = DateTime.now();
         
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of("myEvent"));
+        app.setCustomEvents(ImmutableMap.of("myEvent", FUTURE_ONLY));
         app.setAutomaticCustomEvents(ImmutableMap.of("3-days-after-enrollment", "myEvent:P3D"));
 
         ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
@@ -548,7 +548,7 @@ public class ActivityEventServiceTest {
     public void whenCustomEventFailsPublishNoAutomaticEvents() {
         // Configure app with automatic custom events
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of("myEvent"));
+        app.setCustomEvents(ImmutableMap.of("myEvent", FUTURE_ONLY));
         // Note that these automatic events include events that are triggered by enrollment, 
         // and some that are not, that should be ignored
         app.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
@@ -693,7 +693,7 @@ public class ActivityEventServiceTest {
     public void canPublishCustomEventWithAutomaticCustomEvents() {
         // This also verifies the correct parsing of the custom event key, which contains a colon.
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of("myEvent"));
+        app.setCustomEvents(ImmutableMap.of("myEvent", FUTURE_ONLY));
         app.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
                 .put("3-days-after", "myEvent:P3D")
                 .put("1-week-after", "myEvent:P1W").build());
@@ -839,7 +839,7 @@ public class ActivityEventServiceTest {
     @Test
     public void canDeleteCustomEvent() {
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of("eventKey"));
+        app.setCustomEvents(ImmutableMap.of("eventKey", FUTURE_ONLY));
         
         activityEventService.deleteCustomEvent(app, TEST_STUDY_ID, HEALTH_CODE, "eventKey");
         

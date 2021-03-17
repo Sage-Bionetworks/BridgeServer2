@@ -3,9 +3,15 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.QUESTION;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_START_DATE;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
+import static org.sagebionetworks.bridge.validators.ActivityEventValidator.INSTANCE;
 
 import java.util.List;
 import java.util.Map;
@@ -25,12 +31,10 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
-import org.sagebionetworks.bridge.models.activities.ActivityEventType;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
-import org.sagebionetworks.bridge.validators.ActivityEventValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
@@ -75,16 +79,17 @@ public class ActivityEventService {
      * Delete a custom event.
      */
     public void deleteCustomEvent(App app, String studyId, String healthCode, String eventKey) {
-        if (!app.getActivityEventKeys().contains(eventKey)
-                && !app.getAutomaticCustomEvents().containsKey(eventKey)) {
+        if (!app.getCustomEvents().containsKey(eventKey) && !app.getAutomaticCustomEvents().containsKey(eventKey)) {
             throw new BadRequestException("App's ActivityEventKeys does not contain eventKey: " + eventKey);
         }
         
         ActivityEvent event = new DynamoActivityEvent.Builder()
                 .withHealthCode(healthCode)
-                .withObjectType(ActivityEventObjectType.CUSTOM)
+                .withObjectType(CUSTOM)
+                .withUpdateType(app.getCustomEvents().get(eventKey))
                 .withObjectId(eventKey)
-                .withStudyId(studyId).build();
+                .withStudyId(studyId)
+                .build();
 
         activityEventDao.deleteCustomEvent(event);
     }
@@ -98,20 +103,23 @@ public class ActivityEventService {
         checkNotNull(app);
         checkNotNull(healthCode);
 
-        if (!app.getActivityEventKeys().contains(eventKey)
+        if (!app.getCustomEvents().containsKey(eventKey)
                 && !app.getAutomaticCustomEvents().containsKey(eventKey)) {
             throw new BadRequestException("App's ActivityEventKeys does not contain eventKey: " + eventKey);
         }
 
         ActivityEvent event = new DynamoActivityEvent.Builder()
                 .withHealthCode(healthCode)
-                .withObjectType(ActivityEventObjectType.CUSTOM)
+                .withObjectType(CUSTOM)
+                .withUpdateType(app.getCustomEvents().get(eventKey))
                 .withObjectId(eventKey)
                 .withStudyId(studyId)
                 .withTimestamp(timestamp).build();
         
         // If the globalEvent is valid, all other derivations are valid 
-        Validate.entityThrowingException(ActivityEventValidator.INSTANCE, event);
+        Validate.entityThrowingException(INSTANCE, event);
+        
+        ActivityEventUpdateType updateType = app.getCustomEvents().get(eventKey);
         
         if (activityEventDao.publishEvent(event)) {
             // Create automatic events, as defined in the app
@@ -133,10 +141,11 @@ public class ActivityEventService {
         ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
             .withTimestamp(enrolledOn)
-            .withObjectType(ENROLLMENT).build();
+            .withObjectType(ENROLLMENT)
+            .build();
         
         // If the globalEvent is valid, all other derivations are valid 
-        Validate.entityThrowingException(ActivityEventValidator.INSTANCE, globalEvent);
+        Validate.entityThrowingException(INSTANCE, globalEvent);
         
         if (activityEventDao.publishEvent(globalEvent)) {
             // Create automatic events, as defined in the app
@@ -161,10 +170,11 @@ public class ActivityEventService {
         ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
             .withTimestamp(timestamp)
-            .withObjectType(ACTIVITIES_RETRIEVED).build();
+            .withObjectType(ACTIVITIES_RETRIEVED)
+            .build();
 
         // If the globalEvent is valid, all other derivations are valid
-        Validate.entityThrowingException(ActivityEventValidator.INSTANCE, globalEvent);
+        Validate.entityThrowingException(INSTANCE, globalEvent);
         
         if (activityEventDao.publishEvent(globalEvent)) {
             // Create automatic events, as defined in the app
@@ -193,12 +203,12 @@ public class ActivityEventService {
         ActivityEvent event = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
             .withTimestamp(answer.getAnsweredOn())
-            .withObjectType(ActivityEventObjectType.QUESTION)
+            .withObjectType(QUESTION)
             .withObjectId(answer.getQuestionGuid())
-            .withEventType(ActivityEventType.ANSWERED)
+            .withEventType(ANSWERED)
             .withAnswerValue(COMMA_JOINER.join(answer.getAnswers())).build();
         
-        Validate.entityThrowingException(ActivityEventValidator.INSTANCE, event);
+        Validate.entityThrowingException(INSTANCE, event);
         
         activityEventDao.publishEvent(event);
     }
@@ -217,14 +227,14 @@ public class ActivityEventService {
             
             ActivityEvent event = new DynamoActivityEvent.Builder()
                 .withHealthCode(schActivity.getHealthCode())
-                .withObjectType(ActivityEventObjectType.ACTIVITY)
+                .withObjectType(ACTIVITY)
                 .withObjectId(activityGuid)
-                .withEventType(ActivityEventType.FINISHED)
+                .withEventType(FINISHED)
                 .withTimestamp(schActivity.getFinishedOn())
                 .build();
 
             // If the globalEvent is valid, all other derivations are valid 
-            Validate.entityThrowingException(ActivityEventValidator.INSTANCE, event);
+            Validate.entityThrowingException(INSTANCE, event);
             
             activityEventDao.publishEvent(event);
         }
@@ -244,7 +254,7 @@ public class ActivityEventService {
         activityEventDao.publishEvent(globalEvent);
         
         // If the globalEvent is valid, all other derivations are valid 
-        Validate.entityThrowingException(ActivityEventValidator.INSTANCE, globalEvent);
+        Validate.entityThrowingException(INSTANCE, globalEvent);
 
         if (studyId != null) {
             ActivityEvent studyEvent = new DynamoActivityEvent.Builder()
@@ -327,7 +337,7 @@ public class ActivityEventService {
                 DateTime automaticEventTime = new DateTime(event.getTimestamp()).plus(automaticEventDelay);
                 ActivityEvent automaticEvent = new DynamoActivityEvent.Builder()
                         .withHealthCode(healthCode)
-                        .withObjectType(ActivityEventObjectType.CUSTOM)
+                        .withObjectType(CUSTOM)
                         .withObjectId(automaticEventKey)
                         .withTimestamp(automaticEventTime)
                         .withStudyId(studyId).build();

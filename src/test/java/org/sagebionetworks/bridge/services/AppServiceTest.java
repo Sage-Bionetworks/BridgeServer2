@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.apps.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.REPORT;
@@ -608,12 +609,12 @@ public class AppServiceTest extends Mockito {
     public void cannotRemoveActivityEventKeys() {
         app = TestUtils.getValidApp(AppServiceTest.class);
         app.setIdentifier(TEST_APP_ID);
-        app.setActivityEventKeys(ImmutableSet.of("test"));
+        app.setCustomEvents(ImmutableMap.of("test", FUTURE_ONLY));
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(app);
         
         App updatedApp = TestUtils.getValidApp(AppServiceTest.class);
         updatedApp.setIdentifier(app.getIdentifier());
-        updatedApp.setActivityEventKeys(EMPTY_SET);
+        updatedApp.setCustomEvents(ImmutableMap.of());
         
         service.updateApp(updatedApp, true);
     }
@@ -1584,7 +1585,7 @@ public class AppServiceTest extends Mockito {
         app.setAppIdExcludedInExport(false);
         app.setTaskIdentifiers(null);
         app.setUploadValidationStrictness(null);
-        app.setActivityEventKeys(null);
+        app.setCustomEvents(null);
         app.setHealthCodeExportEnabled(true);
         app.setActive(false);
         app.setStrictUploadValidationEnabled(false);
@@ -1631,7 +1632,7 @@ public class AppServiceTest extends Mockito {
         assertEquals(newApp.getMinAgeOfConsent(), 18);
         assertEquals(newApp.getDataGroups(), ImmutableSet.of("beta_users", "production_users", TEST_USER_GROUP));
         assertTrue(newApp.getTaskIdentifiers().isEmpty());
-        assertTrue(newApp.getActivityEventKeys().isEmpty());
+        assertTrue(newApp.getCustomEvents().isEmpty());
 
         verify(mockCacheProvider).setApp(newApp);
 

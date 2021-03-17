@@ -94,8 +94,9 @@ public class DynamoAppDaoTest extends Mockito {
     
     @Test
     public void getApps() {
-        List<App> saved = ImmutableList.of(App.create(), App.create());
+        List<DynamoApp> saved = ImmutableList.of(new DynamoApp(), new DynamoApp());
         when(mockScanList.toArray()).thenReturn(saved.toArray());
+        when(mockScanList.iterator()).thenReturn(saved.iterator());
         when(mockMapper.scan(eq(DynamoApp.class), any(DynamoDBScanExpression.class))).thenReturn(mockScanList);
         
         List<App> result = dao.getApps();

@@ -20,6 +20,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.type.TypeReference;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.AppleAppLink;
@@ -51,6 +52,15 @@ public final class DynamoApp implements App {
         }
     }
     
+    public static class CustomEventsMarshaller extends MapMarshaller<String, ActivityEventUpdateType> {
+        private static final TypeReference<Map<String,ActivityEventUpdateType>> EVENT_MAP_TYPE = 
+                new TypeReference<Map<String,ActivityEventUpdateType>>() {};
+        @Override
+        public TypeReference<Map<String,ActivityEventUpdateType>> getTypeReference() {
+            return EVENT_MAP_TYPE;
+        }
+    }
+    
     private String name;
     private String shortName;
     private String sponsorName;
@@ -75,6 +85,7 @@ public final class DynamoApp implements App {
     private Set<String> profileAttributes;
     private Set<String> taskIdentifiers;
     private Set<String> activityEventKeys;
+    private Map<String,ActivityEventUpdateType> customEvents;
     private Set<String> dataGroups;
     private PasswordPolicy passwordPolicy;
     private boolean strictUploadValidationEnabled;
@@ -110,6 +121,7 @@ public final class DynamoApp implements App {
         appleAppLinks = new ArrayList<>();
         androidAppLinks = new ArrayList<>();
         defaultTemplates = new HashMap<>();
+        customEvents = new HashMap<>();
     }
 
     /** {@inheritDoc} */
@@ -390,19 +402,28 @@ public final class DynamoApp implements App {
         this.taskIdentifiers = (taskIdentifiers == null) ? new HashSet<>() : taskIdentifiers;
     }
 
-    /** {@inheritDoc} */
     @DynamoDBTypeConverted(converter = StringSetMarshaller.class)
-    @Override
     public Set<String> getActivityEventKeys() {
         return activityEventKeys;
     }
 
-    /** {@inheritDoc} */
-    @Override
     public void setActivityEventKeys(Set<String> activityEventKeys) {
         this.activityEventKeys = (activityEventKeys==null) ? new HashSet<>() : activityEventKeys;
     }
+    
+    /** {@inheritDoc} */
+    @DynamoDBTypeConverted(converter = CustomEventsMarshaller.class)
+    @Override
+    public Map<String, ActivityEventUpdateType> getCustomEvents() {
+        return customEvents;
+    }
 
+    /** {@inheritDoc} */
+    @Override
+    public void setCustomEvents(Map<String,ActivityEventUpdateType> customEvents) {
+        this.customEvents = (customEvents==null) ? new HashMap<>() : customEvents;
+    }
+    
     /** {@inheritDoc} */
     @DynamoDBTypeConverted(converter=StringSetMarshaller.class)
     @Override
@@ -621,7 +642,7 @@ public final class DynamoApp implements App {
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, usesCustomExportSchedule,
                 uploadMetadataFieldDefinitions, uploadValidationStrictness, consentNotificationEmail,
                 consentNotificationEmailVerified, minAgeOfConsent, accountLimit, version, active, profileAttributes,
-                taskIdentifiers, activityEventKeys, dataGroups, passwordPolicy, strictUploadValidationEnabled,
+                taskIdentifiers, activityEventKeys, customEvents, dataGroups, passwordPolicy, strictUploadValidationEnabled,
                 healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, emailSignInEnabled,
                 phoneSignInEnabled, externalIdRequiredOnSignup, minSupportedAppVersions, pushNotificationARNs,
                 installLinks, disableExport, oauthProviders, appleAppLinks, androidAppLinks, reauthenticationEnabled,
@@ -655,6 +676,7 @@ public final class DynamoApp implements App {
                 && Objects.equals(profileAttributes, other.profileAttributes)
                 && Objects.equals(taskIdentifiers, other.taskIdentifiers)
                 && Objects.equals(activityEventKeys, other.activityEventKeys)
+                && Objects.equals(customEvents, other.customEvents)
                 && Objects.equals(dataGroups, other.dataGroups)
                 && Objects.equals(sponsorName, other.sponsorName)
                 && Objects.equals(synapseDataAccessTeamId, other.synapseDataAccessTeamId)
@@ -690,7 +712,7 @@ public final class DynamoApp implements App {
                         + "appIdExcludedInExport=%b, supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, "
                         + "technicalEmail=%s, uploadValidationStrictness=%s, consentNotificationEmail=%s, "
                         + "consentNotificationEmailVerified=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
-                        + "activityEventKeys=%s, dataGroups=%s, passwordPolicy=%s, strictUploadValidationEnabled=%s, "
+                        + "activityEventKeys=%s, customEvents=%s, dataGroups=%s, passwordPolicy=%s, strictUploadValidationEnabled=%s, "
                         + "healthCodeExportEnabled=%s, emailVerificationEnabled=%s, externalIdValidationEnabled=%s, "
                         + "externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, usesCustomExportSchedule=%s, "
                         + "pushNotificationARNs=%s, installLinks=%s, disableExport=%s, emailSignInEnabled=%s, "
@@ -701,8 +723,8 @@ public final class DynamoApp implements App {
                 autoVerificationEmailSuppressed, minAgeOfConsent, participantIpLockingEnabled, appIdExcludedInExport,
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
                 consentNotificationEmail, consentNotificationEmailVerified, version, profileAttributes, taskIdentifiers,
-                activityEventKeys, dataGroups, passwordPolicy, strictUploadValidationEnabled, healthCodeExportEnabled,
-                emailVerificationEnabled, externalIdValidationEnabled, externalIdRequiredOnSignup,
+                activityEventKeys, customEvents, dataGroups, passwordPolicy, strictUploadValidationEnabled, 
+                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, externalIdRequiredOnSignup,
                 minSupportedAppVersions, usesCustomExportSchedule, pushNotificationARNs, installLinks, disableExport,
                 emailSignInEnabled, phoneSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks,
                 reauthenticationEnabled, autoVerificationPhoneSuppressed, verifyChannelOnSignInEnabled,
