@@ -4,7 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLongPeriod;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -37,7 +37,7 @@ public class Schedule2Validator implements Validator {
         if (isBlank(schedule.getGuid())) {
             errors.rejectValue("guid", CANNOT_BE_BLANK);
         }
-        validateFixedLongPeriod(errors, schedule.getDuration(), "duration", true);
+        validateFixedLengthLongPeriod(errors, schedule.getDuration(), "duration", true);
         if (schedule.getCreatedOn() == null) {
             errors.rejectValue("createdOn", CANNOT_BE_NULL);
         }

@@ -71,9 +71,9 @@ public final class NotificationMessage implements BridgeEntity, HasLang {
     
     @Override
     public String toString() {
-        return String.format("NotificationMessage[lang=%, subject=%s, message%s]", lang, subject, message);
+        return "NotificationMessage [lang=" + lang + ", subject=" + subject + ", message=" + message + "]";
     }
-    
+
     public static class Builder {
         private String lang;
         private String subject;

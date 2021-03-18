@@ -6,8 +6,8 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLongPeriod;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedPeriod;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthPeriod;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateMessages;
 
@@ -40,8 +40,8 @@ public class SessionValidator implements Validator {
         if (isBlank(session.getStartEventId())) {
             errors.rejectValue("startEventId", CANNOT_BE_BLANK);
         }
-        validateFixedPeriod(errors, session.getDelay(), "delay", false);
-        validateFixedLongPeriod(errors, session.getInterval(), "interval", false);
+        validateFixedLengthPeriod(errors, session.getDelay(), "delay", false);
+        validateFixedLengthLongPeriod(errors, session.getInterval(), "interval", false);
         if (session.getPerformanceOrder() == null) {
             errors.rejectValue("performanceOrder", CANNOT_BE_NULL);
         }
@@ -61,7 +61,7 @@ public class SessionValidator implements Validator {
                 if (window.getStartTime() == null) {
                     errors.rejectValue("startTime", CANNOT_BE_NULL);
                 }
-                validateFixedPeriod(errors, window.getExpiration(), "expiration", false);
+                validateFixedLengthPeriod(errors, window.getExpiration(), "expiration", false);
                 if (session.getInterval() != null) {
                     if (window.getExpiration() == null) {
                         errors.rejectValue("expiration", "is required when a session has an interval");
@@ -121,7 +121,7 @@ public class SessionValidator implements Validator {
                 errors.rejectValue("messages", CANNOT_BE_NULL_OR_EMPTY);
             }
             validateMessages(errors, session.getMessages());
-            validateFixedPeriod(errors, session.getReminderPeriod(), "reminderPeriod", false);
+            validateFixedLengthPeriod(errors, session.getReminderPeriod(), "reminderPeriod", false);
         }
     }
     

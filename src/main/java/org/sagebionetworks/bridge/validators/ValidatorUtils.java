@@ -39,10 +39,10 @@ public class ValidatorUtils {
     static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFFFF format)";
     static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{6}$";
 
-    private static final Set<DurationFieldType> ALL_FIXED_DURATIONS = ImmutableSet.of(DurationFieldType.minutes(),
+    private static final Set<DurationFieldType> FIXED_LENGTH_DURATIONS = ImmutableSet.of(DurationFieldType.minutes(),
             DurationFieldType.hours(), DurationFieldType.days(), DurationFieldType.weeks());
     
-    private static final Set<DurationFieldType> ALL_FIXED_LONG_DURATIONS = ImmutableSet.of(DurationFieldType.days(),
+    private static final Set<DurationFieldType> FIXED_LENGTH_LONG_DURATIONS = ImmutableSet.of(DurationFieldType.days(),
             DurationFieldType.weeks());
     
     public static boolean participantHasValidIdentifier(StudyParticipant participant) {
@@ -183,16 +183,16 @@ public class ValidatorUtils {
         return minutes;
     }
     
-    public static void validateFixedPeriod(Errors errors, Period period, String fieldName, boolean required) {
-        validateNotOfDuration(ALL_FIXED_DURATIONS, errors, period, fieldName, WRONG_PERIOD, required);
+    public static void validateFixedLengthPeriod(Errors errors, Period period, String fieldName, boolean required) {
+        validateDuration(FIXED_LENGTH_DURATIONS, errors, period, fieldName, WRONG_PERIOD, required);
     }
 
-    public static void validateFixedLongPeriod(Errors errors, Period period, String fieldName, boolean required) {
-        validateNotOfDuration(ALL_FIXED_LONG_DURATIONS, errors, period, fieldName, WRONG_LONG_PERIOD, required);
+    public static void validateFixedLengthLongPeriod(Errors errors, Period period, String fieldName, boolean required) {
+        validateDuration(FIXED_LENGTH_LONG_DURATIONS, errors, period, fieldName, WRONG_LONG_PERIOD, required);
     }
 
-    private static void validateNotOfDuration(Set<DurationFieldType> durations, Errors errors,
-            Period period, String fieldName, String error, boolean required) {
+    private static void validateDuration(Set<DurationFieldType> durations, Errors errors, Period period,
+            String fieldName, String error, boolean required) {
         if (period == null) {
             if (required) {
                 errors.rejectValue(fieldName, CANNOT_BE_NULL);

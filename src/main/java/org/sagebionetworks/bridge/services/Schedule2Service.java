@@ -125,10 +125,7 @@ public class Schedule2Service {
     }
 
     /**
-     * Get an individual schedule. There are no special criteria for being able to see a 
-     * schedule because they are visible to all organization members that sponsor a study, 
-     * as well as any study participants who need them. Basic role-based access applies for
-     * some APIs. 
+     * Get an individual schedule.
      */
     public Schedule2 getSchedule(String appId, String guid) {
         checkNotNull(appId);
@@ -260,8 +257,8 @@ public class Schedule2Service {
     
     /**
      * Physically delete a schedule. Currently there is no protection against 
-     * breaking the integrity fo the system by permanently deleting a schedule; 
-     * this is for integration tests and admin cleanup.
+     * breaking the integrity of the system by permanently deleting a schedule; 
+     * this method is for integration tests and admin cleanup.
      */
     public void deleteSchedulePermanently(String appId, String guid) {
         checkNotNull(appId);
@@ -275,8 +272,8 @@ public class Schedule2Service {
     }
     
     /**
-     * Set guids on objects that don't have them; clean up event keys or set
-     * them to null if they're not valid, so they fail validation.
+     * Set GUIDs on objects that don't have them; clean up event keys or set
+     * them to null if they're not valid, so they will fail validation.
      */
     public void preValidationCleanup(App app, Schedule2 schedule, Consumer<HasGuid> consumer) {
         checkNotNull(app);
@@ -286,18 +283,11 @@ public class Schedule2Service {
 
         for (Session session : schedule.getSessions()) {
             consumer.accept(session);
-//            if (session.getGuid() == null) {
-//                session.setGuid(generateGuid());
-//            }
             session.setSchedule(schedule);
             for (TimeWindow window : session.getTimeWindows()) {
                 consumer.accept(window);
-//                if (window.getGuid() == null) {
-//                    window.setGuid(generateGuid());
-//                }
             }
-            session.setStartEventId(
-                    formatActivityEventId(keys, session.getStartEventId()));
+            session.setStartEventId(formatActivityEventId(keys, session.getStartEventId()));
         }
     }
 }

@@ -476,6 +476,51 @@ public class Schedule2ServiceTest extends Mockito {
     }
     
     @Test
+    public void publishSchedule() { 
+        permitToAccess();
+        
+        Schedule2 existing = new Schedule2();
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
+        
+        service.publishSchedule(TEST_APP_ID, GUID);
+        
+        verify(mockDao).updateSchedule(scheduleCaptor.capture());
+        assertTrue(scheduleCaptor.getValue().isPublished());
+        assertEquals(scheduleCaptor.getValue().getModifiedOn(), MODIFIED_ON);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void publishScheduleNotFound() { 
+        permitToAccess();
+        
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
+        
+        service.publishSchedule(TEST_APP_ID, GUID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void publishScheduleFailsForLogicallyDeletedSchedule() { 
+        permitToAccess();
+        
+        Schedule2 existing = new Schedule2();
+        existing.setDeleted(true);
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
+        
+        service.publishSchedule(TEST_APP_ID, GUID);
+    }
+    
+    @Test(expectedExceptions = PublishedEntityException.class)
+    public void publishScheduleFailsForPublishedSchedule() { 
+        permitToAccess();
+        
+        Schedule2 existing = new Schedule2();
+        existing.setPublished(true);
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
+        
+        service.publishSchedule(TEST_APP_ID, GUID);
+    }
+    
+    @Test
     public void deleteSchedule() {
         permitToAccess();
         

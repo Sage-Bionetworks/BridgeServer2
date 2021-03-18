@@ -13,8 +13,8 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_LONG_PE
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLongPeriod;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedPeriod;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthPeriod;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -197,7 +197,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P3M");
         
-        validateFixedPeriod(errors, period, "period", false);
+        validateFixedLengthPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_PERIOD);
     }
@@ -207,7 +207,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("PT180S");
         
-        validateFixedPeriod(errors, period, "period", false);
+        validateFixedLengthPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_PERIOD);
     }
@@ -217,7 +217,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P3Y");
         
-        validateFixedPeriod(errors, period, "period", false);
+        validateFixedLengthPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_PERIOD);
     }
@@ -227,7 +227,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P2W");
         
-        validateFixedPeriod(errors, period, "period", false);
+        validateFixedLengthPeriod(errors, period, "period", false);
         
         verify(errors, never()).rejectValue(any(), any());
     }
@@ -237,7 +237,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("PT30M");
 
-        validateFixedPeriod(errors, period, "period", false);
+        validateFixedLengthPeriod(errors, period, "period", false);
         
         verify(errors, never()).rejectValue(any(), any());
     }
@@ -247,7 +247,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P2W3DT30M");
 
-        validateFixedPeriod(errors, period, "period", false);
+        validateFixedLengthPeriod(errors, period, "period", false);
         
         verify(errors, never()).rejectValue(any(), any());
     }
@@ -257,7 +257,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P3Y2W3DT30M");
 
-        validateFixedPeriod(errors, period, "period", false);
+        validateFixedLengthPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_PERIOD);
     }
@@ -266,7 +266,7 @@ public class ValidatorUtilsTest extends Mockito {
     public void validateFixedPeriodRequiredIsMissing() {
         Errors errors = mock(Errors.class);
 
-        validateFixedPeriod(errors, null, "period", true);
+        validateFixedLengthPeriod(errors, null, "period", true);
         
         verify(errors).rejectValue("period", CANNOT_BE_NULL);
     }
@@ -276,7 +276,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P2W-3D");
 
-        validateFixedPeriod(errors, period, "period", true);
+        validateFixedLengthPeriod(errors, period, "period", true);
 
         // Despite adding up to a positive value, we don't allow it. 
         verify(errors).rejectValue("period", CANNOT_BE_NEGATIVE);
@@ -289,7 +289,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P3M");
         
-        validateFixedLongPeriod(errors, period, "period", false);
+        validateFixedLengthLongPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_LONG_PERIOD);
     }
@@ -299,7 +299,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("PT180S");
         
-        validateFixedLongPeriod(errors, period, "period", false);
+        validateFixedLengthLongPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_LONG_PERIOD);
     }
@@ -309,7 +309,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P3Y");
         
-        validateFixedLongPeriod(errors, period, "period", false);
+        validateFixedLengthLongPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_LONG_PERIOD);
     }
@@ -319,7 +319,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P2W");
         
-        validateFixedLongPeriod(errors, period, "period", false);
+        validateFixedLengthLongPeriod(errors, period, "period", false);
         
         verify(errors, never()).rejectValue(any(), any());
     }
@@ -329,7 +329,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P12D");
         
-        validateFixedLongPeriod(errors, period, "period", false);
+        validateFixedLengthLongPeriod(errors, period, "period", false);
         
         verify(errors, never()).rejectValue(any(), any());
     }
@@ -339,7 +339,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P2W3D");
 
-        validateFixedLongPeriod(errors, period, "period", false);
+        validateFixedLengthLongPeriod(errors, period, "period", false);
         
         verify(errors, never()).rejectValue(any(), any());
     }
@@ -349,7 +349,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P3Y2W3DT30M");
 
-        validateFixedLongPeriod(errors, period, "period", false);
+        validateFixedLengthLongPeriod(errors, period, "period", false);
         
         verify(errors).rejectValue("period", WRONG_LONG_PERIOD);
     }
@@ -358,7 +358,7 @@ public class ValidatorUtilsTest extends Mockito {
     public void validateFixedLongPeriodRequiredIsMissing() {
         Errors errors = mock(Errors.class);
 
-        validateFixedLongPeriod(errors, null, "period", true);
+        validateFixedLengthLongPeriod(errors, null, "period", true);
         
         verify(errors).rejectValue("period", CANNOT_BE_NULL);
     }
@@ -368,7 +368,7 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         Period period = Period.parse("P2W-3D");
 
-        validateFixedLongPeriod(errors, period, "period", true);
+        validateFixedLengthLongPeriod(errors, period, "period", true);
 
         // Despite adding up to a positive value, we don't allow it. 
         verify(errors).rejectValue("period", CANNOT_BE_NEGATIVE);
