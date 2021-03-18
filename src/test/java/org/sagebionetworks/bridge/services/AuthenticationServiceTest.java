@@ -1608,5 +1608,6 @@ public class AuthenticationServiceTest {
        Map<String,String> map = participantCaptor.getValue().getExternalIds();
        String extId =  map.containsKey("studyA") ? map.get("studyA") : map.get("studyB");
        assertEquals(extId, EXTERNAL_ID);
+       assertFalse(map.keySet().contains("test"));
    }
 }
