@@ -20,15 +20,17 @@ public class NotificationMessageTest {
     
     @Test
     public void canSerialize() throws Exception {
-        String json = TestUtils.createJson("{'subject':'The Subject','message':'The Message'}");
+        String json = TestUtils.createJson("{'lang': 'en', 'subject':'The Subject','message':'The Message'}");
 
         NotificationMessage message = BridgeObjectMapper.get().readValue(json, NotificationMessage.class);
+        assertEquals(message.getLang(), "en");
         assertEquals(message.getSubject(), "The Subject");
         assertEquals(message.getMessage(), "The Message");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(message);
-        assertEquals(node.get("subject").asText(), "The Subject");
-        assertEquals(node.get("message").asText(), "The Message");
-        assertEquals(node.get("type").asText(), "NotificationMessage");
+        assertEquals(node.get("lang").textValue(), "en");
+        assertEquals(node.get("subject").textValue(), "The Subject");
+        assertEquals(node.get("message").textValue(), "The Message");
+        assertEquals(node.get("type").textValue(), "NotificationMessage");
     }
 }

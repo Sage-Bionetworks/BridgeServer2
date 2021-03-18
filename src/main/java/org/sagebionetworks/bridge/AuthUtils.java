@@ -36,7 +36,8 @@ public class AuthUtils {
             .hasAnyRole(ADMIN);
     
     /**
-     * Can the caller edit assessments? Must be a member of the organization.
+     * Can the caller edit assessments? Must be a member of the organization. Probably should be
+     * some kind of developer role as well!
      */
     public static final AuthEvaluator CAN_EDIT_ASSESSMENTS = new AuthEvaluator().isInOrg().or()
             .hasAnyRole(ADMIN);
@@ -131,6 +132,24 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_EDIT_SHARED_ASSESSMENTS = new AuthEvaluator()
             .isSharedOwner().or()
             .hasAnyRole(ADMIN);
+
+    /**
+     * Can the caller read the schedules? They must be enrolled in the study, a study-scoped
+     * role that can view schedules, or a developer. Note that when schedules are used in 
+     * studies, additional people will have read access, but this hasn't been implemented
+     * yet. 
+     */
+    public static final AuthEvaluator CAN_READ_SCHEDULES = new AuthEvaluator()
+            .isInOrg().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, ADMIN);
+
+    /**
+     * Can the caller edit the schedules? They must be a study-scoped role that can view 
+     * schedules, or a developer.
+     */
+    public static final AuthEvaluator CAN_EDIT_SCHEDULES = new AuthEvaluator()
+            .isInOrg().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
      * Is the caller in the provided role? Superadmins always pass this test.

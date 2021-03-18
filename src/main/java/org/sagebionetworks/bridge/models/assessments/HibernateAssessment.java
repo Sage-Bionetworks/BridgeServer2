@@ -40,6 +40,7 @@ public class HibernateAssessment {
     
     public static HibernateAssessment create(String appId, Assessment dto) {
         HibernateAssessment assessment = new HibernateAssessment();
+        assessment.setAppId(appId);
         assessment.setGuid(dto.getGuid());
         assessment.setAppId(appId);
         assessment.setIdentifier(dto.getIdentifier());

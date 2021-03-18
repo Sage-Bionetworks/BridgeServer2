@@ -436,6 +436,7 @@ ADD COLUMN `clientData` mediumtext COLLATE utf8_unicode_ci;
 
 -- changeset bridge:25
 
+<<<<<<< HEAD
 ALTER TABLE `AccountRoles`
 MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','ORG_ADMIN','WORKER','SUPERADMIN','STUDY_COORDINATOR','STUDY_DESIGNER') NOT NULL;
 
@@ -451,3 +452,69 @@ MODIFY COLUMN `category` enum('CUSTOMIZATION_OPTIONS', 'DATA_REPOSITORY',
     'PUBLICATION', 'RELEASE_NOTE', 'SAMPLE_APP', 'SAMPLE_DATA', 
     'SCREENSHOT', 'SEE_ALSO', 'USED_IN_STUDY', 'WEBSITE', 
     'OTHER', 'ICON') NOT NULL;
+=======
+CREATE TABLE `Schedules` (
+  `appId` varchar(255) NOT NULL,
+  `ownerId` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `guid` varchar(60) NOT NULL,
+  `duration` varchar(60) NOT NULL,
+  `clientData` mediumtext COLLATE utf8_unicode_ci,
+  `published` tinyint(1) NOT NULL DEFAULT '0',
+  `createdOn` bigint(20) unsigned DEFAULT NULL,
+  `modifiedOn` bigint(20) unsigned DEFAULT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `version` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`guid`),
+  KEY `Schedules_appId_guid_idx` (`appId`,`guid`),
+  KEY `Schedules_ownerId_guid_idx` (`ownerId`,`guid`),
+  CONSTRAINT `Schedule-Organization-Constraint` FOREIGN KEY (`appId`, `ownerId`) REFERENCES `Organizations` (`appId`, `identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE `Sessions` (
+  `scheduleGuid` varchar(60) NOT NULL,
+  `guid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `name` varchar(255) NOT NULL,
+  `startEventId` varchar(255) NOT NULL,
+  `delayPeriod` varchar(60),
+  `occurrences` int(10) unsigned,
+  `intervalPeriod` varchar(60),
+  `reminderPeriod` varchar(60),
+  `messages` text DEFAULT NULL,
+  `labels` text DEFAULT NULL,
+  `performanceOrder` enum('PARTICIPANT_CHOICE','SEQUENTIAL','RANDOMIZED'),
+  `notifyAt` enum('PARTICIPANT_CHOICE','START_OF_WINDOW','RANDOM'),
+  `remindAt` enum('AFTER_WINDOW_START','BEFORE_WINDOW_END'),
+  `allowSnooze` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`guid`),
+  UNIQUE KEY `Session-guid-scheduleGuid-idx` (`guid`,`scheduleGuid`),
+  CONSTRAINT `Session-Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE `SessionTimeWindows` (
+  `sessionGuid` varchar(60) NOT NULL,
+  `guid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `startTime` varchar(60) NOT NULL,
+  `expirationPeriod` varchar(60),
+  `persistent` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`guid`),
+  UNIQUE KEY `TimeWindow-guid-sessionGuid-idx` (`guid`,`sessionGuid`),
+  CONSTRAINT `TimeWindow-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE `SessionAssessments` (
+  `sessionGuid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `appId` varchar(255) NOT NULL,
+  `guid` varchar(60) NOT NULL,
+  `identifier` varchar(255) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `minutesToComplete` int(10) DEFAULT NULL,
+  `labels` text DEFAULT NULL,
+  PRIMARY KEY (`sessionGuid`, `position`),
+  CONSTRAINT `AssessmentRef-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE,
+  CONSTRAINT `AssessmentRef-Assessment-Constraint` FOREIGN KEY (`guid`) REFERENCES `Assessments` (`guid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+>>>>>>> 3afc28eab4ec70e6d60434938b09dbeee0057df6
