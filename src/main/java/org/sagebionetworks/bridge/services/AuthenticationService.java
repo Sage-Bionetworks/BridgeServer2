@@ -276,8 +276,8 @@ public class AuthenticationService {
         checkNotNull(participant);
         
         // Code to maintain apps in production. External IDs must now be associated to a study 
-        // because they explicitly enroll you in a study. Payloads with an externalId field but
-        // no externalIds map are not declaring a study.
+        // because they enroll you, but older apps continue to submit a payload with an externalId 
+        // field (not the externalIds map).
         if (participant.getExternalId() != null && participant.getExternalIds().isEmpty()) {
             // For apps that create accounts prior to calling sign up from the app (which happens), check and if 
             // the account with this external ID already exists, return quietly.
@@ -286,9 +286,9 @@ public class AuthenticationService {
             if (account != null) {
                 return new IdentifierHolder(account.getId());
             }
-            // Or, they are calling signup with an external ID and a password, but no study. Try to guess
-            // a reasonable default. If we can't the participant is returned as is and will fail validation
-            // (but all production apps we can guess a reasonable default).
+            // Or, they are probably calling signup with an external ID and a password, but no study. Try to 
+            // guess a reasonable default. If we can't the participant is returned as is and will fail 
+            // to be created by ParticipantService.
             participant = findDefaultStudyForExternalId(app, participant);
         }
         
@@ -329,7 +329,7 @@ public class AuthenticationService {
         Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
         String studyId = null;
         
-        // Psorcast Validation has one study named "test", so use it if it’s all there is 
+        // Psorcast Validation has one study named "test", so use it if it’s the only study there is 
         if (studyIds.size() == 1) {
             studyId = Iterables.getFirst(studyIds, null);
         } else {
@@ -346,8 +346,8 @@ public class AuthenticationService {
             }
         }
         // Fix the participant record so they are property enrolled if we found a studyId. For an app with no 
-        // studies could be null. It’s impossible to add an external ID in that case (I added a study to every
-        // app in an earlier migration).
+        // studies, the studyId could still be null. It’s impossible to add an external ID in that case 
+        // (a study has been added to every app in an earlier migration).
         if (studyId != null) {
             return new StudyParticipant.Builder().copyOf(participant)
                     .withExternalIds(ImmutableMap.of(studyId, participant.getExternalId()))

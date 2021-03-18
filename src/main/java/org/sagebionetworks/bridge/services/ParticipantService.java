@@ -548,8 +548,8 @@ public class ParticipantService {
        
         RequestContext requestContext = RequestContext.get();
         
-        // New accounts to be simultaneously enroll themselves in a study using an external ID.
-        // This isn’t ideal since this is enrolling them but we must support for legacy apps.
+        // New accounts can simultaneously enroll themselves in a study using an external ID.
+        // Legacy apps do this so we must continue to support it.
         if (isNew) {
             for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
                 String studyId = entry.getKey();
