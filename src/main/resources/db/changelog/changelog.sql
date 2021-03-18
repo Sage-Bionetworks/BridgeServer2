@@ -436,7 +436,6 @@ ADD COLUMN `clientData` mediumtext COLLATE utf8_unicode_ci;
 
 -- changeset bridge:25
 
-<<<<<<< HEAD
 ALTER TABLE `AccountRoles`
 MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','ORG_ADMIN','WORKER','SUPERADMIN','STUDY_COORDINATOR','STUDY_DESIGNER') NOT NULL;
 
@@ -452,7 +451,9 @@ MODIFY COLUMN `category` enum('CUSTOMIZATION_OPTIONS', 'DATA_REPOSITORY',
     'PUBLICATION', 'RELEASE_NOTE', 'SAMPLE_APP', 'SAMPLE_DATA', 
     'SCREENSHOT', 'SEE_ALSO', 'USED_IN_STUDY', 'WEBSITE', 
     'OTHER', 'ICON') NOT NULL;
-=======
+
+-- changeset bridge:27
+
 CREATE TABLE `Schedules` (
   `appId` varchar(255) NOT NULL,
   `ownerId` varchar(255) NOT NULL,
@@ -509,12 +510,12 @@ CREATE TABLE `SessionAssessments` (
   `position` int(10) signed,
   `appId` varchar(255) NOT NULL,
   `guid` varchar(60) NOT NULL,
-  `identifier` varchar(255) NOT NULL,
-  `title` varchar(255) NOT NULL,
-  `minutesToComplete` int(10) DEFAULT NULL,
-  `labels` text DEFAULT NULL,
+  `identifier` varchar(255),
+  `title` varchar(255),
+  `minutesToComplete` int(10),
+  `labels` text,
+  `colorScheme` text,
   PRIMARY KEY (`sessionGuid`, `position`),
   CONSTRAINT `AssessmentRef-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE,
   CONSTRAINT `AssessmentRef-Assessment-Constraint` FOREIGN KEY (`guid`) REFERENCES `Assessments` (`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
->>>>>>> 3afc28eab4ec70e6d60434938b09dbeee0057df6

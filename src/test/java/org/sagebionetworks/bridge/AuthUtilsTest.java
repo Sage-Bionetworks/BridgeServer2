@@ -20,6 +20,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
@@ -498,10 +499,45 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void canEditSchedulesSucceedsForStudyCoordinator() {
+    public void canReadSchedulesFailsForStudyCoordinator() { // for example
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        assertFalse( AuthUtils.CAN_READ_SCHEDULES.check(ORG_ID, TEST_ORG_ID) );
+    }
+    
+    @Test
+    public void canReadSchedulesSucceedsForDeveloper() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        assertTrue( AuthUtils.CAN_READ_SCHEDULES.check(ORG_ID, TEST_ORG_ID) );
+    }
+
+    @Test
+    public void canReadSchedulesSucceedsForStudyDesigner() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        
+        assertTrue( AuthUtils.CAN_READ_SCHEDULES.check(ORG_ID, TEST_ORG_ID) );
+    }
+    
+    @Test
+    public void canReadSchedulesFailsForStudyDesignerInOtherOrg() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership("other-organization")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        
+        assertFalse( AuthUtils.CAN_READ_SCHEDULES.check(ORG_ID, TEST_ORG_ID) );
+    }
+    
+    @Test
+    public void canEditSchedulesSucceedsForStudyDesigner() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
                 
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }

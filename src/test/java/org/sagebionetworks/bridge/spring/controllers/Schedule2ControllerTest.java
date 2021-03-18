@@ -5,9 +5,11 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -70,8 +72,8 @@ public class Schedule2ControllerTest extends Mockito {
         session = new UserSession();
         session.setAppId(TEST_APP_ID);
         
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR, DEVELOPER);
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR, DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -87,7 +89,7 @@ public class Schedule2ControllerTest extends Mockito {
         assertCrossOrigin(Schedule2Controller.class);
         assertGet(Schedule2Controller.class, "getSchedules");
         assertGet(Schedule2Controller.class, "getSchedule");
-        assertPost(Schedule2Controller.class, "createSchedule");
+        assertCreate(Schedule2Controller.class, "createSchedule");
         assertPost(Schedule2Controller.class, "updateSchedule");
         assertPost(Schedule2Controller.class, "publishSchedule");
         assertDelete(Schedule2Controller.class, "deleteSchedule");

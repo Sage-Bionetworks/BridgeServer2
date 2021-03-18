@@ -3,7 +3,8 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.springframework.http.HttpStatus.CREATED;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -12,6 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -39,7 +41,7 @@ public class Schedule2Controller extends BaseController {
     public PagedResourceList<Schedule2> getSchedules(@RequestParam(required = false) String offsetBy,
             @RequestParam(required = false) String pageSize,
             @RequestParam(required = false) String includeDeleted) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, DEVELOPER);
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0); 
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
@@ -53,8 +55,9 @@ public class Schedule2Controller extends BaseController {
     }
     
     @PostMapping("/v5/schedules")
+    @ResponseStatus(CREATED)
     public Schedule2 createSchedule() {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, DEVELOPER);
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         
         Schedule2 schedule = parseJson(Schedule2.class);
         schedule.setAppId(session.getAppId());
@@ -64,14 +67,14 @@ public class Schedule2Controller extends BaseController {
     
     @GetMapping("/v5/schedules/{guid}")
     public Schedule2 getSchedule(@PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, DEVELOPER);
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         
         return service.getSchedule(session.getAppId(), guid);
     }
     
     @PostMapping("/v5/schedules/{guid}")
     public Schedule2 updateSchedule(@PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, DEVELOPER);
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         
         Schedule2 schedule = parseJson(Schedule2.class);
         schedule.setGuid(guid);
@@ -82,7 +85,7 @@ public class Schedule2Controller extends BaseController {
     
     @PostMapping("/v5/schedules/{guid}/publish")
     public StatusMessage publishSchedule(@PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, DEVELOPER);
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         
         service.publishSchedule(session.getAppId(), guid);
         
@@ -91,7 +94,7 @@ public class Schedule2Controller extends BaseController {
     
     @DeleteMapping("/v5/schedules/{guid}")
     public StatusMessage deleteSchedule(@PathVariable String guid, @RequestParam String physical) {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR, DEVELOPER, ADMIN);
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             service.deleteSchedulePermanently(session.getAppId(), guid);

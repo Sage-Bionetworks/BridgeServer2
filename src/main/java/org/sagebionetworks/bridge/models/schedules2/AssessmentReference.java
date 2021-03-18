@@ -3,14 +3,15 @@ package org.sagebionetworks.bridge.models.schedules2;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 import javax.persistence.Table;
 
+import org.sagebionetworks.bridge.hibernate.ColorSchemeConverter;
 import org.sagebionetworks.bridge.hibernate.LabelListConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.Label;
+import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 
 /**
  * When a session is created it can include display metadata about the assessments, and this
@@ -29,10 +30,11 @@ public class AssessmentReference {
     private String appId;
     private String identifier;
     private String title;
-    @Column(columnDefinition = "text", name = "labels", nullable = true)
     @Convert(converter = LabelListConverter.class)
     private List<Label> labels;
     private Integer minutesToComplete;
+    @Convert(converter = ColorSchemeConverter.class)
+    private ColorScheme colorScheme;
 
     public String getAppId() {
         return appId;
@@ -72,5 +74,11 @@ public class AssessmentReference {
     }
     public void setMinutesToComplete(Integer minutesToComplete) {
         this.minutesToComplete = minutesToComplete;
+    }
+    public ColorScheme getColorScheme() {
+        return colorScheme;
+    }
+    public void setColorScheme(ColorScheme colorScheme) {
+        this.colorScheme = colorScheme;
     }
 }

@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 
 public class ValidatorUtils {
@@ -35,6 +36,8 @@ public class ValidatorUtils {
     static final String WRONG_LONG_PERIOD = "%s can only specify day or week duration units";
     static final String DUPLICATE_LANG = "%s is a duplicate message under the same language code";
     static final String INVALID_LANG = "%s is not a valid ISO 639 alpha-2 or alpha-3 language code";
+    static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFFFF format)";
+    static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{6}$";
 
     private static final Set<DurationFieldType> ALL_FIXED_DURATIONS = ImmutableSet.of(DurationFieldType.minutes(),
             DurationFieldType.hours(), DurationFieldType.days(), DurationFieldType.weeks());
@@ -150,6 +153,25 @@ public class ValidatorUtils {
             if (!englishDefault) {
                 errors.rejectValue("messages", "must include an English-language message as a default");
             }
+        }
+    }
+    
+    public static final void validateColorScheme(Errors errors, ColorScheme cs, String fieldName) {
+        if (cs != null) {
+            errors.pushNestedPath(fieldName);
+            if (cs.getBackground() != null && !cs.getBackground().matches(HEX_TRIPLET_FORMAT)) {
+                errors.rejectValue("background", INVALID_HEX_TRIPLET);
+            }
+            if (cs.getForeground() != null && !cs.getForeground().matches(HEX_TRIPLET_FORMAT)) {
+                errors.rejectValue("foreground", INVALID_HEX_TRIPLET);
+            }
+            if (cs.getActivated() != null && !cs.getActivated().matches(HEX_TRIPLET_FORMAT)) {
+                errors.rejectValue("activated", INVALID_HEX_TRIPLET);
+            }
+            if (cs.getInactivated() != null && !cs.getInactivated().matches(HEX_TRIPLET_FORMAT)) {
+                errors.rejectValue("inactivated", INVALID_HEX_TRIPLET);
+            }
+            errors.popNestedPath();
         }
     }
 

@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
 
 import java.util.Map;
@@ -16,15 +17,11 @@ import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
-import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.services.OrganizationService;
 
 public class AssessmentValidator implements Validator {
 
-    static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFFFF format)";
-    private static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{6}$";
-    
     private final String appId;
     private final OrganizationService organizationService;
 
@@ -80,23 +77,7 @@ public class AssessmentValidator implements Validator {
                 }
             }
         }
-        if (assessment.getColorScheme() != null) {
-            errors.pushNestedPath("colorScheme");
-            ColorScheme cs = assessment.getColorScheme();
-            if (cs.getBackground() != null && !cs.getBackground().matches(HEX_TRIPLET_FORMAT)) {
-                errors.rejectValue("background", INVALID_HEX_TRIPLET);
-            }
-            if (cs.getForeground() != null && !cs.getForeground().matches(HEX_TRIPLET_FORMAT)) {
-                errors.rejectValue("foreground", INVALID_HEX_TRIPLET);
-            }
-            if (cs.getActivated() != null && !cs.getActivated().matches(HEX_TRIPLET_FORMAT)) {
-                errors.rejectValue("activated", INVALID_HEX_TRIPLET);
-            }
-            if (cs.getInactivated() != null && !cs.getInactivated().matches(HEX_TRIPLET_FORMAT)) {
-                errors.rejectValue("inactivated", INVALID_HEX_TRIPLET);
-            }
-            errors.popNestedPath();
-        }
+        validateColorScheme(errors, assessment.getColorScheme(), "colorScheme");
         if (!assessment.getLabels().isEmpty()) {
             validateLabels(errors, assessment.getLabels());
         }

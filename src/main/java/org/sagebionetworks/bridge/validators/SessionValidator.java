@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLongPeriod;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedPeriod;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
@@ -90,7 +91,8 @@ public class SessionValidator implements Validator {
                 if (isBlank(asmt.getAppId())) {
                     errors.rejectValue("appId", CANNOT_BE_BLANK);
                 }
-                ValidatorUtils.validateLabels(errors, asmt.getLabels());
+                validateLabels(errors, asmt.getLabels());
+                validateColorScheme(errors, asmt.getColorScheme(), "colorScheme");
                 errors.popNestedPath();
             }
         }

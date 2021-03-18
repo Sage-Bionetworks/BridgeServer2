@@ -140,7 +140,7 @@ public class AuthUtils {
      * yet. 
      */
     public static final AuthEvaluator CAN_READ_SCHEDULES = new AuthEvaluator()
-            .isInOrg().hasAnyRole(STUDY_COORDINATOR).or()
+            .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, ADMIN);
 
     /**
@@ -148,7 +148,7 @@ public class AuthUtils {
      * schedules, or a developer.
      */
     public static final AuthEvaluator CAN_EDIT_SCHEDULES = new AuthEvaluator()
-            .isInOrg().hasAnyRole(STUDY_COORDINATOR).or()
+            .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
