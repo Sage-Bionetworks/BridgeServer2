@@ -6,19 +6,28 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_LANG;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+import java.util.List;
+
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.mockito.Mockito;
+import org.springframework.validation.Errors;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 
-public class ValidatorUtilsTest {
+public class ValidatorUtilsTest extends Mockito {
     
     @Test
     public void participantHasValidIdentifierValidEmail() {
@@ -103,5 +112,72 @@ public class ValidatorUtilsTest {
         account = Account.create();
         account.setEnrollments(ImmutableSet.of());
         assertFalse(ValidatorUtils.accountHasValidIdentifier(account));
+    }
+    
+    @Test
+    public void validateLabels_emptyValid() {
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateLabels(errors, ImmutableList.of());
+    }
+
+    @Test
+    public void validateLabels_nullValid() {
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateLabels(errors, null);
+    }
+    
+    @Test
+    public void validateLabels_duplicateLang() {
+        Errors errors = mock(Errors.class);
+        
+        List<Label> list = ImmutableList.of(new Label("en", "foo"), new Label("en", "bar"));
+        ValidatorUtils.validateLabels(errors, list);
+        
+        verify(errors).pushNestedPath("labels[0]");
+        verify(errors).rejectValue("lang", DUPLICATE_LANG);
+    }
+
+    @Test
+    public void validateLabels_invalidLang() {
+        Errors errors = mock(Errors.class);
+        
+        List<Label> list = ImmutableList.of(new Label("yyyy", "foo"));
+        ValidatorUtils.validateLabels(errors, list);
+        
+        verify(errors).pushNestedPath("labels[0]");
+        verify(errors).rejectValue("lang", INVALID_LANG);
+    }
+    
+    @Test
+    public void validateLanguageSet_missingLang() {
+        Errors errors = mock(Errors.class);
+        
+        List<Label> list = ImmutableList.of(new Label("", "foo"));
+        ValidatorUtils.validateLabels(errors, list);
+        
+        verify(errors).pushNestedPath("labels[0]");
+        verify(errors).rejectValue("lang", CANNOT_BE_BLANK);
+    }
+
+    @Test
+    public void validateLabels_valueBlank() {
+        Errors errors = mock(Errors.class);
+        
+        List<Label> list = ImmutableList.of(new Label("en", ""));
+        ValidatorUtils.validateLabels(errors, list);
+        
+        verify(errors, times(2)).pushNestedPath("labels[0]");
+        verify(errors).rejectValue("value", CANNOT_BE_BLANK);
+    }
+
+    @Test
+    public void validateLabels_valueNull() {
+        Errors errors = mock(Errors.class);
+        
+        List<Label> list = ImmutableList.of(new Label("en", null));
+        ValidatorUtils.validateLabels(errors, list);
+
+        verify(errors, times(2)).pushNestedPath("labels[0]");
+        verify(errors).rejectValue("value", CANNOT_BE_BLANK);
     }
 }

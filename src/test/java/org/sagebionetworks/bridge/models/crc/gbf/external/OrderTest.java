@@ -92,7 +92,7 @@ public class OrderTest {
                 "</ShippingConfirmations>\n";
         
         ShippingConfirmations shippingConfirmation = XML_MAPPER.readValue(s, ShippingConfirmations.class);
-        JsonNode node = XML_MAPPER.readTree(s);
+        XML_MAPPER.readTree(s);
     
         XML_MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(shippingConfirmation);
         new ObjectMapper().writeValueAsString(shippingConfirmation);
