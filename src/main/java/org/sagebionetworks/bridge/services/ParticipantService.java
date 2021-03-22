@@ -551,13 +551,14 @@ public class ParticipantService {
         // New accounts can simultaneously enroll themselves in a study using an external ID.
         // Legacy apps do this so we must continue to support it.
         if (isNew) {
+            RequestContext.acquireAccountIdentity(account);
+            
             for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
                 String studyId = entry.getKey();
                 String externalId = entry.getValue();
                 
                 Enrollment enrollment = Enrollment.create(account.getAppId(), studyId, account.getId(), externalId);
-                enrollmentService.updateEnrollment(account, enrollment, enrollment);
-                account.getEnrollments().add(enrollment);
+                enrollmentService.addEnrollment(account, enrollment);
             }
         }
         
