@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -15,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
@@ -27,6 +31,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.OperatingSystem;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.AppleAppLink;
@@ -225,6 +230,21 @@ public class DynamoAppTest {
         // Deserialize back to a POJO and verify.
         final App deserApp = BridgeObjectMapper.get().readValue(json, App.class);
         assertEquals(deserApp, app);
+    }
+    
+    @SuppressWarnings("deprecation")
+    @Test
+    public void activityEventKeysAsCustomEvents() { 
+        App app = App.create();
+        app.setActivityEventKeys(ImmutableSet.of("key1", "key2"));
+        app.setCustomEvents(ImmutableMap.of("key3", MUTABLE, "key4", IMMUTABLE));
+        
+        assertEquals(app.getCustomEvents().get("key1"), FUTURE_ONLY);
+        assertEquals(app.getCustomEvents().get("key2"), FUTURE_ONLY);
+        assertEquals(app.getCustomEvents().get("key3"), MUTABLE);
+        assertEquals(app.getCustomEvents().get("key4"), IMMUTABLE);
+        
+        assertTrue(app.getActivityEventKeys().isEmpty());
     }
     
     void assertEqualsAndNotNull(Object expected, Object actual) {

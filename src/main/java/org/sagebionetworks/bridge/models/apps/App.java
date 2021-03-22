@@ -239,6 +239,15 @@ public interface App extends BridgeEntity {
     void setTaskIdentifiers(Set<String> taskIdentifiers);
 
     /**
+     * These are now deprecated in favor of customEvents. If added they will be readable from that mapping 
+     * as FUTURE_ONLY events.  
+     */
+    @Deprecated
+    Set<String> getActivityEventKeys();
+    @Deprecated
+    void setActivityEventKeys(Set<String> activityEventKeys);
+    
+    /**
      * The configuration of custom activity events for this app. The key is the ID of the event, and and the value
      * is the update type. All event IDs declared in the activityEventKeys field of App that are not in the 
      * customEvents map will be added with the update type of FUTURE_ONLY, the default before this could be 

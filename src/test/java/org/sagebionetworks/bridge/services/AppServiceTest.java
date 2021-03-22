@@ -1571,6 +1571,7 @@ public class AppServiceTest extends Mockito {
      * From the non-mock tests, this test is probably redundant with other test, but is kept 
      * here.
      */
+    @SuppressWarnings("deprecation")
     @Test
     public void crudApp() {
         when(mockTemplateService.getTemplatesForType(any(), any(), anyInt(), anyInt(), anyBoolean()))
@@ -1585,6 +1586,7 @@ public class AppServiceTest extends Mockito {
         app.setAppIdExcludedInExport(false);
         app.setTaskIdentifiers(null);
         app.setUploadValidationStrictness(null);
+        app.setActivityEventKeys(null);
         app.setCustomEvents(null);
         app.setHealthCodeExportEnabled(true);
         app.setActive(false);
@@ -1632,7 +1634,7 @@ public class AppServiceTest extends Mockito {
         assertEquals(newApp.getMinAgeOfConsent(), 18);
         assertEquals(newApp.getDataGroups(), ImmutableSet.of("beta_users", "production_users", TEST_USER_GROUP));
         assertTrue(newApp.getTaskIdentifiers().isEmpty());
-        assertTrue()
+        assertTrue(newApp.getActivityEventKeys().isEmpty());
         assertTrue(newApp.getCustomEvents().isEmpty());
 
         verify(mockCacheProvider).setApp(newApp);
