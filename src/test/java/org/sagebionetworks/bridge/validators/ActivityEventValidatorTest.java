@@ -17,7 +17,6 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 
 public class ActivityEventValidatorTest {
     
@@ -39,7 +38,8 @@ public class ActivityEventValidatorTest {
         Validate.entityThrowingException(INSTANCE, getEvent().build());
     }
     
-    @Test
+    @Test(expectedExceptions = IllegalStateException.class,
+            expectedExceptionsMessageRegExp = ".*No update type configured.*")
     public void eventIdNull() {
         ActivityEvent event = getEvent()
                 .withObjectType(null)

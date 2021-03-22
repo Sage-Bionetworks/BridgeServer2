@@ -9,7 +9,6 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SURVEY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
@@ -36,8 +35,6 @@ import org.mockito.MockitoAnnotations;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 
 public class DynamoActivityEventDaoTest extends Mockito {
     

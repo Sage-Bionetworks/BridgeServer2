@@ -86,7 +86,7 @@ public class ActivityEventService {
         ActivityEvent event = new DynamoActivityEvent.Builder()
                 .withHealthCode(healthCode)
                 .withObjectType(CUSTOM)
-                .withUpdateType(MUTABLE)
+                .withUpdateType(app.getCustomEvents().get(eventKey))
                 .withObjectId(eventKey)
                 .withStudyId(studyId)
                 .build();

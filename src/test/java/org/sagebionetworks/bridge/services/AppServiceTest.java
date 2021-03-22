@@ -609,12 +609,12 @@ public class AppServiceTest extends Mockito {
     public void cannotRemoveActivityEventKeys() {
         app = TestUtils.getValidApp(AppServiceTest.class);
         app.setIdentifier(TEST_APP_ID);
-        app.setCustomEvents(ImmutableMap.of("test", FUTURE_ONLY));
+        app.getCustomEvents().put("test", FUTURE_ONLY);
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(app);
         
         App updatedApp = TestUtils.getValidApp(AppServiceTest.class);
         updatedApp.setIdentifier(app.getIdentifier());
-        updatedApp.setCustomEvents(ImmutableMap.of());
+        updatedApp.setCustomEvents(null);
         
         service.updateApp(updatedApp, true);
     }
@@ -1632,6 +1632,7 @@ public class AppServiceTest extends Mockito {
         assertEquals(newApp.getMinAgeOfConsent(), 18);
         assertEquals(newApp.getDataGroups(), ImmutableSet.of("beta_users", "production_users", TEST_USER_GROUP));
         assertTrue(newApp.getTaskIdentifiers().isEmpty());
+        assertTrue()
         assertTrue(newApp.getCustomEvents().isEmpty());
 
         verify(mockCacheProvider).setApp(newApp);

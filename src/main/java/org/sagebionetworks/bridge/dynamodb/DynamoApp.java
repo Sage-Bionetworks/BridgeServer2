@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -407,6 +406,10 @@ public final class DynamoApp implements App {
 
     @DynamoDBTypeConverted(converter = StringSetMarshaller.class)
     public Set<String> getActivityEventKeys() {
+        for (String eventKey : activityEventKeys) {
+            customEvents.putIfAbsent(eventKey, FUTURE_ONLY);
+        }
+        setActivityEventKeys(null);
         return activityEventKeys;
     }
 
@@ -421,6 +424,7 @@ public final class DynamoApp implements App {
         for (String eventKey : activityEventKeys) {
             customEvents.putIfAbsent(eventKey, FUTURE_ONLY);
         }
+        setActivityEventKeys(null);
         return customEvents;
     }
 

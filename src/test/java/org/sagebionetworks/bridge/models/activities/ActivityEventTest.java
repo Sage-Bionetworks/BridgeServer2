@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.models.activities;
 
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -22,7 +24,7 @@ public class ActivityEventTest {
     public void canConstructSimpleEventId() {
         DateTime now = DateTime.now();
         Builder builder = new DynamoActivityEvent.Builder();
-        ActivityEvent event = builder.withObjectType(ActivityEventObjectType.ENROLLMENT).withHealthCode("BBB").withTimestamp(now).build();
+        ActivityEvent event = builder.withObjectType(ENROLLMENT).withHealthCode("BBB").withTimestamp(now).build();
         
         assertEquals(event.getHealthCode(), "BBB");
         assertEquals(new DateTime(event.getTimestamp()), now);
@@ -33,7 +35,7 @@ public class ActivityEventTest {
     public void canConstructEventNoAction() {
         DateTime now = DateTime.now();
         Builder builder = new DynamoActivityEvent.Builder();
-        ActivityEvent event = builder.withObjectType(ActivityEventObjectType.ENROLLMENT).withHealthCode("BBB").withTimestamp(now).build();
+        ActivityEvent event = builder.withObjectType(ENROLLMENT).withHealthCode("BBB").withTimestamp(now).build();
         
         assertEquals(event.getHealthCode(), "BBB");
         assertEquals(new DateTime(event.getTimestamp()), now);
@@ -44,7 +46,7 @@ public class ActivityEventTest {
     public void simpleActivityEventIdIsCorrect() {
         DateTime now = DateTime.now();
         ActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode("BBB")
-                .withObjectType(ActivityEventObjectType.ENROLLMENT).withTimestamp(now).build();
+                .withObjectType(ENROLLMENT).withTimestamp(now).build();
         
         assertEquals(event.getHealthCode(), "BBB");
         assertEquals(new DateTime(event.getTimestamp()), now);
@@ -54,9 +56,8 @@ public class ActivityEventTest {
     @Test
     public void activitiesRetrievedEvent() {
         DateTime now = DateTime.now();
-        ActivityEvent event = new DynamoActivityEvent.Builder()
-                .withObjectType(ActivityEventObjectType.ACTIVITIES_RETRIEVED).withHealthCode("BBB").withTimestamp(now)
-                .build();
+        ActivityEvent event = new DynamoActivityEvent.Builder().withObjectType(ACTIVITIES_RETRIEVED)
+                .withHealthCode("BBB").withTimestamp(now).build();
         
         assertEquals(event.getHealthCode(), "BBB");
         assertEquals(new DateTime(event.getTimestamp()), now);
@@ -178,10 +179,10 @@ public class ActivityEventTest {
     
     @Test
     public void compoundHealthCodeKeyCanBeCopiedMultipleTimes() {
-        DynamoActivityEvent event1 = new DynamoActivityEvent.Builder()
+        DynamoActivityEvent event1 = new DynamoActivityEvent.Builder().withObjectType(ACTIVITIES_RETRIEVED)
                 .withHealthCode(HEALTH_CODE).withStudyId(TEST_STUDY_ID).build();
         
-        DynamoActivityEvent event2 = new DynamoActivityEvent.Builder()
+        DynamoActivityEvent event2 = new DynamoActivityEvent.Builder().withObjectType(ACTIVITIES_RETRIEVED)
                 .withHealthCode(event1.getHealthCode()).withStudyId(event1.getStudyId()).build();
 
         DynamoActivityEvent event3 = new DynamoActivityEvent();
