@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -157,9 +158,22 @@ public class DynamoActivityEventDaoTest extends Mockito {
     @Test
     public void deletesCustomEventEventNotFound() {
         DynamoActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode(HEALTH_CODE)
-                .withObjectType(CUSTOM).withObjectId("AAA").build();
+                .withObjectType(CUSTOM).withUpdateType(MUTABLE).withObjectId("AAA").build();
         
         when(mockMapper.load(any())).thenReturn(null);
+        
+        boolean result = dao.deleteCustomEvent(event);
+        assertFalse(result);
+        
+        verify(mockMapper, never()).delete(any());
+    }
+    
+    @Test
+    public void deletesCustomEventEventImmutable() {
+        DynamoActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM).withUpdateType(IMMUTABLE).withObjectId("AAA").build();
+        
+        when(mockMapper.load(any())).thenReturn(event);
         
         boolean result = dao.deleteCustomEvent(event);
         assertFalse(result);

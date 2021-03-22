@@ -25,6 +25,6 @@ public enum ActivityEventUpdateType {
     
     public boolean canUpdate(ActivityEvent persistedEvent, ActivityEvent newEvent) {
         return persistedEvent == null || this == MUTABLE ||
-            this == FUTURE_ONLY && newEvent.getTimestamp() > persistedEvent.getTimestamp();
+            (this == FUTURE_ONLY && newEvent.getTimestamp() > persistedEvent.getTimestamp());
     }
 }

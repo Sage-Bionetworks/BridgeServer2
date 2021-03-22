@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_START_DATE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.validators.ActivityEventValidator.INSTANCE;
 
 import java.util.List;
@@ -31,7 +32,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
@@ -86,7 +86,7 @@ public class ActivityEventService {
         ActivityEvent event = new DynamoActivityEvent.Builder()
                 .withHealthCode(healthCode)
                 .withObjectType(CUSTOM)
-                .withUpdateType(app.getCustomEvents().get(eventKey))
+                .withUpdateType(MUTABLE)
                 .withObjectId(eventKey)
                 .withStudyId(studyId)
                 .build();
@@ -118,8 +118,6 @@ public class ActivityEventService {
         
         // If the globalEvent is valid, all other derivations are valid 
         Validate.entityThrowingException(INSTANCE, event);
-        
-        ActivityEventUpdateType updateType = app.getCustomEvents().get(eventKey);
         
         if (activityEventDao.publishEvent(event)) {
             // Create automatic events, as defined in the app
@@ -325,6 +323,10 @@ public class ActivityEventService {
         activityEventDao.deleteActivityEvents(healthCode, studyId);
     }
 
+    /**
+     * If the triggering event is mutable, it will succeed and these events must update as well, so they are 
+     * always mutable when this function is called. 
+     */
     private void createAutomaticCustomEvents(App app, String studyId, String healthCode, ActivityEvent event) {
         for (Map.Entry<String, String> oneAutomaticEvent : app.getAutomaticCustomEvents().entrySet()) {
             String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
@@ -338,6 +340,7 @@ public class ActivityEventService {
                 ActivityEvent automaticEvent = new DynamoActivityEvent.Builder()
                         .withHealthCode(healthCode)
                         .withObjectType(CUSTOM)
+                        .withUpdateType(MUTABLE) 
                         .withObjectId(automaticEventKey)
                         .withTimestamp(automaticEventTime)
                         .withStudyId(studyId).build();

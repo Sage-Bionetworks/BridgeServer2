@@ -13,6 +13,8 @@ import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
+
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
@@ -21,7 +23,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @BridgeTypeName("ActivityEvent")
-// We must preserve the table name until any migration occurs.
 @DynamoDBTable(tableName = "TaskEvent")
 @JsonFilter("filter")
 public class DynamoActivityEvent implements ActivityEvent {
@@ -31,7 +32,6 @@ public class DynamoActivityEvent implements ActivityEvent {
     private String answerValue;
     private Long timestamp;
     private String eventId;
-    @DynamoDBIgnore
     private ActivityEventUpdateType updateType;
     
     @DynamoDBHashKey
@@ -77,8 +77,12 @@ public class DynamoActivityEvent implements ActivityEvent {
         this.eventId = eventId;
     }
     @JsonIgnore
+    @DynamoDBIgnore
     public ActivityEventUpdateType getUpdateType() {
         return updateType;
+    }
+    public void setUpdateType(ActivityEventUpdateType updateType) {
+        this.updateType = updateType;
     }
     
     public static class Builder {
@@ -109,9 +113,6 @@ public class DynamoActivityEvent implements ActivityEvent {
         }
         public Builder withObjectType(ActivityEventObjectType type) {
             this.objectType = type;
-            if (type != null) {
-                this.updateType = type.getUpdateType();    
-            }
             return this;
         }
         public Builder withObjectId(String objectId) {
@@ -144,13 +145,22 @@ public class DynamoActivityEvent implements ActivityEvent {
         }
         
         public DynamoActivityEvent build() {
+            // For custom events, we need to retrieve the update type from app settings as part
+            // of the event's construction. But for all other system types, we know the update 
+            // behavior if we've set the object type.
+            if (objectType != null && this.updateType == null) {
+                this.updateType = objectType.getUpdateType();    
+            }
+            if (this.updateType == null) {
+                throw new IllegalStateException("No update type configured for event: " + getEventId());
+            }
             DynamoActivityEvent event = new DynamoActivityEvent();
             event.setHealthCode(healthCode);
             event.setStudyId(studyId);
             event.setTimestamp(timestamp);
             event.setEventId(getEventId());
             event.setAnswerValue(answerValue);
-            event.updateType = updateType;
+            event.setUpdateType(updateType);
             return event;
         }
     }

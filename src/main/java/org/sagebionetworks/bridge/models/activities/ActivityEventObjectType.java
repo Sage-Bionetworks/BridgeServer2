@@ -42,9 +42,8 @@ public enum ActivityEventObjectType {
      */
     ACTIVITY(FUTURE_ONLY),
     /**
-     * A custom event defined at the app level. Automatic custom events are immutable and so that’s the
-     * update type given here. Other custom events get this value from the App configuration, not the 
-     * enum type.
+     * A custom event configured at the app level with an update type (mutable, immutable, or future-
+     * only). If it cannot be found, then the event will default to the most restrictive (immutable).
      */
     CUSTOM(IMMUTABLE),
     /**
