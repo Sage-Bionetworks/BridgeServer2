@@ -4,7 +4,7 @@ import static org.mockito.AdditionalAnswers.returnsFirstArg;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
@@ -221,7 +221,7 @@ public class Schedule2ServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getScheduleWrongOrganization() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .build());
         
@@ -237,6 +237,7 @@ public class Schedule2ServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .build());
         
         App app = App.create();
@@ -281,7 +282,7 @@ public class Schedule2ServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerOrgMembership(TEST_ORG_ID)
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .build());
         
         App app = App.create();
@@ -558,7 +559,7 @@ public class Schedule2ServiceTest extends Mockito {
     public void deleteScheduleNoPermission() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .build());
         
         Schedule2 existing = new Schedule2();
@@ -593,7 +594,7 @@ public class Schedule2ServiceTest extends Mockito {
     public void deleteSchedulePermanentlyNoPermission() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .build());
         
         Schedule2 existing = new Schedule2();

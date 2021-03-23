@@ -24,6 +24,7 @@ import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.LabelListConverter;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.hibernate.ColorSchemeConverter;
 import org.sagebionetworks.bridge.hibernate.CustomizationFieldsConverter;
 import org.sagebionetworks.bridge.models.Label;
@@ -35,6 +36,9 @@ import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
  * the Bridge system.
  */
 @Entity
+// This annotation is necessary so a constraint violation exception involving an 
+// assessment displays the correct message without exposing the Hibernate implementation.
+@BridgeTypeName("Assessment")
 @Table(name = "Assessments")
 public class HibernateAssessment {
     

@@ -117,12 +117,19 @@ public class SessionValidator implements Validator {
             } else if (session.getRemindAt() == null && session.getReminderPeriod() != null) {
                 errors.rejectValue("remindAt", "must be set if reminderPeriod is set");
             }
-            if (session.getNotifyAt() != null && session.getMessages().isEmpty()) {
+            if (session.getMessages().isEmpty()) {
                 errors.rejectValue("messages", CANNOT_BE_NULL_OR_EMPTY);
             }
             validateMessages(errors, session.getMessages());
             validateFixedLengthPeriod(errors, session.getReminderPeriod(), "reminderPeriod", false);
+            // Do not allow a reminder period that is longer than a session's interval.
+            if (session.getInterval() != null && session.getReminderPeriod() != null) {
+                int intMin = periodInMinutes(session.getInterval());
+                int remMin = periodInMinutes(session.getReminderPeriod());
+                if (remMin > intMin) {
+                    errors.rejectValue("reminderPeriod", "cannot be longer in duration than the session’s interval");
+                }
+            }
         }
     }
-    
 }

@@ -144,6 +144,13 @@ public class AuthUtils {
             .hasAnyRole(DEVELOPER, ADMIN);
 
     /**
+     * Study designers can create schedules without reference to their organization since
+     * the schedule will just be in their organization.
+     */
+    public static final AuthEvaluator CAN_CREATE_SCHEDULES = new AuthEvaluator()
+            .hasAnyRole(DEVELOPER, STUDY_DESIGNER, ADMIN);
+    
+    /**
      * Can the caller edit the schedules? They must be a study-scoped role that can view 
      * schedules, or a developer.
      */

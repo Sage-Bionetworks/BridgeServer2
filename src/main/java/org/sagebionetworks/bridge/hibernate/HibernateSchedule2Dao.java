@@ -110,6 +110,9 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         Set<String> sessionGuids = schedule.getSessions().stream()
                 .map(Session::getGuid).collect(toSet());
 
+        // Although orphanRemoval = true is set for the session collection, they do not
+        // delete when removed. So we are manually finding the removed sessions and deleting
+        // them before persisting.
         hibernateHelper.executeWithExceptionHandling(schedule, (session) -> {
             QueryBuilder builder = new QueryBuilder();
             builder.append(DELETE_SESSIONS, GUID, schedule.getGuid());
@@ -140,6 +143,9 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     public void deleteSchedulePermanently(Schedule2 schedule) {
         checkNotNull(schedule);
         
+        // Although orphanRemoval = true is set for the session collection, they do not
+        // delete when we delete the schedule. So we are manually deleting the sessions
+        // before deleting the schedule.
         hibernateHelper.executeWithExceptionHandling(schedule, (session) -> {
             NativeQuery<?> query = session.createNativeQuery(DELETE_SESSIONS);
             query.setParameter(GUID, schedule.getGuid());

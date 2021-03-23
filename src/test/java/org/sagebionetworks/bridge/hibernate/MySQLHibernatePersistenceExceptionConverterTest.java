@@ -18,6 +18,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 
@@ -103,10 +104,11 @@ public class MySQLHibernatePersistenceExceptionConverterTest extends Mockito {
         PersistenceException pe = buildIntegrityConstraintViolation("AssessmentRef-Assessment-Cosntraint",
                 "a foreign key constraint fails ... AssessmentRef-Assessment-Constraint`");
         
-        BridgeServiceException converted = (BridgeServiceException)converter.convert(pe, organization);
+        HibernateAssessment assessment = new HibernateAssessment();
+        BridgeServiceException converted = (BridgeServiceException)converter.convert(pe, assessment);
         
         assertEquals(converted.getMessage(),
-                "This organization cannot be deleted or updated because it is referenced by a scheduling session.");
+                "This assessment cannot be deleted or updated because it is referenced by a scheduling session.");
         assertEquals(converted.getStatusCode(), HttpStatus.SC_CONFLICT);
         assertEquals(converted.getClass().getSimpleName(), "ConstraintViolationException");
     }

@@ -258,6 +258,14 @@ public class SessionValidatorTest extends Mockito {
     }
 
     @Test
+    public void reminderPeriodLongerThanSessionInterval() {
+        Session session = createValidSession();
+        session.setReminderPeriod(Period.parse("P7DT1M"));
+        assertValidatorMessage(INSTANCE, session, "reminderPeriod", 
+                "cannot be longer in duration than the session’s interval");
+    }
+    
+    @Test
     public void allowSnoozeCannotBeTrueWhenNotificationsDisabled() {
         Session session = createValidSession();
         session.setNotifyAt(null);

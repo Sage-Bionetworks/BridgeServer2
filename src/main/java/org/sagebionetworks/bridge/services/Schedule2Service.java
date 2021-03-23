@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_CREATE_SCHEDULES;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SCHEDULES;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_SCHEDULES;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
@@ -146,9 +147,7 @@ public class Schedule2Service {
     public Schedule2 createSchedule(Schedule2 schedule) {
         checkNotNull(schedule);
         
-        // Do not need to check permissions beyond the sanity check in controllers;
-        // this schedule will be owned by the caller’s organization, and the caller
-        // must be in an organization or be a developer.
+        CAN_CREATE_SCHEDULES.checkAndThrow();
         
         String callerAppId = RequestContext.get().getCallerAppId();
         String callerOrgMembership = RequestContext.get().getCallerOrgMembership();
@@ -160,7 +159,6 @@ public class Schedule2Service {
         schedule.setGuid(generateGuid());
         schedule.setCreatedOn(createdOn);
         schedule.setModifiedOn(createdOn);
-        schedule.setGuid(generateGuid());
         schedule.setVersion(0L);
         schedule.setPublished(false);
         schedule.setDeleted(false);
