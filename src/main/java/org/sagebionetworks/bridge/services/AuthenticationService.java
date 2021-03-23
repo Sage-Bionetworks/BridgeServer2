@@ -208,7 +208,8 @@ public class AuthenticationService {
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
         if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
             AccountId accountId = AccountId.forId(app.getIdentifier(), account.getId());
-            account = accountService.getAccount(accountId);
+            account = accountService.getAccountNoFilter(accountId)
+                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
             session = getSessionFromAccount(app, context, account);
         }
         cacheProvider.setUserSession(session);
@@ -282,7 +283,7 @@ public class AuthenticationService {
             // For apps that create accounts prior to calling sign up from the app (which happens), check and if 
             // the account with this external ID already exists, return quietly.
             AccountId accountId = AccountId.forExternalId(app.getIdentifier(), participant.getExternalId());
-            Account account = accountService.getAccount(accountId); 
+            Account account = accountService.getAccountNoFilter(accountId).orElse(null); 
             if (account != null) {
                 return new IdentifierHolder(account.getId());
             }
@@ -443,11 +444,9 @@ public class AuthenticationService {
         }
 
         AccountId accountId = signIn.getAccountId();
-        Account account = accountService.getAccount(accountId);
-        // This should be unlikely, but if someone deleted the account while the token was outstanding
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         }
@@ -475,7 +474,8 @@ public class AuthenticationService {
 
             // Check intent to participate.
             if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
-                account = accountService.getAccount(accountId);
+                account = accountService.getAccountNoFilter(accountId)
+                        .orElseThrow(() -> new EntityNotFoundException(Account.class));
                 session = getSessionFromAccount(app, context, account);
             }
             cacheProvider.setUserSession(session);

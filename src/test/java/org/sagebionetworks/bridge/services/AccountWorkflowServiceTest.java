@@ -428,7 +428,7 @@ public class AccountWorkflowServiceTest extends Mockito {
             createJson("{'appId':'"+TEST_APP_ID+"','type':'email','userId':'userId',"+
                     "'expiresOn':"+ TIMESTAMP.getMillis()+"}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getId()).thenReturn("accountId");
         
         Verification verification = new Verification(SPTOKEN);
@@ -484,7 +484,7 @@ public class AccountWorkflowServiceTest extends Mockito {
                 createJson("{'appId':'" + TEST_APP_ID + "','type':'email','userId':'userId','expiresOn':"
                         + TIMESTAMP.getMillis() + "}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
         
         Verification verification = new Verification(SPTOKEN);
         service.verifyChannel(ChannelType.EMAIL, verification);
@@ -498,7 +498,7 @@ public class AccountWorkflowServiceTest extends Mockito {
             createJson("{'appId':'"+TEST_APP_ID+"','type':'email','userId':'userId','expiresOn':"+
                     TIMESTAMP.getMillis()+"}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getId()).thenReturn("accountId");
         when(mockAccount.getEmailVerified()).thenReturn(TRUE);
         
@@ -522,7 +522,7 @@ public class AccountWorkflowServiceTest extends Mockito {
                 TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
                         TIMESTAMP.getMillis()+"}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getId()).thenReturn("accountId");
         
         Verification verification = new Verification(SPTOKEN);
@@ -540,7 +540,7 @@ public class AccountWorkflowServiceTest extends Mockito {
                 TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
                         TIMESTAMP.getMillis()+"}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getId()).thenReturn("accountId");
         when(mockAccount.getPhoneVerified()).thenReturn(TRUE);
         
@@ -556,7 +556,7 @@ public class AccountWorkflowServiceTest extends Mockito {
                 TestUtils.createJson("{'appId':'"+TEST_APP_ID+"','type':'phone','userId':'userId','expiresOn':"+
                         TIMESTAMP.getMillis()+"}"));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_ID)).thenReturn(Optional.of(mockAccount));
         
         Verification verification = new Verification(SPTOKEN);
         service.verifyChannel(ChannelType.PHONE, verification);
@@ -597,9 +597,10 @@ public class AccountWorkflowServiceTest extends Mockito {
         when(service.getNextToken()).thenReturn(SPTOKEN, TOKEN);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
-        when(mockAccountService.getAccount(AccountId.forEmail(TEST_APP_ID, EMAIL))).thenReturn(mockAccount);
-        
+        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(mockAccount));
+        when(mockAccountService.getAccountNoFilter(AccountId.forEmail(TEST_APP_ID, EMAIL)))
+                .thenReturn(Optional.of(mockAccount));
+
         service.notifyAccountExists(app, accountId);
         
         verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_EMAIL, EMAIL, 60*60*2);
@@ -647,7 +648,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         when(service.getNextToken()).thenReturn(SPTOKEN);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(mockAccount));
         
         service.notifyAccountExists(app, accountId);
         
@@ -689,7 +690,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccountService.getAccount(any())).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(any())).thenReturn(Optional.of(mockAccount));
 
         // Note that password reset token (sptoken) is never cached, so we generate it 3 times. The email sign-in token
         // (token), is cached, so we only generate it the first time around.
@@ -732,7 +733,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         when(service.getNextToken()).thenReturn(SPTOKEN);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(mockAccount));
         
         service.notifyAccountExists(app, accountId);
         
@@ -759,7 +760,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         when(service.getNextPhoneToken()).thenReturn(PHONE_TOKEN);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(mockAccount));
         
         service.notifyAccountExists(app, accountId);
         
@@ -782,7 +783,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         when(service.getNextToken()).thenReturn(SPTOKEN);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(mockAccount));
         
         service.notifyAccountExists(app, accountId);
         
@@ -910,7 +911,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test
     public void requestResetPasswordWithEmail() throws Exception {
         when(service.getNextToken()).thenReturn(SPTOKEN);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);        
         
@@ -939,7 +940,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test
     public void requestResetPasswordWithPhone() throws Exception {
         when(service.getNextToken()).thenReturn(SPTOKEN);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);        
         
@@ -962,7 +963,7 @@ public class AccountWorkflowServiceTest extends Mockito {
 
     @Test
     public void requestResetPasswordFailsQuietlyIfEmailPhoneUnverifiedUsingEmail() {
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.FALSE);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.FALSE);
@@ -976,7 +977,7 @@ public class AccountWorkflowServiceTest extends Mockito {
 
     @Test
     public void requestResetPasswordFailsQuietlyIfEmailPhoneUnverifiedUsingPhone() {
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.FALSE);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.FALSE);
@@ -990,7 +991,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     
     @Test
     public void requestResetPasswordInvalidEmailFailsQuietly() {
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(null);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.empty());
         
         service.requestResetPassword(app, false, ACCOUNT_ID_WITH_EMAIL);
         
@@ -1002,7 +1003,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test
     public void requestRestPasswordUnverifiedEmailFailsQuietly() {
         when(mockAccount.getEmail()).thenReturn(EMAIL);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(mockAccount));
         
         service.requestResetPassword(app, false, ACCOUNT_ID_WITH_EMAIL);
         
@@ -1014,7 +1015,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test
     public void requestRestPasswordUnverifiedPhoneFailsQuietly() {
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(mockAccount));
         
         service.requestResetPassword(app, false, ACCOUNT_ID_WITH_PHONE);
         
@@ -1027,7 +1028,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void requestResetPasswordByAdminDoesNotRequireEmailVerification() {
         when(service.getNextToken()).thenReturn(SPTOKEN);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(mockAccount));
         
         service.requestResetPassword(app, true, ACCOUNT_ID_WITH_PHONE);
         
@@ -1038,7 +1039,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test
     public void requestResetPasswordByAdminDoesNotRequirePhoneVerification() {
         when(service.getNextToken()).thenReturn(SPTOKEN);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         
         service.requestResetPassword(app, true, ACCOUNT_ID_WITH_PHONE);
@@ -1063,7 +1064,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void resetPasswordWithEmail() {
         when(mockCacheProvider.getObject(PASSWORD_RESET_FOR_EMAIL, String.class)).thenReturn(EMAIL);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(mockAccount));
 
         PasswordReset passwordReset = new PasswordReset("newPassword", SPTOKEN, TEST_APP_ID);
         service.resetPassword(passwordReset);
@@ -1077,7 +1078,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void resetPasswordWithPhone() {
         when(mockCacheProvider.getObject(PASSWORD_RESET_FOR_PHONE, Phone.class)).thenReturn(TestConstants.PHONE);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(mockAccount));
 
         PasswordReset passwordReset = new PasswordReset("newPassword", SPTOKEN, TEST_APP_ID);
         service.resetPassword(passwordReset);
@@ -1126,7 +1127,8 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void requestEmailSignIn() throws Exception {
         // Mock.
         app.setEmailSignInEnabled(true);
-        when(mockAccountService.getAccount(SIGN_IN_REQUEST_WITH_EMAIL.getAccountId())).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(SIGN_IN_REQUEST_WITH_EMAIL.getAccountId()))
+            .thenReturn(Optional.of(mockAccount));
         when(mockAppService.getApp(app.getIdentifier())).thenReturn(app);
         when(service.getNextToken()).thenReturn(TOKEN);
 
@@ -1138,7 +1140,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         verify(mockCacheProvider).getObject(keyCaptor.capture(), eq(String.class));
         assertEquals(keyCaptor.getValue(), EMAIL_SIGNIN_CACHE_KEY);
         
-        verify(mockAccountService).getAccount(SIGN_IN_REQUEST_WITH_EMAIL.getAccountId());
+        verify(mockAccountService).getAccountNoFilter(SIGN_IN_REQUEST_WITH_EMAIL.getAccountId());
         
         verify(mockCacheProvider).setObject(eq(EMAIL_SIGNIN_CACHE_KEY), stringCaptor.capture(), eq(SIGNIN_EXPIRE_IN_SECONDS));
         assertNotNull(stringCaptor.getValue());
@@ -1218,7 +1220,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     public void requestEmailSignInThrottles() {
         app.setEmailSignInEnabled(true);
         when(service.getNextToken()).thenReturn(SPTOKEN);
-        when(mockAccountService.getAccount(any())).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(any())).thenReturn(Optional.of(mockAccount));
         when(mockAppService.getApp(app.getIdentifier())).thenReturn(app);
 
         // Throttle limit is 2. Request 3 times. Get 2 emails. (Each call should still return userId.
@@ -1240,7 +1242,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         // we just send the message again.
         app.setEmailSignInEnabled(true);
         when(mockCacheProvider.getObject(EMAIL_SIGNIN_CACHE_KEY, String.class)).thenReturn(TOKEN);
-        when(mockAccountService.getAccount(any())).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(any())).thenReturn(Optional.of(mockAccount));
         when(mockAppService.getApp(app.getIdentifier())).thenReturn(app);
         
         service.requestEmailSignIn(SIGN_IN_REQUEST_WITH_EMAIL);
@@ -1282,7 +1284,8 @@ public class AccountWorkflowServiceTest extends Mockito {
         // Mock.
         app.setPhoneSignInEnabled(true);
         app.setShortName("AppName");
-        when(mockAccountService.getAccount(SIGN_IN_WITH_PHONE.getAccountId())).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(SIGN_IN_WITH_PHONE.getAccountId()))
+            .thenReturn(Optional.of(mockAccount));
         when(service.getNextPhoneToken()).thenReturn("123456");
         when(mockAppService.getApp(app.getIdentifier())).thenReturn(app);
 
@@ -1325,7 +1328,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     @Test
     public void requestPhoneSignInThrottles() {
         app.setPhoneSignInEnabled(true);
-        when(mockAccountService.getAccount(any())).thenReturn(mockAccount);
+        when(mockAccountService.getAccountNoFilter(any())).thenReturn(Optional.of(mockAccount));
         when(mockAppService.getApp(app.getIdentifier())).thenReturn(app);
 
         // Throttle limit is 2. Request 3 times. Get 2 texts. (Each call should still return userId.)
