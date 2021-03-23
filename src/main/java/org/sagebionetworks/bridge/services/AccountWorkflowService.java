@@ -312,6 +312,8 @@ public class AccountWorkflowService {
         boolean sendEmail = app.isEmailVerificationEnabled() && !app.isAutoVerificationEmailSuppressed();
         boolean sendPhone = !app.isAutoVerificationPhoneSuppressed();
         
+        RequestContext.acquireAccountIdentity(account);
+
         if (verifiedEmail && sendEmail) {
             TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_ACCOUNT_EXISTS);
             sendPasswordResetRelatedEmail(app, account.getEmail(), true, revision);
@@ -572,6 +574,8 @@ public class AccountWorkflowService {
             token = tokenSupplier.get();
             cacheProvider.setObject(cacheKey, token, SIGNIN_EXPIRE_IN_SECONDS);
         }
+        
+        RequestContext.acquireAccountIdentity(account);
 
         messageSender.accept(app, account, token);
         atomicLong.set(System.currentTimeMillis()-startTime);
