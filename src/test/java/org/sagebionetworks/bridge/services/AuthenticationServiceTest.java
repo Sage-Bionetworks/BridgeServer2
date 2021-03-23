@@ -78,6 +78,7 @@ import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -171,6 +172,8 @@ public class AuthenticationServiceTest {
     private SponsorService sponsorService;
     @Mock
     private AccountSecretDao accountSecretDao;
+    @Mock 
+    private StudyService studyService;
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
     @Captor
@@ -1502,5 +1505,109 @@ public class AuthenticationServiceTest {
        when(participantService.getParticipant(any(), eq(account), eq(false))).thenReturn(participant);
        
        service.oauthSignIn(CONTEXT, token);
+   }
+   
+   @Test
+   public void signUp_newExternalIdsFormatIgnoresMigrationCode() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalIds(ImmutableMap.of(TEST_APP_ID, "externalId"))
+               .build();
+       
+       service.signUp(app, participant);
+       
+       verify(accountService, never()).getAccount(any());
+       verify(studyService, never()).getStudyIds(TEST_APP_ID);
+   }
+   
+   @Test
+   public void signUp_bothExternalIdFormatsIgnoresMigrationCode() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .withExternalIds(ImmutableMap.of(TEST_APP_ID, EXTERNAL_ID))
+               .build();
+       
+       service.signUp(app, participant);
+       
+       verify(accountService, never()).getAccount(any());
+       verify(studyService, never()).getStudyIds(TEST_APP_ID);
+   }
+   
+   @Test
+   public void signIn_oldExternalIdsFormatForExistingAccountReturnsQuietly() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .build();
+       
+       AccountId accountId = AccountId.forExternalId(TEST_APP_ID, EXTERNAL_ID);
+       when(accountService.getAccount(accountId)).thenReturn(account);
+       
+       IdentifierHolder retValue = service.signUp(app, participant);
+       assertEquals(retValue.getIdentifier(), USER_ID);
+       
+       verify(accountService).getAccount(accountId);
+       verify(studyService, never()).getStudyIds(TEST_APP_ID);
+       verify(participantService, never()).createParticipant(app, participant, true);
+   }
+   
+   @Test
+   public void signUp_oldExternalIdsFormatOneStudyRemapsToStudy() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .build();
+       
+       when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(ImmutableSet.of("studyA"));
+       
+       service.signUp(app, participant);
+       
+       verify(participantService).createParticipant(eq(app), participantCaptor.capture(), eq(true));
+       Map<String,String> map = participantCaptor.getValue().getExternalIds();
+       assertEquals(map.get("studyA"), EXTERNAL_ID);
+   }
+   
+   @Test
+   public void signUp_oldExternalIdsFormatTwoStudiesOneTestRemapsToOtherStudy() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .build();
+       
+       when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(ImmutableSet.of("test", "studyA"));
+       
+       service.signUp(app, participant);
+       
+       verify(participantService).createParticipant(eq(app), participantCaptor.capture(), eq(true));
+       Map<String,String> map = participantCaptor.getValue().getExternalIds();
+       assertEquals(map.get("studyA"), EXTERNAL_ID);       
+   }
+
+   @Test
+   public void signUp_oldExternalIdsFormatNoStudiesDoesNotRemap() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .build();
+       
+       when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(ImmutableSet.of());
+       
+       service.signUp(app, participant);
+       
+       verify(participantService).createParticipant(eq(app), participantCaptor.capture(), eq(true));
+       assertTrue(participantCaptor.getValue().getExternalIds().isEmpty());
+       assertEquals(participantCaptor.getValue().getExternalId(), EXTERNAL_ID);
+   }
+
+   @Test
+   public void signUp_oldExternalIdsFormatTwoOrMoreStudiesPicksOne() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .build();
+       
+       when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(ImmutableSet.of("test", "studyA", "studyB"));
+       
+       service.signUp(app, participant);
+       
+       verify(participantService).createParticipant(eq(app), participantCaptor.capture(), eq(true));
+       Map<String,String> map = participantCaptor.getValue().getExternalIds();
+       String extId =  map.containsKey("studyA") ? map.get("studyA") : map.get("studyB");
+       assertEquals(extId, EXTERNAL_ID);
+       assertFalse(map.keySet().contains("test"));
    }
 }
