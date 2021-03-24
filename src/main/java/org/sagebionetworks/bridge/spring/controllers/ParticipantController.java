@@ -606,7 +606,7 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/emailRoster")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public StatusMessage downloadParticipantRosterForWorker() throws JsonProcessingException {
+    public StatusMessage getParticipantRosterForWorker() throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(WORKER);
         String appId = session.getAppId();
 
