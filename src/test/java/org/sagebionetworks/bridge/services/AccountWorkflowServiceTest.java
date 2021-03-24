@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
@@ -764,9 +765,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         
         service.notifyAccountExists(app, accountId);
         
-        verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_PHONE, 
-                BridgeObjectMapper.get().writeValueAsString(TestConstants.PHONE), 
-                VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
+        verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_PHONE, PHONE, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         verify(mockSmsService).sendSmsMessage(eq(USER_ID), smsMessageProviderCaptor.capture());
         
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
@@ -787,9 +786,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         
         service.notifyAccountExists(app, accountId);
         
-        verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_PHONE, 
-                BridgeObjectMapper.get().writeValueAsString(TestConstants.PHONE), 
-                VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
+        verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_PHONE, PHONE, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         verify(mockSmsService).sendSmsMessage(eq(USER_ID), smsMessageProviderCaptor.capture());
         
         String message = smsMessageProviderCaptor.getValue().getSmsRequest().getMessage();
@@ -946,7 +943,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         
         service.requestResetPassword(app, false, ACCOUNT_ID_WITH_PHONE);
         
-        verify(mockCacheProvider).setObject(eq(PASSWORD_RESET_FOR_PHONE), stringCaptor.capture(), eq(60*60*2));
+        verify(mockCacheProvider).setObject(PASSWORD_RESET_FOR_PHONE, PHONE, 60*60*2);
         verify(mockSmsService).sendSmsMessage(eq(USER_ID), smsMessageProviderCaptor.capture());
         
         assertEquals(smsMessageProviderCaptor.getValue().getApp(), app);
@@ -956,8 +953,6 @@ public class AccountWorkflowServiceTest extends Mockito {
         assertTrue(message.contains("Reset ShortName password: "));
         assertTrue(message.contains("/rp?appId="+TEST_APP_ID+"&sptoken="+SPTOKEN));
         
-        Phone captured = BridgeObjectMapper.get().readValue(stringCaptor.getValue(), Phone.class);
-        assertEquals(captured, TestConstants.PHONE); 
         verifyNoMoreInteractions(mockCacheProvider);
     }
 
