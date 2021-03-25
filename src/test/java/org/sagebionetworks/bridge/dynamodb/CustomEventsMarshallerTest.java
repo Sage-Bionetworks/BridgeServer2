@@ -1,15 +1,16 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.collect.Maps.newHashMap;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableMap;
 
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
@@ -30,10 +31,9 @@ public class CustomEventsMarshallerTest extends Mockito {
     
     @Test
     public void serializes() throws Exception {
-        Map<String, ActivityEventUpdateType> map = new HashMap<>();
-        map.put("event1", IMMUTABLE);
-        map.put("event2", MUTABLE);
-        map.put("event3", FUTURE_ONLY);
+        Map<String, ActivityEventUpdateType> map = newHashMap(
+                ImmutableMap.of("event1", IMMUTABLE, 
+                        "event2", MUTABLE, "event3", FUTURE_ONLY));
         
         String json = marshaller.convert(map);
         
