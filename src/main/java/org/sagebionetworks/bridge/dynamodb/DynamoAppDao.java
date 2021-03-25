@@ -78,6 +78,7 @@ public class DynamoAppDao implements AppDao {
 
         return new ArrayList<App>(mappings);
     }
+
     @Override
     public App createApp(App app) {
         checkNotNull(app, Validate.CANNOT_BE_NULL, "app");

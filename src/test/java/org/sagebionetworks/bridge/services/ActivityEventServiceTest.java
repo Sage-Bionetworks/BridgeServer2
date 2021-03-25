@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -849,6 +850,14 @@ public class ActivityEventServiceTest {
         assertEquals(event.getEventId(), "custom:eventKey");
         assertEquals(event.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = ".*App's customEvents do not contain event ID: eventKey.*")
+    public void deleteCustomEventBadEventId() {
+        App app = App.create();
+        
+        activityEventService.deleteCustomEvent(app, TEST_STUDY_ID, HEALTH_CODE, "eventKey");
     }
     
     private ActivityEvent getEventByKey(List<ActivityEvent> results, String key) {

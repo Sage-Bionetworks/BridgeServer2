@@ -80,7 +80,7 @@ public class ActivityEventService {
      */
     public void deleteCustomEvent(App app, String studyId, String healthCode, String eventKey) {
         if (!app.getCustomEvents().containsKey(eventKey) && !app.getAutomaticCustomEvents().containsKey(eventKey)) {
-            throw new BadRequestException("App's ActivityEventKeys does not contain eventKey: " + eventKey);
+            throw new BadRequestException("App's customEvents do not contain event ID: " + eventKey);
         }
         
         ActivityEvent event = new DynamoActivityEvent.Builder()
@@ -168,8 +168,7 @@ public class ActivityEventService {
         ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
             .withTimestamp(timestamp)
-            .withObjectType(ACTIVITIES_RETRIEVED)
-            .build();
+            .withObjectType(ACTIVITIES_RETRIEVED).build();
 
         // If the globalEvent is valid, all other derivations are valid
         Validate.entityThrowingException(INSTANCE, globalEvent);
