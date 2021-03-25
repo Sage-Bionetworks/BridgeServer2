@@ -605,7 +605,8 @@ public class AppServiceTest extends Mockito {
         service.updateApp(updatedApp, true);
     }
     
-    @Test(expectedExceptions = ConstraintViolationException.class, expectedExceptionsMessageRegExp = "Activity event keys cannot be deleted.")
+    @Test(expectedExceptions = ConstraintViolationException.class, 
+            expectedExceptionsMessageRegExp = "Custom events cannot be deleted.")
     public void cannotRemoveActivityEventKeys() {
         app = TestUtils.getValidApp(AppServiceTest.class);
         app.setIdentifier(TEST_APP_ID);
@@ -619,7 +620,8 @@ public class AppServiceTest extends Mockito {
         service.updateApp(updatedApp, true);
     }
     
-    @Test(expectedExceptions = ConstraintViolationException.class, expectedExceptionsMessageRegExp = "Default templates cannot be deleted.")
+    @Test(expectedExceptions = ConstraintViolationException.class, 
+            expectedExceptionsMessageRegExp = "Default templates cannot be deleted.")
     public void cannotRemoveDefaultAppTemplates() {
         app = TestUtils.getValidApp(AppServiceTest.class);
         app.setIdentifier(TEST_APP_ID);

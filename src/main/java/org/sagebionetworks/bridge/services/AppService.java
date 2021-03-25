@@ -671,7 +671,7 @@ public class AppService {
         if (!app.getCustomEvents().keySet().containsAll(originalApp.getCustomEvents().keySet())) {
             throw new ConstraintViolationException.Builder()
                     .withEntityKey(IDENTIFIER_PROPERTY, app.getIdentifier()).withEntityKey(TYPE_PROPERTY, APP_PROPERTY)
-                    .withMessage("Activity event keys cannot be deleted.").build();
+                    .withMessage("Custom events cannot be deleted.").build();
 
         }
         if (app.getDefaultTemplates().keySet().size() != TemplateType.values().length) {

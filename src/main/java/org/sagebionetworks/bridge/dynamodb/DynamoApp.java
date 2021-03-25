@@ -430,7 +430,7 @@ public final class DynamoApp implements App {
 
     /** {@inheritDoc} */
     @Override
-    public void setCustomEvents(Map<String,ActivityEventUpdateType> customEvents) {
+    public void setCustomEvents(Map<String, ActivityEventUpdateType> customEvents) {
         // This approach allows us to set immutable maps in tests without issue. 
         if (customEvents == null) {
             this.customEvents = new HashMap<>();
