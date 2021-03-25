@@ -5,8 +5,8 @@ package org.sagebionetworks.bridge.models.activities;
  */
 public enum ActivityEventUpdateType {
     /**
-     * The event timestamp can be updated to any other value, or the event can 
-     * even be deleted.
+     * The event timestamp can be updated to any other value, and the event can 
+     * be deleted.
      */
     MUTABLE,
     /**
@@ -15,7 +15,8 @@ public enum ActivityEventUpdateType {
     IMMUTABLE,
     /**
      * The event timestamp can only be updated if the update is after the current 
-     * timestamp (or the timestamp does not yet exist).
+     * timestamp (or the timestamp does not yet exist). The event cannot be deleted
+     * after it is created.
      */
     FUTURE_ONLY;
     

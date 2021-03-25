@@ -250,8 +250,8 @@ public interface App extends BridgeEntity {
     /**
      * The configuration of custom activity events for this app. The key is the ID of the event, and and the value
      * is the update type. All event IDs declared in the activityEventKeys field of App that are not in the 
-     * customEvents map will be added with the update type of FUTURE_ONLY, the default before this could be 
-     * customized.
+     * customEvents map will be added with the update type of FUTURE_ONLY, the default for custom events before 
+     * this could be customized.
      */
     Map<String,ActivityEventUpdateType> getCustomEvents();
     void setCustomEvents(Map<String,ActivityEventUpdateType> customEvents);

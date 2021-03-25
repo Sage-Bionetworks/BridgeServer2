@@ -31,7 +31,6 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.JsonUtils;
 import org.sagebionetworks.bridge.models.OperatingSystem;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.AppleAppLink;
@@ -234,9 +233,11 @@ public class DynamoAppTest {
     
     @SuppressWarnings("deprecation")
     @Test
-    public void activityEventKeysAsCustomEvents() { 
+    public void activityEventKeysMergeIntoCustomEvents() { 
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of("key1", "key2"));
+        // key3 would be future_only, except that it is already set in custom
+        // events, so that will be used in preference
+        app.setActivityEventKeys(ImmutableSet.of("key1", "key2", "key3"));
         app.setCustomEvents(ImmutableMap.of("key3", MUTABLE, "key4", IMMUTABLE));
         
         assertEquals(app.getCustomEvents().get("key1"), FUTURE_ONLY);
@@ -245,6 +246,21 @@ public class DynamoAppTest {
         assertEquals(app.getCustomEvents().get("key4"), IMMUTABLE);
         
         assertTrue(app.getActivityEventKeys().isEmpty());
+    }
+    
+    @SuppressWarnings("deprecation")
+    @Test
+    public void activityEventKeysMigrateToCustomEvents() {
+        App app = App.create();
+        app.setActivityEventKeys(ImmutableSet.of("key1", "key2"));
+        
+        assertEquals(app.getCustomEvents().get("key1"), FUTURE_ONLY);
+        assertEquals(app.getCustomEvents().get("key2"), FUTURE_ONLY);
+        
+        app.setActivityEventKeys(null);
+
+        assertEquals(app.getCustomEvents().get("key1"), FUTURE_ONLY);
+        assertEquals(app.getCustomEvents().get("key2"), FUTURE_ONLY);
     }
     
     void assertEqualsAndNotNull(Object expected, Object actual) {

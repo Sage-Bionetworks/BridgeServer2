@@ -143,9 +143,8 @@ public class DynamoActivityEvent implements ActivityEvent {
         }
         
         public DynamoActivityEvent build() {
-            // For custom events, we need to retrieve the update type from app settings as part
-            // of the event's construction. But for all other system types, we know the update 
-            // behavior if we've set the object type.
+            // For custom events, we need to retrieve the update type from app settings as part of the 
+            // event's construction. But for all other object types, we know the update behavior
             if (objectType != null && this.updateType == null) {
                 this.updateType = objectType.getUpdateType();    
             }

@@ -66,7 +66,6 @@ public class DynamoAppDao implements AppDao {
         if (app == null) {
             throw new EntityNotFoundException(App.class, "App '"+appId+"' not found.");
         }
-        
         return app;
     }
     
@@ -76,10 +75,9 @@ public class DynamoAppDao implements AppDao {
 
         // get all apps including deactivated ones
         List<DynamoApp> mappings = mapper.scan(DynamoApp.class, scan);
-        
+
         return new ArrayList<App>(mappings);
     }
-    
     @Override
     public App createApp(App app) {
         checkNotNull(app, Validate.CANNOT_BE_NULL, "app");

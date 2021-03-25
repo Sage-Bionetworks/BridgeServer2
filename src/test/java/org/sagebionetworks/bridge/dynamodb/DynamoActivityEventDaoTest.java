@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SURVEY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
@@ -137,6 +138,121 @@ public class DynamoActivityEventDaoTest extends Mockito {
     }
     
     @Test
+    public void publishEvent_ImmutableFirstSucceeds() {
+        dao.publishEvent(ENROLLMENT_EVENT);
+        
+        verify(mockMapper).save(ENROLLMENT_EVENT);
+    }
+    
+    @Test
+    public void publishEvent_ImmutableEarlierFails() {
+        when(mockMapper.load(any())).thenReturn(ENROLLMENT_EVENT);
+        DynamoActivityEvent earlierEvent = new DynamoActivityEvent.Builder().withHealthCode(HEALTH_CODE)
+                .withObjectType(ENROLLMENT).withTimestamp(TIMESTAMP.minusHours(1)).build();
+
+        dao.publishEvent(earlierEvent);
+        
+        verify(mockMapper, never()).save(any());
+    }
+    
+    @Test
+    public void publishEvent_ImmutableLaterFails() {
+        when(mockMapper.load(any())).thenReturn(ENROLLMENT_EVENT);
+        DynamoActivityEvent laterEvent = new DynamoActivityEvent.Builder().withHealthCode(HEALTH_CODE)
+                .withObjectType(ENROLLMENT).withTimestamp(TIMESTAMP.plusHours(1)).build();
+
+        dao.publishEvent(laterEvent);
+        
+        verify(mockMapper, never()).save(any());
+    }
+    
+    @Test
+    public void publishEvent_MutableFirstSucceeds() {
+        DynamoActivityEvent event = new DynamoActivityEvent.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM)
+                .withUpdateType(MUTABLE)
+                .withTimestamp(TIMESTAMP).build();
+        
+        dao.publishEvent(event);
+        
+        verify(mockMapper).save(event);
+    }
+    
+    @Test
+    public void publishEvent_MutableEarlierSucceeds() {
+        DynamoActivityEvent.Builder builder = new DynamoActivityEvent.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM)
+                .withUpdateType(MUTABLE)
+                .withTimestamp(TIMESTAMP);
+        when(mockMapper.load(any())).thenReturn(builder.build());
+        DynamoActivityEvent event = builder.withTimestamp(TIMESTAMP.minusHours(1)).build();
+        
+        dao.publishEvent(event);
+        
+        verify(mockMapper).save(event);
+    }
+    
+    @Test
+    public void publishEvent_MutableLaterSucceeds() {
+        DynamoActivityEvent.Builder builder = new DynamoActivityEvent.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM)
+                .withUpdateType(MUTABLE)
+                .withTimestamp(TIMESTAMP);
+        when(mockMapper.load(any())).thenReturn(builder.build());
+        DynamoActivityEvent event = builder.withTimestamp(TIMESTAMP.plusHours(1)).build();
+        
+        dao.publishEvent(event);
+        
+        verify(mockMapper).save(event);
+    }
+    
+    @Test
+    public void publishEvent_FutureOnlyFirstSucceeds() {
+        DynamoActivityEvent event = new DynamoActivityEvent.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM)
+                .withUpdateType(FUTURE_ONLY)
+                .withTimestamp(TIMESTAMP).build();
+        
+        dao.publishEvent(event);
+        
+        verify(mockMapper).save(event);
+    }
+    
+    @Test
+    public void publishEvent_FutureOnlyEarlierFails() {
+        DynamoActivityEvent.Builder builder = new DynamoActivityEvent.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM)
+                .withUpdateType(FUTURE_ONLY)
+                .withTimestamp(TIMESTAMP);
+        when(mockMapper.load(any())).thenReturn(builder.build());
+        DynamoActivityEvent event = builder.withTimestamp(TIMESTAMP.minusHours(1)).build();
+        
+        dao.publishEvent(event);
+        
+        verify(mockMapper, never()).save(any());
+    }
+    
+    @Test
+    public void publishEvent_FutureOnlyLaterSucceeds() {
+        DynamoActivityEvent.Builder builder = new DynamoActivityEvent.Builder()
+                .withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM)
+                .withUpdateType(FUTURE_ONLY)
+                .withTimestamp(TIMESTAMP);
+        when(mockMapper.load(any())).thenReturn(builder.build());
+        DynamoActivityEvent event = builder.withTimestamp(TIMESTAMP.plusHours(1)).build();
+        
+        dao.publishEvent(event);
+        
+        verify(mockMapper).save(event);
+    }
+    
+    @Test
     public void deletesCustomEvent() {
         DynamoActivityEvent event = new DynamoActivityEvent.Builder()
                 .withHealthCode(HEALTH_CODE)
@@ -176,6 +292,33 @@ public class DynamoActivityEventDaoTest extends Mockito {
         assertFalse(result);
         
         verify(mockMapper, never()).delete(any());
+    }
+    
+    @Test
+    public void deleteCustomEvent_ImmutableFails() {
+        dao.deleteCustomEvent(ENROLLMENT_EVENT);
+        
+        verify(mockMapper, never()).delete(any());
+    }
+    
+    @Test
+    public void deleteCustomEvent_FutureOnlyFails() {
+        when(mockMapper.load(any())).thenReturn(SURVEY_FINISHED_EVENT);
+
+        dao.deleteCustomEvent(SURVEY_FINISHED_EVENT);
+        
+        verify(mockMapper, never()).delete(any());
+    }
+    
+    @Test
+    public void deleteCustomEvent_MutableSucceeds() {
+        DynamoActivityEvent event = new DynamoActivityEvent.Builder().withHealthCode(HEALTH_CODE)
+                .withObjectType(CUSTOM).withUpdateType(MUTABLE).withObjectId("AAA").build();
+        when(mockMapper.load(any())).thenReturn(event);
+
+        dao.deleteCustomEvent(event);
+        
+        verify(mockMapper).delete(event);
     }
     
     @Test
