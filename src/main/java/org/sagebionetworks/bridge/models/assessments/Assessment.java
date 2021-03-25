@@ -18,6 +18,7 @@ public class Assessment implements BridgeEntity {
     
     public static Assessment create(HibernateAssessment assessment) {
         Assessment dto = new Assessment();
+        dto.setAppId(assessment.getAppId());
         dto.setGuid(assessment.getGuid());
         dto.setIdentifier(assessment.getIdentifier());
         dto.setRevision(assessment.getRevision());
@@ -44,6 +45,7 @@ public class Assessment implements BridgeEntity {
         return create(HibernateAssessment.create(null, assessment));
     }
     
+    private String appId;
     private String guid;
     private String identifier;
     private int revision = 1;
@@ -64,6 +66,12 @@ public class Assessment implements BridgeEntity {
     private boolean deleted;
     private long version;
     
+    public String getAppId() {
+        return appId;
+    }
+    public void setAppId(String appId) {
+        this.appId = appId;
+    }
     public String getGuid() {
         return guid;
     }

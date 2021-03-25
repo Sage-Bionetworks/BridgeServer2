@@ -56,6 +56,7 @@ import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -713,5 +714,24 @@ public class BridgeUtils {
         }
         return new InvalidEntityException("Error parsing JSON in request body: " + throwable.getMessage());
     }
-
+    
+    /**
+     * Verifies that the activity eventId is valid, and prepends "custom:" to a custom ID if 
+     * necessary. Returns the value property cased if valid, or null otherwise. This is 
+     * then handled by validation.   
+     */
+    public static String formatActivityEventId(Set<String> activityEventIds, String id) {
+        if (id != null) {
+            id = StringUtils.removeStart(id.toLowerCase(), "custom:");
+            if (activityEventIds.contains(id)) {
+                return "custom:" + id;
+            }
+            try {
+                ActivityEventObjectType.valueOf(id.toUpperCase());
+            } catch(IllegalArgumentException e) {
+                return null;
+            }
+        }
+        return id;
+    }
 }

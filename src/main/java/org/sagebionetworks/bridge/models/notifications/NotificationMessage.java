@@ -2,7 +2,10 @@ package org.sagebionetworks.bridge.models.notifications;
 
 import java.util.Objects;
 
+import javax.persistence.Embeddable;
+
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.HasLang;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 
@@ -13,9 +16,12 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
  * Note: There are many more fields that we can and will provide once we have an end-to-end system working. So we have
  * introduced a builder in anticipation of expanding this model.
  */
+@Embeddable
 @JsonDeserialize(builder=NotificationMessage.Builder.class)
-public final class NotificationMessage implements BridgeEntity {
+public final class NotificationMessage implements BridgeEntity, HasLang {
 
+    private final String lang;
+    
     /**
      * Very short rendition of the notification. For example, this value will be displayed on an Apple iWatch, where the
      * message is shown for a short time only.
@@ -27,11 +33,16 @@ public final class NotificationMessage implements BridgeEntity {
      */
     private final String message;
     
-    NotificationMessage(String subject, String message) {
+    NotificationMessage(String lang, String subject, String message) {
+        this.lang = lang;
         this.subject = subject;
         this.message = message;
     }
 
+    public String getLang() {
+        return lang;
+    }
+    
     public String getSubject() {
         return subject;
     }
@@ -42,7 +53,7 @@ public final class NotificationMessage implements BridgeEntity {
     
     @Override
     public int hashCode() {
-        return Objects.hash(subject, message);
+        return Objects.hash(lang, subject, message);
     }
     
     @Override
@@ -53,19 +64,25 @@ public final class NotificationMessage implements BridgeEntity {
             return false;
         }
         NotificationMessage other = (NotificationMessage)obj;
-        return Objects.equals(subject, other.getSubject()) &&
+        return Objects.equals(lang, other.getLang()) &&
+               Objects.equals(subject, other.getSubject()) &&
                Objects.equals(message, other.getMessage());
     }
     
     @Override
     public String toString() {
-        return String.format("NotificationMessage[subject=%s, message%s]", subject, message);
+        return "NotificationMessage [lang=" + lang + ", subject=" + subject + ", message=" + message + "]";
     }
-    
+
     public static class Builder {
+        private String lang;
         private String subject;
         private String message;
         
+        public Builder withLang(String lang) {
+            this.lang = lang;
+            return this;
+        }
         public Builder withSubject(String subject) {
             this.subject = subject;
             return this;
@@ -75,7 +92,7 @@ public final class NotificationMessage implements BridgeEntity {
             return this;
         }
         public NotificationMessage build() {
-            return new NotificationMessage(subject, message);
+            return new NotificationMessage(lang, subject, message);
         }
     }
 }
