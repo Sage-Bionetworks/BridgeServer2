@@ -107,6 +107,7 @@ import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.sagebionetworks.bridge.hibernate.HibernateAccountSecret;
 import org.sagebionetworks.bridge.hibernate.HibernateEnrollment;
 import org.sagebionetworks.bridge.hibernate.HibernateHelper;
+import org.sagebionetworks.bridge.hibernate.MySQLHibernatePersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.HibernateSharedModuleMetadata;
 import org.sagebionetworks.bridge.hibernate.HibernateStudy;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
@@ -125,6 +126,8 @@ import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentC
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.organizations.HibernateOrganization;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
@@ -628,6 +631,8 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(HibernateAssessmentResource.class);
         metadataSources.addAnnotatedClass(HibernateAssessmentConfig.class);
         metadataSources.addAnnotatedClass(HibernateOrganization.class);
+        metadataSources.addAnnotatedClass(Schedule2.class);
+        metadataSources.addAnnotatedClass(Session.class);
         metadataSources.addAnnotatedClass(Tag.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
@@ -701,6 +706,13 @@ public class SpringConfig {
     @Autowired
     public HibernateHelper organizationHibernateHelper(SessionFactory sessionFactory,
             OrganizationPersistenceExceptionConverter converter) {
+        return new HibernateHelper(sessionFactory, converter);
+    }
+    
+    @Bean(name = "mysqlHibernateHelper")
+    @Autowired
+    public HibernateHelper schedule2HibernateHelper(SessionFactory sessionFactory,
+            MySQLHibernatePersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     

@@ -8,6 +8,13 @@ import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUT
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 
+import java.util.Set;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+
 import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -55,7 +62,7 @@ import org.springframework.validation.Validator;
 @Component("authenticationService")
 public class AuthenticationService {
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationService.class);
-
+    
     static final int SIGNIN_GRACE_PERIOD_SECONDS = 5*60; // 5 min
 
     public enum ChannelType {
@@ -75,6 +82,7 @@ public class AuthenticationService {
     private AccountSecretDao accountSecretDao;
     private OAuthProviderService oauthProviderService;
     private SponsorService sponsorService;
+    private StudyService studyService;
     
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -124,6 +132,10 @@ public class AuthenticationService {
     @Autowired
     final void setSponsorService(SponsorService sponsorService) {
         this.sponsorService = sponsorService;
+    }
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     
     /**
@@ -196,7 +208,8 @@ public class AuthenticationService {
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
         if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
             AccountId accountId = AccountId.forId(app.getIdentifier(), account.getId());
-            account = accountService.getAccount(accountId);
+            account = accountService.getAccountNoFilter(accountId)
+                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
             session = getSessionFromAccount(app, context, account);
         }
         cacheProvider.setUserSession(session);
@@ -263,6 +276,23 @@ public class AuthenticationService {
         checkNotNull(app);
         checkNotNull(participant);
         
+        // Code to maintain apps in production. External IDs must now be associated to a study 
+        // because they enroll you, but older apps continue to submit a payload with an externalId 
+        // field (not the externalIds map).
+        if (participant.getExternalId() != null && participant.getExternalIds().isEmpty()) {
+            // For apps that create accounts prior to calling sign up from the app (which happens), check and if 
+            // the account with this external ID already exists, return quietly.
+            AccountId accountId = AccountId.forExternalId(app.getIdentifier(), participant.getExternalId());
+            Account account = accountService.getAccountNoFilter(accountId).orElse(null); 
+            if (account != null) {
+                return new IdentifierHolder(account.getId());
+            }
+            // Or, they are probably calling signup with an external ID and a password, but no study. Try to 
+            // guess a reasonable default. If we can't the participant is returned as is and will fail 
+            // to be created by ParticipantService.
+            participant = findDefaultStudyForExternalId(app, participant);
+        }
+        
         try {
             // This call is exposed without authentication, so the request context has no roles, and no roles 
             // can be assigned to this user.
@@ -289,6 +319,42 @@ public class AuthenticationService {
             accountWorkflowService.notifyAccountExists(app, accountId);
             return null;
         }
+    }
+    
+    /**
+     * The StudyParticipant has been submitted to signUp using the externalId field (only). The issue is that 
+     * we must know what study this external ID enrolls them in. Attempt to infer it for several studies that 
+     * are submitting production accounts in this manner.
+     */
+    protected StudyParticipant findDefaultStudyForExternalId(App app, StudyParticipant participant) {
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
+        String studyId = null;
+        
+        // Psorcast Validation has one study named "test", so use it if it’s the only study there is 
+        if (studyIds.size() == 1) {
+            studyId = Iterables.getFirst(studyIds, null);
+        } else {
+            // PKU Study and FPHS Lab want to use the *other* of two studies that's not the test study. Remove 
+            // "test" and in these cases, they have one remaining study. That’s all the studies using this 
+            // format, but if someone adds a further study, we will not break...but the study we take is no 
+            // longer determinant. So log it for follow-up.
+            studyIds = Sets.difference(studyIds, ImmutableSet.of("test"));
+            studyId = Iterables.getFirst(studyIds, null);
+            if (studyIds.size() != 1) {
+                // There's a client that is not using the new API, but is adding studies to their app.
+                LOG.info("StudyParticipant created in app '" + app.getIdentifier() + "' with an externalId that "
+                        + "has no study, assigning externalId " + participant.getExternalId() + " to study " + studyId);
+            }
+        }
+        // Fix the participant record so they are property enrolled if we found a studyId. For an app with no 
+        // studies, the studyId could still be null. It’s impossible to add an external ID in that case 
+        // (a study has been added to every app in an earlier migration).
+        if (studyId != null) {
+            return new StudyParticipant.Builder().copyOf(participant)
+                    .withExternalIds(ImmutableMap.of(studyId, participant.getExternalId()))
+                    .build();
+        }
+        return participant;
     }
 
     public void verifyChannel(ChannelType type, Verification verification) {
@@ -378,11 +444,9 @@ public class AuthenticationService {
         }
 
         AccountId accountId = signIn.getAccountId();
-        Account account = accountService.getAccount(accountId);
-        // This should be unlikely, but if someone deleted the account while the token was outstanding
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         }
@@ -410,7 +474,8 @@ public class AuthenticationService {
 
             // Check intent to participate.
             if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
-                account = accountService.getAccount(accountId);
+                account = accountService.getAccountNoFilter(accountId)
+                        .orElseThrow(() -> new EntityNotFoundException(Account.class));
                 session = getSessionFromAccount(app, context, account);
             }
             cacheProvider.setUserSession(session);

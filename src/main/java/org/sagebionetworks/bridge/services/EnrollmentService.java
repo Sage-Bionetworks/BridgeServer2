@@ -140,7 +140,7 @@ public class EnrollmentService {
         return newEnrollment;
     }
     
-    public void updateEnrollment(Account account, Enrollment newEnrollment, Enrollment existingEnrollment) {
+    private void updateEnrollment(Account account, Enrollment newEnrollment, Enrollment existingEnrollment) {
         existingEnrollment.setWithdrawnOn(null);
         existingEnrollment.setWithdrawnBy(null);
         existingEnrollment.setWithdrawalNote(null);

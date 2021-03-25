@@ -200,4 +200,7 @@ public class TestConstants {
 
     public static final ColorScheme COLOR_SCHEME = new ColorScheme("#000000", "#FFFFFF", "#CCEECC", "#CCCCCC");
     public static final List<Label> LABELS = ImmutableList.of(new Label("en", "English"), new Label("fr", "French"));
+    public static final List<NotificationMessage> MESSAGES = ImmutableList.of(
+            new NotificationMessage.Builder().withLang("en").withSubject("English").withMessage("Body").build(),
+            new NotificationMessage.Builder().withLang("fr").withSubject("French").withMessage("Body").build());
 }

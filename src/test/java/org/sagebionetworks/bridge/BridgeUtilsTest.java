@@ -980,6 +980,38 @@ public class BridgeUtilsTest {
         assertEquals(e.getMessage(), "Error parsing JSON in request body: error");
     }
     
+    @Test
+    public void formatActivityEventIdIsValidCustomId() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "FOO");
+        assertEquals(retValue, "custom:foo");
+        
+    }
+    
+    @Test
+    public void formatActivityEventIdIsValidCustomIdWithCustomPrefix() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "CUSTOM:FOO");
+        assertEquals(retValue, "custom:foo");
+    }
+
+    @Test
+    public void formatActivityEventIdIsValidSystemId() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "activities_retrieved");
+        assertEquals(retValue, "activities_retrieved");
+    }
+
+    @Test
+    public void formatActivityEventIdBlank() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "");
+        assertNull(retValue);
+        
+    }
+
+    @Test
+    public void formatActivityEventIdNull() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), null);
+        assertNull(retValue);
+    }
+
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
         assertEquals(second.size(), first.size());

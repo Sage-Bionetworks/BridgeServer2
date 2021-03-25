@@ -91,7 +91,7 @@ public class StudyParticipantValidator implements Validator {
             // External IDs can be updated during creation or on update. If it's already assigned to another user, 
             // the database constraints will prevent this record's persistence.
             if (isNotBlank(participant.getExternalId()) && participant.getExternalIds().isEmpty()) {
-                errors.rejectValue("externalId", "must now be supplied in the externalIds property that maps a study ID to the new external ID");
+                errors.rejectValue("externalId", "must now be supplied in the externalIds property that maps a study ID to the new external ID");    
             }
             if (participant.getExternalIds() != null) {
                 for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
