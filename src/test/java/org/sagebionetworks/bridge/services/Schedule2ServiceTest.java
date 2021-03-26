@@ -317,6 +317,29 @@ public class Schedule2ServiceTest extends Mockito {
         
         service.createSchedule(schedule);        
     }
+    
+    @Test(expectedExceptions = InvalidEntityException.class, 
+            expectedExceptionsMessageRegExp = ".*ownerId cannot be null or blank.*")
+    public void createScheduleCallerHasNoOrgWorks() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .build());
+        
+        App app = App.create();
+        app.setActivityEventKeys(ImmutableSet.of());
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, null))
+            .thenThrow(new IllegalArgumentException());
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setName("Name");
+        schedule.setDuration(Period.parse("P2W"));
+        schedule.setClientData(getClientData());
+        
+        service.createSchedule(schedule);        
+    }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createScheduleDoesNotVerifyOwnerIdForNonOrgCaller() { 

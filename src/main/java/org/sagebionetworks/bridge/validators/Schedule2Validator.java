@@ -29,7 +29,7 @@ public class Schedule2Validator implements Validator {
             errors.rejectValue("name", CANNOT_BE_BLANK);
         }
         if (isBlank(schedule.getOwnerId())) {
-            errors.rejectValue("ownerId", "is not a valid organization ID");
+            errors.rejectValue("ownerId", CANNOT_BE_BLANK);
         }
         if (isBlank(schedule.getAppId())) {
             errors.rejectValue("appId", CANNOT_BE_BLANK);
