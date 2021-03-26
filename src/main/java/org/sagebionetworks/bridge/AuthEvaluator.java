@@ -64,6 +64,17 @@ public class AuthEvaluator {
     }
     
     /**
+     * The caller is enrolled in the target study.
+     */
+    public AuthEvaluator isEnrolledInStudy() {
+        predicates.add((factMap) -> {
+            String studyId = factMap.get(STUDY_ID);
+            return RequestContext.get().getCallerEnrolledStudies().contains(studyId);
+        });
+        return this;
+    }
+    
+    /**
      * The caller’s session is bound to the target app.
      */
     public AuthEvaluator isInApp() {

@@ -52,6 +52,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.models.HasLang;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -733,5 +734,27 @@ public class BridgeUtils {
             }
         }
         return id;
+    }
+    
+    /**
+     * Select the member of the list that matches the ISO 639 alpha-2 or alpha-3 language code,
+     * or else the member with the English ("en") value. If neither exists, returns null.
+     */
+    public static <T extends HasLang> T selectByLang(List<T> items, List<String> languages, T defaultValue) {
+        checkNotNull(items);
+        
+        T englishItem = null;
+        for (String lang : languages) {
+            for (T item : items) {
+                if (item != null) {
+                    if (lang.equalsIgnoreCase(item.getLang())) {
+                        return item;
+                    } else if ("en".equalsIgnoreCase(item.getLang())) {
+                        englishItem = item;      
+                    }
+                }
+            }
+        }
+        return (englishItem == null) ? defaultValue : englishItem;
     }
 }

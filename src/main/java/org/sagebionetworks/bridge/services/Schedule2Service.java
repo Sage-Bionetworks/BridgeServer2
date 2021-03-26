@@ -37,6 +37,8 @@ import org.sagebionetworks.bridge.models.schedules2.HasGuid;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
@@ -267,6 +269,11 @@ public class Schedule2Service {
         
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
         dao.deleteSchedulePermanently(existing);
+    }
+    
+    public Timeline getTimelineForSchedule(String appId, String guid) {
+        Schedule2 schedule = getSchedule(appId, guid);        
+        return new Scheduler().calculateTimeline(schedule);
     }
     
     /**
