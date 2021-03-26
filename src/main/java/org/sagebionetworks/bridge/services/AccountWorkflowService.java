@@ -52,8 +52,6 @@ import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.util.TriConsumer;
 import org.sagebionetworks.bridge.validators.Validate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -398,7 +396,7 @@ public class AccountWorkflowService {
         String sptoken = getNextToken();
         
         CacheKey cacheKey = CacheKey.passwordResetForPhone(sptoken, app.getIdentifier());
-        cacheProvider.setObject(cacheKey, getPhoneString(phone), VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
+        cacheProvider.setObject(cacheKey, phone, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         String url = getShortResetPasswordURL(app, sptoken);
         
@@ -583,6 +581,10 @@ public class AccountWorkflowService {
         return account.getId();
     }
 
+    // It looks like for migration reasons, we double serialize and double deserialize the verification
+    // data packet. We'd like to stop this but at the time of deployment, this would break for anyone
+    // in the middle of verification. 
+    
     private void saveVerification(String sptoken, VerificationData data) {
         checkArgument(isNotBlank(sptoken));
         checkNotNull(data);
@@ -611,14 +613,6 @@ public class AccountWorkflowService {
         }
         return null;
     }    
-    
-    private String getPhoneString(Phone phone) {
-        try {
-            return BridgeObjectMapper.get().writeValueAsString(phone);
-        } catch (JsonProcessingException e) {
-            throw new BridgeServiceException(e);
-        }
-    }
     
     // Provided via accessor so it can be mocked for tests
     protected String getNextToken() {
