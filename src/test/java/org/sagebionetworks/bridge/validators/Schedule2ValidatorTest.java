@@ -44,14 +44,14 @@ public class Schedule2ValidatorTest extends Mockito {
     public void ownerIdBlank() {
         Schedule2 schedule = createValidSchedule();
         schedule.setOwnerId(" ");
-        assertValidatorMessage(INSTANCE, schedule, "ownerId", "is not a valid organization ID");
+        assertValidatorMessage(INSTANCE, schedule, "ownerId", CANNOT_BE_BLANK);
     }
     
     @Test
     public void ownerIdNull() {
         Schedule2 schedule = createValidSchedule();
         schedule.setOwnerId(null);
-        assertValidatorMessage(INSTANCE, schedule, "ownerId", "is not a valid organization ID");
+        assertValidatorMessage(INSTANCE, schedule, "ownerId", CANNOT_BE_BLANK);
     }
     
     @Test

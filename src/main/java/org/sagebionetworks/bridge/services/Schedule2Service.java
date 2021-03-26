@@ -171,9 +171,11 @@ public class Schedule2Service {
         }
 
         // Verify the owner ID (this is also caught by the database, but reports the 
-        // error differently than we'd like).
-        organizationService.getOrganization(schedule.getAppId(), schedule.getOwnerId());
-
+        // error differently than we'd like). If there's no ownerId, don't do this because
+        // it is shortly going to be a validation error
+        if (schedule.getOwnerId() != null) {
+            organizationService.getOrganization(schedule.getAppId(), schedule.getOwnerId());    
+        }
         preValidationCleanup(app, schedule, (hasGuid) -> hasGuid.setGuid(generateGuid()));
         
         Validate.entityThrowingException(INSTANCE, schedule);
