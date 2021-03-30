@@ -28,6 +28,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
+import org.sagebionetworks.bridge.dao.TimelineDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedEntityException;
@@ -53,6 +54,8 @@ public class Schedule2Service {
     
     private Schedule2Dao dao;
     
+    private TimelineDao timelineDao;
+    
     @Autowired
     final void setAppService(AppService appService) {
         this.appService = appService;
@@ -66,6 +69,11 @@ public class Schedule2Service {
     @Autowired
     final void setScheduleDao(Schedule2Dao dao) {
         this.dao = dao;
+    }
+    
+    @Autowired
+    final void setTimelineDao(TimelineDao timelineDao) { 
+        this.timelineDao = timelineDao;
     }
     
     DateTime getCreatedOn() {
@@ -271,16 +279,24 @@ public class Schedule2Service {
         dao.deleteSchedulePermanently(existing);
     }
     
-    public Timeline getTimelineForSchedule(String appId, String guid) {
-        Schedule2 schedule = getSchedule(appId, guid);        
-        return new Scheduler().calculateTimeline(schedule);
+    public Timeline getTimelineForSchedule(String appId, String studyId, String guid) {
+        Schedule2 schedule = getSchedule(appId, guid);
+        
+        Timeline timeline = new Scheduler().calculateTimeline(schedule);
+        
+        DateTime scheduleModifiedOn = timelineDao.getModifedOn(schedule.getGuid());
+        
+        if (scheduleModifiedOn == null || scheduleModifiedOn.isBefore(schedule.getModifiedOn())) {
+            timelineDao.persistMetadata(timeline.getMetadata());    
+        }
+        return timeline;
     }
     
     /**
      * Set GUIDs on objects that don't have them; clean up event keys or set
      * them to null if they're not valid, so they will fail validation.
      */
-    public void preValidationCleanup(App app, Schedule2 schedule, Consumer<HasGuid> consumer) {
+    void preValidationCleanup(App app, Schedule2 schedule, Consumer<HasGuid> consumer) {
         checkNotNull(app);
         checkNotNull(schedule);
         

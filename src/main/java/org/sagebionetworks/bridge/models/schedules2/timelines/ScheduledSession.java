@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
+import static java.lang.Boolean.TRUE;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,31 +12,34 @@ import org.joda.time.Period;
 
 public class ScheduledSession {
 
-    private String guid;
+    private String refGuid;
     private String instanceGuid;
     private int startDay;
     private int endDay;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
     private LocalTime startTime;
+    private Period delayTime;
     private Period expiration;
-    private boolean persistent;
+    private Boolean persistent;
     private List<ScheduledAssessment> assessments = new ArrayList<>();
     
-    private ScheduledSession(String guid, String instanceGuid, int startDay, int endDay,
-            LocalTime startTime, Period expiration, boolean persistent, 
-            List<ScheduledAssessment> assessments) {
-        this.guid = guid;
+    private ScheduledSession(String refGuid, String instanceGuid, int startDay, int endDay, LocalTime startTime,
+            Period delayTime, Period expiration, Boolean persistent, List<ScheduledAssessment> assessments) {
+        this.refGuid = refGuid;
         this.instanceGuid = instanceGuid;
         this.startDay = startDay;
         this.endDay = endDay;
+        this.delayTime = delayTime;
         this.startTime = startTime;
         this.expiration = expiration;
-        this.persistent = persistent;
+        if (TRUE.equals(persistent)) {
+            this.persistent = TRUE;    
+        }
         this.assessments = assessments;
     }
     
-    public String getGuid() {
-        return guid;
+    public String getRefGuid() {
+        return refGuid;
     }
     public String getInstanceGuid() {
         return instanceGuid;
@@ -45,13 +50,16 @@ public class ScheduledSession {
     public int getEndDay() {
         return endDay;
     }
+    public Period getDelayTime() {
+        return delayTime;
+    }
     public LocalTime getStartTime() {
         return startTime;
     }
     public Period getExpiration() {
         return expiration;
     }
-    public boolean isPersistent() {
+    public Boolean isPersistent() {
         return persistent;
     }
     public List<ScheduledAssessment> getAssessments() {
@@ -59,17 +67,18 @@ public class ScheduledSession {
     }
     
     public static class Builder {
-        private String guid;
+        private String refGuid;
         private String instanceGuid;
         private int startDay;
         private int endDay;
+        private Period delayTime;
         private LocalTime startTime;
         private Period expiration;
-        private boolean persistent;
+        private Boolean persistent;
         private List<ScheduledAssessment> assessments = new ArrayList<>();
 
-        public Builder withGuid(String guid) {
-            this.guid = guid;
+        public Builder withRefGuid(String refGuid) {
+            this.refGuid = refGuid;
             return this;
         }
         public Builder withInstanceGuid(String instanceGuid) {
@@ -84,6 +93,10 @@ public class ScheduledSession {
             this.endDay = endDay;
             return this;
         }
+        public Builder withDelayTime(Period delayTime) {
+            this.delayTime = delayTime;
+            return this;
+        }
         public Builder withStartTime(LocalTime startTime) {
             this.startTime = startTime;
             return this;
@@ -92,7 +105,7 @@ public class ScheduledSession {
             this.expiration = expiration;
             return this;
         }
-        public Builder withPersistent(boolean persistent) {
+        public Builder withPersistent(Boolean persistent) {
             this.persistent = persistent;
             return this;
         }
@@ -101,8 +114,8 @@ public class ScheduledSession {
             return this;
         }
         public ScheduledSession build() {
-            return new ScheduledSession(guid, instanceGuid, startDay, endDay, startTime, 
-                    expiration, persistent, assessments);
+            return new ScheduledSession(refGuid, instanceGuid, startDay, endDay, startTime, delayTime, expiration,
+                    persistent, assessments);
         }
     }
     

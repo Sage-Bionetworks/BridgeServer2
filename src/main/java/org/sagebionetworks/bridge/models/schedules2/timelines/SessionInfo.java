@@ -18,17 +18,14 @@ import org.sagebionetworks.bridge.models.schedules2.Session;
 public class SessionInfo {
 
     private String guid;
-    private String name;
     private String label;
     private String startEventId;
-    private Period expiration;
-    private boolean persistent;
     private PerformanceOrder performanceOrder;
     private NotificationType notifyAt;
     private ReminderType remindAt;
     private Period reminderPeriod;
-    private boolean allowSnooze;
-    private int minutesToComplete;
+    private Boolean allowSnooze;
+    private Integer minutesToComplete;
     private NotificationMessage message;
     
     public static final SessionInfo create(Session session) {
@@ -39,28 +36,30 @@ public class SessionInfo {
         
         int min = 0;
         for (AssessmentReference ref : session.getAssessments()) {
-            min += ref.getMinutesToComplete();
+            if (ref.getMinutesToComplete() != null) {
+                min += ref.getMinutesToComplete();    
+            }
         }
         SessionInfo info = new SessionInfo();
         info.guid = session.getGuid();
-        info.name = session.getName();
         info.label = label.getValue();
         info.startEventId = session.getStartEventId();
         info.performanceOrder = session.getPerformanceOrder();
         info.notifyAt = session.getNotifyAt();
         info.remindAt = session.getRemindAt();
         info.reminderPeriod = session.getReminderPeriod();
-        info.allowSnooze = session.isAllowSnooze();
-        info.minutesToComplete = min;
+        if (session.isAllowSnooze()) {
+            info.allowSnooze = Boolean.TRUE;    
+        }
+        if (min > 0) {
+            info.minutesToComplete = min;    
+        }
         info.message = msg;
         return info;
     }
     
     public String getGuid() {
         return guid;
-    }
-    public String getName() {
-        return name;
     }
     public String getLabel() {
         return label;
@@ -77,17 +76,16 @@ public class SessionInfo {
     public ReminderType getRemindAt() {
         return remindAt;
     }
-    public Period getRemindPeriod() {
+    public Period getReminderPeriod() {
         return reminderPeriod;
     }
-    public boolean isAllowSnooze() {
+    public Boolean isAllowSnooze() {
         return allowSnooze;
     }
-    public int getMinutesToComplete() {
+    public Integer getMinutesToComplete() {
         return minutesToComplete;
     }
     public NotificationMessage getMessage() {
         return message;
     }
-   
 }

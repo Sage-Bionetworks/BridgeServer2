@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2;
 
+import static org.apache.commons.lang3.StringUtils.repeat;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.LABELS;
 import static org.sagebionetworks.bridge.TestConstants.MESSAGES;
@@ -29,7 +30,7 @@ public class SessionTest {
         Session session = new Session();
         session.setLabels(LABELS);
         session.setName("Do weekly survey");
-        session.setGuid(GUID);
+        session.setGuid("BBBBBBBB");
         session.setStartEventId("activities_retrieved");
         session.setDelay(Period.parse("P1W"));
         session.setOccurrences(19);
@@ -41,7 +42,7 @@ public class SessionTest {
         session.setAllowSnooze(true);
         
         TimeWindow window = new TimeWindow();
-        window.setGuid(GUID);
+        window.setGuid("CCCCCCCC");
         window.setStartTime(LocalTime.parse("08:00"));
         window.setExpiration(Period.parse("P6D"));
         window.setPersistent(true);
@@ -73,7 +74,7 @@ public class SessionTest {
         JsonNode node = BridgeObjectMapper.get().valueToTree(session);
         
         assertEquals(node.size(), 16);
-        assertEquals(node.get("guid").textValue(), GUID);
+        assertEquals(node.get("guid").textValue(), "BBBBBBBB");
         assertEquals(node.get("name").textValue(), "Do weekly survey");
         assertEquals(node.get("startEventId").textValue(), "activities_retrieved");
         assertEquals(node.get("delay").textValue(), "P1W");
@@ -108,7 +109,7 @@ public class SessionTest {
         ArrayNode windowsArray = (ArrayNode)node.get("timeWindows");
         assertEquals(windowsArray.size(), 1);
         assertEquals(windowsArray.get(0).size(), 5);
-        assertEquals(windowsArray.get(0).get("guid").textValue(), "oneGuid");
+        assertEquals(windowsArray.get(0).get("guid").textValue(), "CCCCCCCC");
         assertEquals(windowsArray.get(0).get("startTime").textValue(), "08:00");
         assertEquals(windowsArray.get(0).get("expiration").textValue(), "P6D");
         assertTrue(windowsArray.get(0).get("persistent").booleanValue());
@@ -124,7 +125,7 @@ public class SessionTest {
         
         Session deser = BridgeObjectMapper.get().readValue(node.toString(), Session.class);
         
-        assertEquals(deser.getGuid(), GUID);
+        assertEquals(deser.getGuid(), "BBBBBBBB");
         assertEquals(deser.getName(), "Do weekly survey");
         assertEquals(deser.getStartEventId(), "activities_retrieved");
         assertEquals(deser.getDelay(), Period.parse("P1W"));
@@ -150,7 +151,7 @@ public class SessionTest {
         
         assertEquals(deser.getTimeWindows().size(), 1);
         List<TimeWindow> windows = deser.getTimeWindows();
-        assertEquals(windows.get(0).getGuid(), "oneGuid");
+        assertEquals(windows.get(0).getGuid(), "CCCCCCCC");
         assertEquals(windows.get(0).getStartTime(), LocalTime.parse("08:00"));
         assertEquals(windows.get(0).getExpiration(), Period.parse("P6D"));
         assertTrue(windows.get(0).isPersistent());

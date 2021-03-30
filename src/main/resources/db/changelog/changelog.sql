@@ -519,3 +519,19 @@ CREATE TABLE `SessionAssessments` (
   CONSTRAINT `AssessmentRef-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE,
   CONSTRAINT `AssessmentRef-Assessment-Constraint` FOREIGN KEY (`guid`) REFERENCES `Assessments` (`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:28
+
+CREATE TABLE `TimelineMetadata` (
+  `guid` varchar(60) NOT NULL,
+  `assessmentInstanceGuid` varchar(60),
+  `assessmentGuid` varchar(60),
+  `assessmentId` varchar(255),
+  `sessionInstanceGuid` varchar(60) NOT NULL,
+  `sessionGuid` varchar(60) NOT NULL,
+  `scheduleGuid` varchar(60) NOT NULL,
+  `schedulePublished` tinyint(1) NOT NULL,
+  `scheduleModifiedOn` bigint(20) unsigned NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `appId` varchar(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

@@ -654,7 +654,7 @@ public class Schedule2ServiceTest extends Mockito {
         existing.setAppId(TEST_APP_ID);
         existing.setOwnerId(TEST_ORG_ID);
         existing.setCreatedOn(CREATED_ON);
-        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
+        when(mockDao.getSchedule(TEST_APP_ID, "AAAAAAAA")).thenReturn(Optional.of(existing));
 
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         
@@ -678,10 +678,10 @@ public class Schedule2ServiceTest extends Mockito {
         
         service.updateSchedule(schedule);
         
-        assertEquals(schedule.getSessions().get(0).getGuid(), GUID);
-        assertEquals(schedule.getSessions().get(0).getTimeWindows().get(0).getGuid(), GUID);
+        assertEquals(schedule.getSessions().get(0).getGuid(), "BBBBBBBB");
+        assertEquals(schedule.getSessions().get(0).getTimeWindows().get(0).getGuid(), "CCCCCCCC");
         assertEquals(schedule.getSessions().get(0).getTimeWindows().get(1).getGuid(), "otherGuid");
         assertEquals(schedule.getSessions().get(1).getGuid(), "otherGuid");
-        assertEquals(schedule.getSessions().get(1).getTimeWindows().get(0).getGuid(), GUID);
+        assertEquals(schedule.getSessions().get(1).getTimeWindows().get(0).getGuid(), "CCCCCCCC");
     }
 }

@@ -14,7 +14,6 @@ public class AssessmentInfo {
     private String guid;
     private String appId;
     private String identifier;
-    private String title;
     private String label;
     private Integer minutesToComplete;
     private ColorScheme colorScheme;
@@ -29,14 +28,43 @@ public class AssessmentInfo {
         info.guid = ref.getGuid();
         info.appId = ref.getAppId();
         info.identifier = ref.getIdentifier();
-        info.title = ref.getTitle();
         info.label = label.getValue();
+        info.colorScheme = ref.getColorScheme();
+        info.minutesToComplete = ref.getMinutesToComplete();
         return info;
+    }
+    
+    public String getKey() {
+        return String.valueOf(this.hashCode());
+    }
+    
+    public String getGuid() {
+        return guid;
+    }
+
+    public String getAppId() {
+        return appId;
+    }
+
+    public String getIdentifier() {
+        return identifier;
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public Integer getMinutesToComplete() {
+        return minutesToComplete;
+    }
+
+    public ColorScheme getColorScheme() {
+        return colorScheme;
     }
     
     @Override
     public int hashCode() {
-        return Objects.hash(appId, colorScheme, guid, identifier, label, minutesToComplete, title);
+        return Objects.hash(appId, colorScheme, guid, identifier, label, minutesToComplete);
     }
 
     @Override
@@ -51,7 +79,6 @@ public class AssessmentInfo {
                 Objects.equals(guid, other.guid) &&
                 Objects.equals(identifier, other.identifier) &&
                 Objects.equals(label, other.label) &&
-                Objects.equals(minutesToComplete, other.minutesToComplete) &&
-                Objects.equals(title, other.title);
+                Objects.equals(minutesToComplete, other.minutesToComplete);
     }
 }

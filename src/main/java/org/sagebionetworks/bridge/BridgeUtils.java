@@ -743,16 +743,18 @@ public class BridgeUtils {
     public static <T extends HasLang> T selectByLang(List<T> items, List<String> languages, T defaultValue) {
         checkNotNull(items);
         
+        if (languages == null) {
+            languages = ImmutableList.of();
+        }
         T englishItem = null;
-        for (String lang : languages) {
-            for (T item : items) {
-                if (item != null) {
-                    if (lang.equalsIgnoreCase(item.getLang())) {
-                        return item;
-                    } else if ("en".equalsIgnoreCase(item.getLang())) {
-                        englishItem = item;      
-                    }
+        for (T item : items) {
+            for (String lang : languages) {
+                if (lang.equalsIgnoreCase(item.getLang())) {
+                    return item;
                 }
+            }
+            if ("en".equalsIgnoreCase(item.getLang())) {
+                englishItem = item;
             }
         }
         return (englishItem == null) ? defaultValue : englishItem;

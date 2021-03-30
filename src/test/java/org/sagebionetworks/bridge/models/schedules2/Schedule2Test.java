@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2;
 
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
-import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
@@ -26,7 +25,7 @@ public class Schedule2Test {
         schedule.setAppId(TEST_APP_ID);
         schedule.setOwnerId(TEST_ORG_ID);
         schedule.setName("Schedule name");
-        schedule.setGuid(GUID);
+        schedule.setGuid("AAAAAAAA");
         schedule.setDuration(Period.parse("P8W"));
         schedule.setClientData(getClientData());
         schedule.setCreatedOn(CREATED_ON);
@@ -52,7 +51,7 @@ public class Schedule2Test {
         assertNull(node.get("appId"));
         assertEquals(node.get("ownerId").textValue(), TEST_ORG_ID);
         assertEquals(node.get("name").textValue(), "Schedule name");
-        assertEquals(node.get("guid").textValue(), GUID);
+        assertEquals(node.get("guid").textValue(), "AAAAAAAA");
         assertEquals(node.get("duration").textValue(), "P8W");
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("modifiedOn").textValue(), MODIFIED_ON.toString());
@@ -68,7 +67,7 @@ public class Schedule2Test {
         assertNull(deser.getAppId());
         assertEquals(deser.getOwnerId(), TEST_ORG_ID);
         assertEquals(deser.getName(), "Schedule name");
-        assertEquals(deser.getGuid(), GUID);
+        assertEquals(deser.getGuid(), "AAAAAAAA");
         assertEquals(deser.getDuration(), Period.parse("P8W"));
         assertEquals(deser.getClientData().toString(), getClientData().toString());
         assertEquals(deser.getCreatedOn(), CREATED_ON);
