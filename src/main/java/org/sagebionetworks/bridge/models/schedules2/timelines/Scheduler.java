@@ -19,27 +19,31 @@ import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
 public class Scheduler {
     
+    public static final Scheduler INSTANCE = new Scheduler();
+    
+    private Scheduler() {}
+    
     public final Timeline calculateTimeline(Schedule2 schedule) {
-        Timeline.Builder timeline = new Timeline.Builder();
+        Timeline.Builder builder = new Timeline.Builder();
         
-        timeline.withDuration(schedule.getDuration());
-        timeline.withSchedule(schedule);
-        calculateLanguageKey(timeline);
+        builder.withDuration(schedule.getDuration());
+        builder.withSchedule(schedule);
+        calculateLanguageKey(builder);
         
         for (Session session : schedule.getSessions()) {
             for (TimeWindow window : session.getTimeWindows()) {
-                scheduleTimeWindowSequence(timeline, schedule, session, window);
+                scheduleTimeWindowSequence(builder, schedule, session, window);
             }
         }
-        return timeline.build();
+        return builder.build();
     }
 
-    void calculateLanguageKey(Timeline.Builder timeline) {
-        timeline.withLang("en");
+    void calculateLanguageKey(Timeline.Builder builder) {
+        builder.withLang("en");
         List<String> callerLangs = RequestContext.get().getCallerLanguages();
         if (!callerLangs.isEmpty()) {
             callerLangs = callerLangs.stream().map(s -> s.toLowerCase()).collect(toList());
-            timeline.withLang(COMMA_JOINER.join(callerLangs));
+            builder.withLang(COMMA_JOINER.join(callerLangs));
         }
     }
     
@@ -60,7 +64,7 @@ public class Scheduler {
         return endDay;
     }
 
-    void scheduleTimeWindowSequence(Timeline.Builder timeline, Schedule2 schedule, Session session, TimeWindow window) {
+    void scheduleTimeWindowSequence(Timeline.Builder builder, Schedule2 schedule, Session session, TimeWindow window) {
         int studyLengthInDays = schedule.getDuration().toStandardDays().getDays(); // can be in days or weeks
         
         int delayInDays = (session.getDelay() == null) ? 0 : session.getDelay().toStandardDays().getDays();
@@ -70,7 +74,6 @@ public class Scheduler {
         int startDay = delayInDays;
         int endDay = delayInDays;
         int occurrenceCount = 0;
-        boolean addedSession = false; // don't add session until we've proven it will be in timeline
 
         Multiset<String> ids = HashMultiset.create();
         do {
@@ -85,10 +88,9 @@ public class Scheduler {
             if (endDay > studyLengthInDays) {
                 break;
             }
-            if (!addedSession) {
-                timeline.withSessionInfo(SessionInfo.create(session));
-                addedSession = true;
-            }
+            
+            // This session will be used, so we can add it
+            builder.withSession(session);
             
             ScheduledSession.Builder scheduledSession = new ScheduledSession.Builder();
             scheduledSession.withRefGuid(session.getGuid());
@@ -109,8 +111,8 @@ public class Scheduler {
             scheduledSession.withInstanceGuid(sessionInstanceGuid);
 
             // The position of an assessment in a session is used to differentiate repeated assessments
-            // in a single session. Each configuration gets a separate entry in the timeline with a 
-            // separate key that can be referenced for lookup.
+            // in a single session. Assessments can be configured differently, but if they are exactly
+            // the same, we still generate a unique ID.
             ids.clear();
             for (AssessmentReference ref : session.getAssessments()) {
                 ids.add(ref.getGuid());
@@ -119,12 +121,12 @@ public class Scheduler {
                         window.getGuid(), occurrenceCount, ref.getGuid(), ids.count(ref.getGuid()));
              
                 AssessmentInfo asmtInfo = AssessmentInfo.create(ref);
-                timeline.withAssessmentInfo(asmtInfo);
+                builder.withAssessmentInfo(asmtInfo);
                 
                 ScheduledAssessment schAsmt = new ScheduledAssessment(asmtInfo.getKey(), asmtInstanceGuid);
                 scheduledSession.withScheduledAssessment(schAsmt);
             }
-            timeline.withScheduledSession(scheduledSession.build());
+            builder.withScheduledSession(scheduledSession.build());
       
             startDay += intervalInDays;
             occurrenceCount++;
@@ -139,8 +141,8 @@ public class Scheduler {
      */
     String generateSessionInstanceGuid(String scheduleGuid, String sessionGuid, String windowGuid,
             int windowOccurrence) {
-        return windowGuid.substring(0, 8) + windowOccurrence + sessionGuid.substring(0, 8)
-                + scheduleGuid.substring(0, 6);
+        return windowGuid.substring(0, 8) + Integer.toHexString(windowOccurrence) 
+            + sessionGuid.substring(0, 8) + scheduleGuid.substring(0, 6);
     }
 
     /**
@@ -150,7 +152,8 @@ public class Scheduler {
      */
     String generateAssessmentInstanceGuid(String scheduleGuid, String sessionGuid, String windowGuid,
             int windowOccurrence, String assessmentGuid, int assessmentOcccurrence) {
-        return assessmentGuid.substring(0, 6) + assessmentOcccurrence + windowGuid.substring(0, 6)
-                + windowOccurrence + sessionGuid.substring(0, 4) + scheduleGuid.substring(0, 6);
+        return assessmentGuid.substring(0, 6) + Integer.toHexString(assessmentOcccurrence) 
+            + windowGuid.substring(0, 6) + Integer.toHexString(windowOccurrence) 
+            + sessionGuid.substring(0, 4) + scheduleGuid.substring(0, 6);
     }
 }

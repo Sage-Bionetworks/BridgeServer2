@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
+import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_1_GUID;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -21,7 +23,7 @@ public class TimelineTest extends Mockito {
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         schedule.setDuration(Period.parse("P3W"));
         
-        Timeline timeline = new Scheduler().calculateTimeline(schedule);
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
         assertNull(node.get("lang"));
@@ -29,8 +31,8 @@ public class TimelineTest extends Mockito {
         
         assertEquals(node.get("schedule").size(), 2);
         JsonNode schNode = node.get("schedule").get(0);
-        assertEquals(schNode.get("refGuid").textValue(), "BBBBBBBB");
-        assertEquals(schNode.get("instanceGuid").textValue(), "CCCCCCCC0BBBBBBBBAAAAAA");
+        assertEquals(schNode.get("refGuid").textValue(), SESSION_GUID_1);
+        assertEquals(schNode.get("instanceGuid").textValue(), "FFFFFFFF0BBBBBBBBAAAAAA");
         assertEquals(schNode.get("startDay").intValue(), 7);
         assertEquals(schNode.get("endDay").intValue(), 13);
         assertEquals(schNode.get("startTime").textValue(), "08:00");
@@ -38,24 +40,24 @@ public class TimelineTest extends Mockito {
         assertTrue(schNode.get("persistent").booleanValue());
         assertEquals(schNode.get("type").textValue(), "ScheduledSession");
         assertEquals(schNode.get("assessments")
-                .get(0).get("instanceGuid").textValue(), "asmtRe1CCCCCC0BBBBAAAAAA");
+                .get(0).get("instanceGuid").textValue(), "1111111FFFFFF0BBBBAAAAAA");
         assertEquals(schNode.get("assessments")
-                .get(0).get("refKey").textValue(), "-70507447");
+                .get(0).get("refKey").textValue(), "1687101757");
         assertEquals(schNode.get("assessments")
                 .get(0).get("type").textValue(), "ScheduledAssessment");
         
         assertEquals(node.get("assessments").size(), 2);
         JsonNode asmtNode = node.get("assessments").get(0);
-        assertEquals(asmtNode.get("guid").textValue(), "asmtRef1Guid");
+        assertEquals(asmtNode.get("guid").textValue(), ASSESSMENT_1_GUID);
         assertEquals(asmtNode.get("appId").textValue(), "local");
         assertEquals(asmtNode.get("label").textValue(), "English");
         assertEquals(asmtNode.get("minutesToComplete").intValue(), 3);
-        assertEquals(asmtNode.get("key").textValue(), "-70507447");
+        assertEquals(asmtNode.get("key").textValue(), "1687101757");
         assertEquals(asmtNode.get("type").textValue(), "AssessmentInfo");
 
         assertEquals(node.get("sessions").size(), 1);
         JsonNode sessNode = node.get("sessions").get(0);
-        assertEquals(sessNode.get("guid").textValue(), "BBBBBBBB");
+        assertEquals(sessNode.get("guid").textValue(), SESSION_GUID_1);
         assertEquals(sessNode.get("label").textValue(), "English");
         assertEquals(sessNode.get("startEventId").textValue(), "activities_retrieved");
         assertEquals(sessNode.get("performanceOrder").textValue(), "randomized");

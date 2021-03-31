@@ -9,14 +9,15 @@ import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 
-public class AssessmentInfo {
+public final class AssessmentInfo {
 
-    private String guid;
-    private String appId;
-    private String identifier;
-    private String label;
-    private Integer minutesToComplete;
-    private ColorScheme colorScheme;
+    private final String guid;
+    private final String appId;
+    private final String identifier;
+    private final Integer revision;
+    private final String label;
+    private final Integer minutesToComplete;
+    private final ColorScheme colorScheme;
 
     public static AssessmentInfo create(AssessmentReference ref) {
         List<String> languages = RequestContext.get().getCallerLanguages();
@@ -24,14 +25,19 @@ public class AssessmentInfo {
         Label label = BridgeUtils.selectByLang(ref.getLabels(), 
                 languages, new Label("", ref.getTitle()));
         
-        AssessmentInfo info = new AssessmentInfo();
-        info.guid = ref.getGuid();
-        info.appId = ref.getAppId();
-        info.identifier = ref.getIdentifier();
-        info.label = label.getValue();
-        info.colorScheme = ref.getColorScheme();
-        info.minutesToComplete = ref.getMinutesToComplete();
-        return info;
+        return new AssessmentInfo(ref.getGuid(), ref.getAppId(), ref.getIdentifier(), ref.getRevision(),
+                label.getValue(), ref.getMinutesToComplete(), ref.getColorScheme());
+    }
+    
+    private AssessmentInfo(String guid, String appId, String identifier, Integer revision, String label,
+            Integer minutesToComplete, ColorScheme colorScheme) {
+        this.guid = guid;
+        this.appId = appId;
+        this.identifier = identifier;
+        this.revision = revision;
+        this.label = label;
+        this.colorScheme = colorScheme;
+        this.minutesToComplete = minutesToComplete;
     }
     
     public String getKey() {
@@ -49,6 +55,10 @@ public class AssessmentInfo {
     public String getIdentifier() {
         return identifier;
     }
+    
+    public Integer getRevision() {
+        return revision;
+    }
 
     public String getLabel() {
         return label;
@@ -64,7 +74,7 @@ public class AssessmentInfo {
     
     @Override
     public int hashCode() {
-        return Objects.hash(appId, colorScheme, guid, identifier, label, minutesToComplete);
+        return Objects.hash(appId, colorScheme, guid, identifier, revision, label, minutesToComplete);
     }
 
     @Override
@@ -78,6 +88,7 @@ public class AssessmentInfo {
                 Objects.equals(colorScheme, other.colorScheme) &&
                 Objects.equals(guid, other.guid) &&
                 Objects.equals(identifier, other.identifier) &&
+                Objects.equals(revision, other.revision) &&
                 Objects.equals(label, other.label) &&
                 Objects.equals(minutesToComplete, other.minutesToComplete);
     }

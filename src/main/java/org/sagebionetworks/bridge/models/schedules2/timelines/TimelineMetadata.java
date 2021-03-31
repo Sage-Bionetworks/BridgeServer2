@@ -12,6 +12,7 @@ import javax.persistence.Transient;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
+import org.sagebionetworks.bridge.models.BridgeEntity;
 
 /**
  * The timeline metadata table allows us to take any instance GUID from a timeline
@@ -21,7 +22,7 @@ import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
  */
 @Entity
 @Table(name = "TimelineMetadata")
-public class TimelineMetadata {
+public class TimelineMetadata implements BridgeEntity {
     
     public static final TimelineMetadata copy(TimelineMetadata meta) {
         TimelineMetadata copy = new TimelineMetadata();
@@ -34,12 +35,12 @@ public class TimelineMetadata {
         copy.setScheduleGuid(meta.getScheduleGuid());
         copy.setScheduleModifiedOn(meta.getScheduleModifiedOn());
         copy.setSchedulePublished(meta.isSchedulePublished());
+        copy.setAppId(meta.getAppId());
         if (meta.getStudyIds() != null) {
             Set<String> set = new HashSet<>();
             set.addAll(meta.getStudyIds());
             copy.setStudyIds(set);
         }
-        copy.setAppId(meta.getAppId());
         return copy;
     }
     
@@ -54,6 +55,7 @@ public class TimelineMetadata {
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime scheduleModifiedOn;
     private boolean schedulePublished;
+    private String appId;
     /**
      * A timeline is generated 1:1 from a schedule, but schedule can be used in
      * more than one study (or study arm). The study IDs for this record will be
@@ -62,7 +64,6 @@ public class TimelineMetadata {
      */
     @Transient
     private Set<String> studyIds;
-    private String appId;
     
     public String getGuid() {
         return guid;

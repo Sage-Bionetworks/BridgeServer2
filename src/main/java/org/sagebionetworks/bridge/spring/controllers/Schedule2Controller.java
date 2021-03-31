@@ -74,10 +74,13 @@ public class Schedule2Controller extends BaseController {
     }
     
     @GetMapping("/v5/schedules/{guid}/timeline")
-    public Timeline getTimeline(@PathVariable String guid) {
+    public Timeline getTimelineForSchedule(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         
-        return service.getTimelineForSchedule(session.getAppId(), "test", guid);
+        // when schedules are associated to studies, we’ll verify that a consented
+        // user is enrolled in a study that uses this timeline.
+        
+        return service.getTimelineForSchedule(session.getAppId(), guid);
     }
     
     @PostMapping("/v5/schedules/{guid}")

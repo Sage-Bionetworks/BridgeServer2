@@ -12,6 +12,7 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.Period;
 
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.Session;
 
 /**
  * The view of a schedule partially resolved for client apps, which the GUIDs that
@@ -109,8 +110,10 @@ public class Timeline {
             this.assessments.put(ref.getKey(), ref);
             return this;
         }
-        public Builder withSessionInfo(SessionInfo info) {
-            this.sessions.put(info.getGuid(), info);
+        public Builder withSession(Session session) {
+            if (this.sessions.containsKey(session.getGuid())) {
+                this.sessions.put(session.getGuid(), SessionInfo.create(session));    
+            }
             return this;
         }
         public Timeline build() {

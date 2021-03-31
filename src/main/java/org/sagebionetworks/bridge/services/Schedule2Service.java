@@ -28,7 +28,6 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
-import org.sagebionetworks.bridge.dao.TimelineDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedEntityException;
@@ -52,9 +51,7 @@ public class Schedule2Service {
     
     private OrganizationService organizationService;
     
-    private Schedule2Dao dao;
-    
-    private TimelineDao timelineDao;
+    private Schedule2Dao scheduleDao;
     
     @Autowired
     final void setAppService(AppService appService) {
@@ -68,12 +65,7 @@ public class Schedule2Service {
     
     @Autowired
     final void setScheduleDao(Schedule2Dao dao) {
-        this.dao = dao;
-    }
-    
-    @Autowired
-    final void setTimelineDao(TimelineDao timelineDao) { 
-        this.timelineDao = timelineDao;
+        this.scheduleDao = dao;
     }
     
     DateTime getCreatedOn() {
@@ -104,7 +96,7 @@ public class Schedule2Service {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return dao.getSchedules(appId, offsetBy, pageSize, includeDeleted)
+        return scheduleDao.getSchedules(appId, offsetBy, pageSize, includeDeleted)
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize)
                 .withRequestParam(INCLUDE_DELETED, includeDeleted);
@@ -129,7 +121,7 @@ public class Schedule2Service {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return dao.getSchedulesForOrganization(appId, ownerId, offsetBy, pageSize, includeDeleted)
+        return scheduleDao.getSchedulesForOrganization(appId, ownerId, offsetBy, pageSize, includeDeleted)
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize)
                 .withRequestParam(INCLUDE_DELETED, includeDeleted);
@@ -142,7 +134,7 @@ public class Schedule2Service {
         checkNotNull(appId);
         checkNotNull(guid);
         
-        Schedule2 schedule = dao.getSchedule(appId, guid)
+        Schedule2 schedule = scheduleDao.getSchedule(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
         CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, schedule.getOwnerId());
@@ -188,7 +180,7 @@ public class Schedule2Service {
         
         Validate.entityThrowingException(INSTANCE, schedule);
         
-        return dao.createSchedule(schedule);
+        return scheduleDao.createSchedule(schedule);
     }
     
     /**
@@ -198,7 +190,7 @@ public class Schedule2Service {
     public Schedule2 updateSchedule(Schedule2 schedule) {
         checkNotNull(schedule);
         
-        Schedule2 existing = dao.getSchedule(schedule.getAppId(), schedule.getGuid())
+        Schedule2 existing = scheduleDao.getSchedule(schedule.getAppId(), schedule.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
@@ -223,7 +215,7 @@ public class Schedule2Service {
 
         Validate.entityThrowingException(INSTANCE, schedule);
         
-        return dao.updateSchedule(schedule);
+        return scheduleDao.updateSchedule(schedule);
     }
     
     /**
@@ -231,7 +223,7 @@ public class Schedule2Service {
      */
     public Schedule2 publishSchedule(String appId, String guid) {
         
-        Schedule2 existing = dao.getSchedule(appId, guid)
+        Schedule2 existing = scheduleDao.getSchedule(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());    
@@ -243,7 +235,7 @@ public class Schedule2Service {
         }
         existing.setPublished(true);
         existing.setModifiedOn(getModifiedOn());
-        return dao.updateSchedule(existing);
+        return scheduleDao.updateSchedule(existing);
     }
     
     /**
@@ -254,13 +246,13 @@ public class Schedule2Service {
         checkNotNull(appId);
         checkNotNull(guid);
         
-        Schedule2 existing = dao.getSchedule(appId, guid)
+        Schedule2 existing = scheduleDao.getSchedule(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         if (existing.isDeleted()) {
             throw new EntityNotFoundException(Schedule2.class);
         }
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
-        dao.deleteSchedule(existing);
+        scheduleDao.deleteSchedule(existing);
     }
     
     /**
@@ -272,24 +264,19 @@ public class Schedule2Service {
         checkNotNull(appId);
         checkNotNull(guid);
 
-        Schedule2 existing = dao.getSchedule(appId, guid)
+        Schedule2 existing = scheduleDao.getSchedule(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
-        dao.deleteSchedulePermanently(existing);
+        scheduleDao.deleteSchedulePermanently(existing);
     }
     
-    public Timeline getTimelineForSchedule(String appId, String studyId, String guid) {
-        Schedule2 schedule = getSchedule(appId, guid);
+    public Timeline getTimelineForSchedule(String appId, String guid) {
+        Schedule2 schedule = scheduleDao.getSchedule(appId, guid)
+                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
-        Timeline timeline = new Scheduler().calculateTimeline(schedule);
-        
-        DateTime scheduleModifiedOn = timelineDao.getModifedOn(schedule.getGuid());
-        
-        if (scheduleModifiedOn == null || scheduleModifiedOn.isBefore(schedule.getModifiedOn())) {
-            timelineDao.persistMetadata(timeline.getMetadata());    
-        }
-        return timeline;
+        // This is calculated so quickly it is not worth caching
+        return Scheduler.INSTANCE.calculateTimeline(schedule);
     }
     
     /**

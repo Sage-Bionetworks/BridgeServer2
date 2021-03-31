@@ -1,11 +1,16 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_2;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.AND_DELETED;
+import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.BATCH_SIZE_PROPERTY;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.DELETE_ORPHANED_SESSIONS;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.DELETE_SESSIONS;
+import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.DELETE_TIMELINE_RECORDS;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.GET_ALL_SCHEDULES;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.GET_ORG_SCHEDULES;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.GET_SCHEDULE;
@@ -33,8 +38,12 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2Test;
+import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 
 public class HibernateSchedule2DaoTest extends Mockito {
     
@@ -46,6 +55,9 @@ public class HibernateSchedule2DaoTest extends Mockito {
     
     @Mock
     NativeQuery<Schedule2> mockQuery;
+    
+    @Mock
+    BridgeConfig mockConfig;
 
     @InjectMocks
     HibernateSchedule2Dao dao;
@@ -59,6 +71,10 @@ public class HibernateSchedule2DaoTest extends Mockito {
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
+        
+        when(mockConfig.getInt(BATCH_SIZE_PROPERTY)).thenReturn(10);
+        
+        dao.setBridgeConfig(mockConfig);
         
         when(mockSession.createNativeQuery(any())).thenReturn(mockQuery);
         
@@ -201,36 +217,41 @@ public class HibernateSchedule2DaoTest extends Mockito {
 
     @Test
     public void createSchedule() {
-        Schedule2 schedule = new Schedule2();
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        
+        when(mockSession.createNativeQuery(DELETE_TIMELINE_RECORDS)).thenReturn(mockQuery);
         
         Schedule2 retValue = dao.createSchedule(schedule);
         assertEquals(retValue, schedule);
         
-        verify(mockHibernateHelper).create(schedule);
+        verify(mockSession).setJdbcBatchSize(10);
+        verify(mockSession).save(schedule);
+        verify(mockQuery).setParameter(HibernateSchedule2Dao.SCHEDULE_GUID, TestConstants.SCHEDULE_GUID);
+        verify(mockQuery).executeUpdate();
+        verify(mockSession, times(2)).flush();
+        verify(mockSession, times(2)).clear();
     }
 
     @Test
     public void updateSchedule() {
-        org.sagebionetworks.bridge.models.schedules2.Session session1 = 
-                new org.sagebionetworks.bridge.models.schedules2.Session();
-        session1.setGuid("session1guid");
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
         
-        org.sagebionetworks.bridge.models.schedules2.Session session2 = 
-                new org.sagebionetworks.bridge.models.schedules2.Session();
-        session2.setGuid("session2guid");
-
-        Schedule2 schedule = new Schedule2();
-        schedule.setGuid("ScheduleGuid");
+        org.sagebionetworks.bridge.models.schedules2.Session session1 = SessionTest.createValidSession();
+        session1.setGuid(SESSION_GUID_1);
+        
+        org.sagebionetworks.bridge.models.schedules2.Session session2 = SessionTest.createValidSession();
+        session2.setGuid(SESSION_GUID_2);
         schedule.setSessions(ImmutableList.of(session1, session2));
 
         Schedule2 retValue = dao.updateSchedule(schedule);
         assertEquals(retValue, schedule);
         
-        verify(mockSession).createNativeQuery(queryCaptor.capture());
-        assertEquals(queryCaptor.getValue(), DELETE_ORPHANED_SESSIONS);
-        verify(mockQuery).setParameter("guid", "ScheduleGuid");
-        verify(mockQuery).setParameter("guids", ImmutableSet.of("session1guid", "session2guid"));
-        verify(mockQuery).executeUpdate();
+        verify(mockSession, times(2)).createNativeQuery(queryCaptor.capture());
+        assertEquals(queryCaptor.getAllValues().get(0), DELETE_ORPHANED_SESSIONS);
+        assertEquals(queryCaptor.getAllValues().get(1), DELETE_TIMELINE_RECORDS);
+        verify(mockQuery).setParameter("guid", SCHEDULE_GUID);
+        verify(mockQuery).setParameter("guids", ImmutableSet.of(SESSION_GUID_1, SESSION_GUID_2));
+        verify(mockQuery, times(2)).executeUpdate();
         verify(mockSession).update(schedule);
     }
     

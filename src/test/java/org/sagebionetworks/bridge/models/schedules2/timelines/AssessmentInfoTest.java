@@ -14,7 +14,14 @@ import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+
 public class AssessmentInfoTest extends Mockito {
+    
+    @Test
+    public void equalsHashCode() {
+        EqualsVerifier.forClass(AssessmentInfo.class).allFieldsShouldBeUsed().verify();
+    }
     
     @Test
     public void canSerialize() throws Exception {
@@ -22,6 +29,7 @@ public class AssessmentInfoTest extends Mockito {
         ref.setGuid("guid");
         ref.setAppId(TEST_APP_ID);
         ref.setIdentifier("identifier");
+        ref.setRevision(5);
         ref.setTitle("title");
         ref.setLabels(ImmutableList.of(new Label("en", "English"), new Label("de", "German")));
         ref.setMinutesToComplete(10);
@@ -33,9 +41,10 @@ public class AssessmentInfoTest extends Mockito {
         assertEquals(node.get("guid").textValue(), "guid");
         assertEquals(node.get("appId").textValue(), TEST_APP_ID);
         assertEquals(node.get("identifier").textValue(), "identifier");
+        assertEquals(node.get("revision").intValue(), 5);
         assertEquals(node.get("label").textValue(), "English");
         assertEquals(node.get("minutesToComplete").intValue(), 10);
-        assertEquals(node.get("key").textValue(), "1984641878");
+        assertEquals(node.get("key").textValue(), "595819107");
         assertEquals(node.get("type").textValue(), "AssessmentInfo");
         assertEquals(node.get("colorScheme").get("background").textValue(), "#111111");
         assertEquals(node.get("colorScheme").get("foreground").textValue(), "#222222");
@@ -52,7 +61,7 @@ public class AssessmentInfoTest extends Mockito {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
         assertEquals(node.size(), 2);
-        assertEquals(node.get("key").textValue(), "887503681");
+        assertEquals(node.get("key").textValue(), "1742810335");
         assertEquals(node.get("type").textValue(), "AssessmentInfo");
     }
 }

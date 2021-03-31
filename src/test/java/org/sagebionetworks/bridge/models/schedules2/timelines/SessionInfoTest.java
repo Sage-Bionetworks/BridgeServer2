@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -22,7 +23,7 @@ public class SessionInfoTest extends Mockito {
         SessionInfo info = SessionInfo.create(session);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
-        assertEquals(node.get("guid").textValue(), "BBBBBBBB");
+        assertEquals(node.get("guid").textValue(), SESSION_GUID_1);
         assertEquals(node.get("label").textValue(), "English");
         assertEquals(node.get("startEventId").textValue(), "activities_retrieved");
         assertEquals(node.get("performanceOrder").textValue(), "randomized");
