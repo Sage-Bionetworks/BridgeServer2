@@ -90,7 +90,7 @@ public class Scheduler {
             }
             
             // This session will be used, so we can add it
-            builder.withSession(session);
+            builder.withSessionInfo(SessionInfo.create(session));
             
             ScheduledSession.Builder scheduledSession = new ScheduledSession.Builder();
             scheduledSession.withRefGuid(session.getGuid());
@@ -123,7 +123,7 @@ public class Scheduler {
                 AssessmentInfo asmtInfo = AssessmentInfo.create(ref);
                 builder.withAssessmentInfo(asmtInfo);
                 
-                ScheduledAssessment schAsmt = new ScheduledAssessment(asmtInfo.getKey(), asmtInstanceGuid);
+                ScheduledAssessment schAsmt = new ScheduledAssessment(asmtInfo.getKey(), asmtInstanceGuid, ref);
                 scheduledSession.withScheduledAssessment(schAsmt);
             }
             builder.withScheduledSession(scheduledSession.build());

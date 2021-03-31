@@ -55,6 +55,7 @@ public class SessionTest {
         asmt1.setAppId("local");
         asmt1.setTitle("Assessment 1");
         asmt1.setMinutesToComplete(3);
+        asmt1.setRevision(100);
         asmt1.setLabels(LABELS);
         
         AssessmentReference asmt2 = new AssessmentReference();
@@ -62,6 +63,7 @@ public class SessionTest {
         asmt2.setAppId("shared");
         asmt2.setTitle("Assessment 2");
         asmt2.setMinutesToComplete(5);
+        asmt2.setRevision(200);
         asmt2.setLabels(LABELS);
         session.setAssessments(ImmutableList.of(asmt1, asmt2));
         session.setMessages(MESSAGES);
@@ -100,11 +102,12 @@ public class SessionTest {
         
         ArrayNode asmtsArray = (ArrayNode)node.get("assessments");
         assertEquals(asmtsArray.size(), 2);
-        assertEquals(asmtsArray.get(0).size(), 6);
+        assertEquals(asmtsArray.get(0).size(), 7);
         assertEquals(asmtsArray.get(0).get("guid").textValue(), ASSESSMENT_1_GUID);
         assertEquals(asmtsArray.get(0).get("appId").textValue(), "local");
         assertEquals(asmtsArray.get(0).get("title").textValue(), "Assessment 1");
         assertEquals(asmtsArray.get(0).get("minutesToComplete").intValue(), 3);
+        assertEquals(asmtsArray.get(0).get("revision").intValue(), 100);
         assertEquals(asmtsArray.get(0).get("type").textValue(), "AssessmentReference");
         assertEquals(asmtsArray.get(0).get("labels").size(), 2);
         

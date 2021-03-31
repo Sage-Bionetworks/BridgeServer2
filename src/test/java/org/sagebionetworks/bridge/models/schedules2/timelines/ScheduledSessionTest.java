@@ -16,7 +16,7 @@ public class ScheduledSessionTest extends Mockito {
 
     @Test
     public void canSerialize() throws Exception {
-        ScheduledAssessment asmt = new ScheduledAssessment("ref", "instanceGuid");
+        ScheduledAssessment asmt = new ScheduledAssessment("ref", "instanceGuid", null);
         
         ScheduledSession schSession = new ScheduledSession.Builder()
                 .withRefGuid("guid")

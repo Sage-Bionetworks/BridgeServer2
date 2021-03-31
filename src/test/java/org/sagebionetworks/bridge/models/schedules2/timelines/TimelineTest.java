@@ -42,17 +42,18 @@ public class TimelineTest extends Mockito {
         assertEquals(schNode.get("assessments")
                 .get(0).get("instanceGuid").textValue(), "1111111FFFFFF0BBBBAAAAAA");
         assertEquals(schNode.get("assessments")
-                .get(0).get("refKey").textValue(), "1687101757");
+                .get(0).get("refKey").textValue(), "1687197857");
         assertEquals(schNode.get("assessments")
                 .get(0).get("type").textValue(), "ScheduledAssessment");
         
         assertEquals(node.get("assessments").size(), 2);
-        JsonNode asmtNode = node.get("assessments").get(0);
+        JsonNode asmtNode = node.get("assessments").get(1);
         assertEquals(asmtNode.get("guid").textValue(), ASSESSMENT_1_GUID);
         assertEquals(asmtNode.get("appId").textValue(), "local");
         assertEquals(asmtNode.get("label").textValue(), "English");
         assertEquals(asmtNode.get("minutesToComplete").intValue(), 3);
-        assertEquals(asmtNode.get("key").textValue(), "1687101757");
+        assertEquals(asmtNode.get("key").textValue(), "1687197857");
+        assertEquals(asmtNode.get("revision").intValue(), 100);
         assertEquals(asmtNode.get("type").textValue(), "AssessmentInfo");
 
         assertEquals(node.get("sessions").size(), 1);

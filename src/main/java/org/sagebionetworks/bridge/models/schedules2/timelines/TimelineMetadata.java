@@ -30,6 +30,7 @@ public class TimelineMetadata implements BridgeEntity {
         copy.setAssessmentInstanceGuid(meta.getAssessmentInstanceGuid());
         copy.setAssessmentGuid(meta.getAssessmentGuid());
         copy.setAssessmentId(meta.getAssessmentId());
+        copy.setAssessmentRevision(meta.getAssessmentRevision());
         copy.setSessionInstanceGuid(meta.getSessionInstanceGuid());
         copy.setSessionGuid(meta.getSessionGuid());
         copy.setScheduleGuid(meta.getScheduleGuid());
@@ -49,6 +50,7 @@ public class TimelineMetadata implements BridgeEntity {
     private String assessmentInstanceGuid;
     private String assessmentGuid;
     private String assessmentId;
+    private Integer assessmentRevision;
     private String sessionInstanceGuid;
     private String sessionGuid;
     private String scheduleGuid;
@@ -88,6 +90,12 @@ public class TimelineMetadata implements BridgeEntity {
     }
     public void setAssessmentId(String assessmentId) {
         this.assessmentId = assessmentId;
+    }
+    public Integer getAssessmentRevision() {
+        return assessmentRevision;
+    }
+    public void setAssessmentRevision(Integer assessmentRevision) {
+        this.assessmentRevision = assessmentRevision;
     }
     public String getSessionInstanceGuid() {
         return sessionInstanceGuid;

@@ -12,7 +12,6 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.Period;
 
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
-import org.sagebionetworks.bridge.models.schedules2.Session;
 
 /**
  * The view of a schedule partially resolved for client apps, which the GUIDs that
@@ -95,25 +94,21 @@ public class Timeline {
             
             for (ScheduledAssessment schAsmt : session.getAssessments()) { 
                 TimelineMetadata schMeta = TimelineMetadata.copy(sessionMeta);
-                // could avoid this map lookup by including the information but
-                // excluding it from the json serialization.
-                AssessmentInfo info = assessments.get(schAsmt.getRefKey());
                 schMeta.setGuid(schAsmt.getInstanceGuid());
                 schMeta.setAssessmentInstanceGuid(schAsmt.getInstanceGuid());
-                schMeta.setAssessmentGuid(info.getGuid());
-                schMeta.setAssessmentId(info.getIdentifier());
+                schMeta.setAssessmentGuid(schAsmt.getReference().getGuid());
+                schMeta.setAssessmentId(schAsmt.getReference().getIdentifier());
+                schMeta.setAssessmentRevision(schAsmt.getReference().getRevision());
                 metadata.add(schMeta);    
             }
             return this;
         }
-        public Builder withAssessmentInfo(AssessmentInfo ref) {
-            this.assessments.put(ref.getKey(), ref);
+        public Builder withAssessmentInfo(AssessmentInfo asmtInfo) {
+            this.assessments.put(asmtInfo.getKey(), asmtInfo);
             return this;
         }
-        public Builder withSession(Session session) {
-            if (this.sessions.containsKey(session.getGuid())) {
-                this.sessions.put(session.getGuid(), SessionInfo.create(session));    
-            }
+        public Builder withSessionInfo(SessionInfo sessionInfo) {
+            this.sessions.put(sessionInfo.getGuid(), sessionInfo);    
             return this;
         }
         public Timeline build() {

@@ -17,6 +17,7 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(meta.getAssessmentInstanceGuid(), "assessmentInstanceGuid");
         assertEquals(meta.getAssessmentGuid(), "assessmentGuid");
         assertEquals(meta.getAssessmentId(), "assessmentId");
+        assertEquals(meta.getAssessmentRevision(), Integer.valueOf(7));
         assertEquals(meta.getSessionInstanceGuid(), "sessionInstanceGuid");
         assertEquals(meta.getSessionGuid(), "sessionGuid");
         assertEquals(meta.getScheduleGuid(), "scheduleGuid");
@@ -34,6 +35,7 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(copy.getAssessmentInstanceGuid(), "assessmentInstanceGuid");
         assertEquals(copy.getAssessmentGuid(), "assessmentGuid");
         assertEquals(copy.getAssessmentId(), "assessmentId");
+        assertEquals(copy.getAssessmentRevision(), Integer.valueOf(7));
         assertEquals(copy.getSessionInstanceGuid(), "sessionInstanceGuid");
         assertEquals(copy.getSessionGuid(), "sessionGuid");
         assertEquals(copy.getScheduleGuid(), "scheduleGuid");
@@ -49,6 +51,7 @@ public class TimelineMetadataTest extends Mockito {
         meta.setAssessmentInstanceGuid("assessmentInstanceGuid");
         meta.setAssessmentGuid("assessmentGuid");
         meta.setAssessmentId("assessmentId");
+        meta.setAssessmentRevision(7);
         meta.setSessionInstanceGuid("sessionInstanceGuid");
         meta.setSessionGuid("sessionGuid");
         meta.setScheduleGuid("scheduleGuid");

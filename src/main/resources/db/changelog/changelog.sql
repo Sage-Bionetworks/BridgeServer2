@@ -530,6 +530,7 @@ CREATE TABLE `TimelineMetadata` (
   `assessmentInstanceGuid` varchar(60),
   `assessmentGuid` varchar(60),
   `assessmentId` varchar(255),
+  `assessmentRevision` int(10) unsigned,
   `sessionInstanceGuid` varchar(60) NOT NULL,
   `sessionGuid` varchar(60) NOT NULL,
   `scheduleGuid` varchar(60) NOT NULL,
