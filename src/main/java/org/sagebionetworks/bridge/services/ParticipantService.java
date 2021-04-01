@@ -26,6 +26,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.SendMessageResult;
@@ -844,9 +846,10 @@ public class ParticipantService {
         return getParticipant(app, account.getId(), false);
     }
 
-    // TODO check that password matches these requirements:
-    // TODO at least 8 characters, at least 1 upper case, 1 lower case, and 1 number
-    public void downloadParticipantRoster(String appId, String userId, String password) throws JsonProcessingException {
+    public void downloadParticipantRoster(String appId, String userId, String password, String studyId) throws JsonProcessingException {
+        // password must contain at least 8 characters, 1 upper case, 1 lower case, and 1 number
+        checkPassword(password);
+
         ObjectMapper jsonObjectMapper = new ObjectMapper();
 
         // wrap message as nested json node
@@ -854,7 +857,7 @@ public class ParticipantService {
         requestNode.put(REQUEST_KEY_APP_ID, appId);
         requestNode.put(REQUEST_KEY_USER_ID, userId);
         requestNode.put(REQUEST_KEY_PASSWORD, password);
-        // requestNode.put(REQUEST_KEY_STUDY_ID, studyId); TODO stretch goal
+        requestNode.put(REQUEST_KEY_STUDY_ID, studyId);
 
         ObjectNode requestMsg = jsonObjectMapper.createObjectNode();
         requestMsg.put(REQUEST_KEY_SERVICE, DOWNLOAD_ROSTER_SERVICE_TITLE);
@@ -867,6 +870,18 @@ public class ParticipantService {
         SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJson);
         LOG.info("Sent request to SQS for userId=" + userId + ", app=" + appId +
                 "; receipted message ID=" + sqsResult.getMessageId());
+    }
+
+    private void checkPassword(String password) {
+        String regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,}$";
+
+        Pattern pattern = Pattern.compile(regex);
+        Matcher matcher = pattern.matcher(password);
+
+        if (!matcher.matches()) {
+            throw new BadRequestException("Password must contain at least 8 characters: " +
+                    "1 upper case letter, 1 lower case letter, and 1 number.");
+        }
     }
     
     private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {

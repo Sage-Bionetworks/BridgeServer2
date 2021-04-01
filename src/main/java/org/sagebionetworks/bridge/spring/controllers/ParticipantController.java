@@ -612,14 +612,15 @@ public class ParticipantController extends BaseController {
 
         StudyParticipant participant = session.getParticipant();
         if (!participant.getEmailVerified() && !participant.getPhoneVerified()) {
-            throw new BadRequestException("Cannot request user data, ");
+            throw new BadRequestException("Cannot request user data");
         }
 
         String password = parseJson(String.class); // TODO placeholder; this ain't right
-        participantService.downloadParticipantRoster(appId, session.getId(), password);
+        String studyId = parseJson(String.class);
+
+        participantService.downloadParticipantRoster(appId, session.getId(), password, studyId);
 
         return new StatusMessage("Download initiated.");
-        // TODO or return Download complete? More meaningful message
     }
     
     private JsonNode getParticipantsInternal(App app, String offsetByString, String pageSizeString,
