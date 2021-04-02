@@ -29,6 +29,7 @@ import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -615,8 +616,9 @@ public class ParticipantController extends BaseController {
             throw new BadRequestException("Cannot request user data");
         }
 
-        String password = parseJson(String.class); // TODO placeholder; this ain't right
-        String studyId = parseJson(String.class);
+        ParticipantRosterRequest request = parseJson(ParticipantRosterRequest.class);
+        String password = request.getPassword();
+        String studyId = request.getStudyId();
 
         participantService.downloadParticipantRoster(appId, session.getId(), password, studyId);
 
