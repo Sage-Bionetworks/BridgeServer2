@@ -1027,6 +1027,16 @@ public class BridgeUtilsTest {
         Label sel = BridgeUtils.selectByLang(items, langs, null);
         assertEquals(sel, LABEL_JA);
     }
+    
+    @Test
+    public void selectByLang_selectDespiteOrder() {
+        List<Label> items = ImmutableList.of(LABEL_JA, LABEL_ES);
+        
+        List<String> langs = ImmutableList.of("es", "ja");
+        
+        Label sel = BridgeUtils.selectByLang(items, langs, null);
+        assertEquals(sel, LABEL_ES);
+    }
 
     @Test
     public void selectByLang_selectEnglish() {

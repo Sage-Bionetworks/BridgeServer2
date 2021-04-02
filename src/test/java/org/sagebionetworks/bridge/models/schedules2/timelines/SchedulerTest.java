@@ -245,7 +245,7 @@ public class SchedulerTest extends Mockito {
         assertEquals(asmtInfo.getAppId(), TEST_APP_ID);
         assertEquals(asmtInfo.getIdentifier(), "assessment-1");
         assertEquals(asmtInfo.getLabel(), "Assessment 1");
-        assertEquals(asmtInfo.getKey(), String.valueOf(asmtInfo.hashCode()));
+        assertEquals(asmtInfo.getKey(), "932e4de6932e4de6");
     }
     
     @Test
@@ -382,25 +382,25 @@ public class SchedulerTest extends Mockito {
         
         assertEquals(timeline.getAssessments().size(), 6);
         
-        AssessmentInfo info1 = getByKey(timeline.getAssessments(), "-22258026");
+        AssessmentInfo info1 = getByKey(timeline.getAssessments(), "932e4de6932e4de6");
         assertEquals(info1.getGuid(), ASSESSMENT_1_GUID);
         
-        AssessmentInfo info2 = getByKey(timeline.getAssessments(), "-2061262605");
+        AssessmentInfo info2 = getByKey(timeline.getAssessments(), "5fa66c675fa66c67");
         assertEquals(info2.getGuid(), ASSESSMENT_2_GUID);
         assertNotNull(info2.getColorScheme());
 
-        AssessmentInfo info3 = getByKey(timeline.getAssessments(), "-253371881");
+        AssessmentInfo info3 = getByKey(timeline.getAssessments(), "24df134324df1343");
         assertEquals(info3.getGuid(), ASSESSMENT_3_GUID);
         assertEquals(info3.getLabel(), "English");
 
-        AssessmentInfo info4 = getByKey(timeline.getAssessments(), "573506708");
+        AssessmentInfo info4 = getByKey(timeline.getAssessments(), "fa3150eafa3150ea");
         assertEquals(info4.getGuid(), ASSESSMENT_2_GUID);
         assertNull(info4.getColorScheme());
         
-        AssessmentInfo info5 = getByKey(timeline.getAssessments(), "1765036176");
+        AssessmentInfo info5 = getByKey(timeline.getAssessments(), "75705eb175705eb1");
         assertEquals(info5.getGuid(), ASSESSMENT_4_GUID);
         
-        AssessmentInfo info6 = getByKey(timeline.getAssessments(), "1169271442");
+        AssessmentInfo info6 = getByKey(timeline.getAssessments(), "ae40875fae40875f");
         assertEquals(info6.getGuid(), ASSESSMENT_3_GUID);
         assertEquals(info6.getLabel(), "Assessment 3");
         
@@ -484,7 +484,7 @@ public class SchedulerTest extends Mockito {
         Timeline timeline = INSTANCE.calculateTimeline(schedule);
         assertEquals(timeline.getSchedule().size(), 1);
         assertDayRange(timeline, 0, 0, 0);
-        assertNull(timeline.getSchedule().get(0).getStartTime());
+        assertEquals(timeline.getSchedule().get(0).getStartTime(), LocalTime.parse("08:00"));
         assertEquals(timeline.getSchedule().get(0).getDelayTime(), Period.parse("PT6H"));
     }
     
@@ -695,14 +695,13 @@ public class SchedulerTest extends Mockito {
     public void sessionInstanceGuidsAreCorrect() {
         String guid = INSTANCE.generateSessionInstanceGuid(SCHEDULE_GUID, SESSION_GUID_1, SESSION_WINDOW_GUID_1, 3);
         // window guid, window occurrence, session guid, schedule guid
-        assertEquals(guid, "FFFFFFFF3BBBBBBBBAAAAAA");
+        assertEquals(guid, "4iov0SHEtt2MuKhS2KBMVg");
     }
     
     @Test
     public void assessmentInstanceGuidsAreCorrect() {
         String guid = INSTANCE.generateAssessmentInstanceGuid(SCHEDULE_GUID, SESSION_GUID_1, SESSION_WINDOW_GUID_1, 3, ASSESSMENT_1_GUID, 5);
-        // assessment guid, assessment occurence, window guid, window occurrence, session guid, schedule guid
-        assertEquals(guid, "1111115FFFFFF3BBBBAAAAAA");
+        assertEquals(guid, "iOzm0SlReeu5ex0q8cw1PQ");
     }
     
     @Test

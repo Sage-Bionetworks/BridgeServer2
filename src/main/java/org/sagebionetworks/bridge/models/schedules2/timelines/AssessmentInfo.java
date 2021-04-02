@@ -1,7 +1,13 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
+import static com.google.common.base.Charsets.UTF_8;
+
 import java.util.List;
 import java.util.Objects;
+
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
@@ -10,7 +16,11 @@ import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 
 public final class AssessmentInfo {
-
+    
+    private static final HashFunction HASHER = Hashing.concatenating(
+            Hashing.murmur3_32(), Hashing.murmur3_32());
+    
+    private final String key;
     private final String guid;
     private final String appId;
     private final String identifier;
@@ -25,12 +35,40 @@ public final class AssessmentInfo {
         Label label = BridgeUtils.selectByLang(ref.getLabels(), 
                 languages, new Label("", ref.getTitle()));
         
-        return new AssessmentInfo(ref.getGuid(), ref.getAppId(), ref.getIdentifier(), ref.getRevision(),
-                label.getValue(), ref.getMinutesToComplete(), ref.getColorScheme());
+        // This generates a hash that designed to avoid collisions, unlike e.g. 
+        // hashCode() which doesn’t (not its purpose).
+        Hasher hc = HASHER.newHasher();
+        hashValue(hc, ref.getGuid());
+        hashValue(hc, ref.getAppId());
+        hashValue(hc, ref.getIdentifier());
+        hashValue(hc, label.getValue());
+        hashValue(hc, ref.getRevision());
+        hashValue(hc, ref.getMinutesToComplete());
+        if (ref.getColorScheme() != null) {
+            ColorScheme cs = ref.getColorScheme();
+            hashValue(hc, cs.getBackground());
+            hashValue(hc, cs.getForeground());
+            hashValue(hc, cs.getActivated());
+            hashValue(hc, cs.getInactivated());
+        }
+        String hash = hc.hash().toString();
+        return new AssessmentInfo(hash, ref.getGuid(), ref.getAppId(), ref.getIdentifier(),
+                ref.getRevision(), label.getValue(), ref.getMinutesToComplete(), ref.getColorScheme());
+    }
+    private static void hashValue(Hasher hc, String value) {
+        if (value != null) {
+            hc.putString(value, UTF_8);
+        }
+    }
+    private static void hashValue(Hasher hc, Integer value) {
+        if (value != null) {
+            hc.putInt(value);
+        }
     }
     
-    private AssessmentInfo(String guid, String appId, String identifier, Integer revision, String label,
+    private AssessmentInfo(String key, String guid, String appId, String identifier, Integer revision, String label,
             Integer minutesToComplete, ColorScheme colorScheme) {
+        this.key = key;
         this.guid = guid;
         this.appId = appId;
         this.identifier = identifier;
@@ -41,7 +79,7 @@ public final class AssessmentInfo {
     }
     
     public String getKey() {
-        return String.valueOf(this.hashCode());
+        return key;
     }
     
     public String getGuid() {

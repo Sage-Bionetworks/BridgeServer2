@@ -32,7 +32,7 @@ public class TimelineTest extends Mockito {
         assertEquals(node.get("schedule").size(), 2);
         JsonNode schNode = node.get("schedule").get(0);
         assertEquals(schNode.get("refGuid").textValue(), SESSION_GUID_1);
-        assertEquals(schNode.get("instanceGuid").textValue(), "FFFFFFFF0BBBBBBBBAAAAAA");
+        assertEquals(schNode.get("instanceGuid").textValue(), "So3SXnQm0sIt9vVIqj814Q");
         assertEquals(schNode.get("startDay").intValue(), 7);
         assertEquals(schNode.get("endDay").intValue(), 13);
         assertEquals(schNode.get("startTime").textValue(), "08:00");
@@ -40,19 +40,19 @@ public class TimelineTest extends Mockito {
         assertTrue(schNode.get("persistent").booleanValue());
         assertEquals(schNode.get("type").textValue(), "ScheduledSession");
         assertEquals(schNode.get("assessments")
-                .get(0).get("instanceGuid").textValue(), "1111111FFFFFF0BBBBAAAAAA");
+                .get(0).get("instanceGuid").textValue(), "ZBi2x9clKyYLrPcHNqpjmA");
         assertEquals(schNode.get("assessments")
-                .get(0).get("refKey").textValue(), "1687197857");
+                .get(0).get("refKey").textValue(), "8ab3cb798ab3cb79");
         assertEquals(schNode.get("assessments")
                 .get(0).get("type").textValue(), "ScheduledAssessment");
         
         assertEquals(node.get("assessments").size(), 2);
-        JsonNode asmtNode = node.get("assessments").get(1);
+        JsonNode asmtNode = node.get("assessments").get(0);
         assertEquals(asmtNode.get("guid").textValue(), ASSESSMENT_1_GUID);
         assertEquals(asmtNode.get("appId").textValue(), "local");
         assertEquals(asmtNode.get("label").textValue(), "English");
         assertEquals(asmtNode.get("minutesToComplete").intValue(), 3);
-        assertEquals(asmtNode.get("key").textValue(), "1687197857");
+        assertEquals(asmtNode.get("key").textValue(), "8ab3cb798ab3cb79");
         assertEquals(asmtNode.get("revision").intValue(), 100);
         assertEquals(asmtNode.get("type").textValue(), "AssessmentInfo");
 

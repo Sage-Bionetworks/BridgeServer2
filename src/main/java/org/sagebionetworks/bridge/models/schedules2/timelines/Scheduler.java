@@ -2,11 +2,16 @@ package org.sagebionetworks.bridge.models.schedules2.timelines;
 
 import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
+import static org.sagebionetworks.bridge.BridgeUtils.ENCODER;
 
 import java.util.List;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
+import com.google.common.hash.HashFunction;
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
 
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
@@ -20,6 +25,8 @@ import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 public class Scheduler {
     
     public static final Scheduler INSTANCE = new Scheduler();
+    
+    private static final HashFunction HASHER = Hashing.murmur3_128();
     
     private Scheduler() {}
     
@@ -99,11 +106,13 @@ public class Scheduler {
             scheduledSession.withStartTime(window.getStartTime());
             scheduledSession.withExpiration(window.getExpiration());
             scheduledSession.withPersistent(window.isPersistent());
-            // If we have a delay under one day, and it's the first day, then skip the startTime 
-            // and delay for the indicated time before showing.
+            // If it is the first day, and there is a delay set that is less than a day,
+            // it’s not entirely defined what should happen in this situation. We include
+            // the delay value so the client can try and wait the delay period before 
+            // presenting the scheduled session to the user. But this is not 
+            // mandatory.
             if (startDay == 0 && delay != null && delay.toStandardDays().getDays() == 0) {
                 scheduledSession.withDelayTime(delay);
-                scheduledSession.withStartTime(null);
             }
             
             String sessionInstanceGuid = generateSessionInstanceGuid(
@@ -141,8 +150,12 @@ public class Scheduler {
      */
     String generateSessionInstanceGuid(String scheduleGuid, String sessionGuid, String windowGuid,
             int windowOccurrence) {
-        return windowGuid.substring(0, 8) + Integer.toHexString(windowOccurrence) 
-            + sessionGuid.substring(0, 8) + scheduleGuid.substring(0, 6);
+        Hasher hc = HASHER.newHasher();
+        hc.putString(windowGuid, Charsets.UTF_8);
+        hc.putInt(windowOccurrence);
+        hc.putString(sessionGuid, Charsets.UTF_8);
+        hc.putString(scheduleGuid, Charsets.UTF_8);
+        return ENCODER.encodeToString(hc.hash().asBytes());
     }
 
     /**
@@ -151,9 +164,14 @@ public class Scheduler {
      * have (in the past) parsed compound identifiers, and we want to discourage this.
      */
     String generateAssessmentInstanceGuid(String scheduleGuid, String sessionGuid, String windowGuid,
-            int windowOccurrence, String assessmentGuid, int assessmentOcccurrence) {
-        return assessmentGuid.substring(0, 6) + Integer.toHexString(assessmentOcccurrence) 
-            + windowGuid.substring(0, 6) + Integer.toHexString(windowOccurrence) 
-            + sessionGuid.substring(0, 4) + scheduleGuid.substring(0, 6);
+            int windowOccurrence, String assessmentGuid, int assessmentOccurrence) {
+        Hasher hc = HASHER.newHasher();
+        hc.putString(assessmentGuid, Charsets.UTF_8);
+        hc.putInt(assessmentOccurrence);
+        hc.putString(windowGuid, Charsets.UTF_8);
+        hc.putInt(windowOccurrence);
+        hc.putString(sessionGuid, Charsets.UTF_8);
+        hc.putString(scheduleGuid, Charsets.UTF_8);
+        return ENCODER.encodeToString(hc.hash().asBytes());
     }
 }

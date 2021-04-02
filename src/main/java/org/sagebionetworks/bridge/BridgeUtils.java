@@ -107,7 +107,7 @@ public class BridgeUtils {
     private static final int ONE_DAY = 60*60*24;
     private static final int ONE_MINUTE = 60;
     
-    private static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
+    public static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final StudyAssociations NO_ASSOCIATIONS = new StudyAssociations(ImmutableSet.of(),
             ImmutableMap.of());
@@ -324,7 +324,7 @@ public class BridgeUtils {
         // still being shorter than the prior implementation. 
         byte[] buffer = new byte[18];
         SECURE_RANDOM.nextBytes(buffer);
-            return ENCODER.encodeToString(buffer);
+        return ENCODER.encodeToString(buffer);
     }
     
     /** Generate a random 16-byte salt, using a {@link SecureRandom}. */
@@ -746,17 +746,18 @@ public class BridgeUtils {
         if (languages == null) {
             languages = ImmutableList.of();
         }
-        T englishItem = null;
-        for (T item : items) {
-            for (String lang : languages) {
+        for (String lang : languages) {
+            for (T item : items) {
                 if (lang.equalsIgnoreCase(item.getLang())) {
                     return item;
                 }
             }
+        }
+        for (T item : items) {
             if ("en".equalsIgnoreCase(item.getLang())) {
-                englishItem = item;
+                return item;
             }
         }
-        return (englishItem == null) ? defaultValue : englishItem;
+        return defaultValue;
     }
 }

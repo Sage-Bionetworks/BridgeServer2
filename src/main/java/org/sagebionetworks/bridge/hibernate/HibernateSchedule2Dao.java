@@ -128,25 +128,23 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
 
             session.save(schedule);
 
-            if (!metadata.isEmpty()) {
-                Stopwatch stopwatch = Stopwatch.createStarted();
-                // Batch deleting/recreating rather than updating is 2-3 orders of magnitude faster.
-                NativeQuery<?> query = session.createNativeQuery(DELETE_TIMELINE_RECORDS);
-                query.setParameter(SCHEDULE_GUID, schedule.getGuid());
-                query.executeUpdate();
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            // Batch deleting/recreating rather than updating is 2-3 orders of magnitude faster.
+            NativeQuery<?> query = session.createNativeQuery(DELETE_TIMELINE_RECORDS);
+            query.setParameter(SCHEDULE_GUID, schedule.getGuid());
+            query.executeUpdate();
 
-                for (int i = 0, len = metadata.size(); i < len; i++) {
-                    TimelineMetadata meta = metadata.get(i);
-                    session.save(meta);
-                    if (i > 0 && (i % batchSize) == 0) {
-                        session.flush();
-                        session.clear();
-                    }
+            for (int i = 0, len = metadata.size(); i < len; i++) {
+                TimelineMetadata meta = metadata.get(i);
+                session.save(meta);
+                if (i > 0 && (i % batchSize) == 0) {
+                    session.flush();
+                    session.clear();
                 }
-                stopwatch.stop();
-                LOG.info("Persisting " + metadata.size() + " timeline metadata records in "
-                        + stopwatch.elapsed(MILLISECONDS) + " ms (batchSize = " + batchSize + ")");
             }
+            stopwatch.stop();
+            LOG.info("Persisting " + metadata.size() + " timeline metadata records in "
+                    + stopwatch.elapsed(MILLISECONDS) + " ms (batchSize = " + batchSize + ")");
 
             return null;
         });
@@ -182,26 +180,25 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
 
             session.update(schedule);
 
-            if (!metadata.isEmpty()) {
-                Stopwatch stopwatch = Stopwatch.createStarted();
-                
-                // Batch deleting/recreating rather than updating is 2-3 orders of magnitude faster.
-                query = session.createNativeQuery(DELETE_TIMELINE_RECORDS);
-                query.setParameter(SCHEDULE_GUID, schedule.getGuid());
-                query.executeUpdate();
-                // Create a new set of records
-                for (int i = 0, len = metadata.size(); i < len; i++) {
-                    TimelineMetadata meta = metadata.get(i);
-                    session.save(meta);
-                    if (i > 0 && (i % batchSize) == 0) {
-                        session.flush();
-                        session.clear();
-                    }
+            Stopwatch stopwatch = Stopwatch.createStarted();
+            
+            // Batch deleting/recreating rather than updating is 2-3 orders of magnitude faster.
+            query = session.createNativeQuery(DELETE_TIMELINE_RECORDS);
+            query.setParameter(SCHEDULE_GUID, schedule.getGuid());
+            query.executeUpdate();
+            // Create a new set of records
+            for (int i = 0, len = metadata.size(); i < len; i++) {
+                TimelineMetadata meta = metadata.get(i);
+                session.save(meta);
+                if (i > 0 && (i % batchSize) == 0) {
+                    session.flush();
+                    session.clear();
                 }
-                stopwatch.stop();
-                LOG.info("Persisting " + metadata.size() + " timeline metadata records in "
-                        + stopwatch.elapsed(MILLISECONDS) + " ms (batchSize = " + batchSize + ")");
             }
+            stopwatch.stop();
+            LOG.info("Persisting " + metadata.size() + " timeline metadata records in "
+                    + stopwatch.elapsed(MILLISECONDS) + " ms (batchSize = " + batchSize + ")");
+
             return null;
         });
         return schedule;

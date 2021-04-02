@@ -20,7 +20,8 @@ public class AssessmentInfoTest extends Mockito {
     
     @Test
     public void equalsHashCode() {
-        EqualsVerifier.forClass(AssessmentInfo.class).allFieldsShouldBeUsed().verify();
+        EqualsVerifier.forClass(AssessmentInfo.class)
+            .allFieldsShouldBeUsedExcept("key").verify();
     }
     
     @Test
@@ -44,7 +45,7 @@ public class AssessmentInfoTest extends Mockito {
         assertEquals(node.get("revision").intValue(), 5);
         assertEquals(node.get("label").textValue(), "English");
         assertEquals(node.get("minutesToComplete").intValue(), 10);
-        assertEquals(node.get("key").textValue(), "595819107");
+        assertEquals(node.get("key").textValue(), "b380003bb380003b");
         assertEquals(node.get("type").textValue(), "AssessmentInfo");
         assertEquals(node.get("colorScheme").get("background").textValue(), "#111111");
         assertEquals(node.get("colorScheme").get("foreground").textValue(), "#222222");
@@ -61,7 +62,7 @@ public class AssessmentInfoTest extends Mockito {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
         assertEquals(node.size(), 2);
-        assertEquals(node.get("key").textValue(), "1742810335");
+        assertEquals(node.get("key").textValue(), "0000000000000000");
         assertEquals(node.get("type").textValue(), "AssessmentInfo");
     }
 }

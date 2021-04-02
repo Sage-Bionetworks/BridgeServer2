@@ -141,7 +141,6 @@ public class AuthUtils {
      */
     public static final AuthEvaluator CAN_READ_SCHEDULES = new AuthEvaluator()
             .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
-            .isEnrolledInStudy().or()
             .hasAnyRole(DEVELOPER, ADMIN);
 
     /**

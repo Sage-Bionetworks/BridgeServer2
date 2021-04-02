@@ -225,6 +225,7 @@ public class HibernateSchedule2DaoTest extends Mockito {
         assertEquals(retValue, schedule);
         
         verify(mockSession).setJdbcBatchSize(10);
+        verify(mockSession).createNativeQuery(DELETE_TIMELINE_RECORDS);
         verify(mockSession).save(schedule);
         verify(mockQuery).setParameter(HibernateSchedule2Dao.SCHEDULE_GUID, TestConstants.SCHEDULE_GUID);
         verify(mockQuery).executeUpdate();
@@ -263,10 +264,10 @@ public class HibernateSchedule2DaoTest extends Mockito {
         Schedule2 retValue = dao.updateSchedule(schedule);
         assertEquals(retValue, schedule);
         
-        verify(mockSession).createNativeQuery(queryCaptor.capture());
-        assertEquals(queryCaptor.getValue(), DELETE_SESSIONS);
+        verify(mockSession).createNativeQuery(DELETE_TIMELINE_RECORDS);
+        verify(mockSession).createNativeQuery(DELETE_SESSIONS);
         verify(mockQuery).setParameter("guid", "ScheduleGuid");
-        verify(mockQuery).executeUpdate();
+        verify(mockQuery, times(2)).executeUpdate();
         verify(mockSession).update(schedule);
     }
     
