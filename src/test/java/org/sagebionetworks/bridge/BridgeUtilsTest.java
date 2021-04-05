@@ -31,6 +31,7 @@ import java.util.Set;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -46,6 +47,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -63,6 +65,10 @@ import com.google.common.collect.Sets;
 
 public class BridgeUtilsTest {
     
+    private static final Label LABEL_HI = new Label("hi", "Hindi");
+    private static final Label LABEL_EN = new Label("en", "English");
+    private static final Label LABEL_JA = new Label("ja", "Japanese");
+    private static final Label LABEL_ES = new Label("es", "Spanish");
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
     
     @AfterMethod
@@ -1010,6 +1016,72 @@ public class BridgeUtilsTest {
     public void formatActivityEventIdNull() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), null);
         assertNull(retValue);
+    }
+    
+    @Test
+    public void selectByLang_selectPreferredLanguage() {
+        List<Label> items = ImmutableList.of(LABEL_ES, LABEL_JA);
+        
+        List<String> langs = ImmutableList.of("hi", "ja");
+        
+        Label sel = BridgeUtils.selectByLang(items, langs, null);
+        assertEquals(sel, LABEL_JA);
+    }
+    
+    @Test
+    public void selectByLang_selectDespiteOrder() {
+        List<Label> items = ImmutableList.of(LABEL_JA, LABEL_ES);
+        
+        List<String> langs = ImmutableList.of("es", "ja");
+        
+        Label sel = BridgeUtils.selectByLang(items, langs, null);
+        assertEquals(sel, LABEL_ES);
+    }
+
+    @Test
+    public void selectByLang_selectEnglish() {
+        List<Label> items = ImmutableList.of(LABEL_ES, LABEL_EN);
+        
+        List<String> langs = ImmutableList.of("hi", "ja");
+        
+        Label sel = BridgeUtils.selectByLang(items, langs, null);
+        assertEquals(sel, LABEL_EN);
+    }
+    
+    @Test
+    public void selectByLang_selectDefault() {
+        List<Label> items = ImmutableList.of(LABEL_ES, LABEL_JA);
+        
+        List<String> langs = ImmutableList.of("de");
+        
+        Label sel = BridgeUtils.selectByLang(items, langs, LABEL_HI);
+        assertEquals(sel, LABEL_HI);
+    }
+    
+    @Test
+    public void selectByLang_noLangsSelectPreferredLanguage() {
+        List<Label> items = ImmutableList.of(LABEL_ES, LABEL_JA);
+        
+        // There's no English language version, and no default, so null
+        // is correctly returned.
+        Label sel = BridgeUtils.selectByLang(items, null, null);
+        assertNull(sel);
+    }
+
+    @Test
+    public void selectByLang_noLangsSelectEnglish() {
+        List<Label> items = ImmutableList.of(LABEL_ES, LABEL_EN);
+        
+        Label sel = BridgeUtils.selectByLang(items, null, null);
+        assertEquals(sel, LABEL_EN);
+    }
+    
+    @Test
+    public void selectByLang_noLangsSelectDefault() {
+        List<Label> items = ImmutableList.of(LABEL_ES, LABEL_JA);
+        
+        Label sel = BridgeUtils.selectByLang(items, null, LABEL_HI);
+        assertEquals(sel, LABEL_HI);
     }
 
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

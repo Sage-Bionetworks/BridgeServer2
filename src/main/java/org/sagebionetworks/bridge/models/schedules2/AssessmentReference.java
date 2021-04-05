@@ -29,6 +29,7 @@ public class AssessmentReference {
     private String guid;
     private String appId;
     private String identifier;
+    private Integer revision;
     private String title;
     @Convert(converter = LabelListConverter.class)
     private List<Label> labels;
@@ -53,6 +54,12 @@ public class AssessmentReference {
     }
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
+    }
+    public Integer getRevision() {
+        return revision;
+    }
+    public void setRevision(Integer revision) {
+        this.revision = revision;
     }
     public String getTitle() {
         return title;

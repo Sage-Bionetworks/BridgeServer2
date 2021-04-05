@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.services.Schedule2Service;
 
 @CrossOrigin
@@ -70,6 +71,16 @@ public class Schedule2Controller extends BaseController {
         UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         
         return service.getSchedule(session.getAppId(), guid);
+    }
+    
+    @GetMapping("/v5/schedules/{guid}/timeline")
+    public Timeline getTimelineForSchedule(@PathVariable String guid) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
+        
+        // when schedules are associated to studies, we’ll verify that a consented
+        // user is enrolled in a study that uses this timeline.
+        
+        return service.getTimelineForSchedule(session.getAppId(), guid);
     }
     
     @PostMapping("/v5/schedules/{guid}")

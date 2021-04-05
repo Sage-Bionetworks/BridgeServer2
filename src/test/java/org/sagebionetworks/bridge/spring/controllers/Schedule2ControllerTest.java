@@ -273,4 +273,10 @@ public class Schedule2ControllerTest extends Mockito {
         verify(mockService).deleteSchedule(TEST_APP_ID, GUID);
     }
     
+    @Test
+    public void getTimelineForSchedule() { 
+        controller.getTimelineForSchedule(GUID);
+        verify(mockService).getTimelineForSchedule(TEST_APP_ID, GUID);
+    }
+    
 }

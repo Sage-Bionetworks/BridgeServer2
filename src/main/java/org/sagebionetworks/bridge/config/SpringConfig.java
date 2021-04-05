@@ -128,6 +128,7 @@ import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.organizations.HibernateOrganization;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
@@ -634,6 +635,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(Schedule2.class);
         metadataSources.addAnnotatedClass(Session.class);
         metadataSources.addAnnotatedClass(Tag.class);
+        metadataSources.addAnnotatedClass(TimelineMetadata.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
         

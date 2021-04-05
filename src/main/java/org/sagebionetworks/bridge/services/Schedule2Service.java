@@ -37,6 +37,8 @@ import org.sagebionetworks.bridge.models.schedules2.HasGuid;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
@@ -271,11 +273,19 @@ public class Schedule2Service {
         dao.deleteSchedulePermanently(existing);
     }
     
+    public Timeline getTimelineForSchedule(String appId, String guid) {
+        Schedule2 schedule = dao.getSchedule(appId, guid)
+                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
+        
+        // This is calculated so quickly it is not worth caching
+        return Scheduler.INSTANCE.calculateTimeline(schedule);
+    }
+    
     /**
      * Set GUIDs on objects that don't have them; clean up event keys or set
      * them to null if they're not valid, so they will fail validation.
      */
-    public void preValidationCleanup(App app, Schedule2 schedule, Consumer<HasGuid> consumer) {
+    void preValidationCleanup(App app, Schedule2 schedule, Consumer<HasGuid> consumer) {
         checkNotNull(app);
         checkNotNull(schedule);
         

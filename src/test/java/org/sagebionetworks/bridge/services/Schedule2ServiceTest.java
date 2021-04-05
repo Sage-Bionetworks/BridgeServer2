@@ -8,11 +8,15 @@ import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestUtils.getClientData;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
@@ -48,6 +52,7 @@ import org.sagebionetworks.bridge.models.schedules2.Schedule2Test;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 
 public class Schedule2ServiceTest extends Mockito {
     
@@ -661,7 +666,7 @@ public class Schedule2ServiceTest extends Mockito {
     }
     
     @Test
-    public void setsBlankGuidsOnUpdate() {
+    public void setsBlankGuidsOnUpdate() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
@@ -677,7 +682,7 @@ public class Schedule2ServiceTest extends Mockito {
         existing.setAppId(TEST_APP_ID);
         existing.setOwnerId(TEST_ORG_ID);
         existing.setCreatedOn(CREATED_ON);
-        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
+        when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(existing));
 
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         
@@ -701,10 +706,47 @@ public class Schedule2ServiceTest extends Mockito {
         
         service.updateSchedule(schedule);
         
-        assertEquals(schedule.getSessions().get(0).getGuid(), GUID);
-        assertEquals(schedule.getSessions().get(0).getTimeWindows().get(0).getGuid(), GUID);
+        assertEquals(schedule.getSessions().get(0).getGuid(), SESSION_GUID_1);
+        assertEquals(schedule.getSessions().get(0).getTimeWindows().get(0).getGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(schedule.getSessions().get(0).getTimeWindows().get(1).getGuid(), "otherGuid");
         assertEquals(schedule.getSessions().get(1).getGuid(), "otherGuid");
-        assertEquals(schedule.getSessions().get(1).getTimeWindows().get(0).getGuid(), GUID);
+        assertEquals(schedule.getSessions().get(1).getTimeWindows().get(0).getGuid(), SESSION_WINDOW_GUID_1);
+    }
+    
+    @Test
+    public void getTimelineForScheduleNoPersistence() {
+        Schedule2 schedule = new Schedule2();
+        schedule.setModifiedOn(MODIFIED_ON);
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
+        
+        Timeline timeline = service.getTimelineForSchedule(TEST_APP_ID, GUID);
+        assertNotNull(timeline);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getTimelineForScheduleScheduleNotFound() {
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
+        
+        service.getTimelineForSchedule(TEST_APP_ID, GUID);
+    }
+    
+    @Test
+    public void getTimelineForSchedulePersistenceWhenNoRecords() {
+        Schedule2 schedule = new Schedule2();
+        schedule.setModifiedOn(MODIFIED_ON);
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
+        
+        Timeline timeline = service.getTimelineForSchedule(TEST_APP_ID, GUID);
+        assertNotNull(timeline);
+    }
+
+    @Test
+    public void getTimelineForSchedulePersistenceWhenRecordsOutOfDate() {
+        Schedule2 schedule = new Schedule2();
+        schedule.setModifiedOn(MODIFIED_ON);
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
+        
+        Timeline timeline = service.getTimelineForSchedule(TEST_APP_ID, GUID);
+        assertNotNull(timeline);
     }
 }

@@ -203,4 +203,21 @@ public class TestConstants {
     public static final List<NotificationMessage> MESSAGES = ImmutableList.of(
             new NotificationMessage.Builder().withLang("en").withSubject("English").withMessage("Body").build(),
             new NotificationMessage.Builder().withLang("fr").withSubject("French").withMessage("Body").build());
+    
+    public static final String SCHEDULE_GUID = "AAAAAAAAAAAAAAAAAAAAAAAA";
+
+    public static final String SESSION_GUID_1 = "BBBBBBBBBBBBBBBBBBBBBBBB";
+    public static final String SESSION_GUID_2 = "CCCCCCCCCCCCCCCCCCCCCCCC";
+    public static final String SESSION_GUID_3 = "DDDDDDDDDDDDDDDDDDDDDDDD";
+    public static final String SESSION_GUID_4 = "EEEEEEEEEEEEEEEEEEEEEEEE";
+    
+    public static final String SESSION_WINDOW_GUID_1 = "FFFFFFFFFFFFFFFFFFFFFFFF";
+    public static final String SESSION_WINDOW_GUID_2 = "GGGGGGGGGGGGGGGGGGGGGGGG";
+    public static final String SESSION_WINDOW_GUID_3 = "HHHHHHHHHHHHHHHHHHHHHHHH";
+    public static final String SESSION_WINDOW_GUID_4 = "IIIIIIIIIIIIIIIIIIIIIIII";
+    
+    public static final String ASSESSMENT_1_GUID = "111111111111111111111111";
+    public static final String ASSESSMENT_2_GUID = "222222222222222222222222";
+    public static final String ASSESSMENT_3_GUID = "333333333333333333333333";
+    public static final String ASSESSMENT_4_GUID = "444444444444444444444444";
 }

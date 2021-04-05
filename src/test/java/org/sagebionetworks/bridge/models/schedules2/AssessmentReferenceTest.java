@@ -23,6 +23,8 @@ public class AssessmentReferenceTest {
         ref.setGuid(GUID);
         ref.setAppId("shared");
         ref.setTitle("Title");
+        ref.setIdentifier("identifier");
+        ref.setRevision(5);
         ref.setMinutesToComplete(10);
         ref.setLabels(LABELS);
         ref.setColorScheme(scheme);
@@ -31,7 +33,10 @@ public class AssessmentReferenceTest {
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("appId").textValue(), "shared");
         assertEquals(node.get("title").textValue(), "Title");
+        assertEquals(node.get("identifier").textValue(), "identifier");
+        assertEquals(node.get("revision").intValue(), 5);
         assertEquals(node.get("minutesToComplete").intValue(), 10);
+        
         assertEquals(node.get("colorScheme").get("background").textValue(), "#111111");
         assertEquals(node.get("colorScheme").get("foreground").textValue(), "#222222");
         assertEquals(node.get("colorScheme").get("activated").textValue(), "#333333");
