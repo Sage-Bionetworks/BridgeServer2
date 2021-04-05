@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyDetail;
 import org.sagebionetworks.bridge.services.StudyService;
 
 @CrossOrigin
@@ -67,7 +68,7 @@ public class StudyController extends BaseController {
     }
 
     @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
-    public Study getStudy(@PathVariable String id) {
+    public StudyDetail getStudy(@PathVariable String id) {
         UserSession session = getAdministrativeSession();
         
         CAN_READ_STUDIES.checkAndThrow(STUDY_ID, id);

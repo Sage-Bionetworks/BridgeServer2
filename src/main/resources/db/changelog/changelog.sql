@@ -519,3 +519,43 @@ CREATE TABLE `SessionAssessments` (
   CONSTRAINT `AssessmentRef-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE,
   CONSTRAINT `AssessmentRef-Assessment-Constraint` FOREIGN KEY (`guid`) REFERENCES `Assessments` (`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:28
+
+ALTER TABLE `Substudies`
+ADD COLUMN `details` varchar(510) DEFAULT NULL,
+ADD COLUMN `launchedOn` bigint(20) DEFAULT NULL,
+ADD COLUMN `launchedBy` varchar(255) DEFAULT NULL,
+ADD COLUMN `closeoutOn` bigint(20) DEFAULT NULL,
+ADD COLUMN `closeoutBy` varchar(255) DEFAULT NULL,
+ADD COLUMN `createdBy` varchar(255) DEFAULT NULL,
+ADD COLUMN `modifiedBy` varchar(255) DEFAULT NULL,
+ADD COLUMN `studyLogoUrl` varchar(255) DEFAULT NULL,
+ADD COLUMN `colorScheme` text DEFAULT NULL,
+ADD COLUMN `externalProtocolId` varchar(255) DEFAULT NULL,
+ADD COLUMN `irbProtocolId` varchar(255) DEFAULT NULL,
+ADD COLUMN `irbApprovedOn` bigint(20) DEFAULT NULL,
+ADD COLUMN `scheduleGuid` varchar(255) DEFAULT NULL;
+
+CREATE TABLE `StudyContacts` (
+  `appId` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `role` enum('IRB','PRINCIPAL_INVESTIGATOR','INVESTIGATOR','SPONSOR','SUPPORT') NOT NULL,
+  `position` varchar(255),
+  `affiliation` varchar(255),
+  `jurisdiction` varchar(255),
+  `email` varchar(255),
+  `phone` varchar(20),
+  `phoneRegion` varchar(2),
+  `placeName` varchar(255),
+  `street` varchar(255),
+  `mailRouting` varchar(255),
+  `city` varchar(255),
+  `state` varchar(255),
+  `postalCode` varchar(50),
+  `country` varchar(255),
+  `pos` int(10) signed,
+  PRIMARY KEY (`appId`, `studyId`, `name`),
+  CONSTRAINT `StudyContact-Study-Constraint` FOREIGN KEY (`studyId`,`appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

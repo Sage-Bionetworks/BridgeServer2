@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ASSESSMENTS;
+import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAIL;
 
 import java.util.Map;
 import java.util.Optional;
@@ -18,14 +19,12 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.organizations.Organization;
-import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyDetail;
 import org.sagebionetworks.bridge.services.OrganizationService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 public class StudyParticipantValidator implements Validator {
 
-    // see https://owasp.org/www-community/OWASP_Validation_Regex_Repository
-    private static final String OWASP_REGEXP_VALID_EMAIL = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
     private final StudyService studyService;
     private final OrganizationService organizationService;
     private final App app;
@@ -97,7 +96,7 @@ public class StudyParticipantValidator implements Validator {
                 for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
                     String studyId = entry.getKey();
                     String externalId = entry.getValue();
-                    Study study = studyService.getStudy(app.getIdentifier(), studyId, false);
+                    StudyDetail study = studyService.getStudy(app.getIdentifier(), studyId, false);
                     if (study == null) {
                         errors.rejectValue("externalIds["+studyId+"]", "is not a study");
                     }

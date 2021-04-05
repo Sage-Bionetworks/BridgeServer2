@@ -19,6 +19,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -31,6 +32,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.apps.App;
 
@@ -39,6 +41,10 @@ import org.sagebionetworks.bridge.models.apps.App;
 public class HibernateAccountDao implements AccountDao {
     
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
+    
+    static final String REF_QUERY = "SELECT new org.sagebionetworks.bridge.hibernate.HibernateAccount("
+            + "a.firstName, a.lastName, a.email, a.phone, a.synapseUserId, a.orgMembership, a.id) FROM "
+            + "org.sagebionetworks.bridge.hibernate.HibernateAccount a WHERE a.appId = :appId AND a.id = :id";
 
     static final String ID_QUERY = "SELECT acct.id FROM HibernateAccount AS acct";
     
@@ -113,6 +119,19 @@ public class HibernateAccountDao implements AccountDao {
             account.setVersion(updated.getVersion());
         }
         return Optional.of(account);
+    }
+    
+    @Override
+    public AccountRef getAccountRef(String appId, String userId) {
+        if (userId == null) {
+            return null;
+        }
+        List<HibernateAccount> accounts = hibernateHelper.queryGet(REF_QUERY, 
+                ImmutableMap.of("appId", appId, "id", userId), null, 1, HibernateAccount.class);
+        if (accounts.isEmpty()) {
+            return null;
+        }
+        return new AccountRef(accounts.get(0));
     }
     
     QueryBuilder makeQuery(String prefix, String appId, AccountId accountId, AccountSummarySearch search, boolean isCount) {

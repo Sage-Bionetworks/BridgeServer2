@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.apps.App;
 
@@ -58,4 +59,11 @@ public interface AccountDao {
      *      paging parameters.
      */
     PagedResourceList<AccountSummary> getPagedAccountSummaries(String appId, AccountSummarySearch search);
+    
+    /**
+     * Retrieve a more minimal account representation that can be supplied for fields that describe
+     * an actor (with the standard naming convention of “actionBy” and usually accompanied with 
+     * a timestamp, “actionOn”. Returns null if the account no longer exists.
+     */
+    AccountRef getAccountRef(String appId, String userId);
 }    

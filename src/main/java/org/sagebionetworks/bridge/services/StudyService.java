@@ -11,11 +11,13 @@ import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 
+import java.util.Optional;
 import java.util.Set;
 
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -23,6 +25,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyDetail;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,6 +40,8 @@ public class StudyService {
     
     private SponsorService sponsorService;
     
+    private AccountDao accountDao;
+    
     @Autowired
     final void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
@@ -47,15 +52,28 @@ public class StudyService {
         this.sponsorService = sponsorService;
     }
     
-    public Study getStudy(String appId, String studyId, boolean throwsException) {
+    @Autowired
+    final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
+    }
+    
+    public StudyDetail getStudy(String appId, String studyId, boolean throwsException) {
         checkNotNull(appId);
         checkNotNull(studyId);
         
-        Study study = studyDao.getStudy(appId, studyId);
-        if (throwsException && study == null) {
+        Optional<Study> opt = studyDao.getStudy(appId, studyId);
+        if (throwsException && !opt.isPresent()) {
             throw new EntityNotFoundException(Study.class);
         }
-        return study;
+        Study study = opt.get();
+        StudyDetail details = new StudyDetail.Builder()
+                .withStudy(study)
+                .withLaunchedBy(accountDao.getAccountRef(appId, study.getLaunchedBy()))
+                .withCloseoutBy(accountDao.getAccountRef(appId, study.getCloseoutBy()))
+                .withCreatedBy(accountDao.getAccountRef(appId, study.getCreatedBy()))
+                .withModifiedBy(accountDao.getAccountRef(appId, study.getModifiedBy()))
+                .build();
+        return details;
     }
     
     /**
@@ -111,10 +129,10 @@ public class StudyService {
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
         
-        Study existing = studyDao.getStudy(appId, study.getIdentifier());
-        if (existing != null) {
-            throw new EntityAlreadyExistsException(Study.class, ImmutableMap.of("id", existing.getIdentifier()));
-        }
+        studyDao.getStudy(appId, study.getIdentifier())
+            .orElseThrow(() -> new EntityAlreadyExistsException(Study.class, 
+                        ImmutableMap.of("id", study.getIdentifier())));
+        
         VersionHolder version = studyDao.createStudy(study);
         // You cannot do this when creating an app because it will fail: the caller's organization will not 
         // yet exist. After initial app creation when accounts are established in the app, it should be 
@@ -134,7 +152,8 @@ public class StudyService {
         study.setAppId(appId);
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
-        Study existing = getStudy(appId, study.getIdentifier(), true);
+        Study existing = studyDao.getStudy(appId, study.getIdentifier())
+                .orElseThrow(() -> new EntityNotFoundException(Study.class));
         if (study.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(Study.class);
         }
@@ -148,7 +167,8 @@ public class StudyService {
         checkNotNull(appId);
         checkNotNull(studyId);
         
-        Study existing = getStudy(appId, studyId, true);
+        Study existing = studyDao.getStudy(appId, studyId)
+                .orElseThrow(() -> new EntityNotFoundException(Study.class));
         existing.setDeleted(true);
         existing.setModifiedOn(DateTime.now());
         studyDao.updateStudy(existing);

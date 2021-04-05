@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
@@ -15,6 +16,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,12 +24,14 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
@@ -36,13 +40,13 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class EnrollmentService {
     
-    private AccountService accountService;
+    private AccountDao accountDao;
     
     private EnrollmentDao enrollmentDao;
     
     @Autowired
-    public final void setAccountService(AccountService accountService) {
-        this.accountService = accountService;
+    public final void setAccountDao(AccountDao accountDao) {
+        this.accountDao = accountDao;
     }
     
     @Autowired
@@ -75,6 +79,7 @@ public class EnrollmentService {
         if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
+        List<Enrollment> enrollments = enrollmentDao.getEnrollmentsForStudy(appId, studyId, filter, includeTesters, offsetBy, pageSize);
         return enrollmentDao.getEnrollmentsForStudy(appId, studyId, filter, includeTesters, offsetBy, pageSize)
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize)
@@ -87,12 +92,19 @@ public class EnrollmentService {
         
         // We want all enrollments, even withdrawn enrollments, so don't filter here.
         AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, studyId, USER_ID, account.getId());
 
-        return enrollmentDao.getEnrollmentsForUser(appId, account.getId());
+        List<Enrollment> enrollments = enrollmentDao.getEnrollmentsForUser(appId, account.getId());
+        
+        return enrollments.stream().map(enrollment -> {
+            return new EnrollmentDetail(enrollment, 
+                    accountDao.getAccountRef(appId, account.getId()), 
+                    accountDao.getAccountRef(appId, enrollment.getEnrolledBy()),
+                    accountDao.getAccountRef(appId, enrollment.getWithdrawnBy()));
+        }).collect(toList());
     }
     
     public Enrollment enroll(Enrollment enrollment) {
@@ -109,11 +121,11 @@ public class EnrollmentService {
         // account based on study, because the account has not been put in a study accessible
         // to the caller. The check would fail for researchers.
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         enrollment = addEnrollment(account, enrollment);
-        accountService.updateAccount(account);
+        accountDao.updateAccount(account);
         return enrollment;
     }
     
@@ -169,12 +181,10 @@ public class EnrollmentService {
         Validate.entityThrowingException(INSTANCE, enrollment);
         
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountDao.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         enrollment = unenroll(account, enrollment);
-        accountService.updateAccount(account);
+        accountDao.updateAccount(account);
         return enrollment;
     }
 

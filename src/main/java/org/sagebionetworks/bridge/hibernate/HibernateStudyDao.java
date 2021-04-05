@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -58,12 +59,12 @@ public class HibernateStudyDao implements StudyDao {
     }
 
     @Override
-    public Study getStudy(String appId, String id) {
+    public Optional<Study> getStudy(String appId, String id) {
         checkNotNull(appId);
         checkNotNull(id);
 
         StudyId studyId = new StudyId(appId, id);
-        return hibernateHelper.getById(HibernateStudy.class, studyId);
+        return Optional.ofNullable(hibernateHelper.getById(HibernateStudy.class, studyId));
     }
     
     @Override

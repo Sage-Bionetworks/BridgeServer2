@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.hibernate.HibernateStudyDao.SELECT_PHRA
 import static org.testng.Assert.assertEquals;
 
 import java.util.Map;
+import java.util.Optional;
 
 import javax.persistence.PersistenceException;
 
@@ -133,8 +134,8 @@ public class HibernateStudyDaoTest extends Mockito {
         HibernateStudy study = new HibernateStudy();
         when(hibernateHelper.getById(eq(HibernateStudy.class), any())).thenReturn(study);
         
-        Study returnedValue = dao.getStudy(TEST_APP_ID, "id");
-        assertEquals(returnedValue, study);
+        Optional<Study> returnedValue = dao.getStudy(TEST_APP_ID, "id");
+        assertEquals(returnedValue.get(), study);
         
         verify(hibernateHelper).getById(eq(HibernateStudy.class), studyIdCaptor.capture());
         
