@@ -4,13 +4,16 @@ import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.hibernate.HibernateAccountDao.FULL_QUERY;
+import static org.sagebionetworks.bridge.hibernate.HibernateAccountDao.REF_QUERY;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
@@ -46,11 +49,13 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -1103,6 +1108,47 @@ public class HibernateAccountDaoTest extends Mockito {
     public void getAppIdsForUserNoSynapseUserId() throws Exception {
         List<String> results = dao.getAppIdForUser(null);
         assertTrue(results.isEmpty());
+    }
+    
+    @Test
+    public void getAccountRef_UserIdNull() {
+        assertNull(dao.getAccountRef(TEST_APP_ID, null));
+    }
+    
+    @Test
+    public void getAccountRef() {
+        HibernateAccount account = new HibernateAccount();
+        account.setFirstName("FirstName");
+        account.setLastName("LastName");
+        account.setEmail(EMAIL);
+        account.setPhone(PHONE);
+        account.setSynapseUserId(SYNAPSE_USER_ID);
+        account.setOrgMembership(TEST_ORG_ID);
+        account.setId(TEST_USER_ID);
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+            .thenReturn(ImmutableList.of(account));
+        
+        AccountRef ref = dao.getAccountRef(TEST_APP_ID, TEST_USER_ID);
+        
+        assertEquals(ref.getFirstName(), "FirstName");
+        assertEquals(ref.getLastName(), "LastName");
+        assertEquals(ref.getEmail(), EMAIL);
+        assertEquals(ref.getPhone(), PHONE);
+        assertEquals(ref.getSynapseUserId(), SYNAPSE_USER_ID);
+        assertEquals(ref.getOrgMembership(), TEST_ORG_ID);
+        assertEquals(ref.getIdentifier(), TEST_USER_ID);
+        
+        verify(mockHibernateHelper).queryGet(eq(REF_QUERY), paramCaptor.capture(), isNull(), eq(1), eq(HibernateAccount.class));
+        assertEquals(paramCaptor.getValue().get("appId"), TEST_APP_ID);
+        assertEquals(paramCaptor.getValue().get("id"), TEST_USER_ID);
+    }
+    
+    @Test
+    public void getAccountRef_NoAccountsFound() {
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), any()))
+            .thenReturn(ImmutableList.of());
+    
+        assertNull(dao.getAccountRef(TEST_APP_ID, TEST_USER_ID));
     }
 
     private void verifyCreatedHealthCode() {

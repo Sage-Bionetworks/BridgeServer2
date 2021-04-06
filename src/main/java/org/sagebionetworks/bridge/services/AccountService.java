@@ -41,6 +41,7 @@ import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -348,6 +349,12 @@ public class AccountService {
         } else {
             return null;
         }
+    }
+    
+    public AccountRef getAccountRef(String appId, String userId) {
+        checkNotNull(appId);
+        
+        return accountDao.getAccountRef(appId, userId);
     }
     
     protected Account authenticateInternal(App app, Account account, SignIn signIn) {

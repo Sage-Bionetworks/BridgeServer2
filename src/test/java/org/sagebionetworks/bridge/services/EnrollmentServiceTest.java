@@ -20,7 +20,6 @@ import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLE
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
@@ -51,6 +50,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
@@ -85,11 +85,36 @@ public class EnrollmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
-        PagedResourceList<EnrollmentDetail> page = new PagedResourceList<>(ImmutableList.of(), 10);
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        en.setAccountId("participant");
+        en.setEnrolledBy("enroller");
+        en.setWithdrawnBy("withdrawer");
+        
+        Account account1 = Account.create();
+        account1.setId("participant");
+        AccountRef ref1 = new AccountRef(account1);
+        when(mockAccountService.getAccountRef(TEST_APP_ID, "participant")).thenReturn(ref1);
+        
+        Account account2 = Account.create();
+        account2.setId("enroller");
+        AccountRef ref2 = new AccountRef(account2);
+        when(mockAccountService.getAccountRef(TEST_APP_ID, "enroller")).thenReturn(ref2);
+        
+        Account account3 = Account.create();
+        account3.setId("withdrawer");
+        AccountRef ref3 = new AccountRef(account3);
+        when(mockAccountService.getAccountRef(TEST_APP_ID, "withdrawer")).thenReturn(ref3);
+
+        PagedResourceList<Enrollment> page = new PagedResourceList<>(ImmutableList.of(en), 10);
         when(mockEnrollmentDao.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, true, 10, 50)).thenReturn(page);
         
         PagedResourceList<EnrollmentDetail> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, ENROLLED, true, 10, 50);
-        assertSame(retValue, page);
+        
+        assertEquals(retValue.getTotal(), Integer.valueOf(10));
+        assertEquals(retValue.getItems().get(0).getParticipant(), ref1);
+        assertEquals(retValue.getItems().get(0).getEnrolledBy(), ref2);
+        assertEquals(retValue.getItems().get(0).getWithdrawnBy(), ref3);
+        
         assertEquals(retValue.getRequestParams().get(OFFSET_BY), Integer.valueOf(10));
         assertEquals(retValue.getRequestParams().get(PAGE_SIZE), Integer.valueOf(50));
         assertEquals(retValue.getRequestParams().get(ENROLLMENT_FILTER), EnrollmentFilter.ENROLLED);
@@ -102,11 +127,12 @@ public class EnrollmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
-        PagedResourceList<EnrollmentDetail> page = new PagedResourceList<>(ImmutableList.of(), 10);
+        PagedResourceList<Enrollment> page = new PagedResourceList<>(ImmutableList.of(), 10);
         when(mockEnrollmentDao.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, false, null, null)).thenReturn(page);
         
         PagedResourceList<EnrollmentDetail> retValue = service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, false, null, null);
-        assertSame(retValue, page);
+        assertEquals(retValue.getTotal(), Integer.valueOf(10));
+        assertTrue(retValue.getItems().isEmpty());
         
         verify(mockEnrollmentDao).getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, false, null, null);
     }
@@ -157,12 +183,36 @@ public class EnrollmentServiceTest extends Mockito {
         account.setId(TEST_USER_ID);
         when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(account));
         
-        List<EnrollmentDetail> details = ImmutableList.of();
-        when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID)).thenReturn(details);
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        en.setAccountId("participant");
+        en.setEnrolledBy("enroller");
+        en.setWithdrawnBy("withdrawer");
+        
+        Account account1 = Account.create();
+        account1.setId("participant");
+        AccountRef ref1 = new AccountRef(account1);
+        when(mockAccountService.getAccountRef(TEST_APP_ID, "participant")).thenReturn(ref1);
+        
+        Account account2 = Account.create();
+        account2.setId("enroller");
+        AccountRef ref2 = new AccountRef(account2);
+        when(mockAccountService.getAccountRef(TEST_APP_ID, "enroller")).thenReturn(ref2);
+        
+        Account account3 = Account.create();
+        account3.setId("withdrawer");
+        AccountRef ref3 = new AccountRef(account3);
+        when(mockAccountService.getAccountRef(TEST_APP_ID, "withdrawer")).thenReturn(ref3);
+
+        when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID))
+            .thenReturn(ImmutableList.of(en));
         
         List<EnrollmentDetail> retValue = service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID,
                 "externalId:extId");
-        assertSame(retValue, details);
+        
+        assertEquals(retValue.size(), 1);
+        assertEquals(retValue.get(0).getParticipant(), ref1);
+        assertEquals(retValue.get(0).getEnrolledBy(), ref2);
+        assertEquals(retValue.get(0).getWithdrawnBy(), ref3);
         
         verify(mockEnrollmentDao).getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID);
     }
@@ -266,7 +316,6 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(retValue.getAccountId(), TEST_USER_ID);
     }
     
-    // TODO: Should this throw an exception? I think during migration, it cannot
     @Test
     public void enrollAlreadyExists() {
         RequestContext.set(new RequestContext.Builder()
@@ -513,9 +562,6 @@ public class EnrollmentServiceTest extends Mockito {
         service.unenroll(enrollment);
     }
     
-    // TODO: Should this throw an exception, or not? I think during  migration it cannot.
-//    @Test(expectedExceptions = EntityAlreadyExistsException.class, 
-//            expectedExceptionsMessageRegExp = "Participant is already withdrawn from study.")
     @Test
     public void unenrollAlreadyExistsButIsWithdrawn() {
         RequestContext.set(new RequestContext.Builder()

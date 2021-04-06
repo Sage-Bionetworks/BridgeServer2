@@ -7,6 +7,7 @@ import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.apps.App;
 
@@ -58,4 +59,9 @@ public interface AccountDao {
      *      paging parameters.
      */
     PagedResourceList<AccountSummary> getPagedAccountSummaries(String appId, AccountSummarySearch search);
+    
+    /**
+     * Get a light-weight object describing an account for auditing purposes.
+     */
+    AccountRef getAccountRef(String appId, String userId);
 }    

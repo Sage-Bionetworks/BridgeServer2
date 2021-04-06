@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
@@ -75,7 +76,18 @@ public class EnrollmentService {
         if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return enrollmentDao.getEnrollmentsForStudy(appId, studyId, filter, includeTesters, offsetBy, pageSize)
+        
+        PagedResourceList<Enrollment> page = enrollmentDao.getEnrollmentsForStudy(
+                appId, studyId, filter, includeTesters, offsetBy, pageSize);
+        
+        List<EnrollmentDetail> details = page.getItems().stream().map(en -> {
+            return new EnrollmentDetail(en,
+                    accountService.getAccountRef(appId, en.getAccountId()),
+                    accountService.getAccountRef(appId, en.getEnrolledBy()),
+                    accountService.getAccountRef(appId, en.getWithdrawnBy()) );
+        }).collect(toList());
+                
+        return new PagedResourceList<>(details, page.getTotal())
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize)
                 .withRequestParam(ENROLLMENT_FILTER, filter);
@@ -91,8 +103,15 @@ public class EnrollmentService {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, studyId, USER_ID, account.getId());
-
-        return enrollmentDao.getEnrollmentsForUser(appId, account.getId());
+        
+        List<Enrollment> enrollments = enrollmentDao.getEnrollmentsForUser(appId, account.getId());
+        
+        return enrollments.stream().map(en -> {
+            return new EnrollmentDetail(en,
+                    accountService.getAccountRef(appId, en.getAccountId()),
+                    accountService.getAccountRef(appId, en.getEnrolledBy()),
+                    accountService.getAccountRef(appId, en.getWithdrawnBy()) );
+        }).collect(toList());
     }
     
     public Enrollment enroll(Enrollment enrollment) {
