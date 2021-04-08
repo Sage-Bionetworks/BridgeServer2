@@ -42,7 +42,6 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyPhase;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -332,9 +331,11 @@ public class StudyServiceTest {
         assertNotNull(returnedValue.getModifiedOn());
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateStudyInvalidStudy() {
-        service.updateStudy(TEST_APP_ID, Study.create());
+        Study study = Study.create();
+        study.setIdentifier("oneId");
+        service.updateStudy(TEST_APP_ID, study);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)

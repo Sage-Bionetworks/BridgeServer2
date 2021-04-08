@@ -104,6 +104,7 @@ public class StudyService {
         checkNotNull(study);
         
         study.setAppId(appId);
+        study.setPhase(DESIGN);
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
         study.setVersion(null);
@@ -111,7 +112,6 @@ public class StudyService {
         DateTime timestamp = DateTime.now();
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
-        study.setPhase(DESIGN);
         
         Study existing = studyDao.getStudy(appId, study.getIdentifier());
         if (existing != null) {
@@ -134,8 +134,6 @@ public class StudyService {
         checkNotNull(study);
 
         study.setAppId(appId);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
-        
         Study existing = getStudy(appId, study.getIdentifier(), true);
         if (study.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(Study.class);
@@ -143,6 +141,7 @@ public class StudyService {
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
         return studyDao.updateStudy(study);
     }

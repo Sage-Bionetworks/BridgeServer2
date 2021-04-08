@@ -9,12 +9,11 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyPhase;
 
 import static org.sagebionetworks.bridge.TestConstants.COLOR_SCHEME;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.ANALYSIS;
-import static org.sagebionetworks.bridge.models.studies.StudyPhase.LEGACY;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -34,20 +33,15 @@ public class HibernateStudyTest {
     @Test
     public void shortConstructor() {
         HibernateStudy study = new HibernateStudy("name", "identifier", "appId", 
-                CREATED_ON, MODIFIED_ON, true, 10L);
+                CREATED_ON, MODIFIED_ON, true, DESIGN, 10L);
         assertEquals(study.getName(), "name");
         assertEquals(study.getIdentifier(), "identifier");
         assertEquals(study.getAppId(), "appId");
         assertEquals(study.getCreatedOn(), CREATED_ON);
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
         assertTrue(study.isDeleted());
+        assertEquals(study.getPhase(), DESIGN);
         assertEquals(study.getVersion(), Long.valueOf(10L));
-    }
-    
-    @Test
-    public void legacyByDefault() {
-        HibernateStudy study = new HibernateStudy();
-        assertEquals(study.getPhase(), LEGACY);
     }
     
     @Test

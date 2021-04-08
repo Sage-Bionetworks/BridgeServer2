@@ -558,6 +558,9 @@ ADD COLUMN `scheduleGuid` varchar(255) DEFAULT NULL,
 ADD COLUMN `disease` varchar(255) DEFAULT NULL,
 ADD COLUMN `studyDesignType` varchar(255) DEFAULT NULL;
 
+ALTER TABLE `Substudies`
+ADD CONSTRAINT `Substudies-Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`) ON DELETE RESTRICT;
+
 CREATE TABLE `StudyContacts` (
   `appId` varchar(255) NOT NULL,
   `studyId` varchar(255) NOT NULL,

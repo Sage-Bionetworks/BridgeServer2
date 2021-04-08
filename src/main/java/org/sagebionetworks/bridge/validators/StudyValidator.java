@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN;
 import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAIL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -26,9 +27,9 @@ public class StudyValidator implements Validator {
         Study study = (Study)object;
         
         if (isBlank(study.getIdentifier())) {
-            errors.rejectValue("id", "is required");
-        } else if (!study.getIdentifier().matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
-            errors.rejectValue("id", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+            errors.rejectValue("identifier", "is required");
+        } else if (!study.getIdentifier().matches(BRIDGE_EVENT_ID_PATTERN)) {
+            errors.rejectValue("identifier", BRIDGE_EVENT_ID_ERROR);
         }
         if (isBlank(study.getAppId())) {
             errors.rejectValue("appId", "is required");

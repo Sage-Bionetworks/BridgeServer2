@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.studies.ContactRole.TECHNICAL_SUPPORT;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.entityThrowingException;
@@ -24,51 +25,49 @@ public class StudyValidatorTest {
     
     @Test
     public void valid() {
-        study = Study.create();
-        study.setIdentifier("id");
-        study.setAppId(TEST_APP_ID);
-        study.setName("name");
-        study.setContacts(ImmutableList.of(createContact()));
-        
+        study = createStudy();
         entityThrowingException(VALIDATOR, study);
     }
     
     @Test
     public void idIsRequired() {
-        study = Study.create();
-        assertValidatorMessage(VALIDATOR, study, "id", "is required");
+        study = createStudy();
+        study.setIdentifier(null);
+        assertValidatorMessage(VALIDATOR, study, "identifier", "is required");
     }
     
     @Test
     public void invalidIdentifier() {
-        study = Study.create();
+        study = createStudy();
         study.setIdentifier("id not valid");
         
-        assertValidatorMessage(VALIDATOR, study, "id", "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores");
+        assertValidatorMessage(VALIDATOR, study, "identifier", "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores");
     }
 
     @Test
     public void nameIsRequired() {
-        study = Study.create();
+        study = createStudy();
+        study.setName(null);
         assertValidatorMessage(VALIDATOR, study, "name", "is required");
     }
     
     @Test
     public void phaseRequired() {
-        study = Study.create();
+        study = createStudy();
         study.setPhase(null);
         assertValidatorMessage(VALIDATOR, study, "phase", "is required");
     }
 
     @Test
     public void appIdIsRequired() {
-        study = Study.create();
+        study = createStudy();
+        study.setAppId(null);
         assertValidatorMessage(VALIDATOR, study, "appId", "is required");
     }
     
     @Test
     public void contactNameNull() {
-        study = Study.create();
+        study = createStudy();
         Contact c1 = createContact();
         c1.setName(null);
         study.setContacts(ImmutableList.of(c1));
@@ -78,7 +77,7 @@ public class StudyValidatorTest {
     
     @Test
     public void contactNameBlank() {
-        study = Study.create();
+        study = createStudy();
         Contact c1 = createContact();
         c1.setName("");
         study.setContacts(ImmutableList.of(c1));
@@ -88,7 +87,7 @@ public class StudyValidatorTest {
     
     @Test
     public void contactRoleNull() {
-        study = Study.create();
+        study = createStudy();
         Contact c1 = createContact();
         c1.setRole(null);
         study.setContacts(ImmutableList.of(c1));
@@ -98,7 +97,7 @@ public class StudyValidatorTest {
     
     @Test
     public void contactInvalidEmail() {
-        study = Study.create();
+        study = createStudy();
         Contact c1 = createContact();
         c1.setEmail("junk");
         study.setContacts(ImmutableList.of(c1));
@@ -108,7 +107,7 @@ public class StudyValidatorTest {
     
     @Test
     public void contactInvalidPhone() {
-        study = Study.create();
+        study = createStudy();
         Contact c1 = createContact();
         c1.setPhone(new Phone("333333", "Portual"));
         study.setContacts(ImmutableList.of(c1));
@@ -118,10 +117,7 @@ public class StudyValidatorTest {
     
     @Test
     public void nullContactsOK() {
-        study = Study.create();
-        study.setIdentifier("id");
-        study.setAppId(TEST_APP_ID);
-        study.setName("name");
+        study = createStudy();
         study.setContacts(null);
         
         entityThrowingException(VALIDATOR, study);
@@ -129,10 +125,7 @@ public class StudyValidatorTest {
     
     @Test
     public void nullContactEmailOK() {
-        study = Study.create();
-        study.setIdentifier("id");
-        study.setAppId(TEST_APP_ID);
-        study.setName("name");
+        study = createStudy();
         Contact c1 = createContact();
         c1.setEmail(null);
         study.setContacts(ImmutableList.of(c1));
@@ -142,15 +135,21 @@ public class StudyValidatorTest {
 
     @Test
     public void nullContactPhoneOK() {
-        study = Study.create();
-        study.setIdentifier("id");
-        study.setAppId(TEST_APP_ID);
-        study.setName("name");
+        study = createStudy();
         Contact c1 = createContact();
         c1.setPhone(null);
         study.setContacts(ImmutableList.of(c1));
         
         entityThrowingException(VALIDATOR, study);
+    }
+    
+    private Study createStudy() {
+        Study study = Study.create();
+        study.setIdentifier("id");
+        study.setAppId(TEST_APP_ID);
+        study.setName("name");
+        study.setPhase(DESIGN);
+        return study;
     }
     
     private Contact createContact() {

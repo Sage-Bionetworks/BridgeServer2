@@ -82,6 +82,8 @@ public class StudyController extends BaseController {
         CAN_UPDATE_STUDIES.checkAndThrow(STUDY_ID, id);
 
         Study study = parseJson(Study.class);
+        study.setIdentifier(id);
+        
         return service.updateStudy(session.getAppId(), study);
     }
 

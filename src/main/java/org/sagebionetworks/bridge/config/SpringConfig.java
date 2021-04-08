@@ -114,7 +114,6 @@ import org.sagebionetworks.bridge.hibernate.HibernateTemplate;
 import org.sagebionetworks.bridge.hibernate.HibernateTemplateRevision;
 import org.sagebionetworks.bridge.hibernate.OrganizationPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.SponsorPersistenceExceptionConverter;
-import org.sagebionetworks.bridge.hibernate.StudyPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.hibernate.TagEventListener;
 import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -680,13 +679,6 @@ public class SpringConfig {
     @Autowired
     public HibernateHelper basicHibernateHelper(SessionFactory sessionFactory,
             BasicPersistenceExceptionConverter converter) {
-        return new HibernateHelper(sessionFactory, converter);
-    }
-    
-    @Bean(name = "studyHibernateHelper")
-    @Autowired
-    public HibernateHelper studyHibernateHelper(SessionFactory sessionFactory,
-            StudyPersistenceExceptionConverter converter) {
         return new HibernateHelper(sessionFactory, converter);
     }
     

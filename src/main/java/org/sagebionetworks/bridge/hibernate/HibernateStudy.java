@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.hibernate;
 
-import static org.sagebionetworks.bridge.models.studies.StudyPhase.LEGACY;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,7 +52,7 @@ public class HibernateStudy implements Study {
     @Convert(converter = JsonNodeAttributeConverter.class)
     private JsonNode clientData;
     @Enumerated(EnumType.STRING)
-    private StudyPhase phase = LEGACY;
+    private StudyPhase phase;
     private String details;
     @Convert(converter = LocalDateToStringConverter.class)
     private LocalDate irbApprovedOn;
@@ -86,13 +84,15 @@ public class HibernateStudy implements Study {
      * For partial construction of object by Hibernate, excluding expensive fields like clientData.
      */
     public HibernateStudy(String name, String identifier, String appId, 
-            DateTime createdOn, DateTime modifiedOn, boolean deleted, Long version) {
+            DateTime createdOn, DateTime modifiedOn, boolean deleted, 
+            StudyPhase phase, Long version) {
         this.name = name;
         this.identifier = identifier;
         this.appId = appId;
         this.createdOn = createdOn;
         this.modifiedOn = modifiedOn;
         this.deleted = deleted;
+        this.phase = phase;
         this.version = version;
     }
     
