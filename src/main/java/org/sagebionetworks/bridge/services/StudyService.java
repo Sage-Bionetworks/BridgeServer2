@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 
 import java.util.Set;
 
@@ -110,6 +111,7 @@ public class StudyService {
         DateTime timestamp = DateTime.now();
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
+        study.setPhase(DESIGN);
         
         Study existing = studyDao.getStudy(appId, study.getIdentifier());
         if (existing != null) {
@@ -140,6 +142,7 @@ public class StudyService {
         }
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
+        study.setPhase(existing.getPhase());
         
         return studyDao.updateStudy(study);
     }

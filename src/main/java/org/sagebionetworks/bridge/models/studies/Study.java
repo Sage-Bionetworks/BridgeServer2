@@ -1,8 +1,13 @@
 package org.sagebionetworks.bridge.models.studies;
 
 import org.joda.time.DateTime;
+import org.joda.time.LocalDate;
+
 import org.sagebionetworks.bridge.hibernate.HibernateStudy;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.assessments.ColorScheme;
+
+import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -23,6 +28,12 @@ public interface Study extends BridgeEntity {
     String getName();
     void setName(String name);
     
+    String getDetails();
+    void setDetails(String details);
+    
+    StudyPhase getPhase();
+    void setPhase(StudyPhase phrase);
+    
     boolean isDeleted();
     void setDeleted(boolean deleted);
     
@@ -35,6 +46,36 @@ public interface Study extends BridgeEntity {
     JsonNode getClientData();
     void setClientData(JsonNode clientData);
     
+    LocalDate getIrbApprovedOn();
+    void setIrbApprovedOn(LocalDate irbApprovedOn);
+    
+    LocalDate getIrbApprovedUntil();
+    void setIrbApprovedUntil(LocalDate irbApprovedUntil);
+    
+    String getStudyLogoUrl();
+    void setStudyLogoUrl(String studyLogoUrl);
+    
+    ColorScheme getColorScheme();
+    void setColorScheme(ColorScheme colorScheme);
+    
+    String getInstitutionId();
+    void setInstitutionId(String institutionId);
+    
+    String getIrbProtocolId();
+    void setIrbProtocolId(String irbProtocolId);
+
+    String getScheduleGuid();
+    void setScheduleGuid(String scheduleGuid);
+    
+    String getDisease();
+    void setDisease(String disease);
+    
+    String getStudyDesignType();
+    void setStudyDesignType(String studyDesignType);
+    
+    List<Contact> getContacts();
+    void setContacts(List<Contact> contacts);
+
     Long getVersion();
     void setVersion(Long version);
     

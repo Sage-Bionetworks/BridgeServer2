@@ -79,6 +79,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
+import org.sagebionetworks.bridge.models.studies.Address;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
@@ -343,6 +344,18 @@ public class TestUtils {
 
     public static String randomName(Class<?> clazz) {
         return "test-" + clazz.getSimpleName().toLowerCase() + "-" + RandomStringUtils.randomAlphabetic(5).toLowerCase();
+    }
+    
+    public static final Address getAddress() { 
+        Address address = new Address();
+        address.setPlaceName("aPlaceName");
+        address.setStreet("aStreet");
+        address.setMailRouting("aMailRouting");
+        address.setCity("aCity");
+        address.setDivision("aState");
+        address.setPostalCode("aPostalCode");
+        address.setCountry("aCountry");
+        return address;
     }
 
     public static final NotificationMessage getNotificationMessage() {
