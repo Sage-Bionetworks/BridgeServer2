@@ -38,19 +38,29 @@ public class ActivityEventValidatorTest {
         Validate.entityThrowingException(INSTANCE, getEvent().build());
     }
     
-    @Test(expectedExceptions = IllegalStateException.class,
-            expectedExceptionsMessageRegExp = ".*No update type configured.*")
+    @Test
     public void eventIdNull() {
         ActivityEvent event = getEvent()
                 .withObjectType(null)
                 .withObjectId(null)
                 .withEventType(null)
+                .withUpdateType(FUTURE_ONLY)
+                .withAnswerValue(null)
+                .build();
+       assertValidatorMessage(INSTANCE, event, "eventId", EVENT_ID_ERROR);
+    }
+
+    @Test(expectedExceptions = IllegalStateException.class,
+            expectedExceptionsMessageRegExp = ".*No update type configured.*")
+    public void updateTypeNull() {
+        getEvent().withObjectType(null)
+                .withObjectId(null)
+                .withEventType(null)
                 .withUpdateType(null)
                 .withAnswerValue(null)
                 .build();
-        assertValidatorMessage(INSTANCE, event, "eventId", EVENT_ID_ERROR);
     }
-
+    
     @Test
     public void answerValueRequired() {
         ActivityEvent event = getEvent().withEventType(ActivityEventType.ANSWERED)
