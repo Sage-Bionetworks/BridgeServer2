@@ -13,6 +13,8 @@ import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -38,7 +40,6 @@ import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -93,10 +94,26 @@ public class ActivityEventServiceTest {
 
         assertEquals(activityEvent.getEventId(), "custom:eventKey1");
         assertEquals(activityEvent.getHealthCode(), HEALTH_CODE);
+        assertEquals(activityEvent.getUpdateType(), FUTURE_ONLY);
         assertNull(activityEvent.getStudyId());
         assertEquals(activityEvent.getTimestamp().longValue(), timestamp.getMillis());
     }
 
+    @Test
+    public void canPublishGlobalCustomEventPassesUpdateType() throws Exception {
+        App app = App.create();
+        app.setCustomEvents(ImmutableMap.of("eventKey1", IMMUTABLE, "eventKey2", FUTURE_ONLY));
+
+        ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
+        when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(true);
+
+        DateTime timestamp = DateTime.now();
+        activityEventService.publishCustomEvent(app, null, HEALTH_CODE, "eventKey1", timestamp);
+
+        ActivityEvent activityEvent = activityEventArgumentCaptor.getValue();
+        assertEquals(activityEvent.getUpdateType(), IMMUTABLE);
+    }
+    
     @Test
     public void canPublishStudyScopedCustomEvent() throws Exception {
         App app = App.create();
@@ -112,8 +129,24 @@ public class ActivityEventServiceTest {
 
         assertEquals(activityEvent.getEventId(), "custom:eventKey1");
         assertEquals(activityEvent.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
+        assertEquals(activityEvent.getUpdateType(), FUTURE_ONLY);
         assertEquals(activityEvent.getStudyId(), TEST_STUDY_ID);
         assertEquals(activityEvent.getTimestamp().longValue(), timestamp.getMillis());
+    }
+    
+    @Test
+    public void canPublishStudyScopedCustomEventPassesUpdateType() throws Exception {
+        App app = App.create();
+        app.setCustomEvents(ImmutableMap.of("eventKey1", MUTABLE, "eventKey2", FUTURE_ONLY));
+
+        ArgumentCaptor<ActivityEvent> activityEventArgumentCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
+        when(activityEventDao.publishEvent(activityEventArgumentCaptor.capture())).thenReturn(true);
+
+        DateTime timestamp = DateTime.now();
+        activityEventService.publishCustomEvent(app, TEST_STUDY_ID, HEALTH_CODE, "eventKey1", timestamp);
+
+        ActivityEvent activityEvent = activityEventArgumentCaptor.getValue();
+        assertEquals(activityEvent.getUpdateType(), MUTABLE);
     }
     
     @Test
@@ -134,11 +167,14 @@ public class ActivityEventServiceTest {
 
         ActivityEvent activityEvent = activityEventArgumentCaptor.getAllValues().get(0);
         assertEquals(activityEvent.getEventId(), "custom:myEvent");
+        assertEquals(activityEvent.getUpdateType(), FUTURE_ONLY);
         assertEquals(activityEvent.getHealthCode(), HEALTH_CODE);
         assertEquals(activityEvent.getTimestamp().longValue(), timestamp1.getMillis());
 
         activityEvent = activityEventArgumentCaptor.getAllValues().get(1);
         assertEquals(activityEvent.getEventId(), "custom:3-days-after-enrollment");
+        assertEquals(activityEvent.getUpdateType(), MUTABLE
+                );
         assertEquals(activityEvent.getHealthCode(), HEALTH_CODE);
         assertEquals(activityEvent.getTimestamp().longValue(), timestamp2.getMillis());
     }
@@ -160,6 +196,7 @@ public class ActivityEventServiceTest {
 
         ActivityEvent activityEvent = activityEventArgumentCaptor.getAllValues().get(0);
         assertEquals(activityEvent.getEventId(), "custom:myEvent");
+        assertEquals(activityEvent.getUpdateType(), FUTURE_ONLY);
         assertEquals(activityEvent.getHealthCode(), HEALTH_CODE);
         assertEquals(activityEvent.getTimestamp().longValue(), timestamp1.getMillis());
     }
@@ -186,6 +223,7 @@ public class ActivityEventServiceTest {
         
         assertEquals(argument.getValue().getEventId(), "created_on");
         assertEquals(argument.getValue().getTimestamp(), new Long(now.getMillis()));
+        assertEquals(argument.getValue().getUpdateType(), IMMUTABLE);
         assertNull(argument.getValue().getStudyId());
         assertEquals(argument.getValue().getHealthCode(), HEALTH_CODE);
     }
@@ -201,11 +239,13 @@ public class ActivityEventServiceTest {
         
         assertEquals(argument.getAllValues().get(0).getEventId(), "created_on");
         assertEquals(argument.getAllValues().get(0).getTimestamp(), new Long(now.getMillis()));
+        assertEquals(argument.getAllValues().get(0).getUpdateType(), IMMUTABLE);
         assertNull(argument.getAllValues().get(0).getStudyId());
         assertEquals(argument.getAllValues().get(0).getHealthCode(), HEALTH_CODE);
 
         assertEquals(argument.getAllValues().get(1).getEventId(), "created_on");
         assertEquals(argument.getAllValues().get(1).getTimestamp(), new Long(now.getMillis()));
+        assertEquals(argument.getAllValues().get(1).getUpdateType(), IMMUTABLE);
         assertEquals(argument.getAllValues().get(1).getStudyId(), TEST_STUDY_ID);
         assertEquals(argument.getAllValues().get(1).getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
     }
@@ -354,6 +394,7 @@ public class ActivityEventServiceTest {
         
         assertEquals(argument.getValue().getEventId(), "enrollment");
         assertEquals(argument.getValue().getTimestamp(), new Long(now.getMillis()));
+        assertEquals(argument.getValue().getUpdateType(), IMMUTABLE);
         assertNull(argument.getValue().getStudyId());
         assertEquals(argument.getValue().getHealthCode(), "AAA-BBB-CCC");
     }
@@ -384,24 +425,28 @@ public class ActivityEventServiceTest {
         ActivityEvent event1 = argument.getAllValues().get(0);
         assertEquals(event1.getEventId(), "enrollment");
         assertEquals(event1.getTimestamp(), new Long(now.getMillis()));
+        assertEquals(event1.getUpdateType(), IMMUTABLE);
         assertNull(event1.getStudyId());
         assertEquals(event1.getHealthCode(), HEALTH_CODE);
 
         ActivityEvent event2 = argument.getAllValues().get(1);
         assertEquals(event2.getEventId(), "custom:3-days-after");
         assertEquals(event2.getTimestamp(), new Long(now3DaysLater.getMillis()));
+        assertEquals(event2.getUpdateType(), MUTABLE);
         assertNull(event2.getStudyId());
         assertEquals(event2.getHealthCode(), HEALTH_CODE);
 
         ActivityEvent event3 = argument.getAllValues().get(2);
         assertEquals(event3.getEventId(), "enrollment");
         assertEquals(event3.getTimestamp(), new Long(now.getMillis()));
+        assertEquals(event3.getUpdateType(), IMMUTABLE);
         assertEquals(event3.getStudyId(), TEST_STUDY_ID);
         assertEquals(event3.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
 
         ActivityEvent event4 = argument.getAllValues().get(3);
         assertEquals(event4.getEventId(), "custom:3-days-after");
         assertEquals(event4.getTimestamp(), new Long(now3DaysLater.getMillis()));
+        assertEquals(event4.getUpdateType(), MUTABLE);
         assertEquals(event4.getStudyId(), TEST_STUDY_ID);
         assertEquals(event4.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
     }
@@ -424,6 +469,7 @@ public class ActivityEventServiceTest {
         
         assertEquals(argument.getAllValues().get(0).getEventId(), "enrollment");
         assertEquals(argument.getAllValues().get(0).getTimestamp(), new Long(now.getMillis()));
+        assertEquals(argument.getAllValues().get(0).getUpdateType(), IMMUTABLE);
         assertNull(argument.getAllValues().get(0).getStudyId());
         assertEquals(argument.getAllValues().get(0).getHealthCode(), HEALTH_CODE);
     }
@@ -462,21 +508,25 @@ public class ActivityEventServiceTest {
 
         assertEquals(publishedEventList.get(0).getEventId(), "enrollment");
         assertEquals(publishedEventList.get(0).getTimestamp().longValue(), enrollment.getMillis());
+        assertEquals(publishedEventList.get(0).getUpdateType(), IMMUTABLE);
         assertEquals(publishedEventList.get(0).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(1).getEventId(), "custom:3-days-after");
         assertEquals(publishedEventList.get(1).getTimestamp().longValue(),
                 DateUtils.convertToMillisFromEpoch("2018-04-07T16:00-0700"));
+        assertEquals(publishedEventList.get(1).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(1).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(2).getEventId(), "custom:1-week-after");
         assertEquals(publishedEventList.get(2).getTimestamp().longValue(),
                 DateUtils.convertToMillisFromEpoch("2018-04-11T16:00-0700"));
+        assertEquals(publishedEventList.get(2).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(2).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(3).getEventId(), "custom:13-weeks-after");
         assertEquals(publishedEventList.get(3).getTimestamp().longValue(),
                 DateUtils.convertToMillisFromEpoch("2018-07-04T16:00-0700"));
+        assertEquals(publishedEventList.get(3).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(3).getHealthCode(), "AAA-BBB-CCC");
     }
     
@@ -593,21 +643,25 @@ public class ActivityEventServiceTest {
 
         assertEquals(publishedEventList.get(0).getEventId(), "activities_retrieved");
         assertEquals(publishedEventList.get(0).getTimestamp().longValue(), retrieved.getMillis());
+        assertEquals(publishedEventList.get(0).getUpdateType(), IMMUTABLE);
         assertEquals(publishedEventList.get(0).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(1).getEventId(), "custom:3-days-after");
         assertEquals(publishedEventList.get(1).getTimestamp().longValue(),
                 DateUtils.convertToMillisFromEpoch("2018-04-07T16:00-0700"));
+        assertEquals(publishedEventList.get(1).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(1).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(2).getEventId(), "custom:1-week-after");
         assertEquals(publishedEventList.get(2).getTimestamp().longValue(),
                 DateUtils.convertToMillisFromEpoch("2018-04-11T16:00-0700"));
+        assertEquals(publishedEventList.get(2).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(2).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(3).getEventId(), "custom:13-weeks-after");
         assertEquals(publishedEventList.get(3).getTimestamp().longValue(),
                 DateUtils.convertToMillisFromEpoch("2018-07-04T16:00-0700"));
+        assertEquals(publishedEventList.get(3).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(3).getHealthCode(), "AAA-BBB-CCC");
     }
     
@@ -638,21 +692,25 @@ public class ActivityEventServiceTest {
         
         assertEquals(event1.getEventId(), "activities_retrieved");
         assertEquals(event1.getTimestamp().longValue(), retrieved.getMillis());
+        assertEquals(event1.getUpdateType(), IMMUTABLE);
         assertEquals(event1.getHealthCode(), "AAA-BBB-CCC");
         assertNull(event1.getStudyId());
 
         assertEquals(event2.getEventId(), "custom:3-days-after");
         assertEquals(event2.getTimestamp().longValue(), retrievedAfter3Days.getMillis());
+        assertEquals(event2.getUpdateType(), MUTABLE);
         assertEquals(event2.getHealthCode(), "AAA-BBB-CCC");
         assertNull(event2.getStudyId());
         
         assertEquals(event3.getEventId(), "activities_retrieved");
         assertEquals(event3.getTimestamp().longValue(), retrieved.getMillis());
+        assertEquals(event3.getUpdateType(), IMMUTABLE);
         assertEquals(event3.getHealthCode(), "AAA-BBB-CCC:" + TEST_STUDY_ID);
         assertEquals(event3.getStudyId(), TEST_STUDY_ID);
 
         assertEquals(event4.getEventId(), "custom:3-days-after");
         assertEquals(event4.getTimestamp().longValue(), retrievedAfter3Days.getMillis());
+        assertEquals(event4.getUpdateType(), MUTABLE);
         assertEquals(event4.getHealthCode(), "AAA-BBB-CCC:" + TEST_STUDY_ID);
         assertEquals(event4.getStudyId(), TEST_STUDY_ID);
     }
@@ -681,11 +739,13 @@ public class ActivityEventServiceTest {
         
         assertEquals(event1.getEventId(), "activities_retrieved");
         assertEquals(event1.getTimestamp().longValue(), retrieved.getMillis());
+        assertEquals(event1.getUpdateType(), IMMUTABLE);
         assertEquals(event1.getHealthCode(), "AAA-BBB-CCC");
         assertNull(event1.getStudyId());
 
         assertEquals(event2.getEventId(), "activities_retrieved");
         assertEquals(event2.getTimestamp().longValue(), retrieved.getMillis());
+        assertEquals(event2.getUpdateType(), IMMUTABLE);
         assertEquals(event2.getHealthCode(), "AAA-BBB-CCC:" + TEST_STUDY_ID);
         assertEquals(event2.getStudyId(), TEST_STUDY_ID);
     }
@@ -713,16 +773,19 @@ public class ActivityEventServiceTest {
         
         assertEquals(publishedEventList.get(0).getEventId(), "custom:myEvent");
         assertEquals(publishedEventList.get(0).getTimestamp().longValue(), timestamp.getMillis());
+        assertEquals(publishedEventList.get(0).getUpdateType(), FUTURE_ONLY);
         assertEquals(publishedEventList.get(0).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(1).getEventId(), "custom:3-days-after");
         assertEquals(publishedEventList.get(1).getTimestamp().longValue(),
                 DateUtils.convertToMillisFromEpoch("2018-04-07T16:00-0700"));
+        assertEquals(publishedEventList.get(1).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(1).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(2).getEventId(), "custom:1-week-after");
         assertEquals(publishedEventList.get(2).getTimestamp().longValue(),
                 DateUtils.convertToMillisFromEpoch("2018-04-11T16:00-0700"));
+        assertEquals(publishedEventList.get(2).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(2).getHealthCode(), "AAA-BBB-CCC");
     }
 
@@ -742,6 +805,7 @@ public class ActivityEventServiceTest {
         
         assertEquals(argument.getValue().getEventId(), "question:BBB-CCC-DDD:answered");
         assertEquals(argument.getValue().getTimestamp(), new Long(now.getMillis()));
+        assertEquals(argument.getValue().getUpdateType(), FUTURE_ONLY);
         assertEquals(argument.getValue().getHealthCode(), HEALTH_CODE);
     }
     
@@ -775,6 +839,7 @@ public class ActivityEventServiceTest {
         assertEquals(event.getHealthCode(), HEALTH_CODE);
         assertEquals(event.getEventId(), "activity:AAA:finished");
         assertEquals(event.getTimestamp().longValue(), finishedOn);
+        assertEquals(event.getUpdateType(), FUTURE_ONLY);
     }
     
     @Test
@@ -848,8 +913,22 @@ public class ActivityEventServiceTest {
         
         ActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getEventId(), "custom:eventKey");
+        assertEquals(event.getUpdateType(), FUTURE_ONLY);
         assertEquals(event.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void canDeleteCustomEventPassesUpdateType() {
+        App app = App.create();
+        app.setCustomEvents(ImmutableMap.of("eventKey", MUTABLE));
+        
+        activityEventService.deleteCustomEvent(app, TEST_STUDY_ID, HEALTH_CODE, "eventKey");
+        
+        verify(activityEventDao).deleteCustomEvent(eventCaptor.capture());
+        
+        ActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getUpdateType(), MUTABLE);
     }
     
     @Test(expectedExceptions = BadRequestException.class, 

@@ -30,6 +30,7 @@ import org.mockito.Mockito;
 import org.springframework.validation.Errors;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;

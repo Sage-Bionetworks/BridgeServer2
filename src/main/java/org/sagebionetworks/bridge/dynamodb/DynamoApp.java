@@ -54,7 +54,7 @@ public final class DynamoApp implements App {
         }
     }
     
-    public static class CustomEventsMarshaller extends MapMarshaller<String, ActivityEventUpdateType> {
+    public static class CustomEventsMarshaller extends StringKeyMapMarshaller<ActivityEventUpdateType> {
         private static final TypeReference<Map<String,ActivityEventUpdateType>> EVENT_MAP_TYPE = 
                 new TypeReference<Map<String,ActivityEventUpdateType>>() {};
         @Override
