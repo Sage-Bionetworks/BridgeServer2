@@ -178,7 +178,6 @@ public class ValidatorUtils {
     /**
      * This converts the period to minutes, but only those fields that have a 
      * conventional measurement in minutes (so months and years are ignored).  
-     * These are checked for using other validation.
      */
     public static final int periodInMinutes(Period period) {
         int minutes = period.getMinutes();
@@ -191,7 +190,7 @@ public class ValidatorUtils {
     /**
      * This converts the period to milliseconds, but only those fields that have 
      * a conventional measurement in milliseconds (so months and years are 
-     * ignored). These are checked for using other validation.
+     * ignored).
      */
     public static final long periodInMilliseconds(Period period) {
         int millis = period.getMillis();
