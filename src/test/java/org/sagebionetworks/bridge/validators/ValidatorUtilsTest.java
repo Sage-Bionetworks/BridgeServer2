@@ -372,7 +372,27 @@ public class ValidatorUtilsTest extends Mockito {
 
         // Despite adding up to a positive value, we don't allow it. 
         verify(errors).rejectValue("period", CANNOT_BE_NEGATIVE);
-    }    
+    }
+    
+    @Test
+    public void validateFixedLongPeriodCannotBeZero() {
+        Errors errors = mock(Errors.class);
+        Period period = Period.parse("PT0S"); // actual value submitted by a client
+
+        validateFixedLengthLongPeriod(errors, period, "period", true);
+
+        verify(errors).rejectValue("period", "cannot be of no duration");
+    }
+    
+    @Test
+    public void validateFixedPeriodCannotBeZero() {
+        Errors errors = mock(Errors.class);
+        Period period = Period.parse("P0DT0H");
+
+        validateFixedLengthPeriod(errors, period, "period", true);
+
+        verify(errors).rejectValue("period", "cannot be of no duration");
+    }
     
     @Test
     public void periodInMinutes() {
@@ -381,5 +401,17 @@ public class ValidatorUtilsTest extends Mockito {
         
         period = Period.parse("P0W0DT0H0M"); // 0 minutes
         assertEquals(ValidatorUtils.periodInMinutes(period), 0);
+    }
+    
+    @Test
+    public void periodInMilliseconds() {
+        Period period = Period.parse("P3W2DT10H14M"); // 2,024,040,000 milliseconds
+        assertEquals(ValidatorUtils.periodInMilliseconds(period), 2024040000L);
+        
+        period = Period.parse("P0W0DT0H0M1S"); // 1,000 millis
+        assertEquals(ValidatorUtils.periodInMilliseconds(period), 1000L);
+
+        period = Period.parse("P0W0DT0H0M0S"); // 0 millis
+        assertEquals(ValidatorUtils.periodInMilliseconds(period), 0L);
     }
 }

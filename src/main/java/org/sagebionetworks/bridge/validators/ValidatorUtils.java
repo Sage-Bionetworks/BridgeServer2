@@ -175,12 +175,31 @@ public class ValidatorUtils {
         }
     }
 
+    /**
+     * This converts the period to minutes, but only those fields that have a 
+     * conventional measurement in minutes (so months and years are ignored).  
+     */
     public static final int periodInMinutes(Period period) {
         int minutes = period.getMinutes();
         minutes += (period.getHours() * 60);
         minutes += (period.getDays() * 24 * 60);
         minutes += (period.getWeeks() * 7 * 24 * 60);
         return minutes;
+    }
+    
+    /**
+     * This converts the period to milliseconds, but only those fields that have 
+     * a conventional measurement in milliseconds (so months and years are 
+     * ignored).
+     */
+    public static final long periodInMilliseconds(Period period) {
+        int millis = period.getMillis();
+        millis += (period.getSeconds() * 1000);
+        millis += (period.getMinutes() * 1000 * 60);
+        millis += (period.getHours() * 60 * 1000 * 60);
+        millis += (period.getDays() * 24 * 60 * 1000 * 60);
+        millis += (period.getWeeks() * 7 * 24 * 60 * 1000 * 60);
+        return millis;
     }
     
     public static void validateFixedLengthPeriod(Errors errors, Period period, String fieldName, boolean required) {
@@ -206,12 +225,17 @@ public class ValidatorUtils {
                 break;
             }
         }
+        // Note that this does not allow any portion to be negative, even 
+        // if the sum total is positive.
         int[] values = period.getValues();
         for (int i=0; i < values.length; i++) {
             if (values[i] < 0) {
                 errors.rejectValue(fieldName, CANNOT_BE_NEGATIVE);
                 break;
             }
+        }
+        if (periodInMilliseconds(period) == 0L) {
+            errors.rejectValue(fieldName, "cannot be of no duration");
         }
     }
     
