@@ -372,7 +372,27 @@ public class ValidatorUtilsTest extends Mockito {
 
         // Despite adding up to a positive value, we don't allow it. 
         verify(errors).rejectValue("period", CANNOT_BE_NEGATIVE);
-    }    
+    }
+    
+    @Test
+    public void validateFixedLongPeriodCannotBeZero() {
+        Errors errors = mock(Errors.class);
+        Period period = Period.parse("PT0S"); // actual value submitted by a client
+
+        validateFixedLengthLongPeriod(errors, period, "period", true);
+
+        verify(errors).rejectValue("period", "cannot be of no duration");
+    }
+    
+    @Test
+    public void validateFixedPeriodCannotBeZero() {
+        Errors errors = mock(Errors.class);
+        Period period = Period.parse("P0DT0H");
+
+        validateFixedLengthPeriod(errors, period, "period", true);
+
+        verify(errors).rejectValue("period", "cannot be of no duration");
+    }
     
     @Test
     public void periodInMinutes() {
