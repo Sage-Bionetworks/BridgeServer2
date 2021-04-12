@@ -41,6 +41,11 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.validators.ParticipantRosterRequestValidator;
+import org.sagebionetworks.bridge.validators.PasswordResetValidator;
+import org.sagebionetworks.bridge.validators.ValidatorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,11 +100,12 @@ import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.AccountSummarySearchValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.springframework.validation.Errors;
 
 @Component
 public class ParticipantService {
     private static final Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
-    static final String CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL = "udd.sqs.queue.url"; //TODO this isn't right but need placeholder
+    static final String CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL = "workerPlatform.request.sqs.queue.url";
     static final String REQUEST_KEY_BODY = "body";
     static final String REQUEST_KEY_SERVICE = "service";
     static final String REQUEST_KEY_APP_ID = "appId";
@@ -216,6 +222,16 @@ public class ParticipantService {
     @Autowired
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
+    }
+
+    @Autowired
+    final void setBridgeConfig(BridgeConfig bridgeConfig) {
+        this.bridgeConfig = bridgeConfig;
+    }
+
+    @Autowired
+    final void setSqsClient(AmazonSQSClient sqsClient) {
+        this.sqsClient = sqsClient;
     }
     
     /**
@@ -846,9 +862,10 @@ public class ParticipantService {
         return getParticipant(app, account.getId(), false);
     }
 
-    public void downloadParticipantRoster(String appId, String userId, String password, String studyId) throws JsonProcessingException {
-        // password must contain at least 8 characters, 1 upper case, 1 lower case, and 1 number
-        checkPassword(password);
+    public void downloadParticipantRoster(String appId, String userId, String password, String studyId,
+                                          ParticipantRosterRequest request) throws JsonProcessingException {
+        validatePassword(password);
+        Validate.entityThrowingException(new ParticipantRosterRequestValidator(), request);
 
         ObjectMapper jsonObjectMapper = new ObjectMapper();
 
@@ -866,22 +883,16 @@ public class ParticipantService {
         String requestJson = jsonObjectMapper.writeValueAsString(requestMsg);
 
         // sent to SQS
-        String queueUrl = bridgeConfig.getProperty(CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL); //TODO ask about the url
+        String queueUrl = bridgeConfig.getProperty(CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL);
         SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJson);
         LOG.info("Sent request to SQS for userId=" + userId + ", app=" + appId +
                 "; receipted message ID=" + sqsResult.getMessageId());
     }
 
-    private void checkPassword(String password) {
-        String regex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)[a-zA-Z\\d]{8,}$";
-
-        Pattern pattern = Pattern.compile(regex);
-        Matcher matcher = pattern.matcher(password);
-
-        if (!matcher.matches()) {
-            throw new BadRequestException("Password must contain at least 8 characters: " +
-                    "1 upper case letter, 1 lower case letter, and 1 number.");
-        }
+    private void validatePassword(String password) {
+        Errors error = Validate.getErrorsFor(password);
+        PasswordPolicy passwordPolicy = new PasswordPolicy(8, true, false, true, true);
+        ValidatorUtils.validatePassword(error, passwordPolicy, password);
     }
     
     private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {

@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
@@ -608,19 +609,27 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants/emailRoster")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage getParticipantRosterForWorker() throws JsonProcessingException {
-        UserSession session = getAuthenticatedSession(WORKER);
+        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
         String appId = session.getAppId();
 
         StudyParticipant participant = session.getParticipant();
-        if (!participant.getEmailVerified() && !participant.getPhoneVerified()) {
+        if (participant.getEmail() != null && !participant.getEmailVerified()) {
             throw new BadRequestException("Cannot request user data");
+        }
+        if (RequestContext.get().isInRole(STUDY_COORDINATOR) && !RequestContext.get().isInRole(RESEARCHER)
+            && RequestContext.get().getCallerOrgMembership() == null) {
+            throw new BadRequestException("Caller is a study coordinator without an org membership.");
         }
 
         ParticipantRosterRequest request = parseJson(ParticipantRosterRequest.class);
         String password = request.getPassword();
         String studyId = request.getStudyId();
 
-        participantService.downloadParticipantRoster(appId, session.getId(), password, studyId);
+        if (studyId != null && !RequestContext.get().getOrgSponsoredStudies().contains(studyId)) {
+            throw new BadRequestException("Requested studyId is not sponsored by the caller's org.");
+        }
+
+        participantService.downloadParticipantRoster(appId, session.getId(), password, studyId, request);
 
         return new StatusMessage("Download initiated.");
     }

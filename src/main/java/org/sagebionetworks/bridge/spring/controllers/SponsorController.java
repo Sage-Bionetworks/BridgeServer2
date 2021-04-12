@@ -55,11 +55,11 @@ public class SponsorController extends BaseController {
         return sponsorService.getSponsoredStudies(session.getAppId(), orgId, offsetByInt, pageSizeInt);
     }
 
-    @GetMapping("/v1/organizations/{orgId}/apps/{appId}/studies")
-    public PagedResourceList<Study> getSponsoredStudiesForWorker(@PathVariable String appId, @PathVariable String orgId,
+    @GetMapping("/v1/apps/{appId}/organizations/{orgId}/studies")
+    public PagedResourceList<Study> getSponsoredStudiesForApp(@PathVariable String appId, @PathVariable String orgId,
                                                                  @RequestParam(required = false) String offsetBy,
                                                                  @RequestParam(required = false) String pageSize) {
-        UserSession session = getAuthenticatedSession(WORKER);
+        getAuthenticatedSession(WORKER);
 
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
