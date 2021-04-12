@@ -11,6 +11,8 @@ import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.IN_FLIGHT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -222,6 +224,7 @@ public class StudyServiceTest {
         study.setAppId("junk");
         study.setVersion(10L);
         study.setDeleted(true);
+        study.setPhase(IN_FLIGHT);
         DateTime timestamp = DateTime.now().minusHours(2);
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
@@ -237,6 +240,7 @@ public class StudyServiceTest {
         assertEquals(persisted.getIdentifier(), "oneId");
         assertEquals(persisted.getName(), "oneName");
         assertEquals(persisted.getAppId(), TEST_APP_ID);
+        assertEquals(persisted.getPhase(), DESIGN);
         assertNull(persisted.getVersion());
         assertFalse(persisted.isDeleted());
         assertNotEquals(persisted.getCreatedOn(), timestamp);
@@ -302,6 +306,7 @@ public class StudyServiceTest {
         Study existing = Study.create();
         existing.setIdentifier("oneId");
         existing.setName("oldName");
+        existing.setPhase(IN_FLIGHT);
         existing.setCreatedOn(DateTime.now());
         when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(existing);
         when(studyDao.updateStudy(any())).thenReturn(VERSION_HOLDER);
@@ -310,6 +315,7 @@ public class StudyServiceTest {
         study.setAppId("wrongAppId");
         study.setIdentifier("oneId");
         study.setName("newName");
+        study.setPhase(DESIGN);
         
         VersionHolder versionHolder = service.updateStudy(TEST_APP_ID, study);
         assertEquals(versionHolder, VERSION_HOLDER);
@@ -320,13 +326,16 @@ public class StudyServiceTest {
         assertEquals(returnedValue.getAppId(), TEST_APP_ID);
         assertEquals(returnedValue.getIdentifier(), "oneId");
         assertEquals(returnedValue.getName(), "newName");
+        assertEquals(returnedValue.getPhase(), IN_FLIGHT);
         assertNotNull(returnedValue.getCreatedOn());
         assertNotNull(returnedValue.getModifiedOn());
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateStudyInvalidStudy() {
-        service.updateStudy(TEST_APP_ID, Study.create());
+        Study study = Study.create();
+        study.setIdentifier("oneId");
+        service.updateStudy(TEST_APP_ID, study);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)

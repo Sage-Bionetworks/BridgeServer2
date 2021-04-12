@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -13,11 +14,14 @@ import org.apache.http.HttpStatus;
 import org.hibernate.NonUniqueObjectException;
 import org.hibernate.StaleObjectStateException;
 import org.hibernate.exception.ConstraintViolationException;
+import org.mockito.Mock;
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
@@ -30,8 +34,12 @@ public class MySQLHibernatePersistenceExceptionConverterTest extends Mockito {
     
     Organization organization;
     
+    @Mock
+    private ConstraintViolationException cve;
+    
     @BeforeMethod
     public void beforeMethod() {
+        MockitoAnnotations.initMocks(this);
         converter = new MySQLHibernatePersistenceExceptionConverter();
         schedule = new Schedule2();
         schedule.setGuid(GUID);
@@ -161,5 +169,59 @@ public class MySQLHibernatePersistenceExceptionConverterTest extends Mockito {
         PersistenceException pe = new PersistenceException(cve);
         
         return pe;
+    }
+    
+    @Test
+    public void noConversion() { 
+        PersistenceException ex = new PersistenceException(new RuntimeException("message"));
+        
+        assertSame(converter.convert(ex, null), ex);
+    }
+    
+    @Test
+    public void optimisticLockException() { 
+        HibernateStudy study = new HibernateStudy();
+        study.setAppId(TEST_APP_ID);
+        
+        OptimisticLockException ole = new OptimisticLockException();
+        
+        RuntimeException result = converter.convert(ole, study);
+        assertEquals(result.getClass(), ConcurrentModificationException.class);
+        assertEquals(result.getMessage(), "Study has the wrong version number; it may have been saved in the background.");
+    }
+    
+    @Test
+    public void genericConstraintViolationException() {
+        HibernateStudy study = new HibernateStudy();
+        study.setAppId(TEST_APP_ID);
+
+        SQLIntegrityConstraintViolationException icve = 
+                new SQLIntegrityConstraintViolationException(
+                        "abc a foreign key constraint fails");
+        
+        PersistenceException ex = new PersistenceException(icve);
+
+        RuntimeException result = converter.convert(ex, study);
+
+        assertEquals(result.getClass(), org.sagebionetworks.bridge.exceptions.ConstraintViolationException.class);
+        assertEquals(result.getMessage(), "Cannot update or delete this item because it is in use.");
+    }
+    
+    @Test
+    public void usedByAccountsConstraintViolationException() {
+        HibernateStudy study = new HibernateStudy();
+        study.setAppId(TEST_APP_ID);
+
+        SQLIntegrityConstraintViolationException icve = 
+                new SQLIntegrityConstraintViolationException(
+                        "abc a foreign key constraint fails `fk_substudy`");
+        PersistenceException ex = new PersistenceException(icve);
+
+        RuntimeException result = converter.convert(ex, study);
+
+        assertEquals(result.getClass(), 
+            org.sagebionetworks.bridge.exceptions.ConstraintViolationException.class);
+        assertEquals(result.getMessage(), 
+            "This study cannot be deleted or updated because it is referenced by an account.");
     }
 }

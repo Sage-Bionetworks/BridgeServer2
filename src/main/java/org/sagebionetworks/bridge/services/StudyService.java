@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 
 import java.util.Set;
 
@@ -103,6 +104,7 @@ public class StudyService {
         checkNotNull(study);
         
         study.setAppId(appId);
+        study.setPhase(DESIGN);
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
         study.setVersion(null);
@@ -132,14 +134,14 @@ public class StudyService {
         checkNotNull(study);
 
         study.setAppId(appId);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
-        
         Study existing = getStudy(appId, study.getIdentifier(), true);
         if (study.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(Study.class);
         }
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
+        study.setPhase(existing.getPhase());
+        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
         return studyDao.updateStudy(study);
     }

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.BridgeUtils.getTypeName;
+
 import java.io.Serializable;
 import java.util.Map;
 
@@ -12,7 +14,6 @@ import com.google.common.collect.ImmutableMap;
 import org.hibernate.NonUniqueObjectException;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 
@@ -50,6 +51,8 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
     private static final Map<String,String> FOREIGN_KEY_CONSTRAINTS = new ImmutableMap.Builder<String,String>()
             .put("AssessmentRef-Assessment-Constraint", "a scheduling session")
             .put("Schedule-Organization-Constraint", "a schedule")
+            .put("Substudies-Schedule-Constraint", "a study")
+            .put("`fk_substudy`", "an account")
             .build();
     
     /**
@@ -64,7 +67,7 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
 
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {
-        String name = BridgeUtils.getTypeName(entity.getClass());
+        String name = (entity == null) ? "item" : getTypeName(entity.getClass());
         
         if (exception instanceof OptimisticLockException) {
             return new ConcurrentModificationException(String.format(WRONG_VERSION_MSG, name));

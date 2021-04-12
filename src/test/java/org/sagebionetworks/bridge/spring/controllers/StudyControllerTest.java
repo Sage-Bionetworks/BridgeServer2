@@ -189,7 +189,7 @@ public class StudyControllerTest extends Mockito {
         verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
         Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getIdentifier(), "oneId");
+        assertEquals(persisted.getIdentifier(), "id");
         assertEquals(persisted.getName(), "oneName");
     }
 

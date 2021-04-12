@@ -72,7 +72,11 @@ public class Scheduler {
     }
 
     void scheduleTimeWindowSequence(Timeline.Builder builder, Schedule2 schedule, Session session, TimeWindow window) {
-        int studyLengthInDays = schedule.getDuration().toStandardDays().getDays(); // can be in days or weeks
+        // Can be in days or weeks. Note that this means no individual session time stream can be longer than the
+        // duration of the study, *not* that the study will last the duration on the calendar, since events that 
+        // trigger a session series can start at any time. Those sessions will *also* run for the duration. It’s up 
+        // to study designers to reconcile this for their study. 
+        int studyLengthInDays = schedule.getDuration().toStandardDays().getDays(); 
         
         int delayInDays = (session.getDelay() == null) ? 0 : session.getDelay().toStandardDays().getDays();
         int intervalInDays = (session.getInterval() == null) ? 0 : session.getInterval().toStandardDays().getDays();

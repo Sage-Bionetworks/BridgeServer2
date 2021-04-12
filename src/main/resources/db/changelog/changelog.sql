@@ -542,3 +542,46 @@ CREATE TABLE `TimelineMetadata` (
   CONSTRAINT `TimelineMetadata-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE,
   CONSTRAINT `TimelineMetadata-Assessment-Constraint` FOREIGN KEY (`assessmentGuid`) REFERENCES `Assessments` (`guid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:29
+
+ALTER TABLE `Substudies`
+ADD COLUMN `phase` enum('LEGACY', 'DESIGN', 'PUBLIC_RECRUITMENT', 'ENROLL_BY_INVITATION', 'IN_FLIGHT', 'ANALYSIS', 'COMPLETED', 'WITHDRAWN') DEFAULT 'LEGACY',
+ADD COLUMN `details` varchar(510) DEFAULT NULL,
+ADD COLUMN `studyLogoUrl` varchar(255) DEFAULT NULL,
+ADD COLUMN `colorScheme` text DEFAULT NULL,
+ADD COLUMN `institutionId` varchar(255) DEFAULT NULL,
+ADD COLUMN `irbProtocolId` varchar(255) DEFAULT NULL,
+ADD COLUMN `irbApprovedOn` varchar(12) DEFAULT NULL,
+ADD COLUMN `irbApprovedUntil` varchar(12) DEFAULT NULL,
+ADD COLUMN `scheduleGuid` varchar(255) DEFAULT NULL,
+ADD COLUMN `disease` varchar(255) DEFAULT NULL,
+ADD COLUMN `studyDesignType` varchar(255) DEFAULT NULL;
+
+ALTER TABLE `Substudies`
+ADD CONSTRAINT `Substudies-Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`) ON DELETE RESTRICT;
+
+CREATE TABLE `StudyContacts` (
+  `appId` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `role` enum('IRB','PRINCIPAL_INVESTIGATOR','INVESTIGATOR','SPONSOR','STUDY_SUPPORT','TECHNICAL_SUPPORT') NOT NULL,
+  `position` varchar(255),
+  `affiliation` varchar(255),
+  `jurisdiction` varchar(255),
+  `email` varchar(255),
+  `phone` varchar(20),
+  `phoneRegion` varchar(2),
+  `placeName` varchar(255),
+  `street` varchar(255),
+  `division` varchar(255),
+  `mailRouting` varchar(255),
+  `city` varchar(255),
+  `state` varchar(255),
+  `postalCode` varchar(50),
+  `country` varchar(255),
+  `pos` int(10) signed,
+  PRIMARY KEY (`appId`, `studyId`, `name`),
+  CONSTRAINT `StudyContact-Study-Constraint` FOREIGN KEY (`studyId`,`appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
