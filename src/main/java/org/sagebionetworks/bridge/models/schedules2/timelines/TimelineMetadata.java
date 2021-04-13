@@ -32,6 +32,8 @@ public class TimelineMetadata implements BridgeEntity {
         copy.setAssessmentRevision(meta.getAssessmentRevision());
         copy.setSessionInstanceGuid(meta.getSessionInstanceGuid());
         copy.setSessionGuid(meta.getSessionGuid());
+        copy.setSessionInstanceStartDay(meta.getSessionInstanceStartDay());
+        copy.setSessionInstanceEndDay(meta.getSessionInstanceEndDay());
         copy.setScheduleGuid(meta.getScheduleGuid());
         copy.setSessionStartEventId(meta.getSessionStartEventId());
         copy.setTimeWindowGuid(meta.getTimeWindowGuid());
@@ -50,6 +52,8 @@ public class TimelineMetadata implements BridgeEntity {
         map.put("assessmentRevision", Integer.toString(assessmentRevision));
         map.put("sessionInstanceGuid", sessionInstanceGuid);
         map.put("sessionGuid", sessionGuid);
+        map.put("sessionInstanceStartDay", Integer.toString(sessionInstanceStartDay));
+        map.put("sessionInstanceEndDay", Integer.toString(sessionInstanceEndDay));
         map.put("sessionStartEventId", sessionStartEventId);
         map.put("timeWindowGuid", timeWindowGuid);
         map.put("scheduleGuid", scheduleGuid);
@@ -68,6 +72,8 @@ public class TimelineMetadata implements BridgeEntity {
     private String sessionInstanceGuid;
     private String sessionGuid;
     private String sessionStartEventId;
+    private Integer sessionInstanceStartDay;
+    private Integer sessionInstanceEndDay;
     private String timeWindowGuid;
     private String scheduleGuid;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
@@ -122,6 +128,18 @@ public class TimelineMetadata implements BridgeEntity {
     }
     public void setSessionStartEventId(String sessionStartEventId) {
         this.sessionStartEventId = sessionStartEventId;
+    }
+    public Integer getSessionInstanceStartDay() {
+        return sessionInstanceStartDay;
+    }
+    public void setSessionInstanceStartDay(Integer startDay) {
+        this.sessionInstanceStartDay = startDay;
+    }
+    public Integer getSessionInstanceEndDay() {
+        return sessionInstanceEndDay;
+    }
+    public void setSessionInstanceEndDay(Integer endDay) {
+        this.sessionInstanceEndDay = endDay;
     }
     public String getTimeWindowGuid( ) {
         return timeWindowGuid;

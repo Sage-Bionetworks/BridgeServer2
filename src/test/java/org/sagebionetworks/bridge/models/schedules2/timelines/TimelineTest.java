@@ -100,6 +100,8 @@ public class TimelineTest extends Mockito {
         assertEquals(meta1.getSessionInstanceGuid(), sessionInstanceGuid);
         assertEquals(meta1.getSessionGuid(), SESSION_GUID_1);
         assertEquals(meta1.getSessionStartEventId(), "activities_retrieved");
+        assertEquals(meta1.getSessionInstanceStartDay(), Integer.valueOf(7));
+        assertEquals(meta1.getSessionInstanceEndDay(), Integer.valueOf(13));
         assertEquals(meta1.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(meta1.getScheduleGuid(), SCHEDULE_GUID);
         assertEquals(meta1.getScheduleModifiedOn(), MODIFIED_ON);
@@ -117,6 +119,8 @@ public class TimelineTest extends Mockito {
         assertEquals(meta2.getSessionInstanceGuid(), sessionInstanceGuid);
         assertEquals(meta2.getSessionGuid(), SESSION_GUID_1);
         assertEquals(meta2.getSessionStartEventId(), "activities_retrieved");
+        assertEquals(meta2.getSessionInstanceStartDay(), Integer.valueOf(7));
+        assertEquals(meta2.getSessionInstanceEndDay(), Integer.valueOf(13));
         assertEquals(meta2.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(meta2.getScheduleGuid(), SCHEDULE_GUID);
         assertEquals(meta2.getScheduleModifiedOn(), MODIFIED_ON);
@@ -134,6 +138,8 @@ public class TimelineTest extends Mockito {
         assertEquals(meta3.getSessionInstanceGuid(), sessionInstanceGuid);
         assertEquals(meta3.getSessionGuid(), SESSION_GUID_1);
         assertEquals(meta3.getSessionStartEventId(), "activities_retrieved");
+        assertEquals(meta3.getSessionInstanceStartDay(), Integer.valueOf(7));
+        assertEquals(meta3.getSessionInstanceEndDay(), Integer.valueOf(13));
         assertEquals(meta3.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(meta3.getScheduleGuid(), SCHEDULE_GUID);
         assertEquals(meta3.getScheduleModifiedOn(), MODIFIED_ON);

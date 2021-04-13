@@ -25,6 +25,8 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(meta.getSessionInstanceGuid(), "sessionInstanceGuid");
         assertEquals(meta.getSessionGuid(), "sessionGuid");
         assertEquals(meta.getSessionStartEventId(), "enrollment");
+        assertEquals(meta.getSessionInstanceStartDay(), Integer.valueOf(5));
+        assertEquals(meta.getSessionInstanceEndDay(), Integer.valueOf(15));
         assertEquals(meta.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(meta.getScheduleGuid(), "scheduleGuid");
         assertEquals(meta.getScheduleModifiedOn(), MODIFIED_ON);
@@ -44,6 +46,8 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(copy.getSessionInstanceGuid(), "sessionInstanceGuid");
         assertEquals(copy.getSessionGuid(), "sessionGuid");
         assertEquals(copy.getSessionStartEventId(), "enrollment");
+        assertEquals(copy.getSessionInstanceStartDay(), Integer.valueOf(5));
+        assertEquals(copy.getSessionInstanceEndDay(), Integer.valueOf(15));
         assertEquals(copy.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(copy.getScheduleGuid(), "scheduleGuid");
         assertEquals(copy.getScheduleModifiedOn(), MODIFIED_ON);
@@ -65,6 +69,8 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(map.get("sessionInstanceGuid"), "sessionInstanceGuid");
         assertEquals(map.get("sessionGuid"), "sessionGuid");
         assertEquals(map.get("sessionStartEventId"), "enrollment");
+        assertEquals(map.get("sessionInstanceStartDay"), "5");
+        assertEquals(map.get("sessionInstanceEndDay"), "15");
         assertEquals(map.get("timeWindowGuid"), SESSION_WINDOW_GUID_1);
         assertEquals(map.get("scheduleGuid"), "scheduleGuid");
         assertEquals(map.get("scheduleModifiedOn"), MODIFIED_ON.toString());
@@ -81,6 +87,8 @@ public class TimelineMetadataTest extends Mockito {
         meta.setSessionInstanceGuid("sessionInstanceGuid");
         meta.setSessionGuid("sessionGuid");
         meta.setSessionStartEventId("enrollment");
+        meta.setSessionInstanceStartDay(5);
+        meta.setSessionInstanceEndDay(15);
         meta.setTimeWindowGuid(SESSION_WINDOW_GUID_1);
         meta.setScheduleGuid("scheduleGuid");
         meta.setScheduleModifiedOn(MODIFIED_ON);

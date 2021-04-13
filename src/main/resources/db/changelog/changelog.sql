@@ -589,4 +589,6 @@ CREATE TABLE `StudyContacts` (
 
 ALTER TABLE `TimelineMetadata`
 ADD COLUMN `sessionStartEventId` varchar(255) NOT NULL,
-ADD COLUMN `timeWindowGuid` varchar(60) NOT NULL;
+ADD COLUMN `timeWindowGuid` varchar(60) NOT NULL,
+ADD COLUMN `sessionInstanceStartDay` int(10) NOT NULL,
+ADD COLUMN `sessionInstanceEndDay` int(10) NOT NULL;
