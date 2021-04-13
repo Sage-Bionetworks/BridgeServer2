@@ -1,10 +1,17 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_1_GUID;
+import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_2_GUID;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+
+import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -42,7 +49,7 @@ public class TimelineTest extends Mockito {
         assertEquals(schNode.get("assessments")
                 .get(0).get("instanceGuid").textValue(), "ZBi2x9clKyYLrPcHNqpjmA");
         assertEquals(schNode.get("assessments")
-                .get(0).get("refKey").textValue(), "8ab3cb798ab3cb79");
+                .get(0).get("refKey").textValue(), "646f8c04646f8c04");
         assertEquals(schNode.get("assessments")
                 .get(0).get("type").textValue(), "ScheduledAssessment");
         
@@ -52,7 +59,7 @@ public class TimelineTest extends Mockito {
         assertEquals(asmtNode.get("appId").textValue(), "local");
         assertEquals(asmtNode.get("label").textValue(), "English");
         assertEquals(asmtNode.get("minutesToComplete").intValue(), 3);
-        assertEquals(asmtNode.get("key").textValue(), "8ab3cb798ab3cb79");
+        assertEquals(asmtNode.get("key").textValue(), "646f8c04646f8c04");
         assertEquals(asmtNode.get("revision").intValue(), 100);
         assertEquals(asmtNode.get("type").textValue(), "AssessmentInfo");
 
@@ -72,6 +79,66 @@ public class TimelineTest extends Mockito {
         assertEquals(sessNode.get("message").get("message").textValue(), "Body");
         assertEquals(sessNode.get("message").get("type").textValue(), "NotificationMessage");
         assertEquals(sessNode.get("type").textValue(), "SessionInfo");
+    }
+    
+    @Test
+    public void generatesTimelineMetadataRecord() {
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        schedule.setDuration(Period.parse("P2W"));
+        
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        List<TimelineMetadata> metadata = timeline.getMetadata();
+        
+        // This is the session record
+        TimelineMetadata meta1 = metadata.get(0);
+        String sessionInstanceGuid = "So3SXnQm0sIt9vVIqj814Q";
+        assertEquals(meta1.getGuid(), sessionInstanceGuid);
+        assertNull(meta1.getAssessmentInstanceGuid());
+        assertNull(meta1.getAssessmentGuid());
+        assertNull(meta1.getAssessmentId());
+        assertNull(meta1.getAssessmentRevision());
+        assertEquals(meta1.getSessionInstanceGuid(), sessionInstanceGuid);
+        assertEquals(meta1.getSessionGuid(), SESSION_GUID_1);
+        assertEquals(meta1.getSessionStartEventId(), "activities_retrieved");
+        assertEquals(meta1.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
+        assertEquals(meta1.getScheduleGuid(), SCHEDULE_GUID);
+        assertEquals(meta1.getScheduleModifiedOn(), MODIFIED_ON);
+        assertTrue(meta1.isSchedulePublished());
+        assertEquals(meta1.getAppId(), TEST_APP_ID);
+
+        // This is the assessment #1 record
+        TimelineMetadata meta2 = metadata.get(1);
+        String asmtInstanceGuid = "ZBi2x9clKyYLrPcHNqpjmA";
+        assertEquals(meta2.getGuid(), asmtInstanceGuid);
+        assertEquals(meta2.getAssessmentInstanceGuid(), asmtInstanceGuid);
+        assertEquals(meta2.getAssessmentGuid(), ASSESSMENT_1_GUID);
+        assertEquals(meta2.getAssessmentId(), "Local Assessment 1");
+        assertEquals(meta2.getAssessmentRevision(), Integer.valueOf(100));
+        assertEquals(meta2.getSessionInstanceGuid(), sessionInstanceGuid);
+        assertEquals(meta2.getSessionGuid(), SESSION_GUID_1);
+        assertEquals(meta2.getSessionStartEventId(), "activities_retrieved");
+        assertEquals(meta2.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
+        assertEquals(meta2.getScheduleGuid(), SCHEDULE_GUID);
+        assertEquals(meta2.getScheduleModifiedOn(), MODIFIED_ON);
+        assertTrue(meta2.isSchedulePublished());
+        assertEquals(meta2.getAppId(), TEST_APP_ID);
+        
+        // This is the assessment #2 record
+        TimelineMetadata meta3 = metadata.get(2);
+        asmtInstanceGuid = "b20vr-Bb2Om655sLmp5MjQ";
+        assertEquals(meta3.getGuid(), asmtInstanceGuid);
+        assertEquals(meta3.getAssessmentInstanceGuid(), asmtInstanceGuid);
+        assertEquals(meta3.getAssessmentGuid(), ASSESSMENT_2_GUID);
+        assertEquals(meta3.getAssessmentId(), "Shared Assessment 2");
+        assertEquals(meta3.getAssessmentRevision(), Integer.valueOf(200));
+        assertEquals(meta3.getSessionInstanceGuid(), sessionInstanceGuid);
+        assertEquals(meta3.getSessionGuid(), SESSION_GUID_1);
+        assertEquals(meta3.getSessionStartEventId(), "activities_retrieved");
+        assertEquals(meta3.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
+        assertEquals(meta3.getScheduleGuid(), SCHEDULE_GUID);
+        assertEquals(meta3.getScheduleModifiedOn(), MODIFIED_ON);
+        assertTrue(meta3.isSchedulePublished());
+        assertEquals(meta3.getAppId(), TEST_APP_ID);
     }
     
     @Test

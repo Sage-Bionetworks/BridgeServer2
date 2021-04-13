@@ -1,13 +1,12 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 
 import org.joda.time.DateTime;
 
@@ -34,15 +33,30 @@ public class TimelineMetadata implements BridgeEntity {
         copy.setSessionInstanceGuid(meta.getSessionInstanceGuid());
         copy.setSessionGuid(meta.getSessionGuid());
         copy.setScheduleGuid(meta.getScheduleGuid());
+        copy.setSessionStartEventId(meta.getSessionStartEventId());
+        copy.setTimeWindowGuid(meta.getTimeWindowGuid());
         copy.setScheduleModifiedOn(meta.getScheduleModifiedOn());
         copy.setSchedulePublished(meta.isSchedulePublished());
         copy.setAppId(meta.getAppId());
-        if (meta.getStudyIds() != null) {
-            Set<String> set = new HashSet<>();
-            set.addAll(meta.getStudyIds());
-            copy.setStudyIds(set);
-        }
         return copy;
+    }
+    
+    public final Map<String,String> asMap() {
+        Map<String,String> map = new HashMap<>();
+        map.put("guid", guid);
+        map.put("assessmentInstanceGuid", assessmentInstanceGuid);
+        map.put("assessmentGuid", assessmentGuid);
+        map.put("assessmentId", assessmentId);
+        map.put("assessmentRevision", Integer.toString(assessmentRevision));
+        map.put("sessionInstanceGuid", sessionInstanceGuid);
+        map.put("sessionGuid", sessionGuid);
+        map.put("sessionStartEventId", sessionStartEventId);
+        map.put("timeWindowGuid", timeWindowGuid);
+        map.put("scheduleGuid", scheduleGuid);
+        map.put("scheduleModifiedOn", scheduleModifiedOn.toString());
+        map.put("schedulePublished", Boolean.toString(schedulePublished));
+        map.put("appId", appId);
+        return map;
     }
     
     @Id
@@ -53,19 +67,13 @@ public class TimelineMetadata implements BridgeEntity {
     private Integer assessmentRevision;
     private String sessionInstanceGuid;
     private String sessionGuid;
+    private String sessionStartEventId;
+    private String timeWindowGuid;
     private String scheduleGuid;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime scheduleModifiedOn;
     private boolean schedulePublished;
     private String appId;
-    /**
-     * A timeline is generated 1:1 from a schedule, but schedule can be used in
-     * more than one study (or study arm). The study IDs for this record will be
-     * the intersection of the participant’s enrolled studies, and the schedules
-     * that apply to the participant through these study relationships.
-     */
-    @Transient
-    private Set<String> studyIds;
     
     public String getGuid() {
         return guid;
@@ -109,6 +117,18 @@ public class TimelineMetadata implements BridgeEntity {
     public void setSessionGuid(String sessionGuid) {
         this.sessionGuid = sessionGuid;
     }
+    public String getSessionStartEventId() {
+        return sessionStartEventId;
+    }
+    public void setSessionStartEventId(String sessionStartEventId) {
+        this.sessionStartEventId = sessionStartEventId;
+    }
+    public String getTimeWindowGuid( ) {
+        return timeWindowGuid;
+    }
+    public void setTimeWindowGuid(String timeWindowGuid) {
+        this.timeWindowGuid = timeWindowGuid;
+    }
     public String getScheduleGuid() {
         return scheduleGuid;
     }
@@ -127,17 +147,10 @@ public class TimelineMetadata implements BridgeEntity {
     public void setSchedulePublished(boolean schedulePublished) {
         this.schedulePublished = schedulePublished;
     }
-    public Set<String> getStudyIds() {
-        return studyIds;
-    }
-    public void setStudyIds(Set<String> studyIds) {
-        this.studyIds = studyIds;
-    }
     public String getAppId() {
         return appId;
     }
     public void setAppId(String appId) {
         this.appId = appId;
     }
-
 }

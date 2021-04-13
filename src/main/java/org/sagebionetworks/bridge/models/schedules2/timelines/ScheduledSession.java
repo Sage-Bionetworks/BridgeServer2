@@ -1,18 +1,22 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 
+import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
+
 public class ScheduledSession {
 
-    private String refGuid;
     private String instanceGuid;
     private int startDay;
     private int endDay;
@@ -22,16 +26,23 @@ public class ScheduledSession {
     private Period expiration;
     private Boolean persistent;
     private List<ScheduledAssessment> assessments = new ArrayList<>();
+    // This is carried over in order to make it faster and easer to construct
+    // the TimelineMetadata object during construction of the Timeline. It is
+    // not part of the JSON serialization of the ScheduledSession.
+    private final Session session;
+    private final TimeWindow window;
     
-    private ScheduledSession(String refGuid, String instanceGuid, int startDay, int endDay, LocalTime startTime,
-            Period delayTime, Period expiration, Boolean persistent, List<ScheduledAssessment> assessments) {
-        this.refGuid = refGuid;
+    private ScheduledSession(String instanceGuid, int startDay, int endDay, LocalTime startTime, Period delayTime,
+            Period expiration, Boolean persistent, List<ScheduledAssessment> assessments, Session session,
+            TimeWindow window) {
         this.instanceGuid = instanceGuid;
         this.startDay = startDay;
         this.endDay = endDay;
         this.delayTime = delayTime;
         this.startTime = startTime;
         this.expiration = expiration;
+        this.session = session;
+        this.window = window;
         if (TRUE.equals(persistent)) {
             this.persistent = TRUE;    
         }
@@ -39,7 +50,7 @@ public class ScheduledSession {
     }
     
     public String getRefGuid() {
-        return refGuid;
+        return session.getGuid();
     }
     public String getInstanceGuid() {
         return instanceGuid;
@@ -65,9 +76,16 @@ public class ScheduledSession {
     public List<ScheduledAssessment> getAssessments() {
         return assessments;
     }
+    @JsonIgnore
+    public Session getSession() {
+        return session;
+    }
+    @JsonIgnore
+    public TimeWindow getTimeWindow() {
+        return window;
+    }
     
     public static class Builder {
-        private String refGuid;
         private String instanceGuid;
         private int startDay;
         private int endDay;
@@ -76,11 +94,9 @@ public class ScheduledSession {
         private Period expiration;
         private Boolean persistent;
         private List<ScheduledAssessment> assessments = new ArrayList<>();
+        private Session session;
+        private TimeWindow window;
 
-        public Builder withRefGuid(String refGuid) {
-            this.refGuid = refGuid;
-            return this;
-        }
         public Builder withInstanceGuid(String instanceGuid) {
             this.instanceGuid = instanceGuid;
             return this;
@@ -113,10 +129,20 @@ public class ScheduledSession {
             this.assessments.add(asmt);
             return this;
         }
+        public Builder withSession(Session session) {
+            this.session = session;
+            return this;
+        }
+        public Builder withTimeWindow(TimeWindow window) {
+            this.window = window;
+            return this;
+        }
         public ScheduledSession build() {
-            return new ScheduledSession(refGuid, instanceGuid, startDay, endDay, startTime, delayTime, expiration,
-                    persistent, assessments);
+            checkNotNull(session);
+            checkNotNull(window);
+            
+            return new ScheduledSession(instanceGuid, startDay, endDay, startTime, 
+                    delayTime, expiration, persistent, assessments, session, window);
         }
     }
-    
 }

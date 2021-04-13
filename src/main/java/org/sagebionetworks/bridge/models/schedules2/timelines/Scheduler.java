@@ -104,7 +104,8 @@ public class Scheduler {
             builder.withSessionInfo(SessionInfo.create(session));
             
             ScheduledSession.Builder scheduledSession = new ScheduledSession.Builder();
-            scheduledSession.withRefGuid(session.getGuid());
+            scheduledSession.withSession(session);
+            scheduledSession.withTimeWindow(window);
             scheduledSession.withStartDay(startDay);
             scheduledSession.withEndDay(endDay);
             scheduledSession.withStartTime(window.getStartTime());

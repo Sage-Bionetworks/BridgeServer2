@@ -585,3 +585,8 @@ CREATE TABLE `StudyContacts` (
   CONSTRAINT `StudyContact-Study-Constraint` FOREIGN KEY (`studyId`,`appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+-- changeset bridge:30
+
+ALTER TABLE `TimelineMetadata`
+ADD COLUMN `sessionStartEventId` varchar(255) NOT NULL,
+ADD COLUMN `timeWindowGuid` varchar(60) NOT NULL;
