@@ -862,10 +862,8 @@ public class ParticipantService {
         return getParticipant(app, account.getId(), false);
     }
 
-    public void downloadParticipantRoster(String appId, String userId, String password, String studyId,
-                                          ParticipantRosterRequest request) throws JsonProcessingException {
-        validatePassword(password);
-        Validate.entityThrowingException(new ParticipantRosterRequestValidator(), request);
+    public void getParticipantRoster(String appId, String userId, ParticipantRosterRequest request) throws JsonProcessingException {
+        Validate.entityThrowingException(ParticipantRosterRequestValidator.INSTANCE, request);
 
         ObjectMapper jsonObjectMapper = new ObjectMapper();
 
@@ -873,8 +871,8 @@ public class ParticipantService {
         ObjectNode requestNode = jsonObjectMapper.createObjectNode();
         requestNode.put(REQUEST_KEY_APP_ID, appId);
         requestNode.put(REQUEST_KEY_USER_ID, userId);
-        requestNode.put(REQUEST_KEY_PASSWORD, password);
-        requestNode.put(REQUEST_KEY_STUDY_ID, studyId);
+        requestNode.put(REQUEST_KEY_PASSWORD, request.getPassword());
+        requestNode.put(REQUEST_KEY_STUDY_ID, request.getStudyId());
 
         ObjectNode requestMsg = jsonObjectMapper.createObjectNode();
         requestMsg.put(REQUEST_KEY_SERVICE, DOWNLOAD_ROSTER_SERVICE_TITLE);
@@ -887,12 +885,6 @@ public class ParticipantService {
         SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJson);
         LOG.info("Sent request to SQS for userId=" + userId + ", app=" + appId +
                 "; receipted message ID=" + sqsResult.getMessageId());
-    }
-
-    private void validatePassword(String password) {
-        Errors error = Validate.getErrorsFor(password);
-        PasswordPolicy passwordPolicy = new PasswordPolicy(8, true, false, true, true);
-        ValidatorUtils.validatePassword(error, passwordPolicy, password);
     }
     
     private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {

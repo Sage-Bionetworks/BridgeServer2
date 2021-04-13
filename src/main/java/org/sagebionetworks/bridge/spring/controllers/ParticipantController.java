@@ -608,28 +608,27 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/emailRoster")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public StatusMessage getParticipantRosterForWorker() throws JsonProcessingException {
+    public StatusMessage getParticipantRoster() throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
         String appId = session.getAppId();
 
         StudyParticipant participant = session.getParticipant();
-        if (participant.getEmail() != null && !participant.getEmailVerified()) {
+        if (participant.getEmail() != null || !participant.getEmailVerified()) {
             throw new BadRequestException("Cannot request user data");
         }
         if (RequestContext.get().isInRole(STUDY_COORDINATOR) && !RequestContext.get().isInRole(RESEARCHER)
             && RequestContext.get().getCallerOrgMembership() == null) {
-            throw new BadRequestException("Caller is a study coordinator without an org membership.");
+            throw new UnauthorizedException("Caller is a study coordinator without an org membership.");
         }
 
         ParticipantRosterRequest request = parseJson(ParticipantRosterRequest.class);
-        String password = request.getPassword();
         String studyId = request.getStudyId();
 
         if (studyId != null && !RequestContext.get().getOrgSponsoredStudies().contains(studyId)) {
-            throw new BadRequestException("Requested studyId is not sponsored by the caller's org.");
+            throw new UnauthorizedException("Requested studyId is not sponsored by the caller's org.");
         }
 
-        participantService.downloadParticipantRoster(appId, session.getId(), password, studyId, request);
+        participantService.getParticipantRoster(appId, session.getId(), request);
 
         return new StatusMessage("Download initiated.");
     }

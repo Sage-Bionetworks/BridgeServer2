@@ -1,11 +1,16 @@
 package org.sagebionetworks.bridge.validators;
 
 import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
+import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
+import static org.apache.commons.lang3.StringUtils.isBlank;
+
 /** Validator for {@link org.sagebionetworks.bridge.models.ParticipantRosterRequest}. */
 public class ParticipantRosterRequestValidator implements Validator {
+
+    public static final Validator INSTANCE = new ParticipantRosterRequestValidator();
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -24,8 +29,10 @@ public class ParticipantRosterRequestValidator implements Validator {
             // password
             if (request.getPassword() == null) {
                 errors.rejectValue("password", Validate.CANNOT_BE_NULL);
-            } else if (request.getPassword().isEmpty()) {
+            } else if (isBlank(request.getPassword())) {
                 errors.rejectValue("password", Validate.CANNOT_BE_BLANK);
+            } else {
+                validatePassword(request.getPassword());
             }
 
             // studyId
@@ -33,5 +40,11 @@ public class ParticipantRosterRequestValidator implements Validator {
                 errors.rejectValue("studyId", Validate.CANNOT_BE_NULL);
             }
         }
+    }
+
+    private void validatePassword(String password) {
+        Errors error = Validate.getErrorsFor(password);
+        PasswordPolicy passwordPolicy = new PasswordPolicy(8, true, false, true, true);
+        ValidatorUtils.validatePassword(error, passwordPolicy, password);
     }
 }
