@@ -214,12 +214,12 @@ public class Schedule2ControllerTest extends Mockito {
     @Test
     public void getSchedule() {
         Schedule2 schedule = new Schedule2();
-        when(mockService.getSchedule(TEST_APP_ID, GUID)).thenReturn(schedule);
+        when(mockService.getSchedule(TEST_APP_ID, null, GUID)).thenReturn(schedule);
         
         Schedule2 retValue = controller.getSchedule(GUID);
         assertEquals(retValue, schedule);
         
-        verify(mockService).getSchedule(TEST_APP_ID, GUID);
+        verify(mockService).getSchedule(TEST_APP_ID, null, GUID);
     }
     
     @Test

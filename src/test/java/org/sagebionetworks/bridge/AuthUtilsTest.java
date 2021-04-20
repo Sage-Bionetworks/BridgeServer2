@@ -523,6 +523,22 @@ public class AuthUtilsTest extends Mockito {
         
         assertTrue( AuthUtils.CAN_READ_SCHEDULES.check(ORG_ID, TEST_ORG_ID) );
     }
+
+    @Test
+    public void canReadSchedulesSucceedsForEnrollee() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        
+        assertTrue( AuthUtils.CAN_READ_SCHEDULES.check(STUDY_ID, TEST_STUDY_ID) );
+    }
+
+    @Test
+    public void canReadSchedulesFailsForNonEnrollee() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of("someOtherStudy")).build());
+        
+        assertFalse( AuthUtils.CAN_READ_SCHEDULES.check(STUDY_ID, TEST_STUDY_ID) );
+    }
     
     @Test
     public void canReadSchedulesFailsForStudyDesignerInOtherOrg() {

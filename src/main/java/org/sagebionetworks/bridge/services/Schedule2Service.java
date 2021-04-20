@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_CREATE_SCHEDULES;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SCHEDULES;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_SCHEDULES;
@@ -19,6 +20,8 @@ import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 
 import java.util.Set;
 import java.util.function.Consumer;
+
+import javax.annotation.Nullable;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -87,7 +90,7 @@ public class Schedule2Service {
     public PagedResourceList<Schedule2> getSchedules(String appId, int offsetBy, int pageSize, boolean includeDeleted) {
         checkNotNull(appId);
         
-        // Cannot match on organization; this call has to be made by a developer or admin
+        // Cannot match on organization or study; this call has to be made by a developer or admin
         CAN_READ_SCHEDULES.checkAndThrow();
         
         if (offsetBy < 0) {
@@ -128,16 +131,18 @@ public class Schedule2Service {
     }
 
     /**
-     * Get an individual schedule.
+     * Get an individual schedule. Study ID does not need to be supplied unless the caller
+     * is gaining access to the schedule through enrollment in the study (for all administrative
+     * calls of this method, it can be null).
      */
-    public Schedule2 getSchedule(String appId, String guid) {
+    public Schedule2 getSchedule(String appId, @Nullable String studyId, String guid) {
         checkNotNull(appId);
         checkNotNull(guid);
         
         Schedule2 schedule = dao.getSchedule(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
-        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, schedule.getOwnerId());
+        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, schedule.getOwnerId(), STUDY_ID, studyId);
 
         return schedule;
     }

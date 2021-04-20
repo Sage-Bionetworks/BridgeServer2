@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.getClientData;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -203,7 +204,20 @@ public class Schedule2ServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
         
-        Schedule2 retValue = service.getSchedule(TEST_APP_ID, GUID);
+        Schedule2 retValue = service.getSchedule(TEST_APP_ID, TEST_STUDY_ID, GUID);
+        assertEquals(retValue, schedule);
+    }
+    
+    @Test
+    public void getScheduleWorksForEnrollee() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        
+        Schedule2 schedule = new Schedule2();
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
+        
+        Schedule2 retValue = service.getSchedule(TEST_APP_ID, TEST_STUDY_ID, GUID);
         assertEquals(retValue, schedule);
     }
     
@@ -212,7 +226,7 @@ public class Schedule2ServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
         
-        service.getSchedule(TEST_APP_ID, GUID);
+        service.getSchedule(TEST_APP_ID, null, GUID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -220,7 +234,7 @@ public class Schedule2ServiceTest extends Mockito {
     public void getScheduleNotFound() {
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
         
-        service.getSchedule(TEST_APP_ID, GUID);
+        service.getSchedule(TEST_APP_ID, null, GUID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -234,7 +248,7 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setOwnerId("some-other-organization");
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
         
-        service.getSchedule(TEST_APP_ID, GUID);
+        service.getSchedule(TEST_APP_ID, null, GUID);
     }
     
     @Test

@@ -1,11 +1,16 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.apache.http.HttpHeaders.IF_MODIFIED_SINCE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
+import static org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler.INSTANCE;
+import static org.springframework.http.HttpStatus.NOT_MODIFIED;
+import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
@@ -17,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -46,11 +52,16 @@ import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.Schedule2Service;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -82,6 +93,10 @@ public class StudyParticipantController extends BaseController {
     
     private ActivityEventService activityEventService;
     
+    private StudyService studyService;
+    
+    private Schedule2Service scheduleService;
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -101,7 +116,70 @@ public class StudyParticipantController extends BaseController {
     final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
     }
+    
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
+    
+    @Autowired
+    final void setSchedule2Service(Schedule2Service scheduleService) {
+        this.scheduleService = scheduleService;
+    }
+    
+    @GetMapping("/v5/studies/{studyId}/participants/self/timeline")
+    public ResponseEntity<Timeline> getTimelineForSelf(@PathVariable String studyId) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        if (!session.getParticipant().getStudyIds().contains(studyId)) {
+            throw new UnauthorizedException("Caller is not enrolled in study '" + studyId + "'");
+        }
+        Study study = studyService.getStudy(session.getAppId(), studyId, true);
+        if (study.getScheduleGuid() == null) {
+            throw new EntityNotFoundException(Schedule2.class);
+        }
+        DateTime modifiedSince = modifiedSinceHeader();
+        DateTime modifiedOn = modifiedOn(studyId);
+        
+        if (isUpToDate(modifiedSince, modifiedOn)) {
+            return new ResponseEntity<>(NOT_MODIFIED);
+        }
+        Schedule2 schedule = scheduleService.getSchedule(
+                session.getAppId(), studyId, study.getScheduleGuid());
+        cacheProvider.setObject(
+                scheduleModificationTimestamp(studyId), schedule.getModifiedOn().toString());
+        return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
+    }
+    
+    private DateTime modifiedSinceHeader() {
+        return getDateTimeOrDefault(request().getHeader(IF_MODIFIED_SINCE), null);
+    }
 
+    private DateTime modifiedOn(String studyId) {
+        return getDateTimeOrDefault(cacheProvider.getObject(
+                scheduleModificationTimestamp(studyId), String.class), null);
+    }
+    
+    private boolean isUpToDate(DateTime modifiedSince, DateTime modifiedOn) {
+        return modifiedSince != null && modifiedOn != null && modifiedSince.isAfter(modifiedOn);
+    }
+    
+    @GetMapping("/v5/studies/{studyId}/participants/{userId}/timeline")
+    public Timeline getTimelineForUser(@PathVariable String studyId, @PathVariable String userId) {
+        UserSession session = getAdministrativeSession();
+        getValidAccountInStudy(session.getAppId(), studyId, userId);
+        
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+        
+        // Until protocols with study arms are implemented, all participants in 
+        // a study will get the same schedule.
+        Study study = studyService.getStudy(session.getAppId(), studyId, true);
+        if (study.getScheduleGuid() == null) {
+            throw new EntityNotFoundException(Schedule2.class);
+        }
+        return scheduleService.getTimelineForSchedule(session.getAppId(), study.getScheduleGuid());
+    }
+    
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/enrollments")
     public PagedResourceList<EnrollmentDetail> getEnrollmentsForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
