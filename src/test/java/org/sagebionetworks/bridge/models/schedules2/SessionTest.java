@@ -53,6 +53,7 @@ public class SessionTest {
         AssessmentReference asmt1 = new AssessmentReference();
         asmt1.setGuid(ASSESSMENT_1_GUID);
         asmt1.setAppId("local");
+        asmt1.setIdentifier("Local Assessment 1");
         asmt1.setTitle("Assessment 1");
         asmt1.setMinutesToComplete(3);
         asmt1.setRevision(100);
@@ -61,6 +62,7 @@ public class SessionTest {
         AssessmentReference asmt2 = new AssessmentReference();
         asmt2.setGuid(ASSESSMENT_2_GUID);
         asmt2.setAppId("shared");
+        asmt2.setIdentifier("Shared Assessment 2");
         asmt2.setTitle("Assessment 2");
         asmt2.setMinutesToComplete(5);
         asmt2.setRevision(200);
@@ -102,9 +104,10 @@ public class SessionTest {
         
         ArrayNode asmtsArray = (ArrayNode)node.get("assessments");
         assertEquals(asmtsArray.size(), 2);
-        assertEquals(asmtsArray.get(0).size(), 7);
+        assertEquals(asmtsArray.get(0).size(), 8);
         assertEquals(asmtsArray.get(0).get("guid").textValue(), ASSESSMENT_1_GUID);
         assertEquals(asmtsArray.get(0).get("appId").textValue(), "local");
+        assertEquals(asmtsArray.get(0).get("identifier").textValue(), "Local Assessment 1");
         assertEquals(asmtsArray.get(0).get("title").textValue(), "Assessment 1");
         assertEquals(asmtsArray.get(0).get("minutesToComplete").intValue(), 3);
         assertEquals(asmtsArray.get(0).get("revision").intValue(), 100);

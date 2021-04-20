@@ -79,20 +79,24 @@ public class Timeline {
             this.lang = lang;
             return this;
         }
-        public Builder withScheduledSession(ScheduledSession session) {
-            this.scheduledSessions.add(session);
+        public Builder withScheduledSession(ScheduledSession schSession) {
+            this.scheduledSessions.add(schSession);
             
             TimelineMetadata sessionMeta = new TimelineMetadata();
-            sessionMeta.setGuid(session.getInstanceGuid());
+            sessionMeta.setGuid(schSession.getInstanceGuid());
             sessionMeta.setAppId(schedule.getAppId());
             sessionMeta.setScheduleGuid(schedule.getGuid());
             sessionMeta.setScheduleModifiedOn(schedule.getModifiedOn());
             sessionMeta.setSchedulePublished(schedule.isPublished());
-            sessionMeta.setSessionInstanceGuid(session.getInstanceGuid());
-            sessionMeta.setSessionGuid(session.getRefGuid());
+            sessionMeta.setSessionInstanceGuid(schSession.getInstanceGuid());
+            sessionMeta.setSessionGuid(schSession.getSession().getGuid());
+            sessionMeta.setSessionStartEventId(schSession.getSession().getStartEventId());
+            sessionMeta.setSessionInstanceStartDay(schSession.getStartDay());
+            sessionMeta.setSessionInstanceEndDay(schSession.getEndDay());
+            sessionMeta.setTimeWindowGuid(schSession.getTimeWindow().getGuid());
             metadata.add(sessionMeta);
             
-            for (ScheduledAssessment schAsmt : session.getAssessments()) { 
+            for (ScheduledAssessment schAsmt : schSession.getAssessments()) { 
                 TimelineMetadata schMeta = TimelineMetadata.copy(sessionMeta);
                 schMeta.setGuid(schAsmt.getInstanceGuid());
                 schMeta.setAssessmentInstanceGuid(schAsmt.getInstanceGuid());
