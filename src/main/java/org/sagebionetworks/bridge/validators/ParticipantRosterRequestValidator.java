@@ -32,7 +32,8 @@ public class ParticipantRosterRequestValidator implements Validator {
             } else if (isBlank(request.getPassword())) {
                 errors.rejectValue("password", Validate.CANNOT_BE_BLANK);
             } else {
-                validatePassword(request.getPassword());
+                PasswordPolicy passwordPolicy = new PasswordPolicy(8, true, false, true, true);
+                ValidatorUtils.validatePassword(errors, passwordPolicy, request.getPassword());
             }
 
             // studyId
@@ -40,11 +41,5 @@ public class ParticipantRosterRequestValidator implements Validator {
                 errors.rejectValue("studyId", Validate.CANNOT_BE_NULL);
             }
         }
-    }
-
-    private void validatePassword(String password) {
-        Errors error = Validate.getErrorsFor(password);
-        PasswordPolicy passwordPolicy = new PasswordPolicy(8, true, false, true, true);
-        ValidatorUtils.validatePassword(error, passwordPolicy, password);
     }
 }

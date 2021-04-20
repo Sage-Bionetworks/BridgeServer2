@@ -613,7 +613,7 @@ public class ParticipantController extends BaseController {
         String appId = session.getAppId();
 
         StudyParticipant participant = session.getParticipant();
-        if (participant.getEmail() != null || !participant.getEmailVerified()) {
+        if (participant.getEmail() == null || !participant.getEmailVerified()) {
             throw new BadRequestException("Cannot request user data");
         }
         if (RequestContext.get().isInRole(STUDY_COORDINATOR) && !RequestContext.get().isInRole(RESEARCHER)

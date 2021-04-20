@@ -26,13 +26,10 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Maps;
@@ -42,10 +39,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
-import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.validators.ParticipantRosterRequestValidator;
-import org.sagebionetworks.bridge.validators.PasswordResetValidator;
-import org.sagebionetworks.bridge.validators.ValidatorUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -100,7 +94,6 @@ import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.AccountSummarySearchValidator;
 import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.Validate;
-import org.springframework.validation.Errors;
 
 @Component
 public class ParticipantService {
