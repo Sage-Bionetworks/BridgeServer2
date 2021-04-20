@@ -614,7 +614,7 @@ public class ParticipantController extends BaseController {
 
         StudyParticipant participant = session.getParticipant();
         if (participant.getEmail() == null || !participant.getEmailVerified()) {
-            throw new BadRequestException("Cannot request user data");
+            throw new BadRequestException("Cannot request user data.");
         }
         if (RequestContext.get().isInRole(STUDY_COORDINATOR) && !RequestContext.get().isInRole(RESEARCHER)
             && RequestContext.get().getCallerOrgMembership() == null) {
