@@ -135,19 +135,14 @@ public class StudyParticipantController extends BaseController {
             throw new UnauthorizedException("Caller is not enrolled in study '" + studyId + "'");
         }
         Study study = studyService.getStudy(session.getAppId(), studyId, true);
-        if (study.getScheduleGuid() == null) {
-            throw new EntityNotFoundException(Schedule2.class);
-        }
         DateTime modifiedSince = modifiedSinceHeader();
         DateTime modifiedOn = modifiedOn(studyId);
         
         if (isUpToDate(modifiedSince, modifiedOn)) {
             return new ResponseEntity<>(NOT_MODIFIED);
         }
-        Schedule2 schedule = scheduleService.getSchedule(
-                session.getAppId(), studyId, study.getScheduleGuid());
-        cacheProvider.setObject(
-                scheduleModificationTimestamp(studyId), schedule.getModifiedOn().toString());
+        Schedule2 schedule = scheduleService.getScheduleForStudy(session.getAppId(), study);
+        cacheProvider.setObject(scheduleModificationTimestamp(studyId), schedule.getModifiedOn().toString());
         return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
     }
     

@@ -70,7 +70,7 @@ public class Schedule2Controller extends BaseController {
     public Schedule2 getSchedule(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         
-        return service.getSchedule(session.getAppId(), null, guid);
+        return service.getSchedule(session.getAppId(), guid);
     }
     
     @GetMapping("/v5/schedules/{guid}/timeline")

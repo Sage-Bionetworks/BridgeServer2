@@ -21,8 +21,6 @@ import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 import java.util.Set;
 import java.util.function.Consumer;
 
-import javax.annotation.Nullable;
-
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +40,7 @@ import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
@@ -131,18 +130,36 @@ public class Schedule2Service {
     }
 
     /**
-     * Get an individual schedule. Study ID does not need to be supplied unless the caller
-     * is gaining access to the schedule through enrollment in the study (for all administrative
-     * calls of this method, it can be null).
+     * Get an individual schedule.
      */
-    public Schedule2 getSchedule(String appId, @Nullable String studyId, String guid) {
+    public Schedule2 getSchedule(String appId, String guid) {
         checkNotNull(appId);
         checkNotNull(guid);
         
         Schedule2 schedule = dao.getSchedule(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
-        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, schedule.getOwnerId(), STUDY_ID, studyId);
+        CAN_READ_SCHEDULES.checkAndThrow(ORG_ID, schedule.getOwnerId());
+
+        return schedule;
+    }
+    
+    /**
+     * Get the schedule assigned to a study. Access is only checked through 
+     * enrollment in the study; administrative calls should be made through the
+     * getSchedule() method of this service.
+     */
+    public Schedule2 getScheduleForStudy(String appId, Study study) {
+        checkNotNull(appId);
+        checkNotNull(study);
+        
+        CAN_READ_SCHEDULES.checkAndThrow(STUDY_ID, study.getIdentifier());
+        
+        if (study.getScheduleGuid() == null) {
+            throw new EntityNotFoundException(Schedule2.class);
+        }
+        Schedule2 schedule = dao.getSchedule(appId, study.getScheduleGuid())
+                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
 
         return schedule;
     }
