@@ -13,11 +13,13 @@ import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.getClientData;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 import java.util.List;
 import java.util.Optional;
@@ -53,6 +55,7 @@ import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 public class Schedule2ServiceTest extends Mockito {
     
@@ -235,6 +238,68 @@ public class Schedule2ServiceTest extends Mockito {
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
         
         service.getSchedule(TEST_APP_ID, GUID);
+    }
+    
+    @Test
+    public void getScheduleForStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(GUID);
+        
+        Schedule2 schedule = new Schedule2();
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
+        
+        Schedule2 retValue = service.getScheduleForStudy(TEST_APP_ID, study);
+        assertEquals(retValue, schedule);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getScheduleForStudyNotEnrolled() {
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(GUID);
+        
+        Schedule2 schedule = new Schedule2();
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
+        
+        service.getScheduleForStudy(TEST_APP_ID, study);
+    }
+
+    @Test
+    public void getScheduleForStudyNoSchedule() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        
+        try {
+            service.getScheduleForStudy(TEST_APP_ID, study);
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+            assertEquals("Schedule not found.", e.getMessage());
+        }
+        verify(mockDao, never()).getSchedule(any(), any());
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getScheduleForStudyScheduleNotFound() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(GUID);
+        
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
+        
+        service.getScheduleForStudy(TEST_APP_ID, study);
     }
     
     @Test
