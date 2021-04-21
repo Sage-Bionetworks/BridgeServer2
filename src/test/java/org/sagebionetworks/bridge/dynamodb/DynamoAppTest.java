@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.dynamodb;
 
+import static com.google.common.collect.Maps.newHashMap;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -15,7 +19,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
@@ -225,6 +231,38 @@ public class DynamoAppTest {
         // Deserialize back to a POJO and verify.
         final App deserApp = BridgeObjectMapper.get().readValue(json, App.class);
         assertEquals(deserApp, app);
+    }
+    
+    @SuppressWarnings("deprecation")
+    @Test
+    public void activityEventKeysMergeIntoCustomEvents() { 
+        App app = App.create();
+        // key3 would be future_only, except that it is already set in custom
+        // events, so that will be used in preference
+        app.setActivityEventKeys(Sets.newHashSet("key1", "key2", "key3"));
+        app.setCustomEvents(newHashMap(ImmutableMap.of(
+                "key3", MUTABLE, "key4", IMMUTABLE)));
+        assertEquals(app.getCustomEvents().get("key1"), FUTURE_ONLY);
+        assertEquals(app.getCustomEvents().get("key2"), FUTURE_ONLY);
+        assertEquals(app.getCustomEvents().get("key3"), MUTABLE);
+        assertEquals(app.getCustomEvents().get("key4"), IMMUTABLE);
+        
+        assertTrue(app.getActivityEventKeys().isEmpty());
+    }
+    
+    @SuppressWarnings("deprecation")
+    @Test
+    public void activityEventKeysMigrateToCustomEvents() {
+        App app = App.create();
+        app.setActivityEventKeys(ImmutableSet.of("key1", "key2"));
+        
+        assertEquals(app.getCustomEvents().get("key1"), FUTURE_ONLY);
+        assertEquals(app.getCustomEvents().get("key2"), FUTURE_ONLY);
+        
+        app.setActivityEventKeys(null);
+
+        assertEquals(app.getCustomEvents().get("key1"), FUTURE_ONLY);
+        assertEquals(app.getCustomEvents().get("key2"), FUTURE_ONLY);
     }
     
     void assertEqualsAndNotNull(Object expected, Object actual) {

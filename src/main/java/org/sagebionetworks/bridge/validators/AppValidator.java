@@ -74,9 +74,9 @@ public class AppValidator implements Validator {
                 errors.rejectValue("identifier", "must be at least 2 characters");
             }
         }
-        if (app.getActivityEventKeys().stream()
+        if (app.getCustomEvents().keySet().stream()
                 .anyMatch(k -> !k.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN))) {
-            errors.rejectValue("activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+            errors.rejectValue("customEvents", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
         }
         if (app.getAutomaticCustomEvents() != null) {
             for (Map.Entry<String, String> entry : app.getAutomaticCustomEvents().entrySet()) {
@@ -91,7 +91,7 @@ public class AppValidator implements Validator {
                 Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(value);
                 
                 String originEventKey = autoEventSpec.getLeft();
-                if (!specifiesValidEventKey(app.getActivityEventKeys(), originEventKey)) {
+                if (!specifiesValidEventKey(app.getCustomEvents().keySet(), originEventKey)) {
                     errors.rejectValue("automaticCustomEvents["+key+"]", "'" + originEventKey + "' is not a valid custom or system event ID");
                 }
                 String periodString = autoEventSpec.getRight();
