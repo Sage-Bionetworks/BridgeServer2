@@ -35,11 +35,6 @@ public class ParticipantRosterRequestValidator implements Validator {
                 PasswordPolicy passwordPolicy = new PasswordPolicy(8, true, false, true, true);
                 ValidatorUtils.validatePassword(errors, passwordPolicy, request.getPassword());
             }
-
-            // studyId
-            if (request.getStudyId() == null) {
-                errors.rejectValue("studyId", Validate.CANNOT_BE_NULL);
-            }
         }
     }
 }

@@ -8,7 +8,7 @@ import org.sagebionetworks.bridge.json.DateTimeDeserializer;
  * Request for participant roster download.
  */
 
-public class ParticipantRosterRequest {
+public class ParticipantRosterRequest implements BridgeEntity{
     private final String password;
     private final String studyId;
 
