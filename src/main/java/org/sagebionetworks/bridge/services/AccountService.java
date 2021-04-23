@@ -342,7 +342,7 @@ public class AccountService {
     public String getHealthCodeForAccount(AccountId accountId) {
         checkNotNull(accountId);
         
-        Account account = getAccount(accountId);
+        Account account = getAccountNoFilter(accountId).orElse(null);
         if (account != null) {
             return account.getHealthCode();
         } else {

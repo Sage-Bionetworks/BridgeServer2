@@ -592,3 +592,18 @@ ADD COLUMN `sessionStartEventId` varchar(255) NOT NULL,
 ADD COLUMN `timeWindowGuid` varchar(60) NOT NULL,
 ADD COLUMN `sessionInstanceStartDay` int(10) NOT NULL,
 ADD COLUMN `sessionInstanceEndDay` int(10) NOT NULL;
+
+-- changeset bridge:31
+
+CREATE TABLE `AdherenceRecords` (
+  `userId` varchar(255) NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `guid` varchar(128) NOT NULL,
+  `startedOn` bigint(20) NOT NULL,
+  `finishedOn` bigint(20),
+  `clientData` mediumtext COLLATE utf8_unicode_ci,
+  PRIMARY KEY (`userId`, `studyId`, `guid`, `startedOn`),
+  CONSTRAINT `AdherenceRecord-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `AdherenceRecord-Study-Constraint` FOREIGN KEY (`studyId`) REFERENCES `Substudies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
