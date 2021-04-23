@@ -980,6 +980,20 @@ public class ConsentServiceTest extends Mockito {
         assertEquals(en.getAppId(), app.getIdentifier());
         assertEquals(en.getAccountId(), ID);
     }
+    
+    @Test
+    public void consentToResearchCanSkipEnrollment() throws Exception {
+        // We do not want it to have a studyId in this test.
+        reset(subpopulation);
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(accountService.getAccount(any())).thenReturn(account);
+
+        consentService.consentToResearch(app, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
+                SharingScope.NO_SHARING, false);
+
+        verify(accountService).updateAccount(account);
+        verify(mockEnrollmentService, never()).addEnrollment(any(), any());
+    }
 
     @Test
     public void resendConsentAgreementWithPhoneOK() throws Exception {

@@ -201,9 +201,13 @@ public class ConsentService {
         account.setSharingScope(sharingScope);
         
         account.getDataGroups().addAll(subpop.getDataGroupsAssignedWhileConsented());
-        Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), subpop.getStudyId(), account.getId());
-        enrollmentService.addEnrollment(account, newEnrollment);
-
+        
+        // Supplemental consents do not need to enroll users in a study, and so they do not
+        // declare a study ID. 
+        if (subpop.getStudyId() != null) {
+            Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), subpop.getStudyId(), account.getId());
+            enrollmentService.addEnrollment(account, newEnrollment);
+        }
         accountService.updateAccount(account);
 
         // Administrative actions, almost exclusively for testing, will send no consent documents
