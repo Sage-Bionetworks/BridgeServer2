@@ -17,6 +17,9 @@ public abstract class StringKeyMapMarshaller<T> implements DynamoDBTypeConverter
     /** {@inheritDoc} */
     @Override
     public String convert(Map<String,T> map) {
+        if (map == null) {
+            return null;
+        }
         try {
             return BridgeObjectMapper.get().writeValueAsString(map);
         } catch (JsonProcessingException ex) {
@@ -27,6 +30,9 @@ public abstract class StringKeyMapMarshaller<T> implements DynamoDBTypeConverter
     /** {@inheritDoc} */
     @Override
     public Map<String,T> unconvert(String json) {
+        if (json == null) {
+            return null;
+        }
         try {
             return BridgeObjectMapper.get().readValue(json, getTypeReference());
         } catch (IOException ex) {

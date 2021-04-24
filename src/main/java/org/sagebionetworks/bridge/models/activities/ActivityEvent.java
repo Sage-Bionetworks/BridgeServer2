@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 
 @JsonDeserialize(as = DynamoActivityEvent.class)
 public interface ActivityEvent extends BridgeEntity {
+    
     String getStudyId();
 
     @JsonIgnore
@@ -18,4 +19,7 @@ public interface ActivityEvent extends BridgeEntity {
     String getAnswerValue();
 
     Long getTimestamp();
+    
+    @JsonIgnore
+    ActivityEventUpdateType getUpdateType();
 }
