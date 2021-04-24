@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.springframework.validation.Validator;
 import org.testng.annotations.Test;
 
+import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.Assert.assertEquals;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,20 +17,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 public class UploadValidatorTest {
     private static final String UPLOAD_CONTENT = "testValidateRequest";
 
-    // The other tests in this class don't go through the controller; we want to do that
-    // because we want to verify that we get the right type back. This could easily
-    // be broken since there's no external test and we could switch the object internally.
-    @Test
-    public void uploadRequestHasCorrectType() {
-        BridgeObjectMapper mapper = new BridgeObjectMapper();
-        
-        JsonNode node = mapper.valueToTree(new UploadRequest.Builder().build());
-        assertEquals("UploadRequest", node.get("type").asText(), "Type is UploadRequest");
-    }
-
     @Test
     public void testValidateRequest() {
-        Validator validator = new UploadValidator();
+        Validator validator = UploadValidator.INSTANCE;
         
         // A valid case
         {
@@ -71,6 +61,21 @@ public class UploadValidatorTest {
         } catch (BridgeServiceException e) {
             assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "MD5 not base64 encoded");
         }
+    }
+
+    @Test
+    public void withOptionalParams() throws Exception {
+        JsonNode metadata = BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
+        UploadRequest uploadRequest = makeValidUploadRequestBuilder().withMetadata(metadata).build();
+        Validate.entityThrowingException(UploadValidator.INSTANCE, uploadRequest);
+    }
+
+    @Test
+    public void invalidMetadata() throws Exception {
+        JsonNode metadata = BridgeObjectMapper.get().readTree("[\"not\", \"an\", \"object\"]");
+        UploadRequest uploadRequest = makeValidUploadRequestBuilder().withMetadata(metadata).build();
+        assertValidatorMessage(UploadValidator.INSTANCE, uploadRequest, "metadata",
+                "must be an object node");
     }
 
     private static UploadRequest.Builder makeValidUploadRequestBuilder() {

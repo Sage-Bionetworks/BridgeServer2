@@ -33,6 +33,7 @@ public class DynamoUpload2Test {
     public void canSerialize() throws Exception {
         DateTime requestedOn = DateTime.now().withZone(DateTimeZone.UTC);
         DateTime completedOn = DateTime.now().withZone(DateTimeZone.UTC);
+        JsonNode metadata = BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
         
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
@@ -45,6 +46,7 @@ public class DynamoUpload2Test {
         upload.setEncrypted(false);
         upload.setFilename("filename.zip");
         upload.setHealthCode("healthCode");
+        upload.setMetadata(metadata);
         upload.setRecordId("ABC");
         upload.setStatus(UploadStatus.SUCCEEDED);
         upload.setAppId(TEST_APP_ID);
@@ -61,6 +63,7 @@ public class DynamoUpload2Test {
         assertEquals(node.get("contentLength").longValue(), 10000L);
         assertEquals(node.get("duplicateUploadId").textValue(), "original-upload-id");
         assertFalse(node.get("encrypted").booleanValue());
+        assertEquals(node.get("metadata"), metadata);
         assertEquals(node.get("status").textValue(), "succeeded");
         assertEquals(node.get("uploadDate").textValue(), "2016-10-10");
         assertEquals(node.get("recordId").textValue(), "ABC");
