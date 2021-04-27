@@ -6,9 +6,11 @@ import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.BOOKED;
 import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.CANCELLED;
 import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.ENTEREDINERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.IP_ADDRESS;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
@@ -79,6 +81,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -1721,6 +1724,21 @@ public class CRCControllerTest extends Mockito {
         verify(mockRequest).getHeader(AUTHORIZATION);
         verify(mockAccountService).authenticate(any(), any());
         verify(mockGBFOrderService).requestShippingConfirmations(eq(startDate), eq(endDate));
+    }
+    
+    @Test
+    public void postLabShipmentRequest_carriesOverSecurityContext() {
+        account.setRoles(ImmutableSet.of(RESEARCHER));
+        
+        AccountId accountId = AccountId.forHealthCode(APP_ID, HEALTH_CODE);
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(accountId)).thenReturn(account);
+        doReturn(null).when(controller).internalLabShipmentRequest(any(), any());
+        
+        controller.postLabShipmentRequest("healthcode:"+HEALTH_CODE);
+        
+        assertTrue(RequestContext.get().isInRole(Roles.RESEARCHER));
     }
     
     private void verifyParticipant(JsonNode payload) {
