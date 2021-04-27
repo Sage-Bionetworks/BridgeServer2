@@ -598,12 +598,12 @@ ADD COLUMN `sessionInstanceEndDay` int(10) NOT NULL;
 CREATE TABLE `AdherenceRecords` (
   `userId` varchar(255) NOT NULL,
   `studyId` varchar(60) NOT NULL,
-  `guid` varchar(128) NOT NULL,
-  `startedOn` bigint(20) NOT NULL,
-  `finishedOn` bigint(20),
-  `clientData` mediumtext COLLATE utf8_unicode_ci,
-  PRIMARY KEY (`userId`, `studyId`, `guid`, `startedOn`),
+  `instanceGuid` varchar(128) NOT NULL,
+  `startedOn` bigint(20) unsigned NOT NULL,
+  `eventTimestamp` bigint(20) unsigned,
+  `finishedOn` bigint(20) unsigned,
+  `clientData` text COLLATE utf8_unicode_ci,
+  PRIMARY KEY (`userId`, `studyId`, `instanceGuid`, `startedOn`),
   CONSTRAINT `AdherenceRecord-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `AdherenceRecord-Study-Constraint` FOREIGN KEY (`studyId`) REFERENCES `Substudies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-

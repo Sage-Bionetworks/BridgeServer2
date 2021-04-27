@@ -3,9 +3,13 @@ package org.sagebionetworks.bridge.models.schedules2.adherence;
 import java.io.Serializable;
 import java.util.Objects;
 
+import javax.persistence.Column;
+import javax.persistence.Convert;
 import javax.persistence.Embeddable;
 
 import org.joda.time.DateTime;
+
+import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 
 @SuppressWarnings("serial")
 @Embeddable
@@ -14,6 +18,8 @@ public final class AdherenceRecordId implements Serializable {
     private String userId;
     private String studyId;
     private String guid;
+    @Column(name = "startedOn")
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime startedOn;
 
     public AdherenceRecordId() {

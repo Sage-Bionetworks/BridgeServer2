@@ -88,6 +88,9 @@ public class SessionValidator implements Validator {
                 if (isBlank(asmt.getGuid())) {
                     errors.rejectValue("guid", CANNOT_BE_BLANK);
                 }
+                if (isBlank(asmt.getIdentifier())) {
+                    errors.rejectValue("identifier", CANNOT_BE_BLANK);
+                }
                 if (isBlank(asmt.getAppId())) {
                     errors.rejectValue("appId", CANNOT_BE_BLANK);
                 }

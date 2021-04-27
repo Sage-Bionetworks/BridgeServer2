@@ -145,7 +145,7 @@ public class Scheduler {
             startDay += intervalInDays;
             occurrenceCount++;
             
-        } while(intervalInDays > 0 && occurrenceCount < occurrenceMax && startDay < studyLengthInDays);
+        } while(intervalInDays > 0 && occurrenceCount < occurrenceMax && startDay <= studyLengthInDays);
     }
     
     /**

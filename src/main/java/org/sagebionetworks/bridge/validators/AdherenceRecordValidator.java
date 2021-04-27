@@ -18,14 +18,19 @@ public class AdherenceRecordValidator extends AbstractValidator {
     public void validate(Object obj, Errors errors) {
         AdherenceRecord record = (AdherenceRecord)obj;
         
+        // more things to validate
+        // that the lists and maps do not have too many entries
+        // that the events are all real...potentially fixing "custom:" using
+        // that new utility method.
+        
         if (isBlank(record.getUserId())) {
             errors.rejectValue("userId", CANNOT_BE_BLANK);
         }
         if (isBlank(record.getStudyId())) {
             errors.rejectValue("studyId", CANNOT_BE_BLANK);
         }
-        if (isBlank(record.getGuid())) {
-            errors.rejectValue("guid", CANNOT_BE_BLANK);
+        if (isBlank(record.getInstanceGuid())) {
+            errors.rejectValue("instanceGuid", CANNOT_BE_BLANK);
         }
         if (record.getStartedOn() == null) {
             errors.rejectValue("startedOn", CANNOT_BE_NULL);

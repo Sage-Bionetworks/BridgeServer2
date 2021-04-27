@@ -5,9 +5,12 @@ import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -16,6 +19,8 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.services.AdherenceService;
 
+@CrossOrigin
+@RestController
 public class AdherenceController extends BaseController {
     
     static final StatusMessage CREATED_MSG = new StatusMessage("Adherence record created.");
@@ -48,14 +53,16 @@ public class AdherenceController extends BaseController {
         AdherenceRecord record = parseJson(AdherenceRecord.class);
         record.setUserId(session.getId());
         record.setStudyId(studyId);
-        record.setGuid(guid);
+        record.setInstanceGuid(guid);
         
         service.updateAdherenceRecord(record);
         return UPDATED_MSG;
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence/search")
-    public PagedResourceList<AdherenceRecord> searchForSelfAdherenceRecords(@PathVariable String studyId) {
+    public PagedResourceList<AdherenceRecord> searchForSelfAdherenceRecords(@PathVariable String studyId,
+            @RequestParam(required = false) String offsetBy,
+            @RequestParam(required = false) String pageSize) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         AdherenceRecordsSearch payload = parseJson(AdherenceRecordsSearch.class);

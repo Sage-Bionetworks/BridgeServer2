@@ -24,7 +24,7 @@ public class AdherenceRecord implements BridgeEntity {
     @Id
     private String studyId;
     @Id
-    private String guid;
+    private String instanceGuid;
     @Id
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime startedOn;
@@ -47,11 +47,11 @@ public class AdherenceRecord implements BridgeEntity {
     public void setStudyId(String studyId) {
         this.studyId = studyId;
     }
-    public String getGuid() {
-        return guid;
+    public String getInstanceGuid() {
+        return instanceGuid;
     }
-    public void setGuid(String guid) {
-        this.guid = guid;
+    public void setInstanceGuid(String instanceGuid) {
+        this.instanceGuid = instanceGuid;
     }
     public DateTime getStartedOn() {
         return startedOn;
@@ -71,6 +71,9 @@ public class AdherenceRecord implements BridgeEntity {
     public void setEventTimestamp(DateTime eventTimestamp) {
         this.eventTimestamp = eventTimestamp;
     }
+    /**
+     * Arbitrary JSON information stored by the client (limited to ~65k).
+     */
     public JsonNode getClientData() {
         return clientData;
     }

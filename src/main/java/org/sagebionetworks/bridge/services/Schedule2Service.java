@@ -311,8 +311,7 @@ public class Schedule2Service {
         checkNotNull(app);
         checkNotNull(schedule);
         
-        Set<String> keys = app.getActivityEventKeys();
-
+        Set<String> keys = app.getCustomEvents().keySet();
         for (Session session : schedule.getSessions()) {
             consumer.accept(session);
             session.setSchedule(schedule);

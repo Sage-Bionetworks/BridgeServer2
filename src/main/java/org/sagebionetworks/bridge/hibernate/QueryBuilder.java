@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.WITHDRAWN;
 
@@ -9,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
@@ -74,7 +77,23 @@ class QueryBuilder {
             }
         }
     }
-    
+    public void eventTimestamps(Map<String,DateTime> eventTimestamps) {
+        if (eventTimestamps != null && !eventTimestamps.isEmpty()) {
+            phrases.add("AND (");
+            int count = 0;
+            for (Map.Entry<String, DateTime> entry : eventTimestamps.entrySet()) {
+                String evVarName = "evt" + count;
+                String tsVarName = "ts" + count;
+                if (count++ > 0) {
+                    phrases.add("OR");
+                }
+                String q = format("(tm.sessionStartEventId = :%s AND ar.eventTimestamp = :%s)", 
+                        evVarName, tsVarName);
+                append(q, evVarName, entry.getKey(), tsVarName, entry.getValue().getMillis());
+            }
+            phrases.add(")");
+        }
+    }
     public String getQuery() {
         return BridgeUtils.SPACE_JOINER.join(phrases);
     }

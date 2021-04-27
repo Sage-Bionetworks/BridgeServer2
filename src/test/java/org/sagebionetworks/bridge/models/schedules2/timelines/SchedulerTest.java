@@ -967,7 +967,38 @@ public class SchedulerTest extends Mockito {
     public void startTimeMiddayStartDayTenExpDays() {
         int endDay = INSTANCE.calculateEndDay(20, LocalTime.parse("13:00"), 10, Period.parse("P13D"));
         assertEquals(endDay, 23);
-    }    
+    }
+    
+    // This behavior was not what I expected 
+    @Test
+    public void weeklyAppearsAt28Days() {
+        TimeWindow timeWindow = new TimeWindow();
+        timeWindow.setGuid(SESSION_WINDOW_GUID_1);
+        timeWindow.setStartTime(LocalTime.parse("08:00"));
+        timeWindow.setExpiration(Period.parse("PT12H"));
+        
+        Session session = new Session();
+        session.setGuid(SESSION_GUID_1);
+        session.setStartEventId("enrollment");
+        session.setName("Sessions repeating weekly");
+        session.setInterval(Period.parse("P1W"));
+        session.setPerformanceOrder(SEQUENTIAL);
+        session.setTimeWindows(ImmutableList.of(timeWindow));
+        session.setAssessments(ImmutableList.of(createAssessmentRef("AAA")));
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setGuid(SCHEDULE_GUID);
+        schedule.setDuration(Period.parse("P21D"));
+        schedule.setSessions(ImmutableList.of(session));
+        
+        Timeline timeline = INSTANCE.calculateTimeline(schedule);
+        assertEquals(timeline.getSchedule().size(), 4);
+        
+        // but change the expiration past the last day, and it'll be 3
+        timeWindow.setExpiration(Period.parse("PT24H"));        
+        timeline = INSTANCE.calculateTimeline(schedule);
+        assertEquals(timeline.getSchedule().size(), 3);
+    }
     
     /* ============================================================ */
     /* Many helper methods to construct a schedule */

@@ -1,12 +1,23 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence;
 
+import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+
+import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+/**
+ * Regardless of how you search, you may want to return assessments, sessions,
+ * or both. E.g. a search for session instance guids, but only return the 
+ * assessments for those sessions. Add enum for this.
+ * 
+ * 
+ */
 @JsonDeserialize(builder = AdherenceRecordsSearch.Builder.class)
 public class AdherenceRecordsSearch implements BridgeEntity {
     
@@ -34,26 +45,43 @@ public class AdherenceRecordsSearch implements BridgeEntity {
      */
     private final Set<String> sessionGuids;
     /**
+     * return adherence records for these time windows (as types).
+     */
+    private final Set<String> timeWindowGuids;
+    /**
+     * If null, return only the records that are found by the search, whether 
+     * session or assessment records. Otherwise, return the type indicated.
+     */
+    private final AdherenceRecordType recordType; 
+    /**
      * Include multiple runs of assessments in persistent time windows? These
      * will have the same GUIDs but must have different startedOn timestamps.
      */
     private final Boolean includeRepeats;
     /**
      * Only retrieve records whose event timestamps are identical to the values
-     * that are currently recorded for the user on the server. If event timestamps
-     * change, this will have the effect of wiping out the adherence data for
-     * that stream of events.
+     * supplied in this map. To correctly determine if participants should redo
+     * a session series based on a mutable event, the current event timestamps 
+     * should be supplied in this map.
      */
-    private final Boolean currentTimeseriesOnly;
-
-    // Time-based API can be combined with other criteria
-    private final String startEventId;
-    private final Integer startDay;
-    private final Integer endDay;
+    private final Map<String, DateTime> eventTimestamps;
+    /**
+     * createdOn value of record is on or after the startTime, if provided.
+     */
+    private final DateTime startTime;
+    /**
+     * createdOn value of record is on or before the endTime, if provided.
+     */
+    private final DateTime endTime;
     
     // API is paged.
     private final Integer offsetBy;
     private final Integer pageSize;
+    /**
+     * Sort by createdOn timestamp in ascending or descending order (ascending
+     * by default).
+     */
+    private final SortOrder sortOrder;
     
     private AdherenceRecordsSearch(AdherenceRecordsSearch.Builder builder) {
         this.userId = builder.userId;
@@ -61,13 +89,15 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         this.instanceGuids = builder.instanceGuids;
         this.assessmentIds = builder.assessmentIds;
         this.sessionGuids = builder.sessionGuids;
+        this.timeWindowGuids = builder.timeWindowGuids;
+        this.recordType = builder.recordType;
         this.includeRepeats = builder.includeRepeats;
-        this.currentTimeseriesOnly = builder.currentTimeseriesOnly;
-        this.startEventId = builder.startEventId;
-        this.startDay = builder.startDay;
-        this.endDay = builder.endDay;
+        this.eventTimestamps = builder.eventTimestamps;
+        this.startTime = builder.startTime;
+        this.endTime = builder.endTime;
         this.offsetBy = builder.offsetBy;
         this.pageSize = builder.pageSize;
+        this.sortOrder = builder.sortOrder;
     }
     
     public String getUserId() {
@@ -89,25 +119,29 @@ public class AdherenceRecordsSearch implements BridgeEntity {
     public Set<String> getSessionGuids() {
         return sessionGuids;
     }
+    
+    public Set<String> getTimeWindowGuids() {
+        return timeWindowGuids;
+    }
+    
+    public AdherenceRecordType getRecordType() {
+        return recordType;
+    }
 
     public Boolean getIncludeRepeats() {
         return includeRepeats;
     }
 
-    public Boolean getCurrentTimeseriesOnly() {
-        return currentTimeseriesOnly;
+    public Map<String, DateTime> getEventTimestamps() {
+        return eventTimestamps;
     }
 
-    public String getStartEventId() {
-        return startEventId;
+    public DateTime getStartTime() {
+        return startTime;
     }
 
-    public Integer getStartDay() {
-        return startDay;
-    }
-
-    public Integer getEndDay() {
-        return endDay;
+    public DateTime getEndTime() {
+        return endTime;
     }
 
     public Integer getOffsetBy() {
@@ -117,6 +151,10 @@ public class AdherenceRecordsSearch implements BridgeEntity {
     public Integer getPageSize() {
         return pageSize;
     }
+    
+    public SortOrder getSortOrder() {
+        return sortOrder;
+    }
 
     public static class Builder {
         private String userId;
@@ -124,13 +162,15 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         private Set<String> instanceGuids;
         private Set<String> assessmentIds;
         private Set<String> sessionGuids;
+        private Set<String> timeWindowGuids;
+        private AdherenceRecordType recordType;
         private Boolean includeRepeats;
-        private Boolean currentTimeseriesOnly;
-        private String startEventId;
-        private Integer startDay;
-        private Integer endDay;
+        private Map<String, DateTime> eventTimestamps;
+        private DateTime startTime;
+        private DateTime endTime;
         private Integer offsetBy;
         private Integer pageSize;
+        private SortOrder sortOrder;
         
         public Builder copyOf(AdherenceRecordsSearch search) {
             this.userId = search.userId;
@@ -138,13 +178,15 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             this.instanceGuids = ImmutableSet.copyOf(search.instanceGuids);
             this.assessmentIds = ImmutableSet.copyOf(search.assessmentIds);
             this.sessionGuids = ImmutableSet.copyOf(search.sessionGuids);
+            this.timeWindowGuids = ImmutableSet.copyOf(search.timeWindowGuids);
+            this.recordType = search.recordType;
             this.includeRepeats = search.includeRepeats;
-            this.currentTimeseriesOnly = search.currentTimeseriesOnly;
-            this.startEventId = search.startEventId;
-            this.startDay = search.startDay;
-            this.endDay = search.endDay;
+            this.eventTimestamps = search.eventTimestamps;
+            this.startTime = search.startTime;
+            this.endTime = search.endTime;
             this.offsetBy = search.offsetBy;
             this.pageSize = search.pageSize;
+            this.sortOrder = search.sortOrder;
             return this;
         }
         
@@ -168,24 +210,28 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             this.sessionGuids = sessionGuids;
             return this;
         }
+        public Builder withTimeWindowGuids(Set<String> timeWindowGuids) {
+            this.timeWindowGuids = timeWindowGuids;
+            return this;
+        }
+        public Builder withRecordType(AdherenceRecordType recordType) {
+            this.recordType = recordType;
+            return this;
+        }
         public Builder withIncludeRepeats(Boolean includeRepeats) {
             this.includeRepeats = includeRepeats;
             return this;
         }
-        public Builder withCurrentTimeseriesOnly(Boolean currentTimeseriesOnly) {
-            this.currentTimeseriesOnly = currentTimeseriesOnly;
+        public Builder withEventTimestamps(Map<String, DateTime> eventTimestamps) {
+            this.eventTimestamps = eventTimestamps;
             return this;
         }
-        public Builder withStartEventId(String startEventId) {
-            this.startEventId = startEventId;
+        public Builder withStartTime(DateTime startTime) {
+            this.startTime = startTime;
             return this;
         }
-        public Builder withStartDay(Integer startDay) {
-            this.startDay = startDay;
-            return this;
-        }
-        public Builder withEndDay(Integer endDay) {
-            this.endDay = endDay;
+        public Builder withEndTime(DateTime endTime) {
+            this.endTime = endTime;
             return this;
         }
         public Builder withOffsetBy(Integer offsetBy) {
@@ -194,6 +240,10 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         }
         public Builder withPageSize(Integer pageSize) {
             this.pageSize = pageSize;
+            return this;
+        }
+        public Builder withSortOrder(SortOrder sortOrder) {
+            this.sortOrder = sortOrder;
             return this;
         }
         
@@ -207,17 +257,23 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             if (sessionGuids == null) {
                 sessionGuids = ImmutableSet.of();
             }
+            if (timeWindowGuids == null) {
+                timeWindowGuids = ImmutableSet.of();
+            }
             if (includeRepeats == null) {
                 includeRepeats = Boolean.TRUE;
             }
-            if (currentTimeseriesOnly == null) {
-                currentTimeseriesOnly = Boolean.FALSE;
+            if (eventTimestamps == null) {
+                eventTimestamps = ImmutableMap.of();
+            }
+            if (pageSize == null) {
+                pageSize = Integer.valueOf(500);
             }
             if (offsetBy == null) {
                 offsetBy = Integer.valueOf(0);
             }
-            if (pageSize == null) {
-                pageSize = Integer.valueOf(1000);
+            if (sortOrder == null) {
+                sortOrder = SortOrder.ASC;
             }
             return new AdherenceRecordsSearch(this);
         }
