@@ -12,7 +12,7 @@ public class AdherenceRecordsSearchValidator extends AbstractValidator {
     
     public final static AdherenceRecordsSearchValidator INSTANCE = new AdherenceRecordsSearchValidator();
     
-    static final int MAX_PAGE_SIZE = 500;
+    public static final int MAX_PAGE_SIZE = 500;
     private static final int MAX_SET_SIZE = 500;
     private static final int MAX_MAP_SIZE = 50;
     private static final DateTime EARLIEST_DATE = DateTime.parse("2020-01-01T00:00:00.000Z");

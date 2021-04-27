@@ -19,6 +19,12 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSe
 @Component
 public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
     
+    static final String BASE_QUERY = "FROM AdherenceRecords AS ar"
+        + "LEFT OUTER JOIN TimelineMetadata AS tm"
+        + "ON ar.guid = tm.guid"
+        + "WHERE ar.userId = :userId AND ar.studyId = :studyId"; 
+
+    
     private HibernateHelper hibernateHelper;
 
     @Resource(name = "mysqlHibernateHelper")
@@ -50,8 +56,7 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         QueryBuilder builder = createQuery(search);
         
         List<AdherenceRecord> records = hibernateHelper.nativeQueryGet(
-                "SELECT * " + 
-                    builder.getQuery(), builder.getParameters(), 
+                "SELECT * " + builder.getQuery(), builder.getParameters(), 
                 search.getOffsetBy(), search.getPageSize(), AdherenceRecord.class);
         
         int total = hibernateHelper.nativeQueryCount(
@@ -62,12 +67,8 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
 
     protected QueryBuilder createQuery(AdherenceRecordsSearch search) {
         QueryBuilder builder = new QueryBuilder();
-        builder.append("FROM AdherenceRecords AS ar");
-        builder.append("LEFT OUTER JOIN TimelineMetadata AS tm");
-        builder.append("ON ar.guid = tm.guid");
-        builder.append("WHERE ar.userId = :userId AND ar.studyId = :studyId", 
-                "userId", search.getUserId(),
-                "studyId", search.getStudyId());
+        builder.append(BASE_QUERY, "userId", 
+                search.getUserId(), "studyId", search.getStudyId());
         
         // Note that these IDs can be the same in shared vs. local apps. Do we care?
         if (!search.getAssessmentIds().isEmpty()) {
