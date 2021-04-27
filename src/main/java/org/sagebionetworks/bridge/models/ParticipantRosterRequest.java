@@ -40,7 +40,6 @@ public class ParticipantRosterRequest implements BridgeEntity{
         }
 
         /** @see ParticipantRosterRequest#getStudyId() */
-        @JsonDeserialize(using = DateTimeDeserializer.class)
         public ParticipantRosterRequest.Builder withStudyId(String studyId) {
             this.studyId = studyId;
             return this;

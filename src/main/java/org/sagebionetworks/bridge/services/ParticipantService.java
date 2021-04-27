@@ -38,6 +38,7 @@ import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.sagebionetworks.bridge.validators.ParticipantRosterRequestValidator;
 import org.slf4j.Logger;
@@ -858,7 +859,7 @@ public class ParticipantService {
     public void getParticipantRoster(String appId, String userId, ParticipantRosterRequest request) throws JsonProcessingException {
         Validate.entityThrowingException(ParticipantRosterRequestValidator.INSTANCE, request);
 
-        ObjectMapper jsonObjectMapper = new ObjectMapper();
+        ObjectMapper jsonObjectMapper = BridgeObjectMapper.get();
 
         // wrap message as nested json node
         ObjectNode requestNode = jsonObjectMapper.createObjectNode();
