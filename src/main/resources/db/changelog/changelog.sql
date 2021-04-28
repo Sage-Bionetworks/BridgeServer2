@@ -595,28 +595,7 @@ ADD COLUMN `sessionInstanceEndDay` int(10) NOT NULL;
 
 -- changeset bridge:31
 
-DROP TABLE `StudyContacts`;
+ALTER TABLE `StudyContacts`
+DROP PRIMARY KEY,
+ADD CONSTRAINT PRIMARY KEY (`appId`, `studyId`, `pos`);
 
-CREATE TABLE `StudyContacts` (
-  `appId` varchar(255) NOT NULL,
-  `studyId` varchar(255) NOT NULL,
-  `name` varchar(255) NOT NULL,
-  `pos` int(10) signed NOT NULL,
-  `role` enum('IRB','PRINCIPAL_INVESTIGATOR','INVESTIGATOR','SPONSOR','STUDY_SUPPORT','TECHNICAL_SUPPORT') NOT NULL,
-  `position` varchar(255),
-  `affiliation` varchar(255),
-  `jurisdiction` varchar(255),
-  `email` varchar(255),
-  `phone` varchar(20),
-  `phoneRegion` varchar(2),
-  `placeName` varchar(255),
-  `street` varchar(255),
-  `division` varchar(255),
-  `mailRouting` varchar(255),
-  `city` varchar(255),
-  `state` varchar(255),
-  `postalCode` varchar(50),
-  `country` varchar(255),
-  PRIMARY KEY (`appId`, `studyId`, `pos`),
-  CONSTRAINT `StudyContact-Study-Constraint` FOREIGN KEY (`studyId`,`appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
