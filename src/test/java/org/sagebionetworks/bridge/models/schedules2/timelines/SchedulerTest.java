@@ -249,7 +249,7 @@ public class SchedulerTest extends Mockito {
     }
     
     @Test
-    public void oneRepeatingSession() {
+    public void oneRepeatingSession() throws Exception {
         Schedule2 schedule = createSchedule("P7W");
         schedule.getSessions().add(createRepeatingSession(null, "P1W"));
         
@@ -258,7 +258,7 @@ public class SchedulerTest extends Mockito {
         AssessmentInfo info = timeline.getAssessments().get(0);
         
         assertEquals(timeline.getDuration(), Period.parse("P7W"));
-        assertEquals(timeline.getSchedule().size(), 7);
+        assertEquals(timeline.getSchedule().size(), 8);
         
         ScheduledSession schSession = timeline.getSchedule().get(0);
         assertEquals(schSession.getRefGuid(), SESSION_GUID_1);
@@ -275,6 +275,7 @@ public class SchedulerTest extends Mockito {
         assertDayRange(timeline, 4, 28, 28);
         assertDayRange(timeline, 5, 35, 35);
         assertDayRange(timeline, 6, 42, 42);
+        assertDayRange(timeline, 7, 49, 49);
     }
     
     @Test
@@ -322,7 +323,7 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getSchedule().get(0).getRefGuid(), SESSION_GUID_3);
         assertEquals(timeline.getSchedule().get(1).getRefGuid(), SESSION_GUID_1);
         
-        assertEquals(timeline.getSchedule().size(), 8);
+        assertEquals(timeline.getSchedule().size(), 9);
         assertDayRange(timeline, 0, 0, 0);
         assertDayRange(timeline, 1, 0, 0);
         assertDayRange(timeline, 2, 2, 2);
@@ -331,6 +332,7 @@ public class SchedulerTest extends Mockito {
         assertDayRange(timeline, 5, 8, 8);
         assertDayRange(timeline, 6, 10, 10);
         assertDayRange(timeline, 7, 12, 12);
+        assertDayRange(timeline, 8, 14, 14);
     }
     
     @Test
@@ -344,13 +346,15 @@ public class SchedulerTest extends Mockito {
         
         Timeline timeline = INSTANCE.calculateTimeline(schedule);
         
-        assertEquals(timeline.getSchedule().size(), 6);
+        assertEquals(timeline.getSchedule().size(), 8);
         assertDayRange(timeline, 0, SESSION_GUID_1, 0, 0);
         assertDayRange(timeline, 1, SESSION_GUID_4, 0, 0);
         assertDayRange(timeline, 2, SESSION_GUID_1, 1, 1);
         assertDayRange(timeline, 3, SESSION_GUID_1, 2, 2);
         assertDayRange(timeline, 4, SESSION_GUID_4, 2, 2);
         assertDayRange(timeline, 5, SESSION_GUID_1, 3, 3);
+        assertDayRange(timeline, 6, SESSION_GUID_1, 4, 4);
+        assertDayRange(timeline, 7, SESSION_GUID_4, 4, 4);
     }
     
     @Test
@@ -554,11 +558,12 @@ public class SchedulerTest extends Mockito {
         schedule.getSessions().add(session);
         
         Timeline timeline = INSTANCE.calculateTimeline(schedule);
-        assertEquals(timeline.getSchedule().size(), 4);
+        assertEquals(timeline.getSchedule().size(), 5);
         assertDayRange(timeline, 0, 0, 0);
         assertDayRange(timeline, 1, 7, 7);
         assertDayRange(timeline, 2, 14, 14);
         assertDayRange(timeline, 3, 21, 21);
+        assertDayRange(timeline, 4, 28, 28);
     }
     
     @Test
@@ -582,11 +587,12 @@ public class SchedulerTest extends Mockito {
         schedule.getSessions().add(session);
         
         Timeline timeline = INSTANCE.calculateTimeline(schedule);
-        assertEquals(timeline.getSchedule().size(), 4);
+        assertEquals(timeline.getSchedule().size(), 5);
         assertDayRange(timeline, 0, 0, 0);
         assertDayRange(timeline, 1, 7, 7);
         assertDayRange(timeline, 2, 14, 14);
         assertDayRange(timeline, 3, 21, 21);
+        assertDayRange(timeline, 4, 28, 28);
     }
     
     @Test
@@ -597,10 +603,11 @@ public class SchedulerTest extends Mockito {
         schedule.getSessions().add(session);
         
         Timeline timeline = INSTANCE.calculateTimeline(schedule);
-        assertEquals(timeline.getSchedule().size(), 3);
+        assertEquals(timeline.getSchedule().size(), 4);
         assertDayRange(timeline, 0, 7, 7);
         assertDayRange(timeline, 1, 14, 14);
         assertDayRange(timeline, 2, 21, 21);
+        assertDayRange(timeline, 3, 28, 28);
     }
     
     @Test
@@ -713,16 +720,16 @@ public class SchedulerTest extends Mockito {
         for (ScheduledSession schSession : timeline.getSchedule()) {
             sessionInstanceGuids.add(schSession.getInstanceGuid());
         }
-        // There are 1,274 scheduled sessions and all must have a unique guid.
-        assertEquals(sessionInstanceGuids.size(), 1274);
+        // There are 1,278 scheduled sessions and all must have a unique guid.
+        assertEquals(sessionInstanceGuids.size(), 1278);
         
-        // Just changing the schedule GUID will create 1,274 more unique GUIDs
+        // Just changing the schedule GUID will create 1,278 more unique GUIDs
         schedule.setGuid(ASSESSMENT_4_GUID);
         timeline = INSTANCE.calculateTimeline(schedule);
         for (ScheduledSession schSession : timeline.getSchedule()) {
             sessionInstanceGuids.add(schSession.getInstanceGuid());
         }
-        assertEquals(sessionInstanceGuids.size(), 2548);
+        assertEquals(sessionInstanceGuids.size(), 2556);
     }
     
     @Test
@@ -737,7 +744,7 @@ public class SchedulerTest extends Mockito {
             }
         }
         // There are 2,184 scheduled assessments and all must have a unique guid.
-        assertEquals(asmtInstanceGuids.size(), 2184);
+        assertEquals(asmtInstanceGuids.size(), 2190);
         
         // Just changing the schedule GUID will create 2,184 more unique GUIDs
         schedule.setGuid(ASSESSMENT_4_GUID);
@@ -747,7 +754,7 @@ public class SchedulerTest extends Mockito {
                 asmtInstanceGuids.add(schAsmt.getInstanceGuid());    
             }
         }
-        assertEquals(asmtInstanceGuids.size(), 4368);
+        assertEquals(asmtInstanceGuids.size(), 4380);
     }
     
     @Test
@@ -763,7 +770,7 @@ public class SchedulerTest extends Mockito {
                 allGuids.add(schAsmt.getInstanceGuid());
             }
         }
-        assertEquals(allGuids.size(), 2184 + 1274);
+        assertEquals(allGuids.size(), 2190 + 1278);
     }
     
     @Test
@@ -815,11 +822,11 @@ public class SchedulerTest extends Mockito {
         
         List<TimelineMetadata> metadata = timeline.getMetadata();
         
-        assertEquals(metadata.size(), 2184 + 1274);
+        assertEquals(metadata.size(), 2190 + 1278);
         
         List<TimelineMetadata> sessionMetadata = metadata.stream()
                 .filter(m -> m.getAssessmentGuid() == null).collect(toList());
-        assertEquals(sessionMetadata.size(), 1274);
+        assertEquals(sessionMetadata.size(), 1278);
         
         TimelineMetadata sm = sessionMetadata.get(0);
         assertEquals(sm.getGuid(), sm.getSessionInstanceGuid());
@@ -834,7 +841,7 @@ public class SchedulerTest extends Mockito {
         
         List<TimelineMetadata> asmtMetadata = metadata.stream()
                 .filter(m -> m.getAssessmentGuid() != null).collect(toList());
-        assertEquals(asmtMetadata.size(), 2184);
+        assertEquals(asmtMetadata.size(), 2190);
         
         TimelineMetadata am = asmtMetadata.get(0);
         assertEquals(am.getGuid(), am.getAssessmentInstanceGuid());

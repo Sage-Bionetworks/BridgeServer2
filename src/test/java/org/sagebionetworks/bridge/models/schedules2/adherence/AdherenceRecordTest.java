@@ -27,6 +27,7 @@ public class AdherenceRecordTest extends Mockito {
         record.setStudyId(TEST_STUDY_ID);
         record.setStartedOn(CREATED_ON);
         record.setFinishedOn(MODIFIED_ON);
+        record.setUploadedOn(MODIFIED_ON.plusHours(1));
         record.setEventTimestamp(CREATED_ON.plusHours(1));
         record.setClientData(TestUtils.getClientData());
         record.setInstanceGuid(GUID);
@@ -36,6 +37,7 @@ public class AdherenceRecordTest extends Mockito {
         assertEquals(node.get("studyId").textValue(), TEST_STUDY_ID);
         assertEquals(node.get("startedOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("finishedOn").textValue(), MODIFIED_ON.toString());
+        assertEquals(node.get("uploadedOn").textValue(), MODIFIED_ON.plusHours(1).toString());
         assertEquals(node.get("eventTimestamp").textValue(), CREATED_ON.plusHours(1).toString());
         assertEquals(node.get("clientData").get("intValue").intValue(), 4);
         assertEquals(node.get("instanceGuid").textValue(), GUID);
@@ -47,6 +49,7 @@ public class AdherenceRecordTest extends Mockito {
         assertEquals(deser.getStudyId(), TEST_STUDY_ID);
         assertEquals(deser.getStartedOn(), CREATED_ON);
         assertEquals(deser.getFinishedOn(), MODIFIED_ON);
+        assertEquals(deser.getUploadedOn(), MODIFIED_ON.plusHours(1));
         assertEquals(deser.getEventTimestamp(), CREATED_ON.plusHours(1));
         assertNotNull(deser.getClientData());
         assertEquals(deser.getInstanceGuid(), GUID);

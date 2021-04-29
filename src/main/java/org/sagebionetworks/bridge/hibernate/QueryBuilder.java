@@ -38,6 +38,7 @@ class QueryBuilder {
         params.put(key1, value1);
         params.put(key2, value2);
     }
+    // HQL
     public void dataGroups(Set<String> dataGroups, String operator) {
         if (!BridgeUtils.isEmpty(dataGroups)) {
             int i = 0;
@@ -50,6 +51,7 @@ class QueryBuilder {
             phrases.add("AND (" + Joiner.on(" AND ").join(clauses) + ")");
         }
     }
+    // HQL
     public void adminOnly(Boolean isAdmin) {
         if (isAdmin != null) {
             if (TRUE.equals(isAdmin)) {
@@ -77,19 +79,19 @@ class QueryBuilder {
             }
         }
     }
-    public void eventTimestamps(Map<String,DateTime> eventTimestamps) {
-        if (eventTimestamps != null && !eventTimestamps.isEmpty()) {
+    // Native SQL, not HQL
+    public void alternativeMatchedPairs(Map<String, DateTime> map, String varPrefix, String field1, String field2) {
+        if (map != null && !map.isEmpty()) {
             phrases.add("AND (");
             int count = 0;
-            for (Map.Entry<String, DateTime> entry : eventTimestamps.entrySet()) {
-                String evVarName = "evt" + count;
-                String tsVarName = "ts" + count;
+            for (Map.Entry<String, DateTime> entry : map.entrySet()) {
+                String keyName = varPrefix + "Key" + count;
+                String valName = varPrefix + "Val" + count;
                 if (count++ > 0) {
                     phrases.add("OR");
                 }
-                String q = format("(tm.sessionStartEventId = :%s AND ar.eventTimestamp = :%s)", 
-                        evVarName, tsVarName);
-                append(q, evVarName, entry.getKey(), tsVarName, entry.getValue().getMillis());
+                String q = format("(%s = :%s AND %s = :%s)", field1, keyName, field2, valName);
+                append(q, keyName, entry.getKey(), valName, entry.getValue().getMillis());
             }
             phrases.add(")");
         }

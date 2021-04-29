@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.A
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.DESC;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.MAX_PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -24,24 +25,10 @@ public class AdherenceRecordsSearchTest extends Mockito {
     
     @Test
     public void canSerialize() throws Exception {
-        AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
-                .withUserId(TEST_USER_ID)
-                .withStudyId(TEST_STUDY_ID)
-                .withInstanceGuids(ImmutableSet.of("A"))
-                .withAssessmentIds(ImmutableSet.of("B"))
-                .withSessionGuids(ImmutableSet.of("C"))
-                .withTimeWindowGuids(ImmutableSet.of("D"))
-                .withRecordType(SESSION)
-                .withIncludeRepeats(Boolean.TRUE)
-                .withEventTimestamps(ImmutableMap.of("E", CREATED_ON))
-                .withStartTime(CREATED_ON)
-                .withEndTime(MODIFIED_ON)
-                .withOffsetBy(100)
-                .withPageSize(20)
-                .withSortOrder(DESC)
-                .build();
+        AdherenceRecordsSearch search = createSearch();
                 
         JsonNode node = BridgeObjectMapper.get().valueToTree(search);
+        assertEquals(node.size(), 15);
         assertEquals(node.get("userId").textValue(), TEST_USER_ID);
         assertEquals(node.get("studyId").textValue(), TEST_STUDY_ID);
         assertEquals(node.get("instanceGuids").get(0).textValue(), "A");
@@ -56,6 +43,8 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(node.get("offsetBy").intValue(), 100);
         assertEquals(node.get("pageSize").intValue(), 20);
         assertEquals(node.get("sortOrder").textValue(), "desc");
+        assertEquals(node.get("type").textValue(), "AdherenceRecordsSearch");
+        assertNull(node.get("guidToStartedOnMap"));
         
         AdherenceRecordsSearch deser = BridgeObjectMapper.get()
                 .readValue(node.toString(), AdherenceRecordsSearch.class);
@@ -73,9 +62,15 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(deser.getOffsetBy(), Integer.valueOf(100));
         assertEquals(deser.getPageSize(), Integer.valueOf(20));
         assertEquals(deser.getSortOrder(), DESC);
+        assertEquals(deser.getGuidToStartedOnMap(), ImmutableMap.of());
+    }
+    
+    @Test
+    public void canCopy() {
+        AdherenceRecordsSearch search = createSearch();
         
         AdherenceRecordsSearch copy = new AdherenceRecordsSearch.Builder()
-                .copyOf(deser).build();
+                .copyOf(search).build();
         assertEquals(copy.getUserId(), TEST_USER_ID);
         assertEquals(copy.getStudyId(), TEST_STUDY_ID);
         assertEquals(copy.getInstanceGuids(), ImmutableSet.of("A"));
@@ -85,11 +80,33 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(copy.getRecordType(), SESSION);
         assertTrue(copy.getIncludeRepeats());
         assertEquals(copy.getEventTimestamps().get("E"), CREATED_ON);
+        assertEquals(copy.getGuidToStartedOnMap().get("E"), CREATED_ON);
         assertEquals(copy.getStartTime(), CREATED_ON);
         assertEquals(copy.getEndTime(), MODIFIED_ON);
         assertEquals(copy.getOffsetBy(), Integer.valueOf(100));
         assertEquals(copy.getPageSize(), Integer.valueOf(20));
         assertEquals(copy.getSortOrder(), DESC);
+    }
+
+    protected AdherenceRecordsSearch createSearch() {
+        AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
+                .withUserId(TEST_USER_ID)
+                .withStudyId(TEST_STUDY_ID)
+                .withInstanceGuids(ImmutableSet.of("A"))
+                .withAssessmentIds(ImmutableSet.of("B"))
+                .withSessionGuids(ImmutableSet.of("C"))
+                .withTimeWindowGuids(ImmutableSet.of("D"))
+                .withRecordType(SESSION)
+                .withIncludeRepeats(Boolean.TRUE)
+                .withEventTimestamps(ImmutableMap.of("E", CREATED_ON))
+                .withGuidToStartedOnMap(ImmutableMap.of("E", CREATED_ON))
+                .withStartTime(CREATED_ON)
+                .withEndTime(MODIFIED_ON)
+                .withOffsetBy(100)
+                .withPageSize(20)
+                .withSortOrder(DESC)
+                .build();
+        return search;
     }
     
     @Test

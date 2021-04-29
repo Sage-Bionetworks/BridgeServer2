@@ -20,18 +20,21 @@ import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordValidator.INSTANCE;
 
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.validation.Errors;
+import org.springframework.validation.MapBindingResult;
 
 import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -56,44 +59,27 @@ public class AdherenceService {
         this.appService = appService;
     }
     
-    public void createAdherenceRecord(AdherenceRecord record) {
-        checkNotNull(record);
+    public void updateAdherenceRecords(List<AdherenceRecord> recordList) {
+        checkNotNull(recordList);
         
-        Validate.entityThrowingException(INSTANCE, record);
-        CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
-                AuthEvaluatorField.STUDY_ID, record.getStudyId(), 
-                AuthEvaluatorField.USER_ID, record.getUserId());
-        
-        AdherenceRecord exists = dao.get(record);
-        if (exists != null) {
-            throw new EntityAlreadyExistsException(AdherenceRecord.class, ImmutableMap.of(
-                "userId", record.getUserId(),
-                "studyId", record.getStudyId(),
-                "instanceGuid", record.getInstanceGuid(), 
-                "startedOn", record.getStartedOn()));
+        // This will fail with the first record that is invalid, but it will return
+        // an error message that indicates the index of that record...
+        Errors errors = new MapBindingResult(Maps.newHashMap(), "records");
+        for (int i=0, len = recordList.size(); i < len; i++) {
+            AdherenceRecord record = recordList.get(i);
+            
+            errors.pushNestedPath("["+i+"]");
+            INSTANCE.validate(record, errors);
+            errors.popNestedPath();
+            Validate.throwException(errors, record);
         }
-        // Do we want to prevent creating multiple records if the GUID involved
-        // is not marked as ”persistent”?
-        
-        dao.create(record);
-    }
-    
-    public void updateAdherenceRecord(AdherenceRecord record) {
-        checkNotNull(record);
-        
-        Validate.entityThrowingException(INSTANCE, record);
+        // The only caller to this method set all the studyId/userId fields identically
+        // so it is acceptable to test the first item in the list.
         CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
-                AuthEvaluatorField.STUDY_ID, record.getStudyId(), 
-                AuthEvaluatorField.USER_ID, record.getUserId());
+                AuthEvaluatorField.STUDY_ID, recordList.get(0).getStudyId(), 
+                AuthEvaluatorField.USER_ID, recordList.get(0).getUserId());
         
-        AdherenceRecord exists = dao.get(record);
-        if (exists == null) {
-            throw new EntityNotFoundException(AdherenceRecord.class);
-        }
-        
-        // Should we allow them to change startedOn? Seems like no?
-        
-        dao.update(record);
+        dao.updateAdherenceRecords(recordList);
     }
     
     public PagedResourceList<AdherenceRecord> getAdherenceRecords(String appId, 
@@ -140,6 +126,24 @@ public class AdherenceService {
             search = new AdherenceRecordsSearch.Builder()
                     .copyOf(search)
                     .withEventTimestamps(fixedMap)
+                    .build();
+        }
+        if (!search.getInstanceGuids().isEmpty()) {
+            Map<String, DateTime> map = new HashMap<>();
+            Set<String> instanceGuids = new HashSet<>();
+            
+            for (String instanceGuid : search.getInstanceGuids()) {
+                String[] split = instanceGuid.split(":", 2);
+                if (split.length == 2) {
+                    map.put(split[0], DateTime.parse(split[1]));
+                } else {
+                    instanceGuids.add(instanceGuid);
+                }
+            }
+            search = new AdherenceRecordsSearch.Builder()
+                    .copyOf(search)
+                    .withGuidToStartedOnMap(map)
+                    .withInstanceGuids(instanceGuids)
                     .build();
         }
         return search;

@@ -95,19 +95,19 @@ public class QueryBuilderTest {
     }
     
     @Test
-    public void eventTimestamps() {
+    public void alternativeMatchedPairs() {
         Map<String, DateTime> map = ImmutableMap.of("event_1", CREATED_ON, "event_2", MODIFIED_ON);
         
         QueryBuilder builder = new QueryBuilder();
-        builder.eventTimestamps(map);
+        builder.alternativeMatchedPairs(map, "e", "tm.sessionStartEventId", "ar.eventTimestamp");
         
-        assertEquals("AND ( (tm.sessionStartEventId = :evt0 AND ar.eventTimestamp = :ts0) OR (tm.sessionStartEventId = :evt1 AND ar.eventTimestamp = :ts1) )", 
-                builder.getQuery());
+        assertEquals("AND ( (tm.sessionStartEventId = :eKey0 AND ar.eventTimestamp = :eVal0) OR " +
+                "(tm.sessionStartEventId = :eKey1 AND ar.eventTimestamp = :eVal1) )", builder.getQuery());
         assertEquals(Long.valueOf(CREATED_ON.getMillis()), 
-                (Long)builder.getParameters().get("ts0"));
+                (Long)builder.getParameters().get("eVal0"));
         assertEquals(Long.valueOf(MODIFIED_ON.getMillis()), 
-                (Long)builder.getParameters().get("ts1"));
-        assertEquals("event_1", builder.getParameters().get("evt0"));
-        assertEquals("event_2", builder.getParameters().get("evt1"));
+                (Long)builder.getParameters().get("eVal1"));
+        assertEquals("event_1", builder.getParameters().get("eKey0"));
+        assertEquals("event_2", builder.getParameters().get("eKey1"));
     }
 }

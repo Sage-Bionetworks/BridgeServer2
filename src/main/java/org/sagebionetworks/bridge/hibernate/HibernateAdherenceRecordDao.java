@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.FALSE;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.SESSION;
 
 import java.util.List;
@@ -13,15 +13,14 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordId;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 
 @Component
 public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
     
-    static final String BASE_QUERY = "FROM AdherenceRecords AS ar"
-        + "LEFT OUTER JOIN TimelineMetadata AS tm"
-        + "ON ar.guid = tm.guid"
+    static final String BASE_QUERY = "FROM AdherenceRecords AS ar "
+        + "LEFT OUTER JOIN TimelineMetadata AS tm "
+        + "ON ar.instanceGuid = tm.guid "
         + "WHERE ar.userId = :userId AND ar.studyId = :studyId"; 
 
     
@@ -33,35 +32,28 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
     }
     
     @Override
-    public AdherenceRecord get(AdherenceRecord record) {
-        AdherenceRecordId key = new AdherenceRecordId(record.getUserId(),
-                record.getStudyId(), record.getInstanceGuid(), record.getStartedOn());
+    public void updateAdherenceRecords(List<AdherenceRecord> recordList) {
+        checkNotNull(recordList);
         
-        return hibernateHelper.getById(AdherenceRecord.class, key);
+        for (AdherenceRecord record : recordList) {
+            hibernateHelper.saveOrUpdate(record);    
+        }
     }
-
-    @Override
-    public void create(AdherenceRecord record) {
-        hibernateHelper.create(record);
-    }
-
-    @Override
-    public void update(AdherenceRecord record) {
-        hibernateHelper.update(record);
-    }
+    
 
     @Override
     public PagedResourceList<AdherenceRecord> getAdherenceRecords(AdherenceRecordsSearch search) {
-
+        checkNotNull(search);
+        
         QueryBuilder builder = createQuery(search);
         
         List<AdherenceRecord> records = hibernateHelper.nativeQueryGet(
                 "SELECT * " + builder.getQuery(), builder.getParameters(), 
                 search.getOffsetBy(), search.getPageSize(), AdherenceRecord.class);
-        
+
         int total = hibernateHelper.nativeQueryCount(
                 "SELECT count(*) " + builder.getQuery(), builder.getParameters());
-        
+
         return new PagedResourceList<>(records, total, true);
     }
 
@@ -80,7 +72,7 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
                     "sessionGuids", search.getSessionGuids());
         }
         if (!search.getInstanceGuids().isEmpty()) {
-            builder.append("AND ar.guid IN :instanceGuids", 
+            builder.append("AND ar.instanceGuid IN :instanceGuids", 
                     "instanceGuids", search.getInstanceGuids());
         }
         if (!search.getTimeWindowGuids().isEmpty()) {
@@ -91,10 +83,18 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
             // userId has already been set above
             builder.append("AND ar.startedOn = (SELECT startedOn FROM "
                     + "AdherenceRecords WHERE userId = :userId AND "
-                    + "guid = ar.guid ORDER BY startedOn LIMIT 1)");
+                    + "instanceGuid = ar.instanceGuid ORDER BY startedOn LIMIT 1)");
         }
-        if (!search.getEventTimestamps().isEmpty()) {
-            builder.eventTimestamps(search.getEventTimestamps());
+        builder.alternativeMatchedPairs(search.getGuidToStartedOnMap(), 
+                "gd", "ar.instanceGuid", "ar.startedOn");
+        builder.alternativeMatchedPairs(search.getEventTimestamps(), 
+                "evt", "tm.sessionStartEventId", "ar.eventTimestamp");
+        if (search.getRecordType() != null) {
+            if (search.getRecordType() == SESSION) {
+                builder.append("AND tm.assessmentGuid IS NULL");
+            } else {
+                builder.append("AND tm.assessmentGuid IS NOT NULL");
+            }
         }
         if (search.getStartTime() != null) {
             builder.append("AND ar.startedOn >= :startTime", 
@@ -107,13 +107,6 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         if (search.getEndTime() != null) {
             builder.append("AND ar.startedOn <= :endTime", 
                     "endTime", search.getEndTime().getMillis());
-        }
-        if (search.getRecordType() != null) {
-            if (search.getRecordType() == SESSION) {
-                builder.append("AND tm.assessmentGuid IS NULL");
-            } else if (search.getRecordType() == ASSESSMENT) {
-                builder.append("AND tm.assessmentGuid IS NOT NULL");
-            }
         }
         builder.append("ORDER BY ar.startedOn " + search.getSortOrder().name());
         return builder;

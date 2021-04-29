@@ -32,8 +32,11 @@ public class AdherenceRecord implements BridgeEntity {
     private DateTime finishedOn;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime eventTimestamp;
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    private DateTime uploadedOn;
     @Convert(converter = JsonNodeAttributeConverter.class)
     private JsonNode clientData;
+    private String clientTimeZone; 
     
     public String getUserId() {
         return userId;
@@ -65,6 +68,12 @@ public class AdherenceRecord implements BridgeEntity {
     public void setFinishedOn(DateTime finishedOn) {
         this.finishedOn = finishedOn;
     }
+    public DateTime getUploadedOn() {
+        return uploadedOn;
+    }
+    public void setUploadedOn(DateTime uploadedOn) {
+        this.uploadedOn = uploadedOn;
+    }
     public DateTime getEventTimestamp() {
         return eventTimestamp;
     }
@@ -79,5 +88,11 @@ public class AdherenceRecord implements BridgeEntity {
     }
     public void setClientData(JsonNode clientData) {
         this.clientData = clientData;
+    }
+    public String getClientTimeZone() {
+        return clientTimeZone;
+    }
+    public void setClientTimeZone(String clientTimeZone) {
+        this.clientTimeZone = clientTimeZone;
     }
 }

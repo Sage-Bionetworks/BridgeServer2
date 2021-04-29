@@ -593,7 +593,7 @@ ADD COLUMN `timeWindowGuid` varchar(60) NOT NULL,
 ADD COLUMN `sessionInstanceStartDay` int(10) NOT NULL,
 ADD COLUMN `sessionInstanceEndDay` int(10) NOT NULL;
 
--- changeset bridge:31
+-- changeset bridge:32
 
 CREATE TABLE `AdherenceRecords` (
   `userId` varchar(255) NOT NULL,
@@ -602,7 +602,9 @@ CREATE TABLE `AdherenceRecords` (
   `startedOn` bigint(20) unsigned NOT NULL,
   `eventTimestamp` bigint(20) unsigned,
   `finishedOn` bigint(20) unsigned,
+  `uploadedOn` bigint(20) unsigned,
   `clientData` text COLLATE utf8_unicode_ci,
+  `clientTimeZone` varchar(255),
   PRIMARY KEY (`userId`, `studyId`, `instanceGuid`, `startedOn`),
   CONSTRAINT `AdherenceRecord-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `AdherenceRecord-Study-Constraint` FOREIGN KEY (`studyId`) REFERENCES `Substudies` (`id`) ON DELETE CASCADE

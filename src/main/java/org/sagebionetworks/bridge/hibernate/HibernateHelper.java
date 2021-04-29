@@ -183,6 +183,14 @@ public class HibernateHelper {
         });
     }
 
+    /** Save or update a single object. */
+    public <T> T saveOrUpdate(T obj) {
+        return executeWithExceptionHandling(obj, session -> {
+            session.saveOrUpdate(obj);
+            return obj;
+        });
+    }
+    
     /** Updates a single object. */
     public <T> T update(T obj) {
         return executeWithExceptionHandling(obj, session -> {

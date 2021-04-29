@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules2.adherence;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -21,6 +22,8 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 @JsonDeserialize(builder = AdherenceRecordsSearch.Builder.class)
 public class AdherenceRecordsSearch implements BridgeEntity {
     
+    public static final int PAGE_SIZE = 500;
+    
     /**
      * Searches must be scoped to a user.
      */
@@ -36,6 +39,14 @@ public class AdherenceRecordsSearch implements BridgeEntity {
      * that assessment will be returned unless includeRepeats = false.
      */
     private final Set<String> instanceGuids;
+    
+    /**
+     * This cannot be supplied through the API, it is parsed out from very
+     * specific instance GUIDs in the format "<guid>:<startedOn>" that specifies
+     * the exact record with the given instance GUID.
+     */
+    @JsonIgnore
+    private final Map<String,DateTime> guidToStartedOnMap;
     /** 
      * return adherence records for these assessmentIds (as types).
      */
@@ -87,6 +98,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         this.userId = builder.userId;
         this.studyId = builder.studyId;
         this.instanceGuids = builder.instanceGuids;
+        this.guidToStartedOnMap = builder.guidToStartedOnMap;
         this.assessmentIds = builder.assessmentIds;
         this.sessionGuids = builder.sessionGuids;
         this.timeWindowGuids = builder.timeWindowGuids;
@@ -110,6 +122,10 @@ public class AdherenceRecordsSearch implements BridgeEntity {
     
     public Set<String> getInstanceGuids() {
         return instanceGuids;
+    }
+    
+    public Map<String, DateTime> getGuidToStartedOnMap() {
+        return guidToStartedOnMap;
     }
 
     public Set<String> getAssessmentIds() {
@@ -160,6 +176,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         private String userId;
         private String studyId;
         private Set<String> instanceGuids;
+        private Map<String, DateTime> guidToStartedOnMap;
         private Set<String> assessmentIds;
         private Set<String> sessionGuids;
         private Set<String> timeWindowGuids;
@@ -176,6 +193,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             this.userId = search.userId;
             this.studyId = search.studyId;
             this.instanceGuids = ImmutableSet.copyOf(search.instanceGuids);
+            this.guidToStartedOnMap = ImmutableMap.copyOf(search.guidToStartedOnMap);
             this.assessmentIds = ImmutableSet.copyOf(search.assessmentIds);
             this.sessionGuids = ImmutableSet.copyOf(search.sessionGuids);
             this.timeWindowGuids = ImmutableSet.copyOf(search.timeWindowGuids);
@@ -200,6 +218,10 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         }
         public Builder withInstanceGuids(Set<String> instanceGuids) {
             this.instanceGuids = instanceGuids;
+            return this;
+        }
+        public Builder withGuidToStartedOnMap(Map<String, DateTime> guidToStartedOnMap) {
+            this.guidToStartedOnMap = guidToStartedOnMap;
             return this;
         }
         public Builder withAssessmentIds(Set<String> assessmentIds) {
@@ -251,6 +273,9 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             if (instanceGuids == null) {
                 instanceGuids = ImmutableSet.of();
             }
+            if (guidToStartedOnMap == null) {
+                guidToStartedOnMap = ImmutableMap.of();
+            }
             if (assessmentIds == null) {
                 assessmentIds = ImmutableSet.of();
             }
@@ -267,7 +292,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
                 eventTimestamps = ImmutableMap.of();
             }
             if (pageSize == null) {
-                pageSize = Integer.valueOf(500);
+                pageSize = Integer.valueOf(PAGE_SIZE);
             }
             if (offsetBy == null) {
                 offsetBy = Integer.valueOf(0);
