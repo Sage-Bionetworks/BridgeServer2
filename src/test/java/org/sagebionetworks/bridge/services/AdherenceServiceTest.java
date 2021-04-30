@@ -53,12 +53,12 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 
@@ -102,24 +102,25 @@ public class AdherenceServiceTest extends Mockito {
         
         AdherenceRecord rec1 = getAdherenceRecord("AAA");
         AdherenceRecord rec2 = getAdherenceRecord("BBB");
-        List<AdherenceRecord> records = ImmutableList.of(rec1, rec2);
+        AdherenceRecordList records = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
         service.updateAdherenceRecords(TEST_APP_ID, HEALTH_CODE, records);
         
-        verify(mockDao).updateAdherenceRecord(rec1);
-        verify(mockDao).updateAdherenceRecord(rec2);
+        verify(mockDao).updateAdherenceRecords(records);
         verifyNoMoreInteractions(mockActivityEventService);
         verifyNoMoreInteractions(mockScheduleService);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void updateAdherenceRecords_noRecords() {
-        service.updateAdherenceRecords(TEST_APP_ID, HEALTH_CODE, ImmutableList.of());
+        service.updateAdherenceRecords(TEST_APP_ID, HEALTH_CODE, 
+                new AdherenceRecordList(ImmutableList.of()));
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateAdherenceRecords_notAuthorized() {
         AdherenceRecord rec1 = getAdherenceRecord("AAA");
-        service.updateAdherenceRecords(TEST_APP_ID, HEALTH_CODE, ImmutableList.of(rec1));
+        service.updateAdherenceRecords(TEST_APP_ID, HEALTH_CODE,
+                new AdherenceRecordList(ImmutableList.of(rec1)));
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -128,7 +129,7 @@ public class AdherenceServiceTest extends Mockito {
         rec1.setStartedOn(null);
         AdherenceRecord rec2 = getAdherenceRecord("BBB");
         rec2.setUserId(null);
-        List<AdherenceRecord> records = ImmutableList.of(rec1, rec2);
+        AdherenceRecordList records = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
 
         service.updateAdherenceRecords(TEST_APP_ID, HEALTH_CODE, records);
     }
@@ -146,12 +147,11 @@ public class AdherenceServiceTest extends Mockito {
         AdherenceRecord rec1 = getAdherenceRecord("AAA");
         AdherenceRecord rec2 = getAdherenceRecord("BBB");
         rec2.setFinishedOn(FINISHED_ON);
-        List<AdherenceRecord> records = ImmutableList.of(rec1, rec2);
+        AdherenceRecordList records = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
         
         service.updateAdherenceRecords(TEST_APP_ID, HEALTH_CODE, records);
         
-        verify(mockDao).updateAdherenceRecord(rec1);
-        verify(mockDao).updateAdherenceRecord(rec2);
+        verify(mockDao).updateAdherenceRecords(records);
         
         verify(mockActivityEventService).publishSessionFinishedEvent(
                 TEST_STUDY_ID, HEALTH_CODE, "sessionGuid", FINISHED_ON);
@@ -172,19 +172,17 @@ public class AdherenceServiceTest extends Mockito {
         AdherenceRecord rec1 = getAdherenceRecord("AAA");
         AdherenceRecord rec2 = getAdherenceRecord("BBB");
         rec2.setFinishedOn(FINISHED_ON);
-        List<AdherenceRecord> records = ImmutableList.of(rec1, rec2);
+        AdherenceRecordList records = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
         
         service.updateAdherenceRecords(TEST_APP_ID, HEALTH_CODE, records);
         
-        verify(mockDao).updateAdherenceRecord(rec1);
-        verify(mockDao).updateAdherenceRecord(rec2);
+        verify(mockDao).updateAdherenceRecords(records);
         
         verify(mockActivityEventService).publishAssessmentFinishedEvent(
                 TEST_STUDY_ID, HEALTH_CODE, "assessmentId", FINISHED_ON);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class, 
-            expectedExceptionsMessageRegExp = "Schedule not found.")
+    @Test
     public void updateAdherenceRecords_eventWithoutMetadata() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID)
@@ -194,9 +192,14 @@ public class AdherenceServiceTest extends Mockito {
         
         AdherenceRecord rec1 = getAdherenceRecord("BBB");
         rec1.setFinishedOn(FINISHED_ON);
-        List<AdherenceRecord> records = ImmutableList.of(rec1);
+        AdherenceRecordList records = new AdherenceRecordList(ImmutableList.of(rec1));
         
         service.updateAdherenceRecords(TEST_APP_ID, HEALTH_CODE, records);
+        
+        verify(mockActivityEventService, never()).publishSessionFinishedEvent(
+                any(), any(), any(), any());
+        verify(mockActivityEventService, never()).publishAssessmentFinishedEvent(
+                any(), any(), any(), any());
     }
     
     @Test

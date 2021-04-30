@@ -88,6 +88,7 @@ public class Scheduler {
 
         Multiset<String> ids = HashMultiset.create();
         do {
+            System.out.println(startDay);
             endDay = startDay;
             
             LocalTime startTime = window.getStartTime();
@@ -147,7 +148,7 @@ public class Scheduler {
             startDay += intervalInDays;
             occurrenceCount++;
             
-        } while(intervalInDays > 0 && occurrenceCount < occurrenceMax && startDay <= studyLengthInDays);
+        } while(intervalInDays > 0 && occurrenceCount < occurrenceMax && startDay < studyLengthInDays);
     }
     
     /**

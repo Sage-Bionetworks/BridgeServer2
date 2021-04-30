@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.services.AdherenceService;
 
@@ -41,8 +42,8 @@ public class AdherenceController extends BaseController {
     public StatusMessage updateAdherenceRecords(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        List<AdherenceRecord> recordsList = parseJson(RECORD_LIST);
-        for (AdherenceRecord oneRecord : recordsList) {
+        AdherenceRecordList recordsList = parseJson(AdherenceRecordList.class);
+        for (AdherenceRecord oneRecord : recordsList.getRecords()) {
             oneRecord.setUserId(session.getId());
             oneRecord.setStudyId(studyId);
         }

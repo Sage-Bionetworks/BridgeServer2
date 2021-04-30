@@ -17,10 +17,13 @@ import static org.testng.Assert.assertEquals;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Function;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import org.hibernate.Session;
+import org.hibernate.query.NativeQuery;
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -33,18 +36,15 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordId;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 
 public class HibernateAdherenceRecordDaoTest extends Mockito {
     
     private static final String ORDER = " ORDER BY ar.startedOn ASC";
-    
-    // Filters out marker records to keep track of historical event timestamps, 
-    // and orders by the startedOn field, either ASC or DESC according to search
-    // criteria.
-    private static final String ORDER_AND_FILTER = " AND ar.startedOn > 0" + ORDER;
     
     // It doesn't matter what these strings are, we're just verifying they are passed
     // correctly through the code.
@@ -52,6 +52,12 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
     
     @Mock
     HibernateHelper mockHelper;
+    
+    @Mock
+    Session mockSession;
+    
+    @Mock
+    NativeQuery<Schedule2> mockQuery;
     
     @Captor
     ArgumentCaptor<AdherenceRecordId> recordIdCaptor;
@@ -62,14 +68,25 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
+        
+        when(mockSession.createNativeQuery(any())).thenReturn(mockQuery);
+        when(mockHelper.executeWithExceptionHandling(any(), any())).thenAnswer(args -> {
+            Function<Session, Schedule2> func = args.getArgument(1);
+            func.apply(mockSession);
+            return args.getArgument(0);
+        });
     }
     
     @Test
-    public void updateAdherenceRecord() {
-        AdherenceRecord record = getAdherenceRecord(GUID);
-        dao.updateAdherenceRecord(record);
+    public void updateAdherenceRecords() {
+        AdherenceRecord rec1 = getAdherenceRecord(GUID);
+        AdherenceRecord rec2 = getAdherenceRecord(GUID + "2");
+        AdherenceRecordList list = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
         
-        verify(mockHelper).saveOrUpdate(record);
+        dao.updateAdherenceRecords(list);
+        
+        verify(mockSession).saveOrUpdate(rec1);
+        verify(mockSession).saveOrUpdate(rec2);
     }
     
     @Test
@@ -80,13 +97,13 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         
         AdherenceRecordsSearch search = search().build();
         
-        when(mockHelper.nativeQueryGet("SELECT * " + BASE_QUERY + ORDER_AND_FILTER,
+        when(mockHelper.nativeQueryGet("SELECT * " + BASE_QUERY + ORDER,
                 ImmutableMap.of("studyId", TEST_STUDY_ID, "userId", TEST_USER_ID),
                 0, DEFAULT_PAGE_SIZE, AdherenceRecord.class))
                 .thenReturn(list);
         
         when(mockHelper.nativeQueryCount(
-                "SELECT count(*) " + BASE_QUERY + ORDER_AND_FILTER,
+                "SELECT count(*) " + BASE_QUERY + ORDER,
                 ImmutableMap.of("studyId", TEST_STUDY_ID, "userId", TEST_USER_ID)))
                 .thenReturn(150);
         
@@ -100,7 +117,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         AdherenceRecordsSearch search = search().build();
         
         QueryBuilder builder = dao.createQuery(search);
-        assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + ORDER_AND_FILTER);
+        assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
     }
@@ -112,7 +129,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         
         QueryBuilder builder = dao.createQuery(search);
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
-                " AND tm.assessmentId IN :assessmentIds" + ORDER_AND_FILTER);
+                " AND tm.assessmentId IN :assessmentIds" + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
         assertEquals(builder.getParameters().get("assessmentIds"), STRING_SET);
@@ -125,7 +142,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         
         QueryBuilder builder = dao.createQuery(search);
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
-                " AND tm.sessionGuid IN :sessionGuids" + ORDER_AND_FILTER);
+                " AND tm.sessionGuid IN :sessionGuids" + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
         assertEquals(builder.getParameters().get("sessionGuids"), STRING_SET);
@@ -138,7 +155,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         
         QueryBuilder builder = dao.createQuery(search);
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
-                " AND ar.instanceGuid IN :instanceGuids" + ORDER_AND_FILTER);
+                " AND ar.instanceGuid IN :instanceGuids" + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
         assertEquals(builder.getParameters().get("instanceGuids"), STRING_SET);
@@ -151,7 +168,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         
         QueryBuilder builder = dao.createQuery(search);
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
-                " AND tm.timeWindowGuid IN :timeWindowGuids" + ORDER_AND_FILTER);
+                " AND tm.timeWindowGuid IN :timeWindowGuids" + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
         assertEquals(builder.getParameters().get("timeWindowGuids"), STRING_SET);
@@ -166,7 +183,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
                 " AND ar.startedOn = (SELECT startedOn FROM AdherenceRecords " +
                 "WHERE userId = :userId AND instanceGuid = ar.instanceGuid ORDER BY " +
-                "startedOn LIMIT 1)" + ORDER_AND_FILTER);
+                "startedOn LIMIT 1)" + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
     }
@@ -181,7 +198,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
                 " AND ( (tm.sessionStartEventId = :evtKey0 AND ar.eventTimestamp = " +
                 ":evtVal0) OR (tm.sessionStartEventId = :evtKey1 AND " +
-                "ar.eventTimestamp = :evtVal1) )" + ORDER_AND_FILTER);
+                "ar.eventTimestamp = :evtVal1) )" + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
         assertEquals(builder.getParameters().get("evtKey0"), "e1");
@@ -210,7 +227,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
 
         QueryBuilder builder = dao.createQuery(search);
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
-                " AND ar.startedOn > 0 AND ar.startedOn <= :endTime" + ORDER);
+                " AND ar.startedOn <= :endTime" + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
         assertEquals(builder.getParameters().get("endTime"), MODIFIED_ON.getMillis());
@@ -223,7 +240,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
 
         QueryBuilder builder = dao.createQuery(search);
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
-                " AND tm.assessmentGuid IS NULL" + ORDER_AND_FILTER);
+                " AND tm.assessmentGuid IS NULL" + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
     }
@@ -235,7 +252,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
 
         QueryBuilder builder = dao.createQuery(search);
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
-                " AND tm.assessmentGuid IS NOT NULL" + ORDER_AND_FILTER);
+                " AND tm.assessmentGuid IS NOT NULL" + ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
     }
@@ -249,7 +266,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         // This could be variable, but since it comes from an enum's name, it
         // seems safe to just concatenate it
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
-                " AND ar.startedOn > 0 ORDER BY ar.startedOn ASC");
+                ORDER);
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
     }
@@ -263,7 +280,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         // This could be variable, but since it comes from an enum's name, it
         // seems safe to just concatenate it
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
-                " AND ar.startedOn > 0 ORDER BY ar.startedOn DESC");
+                " ORDER BY ar.startedOn DESC");
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
     }

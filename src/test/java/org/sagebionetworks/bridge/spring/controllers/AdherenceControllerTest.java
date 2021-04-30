@@ -36,6 +36,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AdherenceService;
@@ -59,7 +60,7 @@ public class AdherenceControllerTest extends Mockito {
     AdherenceController controller;
     
     @Captor
-    ArgumentCaptor<List<AdherenceRecord>> listCaptor;
+    ArgumentCaptor<AdherenceRecordList> listCaptor;
     
     @Captor
     ArgumentCaptor<AdherenceRecordsSearch> searchCaptor;
@@ -94,7 +95,7 @@ public class AdherenceControllerTest extends Mockito {
         
         AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
         AdherenceRecord rec2 = TestUtils.getAdherenceRecord("BBB");
-        List<AdherenceRecord> list = ImmutableList.of(rec1, rec2);
+        AdherenceRecordList list = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
         
         mockRequestBody(mockRequest, list);
         
@@ -103,8 +104,8 @@ public class AdherenceControllerTest extends Mockito {
         
         verify(mockService).updateAdherenceRecords(eq(TEST_APP_ID), 
                 eq(HEALTH_CODE), listCaptor.capture());
-        List<AdherenceRecord> recordsList = listCaptor.getValue();
-        for (AdherenceRecord record : recordsList) {
+        AdherenceRecordList recordsList = listCaptor.getValue();
+        for (AdherenceRecord record : recordsList.getRecords()) {
             assertEquals(record.getStudyId(), TEST_STUDY_ID);
             assertEquals(record.getUserId(), TEST_USER_ID);
         }

@@ -17,11 +17,10 @@ import static org.sagebionetworks.bridge.models.ResourceList.SORT_ORDER;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.STUDY_ID;
 import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
-import static org.sagebionetworks.bridge.validators.AdherenceRecordValidator.INSTANCE;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -34,10 +33,9 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
@@ -74,38 +72,40 @@ public class AdherenceService {
         this.scheduleService = scheduleService;
     }
     
-    public void updateAdherenceRecords(String appId, String healthCode, List<AdherenceRecord> recordList) {
+    public void updateAdherenceRecords(String appId, String healthCode, AdherenceRecordList recordList) {
         checkNotNull(recordList);
         
-        if (recordList.isEmpty()) {
+        if (recordList.getRecords().isEmpty()) {
             throw new BadRequestException("No adherence records submitted for update.");
         }
-        // It would be nice to bundle this somehow. There might be successful
-        // records before and after a failed record, for example. If we had an IEE
-        // that took more than one entity, than we could possibly do that.
-        for (AdherenceRecord record : recordList) {
-            Validate.entityThrowingException(INSTANCE, record);
-            
-            CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
-                    AuthEvaluatorField.STUDY_ID, record.getStudyId(), 
-                    AuthEvaluatorField.USER_ID, record.getUserId());
-            
-            dao.updateAdherenceRecord(record);
+        
+        Validate.entityThrowingException(INSTANCE, recordList);
 
-            if (record.getFinishedOn() != null) {
-                TimelineMetadata meta = scheduleService.getTimelineMetadata(record.getInstanceGuid())
-                        .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
-                if (meta.getAssessmentInstanceGuid() == null) {
-                    activityEventService.publishSessionFinishedEvent(
-                            record.getStudyId(), healthCode, meta.getSessionGuid(), record.getFinishedOn());
-                } else {
-                    // Shared and local assessment ID are conceptually different but not 
-                    // differentiated for events scheduling. It might be helpful to end
-                    // users or we might need to change this.
-                    activityEventService.publishAssessmentFinishedEvent(
-                            record.getStudyId(), healthCode, meta.getAssessmentId(), record.getFinishedOn());
-                }                
+        CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
+                AuthEvaluatorField.STUDY_ID, recordList.getRecords().get(0).getStudyId(), 
+                AuthEvaluatorField.USER_ID, recordList.getRecords().get(0).getUserId());
+
+        dao.updateAdherenceRecords(recordList);
+
+        for (AdherenceRecord record : recordList.getRecords()) {
+            if (record.getFinishedOn() == null) {
+                continue;
             }
+            TimelineMetadata meta = scheduleService
+                    .getTimelineMetadata(record.getInstanceGuid()).orElse(null);
+            if (meta == null) {
+                continue;
+            }
+            if (meta.getAssessmentInstanceGuid() == null) {
+                activityEventService.publishSessionFinishedEvent(
+                        record.getStudyId(), healthCode, meta.getSessionGuid(), record.getFinishedOn());
+            } else {
+                // Shared and local assessment ID are conceptually different but not 
+                // differentiated for events scheduling. It might be helpful to end
+                // users or we might need to change this.
+                activityEventService.publishAssessmentFinishedEvent(
+                        record.getStudyId(), healthCode, meta.getAssessmentId(), record.getFinishedOn());
+            }                
         }
     }
     

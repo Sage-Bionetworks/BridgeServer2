@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 
 @Component
@@ -32,9 +33,15 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
     }
     
     @Override
-    public void updateAdherenceRecord(AdherenceRecord record) {
-        checkNotNull(record);
-        hibernateHelper.saveOrUpdate(record);    
+    public void updateAdherenceRecords(AdherenceRecordList recordList) {
+        checkNotNull(recordList);
+        
+        hibernateHelper.executeWithExceptionHandling(recordList, (session) -> {
+            for (AdherenceRecord record: recordList.getRecords()) {
+                session.saveOrUpdate(record);        
+            }
+            return recordList;
+        });
     }
 
     @Override
@@ -95,10 +102,6 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         if (search.getStartTime() != null) {
             builder.append("AND ar.startedOn >= :startTime", 
                     "startTime", search.getStartTime().getMillis());
-        } else {
-            // filter out marker records, which the above search will also do
-            // (we validate the startTime is 2020 or later)
-            builder.append("AND ar.startedOn > 0");
         }
         if (search.getEndTime() != null) {
             builder.append("AND ar.startedOn <= :endTime", 
