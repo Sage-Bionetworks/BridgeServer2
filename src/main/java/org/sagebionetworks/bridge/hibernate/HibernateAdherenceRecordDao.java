@@ -32,14 +32,10 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
     }
     
     @Override
-    public void updateAdherenceRecords(List<AdherenceRecord> recordList) {
-        checkNotNull(recordList);
-        
-        for (AdherenceRecord record : recordList) {
-            hibernateHelper.saveOrUpdate(record);    
-        }
+    public void updateAdherenceRecord(AdherenceRecord record) {
+        checkNotNull(record);
+        hibernateHelper.saveOrUpdate(record);    
     }
-    
 
     @Override
     public PagedResourceList<AdherenceRecord> getAdherenceRecords(AdherenceRecordsSearch search) {
@@ -85,7 +81,7 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
                     + "AdherenceRecords WHERE userId = :userId AND "
                     + "instanceGuid = ar.instanceGuid ORDER BY startedOn LIMIT 1)");
         }
-        builder.alternativeMatchedPairs(search.getGuidToStartedOnMap(), 
+        builder.alternativeMatchedPairs(search.getInstanceGuidStartedOnMap(), 
                 "gd", "ar.instanceGuid", "ar.startedOn");
         builder.alternativeMatchedPairs(search.getEventTimestamps(), 
                 "evt", "tm.sessionStartEventId", "ar.eventTimestamp");

@@ -277,6 +277,14 @@ public class HibernateHelperTest {
         verify(mockQuery).setParameter("appId", TEST_APP_ID);
         verify(mockQuery).executeUpdate();
     }
+    
+    @Test
+    public void saveOrUpdate() {
+        Object testObj = new Object();
+        Object received = helper.saveOrUpdate(testObj);
+        assertSame(received, testObj);
+        verify(mockSession).saveOrUpdate(testObj);
+    }
 
     @Test
     public void update() {

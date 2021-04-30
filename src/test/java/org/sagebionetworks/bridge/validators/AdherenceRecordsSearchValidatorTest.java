@@ -5,10 +5,10 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.AFTER_LATEST_DATETIME_ERROR;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.ASSESSMENT_IDS_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.BEFORE_EARLIEST_DATETIME_ERROR;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.EARLIEST_DATETIME;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.END_TIME_BEFORE_START_TIME;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.END_TIME_FIELD;
@@ -67,7 +67,7 @@ public class AdherenceRecordsSearchValidatorTest extends Mockito {
         assertEquals(search.getEventTimestamps(), ImmutableMap.of());
         assertEquals(search.getIncludeRepeats(), Boolean.TRUE);
         assertEquals(search.getOffsetBy(), Integer.valueOf(0));
-        assertEquals(search.getPageSize(), Integer.valueOf(PAGE_SIZE));
+        assertEquals(search.getPageSize(), Integer.valueOf(DEFAULT_PAGE_SIZE));
         assertEquals(search.getSortOrder(), SortOrder.ASC);
     }
     

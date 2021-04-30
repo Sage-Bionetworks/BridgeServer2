@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSe
 
 public class AdherenceRecordsSearchValidator extends AbstractValidator {
     
+    public static final int DEFAULT_PAGE_SIZE = 250;
     public static final int MAX_PAGE_SIZE = 500;
     public static final int MAX_SET_SIZE = 500;
     public static final int MAX_MAP_SIZE = 50;

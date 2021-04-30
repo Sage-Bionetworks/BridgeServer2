@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -40,6 +41,7 @@ import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -301,6 +303,11 @@ public class Schedule2Service {
         
         // This is calculated so quickly it is not worth caching
         return Scheduler.INSTANCE.calculateTimeline(schedule);
+    }
+    
+    public Optional<TimelineMetadata> getTimelineMetadata(String instanceGuid) {
+        checkNotNull(instanceGuid);
+        return dao.getTimelineMetadata(instanceGuid);
     }
     
     /**

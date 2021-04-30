@@ -738,7 +738,7 @@ public class BridgeUtils {
                 return null;
             }
         }
-        return id;
+        return (id == null) ? null : id.toLowerCase();
     }
     
     /**

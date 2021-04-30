@@ -38,6 +38,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -53,6 +54,7 @@ public class ActivityEventServiceTest {
     private static final DateTime ACTIVITIES_RETRIEVED = DateTime.parse("2017-05-27T00:00:00.000Z");
     private static final DateTime ENROLLMENT = DateTime.parse("2017-05-28T00:00:00.000Z");
     private static final DateTime CREATED_ON = DateTime.parse("2017-05-26T00:00:00.000Z");
+    private static final DateTime FINISHED_ON = DateTime.parse("2020-12-26T00:00:00.000Z");
     
     @Spy
     private ActivityEventService activityEventService;
@@ -937,6 +939,46 @@ public class ActivityEventServiceTest {
         App app = App.create();
         
         activityEventService.deleteCustomEvent(app, TEST_STUDY_ID, HEALTH_CODE, "eventKey");
+    }
+    
+    @Test
+    public void publishSessionFinishedEvent() {
+        activityEventService.publishSessionFinishedEvent(TEST_STUDY_ID, HEALTH_CODE, "sessionGuid", FINISHED_ON);
+        
+        verify(activityEventDao).publishEvent(eventCaptor.capture());
+        
+        ActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
+        assertEquals(event.getEventId(), "session:sessionGuid:finished");
+        assertNull(event.getAnswerValue());
+        assertEquals(event.getTimestamp(), Long.valueOf(FINISHED_ON.getMillis()));
+        assertEquals(event.getUpdateType(), FUTURE_ONLY);
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void publishSessionFinishedEventValidates() {
+        activityEventService.publishSessionFinishedEvent(TEST_STUDY_ID, HEALTH_CODE, "sessionGuid", null);
+    }
+    
+    @Test
+    public void publishAssessmentFinishedEvent() {
+        activityEventService.publishAssessmentFinishedEvent(TEST_STUDY_ID, HEALTH_CODE, "asmt-id", FINISHED_ON);
+        
+        verify(activityEventDao).publishEvent(eventCaptor.capture());
+        
+        ActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
+        assertEquals(event.getEventId(), "assessment:asmt-id:finished");
+        assertNull(event.getAnswerValue());
+        assertEquals(event.getTimestamp(), Long.valueOf(FINISHED_ON.getMillis()));
+        assertEquals(event.getUpdateType(), FUTURE_ONLY);
+    }
+    
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void publishAssessmentFinishedEventValidates() {
+        activityEventService.publishAssessmentFinishedEvent(TEST_STUDY_ID, null, "asmt-id", FINISHED_ON);
     }
     
     private ActivityEvent getEventByKey(List<ActivityEvent> results, String key) {

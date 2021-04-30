@@ -1025,6 +1025,12 @@ public class BridgeUtilsTest {
     }
     
     @Test
+    public void formatActivityEventIdSystemEventWrongCase() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of(), "ENROLLMENT");
+        assertEquals(retValue, "enrollment");
+    }
+    
+    @Test
     public void selectByLang_selectPreferredLanguage() {
         List<Label> items = ImmutableList.of(LABEL_ES, LABEL_JA);
         

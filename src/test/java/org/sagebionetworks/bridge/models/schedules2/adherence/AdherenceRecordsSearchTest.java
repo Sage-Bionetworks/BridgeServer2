@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.SESSION;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.ASC;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.DESC;
-import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.MAX_PAGE_SIZE;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -62,7 +62,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(deser.getOffsetBy(), Integer.valueOf(100));
         assertEquals(deser.getPageSize(), Integer.valueOf(20));
         assertEquals(deser.getSortOrder(), DESC);
-        assertEquals(deser.getGuidToStartedOnMap(), ImmutableMap.of());
+        assertEquals(deser.getInstanceGuidStartedOnMap(), ImmutableMap.of());
     }
     
     @Test
@@ -80,7 +80,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(copy.getRecordType(), SESSION);
         assertTrue(copy.getIncludeRepeats());
         assertEquals(copy.getEventTimestamps().get("E"), CREATED_ON);
-        assertEquals(copy.getGuidToStartedOnMap().get("E"), CREATED_ON);
+        assertEquals(copy.getInstanceGuidStartedOnMap().get("E"), CREATED_ON);
         assertEquals(copy.getStartTime(), CREATED_ON);
         assertEquals(copy.getEndTime(), MODIFIED_ON);
         assertEquals(copy.getOffsetBy(), Integer.valueOf(100));
@@ -99,7 +99,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
                 .withRecordType(SESSION)
                 .withIncludeRepeats(Boolean.TRUE)
                 .withEventTimestamps(ImmutableMap.of("E", CREATED_ON))
-                .withGuidToStartedOnMap(ImmutableMap.of("E", CREATED_ON))
+                .withInstanceGuidStartedOnMap(ImmutableMap.of("E", CREATED_ON))
                 .withStartTime(CREATED_ON)
                 .withEndTime(MODIFIED_ON)
                 .withOffsetBy(100)
@@ -119,7 +119,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertTrue(search.getIncludeRepeats());
         assertEquals(search.getEventTimestamps(), ImmutableMap.of());
         assertEquals(search.getOffsetBy(), Integer.valueOf(0));
-        assertEquals(search.getPageSize(), Integer.valueOf(MAX_PAGE_SIZE));
+        assertEquals(search.getPageSize(), Integer.valueOf(DEFAULT_PAGE_SIZE));
         assertEquals(search.getSortOrder(), ASC);
     }
 

@@ -65,7 +65,7 @@ public class SessionValidator implements Validator {
                 if (session.getInterval() != null) {
                     if (window.getExpiration() == null) {
                         errors.rejectValue("expiration", "is required when a session has an interval");
-                    } else if (window.getExpiration() != null) {
+                    } else {
                         int intervalMin = periodInMinutes(session.getInterval());
                         int expMin = periodInMinutes(window.getExpiration());
                         if (expMin > intervalMin) {

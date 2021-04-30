@@ -1,10 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
-import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordValidator.CLIENT_TIME_ZONE_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordValidator.EVENT_TIMESTAMP_FIELD;
@@ -20,13 +16,14 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 
 public class AdherenceRecordValidatorTest extends Mockito {
 
     @Test
     public void valid() {
-        AdherenceRecord record = createRecord();
+        AdherenceRecord record = TestUtils.getAdherenceRecord(GUID);
         Validate.entityThrowingException(INSTANCE, record);
     }
     
@@ -95,19 +92,8 @@ public class AdherenceRecordValidatorTest extends Mockito {
     
     @Test
     public void clientTimeZoneNullOK() {
-        AdherenceRecord record = createRecord();
+        AdherenceRecord record = TestUtils.getAdherenceRecord(GUID);
         record.setClientTimeZone(null);
         Validate.entityThrowingException(INSTANCE, record);
-    }
-    
-    private AdherenceRecord createRecord() { 
-        AdherenceRecord record = new AdherenceRecord();
-        record.setUserId(TEST_USER_ID);
-        record.setStudyId(TEST_STUDY_ID);
-        record.setInstanceGuid(GUID);
-        record.setEventTimestamp(CREATED_ON);
-        record.setStartedOn(MODIFIED_ON);
-        record.setClientTimeZone("America/Los_Angeles");
-        return record;
     }
 }

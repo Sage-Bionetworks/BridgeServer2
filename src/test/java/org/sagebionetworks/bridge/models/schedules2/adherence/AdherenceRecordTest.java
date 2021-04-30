@@ -30,6 +30,7 @@ public class AdherenceRecordTest extends Mockito {
         record.setUploadedOn(MODIFIED_ON.plusHours(1));
         record.setEventTimestamp(CREATED_ON.plusHours(1));
         record.setClientData(TestUtils.getClientData());
+        record.setClientTimeZone("America/Los_Angeles");
         record.setInstanceGuid(GUID);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(record);
@@ -41,6 +42,7 @@ public class AdherenceRecordTest extends Mockito {
         assertEquals(node.get("eventTimestamp").textValue(), CREATED_ON.plusHours(1).toString());
         assertEquals(node.get("clientData").get("intValue").intValue(), 4);
         assertEquals(node.get("instanceGuid").textValue(), GUID);
+        assertEquals(node.get("clientTimeZone").textValue(), "America/Los_Angeles");
         assertEquals(node.get("type").textValue(), "AdherenceRecord");
         
         AdherenceRecord deser = BridgeObjectMapper.get()
@@ -52,6 +54,7 @@ public class AdherenceRecordTest extends Mockito {
         assertEquals(deser.getUploadedOn(), MODIFIED_ON.plusHours(1));
         assertEquals(deser.getEventTimestamp(), CREATED_ON.plusHours(1));
         assertNotNull(deser.getClientData());
+        assertEquals(deser.getClientTimeZone(), "America/Los_Angeles");
         assertEquals(deser.getInstanceGuid(), GUID);
     }
 }

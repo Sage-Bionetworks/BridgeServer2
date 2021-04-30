@@ -110,4 +110,20 @@ public class QueryBuilderTest {
         assertEquals("event_1", builder.getParameters().get("eKey0"));
         assertEquals("event_2", builder.getParameters().get("eKey1"));
     }
+    
+    @Test
+    public void alternativeMatchedPairs_nullSkipped() { 
+        QueryBuilder builder = new QueryBuilder();
+        builder.alternativeMatchedPairs(null, 
+                "e", "tm.sessionStartEventId", "ar.eventTimestamp");
+        assertEquals(builder.getQuery(), "");
+    }
+
+    @Test
+    public void alternativeMatchedPairs_emptySkipped() { 
+        QueryBuilder builder = new QueryBuilder();
+        builder.alternativeMatchedPairs(ImmutableMap.of(), 
+                "e", "tm.sessionStartEventId", "ar.eventTimestamp");
+        assertEquals(builder.getQuery(), "");
+    }
 }

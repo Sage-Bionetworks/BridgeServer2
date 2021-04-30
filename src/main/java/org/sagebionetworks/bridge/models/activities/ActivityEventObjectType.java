@@ -37,10 +37,22 @@ public enum ActivityEventObjectType {
      * Event for when any activity has been finished. An event is published every time the client 
      * updates a scheduled activity record with a finishedOn timestamp. Clients that use the scheduled 
      * events API do send these updates and we can schedule against the completion of a survey or task. 
-     * Event IDs take the format "activity:<guid>:finished" (The guid is the guid of the activity as 
+     * Event IDs take the format "activity:<guid>:finished" (the guid is the guid of the activity as 
      * saved in a schedule plan).
      */
     ACTIVITY(FUTURE_ONLY),
+    /**
+     * Event for when a session has been finished. An event is published every time the client updates
+     * an adherence record for a session with a finishedOn timestamp. Event IDs take the format 
+     * "session:<guid>:finished" (the guid is the guid of the session as saved in a v2 schedule). 
+     */
+    SESSION(FUTURE_ONLY),
+    /**
+     * Event for when an assessment has been finished. An event is published every time the client updates
+     * an adherence record for an assessment with a finishedOn timestamp. Event IDs take the format 
+     * "assessment:<id>:finished" (the ID is the ID of the assessment). 
+     */
+    ASSESSMENT(FUTURE_ONLY),
     /**
      * A custom event configured at the app level with an update type (mutable, immutable, or future-
      * only). If it cannot be found, then the event will default to the most restrictive (immutable).

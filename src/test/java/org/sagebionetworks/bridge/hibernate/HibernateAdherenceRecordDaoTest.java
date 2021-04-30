@@ -5,11 +5,13 @@ import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestUtils.getAdherenceRecord;
 import static org.sagebionetworks.bridge.hibernate.HibernateAdherenceRecordDao.BASE_QUERY;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.SESSION;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.ASC;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.DESC;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
 
 import java.util.List;
@@ -63,16 +65,24 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
     }
     
     @Test
+    public void updateAdherenceRecord() {
+        AdherenceRecord record = getAdherenceRecord(GUID);
+        dao.updateAdherenceRecord(record);
+        
+        verify(mockHelper).saveOrUpdate(record);
+    }
+    
+    @Test
     public void getAdherenceRecords() {
-        AdherenceRecord rec1 = createRecord();
-        AdherenceRecord rec2 = createRecord();
+        AdherenceRecord rec1 = getAdherenceRecord(GUID);
+        AdherenceRecord rec2 = getAdherenceRecord(GUID);
         List<AdherenceRecord> list = ImmutableList.of(rec1, rec2);
         
         AdherenceRecordsSearch search = search().build();
         
         when(mockHelper.nativeQueryGet("SELECT * " + BASE_QUERY + ORDER_AND_FILTER,
                 ImmutableMap.of("studyId", TEST_STUDY_ID, "userId", TEST_USER_ID),
-                0, AdherenceRecordsSearch.PAGE_SIZE, AdherenceRecord.class))
+                0, DEFAULT_PAGE_SIZE, AdherenceRecord.class))
                 .thenReturn(list);
         
         when(mockHelper.nativeQueryCount(
@@ -256,15 +266,6 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
                 " AND ar.startedOn > 0 ORDER BY ar.startedOn DESC");
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
-    }
-    
-    private AdherenceRecord createRecord() { 
-        AdherenceRecord record = new AdherenceRecord();
-        record.setUserId(TEST_USER_ID);
-        record.setStudyId(TEST_STUDY_ID);
-        record.setInstanceGuid(GUID);
-        record.setStartedOn(CREATED_ON);
-        return record;
     }
     
     private AdherenceRecordsSearch.Builder search() {

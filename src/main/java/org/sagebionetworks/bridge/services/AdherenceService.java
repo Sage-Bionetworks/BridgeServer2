@@ -25,20 +25,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.Errors;
-import org.springframework.validation.MapBindingResult;
 
 import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -48,6 +50,10 @@ public class AdherenceService {
     private AdherenceRecordDao dao;
     
     private AppService appService;
+
+    private ActivityEventService activityEventService;
+    
+    private Schedule2Service scheduleService;
     
     @Autowired
     final void setAdherenceRecordDao(AdherenceRecordDao dao) {
@@ -59,33 +65,57 @@ public class AdherenceService {
         this.appService = appService;
     }
     
-    public void updateAdherenceRecords(List<AdherenceRecord> recordList) {
+    @Autowired
+    final void setActivityEventService(ActivityEventService activityEventService) {
+        this.activityEventService = activityEventService;
+    }
+    
+    @Autowired
+    final void setSchedule2Service(Schedule2Service scheduleService) {
+        this.scheduleService = scheduleService;
+    }
+    
+    public void updateAdherenceRecords(String appId, String healthCode, List<AdherenceRecord> recordList) {
         checkNotNull(recordList);
         
-        // This will fail with the first record that is invalid, but it will return
-        // an error message that indicates the index of that record...
-        Errors errors = new MapBindingResult(Maps.newHashMap(), "records");
-        for (int i=0, len = recordList.size(); i < len; i++) {
-            AdherenceRecord record = recordList.get(i);
-            
-            errors.pushNestedPath("["+i+"]");
-            INSTANCE.validate(record, errors);
-            errors.popNestedPath();
-            Validate.throwException(errors, record);
+        if (recordList.isEmpty()) {
+            throw new BadRequestException("No adherence records submitted for update.");
         }
-        // The only caller to this method set all the studyId/userId fields identically
-        // so it is acceptable to test the first item in the list.
-        CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
-                AuthEvaluatorField.STUDY_ID, recordList.get(0).getStudyId(), 
-                AuthEvaluatorField.USER_ID, recordList.get(0).getUserId());
-        
-        dao.updateAdherenceRecords(recordList);
+        // It would be nice to bundle this somehow. There might be successful
+        // records before and after a failed record, for example. If we had an IEE
+        // that took more than one entity, than we could possibly do that.
+        for (AdherenceRecord record : recordList) {
+            Validate.entityThrowingException(INSTANCE, record);
+            
+            CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
+                    AuthEvaluatorField.STUDY_ID, record.getStudyId(), 
+                    AuthEvaluatorField.USER_ID, record.getUserId());
+            
+            dao.updateAdherenceRecord(record);
+
+            if (record.getFinishedOn() != null) {
+                TimelineMetadata meta = scheduleService.getTimelineMetadata(record.getInstanceGuid())
+                        .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
+                if (meta.getAssessmentInstanceGuid() == null) {
+                    activityEventService.publishSessionFinishedEvent(
+                            record.getStudyId(), healthCode, meta.getSessionGuid(), record.getFinishedOn());
+                } else {
+                    // Shared and local assessment ID are conceptually different but not 
+                    // differentiated for events scheduling. It might be helpful to end
+                    // users or we might need to change this.
+                    activityEventService.publishAssessmentFinishedEvent(
+                            record.getStudyId(), healthCode, meta.getAssessmentId(), record.getFinishedOn());
+                }                
+            }
+        }
     }
     
     public PagedResourceList<AdherenceRecord> getAdherenceRecords(String appId, 
             AdherenceRecordsSearch search) {
         
-        search = cleanupEventIds(requireNonNull(appId), requireNonNull(search));
+        Set<String> originalInstanceGuids = ImmutableSet.copyOf(search.getInstanceGuids());
+        
+        search = cleanupSearch(requireNonNull(appId), requireNonNull(search));
         
         Validate.entityThrowingException(AdherenceRecordsSearchValidator.INSTANCE, search);
         CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
@@ -97,7 +127,7 @@ public class AdherenceService {
                 .withRequestParam(END_TIME, search.getEndTime())
                 .withRequestParam(EVENT_TIMESTAMPS, search.getEventTimestamps())
                 .withRequestParam(INCLUDE_REPEATS, search.getIncludeRepeats())
-                .withRequestParam(INSTANCE_GUIDS, search.getInstanceGuids())
+                .withRequestParam(INSTANCE_GUIDS, originalInstanceGuids)
                 .withRequestParam(OFFSET_BY, search.getOffsetBy())
                 .withRequestParam(PAGE_SIZE, search.getPageSize())
                 .withRequestParam(RECORD_TYPE, search.getRecordType())
@@ -108,9 +138,17 @@ public class AdherenceService {
                 .withRequestParam(TIME_WINDOW_GUIDS, search.getTimeWindowGuids());
     }
 
-    protected AdherenceRecordsSearch cleanupEventIds(String appId, AdherenceRecordsSearch search) {
-        // This fixes things like failing to put a "custom:" prefix on a custom
-        // event. 
+    protected AdherenceRecordsSearch cleanupSearch(String appId, AdherenceRecordsSearch search) {
+        // optimization: skip all this if not relevant to the search
+        boolean skipFixes = search.getEventTimestamps().isEmpty() &&
+                            search.getInstanceGuids().isEmpty();
+        if (skipFixes) {
+            return search;
+        }
+        AdherenceRecordsSearch.Builder builder = new AdherenceRecordsSearch.Builder()
+                .copyOf(search);
+        
+        // This fixes things like failing to put a "custom:" prefix on a custom event.
         if (!search.getEventTimestamps().isEmpty()) {
             App app = appService.getApp(appId);
             
@@ -123,11 +161,10 @@ public class AdherenceService {
                     fixedMap.put(fixedEventId, entry.getValue());    
                 }
             }
-            search = new AdherenceRecordsSearch.Builder()
-                    .copyOf(search)
-                    .withEventTimestamps(fixedMap)
-                    .build();
+            builder.withEventTimestamps(fixedMap);
         }
+        // parse any compound instance IDs that include a startedOn value, and move them 
+        // to a different map.
         if (!search.getInstanceGuids().isEmpty()) {
             Map<String, DateTime> map = new HashMap<>();
             Set<String> instanceGuids = new HashSet<>();
@@ -140,12 +177,9 @@ public class AdherenceService {
                     instanceGuids.add(instanceGuid);
                 }
             }
-            search = new AdherenceRecordsSearch.Builder()
-                    .copyOf(search)
-                    .withGuidToStartedOnMap(map)
-                    .withInstanceGuids(instanceGuids)
-                    .build();
+            builder.withInstanceGuidStartedOnMap(map);
+            builder.withInstanceGuids(instanceGuids);
         }
-        return search;
+        return builder.build();
     }
 }
