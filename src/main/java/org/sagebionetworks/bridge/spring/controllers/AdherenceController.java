@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
@@ -59,7 +61,7 @@ public class AdherenceController extends BaseController {
                 .withUserId(session.getId())
                 .withStudyId(studyId).build();
         
-        return service.getAdherenceRecords(session.getAppId(), search);
+        return service.getAdherenceRecords(session.getAppId(), session.getHealthCode(), search);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/adherence/search")
@@ -74,6 +76,8 @@ public class AdherenceController extends BaseController {
                 .withUserId(userId)
                 .withStudyId(studyId).build();
         
-        return service.getAdherenceRecords(session.getAppId(), search);
+        Account account = accountService.getAccount(AccountId.forId(session.getAppId(), userId));
+        
+        return service.getAdherenceRecords(session.getAppId(), account.getHealthCode(), search);
     }
 }

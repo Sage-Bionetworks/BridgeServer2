@@ -39,7 +39,7 @@ public class TimelineTest extends Mockito {
         assertEquals(node.get("schedule").size(), 2);
         JsonNode schNode = node.get("schedule").get(0);
         assertEquals(schNode.get("refGuid").textValue(), SESSION_GUID_1);
-        assertEquals(schNode.get("instanceGuid").textValue(), "So3SXnQm0sIt9vVIqj814Q");
+        assertEquals(schNode.get("instanceGuid").textValue(), "XPnIpiOvQMtil857X_ihUw");
         assertEquals(schNode.get("startDay").intValue(), 7);
         assertEquals(schNode.get("endDay").intValue(), 13);
         assertEquals(schNode.get("startTime").textValue(), "08:00");
@@ -47,7 +47,7 @@ public class TimelineTest extends Mockito {
         assertTrue(schNode.get("persistent").booleanValue());
         assertEquals(schNode.get("type").textValue(), "ScheduledSession");
         assertEquals(schNode.get("assessments")
-                .get(0).get("instanceGuid").textValue(), "ZBi2x9clKyYLrPcHNqpjmA");
+                .get(0).get("instanceGuid").textValue(), "Lfi4aAVfepdR5DFKYv_H1Q");
         assertEquals(schNode.get("assessments")
                 .get(0).get("refKey").textValue(), "646f8c04646f8c04");
         assertEquals(schNode.get("assessments")
@@ -91,7 +91,7 @@ public class TimelineTest extends Mockito {
         
         // This is the session record
         TimelineMetadata meta1 = metadata.get(0);
-        String sessionInstanceGuid = "So3SXnQm0sIt9vVIqj814Q";
+        String sessionInstanceGuid = "XPnIpiOvQMtil857X_ihUw";
         assertEquals(meta1.getGuid(), sessionInstanceGuid);
         assertNull(meta1.getAssessmentInstanceGuid());
         assertNull(meta1.getAssessmentGuid());
@@ -110,7 +110,7 @@ public class TimelineTest extends Mockito {
 
         // This is the assessment #1 record
         TimelineMetadata meta2 = metadata.get(1);
-        String asmtInstanceGuid = "ZBi2x9clKyYLrPcHNqpjmA";
+        String asmtInstanceGuid = "Lfi4aAVfepdR5DFKYv_H1Q";
         assertEquals(meta2.getGuid(), asmtInstanceGuid);
         assertEquals(meta2.getAssessmentInstanceGuid(), asmtInstanceGuid);
         assertEquals(meta2.getAssessmentGuid(), ASSESSMENT_1_GUID);
@@ -129,7 +129,7 @@ public class TimelineTest extends Mockito {
         
         // This is the assessment #2 record
         TimelineMetadata meta3 = metadata.get(2);
-        asmtInstanceGuid = "b20vr-Bb2Om655sLmp5MjQ";
+        asmtInstanceGuid = "5R2D-mJ434Lj0xyym66x-g";
         assertEquals(meta3.getGuid(), asmtInstanceGuid);
         assertEquals(meta3.getAssessmentInstanceGuid(), asmtInstanceGuid);
         assertEquals(meta3.getAssessmentGuid(), ASSESSMENT_2_GUID);

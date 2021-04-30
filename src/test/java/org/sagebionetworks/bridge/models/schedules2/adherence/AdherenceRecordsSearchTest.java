@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.A
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.DESC;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
@@ -28,7 +29,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         AdherenceRecordsSearch search = createSearch();
                 
         JsonNode node = BridgeObjectMapper.get().valueToTree(search);
-        assertEquals(node.size(), 15);
+        assertEquals(node.size(), 16);
         assertEquals(node.get("userId").textValue(), TEST_USER_ID);
         assertEquals(node.get("studyId").textValue(), TEST_STUDY_ID);
         assertEquals(node.get("instanceGuids").get(0).textValue(), "A");
@@ -37,6 +38,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(node.get("timeWindowGuids").get(0).textValue(), "D");
         assertEquals(node.get("recordType").textValue(), "session");
         assertTrue(node.get("includeRepeats").booleanValue());
+        assertTrue(node.get("currentTimestampsOnly").booleanValue());
         assertEquals(node.get("eventTimestamps").get("E").textValue(), CREATED_ON.toString());
         assertEquals(node.get("startTime").textValue(), CREATED_ON.toString());
         assertEquals(node.get("endTime").textValue(), MODIFIED_ON.toString());
@@ -56,6 +58,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(deser.getTimeWindowGuids(), ImmutableSet.of("D"));
         assertEquals(deser.getRecordType(), SESSION);
         assertTrue(deser.getIncludeRepeats());
+        assertTrue(deser.getCurrentTimestampsOnly());
         assertEquals(deser.getEventTimestamps().get("E"), CREATED_ON);
         assertEquals(deser.getStartTime(), CREATED_ON);
         assertEquals(deser.getEndTime(), MODIFIED_ON);
@@ -79,6 +82,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(copy.getTimeWindowGuids(), ImmutableSet.of("D"));
         assertEquals(copy.getRecordType(), SESSION);
         assertTrue(copy.getIncludeRepeats());
+        assertTrue(copy.getCurrentTimestampsOnly());
         assertEquals(copy.getEventTimestamps().get("E"), CREATED_ON);
         assertEquals(copy.getInstanceGuidStartedOnMap().get("E"), CREATED_ON);
         assertEquals(copy.getStartTime(), CREATED_ON);
@@ -98,6 +102,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
                 .withTimeWindowGuids(ImmutableSet.of("D"))
                 .withRecordType(SESSION)
                 .withIncludeRepeats(Boolean.TRUE)
+                .withCurrentTimestampsOnly(Boolean.TRUE)
                 .withEventTimestamps(ImmutableMap.of("E", CREATED_ON))
                 .withInstanceGuidStartedOnMap(ImmutableMap.of("E", CREATED_ON))
                 .withStartTime(CREATED_ON)
@@ -117,6 +122,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(search.getSessionGuids(), ImmutableSet.of());
         assertEquals(search.getTimeWindowGuids(), ImmutableSet.of());
         assertTrue(search.getIncludeRepeats());
+        assertFalse(search.getCurrentTimestampsOnly());
         assertEquals(search.getEventTimestamps(), ImmutableMap.of());
         assertEquals(search.getOffsetBy(), Integer.valueOf(0));
         assertEquals(search.getPageSize(), Integer.valueOf(DEFAULT_PAGE_SIZE));

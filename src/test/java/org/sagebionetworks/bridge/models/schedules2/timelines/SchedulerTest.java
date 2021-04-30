@@ -700,15 +700,15 @@ public class SchedulerTest extends Mockito {
     
     @Test
     public void sessionInstanceGuidsAreCorrect() {
-        String guid = INSTANCE.generateSessionInstanceGuid(SCHEDULE_GUID, SESSION_GUID_1, SESSION_WINDOW_GUID_1, 3);
+        String guid = INSTANCE.generateSessionInstanceGuid(SCHEDULE_GUID, SESSION_GUID_1, 3, SESSION_WINDOW_GUID_1);
         // window guid, window occurrence, session guid, schedule guid
-        assertEquals(guid, "4iov0SHEtt2MuKhS2KBMVg");
+        assertEquals(guid, "U9uuOEIBzUaw0sKTjgaT-Q");
     }
     
     @Test
     public void assessmentInstanceGuidsAreCorrect() {
-        String guid = INSTANCE.generateAssessmentInstanceGuid(SCHEDULE_GUID, SESSION_GUID_1, SESSION_WINDOW_GUID_1, 3, ASSESSMENT_1_GUID, 5);
-        assertEquals(guid, "iOzm0SlReeu5ex0q8cw1PQ");
+        String guid = INSTANCE.generateAssessmentInstanceGuid(SCHEDULE_GUID, SESSION_GUID_1, 3, SESSION_WINDOW_GUID_1, ASSESSMENT_1_GUID, 5);
+        assertEquals(guid, "BREAKQLN7ZoBo1lF0iLT4Q");
     }
     
     @Test
@@ -760,16 +760,25 @@ public class SchedulerTest extends Mockito {
     @Test
     public void allGuidsAreUnique() {
         Schedule2 schedule = createComplexSchedule();
-        Set<String> allGuids = new HashSet<>();
-            
-        Timeline timeline = INSTANCE.calculateTimeline(schedule);
         
+        Set<String> allGuids = new HashSet<>();
+        Timeline timeline = INSTANCE.calculateTimeline(schedule);
         for (ScheduledSession schSession : timeline.getSchedule()) {
             allGuids.add(schSession.getInstanceGuid());
             for (ScheduledAssessment schAsmt : schSession.getAssessments()) {
                 allGuids.add(schAsmt.getInstanceGuid());
             }
         }
+        
+        Set<String> allGuidsAgain = new HashSet<>();
+        timeline = INSTANCE.calculateTimeline(schedule);
+        for (ScheduledSession schSession : timeline.getSchedule()) {
+            allGuidsAgain.add(schSession.getInstanceGuid());
+            for (ScheduledAssessment schAsmt : schSession.getAssessments()) {
+                allGuidsAgain.add(schAsmt.getInstanceGuid());
+            }
+        }
+        assertEquals(allGuids, allGuidsAgain);
         assertEquals(allGuids.size(), 2190 + 1278);
     }
     

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
@@ -8,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.getAdherenceRecord;
 import static org.sagebionetworks.bridge.models.ResourceList.ASSESSMENT_IDS;
+import static org.sagebionetworks.bridge.models.ResourceList.CURRENT_TIMESTAMPS_ONLY;
 import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.EVENT_TIMESTAMPS;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_REPEATS;
@@ -208,7 +210,7 @@ public class AdherenceServiceTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
-                .withInstanceGuids(ImmutableSet.of("AAA:" + CREATED_ON.toString()))
+                .withInstanceGuids(ImmutableSet.of("AAA@" + CREATED_ON.toString()))
                 .withEventTimestamps(ImmutableMap.of("event1", MODIFIED_ON))
                 .withSessionGuids(ImmutableSet.of("BBB"))
                 .withTimeWindowGuids(ImmutableSet.of("CCC"))
@@ -223,17 +225,18 @@ public class AdherenceServiceTest extends Mockito {
         PagedResourceList<AdherenceRecord> page = new PagedResourceList<AdherenceRecord>(list, 100);
         when(mockDao.getAdherenceRecords(any())).thenReturn(page);
         
-        PagedResourceList<AdherenceRecord> retValue = service.getAdherenceRecords(TEST_APP_ID, search);
+        PagedResourceList<AdherenceRecord> retValue = service.getAdherenceRecords(TEST_APP_ID, HEALTH_CODE, search);
         assertSame(retValue, page);
         
         Map<String, Object> rp = retValue.getRequestParams();
-        assertEquals(rp.size(), 14);
+        assertEquals(rp.size(), 15);
         assertEquals(rp.get(ASSESSMENT_IDS), ImmutableSet.of());
         assertEquals(rp.get(START_TIME).toString(), EARLIEST_DATETIME.toString());
         assertEquals(rp.get(END_TIME).toString(), LATEST_DATETIME.toString());
         assertEquals(rp.get(EVENT_TIMESTAMPS), ImmutableMap.of("custom:event1", MODIFIED_ON));
         assertEquals(rp.get(INCLUDE_REPEATS), Boolean.TRUE);
-        assertEquals(rp.get(INSTANCE_GUIDS), ImmutableSet.of("AAA:2015-01-26T23:38:32.486Z"));
+        assertEquals(rp.get(CURRENT_TIMESTAMPS_ONLY), Boolean.FALSE);
+        assertEquals(rp.get(INSTANCE_GUIDS), ImmutableSet.of("AAA@2015-01-26T23:38:32.486Z"));
         assertEquals(rp.get(OFFSET_BY), 10);
         assertEquals(rp.get(PAGE_SIZE), DEFAULT_PAGE_SIZE);
         assertEquals(rp.get(RECORD_TYPE), ASSESSMENT);
@@ -254,14 +257,14 @@ public class AdherenceServiceTest extends Mockito {
                 .withUserId(TEST_USER_ID)
                 .withStudyId(TEST_STUDY_ID).build();
 
-        service.getAdherenceRecords(TEST_APP_ID, search);
+        service.getAdherenceRecords(TEST_APP_ID, HEALTH_CODE, search);
     }
 
     @Test
     public void cleanupSearchOptimizesWhenUnnecessary() {
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder().build();
         
-        AdherenceRecordsSearch retValue = service.cleanupSearch(TEST_APP_ID, search);
+        AdherenceRecordsSearch retValue = service.cleanupSearch(TEST_APP_ID, HEALTH_CODE, search);
         assertSame(retValue, search);
     }
 
@@ -269,7 +272,6 @@ public class AdherenceServiceTest extends Mockito {
     public void cleanupSearchNormalizesEventIds() {
         App app = App.create();
         app.setCustomEvents(ImmutableMap.of("event1", IMMUTABLE, "event_2", IMMUTABLE));
-        
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
@@ -277,7 +279,7 @@ public class AdherenceServiceTest extends Mockito {
                         "custom:event1", CREATED_ON, "event_2", CREATED_ON,
                         "custom:event3", CREATED_ON)).build();
         
-        AdherenceRecordsSearch retValue = service.cleanupSearch(TEST_APP_ID, search);
+        AdherenceRecordsSearch retValue = service.cleanupSearch(TEST_APP_ID, HEALTH_CODE, search);
         assertEquals(ImmutableSet.of("enrollment", "custom:event1", "custom:event_2"),
                 retValue.getEventTimestamps().keySet());
     }
@@ -285,11 +287,37 @@ public class AdherenceServiceTest extends Mockito {
     @Test
     public void cleanupSearchParsesCompoundInstanceGuids() {
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
-                .withInstanceGuids(ImmutableSet.of("AAA", "BBB:" + CREATED_ON.toString())).build();
+                .withInstanceGuids(ImmutableSet.of("AAA", "BBB@" + CREATED_ON.toString())).build();
         
-        AdherenceRecordsSearch retValue = service.cleanupSearch(TEST_APP_ID, search);
+        AdherenceRecordsSearch retValue = service.cleanupSearch(TEST_APP_ID, HEALTH_CODE, search);
         assertEquals(ImmutableSet.of("AAA"), retValue.getInstanceGuids());
         assertEquals(retValue.getInstanceGuidStartedOnMap().size(), 1);
         assertEquals(retValue.getInstanceGuidStartedOnMap().get("BBB"), CREATED_ON);
+    }
+    
+    @Test
+    public void cleanupSearchRetrievesActivityEventsMap() {
+        App app = App.create();
+        app.setCustomEvents(ImmutableMap.of("event1", IMMUTABLE, "event2", IMMUTABLE));
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+
+        AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
+                .withStudyId(TEST_STUDY_ID)
+                .withCurrentTimestampsOnly(TRUE)
+                .withEventTimestamps(ImmutableMap.of("event1", CREATED_ON)).build();
+        
+        Map<String, DateTime> map = ImmutableMap.of("event1", MODIFIED_ON, "event2", MODIFIED_ON);
+        when(mockActivityEventService.getActivityEventMap(
+                TEST_APP_ID, TEST_STUDY_ID, HEALTH_CODE)).thenReturn(map);
+        
+        AdherenceRecordsSearch retValue = service.cleanupSearch(TEST_APP_ID, HEALTH_CODE, search);
+        
+        verify(mockActivityEventService).getActivityEventMap(
+                TEST_APP_ID, TEST_STUDY_ID, HEALTH_CODE);
+        
+        // this first one is overridden by the values submitted by the client
+        assertEquals(retValue.getEventTimestamps().get("custom:event1"), CREATED_ON);
+        // the second one is added
+        assertEquals(retValue.getEventTimestamps().get("custom:event2"), MODIFIED_ON);
     }
 }

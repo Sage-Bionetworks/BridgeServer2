@@ -70,6 +70,14 @@ public class AdherenceRecordsSearch implements BridgeEntity {
      * will have the same GUIDs but must have different startedOn timestamps.
      */
     private final Boolean includeRepeats;
+    
+    /**
+     * Only retrieve records whose event timestamps are the current timestamps 
+     * of the events. If this value is present along with `eventTimestamps`, the
+     * values in the `eventsTimestamps` field will overwrite the values on the
+     * server.
+     */
+    private final Boolean currentTimestampsOnly;
     /**
      * Only retrieve records whose event timestamps are identical to the values
      * supplied in this map. To correctly determine if participants should redo
@@ -105,6 +113,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         this.timeWindowGuids = builder.timeWindowGuids;
         this.recordType = builder.recordType;
         this.includeRepeats = builder.includeRepeats;
+        this.currentTimestampsOnly = builder.currentTimestampsOnly;
         this.eventTimestamps = builder.eventTimestamps;
         this.startTime = builder.startTime;
         this.endTime = builder.endTime;
@@ -148,6 +157,10 @@ public class AdherenceRecordsSearch implements BridgeEntity {
     public Boolean getIncludeRepeats() {
         return includeRepeats;
     }
+    
+    public Boolean getCurrentTimestampsOnly() {
+        return currentTimestampsOnly;
+    }
 
     public Map<String, DateTime> getEventTimestamps() {
         return eventTimestamps;
@@ -183,6 +196,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         private Set<String> timeWindowGuids;
         private AdherenceRecordType recordType;
         private Boolean includeRepeats;
+        private Boolean currentTimestampsOnly;
         private Map<String, DateTime> eventTimestamps;
         private DateTime startTime;
         private DateTime endTime;
@@ -200,6 +214,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             this.timeWindowGuids = ImmutableSet.copyOf(search.timeWindowGuids);
             this.recordType = search.recordType;
             this.includeRepeats = search.includeRepeats;
+            this.currentTimestampsOnly = search.currentTimestampsOnly;
             this.eventTimestamps = search.eventTimestamps;
             this.startTime = search.startTime;
             this.endTime = search.endTime;
@@ -245,6 +260,10 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             this.includeRepeats = includeRepeats;
             return this;
         }
+        public Builder withCurrentTimestampsOnly(Boolean currentTimestampsOnly) {
+            this.currentTimestampsOnly = currentTimestampsOnly;
+            return this;
+        }
         public Builder withEventTimestamps(Map<String, DateTime> eventTimestamps) {
             this.eventTimestamps = eventTimestamps;
             return this;
@@ -288,6 +307,9 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             }
             if (includeRepeats == null) {
                 includeRepeats = Boolean.TRUE;
+            }
+            if (currentTimestampsOnly == null) {
+                currentTimestampsOnly = Boolean.FALSE;
             }
             if (eventTimestamps == null) {
                 eventTimestamps = ImmutableMap.of();

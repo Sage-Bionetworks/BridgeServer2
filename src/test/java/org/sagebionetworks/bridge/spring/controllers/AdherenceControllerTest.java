@@ -32,10 +32,12 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AdherenceService;
 
 public class AdherenceControllerTest extends Mockito {
@@ -43,6 +45,9 @@ public class AdherenceControllerTest extends Mockito {
     @Mock
     AdherenceService mockService;
 
+    @Mock
+    AccountService mockAccountService;
+    
     @Mock
     HttpServletRequest mockRequest;
     
@@ -118,13 +123,13 @@ public class AdherenceControllerTest extends Mockito {
                 .withOffsetBy(10).withPageSize(50).build();
         mockRequestBody(mockRequest, search);
         
-        when(mockService.getAdherenceRecords(eq(TEST_APP_ID), any())).thenReturn(page);
+        when(mockService.getAdherenceRecords(eq(TEST_APP_ID), eq(HEALTH_CODE), any())).thenReturn(page);
         
         PagedResourceList<AdherenceRecord> retValue = controller
                 .searchForAdherenceRecordsForSelf(TEST_STUDY_ID);
         assertSame(retValue, page);
         
-        verify(mockService).getAdherenceRecords(eq(TEST_APP_ID), searchCaptor.capture());
+        verify(mockService).getAdherenceRecords(eq(TEST_APP_ID), eq(HEALTH_CODE), searchCaptor.capture());
         AdherenceRecordsSearch captured = searchCaptor.getValue();
         assertEquals(captured.getStudyId(), TEST_STUDY_ID);
         assertEquals(captured.getUserId(), TEST_USER_ID);
@@ -136,6 +141,10 @@ public class AdherenceControllerTest extends Mockito {
     public void searchForAdherenceRecords() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
         
+        Account account = Account.create();
+        account.setHealthCode(HEALTH_CODE);
+        when(mockAccountService.getAccount(any())).thenReturn(account);
+
         AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
         AdherenceRecord rec2 = TestUtils.getAdherenceRecord("BBB");
         List<AdherenceRecord> list = ImmutableList.of(rec1, rec2);
@@ -145,13 +154,13 @@ public class AdherenceControllerTest extends Mockito {
                 .withOffsetBy(10).withPageSize(50).build();
         mockRequestBody(mockRequest, search);
         
-        when(mockService.getAdherenceRecords(eq(TEST_APP_ID), any())).thenReturn(page);
+        when(mockService.getAdherenceRecords(eq(TEST_APP_ID), eq(HEALTH_CODE), any())).thenReturn(page);
         
         PagedResourceList<AdherenceRecord> retValue = controller
                 .searchForAdherenceRecords(TEST_STUDY_ID, "some-other-id");
         assertSame(retValue, page);
         
-        verify(mockService).getAdherenceRecords(eq(TEST_APP_ID), searchCaptor.capture());
+        verify(mockService).getAdherenceRecords(eq(TEST_APP_ID), eq(HEALTH_CODE), searchCaptor.capture());
         AdherenceRecordsSearch captured = searchCaptor.getValue();
         assertEquals(captured.getStudyId(), TEST_STUDY_ID);
         assertEquals(captured.getUserId(), "some-other-id");

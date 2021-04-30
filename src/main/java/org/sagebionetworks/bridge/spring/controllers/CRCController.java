@@ -773,6 +773,7 @@ public class CRCController extends BaseController {
         Set<String> studies = BridgeUtils.collectStudyIds(account);
 
         RequestContext.Builder builder = new RequestContext.Builder().withCallerAppId(appId)
+                .withCallerRoles(account.getRoles())
                 .withCallerUserId(account.getId())
                 .withOrgSponsoredStudies(studies)
                 .withCallerOrgMembership(account.getOrgMembership());

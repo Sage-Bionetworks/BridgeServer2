@@ -593,6 +593,12 @@ ADD COLUMN `timeWindowGuid` varchar(60) NOT NULL,
 ADD COLUMN `sessionInstanceStartDay` int(10) NOT NULL,
 ADD COLUMN `sessionInstanceEndDay` int(10) NOT NULL;
 
+-- changeset bridge:31
+
+ALTER TABLE `StudyContacts`
+DROP PRIMARY KEY,
+ADD CONSTRAINT PRIMARY KEY (`appId`, `studyId`, `pos`);
+
 -- changeset bridge:32
 
 CREATE TABLE `AdherenceRecords` (

@@ -28,6 +28,7 @@ public class ResourceList<T> {
     public static final String ASSESSMENT_IDS = "assessmentIds";
     public static final String ASSIGNMENT_FILTER = "assignmentFilter";
     public static final String CATEGORIES = "categories"; // should be a set or list
+    public static final String CURRENT_TIMESTAMPS_ONLY = "currentTimestampsOnly";
     public static final String EMAIL_FILTER = "emailFilter";
     public static final String END_DATE = "endDate";
     public static final String END_TIME = "endTime";
