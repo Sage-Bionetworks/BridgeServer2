@@ -1,20 +1,18 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence;
 
 public enum AdherenceRecordType {
-    /** Return assessments, either selected assessment records or the 
-     * assessments in selected session instances.
+    /** 
+     * Filter search results to return only assessment records. In addition to
+     * limiting results for date-based searches, if you search by session GUIDs, 
+     * you can ask to return the assessments for those sessions. 
      */
     ASSESSMENT,
     /**
-     * Return sessions, either selected session instance records or the 
-     * sessions of selected assessment instances.
+     * Filter search results to only return session records. In addition to
+     * limiting results for date-based searches, if you search by 
+     * session GUIDs and do not wish to retrieve the accompanying assessment 
+     * records, you can do so by limiting the returned records to session 
+     * records.
      */
-    SESSION,
-    /**
-     * Return sessions and assessments of the selected instance records (all 
-     * instance sessions and instance sessions for selected assessment instances, 
-     * and all instance assessments and assessment instances of selected session
-     * instances.
-     */
-    BOTH;
+    SESSION;
 }

@@ -88,7 +88,6 @@ public class Scheduler {
 
         Multiset<String> ids = HashMultiset.create();
         do {
-            System.out.println(startDay);
             endDay = startDay;
             
             LocalTime startTime = window.getStartTime();

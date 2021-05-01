@@ -15,11 +15,11 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 /**
- * Regardless of how you search, you may want to return assessments, sessions,
- * or both. E.g. a search for session instance guids, but only return the 
- * assessments for those sessions. Add enum for this.
- * 
- * 
+ * Search criteria for retrieving adherence records. The criteria listed in this
+ * object are all additive (so adding criteria can easily lead to a situation 
+ * where no records are returned, because the criteria conflict with one 
+ * another). When no criteria are provided, the defaults of this class ensure
+ * that all records will be returned, paged, to the caller. 
  */
 @JsonDeserialize(builder = AdherenceRecordsSearch.Builder.class)
 public class AdherenceRecordsSearch implements BridgeEntity {
@@ -33,73 +33,81 @@ public class AdherenceRecordsSearch implements BridgeEntity {
      */
     private final String studyId;
     /**
-     * session or assessment instance GUIDs (or GUIDs created by the client);
-     * any records that exist under these GUIDs for the caller will be returned.
-     * If the assessment is a persistent assessment, all adherence records for
-     * that assessment will be returned unless includeRepeats = false.
+     * Session or assessment instance GUIDs; any records that exist under these 
+     * GUIDs for the caller will be returned. If the assessment is a persistent 
+     * assessment, all adherence records for that assessment will be returned 
+     * unless includeRepeats = false.
      */
     private final Set<String> instanceGuids;
-    
     /**
      * This cannot be supplied through the API. It is the parsed content of an
      * instanceGuid format that includes the startedOn timestamp, to retrieve
      * specific records when there are multiple time streams (format: 
-     * "<guid>:<startedOn>").
+     * “<guid>@<startedOn>”).
      */
     @JsonIgnore
     private final Map<String,DateTime> instanceGuidStartedOnMap;
     /** 
-     * return adherence records for these assessmentIds (as types).
+     * Return adherence records for these assessmentIds (as types).
      */
     private final Set<String> assessmentIds;
     /**
-     * return adherence records for these sessions (as types).
+     * Return adherence records for these sessions (as types).
      */
     private final Set<String> sessionGuids;
     /**
-     * return adherence records for these time windows (as types).
+     * Return adherence records for these time windows (as types).
      */
     private final Set<String> timeWindowGuids;
     /**
      * If null, return only the records that are found by the search, whether 
-     * session or assessment records. Otherwise, return the type indicated.
+     * session or assessment records. Otherwise, return only the type indicated
+     * (session or assessment).
      */
     private final AdherenceRecordType recordType; 
     /**
      * Include multiple runs of assessments in persistent time windows? These
-     * will have the same GUIDs but must have different startedOn timestamps.
+     * will have the same GUIDs but must have different `startedOn` timestamps.
+     * By default this is true.
      */
     private final Boolean includeRepeats;
-    
     /**
-     * Only retrieve records whose event timestamps are the current timestamps 
-     * of the events. If this value is present along with `eventTimestamps`, the
-     * values in the `eventsTimestamps` field will overwrite the values on the
-     * server.
+     * Only retrieve records whose event timestamp at the time they were recorded
+     * is the current timestamp of the event. In other words, records from the 
+     * current time series only. If this value is present along with 
+     * `eventTimestamps`, the values in the `eventsTimestamps` field will 
+     * overwrite the values on the server. This should be set to true in order 
+     * to determine if a session, based on a mutable event, should be done again
+     * by the participant (because the timestamp has changed). By default this
+     * is false.
      */
     private final Boolean currentTimestampsOnly;
     /**
-     * Only retrieve records whose event timestamps are identical to the values
-     * supplied in this map. To correctly determine if participants should redo
-     * a session series based on a mutable event, the current event timestamps 
-     * should be supplied in this map.
+     * Only retrieve records whose event timestamp at the time they were recorded
+     * is the timestamp provied for that event ID in this map.
      */
     private final Map<String, DateTime> eventTimestamps;
     /**
-     * createdOn value of record is on or after the startTime, if provided.
+     * Return records where `startedOn` value of record is on or after the 
+     * `startTime`, if provided.
      */
     private final DateTime startTime;
     /**
-     * createdOn value of record is on or before the endTime, if provided.
+     * Return records where the `startedOn` value of record is on or before 
+     * the `endTime`, if provided.
      */
     private final DateTime endTime;
-    
-    // API is paged.
+    /**
+     * The offset index (this API is paged).
+     */
     private final Integer offsetBy;
+    /**
+     * The page size (this API is paged). The default is 250 records.
+     */
     private final Integer pageSize;
     /**
-     * Sort by createdOn timestamp in ascending or descending order (ascending
-     * by default).
+     * Sort by the `startedOn` timestamp in either ascending or descending 
+     * order. The default is ascending order.
      */
     private final SortOrder sortOrder;
     

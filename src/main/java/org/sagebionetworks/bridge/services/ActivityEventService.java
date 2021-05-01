@@ -250,9 +250,9 @@ public class ActivityEventService {
                 .withStudyId(studyId)
                 .build();
 
-            Validate.entityThrowingException(INSTANCE, event);
-            
-            activityEventDao.publishEvent(event);
+        Validate.entityThrowingException(INSTANCE, event);
+        
+        activityEventDao.publishEvent(event);
     }
     
     public void publishAssessmentFinishedEvent(String studyId, String healthCode, String assessmentId,
@@ -266,9 +266,9 @@ public class ActivityEventService {
                 .withStudyId(studyId)
                 .build();
 
-            Validate.entityThrowingException(INSTANCE, event);
-            
-            activityEventDao.publishEvent(event);
+        Validate.entityThrowingException(INSTANCE, event);
+        
+        activityEventDao.publishEvent(event);
     }
     
     /**

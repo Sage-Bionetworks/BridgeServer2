@@ -3,10 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 
-import java.util.List;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -15,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -27,8 +22,6 @@ import org.sagebionetworks.bridge.services.AdherenceService;
 @RestController
 public class AdherenceController extends BaseController {
     
-    static final TypeReference<List<AdherenceRecord>> RECORD_LIST = 
-            new TypeReference<List<AdherenceRecord>>() {};
     static final StatusMessage SAVED_MSG = new StatusMessage("Adherence records saved.");
     
     private AdherenceService service;
@@ -77,8 +70,9 @@ public class AdherenceController extends BaseController {
                 .withUserId(userId)
                 .withStudyId(studyId).build();
         
-        Account account = accountService.getAccount(AccountId.forId(session.getAppId(), userId));
+        String healthCode = accountService.getHealthCodeForAccount(
+                AccountId.forId(session.getAppId(), userId));
         
-        return service.getAdherenceRecords(session.getAppId(), account.getHealthCode(), search);
+        return service.getAdherenceRecords(session.getAppId(), healthCode, search);
     }
 }

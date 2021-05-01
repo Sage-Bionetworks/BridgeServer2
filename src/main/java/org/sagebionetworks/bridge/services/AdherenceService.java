@@ -81,6 +81,8 @@ public class AdherenceService {
         
         Validate.entityThrowingException(INSTANCE, recordList);
 
+        // The only caller of this method sets all the userId and studyId fields, 
+        // so this only needs to be called once.
         CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
                 AuthEvaluatorField.STUDY_ID, recordList.getRecords().get(0).getStudyId(), 
                 AuthEvaluatorField.USER_ID, recordList.getRecords().get(0).getUserId());
@@ -144,14 +146,12 @@ public class AdherenceService {
         checkNotNull(search);
         
         // optimization: skip all this if not relevant to the search
-        boolean skipFixes = search.getEventTimestamps().isEmpty() &&
-                            search.getInstanceGuids().isEmpty() &&
-                            Boolean.FALSE.equals(search.getCurrentTimestampsOnly());
+        boolean skipFixes = search.getEventTimestamps().isEmpty() && search.getInstanceGuids().isEmpty()
+                && Boolean.FALSE.equals(search.getCurrentTimestampsOnly());
         if (skipFixes) {
             return search;
         }
-        AdherenceRecordsSearch.Builder builder = new AdherenceRecordsSearch.Builder()
-                .copyOf(search);
+        AdherenceRecordsSearch.Builder builder = new AdherenceRecordsSearch.Builder().copyOf(search);
         
         if (search.getCurrentTimestampsOnly() == Boolean.TRUE || !search.getEventTimestamps().isEmpty()) {
             Set<String> customEventIds = appService.getApp(appId).getCustomEvents().keySet();

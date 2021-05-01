@@ -142,9 +142,7 @@ public class AdherenceControllerTest extends Mockito {
     public void searchForAdherenceRecords() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
         
-        Account account = Account.create();
-        account.setHealthCode(HEALTH_CODE);
-        when(mockAccountService.getAccount(any())).thenReturn(account);
+        when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(HEALTH_CODE);
 
         AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
         AdherenceRecord rec2 = TestUtils.getAdherenceRecord("BBB");
