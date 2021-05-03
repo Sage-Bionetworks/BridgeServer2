@@ -293,7 +293,7 @@ public class AdherenceServiceTest extends Mockito {
                 .withInstanceGuids(ImmutableSet.of("AAA", "BBB@" + CREATED_ON.toString())).build();
         
         AdherenceRecordsSearch retValue = service.cleanupSearch(TEST_APP_ID, HEALTH_CODE, search);
-        assertEquals(ImmutableSet.of("AAA"), retValue.getInstanceGuids());
+        assertEquals(retValue.getInstanceGuids(), ImmutableSet.of("AAA"));
         assertEquals(retValue.getInstanceGuidStartedOnMap().size(), 1);
         assertEquals(retValue.getInstanceGuidStartedOnMap().get("BBB"), CREATED_ON);
     }

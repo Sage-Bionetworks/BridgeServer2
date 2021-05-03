@@ -175,7 +175,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
     }
     
     @Test
-    public void createQuery_noRepeats() {
+    public void createQuery_noRepeatsAsc() {
         AdherenceRecordsSearch search = search()
                 .withIncludeRepeats(Boolean.FALSE).build();
         
@@ -183,7 +183,22 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
                 " AND ar.startedOn = (SELECT startedOn FROM AdherenceRecords " +
                 "WHERE userId = :userId AND instanceGuid = ar.instanceGuid ORDER BY " +
-                "startedOn LIMIT 1)" + ORDER);
+                "startedOn ASC LIMIT 1)" + ORDER);
+        assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
+        assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
+    }
+
+    @Test
+    public void createQuery_noRepeatsDesc() {
+        AdherenceRecordsSearch search = search()
+                .withIncludeRepeats(Boolean.FALSE)
+                .withSortOrder(DESC).build();
+        
+        QueryBuilder builder = dao.createQuery(search);
+        assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
+                " AND ar.startedOn = (SELECT startedOn FROM AdherenceRecords " +
+                "WHERE userId = :userId AND instanceGuid = ar.instanceGuid ORDER BY " +
+                "startedOn DESC LIMIT 1) ORDER BY ar.startedOn DESC");
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
     }

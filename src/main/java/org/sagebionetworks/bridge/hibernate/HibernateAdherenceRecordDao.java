@@ -86,7 +86,8 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
             // userId has already been set above
             builder.append("AND ar.startedOn = (SELECT startedOn FROM "
                     + "AdherenceRecords WHERE userId = :userId AND "
-                    + "instanceGuid = ar.instanceGuid ORDER BY startedOn LIMIT 1)");
+                    + "instanceGuid = ar.instanceGuid ORDER BY startedOn "
+                    + search.getSortOrder() + " LIMIT 1)");
         }
         builder.alternativeMatchedPairs(search.getInstanceGuidStartedOnMap(), 
                 "gd", "ar.instanceGuid", "ar.startedOn");

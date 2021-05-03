@@ -862,8 +862,7 @@ public class Schedule2ServiceTest extends Mockito {
     public void getTimelineMetadata() {
         TimelineMetadata meta = new TimelineMetadata();
         
-        when(mockDao.getTimelineMetadata(GUID))
-            .thenReturn(Optional.of(meta));
+        when(mockDao.getTimelineMetadata(GUID)).thenReturn(Optional.of(meta));
         
         Optional<TimelineMetadata> retValue = service.getTimelineMetadata(GUID);
         assertSame(retValue.get(), meta);

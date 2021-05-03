@@ -6,6 +6,7 @@ import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.Table;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.joda.time.DateTime;
@@ -20,8 +21,10 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 public class AdherenceRecord implements BridgeEntity {
     
     @Id
+    @JsonIgnore
     private String userId;
     @Id
+    @JsonIgnore
     private String studyId;
     @Id
     private String instanceGuid;

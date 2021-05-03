@@ -101,14 +101,15 @@ public class QueryBuilderTest {
         QueryBuilder builder = new QueryBuilder();
         builder.alternativeMatchedPairs(map, "e", "tm.sessionStartEventId", "ar.eventTimestamp");
         
-        assertEquals("AND ( (tm.sessionStartEventId = :eKey0 AND ar.eventTimestamp = :eVal0) OR " +
-                "(tm.sessionStartEventId = :eKey1 AND ar.eventTimestamp = :eVal1) )", builder.getQuery());
-        assertEquals(Long.valueOf(CREATED_ON.getMillis()), 
-                (Long)builder.getParameters().get("eVal0"));
-        assertEquals(Long.valueOf(MODIFIED_ON.getMillis()), 
-                (Long)builder.getParameters().get("eVal1"));
-        assertEquals("event_1", builder.getParameters().get("eKey0"));
-        assertEquals("event_2", builder.getParameters().get("eKey1"));
+        assertEquals(builder.getQuery(), "AND ( (tm.sessionStartEventId = :eKey0 AND " +
+                "ar.eventTimestamp = :eVal0) OR (tm.sessionStartEventId = :eKey1 AND " +
+                "ar.eventTimestamp = :eVal1) )");
+        assertEquals((Long)builder.getParameters().get("eVal0"),
+                Long.valueOf(CREATED_ON.getMillis()));
+        assertEquals((Long)builder.getParameters().get("eVal1"),
+                Long.valueOf(MODIFIED_ON.getMillis()));
+        assertEquals(builder.getParameters().get("eKey0"), "event_1");
+        assertEquals(builder.getParameters().get("eKey1"), "event_2");
     }
     
     @Test

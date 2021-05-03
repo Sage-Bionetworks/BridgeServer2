@@ -34,8 +34,7 @@ public class AdherenceRecordTest extends Mockito {
         record.setInstanceGuid(GUID);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(record);
-        assertEquals(node.get("userId").textValue(), TEST_USER_ID);
-        assertEquals(node.get("studyId").textValue(), TEST_STUDY_ID);
+        assertEquals(node.size(), 8);
         assertEquals(node.get("startedOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("finishedOn").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("uploadedOn").textValue(), MODIFIED_ON.plusHours(1).toString());
@@ -47,8 +46,6 @@ public class AdherenceRecordTest extends Mockito {
         
         AdherenceRecord deser = BridgeObjectMapper.get()
                 .readValue(node.toString(), AdherenceRecord.class);
-        assertEquals(deser.getUserId(), TEST_USER_ID);
-        assertEquals(deser.getStudyId(), TEST_STUDY_ID);
         assertEquals(deser.getStartedOn(), CREATED_ON);
         assertEquals(deser.getFinishedOn(), MODIFIED_ON);
         assertEquals(deser.getUploadedOn(), MODIFIED_ON.plusHours(1));

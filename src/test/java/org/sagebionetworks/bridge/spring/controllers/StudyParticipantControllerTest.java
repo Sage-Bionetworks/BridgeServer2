@@ -1321,6 +1321,7 @@ public class StudyParticipantControllerTest extends Mockito {
     @Test
     public void getTimelineForSelf_cacheHeaderBeforeModifiedOnTimestamp() {
         session.setParticipant(new StudyParticipant.Builder()
+                .withHealthCode(HEALTH_CODE)
                 .withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         
@@ -1339,6 +1340,7 @@ public class StudyParticipantControllerTest extends Mockito {
         assertEquals(retValue.getStatusCodeValue(), 200);
         assertTrue(retValue.getBody() instanceof Timeline);
         
+        verify(mockActivityEventService).publishActivitiesRetrieved(eq(app), eq(TEST_STUDY_ID), eq(HEALTH_CODE), any(DateTime.class));
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
         verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);

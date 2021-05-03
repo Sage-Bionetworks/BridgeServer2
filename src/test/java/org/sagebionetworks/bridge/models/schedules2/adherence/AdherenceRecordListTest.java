@@ -21,16 +21,16 @@ public class AdherenceRecordListTest {
         AdherenceRecordList list = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(list);
-        assertEquals(2, node.get("records").size());
+        assertEquals(node.get("records").size(), 2);
         // just verify these are adherence records, which we test separately
-        assertEquals("AdherenceRecord", node.get("records").get(0).get("type").textValue());;
-        assertEquals("AdherenceRecord", node.get("records").get(1).get("type").textValue());;
+        assertEquals(node.get("records").get(0).get("clientTimeZone").textValue(), "America/Los_Angeles");
+        assertEquals(node.get("records").get(1).get("clientTimeZone").textValue(), "America/Los_Angeles");
         assertEquals(node.get("type").textValue(), "AdherenceRecordList");
         
         AdherenceRecordList deser = BridgeObjectMapper.get().readValue(node.toString(), AdherenceRecordList.class);
-        assertEquals(2, deser.getRecords().size());
-        assertEquals(TEST_STUDY_ID, deser.getRecords().get(0).getStudyId());
-        assertEquals(TEST_STUDY_ID, deser.getRecords().get(1).getStudyId());
+        assertEquals(deser.getRecords().size(), 2);
+        assertEquals(deser.getRecords().get(0).getClientTimeZone(), "America/Los_Angeles");
+        assertEquals(deser.getRecords().get(1).getClientTimeZone(), "America/Los_Angeles");
     }
     
 }
