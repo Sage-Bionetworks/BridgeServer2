@@ -64,7 +64,6 @@ import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
-import org.sagebionetworks.bridge.validators.UploadValidator;
 
 @SuppressWarnings("ConstantConditions")
 public class UploadServiceTest {
@@ -125,7 +124,6 @@ public class UploadServiceTest {
     public void before() {
         DateTimeUtils.setCurrentMillisFixed(TIMESTAMP.getMillis());
         MockitoAnnotations.initMocks(this);
-        svc.setValidator(new UploadValidator());
         svc.setS3Client(mockS3Client);
         svc.setS3UploadClient(mockS3UploadClient);
         
