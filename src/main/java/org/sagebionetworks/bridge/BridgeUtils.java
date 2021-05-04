@@ -719,9 +719,10 @@ public class BridgeUtils {
     /**
      * Verifies that the activity eventId is valid, and prepends "custom:" to a custom ID if 
      * necessary. Returns the value property cased if valid, or null otherwise. This is 
-     * then handled by validation. Note that if the event submitted is an overridden system
-     * event, we cannot infer that...we’ll assume you mean the system event and in that
-     * case, you *must* prepend "custom:" to get different behavior.
+     * then handled by validation. If the event submitted is an overridden system event, 
+     * it will be treated as the system event so in that case, you *must* prepend "custom:" 
+     * to indicate that the custom event is being used (overridding system events is 
+     * confusing and discouraged).
      */
     public static String formatActivityEventId(Set<String> activityEventIds, String id) {
         if (id != null) {

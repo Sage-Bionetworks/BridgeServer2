@@ -65,7 +65,8 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         builder.append(BASE_QUERY, "userId", 
                 search.getUserId(), "studyId", search.getStudyId());
         
-        // Note that these IDs can be the same in shared vs. local apps. Do we care?
+        // Note that by design, this finds both shared/local assessments with the
+        // same ID
         if (!search.getAssessmentIds().isEmpty()) {
             builder.append("AND tm.assessmentId IN :assessmentIds", 
                     "assessmentIds", search.getAssessmentIds());
