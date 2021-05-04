@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.getAdherenceRecord;
+import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.ASSESSMENT_IDS;
 import static org.sagebionetworks.bridge.models.ResourceList.CURRENT_TIMESTAMPS_ONLY;
 import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
@@ -16,7 +17,6 @@ import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_REPEATS;
 import static org.sagebionetworks.bridge.models.ResourceList.INSTANCE_GUIDS;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
-import static org.sagebionetworks.bridge.models.ResourceList.RECORD_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.SESSION_GUIDS;
 import static org.sagebionetworks.bridge.models.ResourceList.SORT_ORDER;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
@@ -26,8 +26,6 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateTy
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.ASC;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
-import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.EARLIEST_DATETIME;
-import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.LATEST_DATETIME;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -64,7 +62,7 @@ import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 
 public class AdherenceServiceTest extends Mockito {
     
-    private static final DateTime FINISHED_ON = LATEST_DATETIME;
+    private static final DateTime FINISHED_ON = MODIFIED_ON;
 
     @Mock
     AdherenceRecordDao mockDao;
@@ -218,10 +216,10 @@ public class AdherenceServiceTest extends Mockito {
                 .withSessionGuids(ImmutableSet.of("BBB"))
                 .withTimeWindowGuids(ImmutableSet.of("CCC"))
                 .withOffsetBy(10)
-                .withRecordType(ASSESSMENT)
+                .withAdherenceRecordType(ASSESSMENT)
                 .withUserId(TEST_USER_ID)
-                .withStartTime(EARLIEST_DATETIME)
-                .withEndTime(LATEST_DATETIME)
+                .withStartTime(CREATED_ON)
+                .withEndTime(MODIFIED_ON)
                 .withStudyId(TEST_STUDY_ID).build();
         
         List<AdherenceRecord> list = ImmutableList.of(getAdherenceRecord("AAA"), getAdherenceRecord("BBB"));
@@ -234,15 +232,15 @@ public class AdherenceServiceTest extends Mockito {
         Map<String, Object> rp = retValue.getRequestParams();
         assertEquals(rp.size(), 15);
         assertEquals(rp.get(ASSESSMENT_IDS), ImmutableSet.of());
-        assertEquals(rp.get(START_TIME).toString(), EARLIEST_DATETIME.toString());
-        assertEquals(rp.get(END_TIME).toString(), LATEST_DATETIME.toString());
+        assertEquals(rp.get(START_TIME).toString(), CREATED_ON.toString());
+        assertEquals(rp.get(END_TIME).toString(), MODIFIED_ON.toString());
         assertEquals(rp.get(EVENT_TIMESTAMPS), ImmutableMap.of("custom:event1", MODIFIED_ON));
         assertEquals(rp.get(INCLUDE_REPEATS), Boolean.TRUE);
         assertEquals(rp.get(CURRENT_TIMESTAMPS_ONLY), Boolean.FALSE);
         assertEquals(rp.get(INSTANCE_GUIDS), ImmutableSet.of("AAA@2015-01-26T23:38:32.486Z"));
         assertEquals(rp.get(OFFSET_BY), 10);
         assertEquals(rp.get(PAGE_SIZE), DEFAULT_PAGE_SIZE);
-        assertEquals(rp.get(RECORD_TYPE), ASSESSMENT);
+        assertEquals(rp.get(ADHERENCE_RECORD_TYPE), ASSESSMENT);
         assertEquals(rp.get(SESSION_GUIDS), ImmutableSet.of("BBB"));
         assertEquals(rp.get(SORT_ORDER), ASC);
         assertEquals(rp.get(STUDY_ID), TEST_STUDY_ID);

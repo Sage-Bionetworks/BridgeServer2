@@ -64,7 +64,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
      * session or assessment records. Otherwise, return only the type indicated
      * (session or assessment).
      */
-    private final AdherenceRecordType recordType; 
+    private final AdherenceRecordType adherenceRecordType; 
     /**
      * Include multiple runs of assessments in persistent time windows? These
      * will have the same GUIDs but must have different `startedOn` timestamps.
@@ -119,7 +119,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         this.assessmentIds = builder.assessmentIds;
         this.sessionGuids = builder.sessionGuids;
         this.timeWindowGuids = builder.timeWindowGuids;
-        this.recordType = builder.recordType;
+        this.adherenceRecordType = builder.adherenceRecordType;
         this.includeRepeats = builder.includeRepeats;
         this.currentTimestampsOnly = builder.currentTimestampsOnly;
         this.eventTimestamps = builder.eventTimestamps;
@@ -158,8 +158,8 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         return timeWindowGuids;
     }
     
-    public AdherenceRecordType getRecordType() {
-        return recordType;
+    public AdherenceRecordType getAdherenceRecordType() {
+        return adherenceRecordType;
     }
 
     public Boolean getIncludeRepeats() {
@@ -202,7 +202,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         private Set<String> assessmentIds;
         private Set<String> sessionGuids;
         private Set<String> timeWindowGuids;
-        private AdherenceRecordType recordType;
+        private AdherenceRecordType adherenceRecordType;
         private Boolean includeRepeats;
         private Boolean currentTimestampsOnly;
         private Map<String, DateTime> eventTimestamps;
@@ -220,7 +220,7 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             this.assessmentIds = ImmutableSet.copyOf(search.assessmentIds);
             this.sessionGuids = ImmutableSet.copyOf(search.sessionGuids);
             this.timeWindowGuids = ImmutableSet.copyOf(search.timeWindowGuids);
-            this.recordType = search.recordType;
+            this.adherenceRecordType = search.adherenceRecordType;
             this.includeRepeats = search.includeRepeats;
             this.currentTimestampsOnly = search.currentTimestampsOnly;
             this.eventTimestamps = search.eventTimestamps;
@@ -260,8 +260,8 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             this.timeWindowGuids = timeWindowGuids;
             return this;
         }
-        public Builder withRecordType(AdherenceRecordType recordType) {
-            this.recordType = recordType;
+        public Builder withAdherenceRecordType(AdherenceRecordType adherenceRecordType) {
+            this.adherenceRecordType = adherenceRecordType;
             return this;
         }
         public Builder withIncludeRepeats(Boolean includeRepeats) {

@@ -23,6 +23,7 @@ import com.google.common.collect.ImmutableMap;
  */
 public class ResourceList<T> {
     
+    public static final String ADHERENCE_RECORD_TYPE = "adherenceRecordType";
     public static final String ADMIN_ONLY = "adminOnly";
     public static final String ALL_OF_GROUPS = "allOfGroups";
     public static final String ASSESSMENT_IDS = "assessmentIds";
@@ -50,7 +51,6 @@ public class ResourceList<T> {
     public static final String ORG_MEMBERSHIP = "orgMembership";
     public static final String PAGE_SIZE = "pageSize";
     public static final String PHONE_FILTER = "phoneFilter";
-    public static final String RECORD_TYPE = "recordType";
     public static final String REPORT_TYPE = "reportType";
     public static final String SCHEDULED_ON_END = "scheduledOnEnd";
     public static final String SCHEDULED_ON_START = "scheduledOnStart";

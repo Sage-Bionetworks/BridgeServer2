@@ -4,7 +4,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 
-import org.joda.time.DateTime;
 import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
@@ -15,14 +14,8 @@ public class AdherenceRecordsSearchValidator extends AbstractValidator {
     public static final int MAX_PAGE_SIZE = 500;
     public static final int MAX_SET_SIZE = 500;
     public static final int MAX_MAP_SIZE = 50;
-    public static final DateTime EARLIEST_DATETIME = DateTime.parse("2020-01-01T00:00:00.000Z");
-    public static final DateTime LATEST_DATETIME = DateTime.parse("2120-01-01T00:00:00.000Z");
     public static final String MAX_SET_SIZE_ERROR = "exceeds maximum size of " + MAX_SET_SIZE + " entries";
     public static final String MAX_MAP_SIZE_ERROR = "exceeds maximum size of " + MAX_MAP_SIZE + " entries";
-    public static final String BEFORE_EARLIEST_DATETIME_ERROR = "is before the earliest allowed time of " 
-            + EARLIEST_DATETIME.toString();
-    public static final String AFTER_LATEST_DATETIME_ERROR = "is after the latest allowed time of " 
-            + LATEST_DATETIME.toString();
     public static final String PAGE_SIZE_ERROR = "must be 1-"+MAX_PAGE_SIZE+" records";
     public static final String START_TIME_MISSING = "must be provided if endTime is provided";
     public static final String END_TIME_MISSING = "must be provided if startTime is provided";
@@ -68,16 +61,8 @@ public class AdherenceRecordsSearchValidator extends AbstractValidator {
                 errors.rejectValue(START_TIME_FIELD, START_TIME_MISSING);
             } else if (search.getEndTime() == null) {
                 errors.rejectValue(END_TIME_FIELD, END_TIME_MISSING);
-            } else {
-                if (search.getStartTime().isBefore(EARLIEST_DATETIME)) {
-                    errors.rejectValue(START_TIME_FIELD, BEFORE_EARLIEST_DATETIME_ERROR);
-                }
-                if (search.getEndTime().isAfter(LATEST_DATETIME)) {
-                    errors.rejectValue(END_TIME_FIELD, AFTER_LATEST_DATETIME_ERROR);
-                }
-                if (search.getEndTime().isBefore(search.getStartTime())) {
-                    errors.rejectValue(END_TIME_FIELD, END_TIME_BEFORE_START_TIME);
-                }
+            } else if (search.getEndTime().isBefore(search.getStartTime())) {
+                errors.rejectValue(END_TIME_FIELD, END_TIME_BEFORE_START_TIME);
             }
         }
         if (isBlank(search.getUserId())) {

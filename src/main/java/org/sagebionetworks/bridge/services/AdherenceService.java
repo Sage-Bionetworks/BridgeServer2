@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
+import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.ASSESSMENT_IDS;
 import static org.sagebionetworks.bridge.models.ResourceList.CURRENT_TIMESTAMPS_ONLY;
 import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
@@ -11,7 +12,6 @@ import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_REPEATS;
 import static org.sagebionetworks.bridge.models.ResourceList.INSTANCE_GUIDS;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
-import static org.sagebionetworks.bridge.models.ResourceList.RECORD_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.SESSION_GUIDS;
 import static org.sagebionetworks.bridge.models.ResourceList.SORT_ORDER;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
@@ -132,7 +132,7 @@ public class AdherenceService {
                 .withRequestParam(INSTANCE_GUIDS, originalInstanceGuids)
                 .withRequestParam(OFFSET_BY, search.getOffsetBy())
                 .withRequestParam(PAGE_SIZE, search.getPageSize())
-                .withRequestParam(RECORD_TYPE, search.getRecordType())
+                .withRequestParam(ADHERENCE_RECORD_TYPE, search.getAdherenceRecordType())
                 .withRequestParam(SESSION_GUIDS, search.getSessionGuids())
                 .withRequestParam(SORT_ORDER, search.getSortOrder())
                 .withRequestParam(START_TIME, search.getStartTime())

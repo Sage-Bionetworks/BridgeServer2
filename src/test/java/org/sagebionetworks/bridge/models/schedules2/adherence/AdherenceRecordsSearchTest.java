@@ -36,7 +36,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(node.get("assessmentIds").get(0).textValue(), "B");
         assertEquals(node.get("sessionGuids").get(0).textValue(), "C");
         assertEquals(node.get("timeWindowGuids").get(0).textValue(), "D");
-        assertEquals(node.get("recordType").textValue(), "session");
+        assertEquals(node.get("adherenceRecordType").textValue(), "session");
         assertTrue(node.get("includeRepeats").booleanValue());
         assertTrue(node.get("currentTimestampsOnly").booleanValue());
         assertEquals(node.get("eventTimestamps").get("E").textValue(), CREATED_ON.toString());
@@ -56,7 +56,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(deser.getAssessmentIds(), ImmutableSet.of("B"));
         assertEquals(deser.getSessionGuids(), ImmutableSet.of("C"));
         assertEquals(deser.getTimeWindowGuids(), ImmutableSet.of("D"));
-        assertEquals(deser.getRecordType(), SESSION);
+        assertEquals(deser.getAdherenceRecordType(), SESSION);
         assertTrue(deser.getIncludeRepeats());
         assertTrue(deser.getCurrentTimestampsOnly());
         assertEquals(deser.getEventTimestamps().get("E"), CREATED_ON);
@@ -80,7 +80,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(copy.getAssessmentIds(), ImmutableSet.of("B"));
         assertEquals(copy.getSessionGuids(), ImmutableSet.of("C"));
         assertEquals(copy.getTimeWindowGuids(), ImmutableSet.of("D"));
-        assertEquals(copy.getRecordType(), SESSION);
+        assertEquals(copy.getAdherenceRecordType(), SESSION);
         assertTrue(copy.getIncludeRepeats());
         assertTrue(copy.getCurrentTimestampsOnly());
         assertEquals(copy.getEventTimestamps().get("E"), CREATED_ON);
@@ -100,7 +100,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
                 .withAssessmentIds(ImmutableSet.of("B"))
                 .withSessionGuids(ImmutableSet.of("C"))
                 .withTimeWindowGuids(ImmutableSet.of("D"))
-                .withRecordType(SESSION)
+                .withAdherenceRecordType(SESSION)
                 .withIncludeRepeats(Boolean.TRUE)
                 .withCurrentTimestampsOnly(Boolean.TRUE)
                 .withEventTimestamps(ImmutableMap.of("E", CREATED_ON))
@@ -128,5 +128,4 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(search.getPageSize(), Integer.valueOf(DEFAULT_PAGE_SIZE));
         assertEquals(search.getSortOrder(), ASC);
     }
-
 }

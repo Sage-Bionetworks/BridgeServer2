@@ -5,17 +5,13 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.AFTER_LATEST_DATETIME_ERROR;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.ASSESSMENT_IDS_FIELD;
-import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.BEFORE_EARLIEST_DATETIME_ERROR;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
-import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.EARLIEST_DATETIME;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.END_TIME_BEFORE_START_TIME;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.END_TIME_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.EVENT_TIMESTAMPS_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.INSTANCE_GUIDS_FIELD;
-import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.LATEST_DATETIME;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.MAX_MAP_SIZE;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.MAX_MAP_SIZE_ERROR;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.MAX_PAGE_SIZE;
@@ -148,22 +144,6 @@ public class AdherenceRecordsSearchValidatorTest extends Mockito {
         assertValidatorMessage(INSTANCE, search, START_TIME_FIELD, START_TIME_MISSING);
     }
     
-    @Test
-    public void startTimeBeforeEarliestTime() {
-        AdherenceRecordsSearch search = search()
-                .withStartTime(EARLIEST_DATETIME.minusMinutes(1))
-                .withEndTime(LATEST_DATETIME).build();
-        assertValidatorMessage(INSTANCE, search, START_TIME_FIELD, BEFORE_EARLIEST_DATETIME_ERROR);
-    }
-    
-    @Test
-    public void endTimeAfterLatestTime() {
-        AdherenceRecordsSearch search = search()
-                .withStartTime(EARLIEST_DATETIME)
-                .withEndTime(LATEST_DATETIME.plusMinutes(1)).build();
-        assertValidatorMessage(INSTANCE, search, END_TIME_FIELD, AFTER_LATEST_DATETIME_ERROR);
-    }
-
     @Test
     public void endTimeBeforeStartTime() {
         AdherenceRecordsSearch search = search()

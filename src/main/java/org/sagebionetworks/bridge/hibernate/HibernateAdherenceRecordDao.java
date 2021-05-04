@@ -94,8 +94,8 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
                 "gd", "ar.instanceGuid", "ar.startedOn");
         builder.alternativeMatchedPairs(search.getEventTimestamps(), 
                 "evt", "tm.sessionStartEventId", "ar.eventTimestamp");
-        if (search.getRecordType() != null) {
-            if (search.getRecordType() == SESSION) {
+        if (search.getAdherenceRecordType() != null) {
+            if (search.getAdherenceRecordType() == SESSION) {
                 builder.append("AND tm.assessmentGuid IS NULL");
             } else {
                 builder.append("AND tm.assessmentGuid IS NOT NULL");

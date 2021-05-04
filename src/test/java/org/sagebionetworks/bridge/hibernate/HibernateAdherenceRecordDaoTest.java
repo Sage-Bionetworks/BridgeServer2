@@ -251,7 +251,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
     @Test
     public void createQuery_sessionRecordsOnly() {
         AdherenceRecordsSearch search = search()
-                .withRecordType(SESSION).build();
+                .withAdherenceRecordType(SESSION).build();
 
         QueryBuilder builder = dao.createQuery(search);
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
@@ -263,7 +263,7 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
     @Test
     public void createQuery_assessmentRecordsOnly() {
         AdherenceRecordsSearch search = search()
-                .withRecordType(ASSESSMENT).build();
+                .withAdherenceRecordType(ASSESSMENT).build();
 
         QueryBuilder builder = dao.createQuery(search);
         assertEquals(builder.getQuery(), HibernateAdherenceRecordDao.BASE_QUERY + 
