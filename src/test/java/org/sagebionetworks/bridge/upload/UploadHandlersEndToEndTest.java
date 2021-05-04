@@ -21,6 +21,7 @@ import java.util.Set;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -126,7 +127,7 @@ public class UploadHandlersEndToEndTest {
         uploadedFileContentMap = new HashMap<>();
         metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
 
-        JsonNode metadataFromRequest = BridgeObjectMapper.get().readTree(
+        ObjectNode metadataFromRequest = (ObjectNode) BridgeObjectMapper.get().readTree(
                 "{\"meta-request-key\":\"meta-request-value\"}");
 
         upload = Upload.create();

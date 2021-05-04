@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.models.upload;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @JsonDeserialize(builder = UploadRequest.Builder.class)
 public class UploadRequest implements BridgeEntity {
@@ -12,11 +12,11 @@ public class UploadRequest implements BridgeEntity {
     private final String contentMd5;
     private final String contentType;
     private final boolean encrypted;
-    private final JsonNode metadata;
+    private final ObjectNode metadata;
     private final boolean zipped;
 
     private UploadRequest(String name, long contentLength, String contentMd5, String contentType, boolean encrypted,
-            JsonNode metadata, boolean zipped) {
+            ObjectNode metadata, boolean zipped) {
         this.name = name;
         this.contentLength = contentLength;
         this.contentMd5 = contentMd5;
@@ -51,7 +51,7 @@ public class UploadRequest implements BridgeEntity {
      * Metadata fields for this upload, as submitted by the app. This corresponds with the
      * uploadMetadataFieldDefinitions configured in the app.
      */
-    public JsonNode getMetadata() {
+    public ObjectNode getMetadata() {
         return metadata;
     }
 
@@ -66,7 +66,7 @@ public class UploadRequest implements BridgeEntity {
         private String contentMd5;
         private String contentType;
         private Boolean encrypted;
-        private JsonNode metadata;
+        private ObjectNode metadata;
         private Boolean zipped;
 
         public Builder withName(String name) {
@@ -94,7 +94,7 @@ public class UploadRequest implements BridgeEntity {
             return this;
         }
 
-        public Builder withMetadata(JsonNode metadata) {
+        public Builder withMetadata(ObjectNode metadata) {
             this.metadata = metadata;
             return this;
         }

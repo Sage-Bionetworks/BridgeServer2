@@ -5,7 +5,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -25,7 +25,7 @@ public class UploadRequestTest {
 
     @Test
     public void withValues() throws Exception {
-        JsonNode metadata = BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
+        ObjectNode metadata = (ObjectNode) BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
 
         UploadRequest uploadRequest = new UploadRequest.Builder()
                 .withName("test name")
@@ -65,7 +65,7 @@ public class UploadRequestTest {
         assertFalse(uploadRequest.isEncrypted());
         assertFalse(uploadRequest.isZipped());
 
-        JsonNode metadata = uploadRequest.getMetadata();
+        ObjectNode metadata = uploadRequest.getMetadata();
         assertEquals(metadata.size(), 1);
         assertEquals(metadata.get("key").textValue(), "value");
     }

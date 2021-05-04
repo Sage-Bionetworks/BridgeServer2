@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.HttpStatus;
@@ -9,10 +10,7 @@ import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.springframework.validation.Validator;
 import org.testng.annotations.Test;
 
-import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.testng.Assert.assertEquals;
-
-import com.fasterxml.jackson.databind.JsonNode;
 
 public class UploadValidatorTest {
     private static final String UPLOAD_CONTENT = "testValidateRequest";
@@ -65,17 +63,9 @@ public class UploadValidatorTest {
 
     @Test
     public void withOptionalParams() throws Exception {
-        JsonNode metadata = BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
+        ObjectNode metadata = (ObjectNode) BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
         UploadRequest uploadRequest = makeValidUploadRequestBuilder().withMetadata(metadata).build();
         Validate.entityThrowingException(UploadValidator.INSTANCE, uploadRequest);
-    }
-
-    @Test
-    public void invalidMetadata() throws Exception {
-        JsonNode metadata = BridgeObjectMapper.get().readTree("[\"not\", \"an\", \"object\"]");
-        UploadRequest uploadRequest = makeValidUploadRequestBuilder().withMetadata(metadata).build();
-        assertValidatorMessage(UploadValidator.INSTANCE, uploadRequest, "metadata",
-                "must be an object node");
     }
 
     private static UploadRequest.Builder makeValidUploadRequestBuilder() {

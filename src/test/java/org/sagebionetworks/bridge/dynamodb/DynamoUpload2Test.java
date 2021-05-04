@@ -10,6 +10,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -33,7 +34,7 @@ public class DynamoUpload2Test {
     public void canSerialize() throws Exception {
         DateTime requestedOn = DateTime.now().withZone(DateTimeZone.UTC);
         DateTime completedOn = DateTime.now().withZone(DateTimeZone.UTC);
-        JsonNode metadata = BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
+        ObjectNode metadata = (ObjectNode) BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
         
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setCompletedBy(UploadCompletionClient.S3_WORKER);
