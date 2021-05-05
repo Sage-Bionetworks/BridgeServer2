@@ -719,11 +719,17 @@ public class BridgeUtils {
     /**
      * Verifies that the activity eventId is valid, and prepends "custom:" to a custom ID if 
      * necessary. Returns the value property cased if valid, or null otherwise. This is 
-     * then handled by validation.   
+     * then handled by validation. If the event submitted is an overridden system event, 
+     * it will be treated as the system event so in that case, you *must* prepend "custom:" 
+     * to indicate that the custom event is being used (overridding system events is 
+     * confusing and discouraged).
      */
     public static String formatActivityEventId(Set<String> activityEventIds, String id) {
         if (id != null) {
-            id = StringUtils.removeStart(id.toLowerCase(), "custom:");
+            String lowerCased = id.toLowerCase();
+            if (lowerCased.startsWith("custom:")) {
+                id = id.substring(7);
+            }
             if (activityEventIds.contains(id)) {
                 return "custom:" + id;
             }
@@ -733,7 +739,7 @@ public class BridgeUtils {
                 return null;
             }
         }
-        return id;
+        return (id == null) ? null : id.toLowerCase();
     }
     
     /**

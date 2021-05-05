@@ -65,7 +65,7 @@ public class SessionValidator implements Validator {
                 if (session.getInterval() != null) {
                     if (window.getExpiration() == null) {
                         errors.rejectValue("expiration", "is required when a session has an interval");
-                    } else if (window.getExpiration() != null) {
+                    } else {
                         int intervalMin = periodInMinutes(session.getInterval());
                         int expMin = periodInMinutes(window.getExpiration());
                         if (expMin > intervalMin) {
@@ -87,6 +87,9 @@ public class SessionValidator implements Validator {
                 errors.pushNestedPath("assessments["+i+"]");
                 if (isBlank(asmt.getGuid())) {
                     errors.rejectValue("guid", CANNOT_BE_BLANK);
+                }
+                if (isBlank(asmt.getIdentifier())) {
+                    errors.rejectValue("identifier", CANNOT_BE_BLANK);
                 }
                 if (isBlank(asmt.getAppId())) {
                     errors.rejectValue("appId", CANNOT_BE_BLANK);

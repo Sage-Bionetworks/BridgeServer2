@@ -988,14 +988,14 @@ public class BridgeUtilsTest {
     
     @Test
     public void formatActivityEventIdIsValidCustomId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "FOO");
-        assertEquals(retValue, "custom:foo");
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("FOO"), "FOO");
+        assertEquals(retValue, "custom:FOO");
         
     }
     
     @Test
     public void formatActivityEventIdIsValidCustomIdWithCustomPrefix() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "CUSTOM:FOO");
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "CUSTOM:foo");
         assertEquals(retValue, "custom:foo");
     }
 
@@ -1016,6 +1016,18 @@ public class BridgeUtilsTest {
     public void formatActivityEventIdNull() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), null);
         assertNull(retValue);
+    }
+    
+    @Test
+    public void formatActivityEventIdWithCasing() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("Event1"), "custom:Event1");
+        assertEquals(retValue, "custom:Event1");
+    }
+    
+    @Test
+    public void formatActivityEventIdSystemEventWrongCase() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of(), "ENROLLMENT");
+        assertEquals(retValue, "enrollment");
     }
     
     @Test

@@ -134,6 +134,7 @@ public class StudyParticipantController extends BaseController {
         if (!session.getParticipant().getStudyIds().contains(studyId)) {
             throw new UnauthorizedException("Caller is not enrolled in study '" + studyId + "'");
         }
+        
         Study study = studyService.getStudy(session.getAppId(), studyId, true);
         DateTime modifiedSince = modifiedSinceHeader();
         DateTime modifiedOn = modifiedOn(studyId);
@@ -141,8 +142,12 @@ public class StudyParticipantController extends BaseController {
         if (isUpToDate(modifiedSince, modifiedOn)) {
             return new ResponseEntity<>(NOT_MODIFIED);
         }
+        App app = appService.getApp(session.getAppId());
         Schedule2 schedule = scheduleService.getScheduleForStudy(session.getAppId(), study);
         cacheProvider.setObject(scheduleModificationTimestamp(studyId), schedule.getModifiedOn().toString());
+        
+        activityEventService.publishActivitiesRetrieved(app, studyId, session.getHealthCode(), DateTime.now());
+        
         return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
     }
     

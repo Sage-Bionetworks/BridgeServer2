@@ -214,6 +214,20 @@ public class SessionValidatorTest extends Mockito {
     }
 
     @Test
+    public void assessmentRefIdentifierNull() {
+        Session session = createValidSession();
+        session.getAssessments().get(0).setIdentifier(null);
+        assertValidatorMessage(INSTANCE, session, "assessments[0].identifier", CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void assessmentRefIdnetifierEmpty() {
+        Session session = createValidSession();
+        session.getAssessments().get(0).setIdentifier("");
+        assertValidatorMessage(INSTANCE, session, "assessments[0].identifier", CANNOT_BE_BLANK);
+    }
+    
+    @Test
     public void assessmentRefAppIdNull() {
         Session session = createValidSession();
         session.getAssessments().get(0).setAppId(null);

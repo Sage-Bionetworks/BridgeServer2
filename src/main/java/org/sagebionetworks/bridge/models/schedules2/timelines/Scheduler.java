@@ -120,8 +120,9 @@ public class Scheduler {
                 scheduledSession.withDelayTime(delay);
             }
             
+            // scheduleGuid:sessionGuid:startDay:windowGuid
             String sessionInstanceGuid = generateSessionInstanceGuid(
-                    schedule.getGuid(), session.getGuid(), window.getGuid(), occurrenceCount);
+                    schedule.getGuid(), session.getGuid(), startDay, window.getGuid());
             scheduledSession.withInstanceGuid(sessionInstanceGuid);
 
             // The position of an assessment in a session is used to differentiate repeated assessments
@@ -131,8 +132,9 @@ public class Scheduler {
             for (AssessmentReference ref : session.getAssessments()) {
                 ids.add(ref.getGuid());
                 
+                // scheduleGuid:sessionGuid:startDay:windowGuid:assessmentGuid:asmtOccurrentCount
                 String asmtInstanceGuid = generateAssessmentInstanceGuid(schedule.getGuid(), session.getGuid(),
-                        window.getGuid(), occurrenceCount, ref.getGuid(), ids.count(ref.getGuid()));
+                        startDay, window.getGuid(), ref.getGuid(), ids.count(ref.getGuid()));
              
                 AssessmentInfo asmtInfo = AssessmentInfo.create(ref);
                 builder.withAssessmentInfo(asmtInfo);
@@ -153,30 +155,37 @@ public class Scheduler {
      * from a Schedule. It should look like a GUID and not a compound identifier, as client developers 
      * have (in the past) parsed compound identifiers, and we want to discourage this.
      */
-    String generateSessionInstanceGuid(String scheduleGuid, String sessionGuid, String windowGuid,
-            int windowOccurrence) {
+    String generateSessionInstanceGuid(String scheduleGuid, String sessionGuid, int startDay, String windowGuid) {
         Hasher hc = HASHER.newHasher();
-        hc.putString(windowGuid, Charsets.UTF_8);
-        hc.putInt(windowOccurrence);
-        hc.putString(sessionGuid, Charsets.UTF_8);
         hc.putString(scheduleGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(sessionGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putInt(startDay);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(windowGuid, Charsets.UTF_8);
         return ENCODER.encodeToString(hc.hash().asBytes());
     }
-
+    
     /**
      * Create a unique GUID for an assessment instance that is the same each time you calculate a Timeline
      * from a Schedule. It should look like a GUID and not a compound identifier, as client developers 
      * have (in the past) parsed compound identifiers, and we want to discourage this.
      */
-    String generateAssessmentInstanceGuid(String scheduleGuid, String sessionGuid, String windowGuid,
-            int windowOccurrence, String assessmentGuid, int assessmentOccurrence) {
+    String generateAssessmentInstanceGuid(String scheduleGuid, String sessionGuid, 
+            int startDay, String windowGuid, String assessmentGuid, int assessmentOccurrence) {
         Hasher hc = HASHER.newHasher();
-        hc.putString(assessmentGuid, Charsets.UTF_8);
-        hc.putInt(assessmentOccurrence);
-        hc.putString(windowGuid, Charsets.UTF_8);
-        hc.putInt(windowOccurrence);
-        hc.putString(sessionGuid, Charsets.UTF_8);
         hc.putString(scheduleGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(sessionGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putInt(startDay);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(windowGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(assessmentGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putInt(assessmentOccurrence);
         return ENCODER.encodeToString(hc.hash().asBytes());
     }
 }

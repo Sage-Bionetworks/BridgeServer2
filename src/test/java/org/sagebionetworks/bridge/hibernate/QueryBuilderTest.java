@@ -1,9 +1,15 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.testng.Assert.assertEquals;
 
+import java.util.Map;
+
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
@@ -85,6 +91,40 @@ public class QueryBuilderTest {
         
         builder = new QueryBuilder();
         builder.enrollment(null);
+        assertEquals(builder.getQuery(), "");
+    }
+    
+    @Test
+    public void alternativeMatchedPairs() {
+        Map<String, DateTime> map = ImmutableMap.of("event_1", CREATED_ON, "event_2", MODIFIED_ON);
+        
+        QueryBuilder builder = new QueryBuilder();
+        builder.alternativeMatchedPairs(map, "e", "tm.sessionStartEventId", "ar.eventTimestamp");
+        
+        assertEquals(builder.getQuery(), "AND ( (tm.sessionStartEventId = :eKey0 AND " +
+                "ar.eventTimestamp = :eVal0) OR (tm.sessionStartEventId = :eKey1 AND " +
+                "ar.eventTimestamp = :eVal1) )");
+        assertEquals((Long)builder.getParameters().get("eVal0"),
+                Long.valueOf(CREATED_ON.getMillis()));
+        assertEquals((Long)builder.getParameters().get("eVal1"),
+                Long.valueOf(MODIFIED_ON.getMillis()));
+        assertEquals(builder.getParameters().get("eKey0"), "event_1");
+        assertEquals(builder.getParameters().get("eKey1"), "event_2");
+    }
+    
+    @Test
+    public void alternativeMatchedPairs_nullSkipped() { 
+        QueryBuilder builder = new QueryBuilder();
+        builder.alternativeMatchedPairs(null, 
+                "e", "tm.sessionStartEventId", "ar.eventTimestamp");
+        assertEquals(builder.getQuery(), "");
+    }
+
+    @Test
+    public void alternativeMatchedPairs_emptySkipped() { 
+        QueryBuilder builder = new QueryBuilder();
+        builder.alternativeMatchedPairs(ImmutableMap.of(), 
+                "e", "tm.sessionStartEventId", "ar.eventTimestamp");
         assertEquals(builder.getQuery(), "");
     }
 }

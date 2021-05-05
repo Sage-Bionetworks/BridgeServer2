@@ -160,6 +160,16 @@ public class AuthUtils {
             .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
+     * Can the caller read and edit adherence data for a given user in a given study?
+     * They must be a caller operating on their own account, or a study coordinator
+     * for the study, or a researcher.
+     */
+    public static final AuthEvaluator CAN_ACCESS_ADHERENCE_DATA = new AuthEvaluator()
+            .isSelf().isEnrolledInStudy().or()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, ADMIN);
+    
+    /**
      * Is the caller in the provided role? Superadmins always pass this test.
      */
     public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
