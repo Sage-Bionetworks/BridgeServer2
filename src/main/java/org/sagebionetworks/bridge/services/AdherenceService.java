@@ -158,7 +158,7 @@ public class AdherenceService {
             Set<String> customEventIds = appService.getApp(appId).getCustomEvents().keySet();
             
             Map<String, DateTime> fixedMap = new HashMap<>();
-            if (TRUE.equals(search.getCurrentTimestampsOnly()) {
+            if (TRUE.equals(search.getCurrentTimestampsOnly())) {
                 // This adds current server timestamps to the search filters
                 Map<String, DateTime> events = activityEventService.getActivityEventMap(
                         appId, search.getStudyId(), healthCode);
