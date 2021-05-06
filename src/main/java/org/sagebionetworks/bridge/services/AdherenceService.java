@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
@@ -153,11 +154,11 @@ public class AdherenceService {
         }
         AdherenceRecordsSearch.Builder builder = new AdherenceRecordsSearch.Builder().copyOf(search);
         
-        if (search.getCurrentTimestampsOnly() == Boolean.TRUE || !search.getEventTimestamps().isEmpty()) {
+        if (TRUE.equals(search.getCurrentTimestampsOnly()) || !search.getEventTimestamps().isEmpty()) {
             Set<String> customEventIds = appService.getApp(appId).getCustomEvents().keySet();
             
             Map<String, DateTime> fixedMap = new HashMap<>();
-            if (search.getCurrentTimestampsOnly() == Boolean.TRUE) {
+            if (TRUE.equals(search.getCurrentTimestampsOnly()) {
                 // This adds current server timestamps to the search filters
                 Map<String, DateTime> events = activityEventService.getActivityEventMap(
                         appId, search.getStudyId(), healthCode);
