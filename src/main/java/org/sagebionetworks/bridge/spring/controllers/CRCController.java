@@ -73,6 +73,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -258,7 +259,7 @@ public class CRCController extends BaseController {
         writeReportAndUpdateState(app, account.getId(), node, SHIPMENT_REPORT, SHIP_TESTS_REQUESTED, false);
 
         return ResponseEntity.accepted()
-                .body(new StatusMessage("Test shipment requested."));
+                .body(new StatusMessage(isTestUser ? "Test" : "Non-test" + " shipment requested."));
     }
 
     // performs basic check for fields required for shipping
@@ -278,23 +279,7 @@ public class CRCController extends BaseController {
         requiredAttributesHelper(atts,"city", "shipping city");
         requiredAttributesHelper(atts,"state", "shipping state");
         requiredAttributesHelper(atts,"zip_code", "shipping zip code");
-    
-        // required employer info preconditions
-        requiredAttributesHelper(atts, "occupation", "occupation");
-        requiredAttributesHelper(atts, "emp_name", "employer name");
-        requiredAttributesHelper(atts, "emp_address1", "employer address");
-        requiredAttributesHelper(atts, "emp_city", "employer city");
-        requiredAttributesHelper(atts, "emp_state", "employer state");
-        requiredAttributesHelper(atts, "emp_zip_code", "employer zip code");
         
-        String phoneString;
-        Phone phone = new Phone(atts.get("emp_phone"), "US");
-        if (Phone.isValid(phone)) {
-            phoneString = phone.getNationalFormat();
-        } else {
-            throw new BadRequestException(("Missing a valid employer phone number"));
-        }
-
         return new Order.ShippingInfo.Address(
                 recipientName,
                 atts.get("address1"),
@@ -303,7 +288,7 @@ public class CRCController extends BaseController {
                 atts.get("state"),
                 atts.get("zip_code"),
                 "United States",
-                phoneString
+                null
         );
     }
     
