@@ -7,6 +7,7 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDocumentationDao;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -16,7 +17,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Nonnull;
 import javax.annotation.Resource;
 import java.util.List;
-import java.util.Optional;
 
 @Component
 public class DynamoHealthDataDocumentationDao implements HealthDataDocumentationDao {
@@ -36,6 +36,14 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
         if (dynamoDocumentation.getIdentifier() == null) {
             // Documentation doesn't have ID assigned yet (new documentation). Create ID and assign it.
             dynamoDocumentation.setIdentifier(BridgeUtils.generateGuid());
+
+            // Update created on/by attributes.
+            dynamoDocumentation.setCreatedOn(DateTime.now());
+            dynamoDocumentation.setCreatedBy("todo"); // TODO do I pass in createdBy or set it in an outer layer?
+        } else {
+            // Update modified on/by attributes.
+            dynamoDocumentation.setModifiedOn(DateTime.now());
+            dynamoDocumentation.setModifiedBy("also todo"); // TODO same as above
         }
 
         // Save to DynamoDB.
@@ -63,8 +71,25 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
 
     /** {@inheritDoc} */
     @Override
-    public Optional<HealthDataDocumentation> getDocumentationById(@Nonnull String identifier) {
-        return Optional.ofNullable(mapper.load(DynamoHealthDataDocumentation.class, identifier));
+    public void deleteDocumentationForIdentifier(@Nonnull String identifier, @Nonnull String parentId) {
+        DynamoHealthDataDocumentation hashKey = new DynamoHealthDataDocumentation();
+        hashKey.setParentId(parentId);
+        hashKey.setIdentifier(identifier);
+
+        DynamoHealthDataDocumentation documentationToDelete = mapper.load(hashKey);
+        if (documentationToDelete != null) {
+            mapper.delete(documentationToDelete);
+        }
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public HealthDataDocumentation getDocumentationById(@Nonnull String identifier, @Nonnull String parentId) {
+        DynamoHealthDataDocumentation hashKey = new DynamoHealthDataDocumentation();
+        hashKey.setIdentifier(identifier);
+        hashKey.setParentId(parentId);
+
+        return mapper.load(hashKey);
     }
 
     /** {@inheritDoc} */
