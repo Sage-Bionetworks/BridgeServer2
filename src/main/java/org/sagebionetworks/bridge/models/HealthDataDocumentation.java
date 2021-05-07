@@ -2,37 +2,33 @@ package org.sagebionetworks.bridge.models;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDoc;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDocumentation;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 
-import java.net.URL;
-
 /** This class represents health data documentation */
-@BridgeTypeName("HealthDataDoc")
-@JsonDeserialize(as = DynamoHealthDataDoc.class)
-public interface HealthDataDoc extends BridgeEntity {
+@BridgeTypeName("HealthDataDocumentation")
+@JsonDeserialize(as = DynamoHealthDataDocumentation.class)
+public interface HealthDataDocumentation extends BridgeEntity {
 
-    static HealthDataDoc create() {
-        return new DynamoHealthDataDoc();
+    /** Convenience method to instantiate a HealthDataDocumentation. */
+    static HealthDataDocumentation create() {
+        return new DynamoHealthDataDocumentation();
     }
 
     String getTitle();
     void setTitle(String title);
 
-    String getAppId();
-    void setAppId(String appId);
+    String getParentId();
+    void setParentId(String parentId);
 
     String getIdentifier();
     void setIdentifier(String identifier);
 
-    String getDoc();
-    void setDoc(String doc);
-
     Long getVersion();
     void setVersion(Long version);
 
-    URL getDocUrl();
-    void setDocUrl(URL docUrl);
+    String getS3Key();
+    void setS3Key(String s3Key);
 
     String getCreatedBy();
     void setCreatedBy(String createdBy);

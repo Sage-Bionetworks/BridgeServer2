@@ -4,18 +4,16 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.models.HealthDataDoc;
+import org.sagebionetworks.bridge.models.HealthDataDocumentation;
 
-import java.net.URL;
-
-@DynamoDBTable(tableName = "HealthDataDoc")
-public class DynamoHealthDataDoc implements HealthDataDoc {
+/** DynamoDB implementation of {@link org.sagebionetworks.bridge.models.HealthDataDocumentation}. */
+@DynamoDBTable(tableName = "HealthDataDocumentation")
+public class DynamoHealthDataDocumentation implements HealthDataDocumentation {
     String title;
-    String appId;
+    String parentId;
     String identifier;
-    String doc; // TODO maybe replaced by docUrl
     Long version;
-    URL docUrl;
+    String s3Key;
     String createdBy;
     DateTime createdOn;
     String modifiedBy;
@@ -34,13 +32,13 @@ public class DynamoHealthDataDoc implements HealthDataDoc {
 
     @DynamoDBHashKey
     @Override
-    public String getAppId() {
-        return this.appId;
+    public String getParentId() {
+        return this.parentId;
     }
 
     @Override
-    public void setAppId(String appId) {
-        this.appId = appId;
+    public void setParentId(String parentId) {
+        this.parentId = parentId;
     }
 
     @DynamoDBRangeKey
@@ -55,16 +53,6 @@ public class DynamoHealthDataDoc implements HealthDataDoc {
     }
 
     @Override
-    public String getDoc() {
-        return this.doc;
-    }
-
-    @Override
-    public void setDoc(String doc) {
-        this.doc = doc;
-    }
-
-    @Override
     public Long getVersion() {
         return this.version;
     }
@@ -75,13 +63,13 @@ public class DynamoHealthDataDoc implements HealthDataDoc {
     }
 
     @Override
-    public URL getDocUrl() {
-        return this.docUrl;
+    public String getS3Key() {
+        return this.s3Key;
     }
 
     @Override
-    public void setDocUrl(URL docUrl) {
-        this.docUrl = docUrl;
+    public void setS3Key(String s3Key) {
+        this.s3Key = s3Key;
     }
 
     @Override
