@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.CLIENT_TIME_ZONE_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 
 import java.time.ZoneId;
 
@@ -18,9 +20,6 @@ public class AdherenceRecordListValidator extends AbstractValidator {
     static final String INSTANCE_GUID_FIELD = "instanceGuid";
     static final String STUDY_ID_FIELD = "studyId";
     static final String USER_ID_FIELD = "userId";
-    static final String CLIENT_TIME_ZONE_FIELD = "clientTimeZone";
-    
-    static final String TIME_ZONE_ERROR = "is not a recognized IANA time zone name";
     
     public static final AdherenceRecordListValidator INSTANCE = new AdherenceRecordListValidator();
     

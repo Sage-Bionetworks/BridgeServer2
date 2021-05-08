@@ -119,6 +119,7 @@ import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.Tag;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
@@ -637,6 +638,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(Tag.class);
         metadataSources.addAnnotatedClass(TimelineMetadata.class);
         metadataSources.addAnnotatedClass(AdherenceRecord.class);
+        metadataSources.addAnnotatedClass(StudyActivityEvent.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
         

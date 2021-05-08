@@ -201,7 +201,7 @@ public class ActivityEventService {
         
         ActivityEvent event = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
-            .withTimestamp(answer.getAnsweredOn())
+            .withTimestamp(new DateTime(answer.getAnsweredOn()))
             .withObjectType(QUESTION)
             .withObjectId(answer.getQuestionGuid())
             .withEventType(ANSWERED)
@@ -229,7 +229,7 @@ public class ActivityEventService {
                 .withObjectType(ACTIVITY)
                 .withObjectId(activityGuid)
                 .withEventType(FINISHED)
-                .withTimestamp(schActivity.getFinishedOn())
+                .withTimestamp(new DateTime(schActivity.getFinishedOn()))
                 .build();
 
             // If the globalEvent is valid, all other derivations are valid 
@@ -343,7 +343,7 @@ public class ActivityEventService {
 
             DateTime timestamp = entry.getValue();
             if (timestamp !=null) {
-                event.setTimestamp(timestamp.getMillis());
+                event.setTimestamp(timestamp);
             }
 
             activityEventList.add(event);

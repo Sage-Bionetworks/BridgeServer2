@@ -26,6 +26,15 @@ public enum ActivityEventUpdateType {
     
     public boolean canUpdate(ActivityEvent persistedEvent, ActivityEvent newEvent) {
         return persistedEvent == null || this == MUTABLE ||
-            (this == FUTURE_ONLY && newEvent.getTimestamp() > persistedEvent.getTimestamp());
+            (this == FUTURE_ONLY && newEvent.getTimestamp().isAfter(persistedEvent.getTimestamp()));
+    }
+
+    public boolean canDelete(StudyActivityEvent persistedEvent, StudyActivityEvent newEvent) {
+        return (persistedEvent != null && this == MUTABLE);
+    }
+    
+    public boolean canUpdate(StudyActivityEvent persistedEvent, StudyActivityEvent newEvent) {
+        return persistedEvent == null || this == MUTABLE ||
+            (this == FUTURE_ONLY && newEvent.getTimestamp().isAfter(persistedEvent.getTimestamp()));
     }
 }

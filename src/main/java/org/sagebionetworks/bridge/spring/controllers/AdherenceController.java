@@ -37,6 +37,7 @@ public class AdherenceController extends BaseController {
         
         AdherenceRecordList recordsList = parseJson(AdherenceRecordList.class);
         for (AdherenceRecord oneRecord : recordsList.getRecords()) {
+            oneRecord.setAppId(session.getAppId());
             oneRecord.setUserId(session.getId());
             oneRecord.setStudyId(studyId);
         }

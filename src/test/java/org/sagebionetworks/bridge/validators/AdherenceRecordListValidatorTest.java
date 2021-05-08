@@ -1,17 +1,17 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeConstants.CLIENT_TIME_ZONE_FIELD;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.CLIENT_TIME_ZONE_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.EVENT_TIMESTAMP_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE_GUID_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.STARTED_ON_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.STUDY_ID_FIELD;
-import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.TIME_ZONE_ERROR;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.USER_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 
 import com.google.common.collect.ImmutableList;
 

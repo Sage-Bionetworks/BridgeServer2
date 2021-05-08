@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.json.DateTimeDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
@@ -28,7 +30,7 @@ public class DynamoActivityEvent implements ActivityEvent {
     private String studyId;
     private String healthCode;
     private String answerValue;
-    private Long timestamp;
+    private DateTime timestamp;
     private String eventId;
     private ActivityEventUpdateType updateType;
     
@@ -58,12 +60,12 @@ public class DynamoActivityEvent implements ActivityEvent {
         this.answerValue = answerValue;
     }
     @Override
-    @JsonSerialize(using = DateTimeToLongSerializer.class)
-    public Long getTimestamp() {
+    @JsonSerialize(using = DateTimeSerializer.class)
+    public DateTime getTimestamp() {
         return timestamp;
     }
-    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
-    public void setTimestamp(Long timestamp) {
+    @JsonDeserialize(using = DateTimeDeserializer.class)
+    public void setTimestamp(DateTime timestamp) {
         this.timestamp = timestamp;
     }
     @DynamoDBRangeKey
@@ -86,7 +88,7 @@ public class DynamoActivityEvent implements ActivityEvent {
     public static class Builder {
         private String healthCode;
         private String studyId;
-        private Long timestamp;
+        private DateTime timestamp;
         private ActivityEventObjectType objectType;
         private String objectId;
         private ActivityEventType eventType;
@@ -101,12 +103,8 @@ public class DynamoActivityEvent implements ActivityEvent {
             this.studyId = studyId;
             return this;
         }
-        public Builder withTimestamp(Long timestamp) {
-            this.timestamp = timestamp;
-            return this;
-        }
         public Builder withTimestamp(DateTime timestamp) {
-            this.timestamp = (timestamp == null) ? null : timestamp.getMillis();
+            this.timestamp = (timestamp == null) ? null : timestamp;
             return this;
         }
         public Builder withObjectType(ActivityEventObjectType type) {

@@ -615,3 +615,39 @@ CREATE TABLE `AdherenceRecords` (
   CONSTRAINT `AdherenceRecord-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `AdherenceRecord-Study-Constraint` FOREIGN KEY (`studyId`) REFERENCES `Substudies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:33
+
+DROP TABLE `AdherenceRecords`;
+
+CREATE TABLE `AdherenceRecords` (
+  `appId` varchar(255) NOT NULL,
+  `userId` varchar(255) NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `instanceGuid` varchar(128) NOT NULL,
+  `startedOn` bigint(20) unsigned NOT NULL,
+  `eventTimestamp` bigint(20) unsigned,
+  `finishedOn` bigint(20) unsigned,
+  `uploadedOn` bigint(20) unsigned,
+  `clientData` text COLLATE utf8_unicode_ci,
+  `clientTimeZone` varchar(255),
+  PRIMARY KEY (`userId`, `studyId`, `instanceGuid`, `startedOn`),
+  KEY `AdherenceRecord-appId-studyId` (`appId`,`studyId`),
+  CONSTRAINT `AdherenceRecord-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `AdherenceRecord-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE `StudyActivityEvents` (
+  `appId` varchar(255) NOT NULL,
+  `userId` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `eventId` varchar(255) NOT NULL,
+  `eventTimestamp` bigint(20) unsigned NOT NULL,
+  `answerValue` varchar(255),
+  `clientTimeZone` varchar(255),
+  `createdOn` bigint(20) unsigned NOT NULL,
+  PRIMARY KEY (`userId`, `studyId`, `eventId`, `eventTimestamp`),
+  CONSTRAINT `StudyActivityEvent-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `StudyActivityEvent-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+

@@ -420,7 +420,7 @@ public class BaseControllerTest extends Mockito {
 
     @Test
     public void parseJsonSucceeds() throws Exception {
-        String json = TestUtils.createJson("{'eventKey':'foo','timestamp':'%s'}", TIMESTAMP.toString());
+        String json = TestUtils.createJson("{'eventKey':'foo','timestamp':'%s','objectType':'custom'}", TIMESTAMP.toString());
         doReturn(TestUtils.toInputStream(json)).when(mockRequest).getInputStream();
         
         CustomActivityEventRequest request = controller.parseJson(CustomActivityEventRequest.class);

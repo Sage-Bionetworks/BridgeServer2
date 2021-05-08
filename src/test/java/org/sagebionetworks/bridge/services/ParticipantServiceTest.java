@@ -85,7 +85,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
-import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.apps.SmsTemplate;
@@ -2368,28 +2367,20 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void createGlobalCustomActivityEvent() throws Exception {
-        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
-                .withEventKey("anEvent")
-                .withTimestamp(TIMESTAMP).build();
-        
         AccountId accountId = AccountId.forId(APP.getIdentifier(), TEST_USER_ID);
         when(accountService.getAccount(accountId)).thenReturn(account);
         
-        participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
+        participantService.createCustomActivityEvent(APP, TEST_USER_ID, "anEvent", TIMESTAMP);
         
         verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
     }
     
     @Test
     public void createStudyScopedCustomActivityEvent() throws Exception {
-        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
-                .withEventKey("anEvent")
-                .withTimestamp(TIMESTAMP).build();
-        
         AccountId accountId = AccountId.forId(APP.getIdentifier(), TEST_USER_ID);
         when(accountService.getAccount(accountId)).thenReturn(account);
         
-        participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
+        participantService.createCustomActivityEvent(APP, TEST_USER_ID, "anEvent", TIMESTAMP);
         
         verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
     }
@@ -2397,11 +2388,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
     public void createCustomActivityEventAccountNotFound() throws Exception {
-        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
-                .withEventKey("anEvent")
-                .withTimestamp(TIMESTAMP).build();
-        
-        participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
+        participantService.createCustomActivityEvent(APP, TEST_USER_ID, "anEvent", TIMESTAMP);
     }
     
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 

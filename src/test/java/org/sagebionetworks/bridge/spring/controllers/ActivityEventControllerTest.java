@@ -84,18 +84,7 @@ public class ActivityEventControllerTest extends Mockito {
         doReturn(TestUtils.toInputStream(json)).when(mockRequest).getInputStream();
         
         StatusMessage message = controller.createCustomActivityEvent();
-        assertEquals("Event recorded", message.getMessage());
-        
-        verify(mockActivityEventService).publishCustomEvent(app, null, HEALTH_CODE, "foo", TIMESTAMP);
-    }
-    
-    @Test
-    public void createScopedStudyCustomActivityEvent() throws Exception {
-        String json = TestUtils.createJson("{'eventKey':'foo','timestamp':'%s'}", TIMESTAMP.toString());
-        doReturn(TestUtils.toInputStream(json)).when(mockRequest).getInputStream();
-        
-        StatusMessage message = controller.createCustomActivityEvent();
-        assertEquals("Event recorded", message.getMessage());
+        assertEquals(message.getMessage(), "Event recorded");
         
         verify(mockActivityEventService).publishCustomEvent(app, null, HEALTH_CODE, "foo", TIMESTAMP);
     }
@@ -105,15 +94,15 @@ public class ActivityEventControllerTest extends Mockito {
         DynamoActivityEvent event = new DynamoActivityEvent();
         event.setEventId("foo");
         event.setHealthCode(HEALTH_CODE);
-        event.setTimestamp(TIMESTAMP.getMillis());
+        event.setTimestamp(TIMESTAMP);
         
         List<ActivityEvent> activityEvents = ImmutableList.of(event);
         when(mockActivityEventService.getActivityEventList(TEST_APP_ID, null, HEALTH_CODE)).thenReturn(activityEvents);
         
         ResourceList<ActivityEvent> list = controller.getSelfActivityEvents();
         ActivityEvent returnedEvent = list.getItems().get(0);
-        assertEquals("foo", returnedEvent.getEventId());
-        assertEquals(new Long(TIMESTAMP.getMillis()), returnedEvent.getTimestamp());
+        assertEquals(returnedEvent.getEventId(), "foo");
+        assertEquals(returnedEvent.getTimestamp(), TIMESTAMP);
         
         verify(mockActivityEventService).getActivityEventList(TEST_APP_ID, null, HEALTH_CODE);
     }
