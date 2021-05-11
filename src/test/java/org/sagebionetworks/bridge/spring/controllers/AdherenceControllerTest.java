@@ -71,7 +71,6 @@ public class AdherenceControllerTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         session = new UserSession(new StudyParticipant.Builder()
-                .withHealthCode(HEALTH_CODE)
                 .withId(TEST_USER_ID)
                 .build());
         session.setAppId(TEST_APP_ID);
@@ -101,8 +100,7 @@ public class AdherenceControllerTest extends Mockito {
         StatusMessage retValue = controller.updateAdherenceRecords(TEST_STUDY_ID);
         assertEquals(retValue, AdherenceController.SAVED_MSG);
         
-        verify(mockService).updateAdherenceRecords(eq(TEST_APP_ID), 
-                eq(HEALTH_CODE), listCaptor.capture());
+        verify(mockService).updateAdherenceRecords(eq(TEST_APP_ID), listCaptor.capture());
         AdherenceRecordList recordsList = listCaptor.getValue();
         for (AdherenceRecord record : recordsList.getRecords()) {
             assertEquals(record.getStudyId(), TEST_STUDY_ID);
@@ -123,13 +121,13 @@ public class AdherenceControllerTest extends Mockito {
                 .withOffsetBy(10).withPageSize(50).build();
         mockRequestBody(mockRequest, search);
         
-        when(mockService.getAdherenceRecords(eq(TEST_APP_ID), eq(HEALTH_CODE), any())).thenReturn(page);
+        when(mockService.getAdherenceRecords(eq(TEST_APP_ID), any())).thenReturn(page);
         
         PagedResourceList<AdherenceRecord> retValue = controller
                 .searchForAdherenceRecordsForSelf(TEST_STUDY_ID);
         assertSame(retValue, page);
         
-        verify(mockService).getAdherenceRecords(eq(TEST_APP_ID), eq(HEALTH_CODE), searchCaptor.capture());
+        verify(mockService).getAdherenceRecords(eq(TEST_APP_ID), searchCaptor.capture());
         AdherenceRecordsSearch captured = searchCaptor.getValue();
         assertEquals(captured.getStudyId(), TEST_STUDY_ID);
         assertEquals(captured.getUserId(), TEST_USER_ID);
@@ -152,13 +150,13 @@ public class AdherenceControllerTest extends Mockito {
                 .withOffsetBy(10).withPageSize(50).build();
         mockRequestBody(mockRequest, search);
         
-        when(mockService.getAdherenceRecords(eq(TEST_APP_ID), eq(HEALTH_CODE), any())).thenReturn(page);
+        when(mockService.getAdherenceRecords(eq(TEST_APP_ID), any())).thenReturn(page);
         
         PagedResourceList<AdherenceRecord> retValue = controller
                 .searchForAdherenceRecords(TEST_STUDY_ID, "some-other-id");
         assertSame(retValue, page);
         
-        verify(mockService).getAdherenceRecords(eq(TEST_APP_ID), eq(HEALTH_CODE), searchCaptor.capture());
+        verify(mockService).getAdherenceRecords(eq(TEST_APP_ID), searchCaptor.capture());
         AdherenceRecordsSearch captured = searchCaptor.getValue();
         assertEquals(captured.getStudyId(), TEST_STUDY_ID);
         assertEquals(captured.getUserId(), "some-other-id");

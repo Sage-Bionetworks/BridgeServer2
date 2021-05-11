@@ -21,6 +21,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class Validate {
+
+    public static final String EVENT_TIMESTAMP_FIELD = "eventTimestamp";
+    public static final String STARTED_ON_FIELD = "startedOn";
+    public static final String INSTANCE_GUID_FIELD = "instanceGuid";
+    public static final String STUDY_ID_FIELD = "studyId";
+    public static final String USER_ID_FIELD = "userId";
+    public static final String CLIENT_TIME_ZONE_FIELD = "clientTimeZone";
     
     public static final String CANNOT_BE_BLANK = "%s cannot be null or blank";
     public static final String CANNOT_BE_EMPTY = "%s cannot be empty";

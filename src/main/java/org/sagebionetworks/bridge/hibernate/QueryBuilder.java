@@ -38,6 +38,13 @@ class QueryBuilder {
         params.put(key1, value1);
         params.put(key2, value2);
     }
+    public void append(String phrase, String key1, Object value1, String key2, Object value2,
+            String key3, Object value3) {
+        phrases.add(phrase);
+        params.put(key1, value1);
+        params.put(key2, value2);
+        params.put(key3, value3);
+    }
     // HQL
     public void dataGroups(Set<String> dataGroups, String operator) {
         if (!BridgeUtils.isEmpty(dataGroups)) {

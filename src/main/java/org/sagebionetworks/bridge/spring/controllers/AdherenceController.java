@@ -11,7 +11,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
@@ -41,7 +40,7 @@ public class AdherenceController extends BaseController {
             oneRecord.setUserId(session.getId());
             oneRecord.setStudyId(studyId);
         }
-        service.updateAdherenceRecords(session.getAppId(), session.getHealthCode(), recordsList);
+        service.updateAdherenceRecords(session.getAppId(), recordsList);
         return SAVED_MSG;
     }
     
@@ -56,7 +55,7 @@ public class AdherenceController extends BaseController {
                 .withUserId(session.getId())
                 .withStudyId(studyId).build();
         
-        return service.getAdherenceRecords(session.getAppId(), session.getHealthCode(), search);
+        return service.getAdherenceRecords(session.getAppId(), search);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/adherence/search")
@@ -71,9 +70,6 @@ public class AdherenceController extends BaseController {
                 .withUserId(userId)
                 .withStudyId(studyId).build();
         
-        String healthCode = accountService.getHealthCodeForAccount(
-                AccountId.forId(session.getAppId(), userId));
-        
-        return service.getAdherenceRecords(session.getAppId(), healthCode, search);
+        return service.getAdherenceRecords(session.getAppId(), search);
     }
 }

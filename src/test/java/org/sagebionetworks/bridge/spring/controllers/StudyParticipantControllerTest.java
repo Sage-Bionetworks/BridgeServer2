@@ -22,6 +22,7 @@ import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
+import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.EVENT_DELETED_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.NOTIFY_SUCCESS_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -202,12 +203,14 @@ public class StudyParticipantControllerTest extends Mockito {
         assertGet(StudyParticipantController.class, "getNotificationRegistrations");
         assertPost(StudyParticipantController.class, "sendNotification");
         assertDelete(StudyParticipantController.class, "deleteTestParticipant");
-        assertGet(StudyParticipantController.class, "getActivityEvents");
-        assertCreate(StudyParticipantController.class, "createActivityEvent");
-        assertGet(StudyParticipantController.class, "getSelfActivityEvents");
-        assertPost(StudyParticipantController.class, "createSelfActivityEvent");
-        assertGet(StudyParticipantController.class, "getTimelineForSelf");
-        assertGet(StudyParticipantController.class, "getTimelineForUser");
+        assertGet(StudyParticipantController.class, "getRecentActivityEvents");
+        assertGet(StudyParticipantController.class, "getActivityEventHistory");
+        assertPost(StudyParticipantController.class, "publishActivityEvent");
+        assertDelete(StudyParticipantController.class, "deleteActivityEvent");
+        assertGet(StudyParticipantController.class, "getRecentActivityEventsForSelf");
+        assertGet(StudyParticipantController.class, "getActivityEventHistoryForSelf");
+        assertPost(StudyParticipantController.class, "publishActivityEventForSelf");
+        assertDelete(StudyParticipantController.class, "deleteActivityEventForSelf");
     }
     
     @Test
@@ -221,11 +224,11 @@ public class StudyParticipantControllerTest extends Mockito {
         List<StudyActivityEvent> list = ImmutableList.of(new StudyActivityEvent());
         ResourceList<StudyActivityEvent> page = new ResourceList<>(list);
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(
-                TEST_STUDY_ID, TEST_USER_ID)).thenReturn(page);
+                TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID)).thenReturn(page);
         
         mockAccountInStudy();
         
-        ResourceList<StudyActivityEvent> retList = controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
+        ResourceList<StudyActivityEvent> retList = controller.getRecentActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retList.getItems().size(), 1);
     }
     
@@ -242,7 +245,7 @@ public class StudyParticipantControllerTest extends Mockito {
         List<EnrollmentDetail> list = ImmutableList.of();
         when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(list);
         
-        controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
+        controller.getRecentActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
     }
 
     @Test
@@ -263,7 +266,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountInStudy();
         
-        StatusMessage retValue = controller.createActivityEvent(TEST_STUDY_ID, TEST_USER_ID);
+        StatusMessage retValue = controller.publishActivityEvent(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);
         
         verify(mockStudyActivityEventService).publishEvent(requestCaptor.capture());
@@ -294,8 +297,8 @@ public class StudyParticipantControllerTest extends Mockito {
         mockAccountInStudy();
         
         StatusMessage retValue = controller.deleteActivityEvent(
-                TEST_STUDY_ID, TEST_USER_ID, "eventKey", CREATED_ON.toString());
-        assertEquals(retValue, StudyParticipantController.EVENT_DELETED_MSG);
+                TEST_STUDY_ID, TEST_USER_ID, "eventKey");
+        assertEquals(retValue, EVENT_DELETED_MSG);
         
         verify(mockStudyActivityEventService).deleteCustomEvent(requestCaptor.capture());
         StudyActivityEventRequest request = requestCaptor.getValue();
@@ -303,7 +306,6 @@ public class StudyParticipantControllerTest extends Mockito {
         assertEquals(request.getStudyId(), TEST_STUDY_ID);
         assertEquals(request.getUserId(), TEST_USER_ID);
         assertEquals(request.getObjectId(), "eventKey");
-        assertEquals(request.getTimestamp(), CREATED_ON);
     }
     
     @Test
@@ -315,12 +317,12 @@ public class StudyParticipantControllerTest extends Mockito {
 
         ResourceList<StudyActivityEvent> page = new ResourceList<>(ImmutableList.of(
                 new StudyActivityEvent()), true);
-        when(mockStudyActivityEventService
-                .getRecentStudyActivityEvents(TEST_STUDY_ID, TEST_USER_ID)).thenReturn(page);
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(
+                TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID)).thenReturn(page);
         
         mockAccountInStudy();
         
-        ResourceList<StudyActivityEvent> retList = controller.getSelfActivityEvents(TEST_STUDY_ID);
+        ResourceList<StudyActivityEvent> retList = controller.getRecentActivityEventsForSelf(TEST_STUDY_ID);
         assertEquals(retList.getItems().size(), 1);
     }
 
@@ -339,7 +341,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountInStudy();
         
-        StatusMessage retValue = controller.createSelfActivityEvent(TEST_STUDY_ID);
+        StatusMessage retValue = controller.publishActivityEventForSelf(TEST_STUDY_ID);
         assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);
         
         verify(mockStudyActivityEventService).publishEvent(requestCaptor.capture());
@@ -363,8 +365,8 @@ public class StudyParticipantControllerTest extends Mockito {
 
         mockAccountInStudy();
         
-        StatusMessage retValue = controller.deleteSelfActivityEvent(TEST_STUDY_ID, "eventKey", CREATED_ON.toString());
-        assertEquals(retValue, StudyParticipantController.EVENT_DELETED_MSG);
+        StatusMessage retValue = controller.deleteActivityEventForSelf(TEST_STUDY_ID, "eventKey");
+        assertEquals(retValue, EVENT_DELETED_MSG);
         
         verify(mockStudyActivityEventService).deleteCustomEvent(requestCaptor.capture());
         StudyActivityEventRequest request = requestCaptor.getValue();
@@ -372,7 +374,6 @@ public class StudyParticipantControllerTest extends Mockito {
         assertEquals(request.getStudyId(), TEST_STUDY_ID);
         assertEquals(request.getUserId(), TEST_USER_ID);
         assertEquals(request.getObjectId(), "eventKey");
-        assertEquals(request.getTimestamp(), CREATED_ON);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -389,7 +390,7 @@ public class StudyParticipantControllerTest extends Mockito {
         when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
             .thenReturn(enrollments);
         
-        controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
+        controller.getRecentActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
     }
 
     @Test
@@ -1119,7 +1120,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountNotInStudy();
         
-        controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
+        controller.getRecentActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test

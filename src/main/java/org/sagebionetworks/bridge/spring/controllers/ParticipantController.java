@@ -123,8 +123,7 @@ public class ParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         
         CustomActivityEventRequest activityEvent = parseJson(CustomActivityEventRequest.class);
-        participantService.createCustomActivityEvent(
-                app, userId, activityEvent.getEventKey(), activityEvent.getTimestamp());
+        participantService.createCustomActivityEvent(app, userId, activityEvent);
         
         return new StatusMessage("Event recorded.");
     }

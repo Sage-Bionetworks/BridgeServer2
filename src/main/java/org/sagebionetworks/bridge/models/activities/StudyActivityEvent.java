@@ -20,7 +20,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 @Table(name = "StudyActivityEvents")
 @IdClass(StudyActivityEventId.class)
 @BridgeTypeName("ActivityEvent")
-public class StudyActivityEvent implements BridgeEntity {
+public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
 
     @JsonIgnore
     private String appId; 
@@ -39,7 +39,6 @@ public class StudyActivityEvent implements BridgeEntity {
     private String answerValue;
     private String clientTimeZone;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
-    @JsonIgnore
     private DateTime createdOn;
     @Transient
     @JsonIgnore
@@ -99,5 +98,10 @@ public class StudyActivityEvent implements BridgeEntity {
     public void setUpdateType(ActivityEventUpdateType updateType) {
         this.updateType = updateType;
     }
-    
+    @Override
+    public String toString() {
+        return "StudyActivityEvent [appId=" + appId + ", userId=" + userId + ", studyId=" + studyId + ", eventId="
+                + eventId + ", timestamp=" + timestamp + ", answerValue=" + answerValue + ", clientTimeZone="
+                + clientTimeZone + ", createdOn=" + createdOn + ", updateType=" + updateType + "]";
+    }
 }

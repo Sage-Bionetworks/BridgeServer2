@@ -146,15 +146,16 @@ public enum ActivityEventObjectType {
         }
     };
     
-    private final ActivityEventUpdateType updateType;
-    
-    private ActivityEventObjectType(ActivityEventUpdateType updateType) {
+    ActivityEventObjectType(ActivityEventUpdateType updateType) {
         this.updateType = updateType;
     }
+    
+    public abstract String getEventId(String objectId, ActivityEventType eventType, String answerValue);
+    
+    private final ActivityEventUpdateType updateType;
     
     public ActivityEventUpdateType getUpdateType() {
         return updateType;
     }
     
-    public abstract String getEventId(String objectId, ActivityEventType eventType, String answerValue);
 }

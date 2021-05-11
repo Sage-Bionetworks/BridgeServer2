@@ -121,6 +121,7 @@ public class AuthUtils {
      * participant APIs). Must be a study coordinator with access to the study, or a researcher. 
      */
     public static final AuthEvaluator CAN_EDIT_STUDY_PARTICIPANTS = new AuthEvaluator()
+            .isEnrolledInStudy().isSelf().or()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(RESEARCHER, ADMIN);
     

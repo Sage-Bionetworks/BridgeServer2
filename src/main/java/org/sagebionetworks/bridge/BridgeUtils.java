@@ -58,6 +58,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -765,5 +766,15 @@ public class BridgeUtils {
             }
         }
         return defaultValue;
+    }
+    
+    public static StudyActivityEvent findByEventType(List<StudyActivityEvent> events, ActivityEventObjectType type) {
+        String eventId = type.name().toLowerCase();
+        for (StudyActivityEvent oneEvent : events) {
+            if (oneEvent.getEventId().equals(eventId)) {
+                return oneEvent;
+            }
+        }
+        return null;
     }
 }

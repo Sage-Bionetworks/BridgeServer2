@@ -8,8 +8,6 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.json.DateTimeDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
-import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
@@ -19,6 +17,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -61,6 +60,7 @@ public class DynamoActivityEvent implements ActivityEvent {
     }
     @Override
     @JsonSerialize(using = DateTimeSerializer.class)
+    @DynamoDBTypeConverted(converter = DateTimeMarshaller.class)
     public DateTime getTimestamp() {
         return timestamp;
     }
@@ -104,11 +104,11 @@ public class DynamoActivityEvent implements ActivityEvent {
             return this;
         }
         public Builder withTimestamp(DateTime timestamp) {
-            this.timestamp = (timestamp == null) ? null : timestamp;
+            this.timestamp = timestamp;
             return this;
         }
-        public Builder withObjectType(ActivityEventObjectType type) {
-            this.objectType = type;
+        public Builder withObjectType(ActivityEventObjectType objectType) {
+            this.objectType = objectType;
             return this;
         }
         public Builder withObjectId(String objectId) {
@@ -143,10 +143,10 @@ public class DynamoActivityEvent implements ActivityEvent {
         public DynamoActivityEvent build() {
             // For custom events, we need to retrieve the update type from app settings as part of the 
             // event's construction. But for all other object types, we know the update behavior
-            if (objectType != null && this.updateType == null) {
-                this.updateType = objectType.getUpdateType();    
+            if (objectType != null && updateType == null) {
+                updateType = objectType.getUpdateType();    
             }
-            if (this.updateType == null) {
+            if (updateType == null) {
                 throw new IllegalStateException("No update type configured for event: " + getEventId());
             }
             DynamoActivityEvent event = new DynamoActivityEvent();

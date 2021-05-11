@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.CLIENT_TIME_ZONE_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+import static org.sagebionetworks.bridge.validators.Validate.CLIENT_TIME_ZONE_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 
 import java.time.ZoneId;
@@ -15,9 +15,14 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 
 public class StudyActivityEventValidator extends AbstractValidator implements Validator {
 
-    public static final StudyActivityEventValidator INSTANCE = new StudyActivityEventValidator();
+    public static final StudyActivityEventValidator INSTANCE = new StudyActivityEventValidator(false);
+    public static final StudyActivityEventValidator DELETE_INSTANCE = new StudyActivityEventValidator(true);
     
-    private StudyActivityEventValidator() {}
+    private final boolean deleteOnly;
+    
+    private StudyActivityEventValidator(boolean deleteOnly) {
+        this.deleteOnly = deleteOnly;
+    }
     
     @Override
     public void validate(Object object, Errors errors) {
@@ -35,20 +40,22 @@ public class StudyActivityEventValidator extends AbstractValidator implements Va
         if (StringUtils.isBlank(event.getEventId())) {
             errors.rejectValue("eventId", CANNOT_BE_BLANK);
         }
-        if (event.getTimestamp() == null) {
-            errors.rejectValue("timestamp", CANNOT_BE_NULL);
-        }
-        if (event.getCreatedOn() == null) {
-            errors.rejectValue("createdOn", CANNOT_BE_NULL);
-        }
         if (event.getUpdateType() == null) {
             errors.rejectValue("updateType", CANNOT_BE_NULL);
         }
-        if (event.getClientTimeZone() != null) {
-            try {
-                ZoneId.of(event.getClientTimeZone());
-            } catch (Exception e) {
-                errors.rejectValue(CLIENT_TIME_ZONE_FIELD, TIME_ZONE_ERROR);
+        if (!deleteOnly) {
+            if (event.getTimestamp() == null) {
+                errors.rejectValue("timestamp", CANNOT_BE_NULL);
+            }
+            if (event.getCreatedOn() == null) {
+                errors.rejectValue("createdOn", CANNOT_BE_NULL);
+            }
+            if (event.getClientTimeZone() != null) {
+                try {
+                    ZoneId.of(event.getClientTimeZone());
+                } catch (Exception e) {
+                    errors.rejectValue(CLIENT_TIME_ZONE_FIELD, TIME_ZONE_ERROR);
+                }
             }
         }
     }

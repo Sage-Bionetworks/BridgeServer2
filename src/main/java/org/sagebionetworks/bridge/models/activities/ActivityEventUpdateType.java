@@ -8,33 +8,46 @@ public enum ActivityEventUpdateType {
      * The event timestamp can be updated to any other value, and the event can 
      * be deleted.
      */
-    MUTABLE,
+    MUTABLE {
+        @Override
+        public boolean canDelete(HasTimestamp persistedEvent, HasTimestamp newEvent) {
+            return (persistedEvent != null);
+        }
+        @Override
+        public boolean canUpdate(HasTimestamp persistedEvent, HasTimestamp newEvent) {
+            return persistedEvent == null || !persistedEvent.getTimestamp().isEqual(newEvent.getTimestamp());
+        }
+    },
     /**
      * Once written, the event timestamp cannot be changed again.
      */
-    IMMUTABLE,
+    IMMUTABLE {
+        @Override
+        public boolean canDelete(HasTimestamp persistedEvent, HasTimestamp newEvent) {
+            return false;
+        }
+        @Override
+        public boolean canUpdate(HasTimestamp persistedEvent, HasTimestamp newEvent) {
+            return (persistedEvent == null);
+        }
+    },
     /**
      * The event timestamp can only be updated if the update is after the current 
      * timestamp (or the timestamp does not yet exist). The event cannot be deleted
      * after it is created.
      */
-    FUTURE_ONLY;
+    FUTURE_ONLY {
+        @Override
+        public boolean canDelete(HasTimestamp persistedEvent, HasTimestamp newEvent) {
+            return false;
+        }
+        @Override
+        public boolean canUpdate(HasTimestamp persistedEvent, HasTimestamp newEvent) {
+            return (persistedEvent == null || newEvent.getTimestamp().isAfter(persistedEvent.getTimestamp()));
+        }
+    };
     
-    public boolean canDelete(ActivityEvent persistedEvent, ActivityEvent newEvent) {
-        return (persistedEvent != null && this == MUTABLE);
-    }
+    public abstract boolean canDelete(HasTimestamp persistedEvent, HasTimestamp newEvent);
     
-    public boolean canUpdate(ActivityEvent persistedEvent, ActivityEvent newEvent) {
-        return persistedEvent == null || this == MUTABLE ||
-            (this == FUTURE_ONLY && newEvent.getTimestamp().isAfter(persistedEvent.getTimestamp()));
-    }
-
-    public boolean canDelete(StudyActivityEvent persistedEvent, StudyActivityEvent newEvent) {
-        return (persistedEvent != null && this == MUTABLE);
-    }
-    
-    public boolean canUpdate(StudyActivityEvent persistedEvent, StudyActivityEvent newEvent) {
-        return persistedEvent == null || this == MUTABLE ||
-            (this == FUTURE_ONLY && newEvent.getTimestamp().isAfter(persistedEvent.getTimestamp()));
-    }
+    public abstract boolean canUpdate(HasTimestamp persistedEvent, HasTimestamp newEvent);
 }

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
+import static java.util.stream.Collectors.toMap;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
@@ -18,6 +19,8 @@ import static org.sagebionetworks.bridge.models.ResourceList.SORT_ORDER;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.STUDY_ID;
 import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ASSESSMENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SESSION;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE;
 
 import java.util.HashMap;
@@ -35,6 +38,8 @@ import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
@@ -49,7 +54,7 @@ public class AdherenceService {
     
     private AppService appService;
 
-    private ActivityEventService activityEventService;
+    private StudyActivityEventService studyActivityEventService;
     
     private Schedule2Service scheduleService;
     
@@ -64,8 +69,8 @@ public class AdherenceService {
     }
     
     @Autowired
-    final void setActivityEventService(ActivityEventService activityEventService) {
-        this.activityEventService = activityEventService;
+    final void setStudyActivityEventService(StudyActivityEventService studyActivityEventService) {
+        this.studyActivityEventService = studyActivityEventService;
     }
     
     @Autowired
@@ -73,7 +78,7 @@ public class AdherenceService {
         this.scheduleService = scheduleService;
     }
     
-    public void updateAdherenceRecords(String appId, String healthCode, AdherenceRecordList recordList) {
+    public void updateAdherenceRecords(String appId, AdherenceRecordList recordList) {
         checkNotNull(recordList);
         
         if (recordList.getRecords().isEmpty()) {
@@ -100,24 +105,33 @@ public class AdherenceService {
                 continue;
             }
             if (meta.getAssessmentInstanceGuid() == null) {
-                activityEventService.publishSessionFinishedEvent(
-                        record.getStudyId(), healthCode, meta.getSessionGuid(), record.getFinishedOn());
+                studyActivityEventService.publishEvent(new StudyActivityEventRequest()
+                        .appId(appId)
+                        .studyId(record.getStudyId())
+                        .userId(record.getUserId())
+                        .objectType(SESSION)
+                        .objectId(meta.getSessionGuid())
+                        .timestamp(record.getFinishedOn()));
             } else {
                 // Shared and local assessment ID are conceptually different but not 
                 // differentiated for events scheduling. It might be helpful to end
                 // users or we might need to change this.
-                activityEventService.publishAssessmentFinishedEvent(
-                        record.getStudyId(), healthCode, meta.getAssessmentId(), record.getFinishedOn());
+                studyActivityEventService.publishEvent(new StudyActivityEventRequest()
+                        .appId(appId)
+                        .studyId(record.getStudyId())
+                        .userId(record.getUserId())
+                        .objectType(ASSESSMENT)
+                        .objectId(meta.getAssessmentId())
+                        .timestamp(record.getFinishedOn()));
             }                
         }
     }
     
-    public PagedResourceList<AdherenceRecord> getAdherenceRecords(String appId, 
-            String healthCode, AdherenceRecordsSearch search) {
+    public PagedResourceList<AdherenceRecord> getAdherenceRecords(String appId, AdherenceRecordsSearch search) {
         
         Set<String> originalInstanceGuids = ImmutableSet.copyOf(search.getInstanceGuids());
         
-        search = cleanupSearch(appId, healthCode, search);
+        search = cleanupSearch(appId, search);
         
         Validate.entityThrowingException(AdherenceRecordsSearchValidator.INSTANCE, search);
         CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
@@ -141,9 +155,8 @@ public class AdherenceService {
                 .withRequestParam(TIME_WINDOW_GUIDS, search.getTimeWindowGuids());
     }
 
-    protected AdherenceRecordsSearch cleanupSearch(String appId, String healthCode, AdherenceRecordsSearch search) {
+    protected AdherenceRecordsSearch cleanupSearch(String appId, AdherenceRecordsSearch search) {
         checkNotNull(appId);
-        checkNotNull(healthCode);
         checkNotNull(search);
         
         // optimization: skip all this if not relevant to the search
@@ -160,8 +173,10 @@ public class AdherenceService {
             Map<String, DateTime> fixedMap = new HashMap<>();
             if (TRUE.equals(search.getCurrentTimestampsOnly())) {
                 // This adds current server timestamps to the search filters
-                Map<String, DateTime> events = activityEventService.getActivityEventMap(
-                        appId, search.getStudyId(), healthCode);
+                Map<String, DateTime> events = studyActivityEventService
+                        .getRecentStudyActivityEvents(appId, search.getUserId(), search.getStudyId())
+                        .getItems().stream()
+                        .collect(toMap(StudyActivityEvent::getEventId, StudyActivityEvent::getTimestamp));
                 addToMap(events, customEventIds, fixedMap);
             }
             if (!search.getEventTimestamps().isEmpty()) {

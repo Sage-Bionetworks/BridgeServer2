@@ -65,7 +65,7 @@ public class ActivityEventUpdateTypeTest extends Mockito {
     @Test
     public void mutableCanUpdate() {
         assertTrue(MUTABLE.canUpdate(EVENT, PAST_EVENT));
-        assertTrue(MUTABLE.canUpdate(EVENT, EVENT));
+        assertFalse(MUTABLE.canUpdate(EVENT, EVENT));
         assertTrue(MUTABLE.canUpdate(EVENT, FUTURE_EVENT));
     }
     

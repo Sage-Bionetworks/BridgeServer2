@@ -1581,14 +1581,19 @@ public class ParticipantControllerTest extends Mockito {
     
     @Test
     public void createCustomActivityEvent() throws Exception {
-        mockRequestBody(mockRequest, TestUtils.createJson(
-                "{'eventKey':'eventKey','timestamp':'"+TIMESTAMP+"'}"));
+        CustomActivityEventRequest request = new CustomActivityEventRequest.Builder()
+                .withEventKey("eventKey")
+                .withTimestamp(TIMESTAMP).build();
+        mockRequestBody(mockRequest, request);
         
         StatusMessage retValue = controller.createCustomActivityEvent(TEST_USER_ID);
         assertEquals(retValue.getMessage(), "Event recorded.");
         
         verify(mockParticipantService).createCustomActivityEvent(
-                eq(app), eq(TEST_USER_ID), eq("eventKey"), eq(TIMESTAMP));
+                eq(app), eq(TEST_USER_ID), eventRequestCaptor.capture());
+        CustomActivityEventRequest captured = eventRequestCaptor.getValue();
+        assertEquals(captured.getEventKey(), "eventKey");
+        assertEquals(captured.getTimestamp(), TIMESTAMP);
     }
 
     private AccountSummarySearch setAccountSummarySearch() throws Exception {

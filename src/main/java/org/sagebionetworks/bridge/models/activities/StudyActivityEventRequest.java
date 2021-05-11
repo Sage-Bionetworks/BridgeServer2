@@ -1,5 +1,10 @@
 package org.sagebionetworks.bridge.models.activities;
 
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
+
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -39,10 +44,8 @@ public class StudyActivityEventRequest {
             @JsonProperty("answerValue") String answerValue,
             @JsonProperty("clientTimeZone") String clientTimeZone) {
         
-        if (thisObjectId != null && thisObjectId.toLowerCase().startsWith("custom:")) {
-            thisObjectId = thisObjectId.substring(7);
-        }
-        this.objectId = thisObjectId;
+        // this possesses logic we want to run, however the value is set
+        this.objectId(thisObjectId); 
         this.timestamp = timestamp;
         this.answerValue = answerValue;
         this.clientTimeZone = clientTimeZone;
@@ -80,8 +83,23 @@ public class StudyActivityEventRequest {
         this.objectType = objectType;
         return this;
     }
-    public StudyActivityEventRequest objectId(String objectId) {
-        this.objectId = objectId;
+    public StudyActivityEventRequest updateTypeForCustomEvents(Map<String,ActivityEventUpdateType> map) {
+        if (objectType != null) {
+            updateType = objectType.getUpdateType();    
+        }
+        if (objectType == CUSTOM) {
+            updateType = map.get(objectId);
+        }
+        if (updateType == null) {
+            updateType = IMMUTABLE;
+        }
+        return this;
+    }
+    public StudyActivityEventRequest objectId(String thisObjectId) {
+        if (thisObjectId != null && thisObjectId.toLowerCase().startsWith("custom:")) {
+            thisObjectId = thisObjectId.substring(7);
+        }
+        this.objectId = thisObjectId;
         return this;
     }
     public StudyActivityEventRequest eventType(ActivityEventType eventType) {
@@ -158,6 +176,4 @@ public class StudyActivityEventRequest {
         copy.updateType = updateType;
         return copy;
     }
-
-
 }

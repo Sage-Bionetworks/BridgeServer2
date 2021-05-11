@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toMap;
+import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
+import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 
 import java.util.List;
 import java.util.Map;
@@ -13,11 +15,35 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventId;
 
+/**
+ * Activity events that are always scoped to a participant in a specific app, with
+ * a history of past timestamps for adherence reporting. The history is presented 
+ * separately from the list of most recent timestamps, since the former are of 
+ * interest to study coordinators and the latter are of interest to consumers of 
+ * the v2 scheduling system.
+ */
 @Component
 public class HibernateStudyActivityEventDao implements StudyActivityEventDao {
     
+    static final String EVENT_ID_FIELD = "eventId";
+    static final String STUDY_ID_FIELD = "studyId";
+    static final String USER_ID_FIELD = "userId";
+
+    static final String DELETE_SQL = "DELETE FROM StudyActivityEvents " +
+            "WHERE userId = :userId AND studyId = :studyId AND eventId = :eventId";
+    
+    // Is there a better way to get this than a subselect? Apparently not in MySQL
+    static final String GET_RECENT_SQL = "SELECT * FROM StudyActivityEvents AS " +
+            "sae WHERE userId = :userId AND studyId = :studyId AND createdOn = " +
+            "(SELECT createdOn FROM StudyActivityEvents WHERE userId = :userId " +
+            "AND studyId = :studyId AND eventId = sae.eventId ORDER BY " +
+            "createdOn DESC LIMIT 1) ORDER BY createdOn DESC";
+    
+    static final String HISTORY_SQL = "FROM StudyActivityEvents WHERE " +
+            "userId = :userId AND studyId = :studyId AND eventId = :eventId " +
+            "ORDER BY createdOn DESC";
+            
     private HibernateHelper helper;
     
     @Resource(name = "mysqlHibernateHelper")
@@ -26,17 +52,14 @@ public class HibernateStudyActivityEventDao implements StudyActivityEventDao {
     }
 
     @Override
-    public boolean deleteCustomEvent(StudyActivityEvent event) {
+    public void deleteCustomEvent(StudyActivityEvent event) {
         checkNotNull(event);
         
-        StudyActivityEventId id = new StudyActivityEventId(
-                event.getUserId(), event.getStudyId(), event.getEventId(), event.getTimestamp());
-        
-        StudyActivityEvent existing = helper.getById(StudyActivityEvent.class, id);
-        if (event.getUpdateType().canDelete(existing, event)) {
-            helper.deleteById(StudyActivityEvent.class, id);
-        }
-        return false;
+        QueryBuilder query = new QueryBuilder();
+        query.append(DELETE_SQL, USER_ID_FIELD, event.getUserId(), 
+                STUDY_ID_FIELD, event.getStudyId(),
+                EVENT_ID_FIELD, event.getEventId());
+        helper.nativeQueryUpdate(query.getQuery(), query.getParameters());
     }
 
     @Override
@@ -48,42 +71,45 @@ public class HibernateStudyActivityEventDao implements StudyActivityEventDao {
 
     @Override
     public List<StudyActivityEvent> getRecentStudyActivityEvents(String userId, String studyId) {
-        // Is there a better way to get this than a subselect?
-        QueryBuilder inner = new QueryBuilder();
-        inner.append("SELECT createdOn FROM StudyActivityEvents");
-        inner.append("WHERE userId = :userId AND studyId = :studyId AND eventId = sae.eventId");
-        inner.append("ORDER BY createdOn DESC LIMIT 1");
+        checkNotNull(userId);
+        checkNotNull(studyId);
         
         QueryBuilder builder = new QueryBuilder();
-        builder.append("SELECT * FROM StudyActivityEvents AS sae");
-        builder.append("WHERE userId = :userId AND studyId = :studyId", "userId", userId, "studyId", studyId);
-        builder.append("AND createdOn = (" + inner.getQuery() + ")");
+        builder.append(GET_RECENT_SQL, USER_ID_FIELD, userId, STUDY_ID_FIELD, studyId);
         
-        return helper.nativeQueryGet(
-                builder.getQuery(), builder.getParameters(), null, null, StudyActivityEvent.class);
+        return helper.nativeQueryGet(builder.getQuery(), 
+                builder.getParameters(), null, null, StudyActivityEvent.class);
     }
     
     @Override
-    public Map<String, StudyActivityEvent> getRecentStudyActivityEventMap(String userId, String studyId) {
-        return getRecentStudyActivityEvents(userId, studyId).stream()
-                .collect(toMap(StudyActivityEvent::getEventId, e -> e));
+    public StudyActivityEvent getRecentStudyActivityEvent(String userId, String studyId, String eventId) {
+        checkNotNull(userId);
+        checkNotNull(studyId);
+        checkNotNull(eventId);
+        
+        Map<String, StudyActivityEvent> map = getRecentStudyActivityEvents(userId, studyId)
+                .stream().collect(toMap(StudyActivityEvent::getEventId, e -> e));
+        return map.get(eventId);
     }
 
     @Override
-    public PagedResourceList<StudyActivityEvent> getStudyActivityEventHistory(String userId, String studyId, 
-            String eventId, int offsetBy, int pageSize) {
-
+    public PagedResourceList<StudyActivityEvent> getStudyActivityEventHistory(String userId, 
+            String studyId, String eventId, Integer offsetBy, Integer pageSize) {
+        checkNotNull(userId);
+        checkNotNull(studyId);
+        checkNotNull(eventId);
+        
         QueryBuilder builder = new QueryBuilder();
-        builder.append("SELECT * FROM StudyActivityEvents");
-        builder.append("WHERE userId = :userId AND studyId = :studyId", "userId", userId, "studyId", studyId);
-        builder.append("AND eventId = :eventId", "eventId", eventId);
+        builder.append(HISTORY_SQL, USER_ID_FIELD, userId, STUDY_ID_FIELD, studyId, EVENT_ID_FIELD, eventId);
 
-        List<StudyActivityEvent> records = helper.nativeQueryGet(
-                builder.getQuery(), builder.getParameters(), offsetBy, pageSize, StudyActivityEvent.class);
+        List<StudyActivityEvent> records = helper.nativeQueryGet("SELECT * " + builder.getQuery(), 
+                builder.getParameters(), offsetBy, pageSize, StudyActivityEvent.class);
         
-        int count = helper.nativeQueryCount(builder.getQuery(), builder.getParameters());
+        int count = helper.nativeQueryCount("SELECT count(*) " + builder.getQuery(), builder.getParameters());
         
-        return new PagedResourceList<>(records, count);
+        return new PagedResourceList<>(records, count, true)
+                .withRequestParam(OFFSET_BY, offsetBy)
+                .withRequestParam(PAGE_SIZE, pageSize);
     }
 
 }

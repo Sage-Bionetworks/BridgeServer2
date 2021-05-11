@@ -69,6 +69,7 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.MimeType;
 import org.sagebionetworks.bridge.models.apps.SmsTemplate;
@@ -571,16 +572,15 @@ public class ParticipantService {
         }
     }
     
-    public void createCustomActivityEvent(App app, String userId, String eventKey, DateTime timestamp) {
+    public void createCustomActivityEvent(App app, String userId, CustomActivityEventRequest request) {
         checkNotNull(app);
         checkArgument(isNotBlank(userId));
-        checkNotNull(eventKey);
-        checkNotNull(timestamp);
+        checkNotNull(request);
         
         Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
         activityEventService.publishCustomEvent(app, null,
-                account.getHealthCode(), eventKey, timestamp);
+                account.getHealthCode(), request.getEventKey(), request.getTimestamp());
     }
     
     public void requestResetPassword(App app, String userId) {
