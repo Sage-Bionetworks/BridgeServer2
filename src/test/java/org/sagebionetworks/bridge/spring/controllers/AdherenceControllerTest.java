@@ -30,6 +30,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -164,5 +165,15 @@ public class AdherenceControllerTest extends Mockito {
         assertEquals(captured.getUserId(), "some-other-id");
         assertEquals(captured.getOffsetBy(), Integer.valueOf(10));
         assertEquals(captured.getPageSize(), Integer.valueOf(50));        
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void searchForAdherenceRecords_noAccount() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        
+        AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder().build();
+        mockRequestBody(mockRequest, search);
+        
+        controller.searchForAdherenceRecords(TEST_STUDY_ID, "some-other-id");
     }
 }
