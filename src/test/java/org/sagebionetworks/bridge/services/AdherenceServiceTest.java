@@ -55,6 +55,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -162,6 +163,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(request.getUserId(), TEST_USER_ID);
         assertEquals(request.getObjectType(), ActivityEventObjectType.SESSION);
         assertEquals(request.getObjectId(), "sessionGuid");
+        assertEquals(request.getEventType(), ActivityEventType.FINISHED);
         assertEquals(request.getTimestamp(), FINISHED_ON); 
     }
 
@@ -193,6 +195,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(request.getUserId(), TEST_USER_ID);
         assertEquals(request.getObjectType(), ActivityEventObjectType.ASSESSMENT);
         assertEquals(request.getObjectId(), "assessmentId");
+        assertEquals(request.getEventType(), ActivityEventType.FINISHED);
         assertEquals(request.getTimestamp(), FINISHED_ON); 
     }
     

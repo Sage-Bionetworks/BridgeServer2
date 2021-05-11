@@ -434,7 +434,8 @@ public class StudyParticipantController extends BaseController {
     
     /* STUDY ACTIVITY EVENT FOR STUDY PARTICIPANT */
     
-    @GetMapping(path = {"/v5/studies/{studyId}/participants/{userId}/activityevents"},
+    @GetMapping(path = {"/v5/studies/{studyId}/participants/{userId}/activityevents",
+            "/v5/studies/{studyId}/participants/{userId}/activityEvents"},
             produces={APPLICATION_JSON_UTF8_VALUE})
     public ResourceList<StudyActivityEvent> getRecentActivityEvents(
             @PathVariable String studyId, @PathVariable String userId) throws JsonProcessingException {
@@ -445,7 +446,8 @@ public class StudyParticipantController extends BaseController {
         return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), userId, studyId);
     }
     
-    @GetMapping(path = {"/v5/studies/{studyId}/participants/{userId}/activityevents/{eventId}"},
+    @GetMapping(path = {"/v5/studies/{studyId}/participants/{userId}/activityevents/{eventId}",
+            "/v5/studies/{studyId}/participants/{userId}/activityEvents/{eventId}"},
             produces={APPLICATION_JSON_UTF8_VALUE})
     public ResourceList<StudyActivityEvent> getActivityEventHistory(@PathVariable String studyId,
             @PathVariable String userId,
@@ -469,7 +471,8 @@ public class StudyParticipantController extends BaseController {
         return studyActivityEventService.getStudyActivityEventHistory(request, offsetByInt, pageSizeInt);
     }
     
-    @PostMapping("/v5/studies/{studyId}/participants/{userId}/activityevents")
+    @PostMapping(path = {"/v5/studies/{studyId}/participants/{userId}/activityevents",
+            "/v5/studies/{studyId}/participants/{userId}/activityEvents"})
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage publishActivityEvent(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
@@ -487,7 +490,8 @@ public class StudyParticipantController extends BaseController {
         return EVENT_RECORDED_MSG;
     }
 
-    @DeleteMapping("/v5/studies/{studyId}/participants/{userId}/activityevents/{eventId}")
+    @DeleteMapping(path = {"/v5/studies/{studyId}/participants/{userId}/activityevents/{eventId}",
+            "/v5/studies/{studyId}/participants/{userId}/activityEvents/{eventId}"})
     public StatusMessage deleteActivityEvent(@PathVariable String studyId, 
             @PathVariable String userId,
             @PathVariable String eventId) {
@@ -507,7 +511,8 @@ public class StudyParticipantController extends BaseController {
     
     /* STUDY ACTIVITY EVENT FOR SELF*/
     
-    @GetMapping(path = {"/v5/studies/{studyId}/participants/self/activityevents"},
+    @GetMapping(path = {"/v5/studies/{studyId}/participants/self/activityevents",
+            "/v5/studies/{studyId}/participants/self/activityEvents"},
             produces={APPLICATION_JSON_UTF8_VALUE})
     public ResourceList<StudyActivityEvent> getRecentActivityEventsForSelf(@PathVariable String studyId)
             throws JsonProcessingException {
@@ -518,7 +523,8 @@ public class StudyParticipantController extends BaseController {
         return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), session.getId(), studyId);
     }
 
-    @GetMapping(path = {"/v5/studies/{studyId}/participants/self/activityevents/{eventId}"},
+    @GetMapping(path = {"/v5/studies/{studyId}/participants/self/activityevents/{eventId}",
+            "/v5/studies/{studyId}/participants/self/activityEvents/{eventId}"},
             produces={APPLICATION_JSON_UTF8_VALUE})
     public ResourceList<StudyActivityEvent> getActivityEventHistoryForSelf(@PathVariable String studyId, 
             @PathVariable String eventId,
@@ -541,7 +547,8 @@ public class StudyParticipantController extends BaseController {
         return studyActivityEventService.getStudyActivityEventHistory(request, offsetByInt, pageSizeInt);
     }
     
-    @PostMapping("/v5/studies/{studyId}/participants/self/activityevents")
+    @PostMapping(path ={"/v5/studies/{studyId}/participants/self/activityevents",
+            "/v5/studies/{studyId}/participants/self/activityEvents"})
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage publishActivityEventForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -558,7 +565,8 @@ public class StudyParticipantController extends BaseController {
         return EVENT_RECORDED_MSG;
     }   
     
-    @DeleteMapping("/v5/studies/{studyId}/participants/self/activityevents/{eventId}")
+    @DeleteMapping(path ={"/v5/studies/{studyId}/participants/self/activityevents/{eventId}",
+            "/v5/studies/{studyId}/participants/self/activityEvents/{eventId}"})
     public StatusMessage deleteActivityEventForSelf(@PathVariable String studyId, @PathVariable String eventId) {
         UserSession session = getAuthenticatedAndConsentedSession();
 

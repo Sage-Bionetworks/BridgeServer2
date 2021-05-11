@@ -21,6 +21,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.STUDY_ID;
 import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SESSION;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE;
 
 import java.util.HashMap;
@@ -99,8 +100,7 @@ public class AdherenceService {
             if (record.getFinishedOn() == null) {
                 continue;
             }
-            TimelineMetadata meta = scheduleService
-                    .getTimelineMetadata(record.getInstanceGuid()).orElse(null);
+            TimelineMetadata meta = scheduleService.getTimelineMetadata(record.getInstanceGuid()).orElse(null);
             if (meta == null) {
                 continue;
             }
@@ -111,6 +111,7 @@ public class AdherenceService {
                         .userId(record.getUserId())
                         .objectType(SESSION)
                         .objectId(meta.getSessionGuid())
+                        .eventType(FINISHED)
                         .timestamp(record.getFinishedOn()));
             } else {
                 // Shared and local assessment ID are conceptually different but not 
@@ -122,6 +123,7 @@ public class AdherenceService {
                         .userId(record.getUserId())
                         .objectType(ASSESSMENT)
                         .objectId(meta.getAssessmentId())
+                        .eventType(FINISHED)
                         .timestamp(record.getFinishedOn()));
             }                
         }

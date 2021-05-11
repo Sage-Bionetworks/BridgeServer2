@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeUtils.findByEventType;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
+import static org.sagebionetworks.bridge.BridgeUtils.parseAutoEventValue;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
@@ -21,12 +22,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -84,10 +86,7 @@ public class StudyActivityEventService {
         checkArgument(request.getObjectType() == CUSTOM);
 
         App app = appService.getApp(request.getAppId());
-        request.objectId(formatActivityEventId(app.getCustomEvents().keySet(), request.getObjectId()));
-        request.updateTypeForCustomEvents(app.getCustomEvents());
-        
-        StudyActivityEvent event = request.toStudyActivityEvent();
+        StudyActivityEvent event = request.toStudyActivityEvent(app.getCustomEvents());
         
         Validate.entityThrowingException(DELETE_INSTANCE, event);
         
@@ -102,13 +101,10 @@ public class StudyActivityEventService {
     public void publishEvent(StudyActivityEventRequest request) {
         checkNotNull(request);
 
-        App app = appService.getApp(request.getAppId());
-        
         request.createdOn(getCreatedOn());
-        request.updateTypeForCustomEvents(app.getCustomEvents());
-        request.objectId(formatActivityEventId(app.getCustomEvents().keySet(), request.getObjectId()));
         
-        StudyActivityEvent event = request.toStudyActivityEvent();
+        App app = appService.getApp(request.getAppId());
+        StudyActivityEvent event = request.toStudyActivityEvent(app.getCustomEvents());
         
         Validate.entityThrowingException(INSTANCE, event);
         
@@ -132,9 +128,8 @@ public class StudyActivityEventService {
         
         List<StudyActivityEvent> finalEvents = new ArrayList<>();
         finalEvents.addAll(events);
-        
-        makeCreatedOn(finalEvents, account.getCreatedOn());
-        makeStudyStartDate(finalEvents, finalEvents, account.getCreatedOn());
+        finalEvents.add(new StudyActivityEvent(CREATED_ON_FIELD, account.getCreatedOn()));
+        finalEvents.add(makeStudyStartDate(finalEvents, account.getCreatedOn()));
         
         return new ResourceList<>(finalEvents); 
     }
@@ -154,20 +149,18 @@ public class StudyActivityEventService {
         String studyId = request.getStudyId();
         String eventId = request.getObjectId();
 
-        // These need to be emulated in the history view as well, or it might be confusing to consumers
+        // These need to be emulated in the history view, so they don't confuse consumers
         if (eventId.equals(START_DATE_FIELD) || eventId.equals(CREATED_ON_FIELD)) {
-            
-            List<StudyActivityEvent> list = dao.getRecentStudyActivityEvents(userId, studyId);
-            
-            List<StudyActivityEvent> finalEvents = new ArrayList<>();
             
             Account account = accountService.getAccountNoFilter(AccountId.forId(appId, userId))
                     .orElseThrow(() -> new EntityNotFoundException(Account.class));
             
+            List<StudyActivityEvent> finalEvents = new ArrayList<>();
             if (eventId.equals(START_DATE_FIELD)) {
-                makeStudyStartDate(list, finalEvents, account.getCreatedOn());
+                List<StudyActivityEvent> list = dao.getRecentStudyActivityEvents(userId, studyId);
+                finalEvents.add(makeStudyStartDate(list, account.getCreatedOn()));
             } else {
-                makeCreatedOn(finalEvents, account.getCreatedOn());   
+                finalEvents.add(new StudyActivityEvent(CREATED_ON_FIELD, account.getCreatedOn()));
             }
             return new PagedResourceList<>(finalEvents, 1, true)
                     .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
@@ -180,53 +173,38 @@ public class StudyActivityEventService {
             .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
     }
     
-    private void makeCreatedOn(List<StudyActivityEvent> outputEvents, DateTime createdOn) { 
-        StudyActivityEvent createdOnEvent = makeSyntheticEvent(CREATED_ON_FIELD, createdOn);
-        outputEvents.add(createdOnEvent);
-    }
-    
-    private void makeStudyStartDate(List<StudyActivityEvent> inputEvents, 
-            List<StudyActivityEvent> outputEvents, DateTime createdOn) {
-        StudyActivityEvent start = makeSyntheticEvent(START_DATE_FIELD, createdOn);
+    private StudyActivityEvent makeStudyStartDate(List<StudyActivityEvent> inputEvents, DateTime createdOn) {
         StudyActivityEvent timelineRetrieved = findByEventType(inputEvents, TIMELINE_RETRIEVED);
         if (timelineRetrieved != null) {
-            start.setTimestamp(timelineRetrieved.getTimestamp());
-        } else {
-            StudyActivityEvent enrollment = findByEventType(inputEvents, ENROLLMENT);
-            if (enrollment != null) {
-                start.setTimestamp(enrollment.getTimestamp());
-            }
+            return new StudyActivityEvent(START_DATE_FIELD, timelineRetrieved.getTimestamp());
         }
-        outputEvents.add(start);
+        StudyActivityEvent enrollment = findByEventType(inputEvents, ENROLLMENT);
+        if (enrollment != null) {
+            return new StudyActivityEvent(START_DATE_FIELD, enrollment.getTimestamp());
+        }
+        return new StudyActivityEvent(START_DATE_FIELD, createdOn);
     }
     
-    private StudyActivityEvent makeSyntheticEvent(String eventId, DateTime timestamp) {
-        StudyActivityEvent event = new StudyActivityEvent();
-        event.setEventId(eventId);
-        event.setTimestamp(timestamp);
-        return event;
-    }
-
     /**
-     * If the triggering event is mutable, it will succeed and these events must update as well, so they are 
-     * always mutable when this function is called. 
+     * If the triggering event is mutable, these events can be created as well.
      */
     private void createAutomaticCustomEvents(App app, StudyActivityEventRequest request) {
-        StudyActivityEvent event = request.toStudyActivityEvent();
+        // StudyActivityEvent event = request.toStudyActivityEvent(app.getCustomEvents());
         for (Map.Entry<String, String> oneAutomaticEvent : app.getAutomaticCustomEvents().entrySet()) {
             String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
-            Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(oneAutomaticEvent.getValue()); // originEventId:Period
+            Tuple<String> autoEventSpec = parseAutoEventValue(oneAutomaticEvent.getValue());
+            String triggerEventId = autoEventSpec.getLeft();
+
             // enrollment, activities_retrieved, or any of the custom:* events defined by the user.
-            if (event.getEventId().equals(autoEventSpec.getLeft())) {
-                
+            if (request.getObjectType().name().toLowerCase().equals(triggerEventId)) {
                 Period automaticEventDelay = Period.parse(autoEventSpec.getRight());
-                DateTime automaticEventTime = new DateTime(event.getTimestamp()).plus(automaticEventDelay);
+                DateTime automaticEventTime = new DateTime(request.getTimestamp()).plus(automaticEventDelay);
                 
                 StudyActivityEvent automaticEvent = request.copy()
                     .objectType(CUSTOM)
-                    .updateType(MUTABLE) 
                     .objectId(automaticEventKey)
-                    .timestamp(automaticEventTime).toStudyActivityEvent();
+                    .timestamp(automaticEventTime)
+                    .toStudyActivityEvent(ImmutableMap.of(automaticEventKey, MUTABLE));
                 dao.publishEvent(automaticEvent);
             }
         }        

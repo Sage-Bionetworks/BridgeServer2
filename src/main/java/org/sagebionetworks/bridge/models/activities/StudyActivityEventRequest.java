@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.activities;
 
+import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 
@@ -25,10 +26,10 @@ public class StudyActivityEventRequest {
     private String answerValue;
     private String clientTimeZone;
     private DateTime createdOn;
-    private ActivityEventObjectType objectType;
+    private ActivityEventObjectType objectType = CUSTOM;
     private String objectId;
     private ActivityEventType eventType;
-    private ActivityEventUpdateType updateType;
+    private ActivityEventUpdateType updateType = IMMUTABLE;
     
     public StudyActivityEventRequest() { 
     }
@@ -83,23 +84,8 @@ public class StudyActivityEventRequest {
         this.objectType = objectType;
         return this;
     }
-    public StudyActivityEventRequest updateTypeForCustomEvents(Map<String,ActivityEventUpdateType> map) {
-        if (objectType != null) {
-            updateType = objectType.getUpdateType();    
-        }
-        if (objectType == CUSTOM) {
-            updateType = map.get(objectId);
-        }
-        if (updateType == null) {
-            updateType = IMMUTABLE;
-        }
-        return this;
-    }
-    public StudyActivityEventRequest objectId(String thisObjectId) {
-        if (thisObjectId != null && thisObjectId.toLowerCase().startsWith("custom:")) {
-            thisObjectId = thisObjectId.substring(7);
-        }
-        this.objectId = thisObjectId;
+    public StudyActivityEventRequest objectId(String objectId) {
+        this.objectId = objectId;
         return this;
     }
     public StudyActivityEventRequest eventType(ActivityEventType eventType) {
@@ -143,11 +129,18 @@ public class StudyActivityEventRequest {
     public ActivityEventUpdateType getUpdateType() {
         return updateType;
     }
-    public StudyActivityEvent toStudyActivityEvent( ) {
-        String eventId = null;
-        if (objectType != null) {
-            eventId = objectType.getEventId(objectId, eventType, answerValue);    
+    public StudyActivityEvent toStudyActivityEvent(Map<String,ActivityEventUpdateType> customEvents) {
+        // This will be reformatted by the CUSTOM object type
+        if (objectId != null && objectId.toLowerCase().startsWith("custom:")) {
+            objectId = objectId.substring(7);
         }
+        updateType = objectType.getUpdateType();
+        if (objectType == CUSTOM) {
+            updateType = customEvents.get(objectId);
+            objectId = formatActivityEventId(customEvents.keySet(), objectId);
+        }
+        String eventId = objectType.getEventId(objectId, eventType, answerValue);
+        
         StudyActivityEvent event = new StudyActivityEvent();
         event.setAppId(appId);
         event.setUserId(userId);
