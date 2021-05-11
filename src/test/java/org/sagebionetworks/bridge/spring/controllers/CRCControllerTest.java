@@ -1590,6 +1590,20 @@ public class CRCControllerTest extends Mockito {
         verify(controller).validateAndGetAddress(any());
     }
     
+    @Test
+    public void internalLabShipmentValidatesAddressNoEmployer() {
+        setupParticipantAuthentication();
+        setupShippingAddress();
+        
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+        
+        controller.postUserLabShipmentRequest();
+        
+        verify(controller).validateAndGetAddress(any());
+    }
+    
     // somewhat redundant test
     @Test(expectedExceptions = BadRequestException.class)
     public void placeOrderMissingCity() {
@@ -1626,15 +1640,7 @@ public class CRCControllerTest extends Mockito {
     
         ImmutableList.of(
                 // shipping preconditions
-                "address1", "city", "state", "zip_code",
-                // employment preconditions
-                "occupation",
-                "emp_name",
-                "emp_address1",
-                "emp_city",
-                "emp_state",
-                "emp_zip_code",
-                "emp_phone"
+                "address1", "city", "state", "zip_code"
         )
                 .forEach(requiredField -> {
                     setupShippingAddress();
@@ -1687,22 +1693,9 @@ public class CRCControllerTest extends Mockito {
                         .put("city", "Seattle")
                         .put("state", "Washington")
                         .put("zip_code", "98119")
-                        .put("home_phone", "206.547.2600")
                         .put("occupation", "Self-Employed")
-                        .put("emp_name", "Test User")
-                        .put("emp_address1", "123 Abc St")
-                        .put("emp_address2", "Unit 456")
-                        .put("emp_city", "Seattle")
-                        .put("emp_state", "Washington")
-                        .put("emp_zip_code", "98119")
-                        .put("emp_phone", "206.547.2600")
                         .build()
         );
-    }
-    
-    @Test
-    public void checkOrderStatus() {
-    
     }
     
     @Test

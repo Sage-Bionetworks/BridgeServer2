@@ -16,6 +16,7 @@ import static org.testng.Assert.fail;
 
 import java.io.IOException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -71,25 +72,26 @@ public class GBFOrderServiceTest {
     @BeforeMethod
     public void before() throws IOException {
         MockitoAnnotations.initMocks(this);
-
+    
         when(mockBridgeConfig.get(GBF_PLACE_ORDER_URL)).thenReturn(PLACE_URL);
         when(mockBridgeConfig.get(GBF_CONFIRMATION_URL)).thenReturn(CONFIRMATION_URL);
         when(mockBridgeConfig.get(GBF_ORDER_STATUS_URL)).thenReturn(STATUS_URL);
-
+    
         when(mockBridgeConfig.get(GBF_API_KEY)).thenReturn("apiKey");
-
+    
         service.setBridgeConfig(mockBridgeConfig);
     }
-
+    
+    
     @Test
     public void placeOrder() throws IOException {
         Order mockOrder = mock(Order.class);
-
+        
         PlaceOrderResponse response = new PlaceOrderResponse(true, null);
         HttpResponse mockResponse = createMockResponse(response);
-
+        
         doReturn(mockResponse).when(service).postJson(eq(PLACE_URL), any(), any());
-
+        
         service.placeOrder(mockOrder, true);
     
         verify(service).postJson(eq(PLACE_URL), any(), any());
