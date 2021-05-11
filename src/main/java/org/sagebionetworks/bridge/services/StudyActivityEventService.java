@@ -40,6 +40,14 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.validators.Validate;
 
+/**
+ * Activity events that are scoped to a person participating in a specific study. 
+ * Unlike v1 of activity events, these events maintain a history of their changes 
+ * (if they are mutable). They also include some metadata that the earlier event 
+ * system could not maintain, including a client time zone. This API will replace 
+ * the v1 API, so some events that span all studies (like the creation of an 
+ * account) are also in the events returned by this system. 
+ */
 @Component
 public class StudyActivityEventService {
     
@@ -131,33 +139,6 @@ public class StudyActivityEventService {
         return new ResourceList<>(finalEvents); 
     }
     
-    private void makeCreatedOn(List<StudyActivityEvent> outputEvents, DateTime createdOn) { 
-        StudyActivityEvent createdOnEvent = makeSyntheticEvent(CREATED_ON_FIELD, createdOn);
-        outputEvents.add(createdOnEvent);
-    }
-    
-    private void makeStudyStartDate(List<StudyActivityEvent> inputEvents, 
-            List<StudyActivityEvent> outputEvents, DateTime createdOn) {
-        StudyActivityEvent start = makeSyntheticEvent(START_DATE_FIELD, createdOn);
-        StudyActivityEvent timelineRetrieved = findByEventType(inputEvents, TIMELINE_RETRIEVED);
-        if (timelineRetrieved != null) {
-            start.setTimestamp(timelineRetrieved.getTimestamp());
-        } else {
-            StudyActivityEvent enrollment = findByEventType(inputEvents, ENROLLMENT);
-            if (enrollment != null) {
-                start.setTimestamp(enrollment.getTimestamp());
-            }
-        }
-        outputEvents.add(start);
-    }
-    
-    private StudyActivityEvent makeSyntheticEvent(String eventId, DateTime timestamp) {
-        StudyActivityEvent event = new StudyActivityEvent();
-        event.setEventId(eventId);
-        event.setTimestamp(timestamp);
-        return event;
-    }
-    
     public PagedResourceList<StudyActivityEvent> getStudyActivityEventHistory(
             StudyActivityEventRequest request, Integer offsetBy, Integer pageSize) {
         checkNotNull(request);
@@ -199,6 +180,33 @@ public class StudyActivityEventService {
             .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
     }
     
+    private void makeCreatedOn(List<StudyActivityEvent> outputEvents, DateTime createdOn) { 
+        StudyActivityEvent createdOnEvent = makeSyntheticEvent(CREATED_ON_FIELD, createdOn);
+        outputEvents.add(createdOnEvent);
+    }
+    
+    private void makeStudyStartDate(List<StudyActivityEvent> inputEvents, 
+            List<StudyActivityEvent> outputEvents, DateTime createdOn) {
+        StudyActivityEvent start = makeSyntheticEvent(START_DATE_FIELD, createdOn);
+        StudyActivityEvent timelineRetrieved = findByEventType(inputEvents, TIMELINE_RETRIEVED);
+        if (timelineRetrieved != null) {
+            start.setTimestamp(timelineRetrieved.getTimestamp());
+        } else {
+            StudyActivityEvent enrollment = findByEventType(inputEvents, ENROLLMENT);
+            if (enrollment != null) {
+                start.setTimestamp(enrollment.getTimestamp());
+            }
+        }
+        outputEvents.add(start);
+    }
+    
+    private StudyActivityEvent makeSyntheticEvent(String eventId, DateTime timestamp) {
+        StudyActivityEvent event = new StudyActivityEvent();
+        event.setEventId(eventId);
+        event.setTimestamp(timestamp);
+        return event;
+    }
+
     /**
      * If the triggering event is mutable, it will succeed and these events must update as well, so they are 
      * always mutable when this function is called. 

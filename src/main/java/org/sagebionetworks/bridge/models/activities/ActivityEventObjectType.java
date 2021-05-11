@@ -129,6 +129,8 @@ public enum ActivityEventObjectType {
     },
     /**
      * Event records the date the account was created on. This event does not update after creation.
+     * It is present in both global and study-specific APIs, despite the fact that an account spans
+     * all studies in an app.
      */
     CREATED_ON(IMMUTABLE) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
@@ -136,9 +138,12 @@ public enum ActivityEventObjectType {
         }
     },
     /**
-     * A study start date event determined by the date the activities_retrieved or enrollment event are
-     * received. If neither event exists then this event records the date the account was created on. 
-     * Event is not persisted.
+     * A study start date event determined for the global event by the activities_retrieved 
+     * or enrollment event (whichever is more recent) or the account’s createdOn timestamp 
+     * if neither exist. For study-specific events, this is determined by the timeline_retrieved 
+     * or enrollment event (whichever is more recent) or the account’s createdOn timestamp if 
+     * neither exist. Thus, although this event is recorded as “immutable,” it can change
+     * with the recording of the events on which it is calculated. 
      */
     STUDY_START_DATE(IMMUTABLE) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {

@@ -16,13 +16,6 @@ import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 
-/**
- * Activity events that are always scoped to a participant in a specific app, with
- * a history of past timestamps for adherence reporting. The history is presented 
- * separately from the list of most recent timestamps, since the former are of 
- * interest to study coordinators and the latter are of interest to consumers of 
- * the v2 scheduling system.
- */
 @Component
 public class HibernateStudyActivityEventDao implements StudyActivityEventDao {
     

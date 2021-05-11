@@ -20,13 +20,17 @@ public class QueryBuilderTest {
     public void testSimpleParams() {
         QueryBuilder builder = new QueryBuilder();
         builder.append("phrase");
-        builder.append("phrase two=:two", "two", "valueForTwo");
-        builder.append("phrase three=:three four=:four", "three", "valueForThree", "four", "valueForFour");
-
-        assertEquals(builder.getQuery(), "phrase phrase two=:two phrase three=:three four=:four");
+        builder.append("phrase one=:one", "one", "valueForOne");
+        builder.append("phrase two=:two three=:three", "two", "valueForTwo", "three", "valueForThree");
+        builder.append("phrase four=:four five=:five six=:six", "four", "valueForFour",
+                "five", "valueForFive", "six", "valueForSix");
+        assertEquals(builder.getQuery(), "phrase phrase one=:one phrase two=:two three=:three phrase four=:four five=:five six=:six");
+        assertEquals(builder.getParameters().get("one"), "valueForOne");
         assertEquals(builder.getParameters().get("two"), "valueForTwo");
         assertEquals(builder.getParameters().get("three"), "valueForThree");
         assertEquals(builder.getParameters().get("four"), "valueForFour");
+        assertEquals(builder.getParameters().get("five"), "valueForFive");
+        assertEquals(builder.getParameters().get("six"), "valueForSix");
     }
     
     @Test

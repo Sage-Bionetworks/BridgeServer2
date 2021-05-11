@@ -39,7 +39,8 @@ public interface StudyActivityEventDao {
      * Get all timestamps (in a paginated API) for a specific event ID. Note that 
      * for immutable events there should only ever be one timestamp. Returns an 
      * empty PagedResourceList if the event has not yet been recorded for this 
-     * participant.
+     * participant. “Synthetic” or calculated events (study_start_date and 
+     * created_on) are returned by this method.
      */
     PagedResourceList<StudyActivityEvent> getStudyActivityEventHistory(
             String userId, String studyId, String eventId, Integer offsetBy, Integer pageSize);

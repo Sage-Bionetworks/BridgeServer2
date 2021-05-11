@@ -107,8 +107,8 @@ public class DynamoActivityEvent implements ActivityEvent {
             this.timestamp = timestamp;
             return this;
         }
-        public Builder withObjectType(ActivityEventObjectType objectType) {
-            this.objectType = objectType;
+        public Builder withObjectType(ActivityEventObjectType type) {
+            this.objectType = type;
             return this;
         }
         public Builder withObjectId(String objectId) {
