@@ -416,7 +416,8 @@ public class TestUtils {
                 .withNotifyByEmail(true)
                 .withDataGroups(Sets.newHashSet("group1"))
                 .withAttributes(new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build())
-                .withLanguages(ImmutableList.of("fr")).build();
+                .withLanguages(ImmutableList.of("fr"))
+                .withNote("note").build();
     }
 
     public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, ScheduleContext context) {

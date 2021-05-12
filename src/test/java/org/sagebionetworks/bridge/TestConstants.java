@@ -78,7 +78,7 @@ public class TestConstants {
     public static final String EMAIL = "email@email.com";
     public static final String PASSWORD = "password";
     public static final String SESSION_TOKEN = "sessionToken";
-    
+
     public static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");
     public static final String UPLOAD_BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
     
@@ -191,12 +191,12 @@ public class TestConstants {
             .withLastName("lastName1").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
             .withExternalIds(ImmutableMap.of("study1", "externalId1")).withId("id")
             .withStudyIds(ImmutableSet.of("study1", "study2")).withCreatedOn(TIMESTAMP).withStatus(DISABLED)
-            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
+            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).withNote("note1").build();
     public static final AccountSummary SUMMARY2 = new AccountSummary.Builder().withFirstName("firstName2")
             .withLastName("lastName2").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
             .withExternalIds(ImmutableMap.of("study2", "externalId2")).withId("id2")
             .withStudyIds(ImmutableSet.of("study1", "study2")).withCreatedOn(TIMESTAMP).withStatus(ENABLED)
-            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
+            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).withNote("note2").build();
 
     public static final ColorScheme COLOR_SCHEME = new ColorScheme("#000000", "#FFFFFF", "#CCEECC", "#CCCCCC");
     public static final List<Label> LABELS = ImmutableList.of(new Label("en", "English"), new Label("fr", "French"));

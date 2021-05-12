@@ -88,6 +88,7 @@ public class StudyParticipantTest {
         assertEquals(node.get("externalIds").get("studyA").textValue(), "externalIdA");
         assertEquals(node.get("orgMembership").textValue(), TEST_ORG_ID);
         assertEquals(node.get("type").textValue(), "StudyParticipant");
+        assertEquals(node.get("note").textValue(), "note");
         
         JsonNode clientData = node.get("clientData");
         assertTrue(clientData.get("booleanFlag").booleanValue());
@@ -111,7 +112,7 @@ public class StudyParticipantTest {
 
         assertEquals(node.get("attributes").get("A").textValue(), "B");
         assertEquals(node.get("attributes").get("C").textValue(), "D");
-        assertEquals(node.size(), 27);
+        assertEquals(node.size(), 28);
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals(deserParticipant.getFirstName(), "firstName");
@@ -135,6 +136,7 @@ public class StudyParticipantTest {
         assertEquals(deserParticipant.getId(), ACCOUNT_ID);
         assertEquals(deserParticipant.getExternalIds().get("studyA"), "externalIdA");
         assertEquals(deserParticipant.getOrgMembership(), TEST_ORG_ID);
+        assertEquals(deserParticipant.getNote(), "note");
         
         UserConsentHistory deserHistory = deserParticipant.getConsentHistories().get("AAA").get(0);
         assertEquals(deserHistory.getBirthdate(), "2002-02-02");
@@ -193,6 +195,7 @@ public class StudyParticipantTest {
         assertEquals(copy.getStudyIds(), STUDIES);
         assertEquals(copy.getId(), ACCOUNT_ID);
         assertEquals(copy.getClientData(), TestUtils.getClientData());
+        assertEquals(copy.getNote(), "note");
         
         // And they are equal in the Java sense
         assertEquals(copy, participant);
@@ -290,6 +293,10 @@ public class StudyParticipantTest {
     @Test
     public void canCopyOrgMembership() {
         assertCopyField("orgMembership", (builder) -> verify(builder).withOrgMembership(any()));
+    }
+    @Test
+    public void canCopyNote() {
+        assertCopyField("note", (builder) -> verify(builder).withNote(any()));
     }
     
     @Test
@@ -404,7 +411,8 @@ public class StudyParticipantTest {
                 .withStatus(AccountStatus.ENABLED)
                 .withClientData(clientData)
                 .withTimeZone(TIME_ZONE)
-                .withOrgMembership(TEST_ORG_ID);
+                .withOrgMembership(TEST_ORG_ID)
+                .withNote("note");
         
         Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();
         

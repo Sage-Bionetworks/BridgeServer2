@@ -599,3 +599,8 @@ ALTER TABLE `StudyContacts`
 DROP PRIMARY KEY,
 ADD CONSTRAINT PRIMARY KEY (`appId`, `studyId`, `pos`);
 
+-- changeset bridge:32
+
+ALTER TABLE `Accounts`
+ADD COLUMN `note` text;
+

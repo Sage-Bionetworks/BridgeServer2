@@ -26,10 +26,11 @@ public final class AccountSummary {
     private final Set<String> studyIds;
     private final Map<String, String> attributes;
     private final String orgMembership;
+    private final String note;
     
     private AccountSummary(String firstName, String lastName, String email, String synapseUserId, Phone phone,
             Map<String, String> externalIds, String id, DateTime createdOn, AccountStatus status, String appId,
-            Set<String> studyIds, Map<String, String> attributes, String orgMembership) {
+            Set<String> studyIds, Map<String, String> attributes, String orgMembership, String note) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -43,6 +44,7 @@ public final class AccountSummary {
         this.studyIds = studyIds;
         this.attributes = attributes;
         this.orgMembership = orgMembership;
+        this.note = note;
     }
     
     public String getFirstName() {
@@ -108,10 +110,14 @@ public final class AccountSummary {
         return orgMembership;
     }
 
+    public String getNote() {
+        return note;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn, status,
-                appId, studyIds, attributes, orgMembership);
+                appId, studyIds, attributes, orgMembership, note);
     }
 
     @Override
@@ -128,7 +134,8 @@ public final class AccountSummary {
                 && Objects.equals(id, other.id) && Objects.equals(appId, other.appId)
                 && Objects.equals(studyIds, other.studyIds)
                 && Objects.equals(attributes, other.attributes)
-                && Objects.equals(orgMembership, other.orgMembership);
+                && Objects.equals(orgMembership, other.orgMembership)
+                && Objects.equals(note, other.note);
     }
     
     // no toString() method as the information is sensitive.
@@ -146,6 +153,7 @@ public final class AccountSummary {
         private Set<String> studyIds;
         private Map<String, String> attributes;
         private String orgMembership;
+        private String note;
         
         public Builder withAppId(String appId) {
             this.appId = appId;
@@ -199,9 +207,13 @@ public final class AccountSummary {
             this.orgMembership = orgMembership;
             return this;
         }
+        public Builder withNote(String note) {
+            this.note = note;
+            return this;
+        }
         public AccountSummary build() {
             return new AccountSummary(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn,
-                    status, appId, studyIds, attributes, orgMembership);
+                    status, appId, studyIds, attributes, orgMembership, note);
         }
     }
 }

@@ -103,6 +103,7 @@ public class HibernateAccountTest {
         account.setSharingScope(ALL_QUALIFIED_RESEARCHERS);
         account.setNotifyByEmail(true);
         account.setMigrationVersion(3);
+        account.setNote("note");
         
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);
@@ -113,7 +114,7 @@ public class HibernateAccountTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(account);
         assertEquals(node.get("type").textValue(), "Account");
-        assertEquals(node.size(), 19);
+        assertEquals(node.size(), 20);
         assertEquals(node.get("id").textValue(), "id");
         assertEquals(node.get("orgMembership").textValue(), "orgId");
         assertEquals(node.get("email").textValue(), "email");
@@ -134,6 +135,7 @@ public class HibernateAccountTest {
         assertEquals(node.get("version").intValue(), 1);
         assertEquals(toSet(node, "dataGroups"), ImmutableSet.of("group1", "group2"));
         assertEquals(toSet(node, "languages"), ImmutableSet.of("en", "fr"));
+        assertEquals(node.get("note").textValue(), "note");
         
         // these should be null
         assertNull(node.get("appId"));
@@ -268,7 +270,7 @@ public class HibernateAccountTest {
     @Test
     public void accountSummaryConstructor() {
         HibernateAccount account = new HibernateAccount(new DateTime(123L), TEST_APP_ID, TEST_ORG_ID, "firstName",
-                "lastName", "email", PHONE, "id", UNVERIFIED, SYNAPSE_USER_ID);
+                "lastName", "email", PHONE, "id", UNVERIFIED, SYNAPSE_USER_ID, "note");
 
         assertEquals(account.getCreatedOn().getMillis(), 123L);
         assertEquals(account.getAppId(), TEST_APP_ID);
@@ -280,6 +282,7 @@ public class HibernateAccountTest {
         assertEquals(account.getId(), "id");
         assertEquals(account.getStatus(), ENABLED); // thanks to synapseUserId
         assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
+        assertEquals(account.getNote(), "note");
     }
     
     @Test
@@ -448,6 +451,12 @@ public class HibernateAccountTest {
         
         account.setEmailVerified(true);
         assertEquals(account.getStatus(), ENABLED);
+    }
+
+    @Test
+    public void noteDefaultsToNull() {
+        HibernateAccount account = new HibernateAccount();
+        assertNull(account.getNote());
     }
     
     public void statusForPhoneAccountEnabled() {
