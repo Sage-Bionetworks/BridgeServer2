@@ -19,7 +19,6 @@ public class DynamoHealthDataDocumentation implements HealthDataDocumentation {
     String modifiedBy;
     DateTime modifiedOn;
 
-
     @Override
     public String getTitle() {
         return this.title;

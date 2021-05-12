@@ -26,7 +26,11 @@ public class HealthDataDocumentationService {
     public HealthDataDocumentation createOrUpdateHealthDataDocumentation(HealthDataDocumentation documentation) {
         checkNotNull(documentation);
 
-        return healthDataDocumentationDao.createOrUpdateDocumentation(documentation);
+        // s3Helper.writeBytesToS3()
+        // create an s3Key
+        String s3Key = "";
+
+        return healthDataDocumentationDao.createOrUpdateDocumentation(documentation, s3Key);
     }
 
     /** Delete health data documentation for the given identifier. */

@@ -30,7 +30,7 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
 
     /** {@inheritDoc} */
     @Override
-    public HealthDataDocumentation createOrUpdateDocumentation(@Nonnull HealthDataDocumentation documentation) {
+    public HealthDataDocumentation createOrUpdateDocumentation(@Nonnull HealthDataDocumentation documentation, String s3Key) {
         HealthDataDocumentation dynamoDocumentation = (DynamoHealthDataDocumentation) documentation;
 
         if (dynamoDocumentation.getIdentifier() == null) {
@@ -45,6 +45,8 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
             dynamoDocumentation.setModifiedOn(DateTime.now());
             dynamoDocumentation.setModifiedBy("also todo"); // TODO same as above
         }
+
+        dynamoDocumentation.setS3Key(s3Key);
 
         // Save to DynamoDB.
         mapper.save(dynamoDocumentation);
