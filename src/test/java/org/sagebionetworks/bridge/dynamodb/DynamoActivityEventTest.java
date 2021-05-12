@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.activities;
+package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -13,14 +13,15 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 
-public class ActivityEventTest {
+public class DynamoActivityEventTest {
 
     @Test
     public void canConstructSimpleEventId() {

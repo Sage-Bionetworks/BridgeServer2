@@ -768,7 +768,7 @@ public class BridgeUtils {
         return defaultValue;
     }
     
-    public static StudyActivityEvent findByEventType(List<StudyActivityEvent> events, ActivityEventObjectType type) {
+    public static StudyActivityEvent findByEventId(List<StudyActivityEvent> events, ActivityEventObjectType type) {
         String eventId = type.name().toLowerCase();
         for (StudyActivityEvent oneEvent : events) {
             if (oneEvent.getEventId().equals(eventId)) {

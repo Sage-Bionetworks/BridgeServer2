@@ -21,6 +21,7 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.STORMPATH_HMAC_SHA_256;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.services.AccountService.ROTATIONS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -824,12 +825,18 @@ public class AccountServiceTest extends Mockito {
         verify(studyActivityEventService, times(2)).publishEvent(requestCaptor.capture());
         
         StudyActivityEventRequest req1 = requestCaptor.getAllValues().get(0);
+        assertEquals(req1.getAppId(), TEST_APP_ID);
         assertEquals(req1.getStudyId(), STUDY_A);
         assertEquals(req1.getUserId(), TEST_USER_ID);
+        assertEquals(req1.getObjectType(), ENROLLMENT);
+        assertEquals(req1.getTimestamp(), account.getCreatedOn());
         
         StudyActivityEventRequest req2 = requestCaptor.getAllValues().get(1);
+        assertEquals(req2.getAppId(), TEST_APP_ID);
         assertEquals(req2.getStudyId(), STUDY_B);
         assertEquals(req2.getUserId(), TEST_USER_ID);
+        assertEquals(req2.getObjectType(), ENROLLMENT);
+        assertEquals(req2.getTimestamp(), account.getCreatedOn());
     }
 
     @Test
@@ -929,6 +936,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(req.getStudyId(), STUDY_B);
         assertEquals(req.getUserId(), TEST_USER_ID);
         assertEquals(req.getTimestamp(), MOCK_DATETIME);
+        assertEquals(req.getObjectType(), ENROLLMENT);
     }
     
     @Test

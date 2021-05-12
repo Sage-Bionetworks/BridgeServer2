@@ -276,8 +276,8 @@ public class AccountService {
             for (String studyId : newStudies) {
                 studyActivityEventService.publishEvent(new StudyActivityEventRequest()
                         .appId(app.getIdentifier())
-                        .userId(account.getId())
                         .studyId(studyId)
+                        .userId(account.getId())
                         .objectType(ENROLLMENT)
                         .timestamp(account.getModifiedOn()));
             }

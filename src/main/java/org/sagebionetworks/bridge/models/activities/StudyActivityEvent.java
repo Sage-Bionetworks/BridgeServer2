@@ -6,7 +6,6 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -40,9 +39,6 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     private String clientTimeZone;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
-    @Transient
-    @JsonIgnore
-    private ActivityEventUpdateType updateType;
     
     public StudyActivityEvent() {}
     
@@ -99,17 +95,4 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
     }
-    public ActivityEventUpdateType getUpdateType() {
-        return updateType;
-    }
-    public void setUpdateType(ActivityEventUpdateType updateType) {
-        this.updateType = updateType;
-    }
-    @Override
-    public String toString() {
-        return "StudyActivityEvent [appId=" + appId + ", userId=" + userId + ", studyId=" + studyId + ", eventId="
-                + eventId + ", timestamp=" + timestamp + ", answerValue=" + answerValue + ", clientTimeZone="
-                + clientTimeZone + ", createdOn=" + createdOn + ", updateType=" + updateType + "]";
-    }
-    
 }

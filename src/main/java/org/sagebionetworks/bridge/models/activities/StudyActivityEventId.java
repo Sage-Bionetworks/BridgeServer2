@@ -24,13 +24,17 @@ public final class StudyActivityEventId implements Serializable {
     
     public StudyActivityEventId() {}
     
-    public StudyActivityEventId(String userId, String studyId, String eventId, DateTime timestamp) {
+    /**
+     * This constructor is never used (Hibernate instruments the fields directly),
+     * but without it, FindBugs complains.
+     */
+    StudyActivityEventId(String userId, String studyId, String eventId, DateTime timestamp) {
         this.userId = userId;
         this.studyId = studyId;
         this.eventId = eventId;
         this.timestamp = timestamp;
     }
-
+    
     public String getUserId() {
         return userId;
     }

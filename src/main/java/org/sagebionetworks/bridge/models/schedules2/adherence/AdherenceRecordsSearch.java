@@ -193,6 +193,26 @@ public class AdherenceRecordsSearch implements BridgeEntity {
     public SortOrder getSortOrder() {
         return sortOrder;
     }
+    
+    public AdherenceRecordsSearch.Builder toBuilder() {
+        return new AdherenceRecordsSearch.Builder()
+                .withUserId(userId)
+                .withStudyId(studyId)
+                .withInstanceGuids(ImmutableSet.copyOf(instanceGuids))
+                .withInstanceGuidStartedOnMap(ImmutableMap.copyOf(instanceGuidStartedOnMap))
+                .withAssessmentIds(ImmutableSet.copyOf(assessmentIds))
+                .withSessionGuids(ImmutableSet.copyOf(sessionGuids))
+                .withTimeWindowGuids(ImmutableSet.copyOf(timeWindowGuids))
+                .withAdherenceRecordType(adherenceRecordType)
+                .withIncludeRepeats(includeRepeats)
+                .withCurrentTimestampsOnly(currentTimestampsOnly)
+                .withEventTimestamps(ImmutableMap.copyOf(eventTimestamps))
+                .withStartTime(startTime)
+                .withEndTime(endTime)
+                .withOffsetBy(offsetBy)
+                .withPageSize(pageSize)
+                .withSortOrder(sortOrder);
+    }
 
     public static class Builder {
         private String userId;
@@ -211,26 +231,6 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         private Integer offsetBy;
         private Integer pageSize;
         private SortOrder sortOrder;
-        
-        public Builder copyOf(AdherenceRecordsSearch search) {
-            this.userId = search.userId;
-            this.studyId = search.studyId;
-            this.instanceGuids = ImmutableSet.copyOf(search.instanceGuids);
-            this.instanceGuidStartedOnMap = ImmutableMap.copyOf(search.instanceGuidStartedOnMap);
-            this.assessmentIds = ImmutableSet.copyOf(search.assessmentIds);
-            this.sessionGuids = ImmutableSet.copyOf(search.sessionGuids);
-            this.timeWindowGuids = ImmutableSet.copyOf(search.timeWindowGuids);
-            this.adherenceRecordType = search.adherenceRecordType;
-            this.includeRepeats = search.includeRepeats;
-            this.currentTimestampsOnly = search.currentTimestampsOnly;
-            this.eventTimestamps = search.eventTimestamps;
-            this.startTime = search.startTime;
-            this.endTime = search.endTime;
-            this.offsetBy = search.offsetBy;
-            this.pageSize = search.pageSize;
-            this.sortOrder = search.sortOrder;
-            return this;
-        }
         
         public Builder withUserId(String userId) {
             this.userId = userId;

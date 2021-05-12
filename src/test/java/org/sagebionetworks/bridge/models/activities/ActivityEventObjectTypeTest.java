@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SESSION;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_START_DATE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SURVEY;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
@@ -25,6 +26,13 @@ public class ActivityEventObjectTypeTest {
         String retValue = ACTIVITIES_RETRIEVED.getEventId(null, null, null);
         assertEquals(retValue, "activities_retrieved");
         assertEquals(ACTIVITIES_RETRIEVED.getUpdateType(), IMMUTABLE);
+    }
+    
+    @Test
+    public void timelineRetrieved() {
+        String retValue = TIMELINE_RETRIEVED.getEventId(null, null, null);
+        assertEquals(retValue, "timeline_retrieved");
+        assertEquals(TIMELINE_RETRIEVED.getUpdateType(), IMMUTABLE);
     }
     
     @Test

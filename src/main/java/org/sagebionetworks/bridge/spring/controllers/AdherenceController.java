@@ -50,8 +50,7 @@ public class AdherenceController extends BaseController {
         
         AdherenceRecordsSearch payload = parseJson(AdherenceRecordsSearch.class);
         
-        AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
-                .copyOf(payload)
+        AdherenceRecordsSearch search = payload.toBuilder()
                 .withUserId(session.getId())
                 .withStudyId(studyId).build();
         
@@ -65,8 +64,7 @@ public class AdherenceController extends BaseController {
         
         AdherenceRecordsSearch payload = parseJson(AdherenceRecordsSearch.class);
         
-        AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
-                .copyOf(payload)
+        AdherenceRecordsSearch search = payload.toBuilder()
                 .withUserId(userId)
                 .withStudyId(studyId).build();
         

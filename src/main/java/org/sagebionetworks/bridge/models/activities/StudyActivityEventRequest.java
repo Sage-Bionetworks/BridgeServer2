@@ -13,9 +13,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.joda.time.DateTime;
 
 /**
- * We need to accumulate information from the client, information from the 
- * code path, and then put it together to create a StudyActivityEvent with
- * the correct event ID.
+ * Accumulate information from the client, from the code path, and then put it together
+ * to form a valid StudyActivityEvent with the correct event ID and update type.
  */
 public class StudyActivityEventRequest {
 
@@ -30,6 +29,7 @@ public class StudyActivityEventRequest {
     private String objectId;
     private ActivityEventType eventType;
     private ActivityEventUpdateType updateType = IMMUTABLE;
+    private Map<String,ActivityEventUpdateType> customEvents;
     
     public StudyActivityEventRequest() { 
     }
@@ -96,6 +96,10 @@ public class StudyActivityEventRequest {
         this.updateType = updateType;
         return this;
     }
+    public StudyActivityEventRequest customEvents(Map<String,ActivityEventUpdateType> customEvents) {
+        this.customEvents = customEvents;
+        return this;
+    }
     public String getAppId() {
         return appId;
     }
@@ -121,24 +125,18 @@ public class StudyActivityEventRequest {
         return objectType;
     }
     public String getObjectId() {
+        fixUpdateTypeAndObjectId();
         return objectId;
     }
     public ActivityEventType getEventType() {
         return eventType;
     }
     public ActivityEventUpdateType getUpdateType() {
+        fixUpdateTypeAndObjectId();
         return updateType;
     }
-    public StudyActivityEvent toStudyActivityEvent(Map<String,ActivityEventUpdateType> customEvents) {
-        // This will be reformatted by the CUSTOM object type
-        if (objectId != null && objectId.toLowerCase().startsWith("custom:")) {
-            objectId = objectId.substring(7);
-        }
-        updateType = objectType.getUpdateType();
-        if (objectType == CUSTOM) {
-            updateType = customEvents.get(objectId);
-            objectId = formatActivityEventId(customEvents.keySet(), objectId);
-        }
+    public StudyActivityEvent toStudyActivityEvent() {
+        fixUpdateTypeAndObjectId();
         String eventId = objectType.getEventId(objectId, eventType, answerValue);
         
         StudyActivityEvent event = new StudyActivityEvent();
@@ -150,10 +148,19 @@ public class StudyActivityEventRequest {
         event.setAnswerValue(answerValue);
         event.setClientTimeZone(clientTimeZone);
         event.setCreatedOn(createdOn);
-        event.setUpdateType(updateType);
         return event;
     }
-    
+    private void fixUpdateTypeAndObjectId() { 
+        // This will be reformatted by the CUSTOM object type
+        if (objectId != null && objectId.toLowerCase().startsWith("custom:")) {
+            objectId = objectId.substring(7);
+        }
+        updateType = objectType.getUpdateType();
+        if (objectType == CUSTOM && customEvents != null) {
+            updateType = customEvents.get(objectId);
+            objectId = formatActivityEventId(customEvents.keySet(), objectId);
+        }
+    }
     public StudyActivityEventRequest copy() {
         StudyActivityEventRequest copy = new StudyActivityEventRequest();
         copy.appId = appId; 

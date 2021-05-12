@@ -104,27 +104,21 @@ public class AdherenceService {
             if (meta == null) {
                 continue;
             }
+            StudyActivityEventRequest request = new StudyActivityEventRequest()
+                    .appId(appId)
+                    .studyId(record.getStudyId())
+                    .userId(record.getUserId())
+                    .eventType(FINISHED)
+                    .timestamp(record.getFinishedOn());
             if (meta.getAssessmentInstanceGuid() == null) {
-                studyActivityEventService.publishEvent(new StudyActivityEventRequest()
-                        .appId(appId)
-                        .studyId(record.getStudyId())
-                        .userId(record.getUserId())
-                        .objectType(SESSION)
-                        .objectId(meta.getSessionGuid())
-                        .eventType(FINISHED)
-                        .timestamp(record.getFinishedOn()));
+                studyActivityEventService.publishEvent(
+                        request.objectType(SESSION).objectId(meta.getSessionGuid()));
             } else {
                 // Shared and local assessment ID are conceptually different but not 
                 // differentiated for events scheduling. It might be helpful to end
                 // users or we might need to change this.
-                studyActivityEventService.publishEvent(new StudyActivityEventRequest()
-                        .appId(appId)
-                        .studyId(record.getStudyId())
-                        .userId(record.getUserId())
-                        .objectType(ASSESSMENT)
-                        .objectId(meta.getAssessmentId())
-                        .eventType(FINISHED)
-                        .timestamp(record.getFinishedOn()));
+                studyActivityEventService.publishEvent(
+                        request.objectType(ASSESSMENT).objectId(meta.getAssessmentId()));
             }                
         }
     }
@@ -167,7 +161,7 @@ public class AdherenceService {
         if (skipFixes) {
             return search;
         }
-        AdherenceRecordsSearch.Builder builder = new AdherenceRecordsSearch.Builder().copyOf(search);
+        AdherenceRecordsSearch.Builder builder = search.toBuilder();
         
         if (TRUE.equals(search.getCurrentTimestampsOnly()) || !search.getEventTimestamps().isEmpty()) {
             Set<String> customEventIds = appService.getApp(appId).getCustomEvents().keySet();

@@ -31,7 +31,8 @@ public interface StudyActivityEventDao {
      * study. Each eventId is guaranteed to be in the list one time, with the latest 
      * `createdOn` timestamp recorded for that event. If the event has yet to be recorded
      * for this participant, there will be no entry for that event ID in the ResourceList.
-     * Custom events are prefixed with "custom:".
+     * Custom events are prefixed with "custom:". The list returned from this method is 
+     * mutable and additional “synthetic” events can be added to it by the service.
      */
     public List<StudyActivityEvent> getRecentStudyActivityEvents(String userId, String studyId);
     
