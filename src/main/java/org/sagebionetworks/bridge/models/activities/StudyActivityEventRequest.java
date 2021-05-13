@@ -4,7 +4,9 @@ import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -30,6 +32,7 @@ public class StudyActivityEventRequest {
     private ActivityEventType eventType;
     private ActivityEventUpdateType updateType = IMMUTABLE;
     private Map<String,ActivityEventUpdateType> customEvents;
+    private Set<String> eventKeys = new HashSet<>();
     
     public StudyActivityEventRequest() { 
     }
@@ -98,6 +101,11 @@ public class StudyActivityEventRequest {
     }
     public StudyActivityEventRequest customEvents(Map<String,ActivityEventUpdateType> customEvents) {
         this.customEvents = customEvents;
+        this.eventKeys.addAll(this.customEvents.keySet());
+        return this;
+    }
+    public StudyActivityEventRequest autoCustomEvents(Map<String,String> autoCustomEvents) {
+        this.eventKeys.addAll(autoCustomEvents.keySet());
         return this;
     }
     public String getAppId() {
@@ -158,7 +166,7 @@ public class StudyActivityEventRequest {
         updateType = objectType.getUpdateType();
         if (objectType == CUSTOM && customEvents != null) {
             updateType = customEvents.get(objectId);
-            objectId = formatActivityEventId(customEvents.keySet(), objectId);
+            objectId = formatActivityEventId(eventKeys, objectId);
         }
     }
     public StudyActivityEventRequest copy() {

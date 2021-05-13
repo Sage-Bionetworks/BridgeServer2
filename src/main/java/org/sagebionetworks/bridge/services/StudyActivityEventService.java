@@ -145,6 +145,7 @@ public class StudyActivityEventService {
         }
         String appId = request.getAppId();
         request.customEvents(appService.getApp(appId).getCustomEvents());
+        request.autoCustomEvents(appService.getApp(appId).getAutomaticCustomEvents());
         
         String userId = request.getUserId();
         String studyId = request.getStudyId();

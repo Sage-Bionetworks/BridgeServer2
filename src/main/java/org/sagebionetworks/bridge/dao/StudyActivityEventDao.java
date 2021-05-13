@@ -24,7 +24,7 @@ public interface StudyActivityEventDao {
      * `eventTimestamp` field). Returns null if this event has not been persisted for 
      * this user in this study. 
      */
-    public StudyActivityEvent getRecentStudyActivityEvent(String userId, String studyId, String eventId);
+    StudyActivityEvent getRecentStudyActivityEvent(String userId, String studyId, String eventId);
     
     /**
      * Get a non-paginated list of all events recorded for this participant in this 
@@ -34,7 +34,7 @@ public interface StudyActivityEventDao {
      * Custom events are prefixed with "custom:". The list returned from this method is 
      * mutable and additional “synthetic” events can be added to it by the service.
      */
-    public List<StudyActivityEvent> getRecentStudyActivityEvents(String userId, String studyId);
+    List<StudyActivityEvent> getRecentStudyActivityEvents(String userId, String studyId);
     
     /**
      * Get all timestamps (in a paginated API) for a specific event ID. Note that 
