@@ -16,6 +16,7 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
@@ -606,5 +607,23 @@ public class HibernateHelperTest {
         verify(mockQuery).setParameter("a", "b");
         verify(mockQuery).setParameter("c", "d");
         verify(mockQuery).executeUpdate();
+    }
+    
+    @Test
+    public void nativeQuery() {
+        List<Object> resultset = new ArrayList<>();
+        resultset.add(new Object[8]);
+        resultset.add(new Object[8]);
+        
+        NativeQuery<Object> mockQuery = mock(NativeQuery.class);
+        when(mockSession.createNativeQuery(QUERY)).thenReturn(mockQuery);
+        when(mockQuery.getResultList()).thenReturn(resultset);
+        
+        List<Object[]> retValue = helper.nativeQuery(QUERY, ImmutableMap.of("a", "b", "c", "d"));
+        assertSame(retValue, resultset);
+        
+        verify(mockQuery).setParameter("a", "b");
+        verify(mockQuery).setParameter("c", "d");
+        verify(mockQuery).getResultList();
     }
 }

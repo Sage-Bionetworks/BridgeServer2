@@ -6,6 +6,7 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -39,12 +40,15 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     private String clientTimeZone;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
+    @Transient
+    private int recordCount;
     
     public StudyActivityEvent() {}
     
     public StudyActivityEvent(String eventId, DateTime timestamp) {
         this.eventId = eventId;
         this.timestamp = timestamp;
+        this.recordCount = 1;
     }
     
     public String getAppId() {
@@ -94,5 +98,11 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     }
     public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
+    }
+    public int getRecordCount() {
+        return recordCount;
+    }
+    public void setRecordCount(int recordCount) {
+        this.recordCount = recordCount;
     }
 }

@@ -15,11 +15,14 @@ import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
+import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
+import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -75,17 +78,14 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
     
     @Test
     public void getRecentStudyActivityEvents() { 
-        List<StudyActivityEvent> list = ImmutableList.of(
-                new StudyActivityEvent(), new StudyActivityEvent());
-        when(mockHelper.nativeQueryGet(any(), any(), any(), any(), eq(StudyActivityEvent.class)))
-            .thenReturn(list);
+        List<Object[]> list = ImmutableList.of(new Object[8], new Object[8]);
+        when(mockHelper.nativeQuery(any(), any())).thenReturn(list);
         
         List<StudyActivityEvent> retValue = dao.getRecentStudyActivityEvents(
                 TEST_USER_ID, TEST_STUDY_ID);
-        assertSame(retValue, list);
+        assertSame(retValue.size(), 2);
         
-        verify(mockHelper).nativeQueryGet(eq(GET_RECENT_SQL), 
-                paramsCaptor.capture(), eq(null), eq(null), eq(StudyActivityEvent.class));
+        verify(mockHelper).nativeQuery(eq(GET_RECENT_SQL), paramsCaptor.capture());
         Map<String,Object> params = paramsCaptor.getValue();
         assertEquals(params.get(USER_ID_FIELD), TEST_USER_ID);
         assertEquals(params.get(STUDY_ID_FIELD), TEST_STUDY_ID);
@@ -93,23 +93,25 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
     
     @Test
     public void getRecentStudyActivityEvent() {
-        StudyActivityEvent event1 = new StudyActivityEvent();
-        event1.setEventId("custom:event1");
-        event1.setTimestamp(CREATED_ON);
+        List<Object[]> results = new ArrayList<>();
+        Object[] arr1 = new Object[8];
+        arr1[3] = "custom:event1";
+        arr1[4] = BigInteger.valueOf(CREATED_ON.getMillis());
+        arr1[7] = BigInteger.valueOf(new DateTime().getMillis());
+        results.add(arr1);
+        Object[] arr2 = new Object[8];
+        arr2[3] = "custom:event2";
+        arr2[4] = BigInteger.valueOf(MODIFIED_ON.getMillis());
+        arr2[7] = BigInteger.valueOf(new DateTime().getMillis());
+        results.add(arr2);
         
-        StudyActivityEvent event2 = new StudyActivityEvent();
-        event2.setEventId("custom:event2");
-        event2.setTimestamp(MODIFIED_ON);
-        
-        when(mockHelper.nativeQueryGet(any(), any(), any(), any(), eq(StudyActivityEvent.class)))
-            .thenReturn(ImmutableList.of(event1, event2));
+        when(mockHelper.nativeQuery(any(), any())).thenReturn(ImmutableList.of(arr1, arr2));
         
         StudyActivityEvent retValue = dao.getRecentStudyActivityEvent(
                 TEST_USER_ID, TEST_STUDY_ID, "custom:event2");
-        assertSame(retValue, event2);
+        assertSame(retValue.getEventId(), "custom:event2");
         
-        verify(mockHelper).nativeQueryGet(eq(GET_RECENT_SQL), paramsCaptor.capture(), 
-                eq(null), eq(null), eq(StudyActivityEvent.class));
+        verify(mockHelper).nativeQuery(eq(GET_RECENT_SQL), paramsCaptor.capture());
         Map<String,Object> params = paramsCaptor.getValue();
         assertEquals(params.get(USER_ID_FIELD), TEST_USER_ID);
         assertEquals(params.get(STUDY_ID_FIELD), TEST_STUDY_ID);

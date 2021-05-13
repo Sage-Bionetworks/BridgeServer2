@@ -195,7 +195,7 @@ public class StudyActivityEventService {
             String triggerEventId = autoEventSpec.getLeft();
             
             // enrollment, activities_retrieved, or any of the custom:* events defined by the user.
-            if (eventId.toLowerCase().equals(triggerEventId)) {
+            if (eventId.equals(triggerEventId)) {
                 Period automaticEventDelay = Period.parse(autoEventSpec.getRight());
                 DateTime automaticEventTime = new DateTime(request.getTimestamp()).plus(automaticEventDelay);
                 

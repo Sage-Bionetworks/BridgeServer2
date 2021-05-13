@@ -171,15 +171,4 @@ public class TimelineMetadata implements BridgeEntity {
     public void setAppId(String appId) {
         this.appId = appId;
     }
-
-    @Override
-    public String toString() {
-        return "TimelineMetadata [guid=" + guid + ", assessmentInstanceGuid=" + assessmentInstanceGuid
-                + ", assessmentGuid=" + assessmentGuid + ", assessmentId=" + assessmentId + ", assessmentRevision="
-                + assessmentRevision + ", sessionInstanceGuid=" + sessionInstanceGuid + ", sessionGuid=" + sessionGuid
-                + ", sessionStartEventId=" + sessionStartEventId + ", sessionInstanceStartDay="
-                + sessionInstanceStartDay + ", sessionInstanceEndDay=" + sessionInstanceEndDay + ", timeWindowGuid="
-                + timeWindowGuid + ", scheduleGuid=" + scheduleGuid + ", scheduleModifiedOn=" + scheduleModifiedOn
-                + ", schedulePublished=" + schedulePublished + ", appId=" + appId + "]";
-    }
 }

@@ -1,15 +1,18 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 
 import javax.annotation.Resource;
 
+import org.joda.time.DateTime;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
@@ -26,13 +29,15 @@ public class HibernateStudyActivityEventDao implements StudyActivityEventDao {
     static final String DELETE_SQL = "DELETE FROM StudyActivityEvents " +
             "WHERE userId = :userId AND studyId = :studyId AND eventId = :eventId";
     
-    // Is there a better way to get this than a subselect? Apparently not in MySQL
-    static final String GET_RECENT_SQL = "SELECT * FROM StudyActivityEvents AS " +
-            "sae WHERE userId = :userId AND studyId = :studyId AND createdOn = " +
-            "(SELECT createdOn FROM StudyActivityEvents WHERE userId = :userId " +
-            "AND studyId = :studyId AND eventId = sae.eventId ORDER BY " +
-            "createdOn DESC LIMIT 1) ORDER BY createdOn DESC";
-    
+    // Is there a better way to get this than two subselects? Apparently not in MySQL
+    static final String GET_RECENT_SQL = "SELECT *, (SELECT count(*) as total FROM " +
+            "StudyActivityEvents WHERE eventId = sae.eventId AND studyId = :studyId " +
+            "AND userId = :userId GROUP BY eventId) FROM StudyActivityEvents AS sae " +
+            "WHERE userId = :userId AND studyId = :studyId AND createdOn = (SELECT " +
+            "createdOn FROM StudyActivityEvents WHERE userId = :userId AND studyId = " +
+            ":studyId AND eventId = sae.eventId ORDER BY createdOn DESC LIMIT 1) " +
+            "ORDER BY eventId";
+
     static final String HISTORY_SQL = "FROM StudyActivityEvents WHERE " +
             "userId = :userId AND studyId = :studyId AND eventId = :eventId " +
             "ORDER BY createdOn DESC";
@@ -70,8 +75,42 @@ public class HibernateStudyActivityEventDao implements StudyActivityEventDao {
         QueryBuilder builder = new QueryBuilder();
         builder.append(GET_RECENT_SQL, USER_ID_FIELD, userId, STUDY_ID_FIELD, studyId);
         
-        return helper.nativeQueryGet(builder.getQuery(), 
-                builder.getParameters(), null, null, StudyActivityEvent.class);
+        List<Object[]> results = helper.nativeQuery(builder.getQuery(), builder.getParameters());
+        return results.stream().map(HibernateStudyActivityEventDao::construct)
+                .collect(toList());
+    }
+    
+    /**
+     * The field requiring this unusual constructions is the subselect of total records
+     * for a given eventID..this is no harder than making a @ResultSetMapping to get 
+     * the total subselect, so I went this route.
+     */
+    private static StudyActivityEvent construct(Object[] record) {
+        StudyActivityEvent event = new StudyActivityEvent();
+        event.setAppId(toString(record[0]));
+        event.setUserId(toString(record[1]));
+        event.setStudyId(toString(record[2]));
+        event.setEventId(toString(record[3]));
+        event.setTimestamp(toDateTime(record[4]));
+        event.setAnswerValue(toString(record[5]));
+        event.setClientTimeZone(toString(record[6]));
+        event.setCreatedOn(toDateTime(record[7]));
+        if (record.length > 8) {
+            event.setRecordCount(toInt(record[8]));    
+        }
+        return event;
+    }
+    
+    private static int toInt(Object obj) {
+        return (obj == null) ? -1 : ((BigInteger)obj).intValue();
+    }
+    
+    private static String toString(Object obj) {
+        return (obj == null) ? null : (String)obj;
+    }
+
+    private static DateTime toDateTime(Object obj) {
+        return (obj == null) ? null : new DateTime( ((BigInteger)obj).longValue() );
     }
     
     @Override

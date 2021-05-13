@@ -28,14 +28,16 @@ public class StudyActivityEventTest {
         event.setAnswerValue("my answer");
         event.setClientTimeZone("America/Los_Angeles");
         event.setCreatedOn(CREATED_ON);
+        event.setRecordCount(10);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(event);
-        assertEquals(node.size(), 6);
+        assertEquals(node.size(), 7);
         assertEquals(node.get("eventId").textValue(), "eventKey");
         assertEquals(node.get("timestamp").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("answerValue").textValue(), "my answer");
         assertEquals(node.get("clientTimeZone").textValue(), "America/Los_Angeles");
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
+        assertEquals(node.get("recordCount").intValue(), 10);
         assertEquals(node.get("type").textValue(), "ActivityEvent");
     }
     
