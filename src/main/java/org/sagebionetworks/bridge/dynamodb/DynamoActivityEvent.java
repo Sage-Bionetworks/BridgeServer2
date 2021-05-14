@@ -60,7 +60,7 @@ public class DynamoActivityEvent implements ActivityEvent {
     }
     @Override
     @JsonSerialize(using = DateTimeSerializer.class)
-    @DynamoDBTypeConverted(converter = DateTimeMarshaller.class)
+    @DynamoDBTypeConverted(converter = DateTimeToLongMarshaller.class)
     public DateTime getTimestamp() {
         return timestamp;
     }
