@@ -144,7 +144,7 @@ public class GBFOrderServiceTest {
         ArgumentCaptor<CheckOrderStatusRequest> captor = ArgumentCaptor.forClass(CheckOrderStatusRequest.class);
         doReturn(mockResponse).when(service).postJson(eq(STATUS_URL), any(), captor.capture());
     
-        CheckOrderStatusResponse result = service.checkOrderStatus(order1, order2);
+        service.checkOrderStatus(order1, order2);
     
         verify(service).handleGbfHttpStatusErrors(any());
     
@@ -270,11 +270,5 @@ public class GBFOrderServiceTest {
         String phone = "206.547.2600";
         Phone p = new Phone(phone, "US");
         assertTrue(Phone.isValid(p));
-        System.out.println(p.getNumber());
-        System.out.println(p.getRegionCode());
-        System.out.println(p.getNationalFormat());
-
-        System.out.println(p);
-
     }
 }

@@ -5,9 +5,12 @@ import static javax.persistence.CascadeType.PERSIST;
 import static javax.persistence.FetchType.EAGER;
 import static org.sagebionetworks.bridge.models.TagUtils.toTagSet;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -20,7 +23,11 @@ import javax.persistence.Version;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
+import org.sagebionetworks.bridge.hibernate.LabelListConverter;
+import org.sagebionetworks.bridge.json.BridgeTypeName;
+import org.sagebionetworks.bridge.hibernate.ColorSchemeConverter;
 import org.sagebionetworks.bridge.hibernate.CustomizationFieldsConverter;
+import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 
@@ -29,11 +36,15 @@ import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
  * the Bridge system.
  */
 @Entity
+// This annotation is necessary so a constraint violation exception involving an 
+// assessment displays the correct message without exposing the Hibernate implementation.
+@BridgeTypeName("Assessment")
 @Table(name = "Assessments")
 public class HibernateAssessment {
     
     public static HibernateAssessment create(String appId, Assessment dto) {
         HibernateAssessment assessment = new HibernateAssessment();
+        assessment.setAppId(appId);
         assessment.setGuid(dto.getGuid());
         assessment.setAppId(appId);
         assessment.setIdentifier(dto.getIdentifier());
@@ -48,6 +59,8 @@ public class HibernateAssessment {
         assessment.setOwnerId(dto.getOwnerId());
         assessment.setTags(toTagSet(dto.getTags()));
         assessment.setCustomizationFields(dto.getCustomizationFields());
+        assessment.setColorScheme(dto.getColorScheme());
+        assessment.getLabels().addAll(dto.getLabels());
         assessment.setCreatedOn(dto.getCreatedOn());
         assessment.setModifiedOn(dto.getModifiedOn());
         assessment.setDeleted(dto.isDeleted());
@@ -65,7 +78,7 @@ public class HibernateAssessment {
     private String validationStatus;
     private String normingStatus;
     private Integer minutesToComplete;
-    // same constants used in BridgeServer2
+    // same constants used in OperatingSystem
     private String osName;
     
     // For imported assessments, they retain a link to the assessment they
@@ -93,6 +106,13 @@ public class HibernateAssessment {
     
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime modifiedOn;
+    
+    @Convert(converter = ColorSchemeConverter.class)
+    private ColorScheme colorScheme;
+    
+    @Column(columnDefinition = "text", name = "labels", nullable = true)
+    @Convert(converter = LabelListConverter.class)
+    private List<Label> labels;
     
     private boolean deleted;
     
@@ -188,7 +208,22 @@ public class HibernateAssessment {
     }
     public void setModifiedOn(DateTime modifiedOn) {
         this.modifiedOn = modifiedOn;
-    }    
+    }
+    public ColorScheme getColorScheme() {
+        return colorScheme;
+    }
+    public void setColorScheme(ColorScheme colorScheme) {
+        this.colorScheme = colorScheme;
+    }
+    public List<Label> getLabels() {
+        if (labels == null) {
+            labels = new ArrayList<>();
+        }
+        return labels;
+    }
+    public void setLabels(List<Label> labels) {
+        this.labels = labels;
+    }
     public boolean isDeleted() {
         return deleted;
     }

@@ -1,9 +1,11 @@
 package org.sagebionetworks.bridge.models.assessments;
 
+import static org.sagebionetworks.bridge.TestConstants.COLOR_SCHEME;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.CUSTOMIZATION_FIELDS;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.LABELS;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
@@ -53,6 +55,8 @@ public class AssessmentTest {
         assessment.setNormingStatus("normingStatus");
         assessment.setTags(TAGS);
         assessment.setCustomizationFields(CUSTOMIZATION_FIELDS);
+        assessment.setLabels(LABELS);
+        assessment.setColorScheme(COLOR_SCHEME);
         assessment.setCreatedOn(CREATED_ON);
         assessment.setModifiedOn(MODIFIED_ON);
         assessment.setDeleted(true);
@@ -78,7 +82,7 @@ public class AssessmentTest {
         Assessment dto = createAssessment();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(dto);
-        assertEquals(node.size(), 18);
+        assertEquals(node.size(), 20);
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
         assertEquals(node.get("revision").intValue(), 5);
@@ -89,6 +93,8 @@ public class AssessmentTest {
         assertEquals(node.get("originGuid").textValue(), "originGuid");
         assertEquals(node.get("validationStatus").textValue(), "validationStatus");
         assertEquals(node.get("normingStatus").textValue(), "normingStatus");
+        assertEquals(node.get("colorScheme").get("background").textValue(), "#000000");
+        assertEquals(node.get("colorScheme").get("foreground").textValue(), "#FFFFFF");
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("modifiedOn").textValue(), MODIFIED_ON.toString());
         assertTrue(node.get("deleted").booleanValue());
@@ -137,6 +143,8 @@ public class AssessmentTest {
         dto.setMinutesToComplete(10);
         dto.setTags(STRING_TAGS);
         dto.setCustomizationFields(CUSTOMIZATION_FIELDS);
+        dto.setLabels(LABELS);
+        dto.setColorScheme(COLOR_SCHEME);
         dto.setCreatedOn(CREATED_ON);
         dto.setModifiedOn(MODIFIED_ON);
         dto.setDeleted(true);
@@ -157,6 +165,14 @@ public class AssessmentTest {
         assertEquals(assessment.getNormingStatus(), "normingStatus");
         assertEquals(assessment.getTags(), ImmutableSet.of("tag1", "tag2"));
         assertEquals(assessment.getCustomizationFields(), CUSTOMIZATION_FIELDS);
+        assertEquals(assessment.getLabels().get(0).getLang(), LABELS.get(0).getLang());
+        assertEquals(assessment.getLabels().get(0).getValue(), LABELS.get(0).getValue());
+        assertEquals(assessment.getLabels().get(1).getLang(), LABELS.get(1).getLang());
+        assertEquals(assessment.getLabels().get(1).getValue(), LABELS.get(1).getValue());
+        assertEquals(assessment.getColorScheme().getBackground(), COLOR_SCHEME.getBackground());
+        assertEquals(assessment.getColorScheme().getForeground(), COLOR_SCHEME.getForeground());
+        assertEquals(assessment.getColorScheme().getActivated(), COLOR_SCHEME.getActivated());
+        assertEquals(assessment.getColorScheme().getInactivated(), COLOR_SCHEME.getInactivated());
         assertEquals(assessment.getCreatedOn(), CREATED_ON);
         assertEquals(assessment.getModifiedOn(), MODIFIED_ON);
         assertTrue(assessment.isDeleted());

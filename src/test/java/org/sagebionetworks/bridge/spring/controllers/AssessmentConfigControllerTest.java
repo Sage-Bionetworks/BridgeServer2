@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -122,7 +123,7 @@ public class AssessmentConfigControllerTest extends Mockito {
     
     @Test
     public void customizeAssessmentConfig() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         AssessmentConfig config = new AssessmentConfig();
         config.setConfig(TestUtils.getClientData());
@@ -144,7 +145,7 @@ public class AssessmentConfigControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void customizeAssessmentConfigRejectsSharedApp() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         session.setAppId(SHARED_APP_ID);
         
         Map<String, Map<String, JsonNode>> updates = new HashMap<>();
@@ -158,7 +159,7 @@ public class AssessmentConfigControllerTest extends Mockito {
     // so in this call we use a different ObjectMapper to capture these.
     @Test
     public void customizeAsessmentConfigPreservesNulls() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         Map<String, Map<String, JsonNode>> updates = new HashMap<>();
         

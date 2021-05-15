@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
@@ -76,7 +75,6 @@ public class UploadService {
     private UploadSessionCredentialsService uploadCredentailsService;
     private UploadDedupeDao uploadDedupeDao;
     private UploadValidationService uploadValidationService;
-    private Validator validator;
 
     // These parameters can be overriden to facilitate testing.
     // By default, we sleep 5 seconds, including right at the start and end. This means on our 7th iteration,
@@ -134,11 +132,6 @@ public class UploadService {
         this.uploadValidationService = uploadValidationService;
     }
 
-    @Autowired
-    public void setValidator(UploadValidator validator) {
-        this.validator = validator;
-    }
-
     /**
      * Number of iterations while polling for validation status before we time out. This is used primarily by tests to
      * reduce the amount of wait time during tests.
@@ -156,7 +149,7 @@ public class UploadService {
     }
 
     public UploadSession createUpload(String appId, StudyParticipant participant, UploadRequest uploadRequest) {
-        Validate.entityThrowingException(validator, uploadRequest);
+        Validate.entityThrowingException(UploadValidator.INSTANCE, uploadRequest);
 
         // Check to see if upload is a dupe, and if it is, get the upload status.
         String uploadMd5 = uploadRequest.getContentMd5();

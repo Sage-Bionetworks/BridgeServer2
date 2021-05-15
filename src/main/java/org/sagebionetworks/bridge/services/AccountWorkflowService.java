@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -50,8 +51,6 @@ import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.util.TriConsumer;
 import org.sagebionetworks.bridge.validators.Validate;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -251,8 +250,10 @@ public class AccountWorkflowService {
         checkNotNull(accountId);
         
         App app = appService.getApp(accountId.getAppId());
-        Account account = accountService.getAccount(accountId);
+        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
         if (account != null) {
+            RequestContext.acquireAccountIdentity(account);
+            
             if (type == ChannelType.EMAIL) {
                 sendEmailVerificationToken(app, account.getId(), account.getEmail());
             } else if (type == ChannelType.PHONE) {
@@ -276,10 +277,9 @@ public class AccountWorkflowService {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
         App app = appService.getApp(data.getAppId());
-        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), data.getUserId()));
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(AccountId.forId(app.getIdentifier(), data.getUserId()))
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
         if (type == ChannelType.EMAIL && TRUE.equals(account.getEmailVerified())) {
             throw new BadRequestException(String.format(ALREADY_VERIFIED, "email address"));
         } else if (type == ChannelType.PHONE && TRUE.equals(account.getPhoneVerified())) {
@@ -301,7 +301,7 @@ public class AccountWorkflowService {
         checkNotNull(app);
         checkNotNull(accountId);
 
-        Account account = accountService.getAccount(accountId);
+        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
         if (account == null) {
             return;
         }
@@ -310,6 +310,8 @@ public class AccountWorkflowService {
         boolean sendEmail = app.isEmailVerificationEnabled() && !app.isAutoVerificationEmailSuppressed();
         boolean sendPhone = !app.isAutoVerificationPhoneSuppressed();
         
+        RequestContext.acquireAccountIdentity(account);
+
         if (verifiedEmail && sendEmail) {
             TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_ACCOUNT_EXISTS);
             sendPasswordResetRelatedEmail(app, account.getEmail(), true, revision);
@@ -331,7 +333,7 @@ public class AccountWorkflowService {
         checkNotNull(accountId);
         checkArgument(app.getIdentifier().equals(accountId.getAppId()));
         
-        Account account = accountService.getAccount(accountId);
+        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
         // We are going to change the status of the account if this succeeds, so we must also
         // ignore disabled accounts.
         if (account != null && account.getStatus() != AccountStatus.DISABLED) {
@@ -394,7 +396,7 @@ public class AccountWorkflowService {
         String sptoken = getNextToken();
         
         CacheKey cacheKey = CacheKey.passwordResetForPhone(sptoken, app.getIdentifier());
-        cacheProvider.setObject(cacheKey, getPhoneString(phone), VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
+        cacheProvider.setObject(cacheKey, phone, VERIFY_OR_RESET_EXPIRE_IN_SECONDS);
         
         String url = getShortResetPasswordURL(app, sptoken);
         
@@ -451,10 +453,9 @@ public class AccountWorkflowService {
         } else {
             throw new BridgeServiceException("Could not reset password");
         }
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
         accountService.changePassword(account, channelType, passwordReset.getPassword());
     }
     
@@ -538,7 +539,7 @@ public class AccountWorkflowService {
         }
 
         // check that the account exists, return quietly if not to prevent account enumeration attacks
-        Account account = accountService.getAccount(signIn.getAccountId());
+        Account account = accountService.getAccountNoFilter(signIn.getAccountId()).orElse(null);
         if (account == null) {
             try {
                 // The not found case returns *much* faster than the normal case. To prevent account enumeration 
@@ -571,6 +572,8 @@ public class AccountWorkflowService {
             token = tokenSupplier.get();
             cacheProvider.setObject(cacheKey, token, SIGNIN_EXPIRE_IN_SECONDS);
         }
+        
+        RequestContext.acquireAccountIdentity(account);
 
         messageSender.accept(app, account, token);
         atomicLong.set(System.currentTimeMillis()-startTime);
@@ -578,6 +581,10 @@ public class AccountWorkflowService {
         return account.getId();
     }
 
+    // It looks like for migration reasons, we double serialize and double deserialize the verification
+    // data packet. We'd like to stop this but at the time of deployment, this would break for anyone
+    // in the middle of verification. 
+    
     private void saveVerification(String sptoken, VerificationData data) {
         checkArgument(isNotBlank(sptoken));
         checkNotNull(data);
@@ -606,14 +613,6 @@ public class AccountWorkflowService {
         }
         return null;
     }    
-    
-    private String getPhoneString(Phone phone) {
-        try {
-            return BridgeObjectMapper.get().writeValueAsString(phone);
-        } catch (JsonProcessingException e) {
-            throw new BridgeServiceException(e);
-        }
-    }
     
     // Provided via accessor so it can be mocked for tests
     protected String getNextToken() {

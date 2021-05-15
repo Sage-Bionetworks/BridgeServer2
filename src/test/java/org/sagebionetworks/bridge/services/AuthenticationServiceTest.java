@@ -31,6 +31,7 @@ import static org.testng.Assert.fail;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.mockito.ArgumentCaptor;
@@ -77,6 +78,7 @@ import org.sagebionetworks.bridge.models.oauth.OAuthAuthorizationToken;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.accounts.PasswordReset;
 import org.sagebionetworks.bridge.models.accounts.GeneratedPassword;
+import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -170,6 +172,8 @@ public class AuthenticationServiceTest {
     private SponsorService sponsorService;
     @Mock
     private AccountSecretDao accountSecretDao;
+    @Mock 
+    private StudyService studyService;
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
     @Captor
@@ -240,7 +244,7 @@ public class AuthenticationServiceTest {
         UserSession session = service.signIn(app, context, EMAIL_PASSWORD_SIGN_IN);
         
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
-        inOrder.verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(accountService).deleteReauthToken(account);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
         inOrder.verify(cacheProvider).setUserSession(session);
         
@@ -320,7 +324,7 @@ public class AuthenticationServiceTest {
             session = e.getUserSession();
         }
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
-        inOrder.verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(accountService).deleteReauthToken(account);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
         inOrder.verify(cacheProvider).setUserSession(session);
         
@@ -430,9 +434,12 @@ public class AuthenticationServiceTest {
         session.setAppId(TEST_APP_ID);
         session.setReauthToken(TOKEN);
         session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").withId(USER_ID).build());
+        
+        when(accountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        
         service.signOut(session);
         
-        verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        verify(accountService).deleteReauthToken(account);
         verify(cacheProvider).removeSession(session);
     }
     
@@ -443,13 +450,28 @@ public class AuthenticationServiceTest {
         verify(accountService, never()).deleteReauthToken(any());
         verify(cacheProvider, never()).removeSession(any());
     }
+    
+    @Test
+    public void signOutNoAccount() {
+        UserSession session = new UserSession();
+        session.setAppId(TEST_APP_ID);
+        session.setReauthToken(TOKEN);
+        session.setParticipant(new StudyParticipant.Builder().withEmail("email@email.com").withId(USER_ID).build());
+
+        when(accountService.getAccountNoFilter(any())).thenReturn(Optional.empty());
+        
+        service.signOut(session);
+        
+        verify(accountService, never()).deleteReauthToken(any());
+        verify(cacheProvider, never()).removeSession(any());
+    }
 
     @Test
     public void emailSignIn() {
         account.setId(USER_ID);
         account.setReauthToken(REAUTH_TOKEN);
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
-        doReturn(account).when(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(Optional.of(account)).when(accountService).getAccountNoFilter(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(PARTICIPANT).when(participantService).getParticipant(app, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
@@ -459,9 +481,9 @@ public class AuthenticationServiceTest {
         assertEquals(retSession.getReauthToken(), REAUTH_TOKEN);
 
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
-        inOrder.verify(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
+        inOrder.verify(accountService).getAccountNoFilter(SIGN_IN_WITH_EMAIL.getAccountId());
         inOrder.verify(accountService).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
-        inOrder.verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(accountService).deleteReauthToken(account);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
         inOrder.verify(cacheProvider).setUserSession(retSession);
         inOrder.verify(cacheProvider).setExpiration(CACHE_KEY_EMAIL_SIGNIN,
@@ -480,7 +502,7 @@ public class AuthenticationServiceTest {
         when(cacheProvider.getObject(CACHE_KEY_SIGNIN_TO_SESSION, String.class)).thenReturn(SESSION_TOKEN);
         when(cacheProvider.getUserSession(SESSION_TOKEN)).thenReturn(null);
 
-        doReturn(account).when(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(Optional.of(account)).when(accountService).getAccountNoFilter(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(PARTICIPANT).when(participantService).getParticipant(app, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
@@ -490,9 +512,9 @@ public class AuthenticationServiceTest {
         assertEquals(retSession.getReauthToken(), REAUTH_TOKEN);
 
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
-        inOrder.verify(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
+        inOrder.verify(accountService).getAccountNoFilter(SIGN_IN_WITH_EMAIL.getAccountId());
         inOrder.verify(accountService).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
-        inOrder.verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(accountService).deleteReauthToken(account);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
         inOrder.verify(cacheProvider).setUserSession(retSession);
         inOrder.verify(cacheProvider).setExpiration(CACHE_KEY_EMAIL_SIGNIN,
@@ -513,7 +535,7 @@ public class AuthenticationServiceTest {
         cachedSession.setConsentStatuses(CONSENTED_STATUS_MAP);
         when(cacheProvider.getUserSession(SESSION_TOKEN)).thenReturn(cachedSession);
 
-        doReturn(account).when(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(Optional.of(account)).when(accountService).getAccountNoFilter(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(PARTICIPANT).when(participantService).getParticipant(app, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
@@ -521,7 +543,7 @@ public class AuthenticationServiceTest {
         assertNotNull(retSession);
 
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
-        inOrder.verify(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
+        inOrder.verify(accountService).getAccountNoFilter(SIGN_IN_WITH_EMAIL.getAccountId());
         inOrder.verify(accountService).verifyChannel(AuthenticationService.ChannelType.EMAIL, account);
 
         // Because we got the cached session, we don't do certain operations.
@@ -570,7 +592,7 @@ public class AuthenticationServiceTest {
         account.setStatus(AccountStatus.DISABLED);
 
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
-        doReturn(account).when(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(Optional.of(account)).when(accountService).getAccountNoFilter(SIGN_IN_WITH_EMAIL.getAccountId());
 
         service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
     }
@@ -581,7 +603,7 @@ public class AuthenticationServiceTest {
                 .build();
 
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
-        doReturn(account).when(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(Optional.of(account)).when(accountService).getAccountNoFilter(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(participant).when(participantService).getParticipant(app, account, false);
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
@@ -601,7 +623,7 @@ public class AuthenticationServiceTest {
 
         doReturn(participant).when(participantService).getParticipant(app, account, false);
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
-        doReturn(account).when(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
+        doReturn(Optional.of(account)).when(accountService).getAccountNoFilter(SIGN_IN_WITH_EMAIL.getAccountId());
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         // Does not throw a consent required exception because the participant is an admin.
@@ -807,7 +829,7 @@ public class AuthenticationServiceTest {
                 .withFirstName("Test").withLastName("Tester").withPhone(TestConstants.PHONE).build();
         doReturn(participant).when(participantService).getParticipant(app, account, false);
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
-        doReturn(account).when(accountService).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
+        doReturn(Optional.of(account)).when(accountService).getAccountNoFilter(SIGN_IN_WITH_PHONE.getAccountId());
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
         // Execute and validate.
@@ -819,9 +841,9 @@ public class AuthenticationServiceTest {
 
         // this doesn't pass if our mock calls above aren't executed, but verify these:
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
-        inOrder.verify(accountService).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
+        inOrder.verify(accountService).getAccountNoFilter(SIGN_IN_WITH_PHONE.getAccountId());
         inOrder.verify(accountService).verifyChannel(ChannelType.PHONE, account);
-        inOrder.verify(accountService).deleteReauthToken(ACCOUNT_ID);
+        inOrder.verify(accountService).deleteReauthToken(account);
         inOrder.verify(cacheProvider).removeSessionByUserId(USER_ID);
         inOrder.verify(cacheProvider).setUserSession(session);
         inOrder.verify(cacheProvider).setExpiration(CACHE_KEY_PHONE_SIGNIN,
@@ -835,7 +857,7 @@ public class AuthenticationServiceTest {
         account.setId(USER_ID);
 
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
-        doReturn(account).when(accountService).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
+        doReturn(Optional.of(account)).when(accountService).getAccountNoFilter(SIGN_IN_WITH_PHONE.getAccountId());
         doReturn(PARTICIPANT).when(participantService).getParticipant(app, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
@@ -850,7 +872,7 @@ public class AuthenticationServiceTest {
         account.setId(USER_ID);
 
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
-        doReturn(account).when(accountService).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
+        doReturn(Optional.of(account)).when(accountService).getAccountNoFilter(SIGN_IN_WITH_PHONE.getAccountId());
         doReturn(PARTICIPANT).when(participantService).getParticipant(app, account, false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
 
@@ -896,7 +918,7 @@ public class AuthenticationServiceTest {
         doReturn(participant).when(participantService).getParticipant(app, account, false);
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), any());
-        doReturn(account).when(accountService).getAccount(SIGN_IN_WITH_PHONE.getAccountId());
+        doReturn(Optional.of(account)).when(accountService).getAccountNoFilter(SIGN_IN_WITH_PHONE.getAccountId());
 
         try {
             service.phoneSignIn(CONTEXT, SIGN_IN_WITH_PHONE);
@@ -1132,7 +1154,7 @@ public class AuthenticationServiceTest {
                 false);
         doReturn(UNCONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), eq(account));
         
-        doReturn(consentedAccount).when(accountService).getAccount(any());
+        doReturn(Optional.of(consentedAccount)).when(accountService).getAccountNoFilter(any());
         doReturn(PARTICIPANT_WITH_ATTRIBUTES).when(participantService).getParticipant(app, consentedAccount,
                 false);
         doReturn(CONSENTED_STATUS_MAP).when(consentService).getConsentStatuses(any(), eq(consentedAccount));
@@ -1143,13 +1165,15 @@ public class AuthenticationServiceTest {
         service.signIn(app, CONTEXT, EMAIL_PASSWORD_SIGN_IN);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void emailSignInWithIntentToParticipate() {
         Account consentedAccount = Account.create();
         consentedAccount.setId(USER_ID);
 
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
-        when(accountService.getAccount(any())).thenReturn(account, consentedAccount);
+        when(accountService.getAccountNoFilter(any())).thenReturn(
+                Optional.of(account), Optional.of(consentedAccount));
         when(participantService.getParticipant(app, account, false)).thenReturn(
                 PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(UNCONSENTED_STATUS_MAP);
@@ -1164,13 +1188,15 @@ public class AuthenticationServiceTest {
         service.emailSignIn(CONTEXT, SIGN_IN_WITH_EMAIL);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void phoneSignInWithIntentToParticipate() {
         Account consentedAccount = Account.create();
         consentedAccount.setId(USER_ID);
 
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
-        when(accountService.getAccount(any())).thenReturn(account, consentedAccount);
+        when(accountService.getAccountNoFilter(any())).thenReturn(
+               Optional.of(account), Optional.of(consentedAccount));
         when(participantService.getParticipant(app, account, false)).thenReturn(
                 PARTICIPANT_WITH_ATTRIBUTES);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(UNCONSENTED_STATUS_MAP);
@@ -1199,7 +1225,7 @@ public class AuthenticationServiceTest {
     @Test
     public void consentedEmailSignInDoesNotExecuteIntentToParticipate() {
         when(cacheProvider.getObject(CACHE_KEY_EMAIL_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccountNoFilter(any())).thenReturn(Optional.of(account));
         when(participantService.getParticipant(app, account, false)).thenReturn(PARTICIPANT);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(CONSENTED_STATUS_MAP);
 
@@ -1211,7 +1237,7 @@ public class AuthenticationServiceTest {
     @Test
     public void consentedPhoneSignInDoesNotExecuteIntentToParticipate() {
         when(cacheProvider.getObject(CACHE_KEY_PHONE_SIGNIN, String.class)).thenReturn(TOKEN_UNFORMATTED);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccountNoFilter(any())).thenReturn(Optional.of(account));
         when(participantService.getParticipant(app, account, false)).thenReturn(PARTICIPANT);
         when(consentService.getConsentStatuses(any(), eq(account))).thenReturn(CONSENTED_STATUS_MAP);
 
@@ -1320,8 +1346,23 @@ public class AuthenticationServiceTest {
     }
 
     @Test
-    public void getSession() {
-        service.getSession(TOKEN);
+    public void getSessionSucceeds() {
+        UserSession session = new UserSession();
+        when(cacheProvider.getUserSession(TOKEN)).thenReturn(session);
+        
+        UserSession retValue = service.getSession(TOKEN);
+        assertEquals(retValue, session);
+        
+        verify(cacheProvider).getUserSession(TOKEN);
+    }
+    
+    @Test
+    public void getSessionFails() {
+        when(cacheProvider.getUserSession(TOKEN)).thenReturn(null);
+        
+        UserSession retValue = service.getSession(TOKEN);
+        assertNull(retValue);
+        
         verify(cacheProvider).getUserSession(TOKEN);
     }
     
@@ -1424,7 +1465,7 @@ public class AuthenticationServiceTest {
        when(oauthProviderService.oauthSignIn(token)).thenReturn(accountId);
        
        account.setRoles(ImmutableSet.of(DEVELOPER));
-       when(accountService.getAccount(accountId)).thenReturn(account);
+       when(accountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(account));
        
        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId("12345").build();
        when(participantService.getParticipant(any(), eq(account), eq(false))).thenReturn(participant);
@@ -1432,7 +1473,7 @@ public class AuthenticationServiceTest {
        UserSession session = service.oauthSignIn(CONTEXT, token);
        
        assertEquals(session.getParticipant().getSynapseUserId(), "12345");
-       verify(accountService).deleteReauthToken(ACCOUNT_ID);
+       verify(accountService).deleteReauthToken(account);
        verify(cacheProvider).removeSessionByUserId(USER_ID);
        verify(cacheProvider).setUserSession(session);
    }
@@ -1462,11 +1503,115 @@ public class AuthenticationServiceTest {
        AccountId accountId = AccountId.forSynapseUserId(TEST_APP_ID, "12345");
        when(oauthProviderService.oauthSignIn(token)).thenReturn(accountId);
        
-       when(accountService.getAccount(accountId)).thenReturn(account);
+       when(accountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(account));
        
        StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId("12345").build();
        when(participantService.getParticipant(any(), eq(account), eq(false))).thenReturn(participant);
        
        service.oauthSignIn(CONTEXT, token);
+   }
+   
+   @Test
+   public void signUp_newExternalIdsFormatIgnoresMigrationCode() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalIds(ImmutableMap.of(TEST_APP_ID, "externalId"))
+               .build();
+       
+       service.signUp(app, participant);
+       
+       verify(accountService, never()).getAccountNoFilter(any());
+       verify(studyService, never()).getStudyIds(TEST_APP_ID);
+   }
+   
+   @Test
+   public void signUp_bothExternalIdFormatsIgnoresMigrationCode() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .withExternalIds(ImmutableMap.of(TEST_APP_ID, EXTERNAL_ID))
+               .build();
+       
+       service.signUp(app, participant);
+       
+       verify(accountService, never()).getAccountNoFilter(any());
+       verify(studyService, never()).getStudyIds(TEST_APP_ID);
+   }
+   
+   @Test
+   public void signIn_oldExternalIdsFormatForExistingAccountReturnsQuietly() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .build();
+       
+       AccountId accountId = AccountId.forExternalId(TEST_APP_ID, EXTERNAL_ID);
+       when(accountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(account));
+       
+       IdentifierHolder retValue = service.signUp(app, participant);
+       assertEquals(retValue.getIdentifier(), USER_ID);
+       
+       verify(accountService).getAccountNoFilter(accountId);
+       verify(studyService, never()).getStudyIds(TEST_APP_ID);
+       verify(participantService, never()).createParticipant(app, participant, true);
+   }
+   
+   @Test
+   public void signUp_oldExternalIdsFormatOneStudyRemapsToStudy() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .build();
+       
+       when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(ImmutableSet.of("studyA"));
+       
+       service.signUp(app, participant);
+       
+       verify(participantService).createParticipant(eq(app), participantCaptor.capture(), eq(true));
+       Map<String,String> map = participantCaptor.getValue().getExternalIds();
+       assertEquals(map.get("studyA"), EXTERNAL_ID);
+   }
+   
+   @Test
+   public void signUp_oldExternalIdsFormatTwoStudiesOneTestRemapsToOtherStudy() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .build();
+       
+       when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(ImmutableSet.of("test", "studyA"));
+       
+       service.signUp(app, participant);
+       
+       verify(participantService).createParticipant(eq(app), participantCaptor.capture(), eq(true));
+       Map<String,String> map = participantCaptor.getValue().getExternalIds();
+       assertEquals(map.get("studyA"), EXTERNAL_ID);       
+   }
+
+   @Test
+   public void signUp_oldExternalIdsFormatNoStudiesDoesNotRemap() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .build();
+       
+       when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(ImmutableSet.of());
+       
+       service.signUp(app, participant);
+       
+       verify(participantService).createParticipant(eq(app), participantCaptor.capture(), eq(true));
+       assertTrue(participantCaptor.getValue().getExternalIds().isEmpty());
+       assertEquals(participantCaptor.getValue().getExternalId(), EXTERNAL_ID);
+   }
+
+   @Test
+   public void signUp_oldExternalIdsFormatTwoOrMoreStudiesPicksOne() {
+       StudyParticipant participant = new StudyParticipant.Builder()
+               .withExternalId(EXTERNAL_ID)
+               .build();
+       
+       when(studyService.getStudyIds(TEST_APP_ID)).thenReturn(ImmutableSet.of("test", "studyA", "studyB"));
+       
+       service.signUp(app, participant);
+       
+       verify(participantService).createParticipant(eq(app), participantCaptor.capture(), eq(true));
+       Map<String,String> map = participantCaptor.getValue().getExternalIds();
+       String extId =  map.containsKey("studyA") ? map.get("studyA") : map.get("studyB");
+       assertEquals(extId, EXTERNAL_ID);
+       assertFalse(map.keySet().contains("test"));
    }
 }

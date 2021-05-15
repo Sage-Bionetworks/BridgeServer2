@@ -14,6 +14,7 @@ import org.joda.time.DateTimeZone;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.Tag;
 import org.sagebionetworks.bridge.models.TagUtils;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -23,6 +24,7 @@ import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
 import org.sagebionetworks.bridge.models.apps.AppleAppLink;
+import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -195,4 +197,27 @@ public class TestConstants {
             .withExternalIds(ImmutableMap.of("study2", "externalId2")).withId("id2")
             .withStudyIds(ImmutableSet.of("study1", "study2")).withCreatedOn(TIMESTAMP).withStatus(ENABLED)
             .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
+
+    public static final ColorScheme COLOR_SCHEME = new ColorScheme("#000000", "#FFFFFF", "#CCEECC", "#CCCCCC");
+    public static final List<Label> LABELS = ImmutableList.of(new Label("en", "English"), new Label("fr", "French"));
+    public static final List<NotificationMessage> MESSAGES = ImmutableList.of(
+            new NotificationMessage.Builder().withLang("en").withSubject("English").withMessage("Body").build(),
+            new NotificationMessage.Builder().withLang("fr").withSubject("French").withMessage("Body").build());
+    
+    public static final String SCHEDULE_GUID = "AAAAAAAAAAAAAAAAAAAAAAAA";
+
+    public static final String SESSION_GUID_1 = "BBBBBBBBBBBBBBBBBBBBBBBB";
+    public static final String SESSION_GUID_2 = "CCCCCCCCCCCCCCCCCCCCCCCC";
+    public static final String SESSION_GUID_3 = "DDDDDDDDDDDDDDDDDDDDDDDD";
+    public static final String SESSION_GUID_4 = "EEEEEEEEEEEEEEEEEEEEEEEE";
+    
+    public static final String SESSION_WINDOW_GUID_1 = "FFFFFFFFFFFFFFFFFFFFFFFF";
+    public static final String SESSION_WINDOW_GUID_2 = "GGGGGGGGGGGGGGGGGGGGGGGG";
+    public static final String SESSION_WINDOW_GUID_3 = "HHHHHHHHHHHHHHHHHHHHHHHH";
+    public static final String SESSION_WINDOW_GUID_4 = "IIIIIIIIIIIIIIIIIIIIIIII";
+    
+    public static final String ASSESSMENT_1_GUID = "111111111111111111111111";
+    public static final String ASSESSMENT_2_GUID = "222222222222222222222222";
+    public static final String ASSESSMENT_3_GUID = "333333333333333333333333";
+    public static final String ASSESSMENT_4_GUID = "444444444444444444444444";
 }

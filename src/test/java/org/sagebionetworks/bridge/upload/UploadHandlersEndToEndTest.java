@@ -16,10 +16,12 @@ import java.io.InputStream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -67,7 +69,7 @@ public class UploadHandlersEndToEndTest {
     private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("parkinson", "test_user");
     private static final String EXTERNAL_ID = "external-id";
     private static final String HEALTH_CODE = "health-code";
-    private static final byte[] METADATA_JSON_CONTENT = "{\"my-meta-key\":\"my-meta-value\"}".getBytes();
+    private static final byte[] METADATA_JSON_CONTENT = "{\"meta-file-key\":\"meta-file-value\"}".getBytes();
     private static final String PHONE_INFO = "Unit Test Hardware";
     private static final String UPLOAD_FILENAME = "upload-filename";
     private static final String UPLOAD_ID = "upload-id";
@@ -125,9 +127,13 @@ public class UploadHandlersEndToEndTest {
         uploadedFileContentMap = new HashMap<>();
         metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
 
+        ObjectNode metadataFromRequest = (ObjectNode) BridgeObjectMapper.get().readTree(
+                "{\"meta-request-key\":\"meta-request-value\"}");
+
         upload = Upload.create();
         upload.setFilename(UPLOAD_FILENAME);
         upload.setHealthCode(HEALTH_CODE);
+        upload.setMetadata(metadataFromRequest);
         upload.setUploadId(UPLOAD_ID);
 
         // Mock HealthDataService.createOrUpdateRecord()
@@ -294,7 +300,7 @@ public class UploadHandlersEndToEndTest {
         account.setEnrollments(ImmutableSet.of(enrollment));
 
         AccountService mockAccountService = mock(AccountService.class);
-        when(mockAccountService.getAccount(any())).thenReturn(account);
+        when(mockAccountService.getAccountNoFilter(any())).thenReturn(Optional.of(account));
 
         ParticipantService mockParticipantService = mock(ParticipantService.class);
         when(mockParticipantService.getStudyStartTime(any())).thenReturn(STUDY_START_TIME);
@@ -354,8 +360,9 @@ public class UploadHandlersEndToEndTest {
 
         // Validate user metadata.
         JsonNode userMetadataNode = record.getUserMetadata();
-        assertEquals(userMetadataNode.size(), 1);
-        assertEquals(userMetadataNode.get("my-meta-key").textValue(), "my-meta-value");
+        assertEquals(userMetadataNode.size(), 2);
+        assertEquals(userMetadataNode.get("meta-file-key").textValue(), "meta-file-value");
+        assertEquals(userMetadataNode.get("meta-request-key").textValue(), "meta-request-value");
     }
 
     private void testSurvey(Map<String, String> fileMap) throws Exception {
@@ -796,7 +803,11 @@ public class UploadHandlersEndToEndTest {
         assertNull(record.getPhoneInfo());
         assertNull(record.getSchemaId());
         assertNull(record.getSchemaRevision());
-        assertNull(record.getUserMetadata());
+
+        // User metadata from request only.
+        JsonNode userMetadata = record.getUserMetadata();
+        assertEquals(userMetadata.size(), 1);
+        assertEquals(userMetadata.get("meta-request-key").textValue(), "meta-request-value");
 
         // Data and metadata both exist and are empty.
         assertTrue(record.getData().isObject());

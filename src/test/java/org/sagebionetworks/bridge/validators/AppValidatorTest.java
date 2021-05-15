@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,7 +10,6 @@ import java.util.TreeSet;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -124,14 +124,18 @@ public class AppValidatorTest {
 
     @Test
     public void rejectEventKeysWithColons() {
-        app.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, app, "activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+        app.getCustomEvents().put("a-1", FUTURE_ONLY);
+        app.getCustomEvents().put("b:2", FUTURE_ONLY);
+        
+        assertValidatorMessage(INSTANCE, app, "customEvents", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
     public void cannotCreateIdentifierWithColons() {
-        app.setActivityEventKeys(Sets.newHashSet("a-1", "b:2"));
-        assertValidatorMessage(INSTANCE, app, "activityEventKeys", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+        app.getCustomEvents().put("a-1", FUTURE_ONLY);
+        app.getCustomEvents().put("b:2", FUTURE_ONLY);
+        
+        assertValidatorMessage(INSTANCE, app, "customEvents", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
@@ -547,8 +551,8 @@ public class AppValidatorTest {
     
     @Test
     public void validAutomaticCustomEventWithCustomOriginEvent() {
-        app.setActivityEventKeys(ImmutableSet.of("externalEvent"));
-        app.setAutomaticCustomEvents(ImmutableMap.of("myEvent", "externalEvent:P-14D"));
+        app.getCustomEvents().put("externalEvent", FUTURE_ONLY);
+        app.getAutomaticCustomEvents().put("myEvent", "externalEvent:P-14D");
         Validate.entityThrowingException(INSTANCE, app);
     }
 

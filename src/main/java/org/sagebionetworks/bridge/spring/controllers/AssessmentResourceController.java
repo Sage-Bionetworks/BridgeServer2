@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.STRING_SET_TYPEREF;
 import static org.sagebionetworks.bridge.BridgeUtils.getEnumOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 
 import java.util.List;
 import java.util.Set;
@@ -52,7 +53,7 @@ public class AssessmentResourceController extends BaseController {
             @RequestParam(required = false) String minRevision,
             @RequestParam(required = false) String maxRevision,
             @RequestParam(required = false) String includeDeleted) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
         
         if (SHARED_APP_ID.equals(appId)) {
@@ -92,7 +93,7 @@ public class AssessmentResourceController extends BaseController {
 
     @GetMapping("/v1/assessments/identifier:{assessmentId}/resources/{guid}")
     public AssessmentResource getAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
         
         if (SHARED_APP_ID.equals(appId)) {

@@ -434,4 +434,168 @@ MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','ORG_ADMIN','WORKER',
 ALTER TABLE `Substudies`
 ADD COLUMN `clientData` mediumtext COLLATE utf8_unicode_ci;
 
+-- changeset bridge:25
+
+ALTER TABLE `AccountRoles`
+MODIFY COLUMN `role` enum('DEVELOPER','RESEARCHER','ADMIN','ORG_ADMIN','WORKER','SUPERADMIN','STUDY_COORDINATOR','STUDY_DESIGNER') NOT NULL;
+
+-- changeset bridge:26
+
+ALTER TABLE `Assessments`
+ADD COLUMN `labels` text DEFAULT NULL,
+ADD COLUMN `colorScheme` text DEFAULT NULL;
+
+ALTER TABLE `ExternalResources`
+MODIFY COLUMN `category` enum('CUSTOMIZATION_OPTIONS', 'DATA_REPOSITORY', 
+    'SCIENCE_DOCUMENTATION', 'DEVELOPER_DOCUMENTATION', 'LICENSE', 
+    'PUBLICATION', 'RELEASE_NOTE', 'SAMPLE_APP', 'SAMPLE_DATA', 
+    'SCREENSHOT', 'SEE_ALSO', 'USED_IN_STUDY', 'WEBSITE', 
+    'OTHER', 'ICON') NOT NULL;
+
+-- changeset bridge:27
+
+CREATE TABLE `Schedules` (
+  `appId` varchar(255) NOT NULL,
+  `ownerId` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `guid` varchar(60) NOT NULL,
+  `duration` varchar(60) NOT NULL,
+  `clientData` mediumtext COLLATE utf8_unicode_ci,
+  `published` tinyint(1) NOT NULL DEFAULT '0',
+  `createdOn` bigint(20) unsigned DEFAULT NULL,
+  `modifiedOn` bigint(20) unsigned DEFAULT NULL,
+  `deleted` tinyint(1) NOT NULL DEFAULT '0',
+  `version` int(10) unsigned NOT NULL,
+  PRIMARY KEY (`guid`),
+  KEY `Schedules_appId_guid_idx` (`appId`,`guid`),
+  KEY `Schedules_ownerId_guid_idx` (`ownerId`,`guid`),
+  CONSTRAINT `Schedule-Organization-Constraint` FOREIGN KEY (`appId`, `ownerId`) REFERENCES `Organizations` (`appId`, `identifier`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE `Sessions` (
+  `scheduleGuid` varchar(60) NOT NULL,
+  `guid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `name` varchar(255) NOT NULL,
+  `startEventId` varchar(255) NOT NULL,
+  `delayPeriod` varchar(60),
+  `occurrences` int(10) unsigned,
+  `intervalPeriod` varchar(60),
+  `reminderPeriod` varchar(60),
+  `messages` text DEFAULT NULL,
+  `labels` text DEFAULT NULL,
+  `performanceOrder` enum('PARTICIPANT_CHOICE','SEQUENTIAL','RANDOMIZED'),
+  `notifyAt` enum('PARTICIPANT_CHOICE','START_OF_WINDOW','RANDOM'),
+  `remindAt` enum('AFTER_WINDOW_START','BEFORE_WINDOW_END'),
+  `allowSnooze` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`guid`),
+  UNIQUE KEY `Session-guid-scheduleGuid-idx` (`guid`,`scheduleGuid`),
+  CONSTRAINT `Session-Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE `SessionTimeWindows` (
+  `sessionGuid` varchar(60) NOT NULL,
+  `guid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `startTime` varchar(60) NOT NULL,
+  `expirationPeriod` varchar(60),
+  `persistent` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`guid`),
+  UNIQUE KEY `TimeWindow-guid-sessionGuid-idx` (`guid`,`sessionGuid`),
+  CONSTRAINT `TimeWindow-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE `SessionAssessments` (
+  `sessionGuid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `appId` varchar(255) NOT NULL,
+  `guid` varchar(60) NOT NULL,
+  `identifier` varchar(255),
+  `title` varchar(255),
+  `minutesToComplete` int(10),
+  `labels` text,
+  `colorScheme` text,
+  PRIMARY KEY (`sessionGuid`, `position`),
+  CONSTRAINT `AssessmentRef-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE,
+  CONSTRAINT `AssessmentRef-Assessment-Constraint` FOREIGN KEY (`guid`) REFERENCES `Assessments` (`guid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:28
+
+ALTER TABLE `SessionAssessments`
+ADD COLUMN `revision` int(10) unsigned;
+
+CREATE TABLE `TimelineMetadata` (
+  `guid` varchar(60) NOT NULL,
+  `assessmentInstanceGuid` varchar(60),
+  `assessmentGuid` varchar(60),
+  `assessmentId` varchar(255),
+  `assessmentRevision` int(10) unsigned,
+  `sessionInstanceGuid` varchar(60) NOT NULL,
+  `sessionGuid` varchar(60) NOT NULL,
+  `scheduleGuid` varchar(60) NOT NULL,
+  `schedulePublished` tinyint(1) NOT NULL,
+  `scheduleModifiedOn` bigint(20) unsigned NOT NULL,
+  `appId` varchar(255) NOT NULL,
+  PRIMARY KEY (`guid`),
+  CONSTRAINT `TimelineMetadata-Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`) ON DELETE CASCADE,
+  CONSTRAINT `TimelineMetadata-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE,
+  CONSTRAINT `TimelineMetadata-Assessment-Constraint` FOREIGN KEY (`assessmentGuid`) REFERENCES `Assessments` (`guid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:29
+
+ALTER TABLE `Substudies`
+ADD COLUMN `phase` enum('LEGACY', 'DESIGN', 'PUBLIC_RECRUITMENT', 'ENROLL_BY_INVITATION', 'IN_FLIGHT', 'ANALYSIS', 'COMPLETED', 'WITHDRAWN') DEFAULT 'LEGACY',
+ADD COLUMN `details` varchar(510) DEFAULT NULL,
+ADD COLUMN `studyLogoUrl` varchar(255) DEFAULT NULL,
+ADD COLUMN `colorScheme` text DEFAULT NULL,
+ADD COLUMN `institutionId` varchar(255) DEFAULT NULL,
+ADD COLUMN `irbProtocolId` varchar(255) DEFAULT NULL,
+ADD COLUMN `irbApprovedOn` varchar(12) DEFAULT NULL,
+ADD COLUMN `irbApprovedUntil` varchar(12) DEFAULT NULL,
+ADD COLUMN `scheduleGuid` varchar(255) DEFAULT NULL,
+ADD COLUMN `disease` varchar(255) DEFAULT NULL,
+ADD COLUMN `studyDesignType` varchar(255) DEFAULT NULL;
+
+ALTER TABLE `Substudies`
+ADD CONSTRAINT `Substudies-Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`) ON DELETE RESTRICT;
+
+CREATE TABLE `StudyContacts` (
+  `appId` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `role` enum('IRB','PRINCIPAL_INVESTIGATOR','INVESTIGATOR','SPONSOR','STUDY_SUPPORT','TECHNICAL_SUPPORT') NOT NULL,
+  `position` varchar(255),
+  `affiliation` varchar(255),
+  `jurisdiction` varchar(255),
+  `email` varchar(255),
+  `phone` varchar(20),
+  `phoneRegion` varchar(2),
+  `placeName` varchar(255),
+  `street` varchar(255),
+  `division` varchar(255),
+  `mailRouting` varchar(255),
+  `city` varchar(255),
+  `state` varchar(255),
+  `postalCode` varchar(50),
+  `country` varchar(255),
+  `pos` int(10) signed,
+  PRIMARY KEY (`appId`, `studyId`, `name`),
+  CONSTRAINT `StudyContact-Study-Constraint` FOREIGN KEY (`studyId`,`appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:30
+
+ALTER TABLE `TimelineMetadata`
+ADD COLUMN `sessionStartEventId` varchar(255) NOT NULL,
+ADD COLUMN `timeWindowGuid` varchar(60) NOT NULL,
+ADD COLUMN `sessionInstanceStartDay` int(10) NOT NULL,
+ADD COLUMN `sessionInstanceEndDay` int(10) NOT NULL;
+
+-- changeset bridge:31
+
+ALTER TABLE `StudyContacts`
+DROP PRIMARY KEY,
+ADD CONSTRAINT PRIMARY KEY (`appId`, `studyId`, `pos`);
 

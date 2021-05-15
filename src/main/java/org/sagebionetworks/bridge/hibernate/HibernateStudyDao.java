@@ -24,12 +24,13 @@ public class HibernateStudyDao implements StudyDao {
     
     static final String COUNT_PHRASE = "select count(*) ";
     static final String SELECT_PHRASE = "select new org.sagebionetworks.bridge.hibernate."
-            + "HibernateStudy(study.name, study.identifier, study.appId, study.deleted) ";
+            + "HibernateStudy(study.name, study.identifier, study.appId, study.createdOn, "
+            + "study.modifiedOn, study.deleted, study.phase, study.version) ";
     static final String FROM_PHRASE = "from HibernateStudy as study where appId = :appId"; 
     
     private HibernateHelper hibernateHelper;
     
-    @Resource(name = "studyHibernateHelper")
+    @Resource(name = "mysqlHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }
@@ -41,7 +42,7 @@ public class HibernateStudyDao implements StudyDao {
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(FROM_PHRASE, "appId", appId);
-        if (studyIds != null && !studyIds.isEmpty()) {
+        if (studyIds != null) {
             builder.append("and identifier in (:studies)", "studies", studyIds);
         }
         if (!includeDeleted) {

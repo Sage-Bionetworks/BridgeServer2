@@ -45,11 +45,17 @@ public class AuthEvaluatorTest {
         assertFalse(evaluator.check(USER_ID, "user"));
     }
     
-    // This does need to go away
     @Test
-    public void callerConsideredGlobal() {
-        AuthEvaluator evaluator = new AuthEvaluator().callerConsideredGlobal();
+    public void isEnrolledInStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of("study1", "study2")).build());
+
+        AuthEvaluator evaluator = new AuthEvaluator().isEnrolledInStudy();
+        
         assertTrue(evaluator.check(STUDY_ID, "study2"));
+        assertFalse(evaluator.check());
+        assertFalse(evaluator.check(STUDY_ID, "study3"));
+        assertFalse(evaluator.check(USER_ID, "user"));
     }
     
     @Test

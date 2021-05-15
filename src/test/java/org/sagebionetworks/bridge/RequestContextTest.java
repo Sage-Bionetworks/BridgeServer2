@@ -30,7 +30,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
-import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.SponsorService;
@@ -304,27 +304,22 @@ public class RequestContextTest extends Mockito {
     }
     
     @Test
-    public void updateFromExternalId() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerEnrolledStudies(ImmutableSet.of("study1")).build());
+    public void acquireAccountIdentity() {
+        RequestContext initialContext = new RequestContext.Builder()
+                .withCallerUserId("old-id")
+                .withCallerAppId("old-app-id").build();
+        RequestContext.set(initialContext);
         
-        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, "anIdentifier");
-        externalId.setStudyId("study2");
+        Account account = Account.create();
+        account.setId("id");
+        account.setAppId(TEST_APP_ID);
+        account.setOrgMembership("orgId");
+        account.setEmail("email");
         
-        RequestContext.updateFromExternalId(externalId);
+        RequestContext.acquireAccountIdentity(account);
         
-        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of("study1", "study2"));
-    }
-
-    @Test
-    public void updateFromExternalIdSkipsNull() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerEnrolledStudies(ImmutableSet.of("study1")).build());
-        
-        ExternalIdentifier externalId = ExternalIdentifier.create(TEST_APP_ID, "anIdentifier");
-        
-        RequestContext.updateFromExternalId(externalId);
-        
-        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of("study1"));
+        RequestContext updatedContext = RequestContext.get();
+        assertEquals(updatedContext.getCallerUserId(), "id");
+        assertEquals(updatedContext.getCallerAppId(), "old-app-id");
     }
 }

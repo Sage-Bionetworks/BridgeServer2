@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
@@ -74,7 +75,7 @@ public class StudyControllerTest extends Mockito {
 
         controller.setStudyService(service);
 
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR, ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR, STUDY_DESIGNER, ORG_ADMIN, ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         doReturn(session).when(controller).getAdministrativeSession();
         
@@ -188,7 +189,7 @@ public class StudyControllerTest extends Mockito {
         verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
         Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getIdentifier(), "oneId");
+        assertEquals(persisted.getIdentifier(), "id");
         assertEquals(persisted.getName(), "oneName");
     }
 

@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.apps.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.upload.UploadValidationStrictness.REPORT;
@@ -604,21 +605,23 @@ public class AppServiceTest extends Mockito {
         service.updateApp(updatedApp, true);
     }
     
-    @Test(expectedExceptions = ConstraintViolationException.class, expectedExceptionsMessageRegExp = "Activity event keys cannot be deleted.")
+    @Test(expectedExceptions = ConstraintViolationException.class, 
+            expectedExceptionsMessageRegExp = "Custom events cannot be deleted.")
     public void cannotRemoveActivityEventKeys() {
         app = TestUtils.getValidApp(AppServiceTest.class);
         app.setIdentifier(TEST_APP_ID);
-        app.setActivityEventKeys(ImmutableSet.of("test"));
+        app.getCustomEvents().put("test", FUTURE_ONLY);
         when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(app);
         
         App updatedApp = TestUtils.getValidApp(AppServiceTest.class);
         updatedApp.setIdentifier(app.getIdentifier());
-        updatedApp.setActivityEventKeys(EMPTY_SET);
+        updatedApp.setCustomEvents(null);
         
         service.updateApp(updatedApp, true);
     }
     
-    @Test(expectedExceptions = ConstraintViolationException.class, expectedExceptionsMessageRegExp = "Default templates cannot be deleted.")
+    @Test(expectedExceptions = ConstraintViolationException.class, 
+            expectedExceptionsMessageRegExp = "Default templates cannot be deleted.")
     public void cannotRemoveDefaultAppTemplates() {
         app = TestUtils.getValidApp(AppServiceTest.class);
         app.setIdentifier(TEST_APP_ID);
@@ -1570,6 +1573,7 @@ public class AppServiceTest extends Mockito {
      * From the non-mock tests, this test is probably redundant with other test, but is kept 
      * here.
      */
+    @SuppressWarnings("deprecation")
     @Test
     public void crudApp() {
         when(mockTemplateService.getTemplatesForType(any(), any(), anyInt(), anyInt(), anyBoolean()))
@@ -1585,6 +1589,7 @@ public class AppServiceTest extends Mockito {
         app.setTaskIdentifiers(null);
         app.setUploadValidationStrictness(null);
         app.setActivityEventKeys(null);
+        app.setCustomEvents(null);
         app.setHealthCodeExportEnabled(true);
         app.setActive(false);
         app.setStrictUploadValidationEnabled(false);
@@ -1632,6 +1637,7 @@ public class AppServiceTest extends Mockito {
         assertEquals(newApp.getDataGroups(), ImmutableSet.of("beta_users", "production_users", TEST_USER_GROUP));
         assertTrue(newApp.getTaskIdentifiers().isEmpty());
         assertTrue(newApp.getActivityEventKeys().isEmpty());
+        assertTrue(newApp.getCustomEvents().isEmpty());
 
         verify(mockCacheProvider).setApp(newApp);
 

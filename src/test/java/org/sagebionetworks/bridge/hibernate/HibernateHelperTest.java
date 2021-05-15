@@ -120,6 +120,23 @@ public class HibernateHelperTest {
         helper.deleteById(Object.class, "test-id");
         verify(mockSession).delete(hibernateOutput);
     }
+    
+    @Test
+    public void deleteThrowingException() {
+        PersistenceException ex = new PersistenceException();
+        // set up
+        Object hibernateOutput = new Object();
+        when(mockSession.get(Object.class, "test-id")).thenReturn(hibernateOutput);
+        doThrow(ex).when(mockSession).delete(any());
+        when(mockExceptionConverter.convert(any(), any())).thenReturn(ex);
+
+        // execute and validate
+        try {
+            helper.deleteById(Object.class, "test-id");
+            fail("Should have thrown exception.");
+        } catch(BridgeServiceException e) {}
+        verify(mockExceptionConverter).convert(ex, hibernateOutput);
+    }
 
     @Test
     public void getById() {

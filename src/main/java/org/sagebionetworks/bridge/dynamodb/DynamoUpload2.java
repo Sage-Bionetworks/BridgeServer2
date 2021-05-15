@@ -7,6 +7,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
@@ -39,6 +40,7 @@ public class DynamoUpload2 implements Upload {
     private Boolean encrypted;
     private String filename;
     private String healthCode;
+    private ObjectNode metadata;
     private String recordId;
     private UploadStatus status;
     private String appId;
@@ -62,6 +64,8 @@ public class DynamoUpload2 implements Upload {
         encrypted = uploadRequest.isEncrypted();
         filename = uploadRequest.getName();
         this.healthCode = healthCode;
+        // Already validated by UploadValidator.
+        metadata = (ObjectNode) uploadRequest.getMetadata();
         status = UploadStatus.REQUESTED;
         uploadId = BridgeUtils.generateGuid();
         zipped = uploadRequest.isZipped();
@@ -153,6 +157,19 @@ public class DynamoUpload2 implements Upload {
     @Override
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
+    }
+
+    /** {@inheritDoc} */
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    @Override
+    public ObjectNode getMetadata() {
+        return metadata;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setMetadata(ObjectNode metadata) {
+        this.metadata = metadata;
     }
 
     /** {@inheritDoc} */

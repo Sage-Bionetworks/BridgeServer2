@@ -371,9 +371,7 @@ public class ParticipantService {
      * activities_retrieved event time, then fall back to enrollment (for studies that don't use scheduling), then fall
      * back to account creation time (for studies that use neither scheduling nor consent).
      */
-    public DateTime getStudyStartTime(AccountId accountId) {
-        Account account = getAccountThrowingException(accountId);
-
+    public DateTime getStudyStartTime(Account account) {
         Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getAppId(), null, account.getHealthCode());
         DateTime activitiesRetrievedDateTime = activityMap.get(ACTIVITIES_RETRIEVED.name().toLowerCase());
         if (activitiesRetrievedDateTime != null) {
@@ -396,7 +394,7 @@ public class ParticipantService {
         Account account = getAccountThrowingException(accountId);
 
         if (deleteReauthToken) {
-            accountService.deleteReauthToken(accountId);
+            accountService.deleteReauthToken(account);
         }
         
         cacheProvider.removeSessionByUserId(account.getId());
@@ -412,17 +410,6 @@ public class ParticipantService {
         
         if (app.getAccountLimit() > 0) {
             throwExceptionIfLimitMetOrExceeded(app);
-        }
-        
-        // Fix for callers that include only externalId and not the new externalId map: in these cases, tools are 
-        // creating the participant before the sign up call (through the Bridge Study Manager). Check and if 
-        // the account with this external ID already exists, return quietly. Otherwise proceed as before.
-        if (participant.getExternalId() != null && participant.getExternalIds().isEmpty()) {
-            AccountId accountId = AccountId.forExternalId(app.getIdentifier(), participant.getExternalId());
-            Account account = accountService.getAccount(accountId); 
-            if (account != null) {
-                return new IdentifierHolder(account.getId());
-            }
         }
         
         StudyParticipantValidator validator = new StudyParticipantValidator(studyService, organizationService, app,
@@ -500,7 +487,7 @@ public class ParticipantService {
         }
         return new IdentifierHolder(account.getId());
     }
-    
+
     // Provided to override in tests
     protected Account getAccount() {
         return Account.create();
@@ -561,12 +548,11 @@ public class ParticipantService {
        
         RequestContext requestContext = RequestContext.get();
         
-        // You can no longer enroll users or add them to studies through the enrollments table just
-        // by updating the participant account. There are separate APIs for this. HOWEVER we have one 
-        // important exception: accounts that are identifiable only by an external ID. Since an external
-        // ID enrolls you in a study, administrative callers can supply study:externalId mappings 
-        // to enroll such an account at account creation.
-        if (isNew && requestContext.isAdministrator()) {
+        // New accounts can simultaneously enroll themselves in a study using an external ID.
+        // Legacy apps do this so we must continue to support it.
+        if (isNew) {
+            RequestContext.acquireAccountIdentity(account);
+            
             for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
                 String studyId = entry.getKey();
                 String externalId = entry.getValue();

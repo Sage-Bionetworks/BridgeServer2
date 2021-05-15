@@ -668,10 +668,10 @@ public class AppService {
                     .withEntityKey(IDENTIFIER_PROPERTY, app.getIdentifier()).withEntityKey(TYPE_PROPERTY, APP_PROPERTY)
                     .withMessage("Task identifiers cannot be deleted.").build();
         }
-        if (!app.getActivityEventKeys().containsAll(originalApp.getActivityEventKeys())) {
+        if (!app.getCustomEvents().keySet().containsAll(originalApp.getCustomEvents().keySet())) {
             throw new ConstraintViolationException.Builder()
                     .withEntityKey(IDENTIFIER_PROPERTY, app.getIdentifier()).withEntityKey(TYPE_PROPERTY, APP_PROPERTY)
-                    .withMessage("Activity event keys cannot be deleted.").build();
+                    .withMessage("Custom events cannot be deleted.").build();
 
         }
         if (app.getDefaultTemplates().keySet().size() != TemplateType.values().length) {

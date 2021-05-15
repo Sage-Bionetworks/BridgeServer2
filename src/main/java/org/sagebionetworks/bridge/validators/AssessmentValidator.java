@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
 
 import java.util.Map;
 import java.util.Set;
@@ -22,7 +24,7 @@ public class AssessmentValidator implements Validator {
 
     private final String appId;
     private final OrganizationService organizationService;
-    
+
     public AssessmentValidator(String appId, OrganizationService organizationService) {
         this.appId = appId;
         this.organizationService = organizationService;
@@ -57,7 +59,7 @@ public class AssessmentValidator implements Validator {
         if (assessment.getRevision() < 0) {
             errors.rejectValue("revision", "cannot be negative");   
         }
-        if (assessment.getCustomizationFields() != null && !assessment.getCustomizationFields().isEmpty()) {
+        if (!assessment.getCustomizationFields().isEmpty()) {
             for (Map.Entry<String, Set<PropertyInfo>> entry : assessment.getCustomizationFields().entrySet()) {
                 String key = entry.getKey();
                 
@@ -74,6 +76,10 @@ public class AssessmentValidator implements Validator {
                     i++;
                 }
             }
+        }
+        validateColorScheme(errors, assessment.getColorScheme(), "colorScheme");
+        if (!assessment.getLabels().isEmpty()) {
+            validateLabels(errors, assessment.getLabels());
         }
         
         // ownerId == studyId except in the shared assessments app, where it must include

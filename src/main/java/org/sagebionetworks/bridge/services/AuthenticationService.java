@@ -8,6 +8,13 @@ import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUT
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 
+import java.util.Set;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Sets;
+
 import org.apache.commons.lang3.StringUtils;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -55,7 +62,7 @@ import org.springframework.validation.Validator;
 @Component("authenticationService")
 public class AuthenticationService {
     private static final Logger LOG = LoggerFactory.getLogger(AuthenticationService.class);
-
+    
     static final int SIGNIN_GRACE_PERIOD_SECONDS = 5*60; // 5 min
 
     public enum ChannelType {
@@ -75,6 +82,7 @@ public class AuthenticationService {
     private AccountSecretDao accountSecretDao;
     private OAuthProviderService oauthProviderService;
     private SponsorService sponsorService;
+    private StudyService studyService;
     
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -125,6 +133,10 @@ public class AuthenticationService {
     final void setSponsorService(SponsorService sponsorService) {
         this.sponsorService = sponsorService;
     }
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
     
     /**
      * Sign in using a phone number and a token that was sent to that phone number via SMS. 
@@ -152,7 +164,11 @@ public class AuthenticationService {
         if (sessionToken == null) {
             return null;
         }
-        return cacheProvider.getUserSession(sessionToken);
+        UserSession session = cacheProvider.getUserSession(sessionToken);
+        if (session != null) {
+            RequestContext.updateFromSession(session, sponsorService);    
+        }
+        return session;
     }
     
     /**
@@ -186,13 +202,14 @@ public class AuthenticationService {
         
         Account account = accountService.authenticate(app, signIn);
         
-        clearSession(app.getIdentifier(), account.getId());
+        clearSession(app.getIdentifier(), account);
         UserSession session = getSessionFromAccount(app, context, account);
 
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
         if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
             AccountId accountId = AccountId.forId(app.getIdentifier(), account.getId());
-            account = accountService.getAccount(accountId);
+            account = accountService.getAccountNoFilter(accountId)
+                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
             session = getSessionFromAccount(app, context, account);
         }
         cacheProvider.setUserSession(session);
@@ -244,17 +261,37 @@ public class AuthenticationService {
     public void signOut(final UserSession session) {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
-            accountService.deleteReauthToken(accountId);
-            // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
-            // removed, but once the reauth token is removed from the user table, the reauth token will no 
-            // longer work (and is short-lived in the cache).
-            cacheProvider.removeSession(session);
+            Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+            if (account != null) {
+                accountService.deleteReauthToken(account);
+                // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
+                // removed, but once the reauth token is removed from the user table, the reauth token will no 
+                // longer work (and is short-lived in the cache).
+                cacheProvider.removeSession(session);
+            }
         } 
     }
 
     public IdentifierHolder signUp(App app, StudyParticipant participant) {
         checkNotNull(app);
         checkNotNull(participant);
+        
+        // Code to maintain apps in production. External IDs must now be associated to a study 
+        // because they enroll you, but older apps continue to submit a payload with an externalId 
+        // field (not the externalIds map).
+        if (participant.getExternalId() != null && participant.getExternalIds().isEmpty()) {
+            // For apps that create accounts prior to calling sign up from the app (which happens), check and if 
+            // the account with this external ID already exists, return quietly.
+            AccountId accountId = AccountId.forExternalId(app.getIdentifier(), participant.getExternalId());
+            Account account = accountService.getAccountNoFilter(accountId).orElse(null); 
+            if (account != null) {
+                return new IdentifierHolder(account.getId());
+            }
+            // Or, they are probably calling signup with an external ID and a password, but no study. Try to 
+            // guess a reasonable default. If we can't the participant is returned as is and will fail 
+            // to be created by ParticipantService.
+            participant = findDefaultStudyForExternalId(app, participant);
+        }
         
         try {
             // This call is exposed without authentication, so the request context has no roles, and no roles 
@@ -282,6 +319,42 @@ public class AuthenticationService {
             accountWorkflowService.notifyAccountExists(app, accountId);
             return null;
         }
+    }
+    
+    /**
+     * The StudyParticipant has been submitted to signUp using the externalId field (only). The issue is that 
+     * we must know what study this external ID enrolls them in. Attempt to infer it for several studies that 
+     * are submitting production accounts in this manner.
+     */
+    protected StudyParticipant findDefaultStudyForExternalId(App app, StudyParticipant participant) {
+        Set<String> studyIds = studyService.getStudyIds(app.getIdentifier());
+        String studyId = null;
+        
+        // Psorcast Validation has one study named "test", so use it if it’s the only study there is 
+        if (studyIds.size() == 1) {
+            studyId = Iterables.getFirst(studyIds, null);
+        } else {
+            // PKU Study and FPHS Lab want to use the *other* of two studies that's not the test study. Remove 
+            // "test" and in these cases, they have one remaining study. That’s all the studies using this 
+            // format, but if someone adds a further study, we will not break...but the study we take is no 
+            // longer determinant. So log it for follow-up.
+            studyIds = Sets.difference(studyIds, ImmutableSet.of("test"));
+            studyId = Iterables.getFirst(studyIds, null);
+            if (studyIds.size() != 1) {
+                // There's a client that is not using the new API, but is adding studies to their app.
+                LOG.info("StudyParticipant created in app '" + app.getIdentifier() + "' with an externalId that "
+                        + "has no study, assigning externalId " + participant.getExternalId() + " to study " + studyId);
+            }
+        }
+        // Fix the participant record so they are property enrolled if we found a studyId. For an app with no 
+        // studies, the studyId could still be null. It’s impossible to add an external ID in that case 
+        // (a study has been added to every app in an earlier migration).
+        if (studyId != null) {
+            return new StudyParticipant.Builder().copyOf(participant)
+                    .withExternalIds(ImmutableMap.of(studyId, participant.getExternalId()))
+                    .build();
+        }
+        return participant;
     }
 
     public void verifyChannel(ChannelType type, Verification verification) {
@@ -371,11 +444,9 @@ public class AuthenticationService {
         }
 
         AccountId accountId = signIn.getAccountId();
-        Account account = accountService.getAccount(accountId);
-        // This should be unlikely, but if someone deleted the account while the token was outstanding
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         if (account.getStatus() == AccountStatus.DISABLED) {
             throw new AccountDisabledException();
         }
@@ -397,13 +468,14 @@ public class AuthenticationService {
         } else {
             // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
             // Then, create a new session.
-            clearSession(context.getAppId(), account.getId());
+            clearSession(context.getAppId(), account);
             App app = appService.getApp(signIn.getAppId());
             session = getSessionFromAccount(app, context, account);
 
             // Check intent to participate.
             if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
-                account = accountService.getAccount(accountId);
+                account = accountService.getAccountNoFilter(accountId)
+                        .orElseThrow(() -> new EntityNotFoundException(Account.class));
                 session = getSessionFromAccount(app, context, account);
             }
             cacheProvider.setUserSession(session);
@@ -439,6 +511,12 @@ public class AuthenticationService {
      * APIs, which creates the session. Package-scoped for unit tests.
      */
     public UserSession getSessionFromAccount(App app, CriteriaContext context, Account account) {
+        
+        // We are about to retrieve a participant and the security check must pass. In this case,
+        // an authenticating user is retrieving their own account, and we want the IDs to match
+        // during the authentication check.
+        RequestContext.acquireAccountIdentity(account);
+        
         StudyParticipant participant = participantService.getParticipant(app, account, false);
 
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
@@ -494,15 +572,12 @@ public class AuthenticationService {
         if (accountId == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         if (account.getRoles().isEmpty()) {
             throw new UnauthorizedException("Only administrative accounts can sign in via OAuth.");
         }
-        
-        clearSession(authToken.getAppId(), account.getId());
+        clearSession(authToken.getAppId(), account);
         App app = appService.getApp(authToken.getAppId());
         UserSession session = getSessionFromAccount(app, context, account);
         cacheProvider.setUserSession(session);
@@ -514,10 +589,9 @@ public class AuthenticationService {
     // (old session tokens should not be usable to retrieve the session) and we are deleting all outstanding 
     // reauthentication tokens. Call this after successfully authenticating, but before creating a session which 
     // also includes creating a new (valid) reauth token.
-    private void clearSession(String appId, String userId) {
-        AccountId accountId = AccountId.forId(appId, userId);
-        accountService.deleteReauthToken(accountId);
-        cacheProvider.removeSessionByUserId(userId);
+    private void clearSession(String appId, Account account) {
+        accountService.deleteReauthToken(account);
+        cacheProvider.removeSessionByUserId(account.getId());
     }
 
     // Sign-in methods contain a criteria context that includes no user information. After signing in, we need to

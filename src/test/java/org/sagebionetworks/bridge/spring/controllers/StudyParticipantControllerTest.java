@@ -4,9 +4,12 @@ import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -16,6 +19,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
+import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.NOTIFY_SUCCESS_MSG;
 import static org.testng.Assert.assertEquals;
@@ -40,6 +44,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.springframework.http.ResponseEntity;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -48,8 +53,11 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
+import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -69,8 +77,11 @@ import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AccountService;
@@ -80,6 +91,8 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
+import org.sagebionetworks.bridge.services.Schedule2Service;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
 public class StudyParticipantControllerTest extends Mockito {
@@ -103,6 +116,15 @@ public class StudyParticipantControllerTest extends Mockito {
     
     @Mock
     AccountService mockAccountService;
+    
+    @Mock
+    StudyService mockStudyService;
+    
+    @Mock
+    Schedule2Service mockScheduleService;
+    
+    @Mock
+    CacheProvider mockCacheProvider;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -181,6 +203,8 @@ public class StudyParticipantControllerTest extends Mockito {
         assertCreate(StudyParticipantController.class, "createActivityEvent");
         assertGet(StudyParticipantController.class, "getSelfActivityEvents");
         assertPost(StudyParticipantController.class, "createSelfActivityEvent");
+        assertGet(StudyParticipantController.class, "getTimelineForSelf");
+        assertGet(StudyParticipantController.class, "getTimelineForUser");
     }
     
     @Test
@@ -562,6 +586,11 @@ public class StudyParticipantControllerTest extends Mockito {
     public void getParticipantPreventsUnauthorizedHealthCodeRequests() throws Exception {
         app.setHealthCodeExportEnabled(false);
         
+        Account account = Account.create();
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        account.setEnrollments(ImmutableSet.of(en1));
+        when(mockAccountService.getAccount(any())).thenReturn(account);
+        
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
@@ -573,8 +602,8 @@ public class StudyParticipantControllerTest extends Mockito {
                 .withHealthCode("healthCode").build();
         when(mockParticipantService.getParticipant(app, "healthcode:"+TEST_USER_ID, true)).thenReturn(participant);
         
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "healthcode:"+TEST_USER_ID);
-        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en, null, null, null));
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "healthcode:"+TEST_USER_ID);
+        List<EnrollmentDetail> list = ImmutableList.of(new EnrollmentDetail(en2, null, null, null));
         when(mockEnrollmentService.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, "healthcode:"+TEST_USER_ID))
             .thenReturn(list);
 
@@ -1077,6 +1106,357 @@ public class StudyParticipantControllerTest extends Mockito {
         mockAccountNotInStudy();
         
         controller.getActivityEvents(TEST_STUDY_ID, TEST_USER_ID);
+    }
+    
+    @Test
+    public void getTimelineForSelf_cacheHeaderNotProvided() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+            
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        when(mockCacheProvider.getObject(
+                scheduleModificationTimestamp(TEST_STUDY_ID), String.class)).thenReturn(MODIFIED_ON.toString());
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setModifiedOn(MODIFIED_ON);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        
+        ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
+        assertEquals(retValue.getStatusCodeValue(), 200);
+        assertTrue(retValue.getBody() instanceof Timeline);
+        
+        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_STUDY_ID), MODIFIED_ON.toString());
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+    }
+    
+    @Test(expectedExceptions = NotAuthenticatedException.class)
+    public void getTimelineForSelf_notAuthenticated() {
+        doThrow(new NotAuthenticatedException()).when(controller).getAuthenticatedAndConsentedSession();
+            
+        controller.getTimelineForSelf(TEST_STUDY_ID);
+    }
+
+    @Test(expectedExceptions = ConsentRequiredException.class)
+    public void getTimelineForSelf_notConsented() {
+        doThrow(new ConsentRequiredException(session)).when(controller).getAuthenticatedAndConsentedSession();
+            
+        controller.getTimelineForSelf(TEST_STUDY_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = "Caller is not enrolled in study 'test-study'")
+    public void getTimelineForSelf_notEnrolledInStudy() {
+        session.setParticipant(new StudyParticipant.Builder().build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+            
+        controller.getTimelineForSelf(TEST_STUDY_ID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Study not found.")
+    public void getTimelineForSelf_studyNotFound() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+            
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenThrow(new EntityNotFoundException(Study.class));
+        
+        controller.getTimelineForSelf(TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void getTimelineForSelf_cacheHeaderProvidedModifiedOnNotCached() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        
+        // It has been modified
+        doReturn(MODIFIED_ON.minusMinutes(1).toString()).when(mockRequest).getHeader("If-Modified-Since");
+            
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        // But no value from cache, it'll have to load the schedule
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setModifiedOn(MODIFIED_ON);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        
+        ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
+        assertEquals(retValue.getStatusCodeValue(), 200);
+        assertTrue(retValue.getBody() instanceof Timeline);
+        
+        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
+        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_STUDY_ID), MODIFIED_ON.toString());
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+    }
+    
+    @Test
+    public void getTimelineForSelf_cacheHeaderProvidedModifiedOnIsCached() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        
+        // It has been modified
+        doReturn(MODIFIED_ON.minusMinutes(1).toString()).when(mockRequest).getHeader("If-Modified-Since");
+            
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        when(mockCacheProvider.getObject(scheduleModificationTimestamp(TEST_STUDY_ID), 
+                String.class)).thenReturn(MODIFIED_ON.toString());
+        
+        Schedule2 schedule = new Schedule2();
+        // just make this different so we can verify this is set
+        schedule.setModifiedOn(CREATED_ON); 
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        
+        ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
+        assertEquals(retValue.getStatusCodeValue(), 200);
+        assertTrue(retValue.getBody() instanceof Timeline);
+        
+        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
+        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_STUDY_ID), CREATED_ON.toString());
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+    }
+    
+    @Test
+    public void getTimelineForSelf_cacheHeaderSameAsCachedModifiedOnTimestamp() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        
+        doReturn(MODIFIED_ON.toString()).when(mockRequest).getHeader("If-Modified-Since");
+            
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        when(mockCacheProvider.getObject(scheduleModificationTimestamp(TEST_STUDY_ID), 
+                String.class)).thenReturn(MODIFIED_ON.toString());
+        
+        Schedule2 schedule = new Schedule2();
+        // just make this different so we can verify this is set
+        schedule.setModifiedOn(CREATED_ON); 
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+
+        ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
+        assertEquals(retValue.getStatusCodeValue(), 200);
+        assertTrue(retValue.getBody() instanceof Timeline);
+        
+        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
+        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_STUDY_ID), CREATED_ON.toString());
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+    }
+    
+    @Test
+    public void getTimelineForSelf_cacheHeaderSameAsModifiedOnTimestamp() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        
+        doReturn(MODIFIED_ON.toString()).when(mockRequest).getHeader("If-Modified-Since");
+
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setModifiedOn(MODIFIED_ON);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        
+        ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
+        assertEquals(retValue.getStatusCodeValue(), 200);
+        assertTrue(retValue.getBody() instanceof Timeline);
+        
+        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
+    }
+    
+    @Test
+    public void getTimelineForSelf_cacheHeaderAfterModifiedOnTimestamp() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        
+        doReturn(MODIFIED_ON.plusMinutes(1).toString()).when(mockRequest).getHeader("If-Modified-Since");
+
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        when(mockCacheProvider.getObject(
+                scheduleModificationTimestamp(TEST_STUDY_ID), String.class)).thenReturn(MODIFIED_ON.toString());
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setModifiedOn(MODIFIED_ON);
+        when(mockScheduleService.getScheduleForStudy(TEST_STUDY_ID, study)).thenReturn(schedule);
+        
+        ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
+        assertEquals(retValue.getStatusCodeValue(), 304);
+        assertNull(retValue.getBody());
+        
+        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+        verify(mockScheduleService, never()).getScheduleForStudy(any(), any());
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
+    }
+    
+    @Test
+    public void getTimelineForSelf_cacheHeaderBeforeModifiedOnTimestamp() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        
+        doReturn(MODIFIED_ON.minusMinutes(1).toString()).when(mockRequest).getHeader("If-Modified-Since");
+
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setModifiedOn(MODIFIED_ON);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        
+        ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
+        assertEquals(retValue.getStatusCodeValue(), 200);
+        assertTrue(retValue.getBody() instanceof Timeline);
+        
+        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+        verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
+    }
+    
+    @Test
+    public void getTimelineForUser() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        Account account = Account.create();
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        account.setEnrollments(ImmutableSet.of(en));
+        when(mockAccountService.getAccount(any())).thenReturn(account);
+        
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        Timeline timeline = new Timeline.Builder().build();
+        when(mockScheduleService.getTimelineForSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(timeline);
+
+        Timeline retValue = controller.getTimelineForUser(TEST_STUDY_ID, TEST_USER_ID);
+        assertSame(retValue, timeline);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getTimelineForUser_notAuthorized() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        Account account = Account.create();
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        account.setEnrollments(ImmutableSet.of(en));
+        when(mockAccountService.getAccount(any())).thenReturn(account);
+
+        controller.getTimelineForUser(TEST_STUDY_ID, TEST_USER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getTimelineForUser_noStudyAccess() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of("studyB"))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        Account account = Account.create();
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        account.setEnrollments(ImmutableSet.of(en));
+        when(mockAccountService.getAccount(any())).thenReturn(account);
+        
+        controller.getTimelineForUser(TEST_STUDY_ID, TEST_USER_ID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class,
+        expectedExceptionsMessageRegExp = "Account not found.")
+    public void getTimelineForUser_accountNotFound() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        controller.getTimelineForUser(TEST_STUDY_ID, TEST_USER_ID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void getTimelineForUser_userNotInStudy() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        Account account = Account.create();
+        when(mockAccountService.getAccount(any())).thenReturn(account);
+        
+        controller.getTimelineForUser(TEST_STUDY_ID, TEST_USER_ID);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Schedule not found.")
+    public void getTimelineForUser_studyHasNoSchedule() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        Account account = Account.create();
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        account.setEnrollments(ImmutableSet.of(en));
+        when(mockAccountService.getAccount(any())).thenReturn(account);
+        
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        controller.getTimelineForUser(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     private void mockAccountInStudy() {

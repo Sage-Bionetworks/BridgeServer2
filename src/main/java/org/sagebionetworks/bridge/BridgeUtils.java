@@ -52,10 +52,12 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.models.HasLang;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -105,7 +107,7 @@ public class BridgeUtils {
     private static final int ONE_DAY = 60*60*24;
     private static final int ONE_MINUTE = 60;
     
-    private static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
+    public static final Base64.Encoder ENCODER = Base64.getUrlEncoder().withoutPadding();
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final StudyAssociations NO_ASSOCIATIONS = new StudyAssociations(ImmutableSet.of(),
             ImmutableMap.of());
@@ -322,7 +324,7 @@ public class BridgeUtils {
         // still being shorter than the prior implementation. 
         byte[] buffer = new byte[18];
         SECURE_RANDOM.nextBytes(buffer);
-            return ENCODER.encodeToString(buffer);
+        return ENCODER.encodeToString(buffer);
     }
     
     /** Generate a random 16-byte salt, using a {@link SecureRandom}. */
@@ -713,5 +715,49 @@ public class BridgeUtils {
         }
         return new InvalidEntityException("Error parsing JSON in request body: " + throwable.getMessage());
     }
-
+    
+    /**
+     * Verifies that the activity eventId is valid, and prepends "custom:" to a custom ID if 
+     * necessary. Returns the value property cased if valid, or null otherwise. This is 
+     * then handled by validation.   
+     */
+    public static String formatActivityEventId(Set<String> activityEventIds, String id) {
+        if (id != null) {
+            id = StringUtils.removeStart(id.toLowerCase(), "custom:");
+            if (activityEventIds.contains(id)) {
+                return "custom:" + id;
+            }
+            try {
+                ActivityEventObjectType.valueOf(id.toUpperCase());
+            } catch(IllegalArgumentException e) {
+                return null;
+            }
+        }
+        return id;
+    }
+    
+    /**
+     * Select the member of the list that matches the ISO 639 alpha-2 or alpha-3 language code,
+     * or else the member with the English ("en") value. If neither exists, returns null.
+     */
+    public static <T extends HasLang> T selectByLang(List<T> items, List<String> languages, T defaultValue) {
+        checkNotNull(items);
+        
+        if (languages == null) {
+            languages = ImmutableList.of();
+        }
+        for (String lang : languages) {
+            for (T item : items) {
+                if (lang.equalsIgnoreCase(item.getLang())) {
+                    return item;
+                }
+            }
+        }
+        for (T item : items) {
+            if ("en".equalsIgnoreCase(item.getLang())) {
+                return item;
+            }
+        }
+        return defaultValue;
+    }
 }

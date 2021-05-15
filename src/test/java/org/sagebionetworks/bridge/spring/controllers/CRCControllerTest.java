@@ -6,9 +6,11 @@ import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.BOOKED;
 import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.CANCELLED;
 import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.ENTEREDINERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.IP_ADDRESS;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
@@ -20,6 +22,7 @@ import static org.sagebionetworks.bridge.spring.controllers.CRCController.APP_ID
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.AccountStates.SHIP_TESTS_REQUESTED;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.CUIMC_USERNAME;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.FHIR_CONTEXT;
+import static org.sagebionetworks.bridge.spring.controllers.CRCController.GBF_TEST_KIT_SHIP_METHOD;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.OBSERVATION_REPORT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.PROCEDURE_REPORT;
 import static org.sagebionetworks.bridge.spring.controllers.CRCController.SHIPMENT_REPORT;
@@ -78,6 +81,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -94,6 +98,7 @@ import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.crc.gbf.external.Order;
 import org.sagebionetworks.bridge.models.crc.gbf.external.ShippingConfirmations;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataSubmission;
 import org.sagebionetworks.bridge.models.reports.ReportData;
@@ -1486,6 +1491,25 @@ public class CRCControllerTest extends Mockito {
     }
     
     @Test
+    public void internalLabShipmentRequestSetsShipMethod() {
+        setupParticipantAuthentication();
+        setupShippingAddress();
+    
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+    
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+    
+        controller.internalLabShipmentRequest(mockApp, account);
+    
+        verify(mockGBFOrderService).placeOrder(orderCaptor.capture(),anyBoolean());
+    
+        Order requestedOrder = orderCaptor.getValue();
+        assertEquals(requestedOrder.ShippingInfo.ShipMethod, GBF_TEST_KIT_SHIP_METHOD);
+    }
+    
+    @Test
     public void internalLabShipmentSetsShipTestRequestedState() {
         setupParticipantAuthentication();
         setupShippingAddress();
@@ -1497,6 +1521,47 @@ public class CRCControllerTest extends Mockito {
         controller.postUserLabShipmentRequest();
         
         assertTrue(account.getDataGroups().contains(SHIP_TESTS_REQUESTED.name().toLowerCase()));
+    }
+    
+    @Test
+    public void internalLabShipmentRequestForTestUser() {
+        setupParticipantAuthentication();
+        setupShippingAddress();
+    
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+    
+        account.setDataGroups(ImmutableSet.of(
+                TEST_USER_GROUP
+        ));
+        
+        controller.internalLabShipmentRequest(mockApp, account);
+    
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(mockGBFOrderService).placeOrder(orderCaptor.capture(),eq(true));
+        
+        assertTrue(orderCaptor.getValue().test);
+    }
+    
+    @Test
+    public void internalLabShipmentRequestForNonTestUser() {
+        setupParticipantAuthentication();
+        setupShippingAddress();
+    
+        DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
+        doReturn(results).when(mockReportService).getParticipantReport(
+                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+    
+        account.setDataGroups(ImmutableSet.of(
+        ));
+        
+        controller.internalLabShipmentRequest(mockApp, account);
+    
+        ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
+        verify(mockGBFOrderService).placeOrder(orderCaptor.capture(),eq(false));
+    
+        assertFalse(orderCaptor.getValue().test);
     }
     
     @Test(expectedExceptions = LimitExceededException.class)
@@ -1659,6 +1724,21 @@ public class CRCControllerTest extends Mockito {
         verify(mockRequest).getHeader(AUTHORIZATION);
         verify(mockAccountService).authenticate(any(), any());
         verify(mockGBFOrderService).requestShippingConfirmations(eq(startDate), eq(endDate));
+    }
+    
+    @Test
+    public void postLabShipmentRequest_carriesOverSecurityContext() {
+        account.setRoles(ImmutableSet.of(RESEARCHER));
+        
+        AccountId accountId = AccountId.forHealthCode(APP_ID, HEALTH_CODE);
+        when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
+        when(mockAccountService.authenticate(any(), any())).thenReturn(account);
+        when(mockAccountService.getAccount(accountId)).thenReturn(account);
+        doReturn(null).when(controller).internalLabShipmentRequest(any(), any());
+        
+        controller.postLabShipmentRequest("healthcode:"+HEALTH_CODE);
+        
+        assertTrue(RequestContext.get().isInRole(Roles.RESEARCHER));
     }
     
     private void verifyParticipant(JsonNode payload) {

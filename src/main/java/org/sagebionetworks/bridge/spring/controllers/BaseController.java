@@ -201,7 +201,6 @@ public abstract class BaseController {
         }
         
         getLanguages(session);
-        RequestContext reqContext = RequestContext.updateFromSession(session, sponsorService);
         
         // Sessions are locked to an IP address if (a) it is enabled in the app for unprivileged participant accounts
         // or (b) always for privileged accounts.
@@ -210,7 +209,7 @@ public abstract class BaseController {
         boolean userHasRoles = !userRoles.isEmpty();
         if (app.isParticipantIpLockingEnabled() || userHasRoles) {
             String sessionIpAddress = session.getIpAddress();
-            String requestIpAddress = reqContext.getCallerIpAddress();
+            String requestIpAddress = RequestContext.get().getCallerIpAddress();
             if (!Objects.equals(sessionIpAddress, requestIpAddress)) {
                 throw new NotAuthenticatedException();
             }

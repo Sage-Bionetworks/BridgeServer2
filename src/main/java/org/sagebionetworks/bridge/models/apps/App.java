@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.upload.ExporterVersion;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 
@@ -248,11 +249,22 @@ public interface App extends BridgeEntity {
     void setTaskIdentifiers(Set<String> taskIdentifiers);
 
     /**
-     * The enumerated activity event keys for timestamps that can be recorded for use when scheduling tasks . These
-     * are provided through the UI to prevent errors when creating schedules.
+     * These are now deprecated in favor of customEvents. If added they will be readable from that mapping 
+     * as FUTURE_ONLY events.  
      */
+    @Deprecated
     Set<String> getActivityEventKeys();
+    @Deprecated
     void setActivityEventKeys(Set<String> activityEventKeys);
+    
+    /**
+     * The configuration of custom activity events for this app. The key is the ID of the event, and and the value
+     * is the update type. All event IDs declared in the activityEventKeys field of App that are not in the 
+     * customEvents map will be added with the update type of FUTURE_ONLY, the default for custom events before 
+     * this could be customized.
+     */
+    Map<String,ActivityEventUpdateType> getCustomEvents();
+    void setCustomEvents(Map<String,ActivityEventUpdateType> customEvents);
 
     /**
      * The enumerated set of data group strings that can be assigned to users in this app. This enumeration ensures 

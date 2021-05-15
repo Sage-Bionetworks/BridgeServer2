@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.validators.ActivityEventValidator.ANSWER_VALUE_ERROR;
 import static org.sagebionetworks.bridge.validators.ActivityEventValidator.EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.validators.ActivityEventValidator.INSTANCE;
@@ -26,6 +27,7 @@ public class ActivityEventValidatorTest {
                 .withStudyId(TEST_STUDY_ID)
                 .withTimestamp(CREATED_ON)
                 .withObjectType(CUSTOM)
+                .withUpdateType(FUTURE_ONLY)
                 .withObjectId("fooboo")
                 .withEventType(ANSWERED) // irrelevant here
                 .withAnswerValue("anAnswer");
@@ -42,11 +44,23 @@ public class ActivityEventValidatorTest {
                 .withObjectType(null)
                 .withObjectId(null)
                 .withEventType(null)
+                .withUpdateType(FUTURE_ONLY)
                 .withAnswerValue(null)
                 .build();
-        assertValidatorMessage(INSTANCE, event, "eventId", EVENT_ID_ERROR);
+       assertValidatorMessage(INSTANCE, event, "eventId", EVENT_ID_ERROR);
     }
 
+    @Test(expectedExceptions = IllegalStateException.class,
+            expectedExceptionsMessageRegExp = ".*No update type configured.*")
+    public void updateTypeNull() {
+        getEvent().withObjectType(null)
+                .withObjectId(null)
+                .withEventType(null)
+                .withUpdateType(null)
+                .withAnswerValue(null)
+                .build();
+    }
+    
     @Test
     public void answerValueRequired() {
         ActivityEvent event = getEvent().withEventType(ActivityEventType.ANSWERED)

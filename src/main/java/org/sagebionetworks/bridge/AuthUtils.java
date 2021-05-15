@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
@@ -35,13 +36,15 @@ public class AuthUtils {
             .hasAnyRole(ADMIN);
     
     /**
-     * Can the caller edit assessments? Must be a member of the organization.
+     * Can the caller edit assessments? Must be a member of the organization. Probably should be
+     * some kind of developer role as well!
      */
     public static final AuthEvaluator CAN_EDIT_ASSESSMENTS = new AuthEvaluator().isInOrg().or()
             .hasAnyRole(ADMIN);
     
     /**
-     * Can the caller and/remove organization members? Must be the organizations's admin.
+     * Can the caller and/remove organization members? Must be the organizations's admin. Note 
+     * that this check is currently also used for sponsors...which are not members.
      */
     public static final AuthEvaluator CAN_EDIT_MEMBERS = new AuthEvaluator()
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
@@ -62,18 +65,17 @@ public class AuthUtils {
      * own account, must have access to the study, or be a worker. 
      */
     public static final AuthEvaluator CAN_READ_STUDY_ASSOCIATIONS = new AuthEvaluator().isSelf().or()
-            .canAccessStudy().or()
-            .hasAnyRole(WORKER, ADMIN).or()
-            .callerConsideredGlobal();
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
     
     /**
-     * Can the caller view participants (through the origin Participants API)? Must be reading self,
+     * Can the caller view participants (through the original Participants API)? Must be reading self,
      * be an organization admin, or be a worker.
      */
     public static final AuthEvaluator CAN_READ_PARTICIPANTS = new AuthEvaluator().isSelf().or()
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
-            .hasAnyRole(WORKER, ADMIN).or()
-            .callerConsideredGlobal();
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
     
     /**
      * Can the caller edit participants? Must be editing one’s own account, or be a study coordinator
@@ -96,7 +98,7 @@ public class AuthUtils {
      * (external IDs are pretty lax because in theory, they are not identifying).
      */
     public static final AuthEvaluator CAN_READ_EXTERNAL_IDS = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
 
     /**
@@ -104,14 +106,14 @@ public class AuthUtils {
      * study.
      */
     public static final AuthEvaluator CAN_READ_STUDIES = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, ORG_ADMIN).or()
-            .hasAnyRole(ADMIN);
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER, ORG_ADMIN).or()
+            .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
      * Can the caller edit studies? Caller must be a study coordinator, or a developer.
      */
     public static final AuthEvaluator CAN_UPDATE_STUDIES = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
@@ -130,6 +132,32 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_EDIT_SHARED_ASSESSMENTS = new AuthEvaluator()
             .isSharedOwner().or()
             .hasAnyRole(ADMIN);
+
+    /**
+     * Can the caller read the schedules? They must be enrolled in the study, a study-scoped
+     * role that can view schedules, or a developer. Note that when schedules are used in 
+     * studies, additional people will have read access, but this hasn't been implemented
+     * yet. 
+     */
+    public static final AuthEvaluator CAN_READ_SCHEDULES = new AuthEvaluator()
+            .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
+            .isEnrolledInStudy().or()
+            .hasAnyRole(DEVELOPER, ADMIN);
+
+    /**
+     * Study designers can create schedules without reference to their organization since
+     * the schedule will just be in their organization.
+     */
+    public static final AuthEvaluator CAN_CREATE_SCHEDULES = new AuthEvaluator()
+            .hasAnyRole(DEVELOPER, STUDY_DESIGNER, ADMIN);
+    
+    /**
+     * Can the caller edit the schedules? They must be a study-scoped role that can view 
+     * schedules, or a developer.
+     */
+    public static final AuthEvaluator CAN_EDIT_SCHEDULES = new AuthEvaluator()
+            .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
+            .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
      * Is the caller in the provided role? Superadmins always pass this test.
