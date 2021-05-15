@@ -46,7 +46,7 @@ public class UploadFileHelperTest {
     @Test
     public void uploadBytesAsAttachment() throws Exception {
         // Execute.
-        helper.uploadBytesAsAttachment(FILENAME, CONTENT);
+        helper.uploadBytesToS3(FILENAME, CONTENT);
 
         // Verify.
         ArgumentCaptor<ObjectMetadata> metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);
@@ -62,7 +62,7 @@ public class UploadFileHelperTest {
     public void uploadFileAsAttachment() throws Exception {
         // Execute.
         File mockFile = mock(File.class);
-        helper.uploadFileAsAttachment(FILENAME, mockFile);
+        helper.uploadFileToS3(FILENAME, mockFile);
 
         // Verify.
         ArgumentCaptor<ObjectMetadata> metadataCaptor = ArgumentCaptor.forClass(ObjectMetadata.class);

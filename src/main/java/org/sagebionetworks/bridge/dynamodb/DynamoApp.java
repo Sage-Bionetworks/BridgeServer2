@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.AppleAppLink;
 import org.sagebionetworks.bridge.models.apps.OAuthProvider;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
+import org.sagebionetworks.bridge.models.upload.ExporterVersion;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 
@@ -57,6 +58,7 @@ public final class DynamoApp implements App {
     private String identifier;
     private Map<String, String> automaticCustomEvents;
     private boolean autoVerificationEmailSuppressed;
+    private ExporterVersion exporterVersion;
     private boolean participantIpLockingEnabled;
     private boolean appIdExcludedInExport;
     private String supportEmail;
@@ -190,6 +192,17 @@ public final class DynamoApp implements App {
     @Override
     public void setAutoVerificationEmailSuppressed(boolean autoVerificationEmailSuppressed) {
         this.autoVerificationEmailSuppressed = autoVerificationEmailSuppressed;
+    }
+
+    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
+    @Override
+    public ExporterVersion getExporterVersion() {
+        return exporterVersion != null ? exporterVersion : ExporterVersion.LEGACY_EXPORTER;
+    }
+
+    @Override
+    public void setExporterVersion(ExporterVersion exporterVersion) {
+        this.exporterVersion = exporterVersion;
     }
 
     /** {@inheritDoc} */
@@ -617,7 +630,7 @@ public final class DynamoApp implements App {
     @Override
     public int hashCode() {
         return Objects.hash(name, shortName, sponsorName, identifier, automaticCustomEvents,
-                autoVerificationEmailSuppressed, participantIpLockingEnabled, appIdExcludedInExport,
+                autoVerificationEmailSuppressed, exporterVersion, participantIpLockingEnabled, appIdExcludedInExport,
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, usesCustomExportSchedule,
                 uploadMetadataFieldDefinitions, uploadValidationStrictness, consentNotificationEmail,
                 consentNotificationEmailVerified, minAgeOfConsent, accountLimit, version, active, profileAttributes,
@@ -639,6 +652,7 @@ public final class DynamoApp implements App {
         return (Objects.equals(identifier, other.identifier)
                 && Objects.equals(automaticCustomEvents, other.automaticCustomEvents)
                 && Objects.equals(autoVerificationEmailSuppressed, other.autoVerificationEmailSuppressed)
+                && Objects.equals(exporterVersion, other.exporterVersion)
                 && Objects.equals(participantIpLockingEnabled, other.participantIpLockingEnabled)
                 && Objects.equals(appIdExcludedInExport, other.appIdExcludedInExport)
                 && Objects.equals(supportEmail, other.supportEmail)
@@ -686,7 +700,7 @@ public final class DynamoApp implements App {
     public String toString() {
         return String.format(
                 "DynamoApp [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, automaticCustomEvents=%s"
-                        + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, participantIpLockingEnabled=%b, "
+                        + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, exporterVersion=%s, participantIpLockingEnabled=%b, "
                         + "appIdExcludedInExport=%b, supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, "
                         + "technicalEmail=%s, uploadValidationStrictness=%s, consentNotificationEmail=%s, "
                         + "consentNotificationEmailVerified=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
@@ -698,7 +712,7 @@ public final class DynamoApp implements App {
                         + "reauthenticationEnabled=%s, autoVerificationPhoneSuppressed=%s, verifyChannelOnSignInEnabled=%s, "
                         + "defaultTemplates=%s]",
                 name, shortName, active, sponsorName, identifier, automaticCustomEvents,
-                autoVerificationEmailSuppressed, minAgeOfConsent, participantIpLockingEnabled, appIdExcludedInExport,
+                autoVerificationEmailSuppressed, minAgeOfConsent, exporterVersion, participantIpLockingEnabled, appIdExcludedInExport,
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
                 consentNotificationEmail, consentNotificationEmailVerified, version, profileAttributes, taskIdentifiers,
                 activityEventKeys, dataGroups, passwordPolicy, strictUploadValidationEnabled, healthCodeExportEnabled,

@@ -249,7 +249,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         // Validate raw data submitted to S3
         String expectedRawDataAttachmentId = uploadId + HealthDataService.RAW_ATTACHMENT_SUFFIX;
         ArgumentCaptor<byte[]> rawBytesCaptor = ArgumentCaptor.forClass(byte[].class);
-        verify(mockUploadFileHelper).uploadBytesAsAttachment(eq(expectedRawDataAttachmentId),
+        verify(mockUploadFileHelper).uploadBytesToS3(eq(expectedRawDataAttachmentId),
                 rawBytesCaptor.capture());
         assertEquals(contextRecord.getRawDataAttachmentId(), expectedRawDataAttachmentId);
 
@@ -359,7 +359,7 @@ public class HealthDataServiceSubmitHealthDataTest {
         // Validate raw data submitted to S3.
         String expectedRawDataAttachmentId = context.getUploadId() + HealthDataService.RAW_ATTACHMENT_SUFFIX;
         ArgumentCaptor<byte[]> rawBytesCaptor = ArgumentCaptor.forClass(byte[].class);
-        verify(mockUploadFileHelper).uploadBytesAsAttachment(eq(expectedRawDataAttachmentId),
+        verify(mockUploadFileHelper).uploadBytesToS3(eq(expectedRawDataAttachmentId),
                 rawBytesCaptor.capture());
         assertEquals(contextRecord.getRawDataAttachmentId(), expectedRawDataAttachmentId);
 

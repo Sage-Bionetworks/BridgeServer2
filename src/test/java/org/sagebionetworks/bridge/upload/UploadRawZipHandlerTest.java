@@ -53,7 +53,7 @@ public class UploadRawZipHandlerTest {
     public void test() throws Exception {
         // Execute and validate.
         handler.handle(context);
-        verify(mockUploadFileHelper).uploadFileAsAttachment(EXPECTED_RAW_DATA_ZIP_FILENAME, mockDecryptedFile);
+        verify(mockUploadFileHelper).uploadFileToS3(EXPECTED_RAW_DATA_ZIP_FILENAME, mockDecryptedFile);
         assertEquals(record.getRawDataAttachmentId(), EXPECTED_RAW_DATA_ZIP_FILENAME);
     }
 
@@ -62,14 +62,14 @@ public class UploadRawZipHandlerTest {
         // This is the same as the zipped case, except the filename is different.
         upload.setZipped(false);
         handler.handle(context);
-        verify(mockUploadFileHelper).uploadFileAsAttachment(EXPECTED_NON_ZIPPED_FILENAME, mockDecryptedFile);
+        verify(mockUploadFileHelper).uploadFileToS3(EXPECTED_NON_ZIPPED_FILENAME, mockDecryptedFile);
         assertEquals(record.getRawDataAttachmentId(), EXPECTED_NON_ZIPPED_FILENAME);
     }
 
     @Test(expectedExceptions = UploadValidationException.class)
     public void errorCase() throws Exception {
         // Mock uploadFileHelper to throw.
-        doThrow(IOException.class).when(mockUploadFileHelper).uploadFileAsAttachment(EXPECTED_RAW_DATA_ZIP_FILENAME,
+        doThrow(IOException.class).when(mockUploadFileHelper).uploadFileToS3(EXPECTED_RAW_DATA_ZIP_FILENAME,
                 mockDecryptedFile);
 
         // Execute (throws exception).
