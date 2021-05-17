@@ -290,15 +290,11 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         ResourceList<StudyActivityEvent> retValue = service
                 .getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
-        assertEquals(retValue.getItems().size(), 4);
+        assertEquals(retValue.getItems().size(), 3);
         
         StudyActivityEvent createdOn = BridgeUtils.findByEventId(
                 retValue.getItems(), ActivityEventObjectType.CREATED_ON);
         assertEquals(createdOn.getTimestamp(), CREATED_ON);
-                
-        StudyActivityEvent studyStartDate = BridgeUtils.findByEventId(
-                retValue.getItems(), ActivityEventObjectType.STUDY_START_DATE);
-        assertEquals(studyStartDate.getTimestamp(), TIMELINE_RETRIEVED_TS);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -306,73 +302,6 @@ public class StudyActivityEventServiceTest extends Mockito {
         service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
     }
     
-    @Test
-    public void getRecentStudyActivityEvents_studyStartDateFromTimelineRetrieved() {
-        StudyActivityEvent event1 = new StudyActivityEvent();
-        event1.setEventId("enrollment");
-        event1.setTimestamp(ENROLLMENT_TS);
-        StudyActivityEvent event2 = new StudyActivityEvent();
-        event2.setEventId("timeline_retrieved");
-        event2.setTimestamp(TIMELINE_RETRIEVED_TS);
-        
-        List<StudyActivityEvent> list = Lists.newArrayList(event1, event2);
-        when(mockDao.getRecentStudyActivityEvents(
-                TEST_USER_ID, TEST_STUDY_ID)).thenReturn(list);
-        
-        Account account = Account.create();
-        account.setCreatedOn(CREATED_ON);
-        when(mockAccountService.getAccountNoFilter(AccountId.forId(
-                TEST_APP_ID, TEST_USER_ID))).thenReturn(Optional.of(account));
-        
-        ResourceList<StudyActivityEvent> retValue = service
-                .getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
-        
-        StudyActivityEvent studyStartDate = BridgeUtils.findByEventId(
-                retValue.getItems(), ActivityEventObjectType.STUDY_START_DATE);
-        assertEquals(studyStartDate.getTimestamp(), TIMELINE_RETRIEVED_TS);
-    }
-    
-    @Test
-    public void getRecentStudyActivityEvents_studyStartDateFromEnrollment() {
-        StudyActivityEvent event1 = new StudyActivityEvent();
-        event1.setEventId("enrollment");
-        event1.setTimestamp(ENROLLMENT_TS);
-        
-        List<StudyActivityEvent> list = Lists.newArrayList(event1);
-        when(mockDao.getRecentStudyActivityEvents(
-                TEST_USER_ID, TEST_STUDY_ID)).thenReturn(list);
-        
-        Account account = Account.create();
-        account.setCreatedOn(CREATED_ON);
-        when(mockAccountService.getAccountNoFilter(AccountId.forId(
-                TEST_APP_ID, TEST_USER_ID))).thenReturn(Optional.of(account));
-        
-        ResourceList<StudyActivityEvent> retValue = service
-                .getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
-        
-        StudyActivityEvent studyStartDate = BridgeUtils.findByEventId(
-                retValue.getItems(), ActivityEventObjectType.STUDY_START_DATE);
-        assertEquals(studyStartDate.getTimestamp(), ENROLLMENT_TS);
-    }
-    
-    @Test
-    public void getRecentStudyActivityEvents_studyStartDateFromAccountCreatedOn() {
-        when(mockDao.getRecentStudyActivityEvents(
-                TEST_USER_ID, TEST_STUDY_ID)).thenReturn(new ArrayList<>());
-        
-        Account account = Account.create();
-        account.setCreatedOn(CREATED_ON);
-        when(mockAccountService.getAccountNoFilter(AccountId.forId(
-                TEST_APP_ID, TEST_USER_ID))).thenReturn(Optional.of(account));
-        
-        ResourceList<StudyActivityEvent> retValue = service
-                .getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
-        
-        StudyActivityEvent studyStartDate = BridgeUtils.findByEventId(
-                retValue.getItems(), ActivityEventObjectType.STUDY_START_DATE);
-        assertEquals(studyStartDate.getTimestamp(), CREATED_ON);
-    }
-
     @Test
     public void getStudyActivityEventHistory() {
         List<StudyActivityEvent> list = new ArrayList<>();
@@ -424,27 +353,6 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(retValue.getItems().get(0).getTimestamp(), CREATED_ON);
     }
 
-    @Test
-    public void getStudyActivityEventHistory_studyStartDate() {
-        StudyActivityEvent event1 = new StudyActivityEvent();
-        event1.setEventId("enrollment");
-        event1.setTimestamp(ENROLLMENT_TS);
-
-        when(mockDao.getRecentStudyActivityEvents(
-                TEST_USER_ID, TEST_STUDY_ID)).thenReturn(ImmutableList.of(event1));
-        
-        Account account = Account.create();
-        account.setCreatedOn(CREATED_ON);
-        when(mockAccountService.getAccountNoFilter(AccountId.forId(
-                TEST_APP_ID, TEST_USER_ID))).thenReturn(Optional.of(account));
-        
-        StudyActivityEventRequest request = makeRequest().objectId("study_start_date");
-        
-        PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(request, 0, 50);
-        assertEquals(retValue.getItems().size(), 1);
-        assertEquals(retValue.getItems().get(0).getTimestamp(), ENROLLMENT_TS);
-    }
-
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Account not found.")
     public void getStudyActivityEventHistory_syntheticEventNoAccount() {
@@ -454,7 +362,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockAccountService.getAccountNoFilter(AccountId.forId(
                 TEST_APP_ID, TEST_USER_ID))).thenReturn(Optional.empty());
         
-        StudyActivityEventRequest request = makeRequest().objectId("study_start_date");
+        StudyActivityEventRequest request = makeRequest().objectId("created_on");
         
         service.getStudyActivityEventHistory(request, 0, 50);
     }
@@ -470,6 +378,23 @@ public class StudyActivityEventServiceTest extends Mockito {
             .thenReturn(new PagedResourceList<>(Lists.newArrayList(event1), 0, true));
         
         StudyActivityEventRequest request = makeRequest().objectId("event1");
+        
+        PagedResourceList<StudyActivityEvent> retValue = service
+                .getStudyActivityEventHistory(request, null, null);
+        assertEquals(retValue.getItems().size(), 1);
+        
+        verify(mockDao).getStudyActivityEventHistory(
+                TEST_USER_ID, TEST_STUDY_ID, "custom:event1", null, null);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = "Invalid event ID: nonsense")
+    public void getStudyActivityEventHistory_invalidEventId() {
+        when(mockDao.getStudyActivityEventHistory(
+                eq(TEST_USER_ID), eq(TEST_STUDY_ID), any(), eq(null), eq(null)))
+            .thenReturn(new PagedResourceList<>(Lists.newArrayList(), 0, true));
+        
+        StudyActivityEventRequest request = makeRequest().objectId("nonsense");
         
         PagedResourceList<StudyActivityEvent> retValue = service
                 .getStudyActivityEventHistory(request, null, null);

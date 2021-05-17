@@ -2,11 +2,13 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 
 import java.util.List;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -50,6 +52,10 @@ public class ActivityEventController extends BaseController {
     @Autowired
     final void setStudyActivityEventService(StudyActivityEventService studyActivityEventService) {
         this.studyActivityEventService = studyActivityEventService;
+    }
+    
+    DateTime getDateTime() {
+        return new DateTime();
     }
 
     @PostMapping("/v1/activityevents")
@@ -96,6 +102,13 @@ public class ActivityEventController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
         
+        studyActivityEventService.publishEvent(new StudyActivityEventRequest()
+                .appId(session.getAppId())
+                .studyId(studyId)
+                .userId(session.getId())
+                .objectType(TIMELINE_RETRIEVED)
+                .timestamp(getDateTime()));
+
         return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), session.getId(), studyId);
     }
 

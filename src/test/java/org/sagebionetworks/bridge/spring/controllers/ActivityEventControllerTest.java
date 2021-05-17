@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.spring.controllers.ActivityEventController.EVENT_DELETED_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.ActivityEventController.EVENT_RECORDED_MSG;
 import static org.testng.Assert.assertEquals;
@@ -157,14 +158,23 @@ public class ActivityEventControllerTest extends Mockito {
                 .withId(TEST_USER_ID).build());
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        doReturn(CREATED_ON).when(controller).getDateTime();
 
-        ResourceList<StudyActivityEvent> page = new ResourceList<>(ImmutableList.of(
-                new StudyActivityEvent()), true);
+        ResourceList<StudyActivityEvent> page = new ResourceList<>(
+                ImmutableList.of(new StudyActivityEvent()), true);
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(
                 TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID)).thenReturn(page);
         
         ResourceList<StudyActivityEvent> retList = controller.getRecentActivityEventsForSelf(TEST_STUDY_ID);
         assertEquals(retList.getItems().size(), 1);
+
+        verify(mockStudyActivityEventService).publishEvent(requestCaptor.capture());
+        StudyActivityEventRequest request = requestCaptor.getValue();
+        assertEquals(request.getAppId(), TEST_APP_ID);
+        assertEquals(request.getStudyId(), TEST_STUDY_ID);
+        assertEquals(request.getUserId(), TEST_USER_ID);
+        assertEquals(request.getObjectType(), TIMELINE_RETRIEVED);
+        assertEquals(request.getTimestamp(), CREATED_ON);
     }
 
     @Test

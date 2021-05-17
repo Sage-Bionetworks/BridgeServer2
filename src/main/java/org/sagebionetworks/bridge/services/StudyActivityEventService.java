@@ -6,13 +6,9 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.BridgeUtils.findByEventId;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAutoEventValue;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_START_DATE;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.DELETE_INSTANCE;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.CREATE_INSTANCE;
@@ -52,7 +48,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class StudyActivityEventService {
     
-    private static final String START_DATE_FIELD = STUDY_START_DATE.name().toLowerCase();
     private static final String CREATED_ON_FIELD = CREATED_ON.name().toLowerCase();
 
     private StudyActivityEventDao dao;
@@ -128,7 +123,6 @@ public class StudyActivityEventService {
 
         List<StudyActivityEvent> events = dao.getRecentStudyActivityEvents(userId, studyId);
         events.add(new StudyActivityEvent(CREATED_ON_FIELD, account.getCreatedOn()));
-        events.add(makeStudyStartDate(events, account.getCreatedOn()));
         
         return new ResourceList<>(events); 
     }
@@ -143,27 +137,30 @@ public class StudyActivityEventService {
         if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
+        String originalEventId = request.getObjectId();
+        
         String appId = request.getAppId();
-        request.customEvents(appService.getApp(appId).getCustomEvents());
-        request.autoCustomEvents(appService.getApp(appId).getAutomaticCustomEvents());
+        App app = appService.getApp(appId);
+        
+        request.customEvents(app.getCustomEvents());
+        request.autoCustomEvents(app.getAutomaticCustomEvents());
         
         String userId = request.getUserId();
         String studyId = request.getStudyId();
         String eventId = request.getObjectId();
-
+        
+        if (eventId == null) {
+            throw new BadRequestException("Invalid event ID: " + originalEventId);
+        }
         // These need to be emulated in the history view, so they don't confuse consumers
-        if (eventId.equals(START_DATE_FIELD) || eventId.equals(CREATED_ON_FIELD)) {
+        if (eventId.equals(CREATED_ON_FIELD)) {
             
             Account account = accountService.getAccountNoFilter(AccountId.forId(appId, userId))
                     .orElseThrow(() -> new EntityNotFoundException(Account.class));
             
             List<StudyActivityEvent> events = new ArrayList<>();
-            if (eventId.equals(START_DATE_FIELD)) {
-                List<StudyActivityEvent> list = dao.getRecentStudyActivityEvents(userId, studyId);
-                events.add(makeStudyStartDate(list, account.getCreatedOn()));
-            } else {
-                events.add(new StudyActivityEvent(CREATED_ON_FIELD, account.getCreatedOn()));
-            }
+            events.add(new StudyActivityEvent(CREATED_ON_FIELD, account.getCreatedOn()));
+            
             return new PagedResourceList<>(events, 1, true)
                     .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
                     .withRequestParam(ResourceList.PAGE_SIZE, pageSize);    
@@ -171,18 +168,6 @@ public class StudyActivityEventService {
         return dao.getStudyActivityEventHistory(userId, studyId, eventId, offsetBy, pageSize)
             .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
             .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
-    }
-    
-    private StudyActivityEvent makeStudyStartDate(List<StudyActivityEvent> inputEvents, DateTime createdOn) {
-        StudyActivityEvent timelineRetrieved = findByEventId(inputEvents, TIMELINE_RETRIEVED);
-        if (timelineRetrieved != null) {
-            return new StudyActivityEvent(START_DATE_FIELD, timelineRetrieved.getTimestamp());
-        }
-        StudyActivityEvent enrollment = findByEventId(inputEvents, ENROLLMENT);
-        if (enrollment != null) {
-            return new StudyActivityEvent(START_DATE_FIELD, enrollment.getTimestamp());
-        }
-        return new StudyActivityEvent(START_DATE_FIELD, createdOn);
     }
     
     /**
