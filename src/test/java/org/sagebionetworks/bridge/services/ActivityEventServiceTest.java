@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
-import static org.sagebionetworks.bridge.TestUtils.assertDatesWithTimeZoneEqual;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
@@ -508,25 +507,25 @@ public class ActivityEventServiceTest {
         List<ActivityEvent> publishedEventList = publishedEventCaptor.getAllValues();
 
         assertEquals(publishedEventList.get(0).getEventId(), "enrollment");
-        assertDatesWithTimeZoneEqual(publishedEventList.get(0).getTimestamp(), enrollment);
+        assertTrue(publishedEventList.get(0).getTimestamp().isEqual(enrollment));
         assertEquals(publishedEventList.get(0).getUpdateType(), IMMUTABLE);
         assertEquals(publishedEventList.get(0).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(1).getEventId(), "custom:3-days-after");
-        assertEquals(publishedEventList.get(1).getTimestamp(),
-                DateTime.parse("2018-04-07T16:00Z"));
+        assertTrue(publishedEventList.get(1).getTimestamp().isEqual(
+                enrollment.plusDays(3)));
         assertEquals(publishedEventList.get(1).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(1).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(2).getEventId(), "custom:1-week-after");
-        assertEquals(publishedEventList.get(2).getTimestamp(),
-                DateTime.parse("2018-04-11T16:00Z"));
+        assertTrue(publishedEventList.get(2).getTimestamp().isEqual(
+                enrollment.plusWeeks(1)));
         assertEquals(publishedEventList.get(2).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(2).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(3).getEventId(), "custom:13-weeks-after");
-        assertEquals(publishedEventList.get(3).getTimestamp(),
-                DateTime.parse("2018-07-04T16:00Z"));
+        assertTrue(publishedEventList.get(3).getTimestamp().isEqual(
+                enrollment.plusWeeks(13)));
         assertEquals(publishedEventList.get(3).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(3).getHealthCode(), "AAA-BBB-CCC");
     }
@@ -778,13 +777,13 @@ public class ActivityEventServiceTest {
         assertEquals(publishedEventList.get(0).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(1).getEventId(), "custom:3-days-after");
-        assertDatesWithTimeZoneEqual(publishedEventList.get(1).getTimestamp(), new DateTime("2018-04-07T16:00-0700"));
+        assertTrue(publishedEventList.get(1).getTimestamp().isEqual(timestamp.plusDays(3)));
         assertEquals(publishedEventList.get(1).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(1).getHealthCode(), "AAA-BBB-CCC");
 
         assertEquals(publishedEventList.get(2).getEventId(), "custom:1-week-after");
-        assertDatesWithTimeZoneEqual(publishedEventList.get(2).getTimestamp(),
-                new DateTime("2018-04-11T16:00-0700"));
+        assertTrue(publishedEventList.get(2).getTimestamp().isEqual(
+                timestamp.plusWeeks(1)));
         assertEquals(publishedEventList.get(2).getUpdateType(), MUTABLE);
         assertEquals(publishedEventList.get(2).getHealthCode(), "AAA-BBB-CCC");
     }
