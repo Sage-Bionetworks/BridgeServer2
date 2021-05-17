@@ -138,7 +138,20 @@ public class HibernateHelper {
             }
             return query.list();
         });
-    }    
+    }
+    
+    @SuppressWarnings("unchecked")
+    public <T> List<Object[]> nativeQuery(String queryString, Map<String,Object> parameters) {
+        return executeWithExceptionHandling(null, session -> {
+            Query<?> query = session.createNativeQuery(queryString);
+            if (parameters != null) {
+                for (Map.Entry<String, Object> entry : parameters.entrySet()) {
+                    query.setParameter(entry.getKey(), entry.getValue());
+                }
+            }
+            return (List<Object[]>)query.getResultList();
+        });
+    }
     
     /**
      * Executes the given query as an update. Can either be an UPDATE query or a DELETE query. Returns the number of

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules2.adherence;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
@@ -23,6 +24,7 @@ public class AdherenceRecordTest extends Mockito {
     @Test
     public void canSerialize() throws Exception { 
         AdherenceRecord record = new AdherenceRecord();
+        record.setAppId(TEST_APP_ID);
         record.setUserId(TEST_USER_ID);
         record.setStudyId(TEST_STUDY_ID);
         record.setStartedOn(CREATED_ON);

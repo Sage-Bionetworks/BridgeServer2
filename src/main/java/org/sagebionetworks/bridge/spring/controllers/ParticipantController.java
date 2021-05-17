@@ -116,7 +116,8 @@ public class ParticipantController extends BaseController {
         return new StatusMessage("SMS notification registration created");
     }
     
-    @PostMapping("/v3/participants/{userId}/activityEvents")
+    @PostMapping(path = {"/v3/participants/{userId}/activityEvents",
+            "/v3/participants/{userId}/activityevents"})
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage createCustomActivityEvent(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
@@ -206,7 +207,9 @@ public class ParticipantController extends BaseController {
     }
 
     @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/activityEvents",
-            "/v3/studies/{appId}/participants/{userId}/activityEvents" })
+            "/v3/studies/{appId}/participants/{userId}/activityEvents",
+            "/v1/apps/{appId}/participants/{userId}/activityevents",
+            "/v3/studies/{appId}/participants/{userId}/activityevents"})
     public ResourceList<ActivityEvent> getActivityEventsForWorker(@PathVariable String appId,
             @PathVariable String userId) {
         getAuthenticatedSession(WORKER);
@@ -583,7 +586,8 @@ public class ParticipantController extends BaseController {
                 + BridgeUtils.COMMA_SPACE_JOINER.join(erroredNotifications) + ".");
     }
 
-    @GetMapping(path = {"/v3/participants/{userId}/activityEvents"}, produces = {
+    @GetMapping(path = {"/v3/participants/{userId}/activityEvents",
+            "/v3/participants/{userId}/activityevents"}, produces = {
             APPLICATION_JSON_UTF8_VALUE })
     public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String userId) throws JsonProcessingException {
         UserSession researcherSession = getAdministrativeSession();

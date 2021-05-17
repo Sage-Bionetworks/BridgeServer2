@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
@@ -38,7 +39,7 @@ public class SessionValidator implements Validator {
             errors.rejectValue("name", CANNOT_BE_BLANK);
         }
         if (isBlank(session.getStartEventId())) {
-            errors.rejectValue("startEventId", CANNOT_BE_BLANK);
+            errors.rejectValue("startEventId", INVALID_EVENT_ID);
         }
         validateFixedLengthPeriod(errors, session.getDelay(), "delay", false);
         validateFixedLengthLongPeriod(errors, session.getInterval(), "interval", false);

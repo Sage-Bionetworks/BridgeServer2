@@ -69,11 +69,10 @@ public class AdherenceRecordsSearchTest extends Mockito {
     }
     
     @Test
-    public void canCopy() {
+    public void toBuilder() {
         AdherenceRecordsSearch search = createSearch();
         
-        AdherenceRecordsSearch copy = new AdherenceRecordsSearch.Builder()
-                .copyOf(search).build();
+        AdherenceRecordsSearch copy = search.toBuilder().build();
         assertEquals(copy.getUserId(), TEST_USER_ID);
         assertEquals(copy.getStudyId(), TEST_STUDY_ID);
         assertEquals(copy.getInstanceGuids(), ImmutableSet.of("A"));

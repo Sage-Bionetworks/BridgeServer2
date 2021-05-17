@@ -20,6 +20,8 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 @IdClass(AdherenceRecordId.class)
 public class AdherenceRecord implements BridgeEntity {
     
+    @JsonIgnore
+    private String appId;
     @Id
     @JsonIgnore
     private String userId;
@@ -41,6 +43,12 @@ public class AdherenceRecord implements BridgeEntity {
     private JsonNode clientData;
     private String clientTimeZone; 
     
+    public String getAppId() {
+        return appId;
+    }
+    public void setAppId(String appId) {
+        this.appId = appId;
+    }
     public String getUserId() {
         return userId;
     }

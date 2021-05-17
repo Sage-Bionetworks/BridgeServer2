@@ -9,11 +9,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
@@ -39,10 +36,11 @@ public class AdherenceController extends BaseController {
         
         AdherenceRecordList recordsList = parseJson(AdherenceRecordList.class);
         for (AdherenceRecord oneRecord : recordsList.getRecords()) {
+            oneRecord.setAppId(session.getAppId());
             oneRecord.setUserId(session.getId());
             oneRecord.setStudyId(studyId);
         }
-        service.updateAdherenceRecords(session.getAppId(), session.getHealthCode(), recordsList);
+        service.updateAdherenceRecords(session.getAppId(), recordsList);
         return SAVED_MSG;
     }
     
@@ -52,12 +50,11 @@ public class AdherenceController extends BaseController {
         
         AdherenceRecordsSearch payload = parseJson(AdherenceRecordsSearch.class);
         
-        AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
-                .copyOf(payload)
+        AdherenceRecordsSearch search = payload.toBuilder()
                 .withUserId(session.getId())
                 .withStudyId(studyId).build();
         
-        return service.getAdherenceRecords(session.getAppId(), session.getHealthCode(), search);
+        return service.getAdherenceRecords(session.getAppId(), search);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/adherence/search")
@@ -67,16 +64,10 @@ public class AdherenceController extends BaseController {
         
         AdherenceRecordsSearch payload = parseJson(AdherenceRecordsSearch.class);
         
-        AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
-                .copyOf(payload)
+        AdherenceRecordsSearch search = payload.toBuilder()
                 .withUserId(userId)
                 .withStudyId(studyId).build();
         
-        String healthCode = accountService.getHealthCodeForAccount(
-                AccountId.forId(session.getAppId(), userId));
-        if (healthCode == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        return service.getAdherenceRecords(session.getAppId(), healthCode, search);
+        return service.getAdherenceRecords(session.getAppId(), search);
     }
 }

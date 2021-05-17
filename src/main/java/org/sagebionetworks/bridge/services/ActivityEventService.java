@@ -4,12 +4,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITY;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.QUESTION;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SESSION;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_START_DATE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
@@ -201,7 +199,7 @@ public class ActivityEventService {
         
         ActivityEvent event = new DynamoActivityEvent.Builder()
             .withHealthCode(healthCode)
-            .withTimestamp(answer.getAnsweredOn())
+            .withTimestamp(new DateTime(answer.getAnsweredOn()))
             .withObjectType(QUESTION)
             .withObjectId(answer.getQuestionGuid())
             .withEventType(ANSWERED)
@@ -229,7 +227,7 @@ public class ActivityEventService {
                 .withObjectType(ACTIVITY)
                 .withObjectId(activityGuid)
                 .withEventType(FINISHED)
-                .withTimestamp(schActivity.getFinishedOn())
+                .withTimestamp(new DateTime(schActivity.getFinishedOn()))
                 .build();
 
             // If the globalEvent is valid, all other derivations are valid 
@@ -237,38 +235,6 @@ public class ActivityEventService {
             
             activityEventDao.publishEvent(event);
         }
-    }
-    
-    public void publishSessionFinishedEvent(String studyId, String healthCode, String sessionGuid,
-            DateTime finishedOn) {
-        ActivityEvent event = new DynamoActivityEvent.Builder()
-                .withHealthCode(healthCode)
-                .withObjectType(SESSION)
-                .withObjectId(sessionGuid)
-                .withEventType(FINISHED)
-                .withTimestamp(finishedOn)
-                .withStudyId(studyId)
-                .build();
-
-        Validate.entityThrowingException(INSTANCE, event);
-        
-        activityEventDao.publishEvent(event);
-    }
-    
-    public void publishAssessmentFinishedEvent(String studyId, String healthCode, String assessmentId,
-            DateTime finishedOn) {
-        ActivityEvent event = new DynamoActivityEvent.Builder()
-                .withHealthCode(healthCode)
-                .withObjectType(ASSESSMENT)
-                .withObjectId(assessmentId)
-                .withEventType(FINISHED)
-                .withTimestamp(finishedOn)
-                .withStudyId(studyId)
-                .build();
-
-        Validate.entityThrowingException(INSTANCE, event);
-        
-        activityEventDao.publishEvent(event);
     }
     
     /**
@@ -343,7 +309,7 @@ public class ActivityEventService {
 
             DateTime timestamp = entry.getValue();
             if (timestamp !=null) {
-                event.setTimestamp(timestamp.getMillis());
+                event.setTimestamp(timestamp);
             }
 
             activityEventList.add(event);
