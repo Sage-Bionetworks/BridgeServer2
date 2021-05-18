@@ -37,6 +37,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.DateTime;
@@ -45,6 +48,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
+import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -232,6 +239,12 @@ public class ParticipantServiceTest extends Mockito {
     
     @Mock
     private OrganizationService organizationService;
+
+    @Mock
+    private AmazonSQSClient sqsClient;
+
+    @Mock
+    private BridgeConfig bridgeConfig;
     
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
@@ -2403,7 +2416,42 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
     }
-    
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void getParticipantRosterNullPassword() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(null).build();
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void getParticipantRosterBlankPassword() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("").build();
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void getParticipantRosterInvalidPassword() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("badPassword").build();
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+    }
+
+    @Test
+    public void getParticipantRoster() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
+
+        String queueUrl = "https://sqs.us-east-1.amazonaws.com/420786776710/Bridge-WorkerPlatform-Request-local";
+        when(bridgeConfig.getProperty("workerPlatform.request.sqs.queue.url")).thenReturn(queueUrl);
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+
+        String requestJson = "{\"service\":\"DownloadParticipantRosterWorker\",\"body\":{\"appId\":\"test-app\"," +
+                "\"userId\":\"userId\",\"password\":\"P@ssword1\",\"studyId\":\"studyId\"}}";
+        verify(sqsClient).sendMessage(queueUrl, requestJson);
+    }
+
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 
     // way to get correct paging.
     

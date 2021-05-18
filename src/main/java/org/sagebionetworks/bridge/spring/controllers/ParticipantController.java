@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
@@ -28,6 +29,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -608,6 +611,33 @@ public class ParticipantController extends BaseController {
         
         participantService.sendSmsMessage(app, userId, template);
         return new StatusMessage("Message sent.");
+    }
+
+    @PostMapping("/v3/participants/emailRoster")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public StatusMessage getParticipantRoster() throws JsonProcessingException {
+        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        String appId = session.getAppId();
+
+        StudyParticipant participant = session.getParticipant();
+        if (participant.getEmail() == null || !participant.getEmailVerified()) {
+            throw new BadRequestException("Cannot request user data.");
+        }
+        if (RequestContext.get().isInRole(STUDY_COORDINATOR) && !RequestContext.get().isInRole(RESEARCHER)
+            && RequestContext.get().getCallerOrgMembership() == null) {
+            throw new UnauthorizedException("Caller is a study coordinator without an org membership.");
+        }
+
+        ParticipantRosterRequest request = parseJson(ParticipantRosterRequest.class);
+        String studyId = request.getStudyId();
+
+        if (studyId != null && !RequestContext.get().getOrgSponsoredStudies().contains(studyId)) {
+            throw new UnauthorizedException("Requested studyId is not sponsored by the caller's org.");
+        }
+
+        participantService.getParticipantRoster(appId, session.getId(), request);
+
+        return new StatusMessage("Download initiated.");
     }
     
     private JsonNode getParticipantsInternal(App app, String offsetByString, String pageSizeString,
