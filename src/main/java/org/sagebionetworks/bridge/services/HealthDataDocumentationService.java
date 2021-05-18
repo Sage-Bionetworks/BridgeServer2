@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.HealthDataDocumentationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -27,7 +28,7 @@ public class HealthDataDocumentationService {
         checkNotNull(documentation);
 
         // s3Helper.writeBytesToS3()
-        // create an s3Key
+        // create an s3Key: parentId-identifier
         String s3Key = "";
 
         return healthDataDocumentationDao.createOrUpdateDocumentation(documentation, s3Key);

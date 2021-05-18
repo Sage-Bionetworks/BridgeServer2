@@ -39,11 +39,9 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
 
             // Update created on/by attributes.
             dynamoDocumentation.setCreatedOn(DateTime.now());
-            dynamoDocumentation.setCreatedBy("todo"); // TODO do I pass in createdBy or set it in an outer layer?
         } else {
             // Update modified on/by attributes.
             dynamoDocumentation.setModifiedOn(DateTime.now());
-            dynamoDocumentation.setModifiedBy("also todo"); // TODO same as above
         }
 
         dynamoDocumentation.setS3Key(s3Key);
