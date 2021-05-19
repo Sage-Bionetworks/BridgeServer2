@@ -873,7 +873,8 @@ public class ParticipantService {
         // sent to SQS
         String queueUrl = bridgeConfig.getProperty(CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL);
         SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJson);
-        LOG.info("Sent request to SQS for userId=" + userId + ", app=" + appId);
+        LOG.info("Sent request to SQS for userId=" + userId + ", app=" + appId + "; received message ID=" +
+                sqsResult.getMessageId());
     }
     
     private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {

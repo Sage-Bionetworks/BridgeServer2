@@ -38,6 +38,7 @@ import java.util.Optional;
 import java.util.Set;
 
 import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
@@ -2444,6 +2445,8 @@ public class ParticipantServiceTest extends Mockito {
 
         String queueUrl = "https://sqs.us-east-1.amazonaws.com/420786776710/Bridge-WorkerPlatform-Request-local";
         when(bridgeConfig.getProperty("workerPlatform.request.sqs.queue.url")).thenReturn(queueUrl);
+
+        when(sqsClient.sendMessage(eq(queueUrl), anyString())).thenReturn(mock(SendMessageResult.class));
 
         participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
 
