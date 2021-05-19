@@ -268,7 +268,7 @@ public class ParticipantControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
 
         doAnswer((ans) -> {
-            RequestContext.updateFromSession(session, null);
+            RequestContext.updateFromSession(session, mockSponsorService);
             return session;
         }).when(controller).getSessionIfItExists();
         

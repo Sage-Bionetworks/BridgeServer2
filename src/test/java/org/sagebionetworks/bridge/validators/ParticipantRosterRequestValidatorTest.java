@@ -50,7 +50,7 @@ public class ParticipantRosterRequestValidatorTest {
                 "   \"password\":\"" + BLANK_PASSWORD + "\",\n" +
                 "   \"studyId\":\"" + STUDY_ID + "\"\n" +
                 "}");
-        assertValidatorMessage(ParticipantRosterRequestValidator.INSTANCE, request, "password", "cannot be missing, null, or blank");
+        assertValidatorMessage(ParticipantRosterRequestValidator.INSTANCE, request, "password", "cannot be null or blank");
     }
 
     @Test
