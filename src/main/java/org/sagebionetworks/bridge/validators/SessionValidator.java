@@ -10,7 +10,6 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColor
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthPeriod;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateMessages;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -98,41 +97,6 @@ public class SessionValidator implements Validator {
                 validateLabels(errors, asmt.getLabels());
                 validateColorScheme(errors, asmt.getColorScheme(), "colorScheme");
                 errors.popNestedPath();
-            }
-        }
-        // Notifications are off. We don't want any of the fields set so the designer isn't
-        // confused about what will happen.
-        if (session.getNotifyAt() == null) {
-            if (session.getRemindAt() != null) {
-                errors.rejectValue("remindAt", "cannot be set if notifications are disabled");
-            }
-            if (session.getReminderPeriod() != null) {
-                errors.rejectValue("reminderPeriod", "cannot be set if notifications are disabled");
-            }
-            if (session.isAllowSnooze()) {
-                errors.rejectValue("allowSnooze", "cannot be true if notifications are disabled");
-            }
-            if (!session.getMessages().isEmpty()) {
-                errors.rejectValue("messages", "cannot be set if notifications are disabled");
-            }
-        } else {
-            if (session.getRemindAt() != null && session.getReminderPeriod() == null) {
-                errors.rejectValue("reminderPeriod", "must be set if remindAt is set");
-            } else if (session.getRemindAt() == null && session.getReminderPeriod() != null) {
-                errors.rejectValue("remindAt", "must be set if reminderPeriod is set");
-            }
-            if (session.getMessages().isEmpty()) {
-                errors.rejectValue("messages", CANNOT_BE_NULL_OR_EMPTY);
-            }
-            validateMessages(errors, session.getMessages());
-            validateFixedLengthPeriod(errors, session.getReminderPeriod(), "reminderPeriod", false);
-            // Do not allow a reminder period that is longer than a session's interval.
-            if (session.getInterval() != null && session.getReminderPeriod() != null) {
-                int intMin = periodInMinutes(session.getInterval());
-                int remMin = periodInMinutes(session.getReminderPeriod());
-                if (remMin > intMin) {
-                    errors.rejectValue("reminderPeriod", "cannot be longer in duration than the session’s interval");
-                }
             }
         }
     }

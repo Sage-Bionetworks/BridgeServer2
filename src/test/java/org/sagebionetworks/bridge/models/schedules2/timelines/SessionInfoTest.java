@@ -66,17 +66,6 @@ public class SessionInfoTest extends Mockito {
     }
 
     @Test
-    public void allowSnoozeFalseNoProperty() {
-        Session session = SessionTest.createValidSession();
-        session.setAllowSnooze(false);
-        
-        SessionInfo info = SessionInfo.create(session);
-        
-        JsonNode node = BridgeObjectMapper.get().valueToTree(info);
-        assertNull(node.get("allowSnooze"));
-    }
-    
-    @Test
     public void serializationHandlesNulls() {
         SessionInfo info = SessionInfo.create(new Session());
         

@@ -5,15 +5,10 @@ import static org.sagebionetworks.bridge.BridgeUtils.selectByLang;
 
 import java.util.List;
 
-import org.joda.time.Period;
-
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.Label;
-import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
-import org.sagebionetworks.bridge.models.schedules2.NotificationType;
 import org.sagebionetworks.bridge.models.schedules2.PerformanceOrder;
-import org.sagebionetworks.bridge.models.schedules2.ReminderType;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
@@ -23,19 +18,13 @@ public class SessionInfo {
     private String label;
     private String startEventId;
     private PerformanceOrder performanceOrder;
-    private NotificationType notifyAt;
-    private ReminderType remindAt;
-    private Period reminderPeriod;
-    private Boolean allowSnooze;
     private Integer minutesToComplete;
-    private NotificationMessage message;
     private List<String> timeWindowGuids;
     
     public static final SessionInfo create(Session session) {
         List<String> languages = RequestContext.get().getCallerLanguages();
         
         Label label = selectByLang(session.getLabels(), languages, new Label("", session.getName()));
-        NotificationMessage msg = selectByLang(session.getMessages(), languages, null);
         
         int min = 0;
         for (AssessmentReference ref : session.getAssessments()) {
@@ -48,18 +37,11 @@ public class SessionInfo {
         info.label = label.getValue();
         info.startEventId = session.getStartEventId();
         info.performanceOrder = session.getPerformanceOrder();
-        info.notifyAt = session.getNotifyAt();
-        info.remindAt = session.getRemindAt();
-        info.reminderPeriod = session.getReminderPeriod();
-        if (session.isAllowSnooze()) {
-            info.allowSnooze = Boolean.TRUE;    
-        }
         info.timeWindowGuids = session.getTimeWindows().stream()
                 .map(TimeWindow::getGuid).collect(toList());
         if (min > 0) {
             info.minutesToComplete = min;    
         }
-        info.message = msg;
         return info;
     }
     
@@ -75,25 +57,10 @@ public class SessionInfo {
     public PerformanceOrder getPerformanceOrder() {
         return performanceOrder;
     }
-    public NotificationType getNotifyAt() {
-        return notifyAt;
-    }
-    public ReminderType getRemindAt() {
-        return remindAt;
-    }
-    public Period getReminderPeriod() {
-        return reminderPeriod;
-    }
-    public Boolean isAllowSnooze() {
-        return allowSnooze;
-    }
     public Integer getMinutesToComplete() {
         return minutesToComplete;
     }
-    public NotificationMessage getMessage() {
-        return message;
-    }
     public List<String> getTimeWindowGuids() {
         return timeWindowGuids;
-    }    
+    }
 }

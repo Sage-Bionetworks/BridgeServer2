@@ -651,3 +651,12 @@ CREATE TABLE `StudyActivityEvents` (
   CONSTRAINT `StudyActivityEvent-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+-- changeset bridge:34
+
+ALTER TABLE `Sessions`
+DROP COLUMN `reminderPeriod`,
+DROP COLUMN `messages`,
+DROP COLUMN `notifyAt`,
+DROP COLUMN `remindAt`,
+DROP COLUMN `allowSnooze`;
+

@@ -3,12 +3,9 @@ package org.sagebionetworks.bridge.models.schedules2;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_1_GUID;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_2_GUID;
 import static org.sagebionetworks.bridge.TestConstants.LABELS;
-import static org.sagebionetworks.bridge.TestConstants.MESSAGES;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
-import static org.sagebionetworks.bridge.models.schedules2.NotificationType.START_OF_WINDOW;
 import static org.sagebionetworks.bridge.models.schedules2.PerformanceOrder.RANDOMIZED;
-import static org.sagebionetworks.bridge.models.schedules2.ReminderType.BEFORE_WINDOW_END;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -24,7 +21,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Label;
-import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 
 public class SessionTest {
 
@@ -38,10 +34,6 @@ public class SessionTest {
         session.setOccurrences(19);
         session.setInterval(Period.parse("P7D"));
         session.setPerformanceOrder(RANDOMIZED);
-        session.setNotifyAt(START_OF_WINDOW);
-        session.setRemindAt(BEFORE_WINDOW_END);
-        session.setReminderPeriod(Period.parse("PT10M"));
-        session.setAllowSnooze(true);
         
         TimeWindow window = new TimeWindow();
         window.setGuid(SESSION_WINDOW_GUID_1);
@@ -68,7 +60,6 @@ public class SessionTest {
         asmt2.setRevision(200);
         asmt2.setLabels(LABELS);
         session.setAssessments(ImmutableList.of(asmt1, asmt2));
-        session.setMessages(MESSAGES);
         
         return session;
     }
@@ -140,10 +131,6 @@ public class SessionTest {
         assertEquals(deser.getOccurrences(), Integer.valueOf(19));
         assertEquals(deser.getInterval(), Period.parse("P7D"));
         assertEquals(deser.getPerformanceOrder(), PerformanceOrder.RANDOMIZED);
-        assertEquals(deser.getNotifyAt(), NotificationType.START_OF_WINDOW);
-        assertEquals(deser.getRemindAt(), ReminderType.BEFORE_WINDOW_END);
-        assertEquals(deser.getReminderPeriod(), Period.parse("PT10M"));
-        assertTrue(deser.isAllowSnooze());
         
         assertEquals(deser.getLabels().size(), 2);
         List<Label> labels = deser.getLabels();
@@ -163,12 +150,6 @@ public class SessionTest {
         assertEquals(windows.get(0).getStartTime(), LocalTime.parse("08:00"));
         assertEquals(windows.get(0).getExpiration(), Period.parse("P6D"));
         assertTrue(windows.get(0).isPersistent());
-
-        assertEquals(deser.getMessages().size(), 2);
-        List<NotificationMessage> messages = deser.getMessages();
-        assertEquals(messages.get(0).getLang(), "en");
-        assertEquals(messages.get(0).getSubject(), "English");
-        assertEquals(messages.get(0).getMessage(), "Body");
     }
     
     @Test
@@ -177,7 +158,6 @@ public class SessionTest {
         assertEquals(session.getAssessments(), ImmutableList.of());
         assertEquals(session.getLabels(), ImmutableList.of());
         assertEquals(session.getTimeWindows(), ImmutableList.of());
-        assertEquals(session.getMessages(), ImmutableList.of());
     }
     
     @Test

@@ -4,26 +4,20 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.schedules2.SessionTest.createValidSession;
 import static org.sagebionetworks.bridge.validators.SessionValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
-import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_LONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_PERIOD;
 
-import java.util.List;
-
 import com.google.common.collect.ImmutableList;
 
-import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.Label;
-import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 
 public class SessionValidatorTest extends Mockito {
@@ -240,171 +234,5 @@ public class SessionValidatorTest extends Mockito {
         Session session = createValidSession();
         session.getAssessments().get(0).setAppId("\t");
         assertValidatorMessage(INSTANCE, session, "assessments[0].appId", CANNOT_BE_BLANK);
-    }
-    
-    @Test
-    public void remindAtSetButReminMinBeforeNotSet() {
-        Session session = createValidSession();
-        session.setReminderPeriod(null);
-        assertValidatorMessage(INSTANCE, session, "reminderPeriod", "must be set if remindAt is set");
-    }
-    
-    @Test
-    public void remindMinBeforeSetButRemindAtNotSet() {
-        Session session = createValidSession();
-        session.setRemindAt(null);
-        assertValidatorMessage(INSTANCE, session, "remindAt", "must be set if reminderPeriod is set");
-    }
-    
-    @Test
-    public void reminderPeriodAndRemindAtNullOK() {
-        // No reminder (second notification) should be shown. This is valid
-        Session session = createValidSession();
-        session.setReminderPeriod(null);
-        session.setRemindAt(null);
-        Validate.entityThrowingException(INSTANCE, session);
-    }
-    
-    @Test
-    public void reminderPeriodNegative() {
-        Session session = createValidSession();
-        session.setReminderPeriod(Period.parse("PT-10M"));
-        assertValidatorMessage(INSTANCE, session, "reminderPeriod", CANNOT_BE_NEGATIVE);
-    }
-
-    @Test
-    public void reminderPeriodLongerThanSessionInterval() {
-        Session session = createValidSession();
-        session.setReminderPeriod(Period.parse("P7DT1M"));
-        assertValidatorMessage(INSTANCE, session, "reminderPeriod", 
-                "cannot be longer in duration than the session’s interval");
-    }
-    
-    @Test
-    public void allowSnoozeCannotBeTrueWhenNotificationsDisabled() {
-        Session session = createValidSession();
-        session.setNotifyAt(null);
-        assertValidatorMessage(INSTANCE, session, "allowSnooze", "cannot be true if notifications are disabled");
-    }
-    
-    @Test
-    public void messagesNullOrEmpty() {
-        Session session = createValidSession();
-        session.setMessages(null);
-        assertValidatorMessage(INSTANCE, session, "messages", CANNOT_BE_NULL_OR_EMPTY);
-    }
-    
-    @Test
-    public void messagesNullOrEmptyOKIfNoNotifications() {
-        Session session = createValidSession();
-        session.setNotifyAt(null);
-        session.setRemindAt(null);
-        session.setAllowSnooze(false);
-        session.setReminderPeriod(null);
-        session.setMessages(null);
-        Validate.entityThrowingException(INSTANCE, session);
-    }
-    
-    @Test
-    public void messagesMustContainEnglishDefault() {
-        Session session = createValidSession();
-        session.setMessages(ImmutableList.of(
-            new NotificationMessage.Builder().withLang("fr").build(),
-            new NotificationMessage.Builder().withLang("de").build()
-        ));
-        
-        assertValidatorMessage(INSTANCE, session, "messages", "must include an English-language message as a default");
-    }
-    
-    @Test
-    public void messageLanguageBlank() {
-        Session session = createValidSession();
-        session.setMessages(updateLanguage(session.getMessages(), ""));
-        assertValidatorMessage(INSTANCE, session, "messages[0].lang", CANNOT_BE_BLANK);
-    }
-    
-    @Test
-    public void messageLanguageNull() {
-        Session session = createValidSession();
-        session.setMessages(updateLanguage(session.getMessages(), null));
-        assertValidatorMessage(INSTANCE, session, "messages[0].lang", CANNOT_BE_BLANK);
-    }
-    
-    @Test
-    public void messageLanguageCodeDuplicated() throws Exception {
-        Session session = createValidSession();
-        session.setMessages(ImmutableList.of(session.getMessages().get(0), session.getMessages().get(0)));
-        
-        assertValidatorMessage(INSTANCE, session, "messages[1].lang", DUPLICATE_LANG);
-    }
-    
-    @Test
-    public void messsageLanguageCodeInvalid() {
-        NotificationMessage message = new NotificationMessage.Builder()
-                .withLang("yyy").withSubject("Subject").withMessage("Body").build();
-
-        Session session = createValidSession();
-        session.setMessages(ImmutableList.of(session.getMessages().get(0), message));
-        assertValidatorMessage(INSTANCE, session, "messages[1].lang", INVALID_LANG);
-    }
-    
-    @Test
-    public void messageSubjectBlank() {
-        Session session = createValidSession();
-        session.setMessages(updateSubject(session.getMessages(), "\t\n"));
-        assertValidatorMessage(INSTANCE, session, "messages[0].subject", CANNOT_BE_BLANK);
-    }
-    
-    @Test
-    public void messageSubjectNull() {
-        Session session = createValidSession();
-        session.setMessages(updateSubject(session.getMessages(), null));
-        assertValidatorMessage(INSTANCE, session, "messages[0].subject", CANNOT_BE_BLANK);
-    }
-    
-    @Test
-    public void messageSubjectTooLong() {
-        Session session = createValidSession();
-        session.setMessages(updateSubject(session.getMessages(), StringUtils.repeat("X", 100)));
-        assertValidatorMessage(INSTANCE, session, "messages[0].subject", "must be 40 characters or less");
-    }
-    
-    @Test
-    public void messageBlank() {
-        Session session = createValidSession();
-        session.setMessages(updateMessage(session.getMessages(), "\t\n"));
-        assertValidatorMessage(INSTANCE, session, "messages[0].message", CANNOT_BE_BLANK);
-    }
-    
-    @Test
-    public void messageNull() {
-        Session session = createValidSession();
-        session.setMessages(updateMessage(session.getMessages(), null));
-        assertValidatorMessage(INSTANCE, session, "messages[0].message", CANNOT_BE_BLANK);
-    }
-    
-    @Test
-    public void messageTooLong() {
-        Session session = createValidSession();
-        session.setMessages(updateMessage(session.getMessages(), StringUtils.repeat("X", 100)));
-        assertValidatorMessage(INSTANCE, session, "messages[0].message", "must be 60 characters or less");
-    }
-    
-    private List<NotificationMessage> updateLanguage(List<NotificationMessage> messages, String lang) {
-        NotificationMessage msg = messages.get(0);
-        return ImmutableList.of(new NotificationMessage.Builder().withLang(lang).withSubject(msg.getSubject())
-                .withMessage(msg.getMessage()).build(), messages.get(1));
-    }
-    
-    private List<NotificationMessage> updateSubject(List<NotificationMessage> messages, String subject) {
-        NotificationMessage msg = messages.get(0);
-        return ImmutableList.of(new NotificationMessage.Builder().withLang(msg.getLang()).withSubject(subject)
-                .withMessage(msg.getMessage()).build(), messages.get(1));
-    }
-    
-    private List<NotificationMessage> updateMessage(List<NotificationMessage> messages, String message) {
-        NotificationMessage msg = messages.get(0);
-        return ImmutableList.of(new NotificationMessage.Builder().withLang(msg.getLang()).withSubject(msg.getSubject())
-                .withMessage(message).build(), messages.get(1));
     }
 }
