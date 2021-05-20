@@ -14,7 +14,6 @@ import com.google.common.hash.Hashing;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.Label;
-import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 
@@ -118,12 +117,7 @@ public final class AssessmentInfo {
             return null;
         }
         String path = SHARED_APP_ID.equals(appId) ? "/v1/sharedassessments/" : "/v1/assessments/";
-        return getConfigResolver().url("ws", path + guid + "/config");
-    }
-    
-    // converted to an accessor allow for testing.
-    ConfigResolver getConfigResolver() {
-        return INSTANCE;
+        return INSTANCE.url("ws", path + guid + "/config");
     }
     
     @Override
