@@ -5,6 +5,9 @@ import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_2_GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_2;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_3;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_4;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
@@ -14,6 +17,7 @@ import static org.testng.Assert.assertTrue;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 
 import org.joda.time.Period;
 import org.mockito.Mockito;
@@ -22,6 +26,8 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2Test;
+import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 
 public class TimelineTest extends Mockito {
 
@@ -157,5 +163,31 @@ public class TimelineTest extends Mockito {
         assertEquals(node.get("sessions").size(), 0);
         assertEquals(node.get("schedule").size(), 0);
         assertEquals(node.get("type").textValue(), "Timeline");
+    }
+    
+    @Test
+    public void sessionInsertionOrderPreserved() { 
+        Session sess1 = SessionTest.createValidSession();
+        sess1.setGuid(SESSION_GUID_1);
+        
+        Session sess2 = SessionTest.createValidSession();
+        sess2.setGuid(SESSION_GUID_2);
+        
+        Session sess3 = SessionTest.createValidSession();
+        sess3.setGuid(SESSION_GUID_3);
+        
+        Session sess4 = SessionTest.createValidSession();
+        sess4.setGuid(SESSION_GUID_4);
+        
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        schedule.setSessions(ImmutableList.of(sess1, sess2, sess3, sess4));
+        
+        // This fails if you substitute a HashMap for the LinkedHashMap in 
+        // Timeline, which preserves key insertion order.
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        assertEquals(timeline.getSessions().get(0).getGuid(), SESSION_GUID_1);
+        assertEquals(timeline.getSessions().get(1).getGuid(), SESSION_GUID_2);
+        assertEquals(timeline.getSessions().get(2).getGuid(), SESSION_GUID_3);
+        assertEquals(timeline.getSessions().get(3).getGuid(), SESSION_GUID_4);
     }
 }

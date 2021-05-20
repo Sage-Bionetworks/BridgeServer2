@@ -1,8 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.sagebionetworks.bridge.json.DateTimeDeserializer;
 
 /**
  * Request for participant roster download.

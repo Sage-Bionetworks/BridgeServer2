@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
+import static org.sagebionetworks.bridge.models.appconfig.ConfigResolver.INSTANCE;
 
 import java.util.List;
 import java.util.Objects;
@@ -12,6 +14,7 @@ import com.google.common.hash.Hashing;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.Label;
+import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 
@@ -28,7 +31,7 @@ public final class AssessmentInfo {
     private final String label;
     private final Integer minutesToComplete;
     private final ColorScheme colorScheme;
-
+    
     public static AssessmentInfo create(AssessmentReference ref) {
         List<String> languages = RequestContext.get().getCallerLanguages();
         
@@ -66,8 +69,8 @@ public final class AssessmentInfo {
         }
     }
     
-    private AssessmentInfo(String key, String guid, String appId, String identifier, Integer revision, String label,
-            Integer minutesToComplete, ColorScheme colorScheme) {
+    private AssessmentInfo(String key, String guid, String appId, String identifier,
+            Integer revision, String label, Integer minutesToComplete, ColorScheme colorScheme) {
         this.key = key;
         this.guid = guid;
         this.appId = appId;
@@ -108,6 +111,19 @@ public final class AssessmentInfo {
 
     public ColorScheme getColorScheme() {
         return colorScheme;
+    }
+    
+    public String getConfigUrl() {
+        if (guid == null) {
+            return null;
+        }
+        String path = SHARED_APP_ID.equals(appId) ? "/v1/sharedassessments/" : "/v1/assessments/";
+        return getConfigResolver().url("ws", path + guid + "/config");
+    }
+    
+    // converted to an accessor allow for testing.
+    ConfigResolver getConfigResolver() {
+        return INSTANCE;
     }
     
     @Override

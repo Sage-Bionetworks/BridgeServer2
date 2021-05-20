@@ -50,6 +50,7 @@ public class ScheduledSessionTest extends Mockito {
         assertEquals(node.get("startTime").textValue(), "17:00");
         assertEquals(node.get("delayTime").textValue(), "PT3H");
         assertEquals(node.get("expiration").textValue(), "PT30M");
+        assertEquals(node.get("timeWindowGuid").textValue(), SESSION_WINDOW_GUID_1);
         assertTrue(node.get("persistent").booleanValue());
         assertEquals(node.get("type").textValue(), "ScheduledSession");
         assertEquals(node.get("assessments").size(), 1);
