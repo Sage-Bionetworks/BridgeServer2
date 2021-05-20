@@ -55,8 +55,9 @@ public class Scheduler {
     }
     
     int calculateEndDay(int studyLengthInDays, LocalTime startTime, int startDay, Period expiration) {
+        // endDay is zero indexed, so we subtract one from studyLengthInDays.
         if (expiration == null) {
-            return studyLengthInDays;
+            return studyLengthInDays - 1;
         }
         int expInMinutes = expiration.toStandardMinutes().getMinutes();
         int minutesInDay = (startTime.getHourOfDay() * 60) + startTime.getMinuteOfHour();
@@ -95,9 +96,13 @@ public class Scheduler {
             Period expiration = window.getExpiration();
             
             endDay = calculateEndDay(studyLengthInDays, startTime, startDay, expiration);
-            // If it extends beyond the end of the study, it is not included in timeline
-            if (endDay > studyLengthInDays) {
+            // If it extends beyond the end of the study, it is not included in timeline.
+            // days are zero indexed so we subtract 1 from studyLengthInDays.
+            if (endDay > (studyLengthInDays-1)) {
                 break;
+            }
+            if (expiration == null) {
+                expiration = Period.parse("P" + (endDay - startDay) + "D");
             }
             
             // This session will be used, so we can add it
@@ -109,7 +114,7 @@ public class Scheduler {
             scheduledSession.withStartDay(startDay);
             scheduledSession.withEndDay(endDay);
             scheduledSession.withStartTime(window.getStartTime());
-            scheduledSession.withExpiration(window.getExpiration());
+            scheduledSession.withExpiration(expiration);
             scheduledSession.withPersistent(window.isPersistent());
             // If it is the first day, and there is a delay set that is less than a day,
             // it’s not entirely defined what should happen in this situation. We include

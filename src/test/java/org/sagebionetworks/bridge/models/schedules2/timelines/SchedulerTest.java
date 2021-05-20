@@ -978,6 +978,27 @@ public class SchedulerTest extends Mockito {
         assertEquals(endDay, 23);
     }
     
+    // This verifies that we set an expiration for scheduled sessions based on windows without
+    // an expiration, and (since these had an off-by-one error) verifies that we are calculating
+    // the endDay for these sessions correctly.
+    @Test
+    public void expirationDefaultsToLastDayOfStudy() {
+        int endDay = INSTANCE.calculateEndDay(21, LocalTime.parse("10:00"), 7, null);
+        assertEquals(endDay, 20);
+        
+        Schedule2 schedule = createSchedule("P21D");
+        Session session = createOneTimeSession("P2D");
+        session.getTimeWindows().get(0).setExpiration(null); // no expiration
+        schedule.setSessions(ImmutableList.of(session));
+        
+        Timeline timeline = INSTANCE.calculateTimeline(schedule);
+        assertEquals(timeline.getSchedule().size(), 1);
+        
+        ScheduledSession schSession = timeline.getSchedule().get(0);
+        assertEquals(schSession.getEndDay(), 20);
+        assertEquals(schSession.getExpiration(), Period.parse("P18D"));
+    }
+    
     // This behavior was not what I expected 
     @Test
     public void weeklyAppearsAt28Days() {

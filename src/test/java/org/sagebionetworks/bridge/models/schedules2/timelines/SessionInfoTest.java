@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -29,6 +30,7 @@ public class SessionInfoTest extends Mockito {
         assertEquals(node.get("performanceOrder").textValue(), "randomized");
         assertEquals(node.get("notifyAt").textValue(), "start_of_window");
         assertEquals(node.get("remindAt").textValue(), "before_window_end");
+        assertEquals(node.get("timeWindowGuids").get(0).textValue(), SESSION_WINDOW_GUID_1);
         assertTrue(node.get("allowSnooze").booleanValue());
         // this combines the minutes from two assessments, correctly
         assertEquals(node.get("minutesToComplete").intValue(), 8);
@@ -79,7 +81,8 @@ public class SessionInfoTest extends Mockito {
         SessionInfo info = SessionInfo.create(new Session());
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
-        assertEquals(node.size(), 1);
+        assertEquals(node.get("timeWindowGuids").size(), 0);
+        assertEquals(node.size(), 2);
         assertEquals(node.get("type").textValue(), "SessionInfo");
     }
 }

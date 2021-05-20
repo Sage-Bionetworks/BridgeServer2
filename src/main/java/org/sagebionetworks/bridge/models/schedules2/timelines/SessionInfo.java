@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
+import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeUtils.selectByLang;
 
 import java.util.List;
@@ -14,6 +15,7 @@ import org.sagebionetworks.bridge.models.schedules2.NotificationType;
 import org.sagebionetworks.bridge.models.schedules2.PerformanceOrder;
 import org.sagebionetworks.bridge.models.schedules2.ReminderType;
 import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
 public class SessionInfo {
 
@@ -27,6 +29,7 @@ public class SessionInfo {
     private Boolean allowSnooze;
     private Integer minutesToComplete;
     private NotificationMessage message;
+    private List<String> timeWindowGuids;
     
     public static final SessionInfo create(Session session) {
         List<String> languages = RequestContext.get().getCallerLanguages();
@@ -51,6 +54,8 @@ public class SessionInfo {
         if (session.isAllowSnooze()) {
             info.allowSnooze = Boolean.TRUE;    
         }
+        info.timeWindowGuids = session.getTimeWindows().stream()
+                .map(TimeWindow::getGuid).collect(toList());
         if (min > 0) {
             info.minutesToComplete = min;    
         }
@@ -88,4 +93,7 @@ public class SessionInfo {
     public NotificationMessage getMessage() {
         return message;
     }
+    public List<String> getTimeWindowGuids() {
+        return timeWindowGuids;
+    }    
 }

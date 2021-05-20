@@ -133,7 +133,6 @@ import org.sagebionetworks.bridge.services.SponsorService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
-import org.testng.internal.annotations.ExpectedExceptionsAnnotation;
 
 public class ParticipantControllerTest extends Mockito {
 

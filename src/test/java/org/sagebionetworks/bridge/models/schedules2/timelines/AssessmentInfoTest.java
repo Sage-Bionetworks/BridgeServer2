@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 
@@ -7,16 +8,24 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
 import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Label;
+import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
 public class AssessmentInfoTest extends Mockito {
+    
+    @BeforeMethod
+    public void beforeMethod() {
+        MockitoAnnotations.initMocks(this);;
+    }
     
     @Test
     public void equalsHashCode() {
@@ -26,6 +35,10 @@ public class AssessmentInfoTest extends Mockito {
     
     @Test
     public void canSerialize() throws Exception {
+        ConfigResolver resolver = ConfigResolver.INSTANCE;
+        
+        String url = resolver.url("ws", "/v1/assessments/guid/config");
+        
         AssessmentReference ref = new AssessmentReference();
         ref.setGuid("guid");
         ref.setAppId(TEST_APP_ID);
@@ -35,7 +48,7 @@ public class AssessmentInfoTest extends Mockito {
         ref.setLabels(ImmutableList.of(new Label("en", "English"), new Label("de", "German")));
         ref.setMinutesToComplete(10);
         ref.setColorScheme(new ColorScheme("#111111", "#222222", "#333333", "#444444"));
-
+        
         AssessmentInfo info = AssessmentInfo.create(ref);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
@@ -46,12 +59,20 @@ public class AssessmentInfoTest extends Mockito {
         assertEquals(node.get("label").textValue(), "English");
         assertEquals(node.get("minutesToComplete").intValue(), 10);
         assertEquals(node.get("key").textValue(), "b380003bb380003b");
+        assertEquals(node.get("configUrl").textValue(), url);
         assertEquals(node.get("type").textValue(), "AssessmentInfo");
         assertEquals(node.get("colorScheme").get("background").textValue(), "#111111");
         assertEquals(node.get("colorScheme").get("foreground").textValue(), "#222222");
         assertEquals(node.get("colorScheme").get("activated").textValue(), "#333333");
         assertEquals(node.get("colorScheme").get("inactivated").textValue(), "#444444");
         assertEquals(node.get("colorScheme").get("type").textValue(), "ColorScheme");
+        
+        // shared ID also generates the correct URL
+        url = resolver.url("ws", "/v1/sharedassessments/guid/config");
+        ref.setAppId(SHARED_APP_ID);
+        info = AssessmentInfo.create(ref);
+        node = BridgeObjectMapper.get().valueToTree(info);
+        assertEquals(node.get("configUrl").textValue(), url);
     }
     
     @Test
