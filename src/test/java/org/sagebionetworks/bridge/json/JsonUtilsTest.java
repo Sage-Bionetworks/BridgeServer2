@@ -10,6 +10,8 @@ import static org.testng.Assert.assertTrue;
 
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.node.NullNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
@@ -244,4 +246,64 @@ public class JsonUtilsTest {
         assertEquals(JsonUtils.asRolesSet(node, "key"), set);
     }
 
+    @Test
+    public void mergeObjectNodes_zeroNodes() {
+        ObjectNode result = JsonUtils.mergeObjectNodes();
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    public void mergeObjectNodes_oneNode() throws Exception {
+        JsonNode input = mapper.readTree("{\"a\":1,\"b\":2}");
+        ObjectNode result = JsonUtils.mergeObjectNodes(input);
+        assertEquals(result, input);
+    }
+
+    @Test
+    public void mergeObjectNodes_twoNodes() throws Exception {
+        JsonNode input1 = mapper.readTree("{\"a\":1,\"b\":2}");
+        JsonNode input2 = mapper.readTree("{\"c\":3,\"d\":4}");
+
+        ObjectNode result = JsonUtils.mergeObjectNodes(input1, input2);
+        assertEquals(result.size(), 4);
+        assertEquals(result.get("a").intValue(), 1);
+        assertEquals(result.get("b").intValue(), 2);
+        assertEquals(result.get("c").intValue(), 3);
+        assertEquals(result.get("d").intValue(), 4);
+    }
+
+    @Test
+    public void mergeObjectNodes_threeNodes() throws Exception {
+        JsonNode input1 = mapper.readTree("{\"a\":1}");
+        JsonNode input2 = mapper.readTree("{\"b\":2}");
+        JsonNode input3 = mapper.readTree("{\"c\":3}");
+
+        ObjectNode result = JsonUtils.mergeObjectNodes(input1, input2, input3);
+        assertEquals(result.size(), 3);
+        assertEquals(result.get("a").intValue(), 1);
+        assertEquals(result.get("b").intValue(), 2);
+        assertEquals(result.get("c").intValue(), 3);
+    }
+
+    @Test
+    public void mergeObjectNodes_mergeWithNullObject() throws Exception {
+        JsonNode input = mapper.readTree("{\"a\":1,\"b\":2}");
+        ObjectNode result = JsonUtils.mergeObjectNodes(input, null);
+        assertEquals(result, input);
+    }
+
+    @Test
+    public void mergeObjectNodes_mergeWithNullNode() throws Exception {
+        JsonNode input = mapper.readTree("{\"a\":1,\"b\":2}");
+        ObjectNode result = JsonUtils.mergeObjectNodes(input, NullNode.instance);
+        assertEquals(result, input);
+    }
+
+    @Test
+    public void mergeObjectNodes_mergeNonObject() throws Exception {
+        JsonNode input1 = mapper.readTree("{\"a\":1,\"b\":2}");
+        JsonNode input2 = mapper.readTree("[\"not\", \"an\", \"object\"]");
+        ObjectNode result = JsonUtils.mergeObjectNodes(input1, input2);
+        assertEquals(result, input1);
+    }
 }

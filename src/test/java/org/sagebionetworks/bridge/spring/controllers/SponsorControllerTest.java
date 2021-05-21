@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -206,5 +207,33 @@ public class SponsorControllerTest extends Mockito {
         controller.removeStudySponsor(TEST_STUDY_ID, TEST_ORG_ID);
         
         verify(mockService).removeStudySponsor(TEST_APP_ID, TEST_STUDY_ID, TEST_ORG_ID);
+    }
+
+    @Test
+    public void getSponsoredStudiesForApp() {
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+
+        PagedResourceList<Study> page = new PagedResourceList<>(
+                ImmutableList.of(Study.create(), Study.create()), 100);
+        when(mockService.getSponsoredStudies(TEST_APP_ID, TEST_ORG_ID, 15, 75)).thenReturn(page);
+
+        PagedResourceList<Study> retValue = controller.getSponsoredStudiesForApp(TEST_APP_ID, TEST_ORG_ID, "15", "75");
+        assertSame(retValue, page);
+
+        verify(mockService).getSponsoredStudies(TEST_APP_ID, TEST_ORG_ID, 15, 75);
+    }
+
+    @Test
+    public void getSponsoredStudiesForAppUsesDefaults() {
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+
+        PagedResourceList<Study> page = new PagedResourceList<>(
+                ImmutableList.of(Study.create(), Study.create()), 100);
+        when(mockService.getSponsoredStudies(TEST_APP_ID, TEST_ORG_ID, 0, API_DEFAULT_PAGE_SIZE)).thenReturn(page);
+
+        PagedResourceList<Study> retValue = controller.getSponsoredStudiesForApp(TEST_APP_ID, TEST_ORG_ID, null, null);
+        assertSame(retValue, page);
+
+        verify(mockService).getSponsoredStudies(TEST_APP_ID, TEST_ORG_ID, 0, API_DEFAULT_PAGE_SIZE);
     }
 }

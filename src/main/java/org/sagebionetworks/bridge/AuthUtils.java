@@ -121,6 +121,7 @@ public class AuthUtils {
      * participant APIs). Must be a study coordinator with access to the study, or a researcher. 
      */
     public static final AuthEvaluator CAN_EDIT_STUDY_PARTICIPANTS = new AuthEvaluator()
+            .isEnrolledInStudy().isSelf().or()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(RESEARCHER, ADMIN);
     
@@ -158,6 +159,16 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_EDIT_SCHEDULES = new AuthEvaluator()
             .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, ADMIN);
+    
+    /**
+     * Can the caller read and edit adherence data for a given user in a given study?
+     * They must be a caller operating on their own account, or a study coordinator
+     * for the study, or a researcher.
+     */
+    public static final AuthEvaluator CAN_ACCESS_ADHERENCE_DATA = new AuthEvaluator()
+            .isSelf().isEnrolledInStudy().or()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, ADMIN);
     
     /**
      * Is the caller in the provided role? Superadmins always pass this test.

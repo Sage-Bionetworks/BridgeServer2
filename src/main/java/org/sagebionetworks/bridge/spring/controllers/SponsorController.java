@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.springframework.http.HttpStatus.CREATED;
 
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -52,6 +53,18 @@ public class SponsorController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
         return sponsorService.getSponsoredStudies(session.getAppId(), orgId, offsetByInt, pageSizeInt);
+    }
+
+    @GetMapping("/v1/apps/{appId}/organizations/{orgId}/studies")
+    public PagedResourceList<Study> getSponsoredStudiesForApp(@PathVariable String appId, @PathVariable String orgId,
+                                                                 @RequestParam(required = false) String offsetBy,
+                                                                 @RequestParam(required = false) String pageSize) {
+        getAuthenticatedSession(WORKER);
+
+        int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
+        int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
+
+        return sponsorService.getSponsoredStudies(appId, orgId, offsetByInt, pageSizeInt);
     }
     
     @PostMapping(path = {"/v5/studies/{studyId}/sponsors/{orgId}", 

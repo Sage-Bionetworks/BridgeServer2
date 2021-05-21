@@ -33,7 +33,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
 import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
-import org.sagebionetworks.bridge.validators.UploadValidator;
 
 public class UploadServiceCreateUploadTest {
     private static final String TEST_BUCKET = "test-bucket";
@@ -101,7 +100,6 @@ public class UploadServiceCreateUploadTest {
         // set up service
         svc = new UploadService();
         svc.setConfig(mockConfig);
-        svc.setValidator(new UploadValidator());
         svc.setUploadDao(mockUploadDao);
         svc.setUploadDedupeDao(mockUploadDedupeDao);
         svc.setUploadSessionCredentialsService(mockCredentialsSvc);

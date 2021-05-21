@@ -29,11 +29,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.SendMessageResult;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
+import org.sagebionetworks.bridge.validators.ParticipantRosterRequestValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -93,6 +102,14 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class ParticipantService {
     private static final Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
+    static final String CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL = "workerPlatform.request.sqs.queue.url";
+    static final String REQUEST_KEY_BODY = "body";
+    static final String REQUEST_KEY_SERVICE = "service";
+    static final String REQUEST_KEY_APP_ID = "appId";
+    static final String REQUEST_KEY_USER_ID = "userId";
+    static final String REQUEST_KEY_PASSWORD = "password";
+    static final String REQUEST_KEY_STUDY_ID = "studyId";
+    static final String DOWNLOAD_ROSTER_SERVICE_TITLE = "DownloadParticipantRosterWorker";
 
     private AccountService accountService;
 
@@ -123,6 +140,10 @@ public class ParticipantService {
     private OrganizationService organizationService;
     
     private EnrollmentService enrollmentService;
+
+    private BridgeConfig bridgeConfig;
+
+    private AmazonSQSClient sqsClient;
 
     @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -198,6 +219,16 @@ public class ParticipantService {
     @Autowired
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
+    }
+
+    @Autowired
+    final void setBridgeConfig(BridgeConfig bridgeConfig) {
+        this.bridgeConfig = bridgeConfig;
+    }
+
+    @Autowired
+    final void setSqsClient(AmazonSQSClient sqsClient) {
+        this.sqsClient = sqsClient;
     }
     
     /**
@@ -822,6 +853,31 @@ public class ParticipantService {
         }
         // return updated StudyParticipant to update and return session
         return getParticipant(app, account.getId(), false);
+    }
+
+    public void getParticipantRoster(String appId, String userId, ParticipantRosterRequest request) throws JsonProcessingException {
+        Validate.entityThrowingException(ParticipantRosterRequestValidator.INSTANCE, request);
+
+        ObjectMapper jsonObjectMapper = BridgeObjectMapper.get();
+
+        // wrap message as nested json node
+        ObjectNode requestNode = jsonObjectMapper.createObjectNode();
+        requestNode.put(REQUEST_KEY_APP_ID, appId);
+        requestNode.put(REQUEST_KEY_USER_ID, userId);
+        requestNode.put(REQUEST_KEY_PASSWORD, request.getPassword());
+        requestNode.put(REQUEST_KEY_STUDY_ID, request.getStudyId());
+
+        ObjectNode requestMsg = jsonObjectMapper.createObjectNode();
+        requestMsg.put(REQUEST_KEY_SERVICE, DOWNLOAD_ROSTER_SERVICE_TITLE);
+        requestMsg.set(REQUEST_KEY_BODY, requestNode);
+
+        String requestJson = jsonObjectMapper.writeValueAsString(requestMsg);
+
+        // sent to SQS
+        String queueUrl = bridgeConfig.getProperty(CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL);
+        SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJson);
+        LOG.info("Sent request to SQS for userId=" + userId + ", app=" + appId + "; received message ID=" +
+                sqsResult.getMessageId());
     }
     
     private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {

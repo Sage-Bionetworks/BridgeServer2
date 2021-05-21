@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static java.lang.Boolean.TRUE;
+import static java.lang.String.format;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.WITHDRAWN;
 
@@ -9,6 +10,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
@@ -35,6 +38,14 @@ class QueryBuilder {
         params.put(key1, value1);
         params.put(key2, value2);
     }
+    public void append(String phrase, String key1, Object value1, String key2, Object value2,
+            String key3, Object value3) {
+        phrases.add(phrase);
+        params.put(key1, value1);
+        params.put(key2, value2);
+        params.put(key3, value3);
+    }
+    // HQL
     public void dataGroups(Set<String> dataGroups, String operator) {
         if (!BridgeUtils.isEmpty(dataGroups)) {
             int i = 0;
@@ -47,6 +58,7 @@ class QueryBuilder {
             phrases.add("AND (" + Joiner.on(" AND ").join(clauses) + ")");
         }
     }
+    // HQL
     public void adminOnly(Boolean isAdmin) {
         if (isAdmin != null) {
             if (TRUE.equals(isAdmin)) {
@@ -74,7 +86,23 @@ class QueryBuilder {
             }
         }
     }
-    
+    // Native SQL, not HQL
+    public void alternativeMatchedPairs(Map<String, DateTime> map, String varPrefix, String field1, String field2) {
+        if (map != null && !map.isEmpty()) {
+            phrases.add("AND (");
+            int count = 0;
+            for (Map.Entry<String, DateTime> entry : map.entrySet()) {
+                String keyName = varPrefix + "Key" + count;
+                String valName = varPrefix + "Val" + count;
+                if (count++ > 0) {
+                    phrases.add("OR");
+                }
+                String q = format("(%s = :%s AND %s = :%s)", field1, keyName, field2, valName);
+                append(q, keyName, entry.getKey(), valName, entry.getValue().getMillis());
+            }
+            phrases.add(")");
+        }
+    }
     public String getQuery() {
         return BridgeUtils.SPACE_JOINER.join(phrases);
     }
