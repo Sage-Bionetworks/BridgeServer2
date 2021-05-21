@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUT
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.PHONE;
 
@@ -44,6 +45,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -59,6 +61,7 @@ public class AccountService {
     private AccountSecretDao accountSecretDao;
     private AppService appService;
     private ActivityEventService activityEventService;
+    private StudyActivityEventService studyActivityEventService;
 
     @Autowired
     public final void setAccountDao(AccountDao accountDao) {
@@ -78,6 +81,11 @@ public class AccountService {
     @Autowired
     public final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
+    }
+    
+    @Autowired
+    public final void setStudyActivityEventService(StudyActivityEventService studyActivityEventService) {
+        this.studyActivityEventService = studyActivityEventService;
     }
     
     // Provided to override in tests
@@ -215,9 +223,17 @@ public class AccountService {
         // Create account. We don't verify studies because this is handled by validation
         accountDao.createAccount(app, account);
         
-        for (Enrollment en : account.getEnrollments()) {
-            activityEventService.publishEnrollmentEvent(app, en.getStudyId(), 
+        if (!account.getEnrollments().isEmpty()) {
+            activityEventService.publishEnrollmentEvent(app, null, 
                     account.getHealthCode(), account.getCreatedOn());
+        }
+        for (Enrollment en : account.getEnrollments()) {
+            studyActivityEventService.publishEvent(new StudyActivityEventRequest()
+                    .appId(app.getIdentifier())
+                    .studyId(en.getStudyId())
+                    .userId(account.getId())
+                    .objectType(ENROLLMENT)
+                    .timestamp(account.getCreatedOn()));
         }
     }
     
@@ -255,9 +271,15 @@ public class AccountService {
         
         if (!newStudies.isEmpty()) {
             App app = appService.getApp(account.getAppId());
+            activityEventService.publishEnrollmentEvent(app, null, 
+                    account.getHealthCode(), account.getModifiedOn());
             for (String studyId : newStudies) {
-                activityEventService.publishEnrollmentEvent(app, studyId, 
-                        account.getHealthCode(), account.getModifiedOn());
+                studyActivityEventService.publishEvent(new StudyActivityEventRequest()
+                        .appId(app.getIdentifier())
+                        .studyId(studyId)
+                        .userId(account.getId())
+                        .objectType(ENROLLMENT)
+                        .timestamp(account.getModifiedOn()));
             }
         }
     }

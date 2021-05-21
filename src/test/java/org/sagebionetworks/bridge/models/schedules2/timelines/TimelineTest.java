@@ -5,6 +5,9 @@ import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_2_GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_2;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_3;
+import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_4;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
@@ -14,6 +17,7 @@ import static org.testng.Assert.assertTrue;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 
 import org.joda.time.Period;
 import org.mockito.Mockito;
@@ -22,6 +26,8 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2Test;
+import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 
 public class TimelineTest extends Mockito {
 
@@ -39,7 +45,7 @@ public class TimelineTest extends Mockito {
         assertEquals(node.get("schedule").size(), 2);
         JsonNode schNode = node.get("schedule").get(0);
         assertEquals(schNode.get("refGuid").textValue(), SESSION_GUID_1);
-        assertEquals(schNode.get("instanceGuid").textValue(), "So3SXnQm0sIt9vVIqj814Q");
+        assertEquals(schNode.get("instanceGuid").textValue(), "XPnIpiOvQMtil857X_ihUw");
         assertEquals(schNode.get("startDay").intValue(), 7);
         assertEquals(schNode.get("endDay").intValue(), 13);
         assertEquals(schNode.get("startTime").textValue(), "08:00");
@@ -47,7 +53,7 @@ public class TimelineTest extends Mockito {
         assertTrue(schNode.get("persistent").booleanValue());
         assertEquals(schNode.get("type").textValue(), "ScheduledSession");
         assertEquals(schNode.get("assessments")
-                .get(0).get("instanceGuid").textValue(), "ZBi2x9clKyYLrPcHNqpjmA");
+                .get(0).get("instanceGuid").textValue(), "Lfi4aAVfepdR5DFKYv_H1Q");
         assertEquals(schNode.get("assessments")
                 .get(0).get("refKey").textValue(), "646f8c04646f8c04");
         assertEquals(schNode.get("assessments")
@@ -91,7 +97,7 @@ public class TimelineTest extends Mockito {
         
         // This is the session record
         TimelineMetadata meta1 = metadata.get(0);
-        String sessionInstanceGuid = "So3SXnQm0sIt9vVIqj814Q";
+        String sessionInstanceGuid = "XPnIpiOvQMtil857X_ihUw";
         assertEquals(meta1.getGuid(), sessionInstanceGuid);
         assertNull(meta1.getAssessmentInstanceGuid());
         assertNull(meta1.getAssessmentGuid());
@@ -110,7 +116,7 @@ public class TimelineTest extends Mockito {
 
         // This is the assessment #1 record
         TimelineMetadata meta2 = metadata.get(1);
-        String asmtInstanceGuid = "ZBi2x9clKyYLrPcHNqpjmA";
+        String asmtInstanceGuid = "Lfi4aAVfepdR5DFKYv_H1Q";
         assertEquals(meta2.getGuid(), asmtInstanceGuid);
         assertEquals(meta2.getAssessmentInstanceGuid(), asmtInstanceGuid);
         assertEquals(meta2.getAssessmentGuid(), ASSESSMENT_1_GUID);
@@ -129,7 +135,7 @@ public class TimelineTest extends Mockito {
         
         // This is the assessment #2 record
         TimelineMetadata meta3 = metadata.get(2);
-        asmtInstanceGuid = "b20vr-Bb2Om655sLmp5MjQ";
+        asmtInstanceGuid = "5R2D-mJ434Lj0xyym66x-g";
         assertEquals(meta3.getGuid(), asmtInstanceGuid);
         assertEquals(meta3.getAssessmentInstanceGuid(), asmtInstanceGuid);
         assertEquals(meta3.getAssessmentGuid(), ASSESSMENT_2_GUID);
@@ -157,5 +163,31 @@ public class TimelineTest extends Mockito {
         assertEquals(node.get("sessions").size(), 0);
         assertEquals(node.get("schedule").size(), 0);
         assertEquals(node.get("type").textValue(), "Timeline");
+    }
+    
+    @Test
+    public void sessionInsertionOrderPreserved() { 
+        Session sess1 = SessionTest.createValidSession();
+        sess1.setGuid(SESSION_GUID_1);
+        
+        Session sess2 = SessionTest.createValidSession();
+        sess2.setGuid(SESSION_GUID_2);
+        
+        Session sess3 = SessionTest.createValidSession();
+        sess3.setGuid(SESSION_GUID_3);
+        
+        Session sess4 = SessionTest.createValidSession();
+        sess4.setGuid(SESSION_GUID_4);
+        
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        schedule.setSessions(ImmutableList.of(sess1, sess2, sess3, sess4));
+        
+        // This fails if you substitute a HashMap for the LinkedHashMap in 
+        // Timeline, which preserves key insertion order.
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        assertEquals(timeline.getSessions().get(0).getGuid(), SESSION_GUID_1);
+        assertEquals(timeline.getSessions().get(1).getGuid(), SESSION_GUID_2);
+        assertEquals(timeline.getSessions().get(2).getGuid(), SESSION_GUID_3);
+        assertEquals(timeline.getSessions().get(3).getGuid(), SESSION_GUID_4);
     }
 }

@@ -6,8 +6,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.json.BridgeTypeName;
-import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
-import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
+import org.sagebionetworks.bridge.json.DateTimeDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.ActivityEventType;
@@ -17,6 +17,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIgnore;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -28,7 +29,7 @@ public class DynamoActivityEvent implements ActivityEvent {
     private String studyId;
     private String healthCode;
     private String answerValue;
-    private Long timestamp;
+    private DateTime timestamp;
     private String eventId;
     private ActivityEventUpdateType updateType;
     
@@ -58,12 +59,13 @@ public class DynamoActivityEvent implements ActivityEvent {
         this.answerValue = answerValue;
     }
     @Override
-    @JsonSerialize(using = DateTimeToLongSerializer.class)
-    public Long getTimestamp() {
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @DynamoDBTypeConverted(converter = DateTimeToLongMarshaller.class)
+    public DateTime getTimestamp() {
         return timestamp;
     }
-    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
-    public void setTimestamp(Long timestamp) {
+    @JsonDeserialize(using = DateTimeDeserializer.class)
+    public void setTimestamp(DateTime timestamp) {
         this.timestamp = timestamp;
     }
     @DynamoDBRangeKey
@@ -86,7 +88,7 @@ public class DynamoActivityEvent implements ActivityEvent {
     public static class Builder {
         private String healthCode;
         private String studyId;
-        private Long timestamp;
+        private DateTime timestamp;
         private ActivityEventObjectType objectType;
         private String objectId;
         private ActivityEventType eventType;
@@ -101,12 +103,8 @@ public class DynamoActivityEvent implements ActivityEvent {
             this.studyId = studyId;
             return this;
         }
-        public Builder withTimestamp(Long timestamp) {
-            this.timestamp = timestamp;
-            return this;
-        }
         public Builder withTimestamp(DateTime timestamp) {
-            this.timestamp = (timestamp == null) ? null : timestamp.getMillis();
+            this.timestamp = timestamp;
             return this;
         }
         public Builder withObjectType(ActivityEventObjectType type) {
@@ -145,10 +143,10 @@ public class DynamoActivityEvent implements ActivityEvent {
         public DynamoActivityEvent build() {
             // For custom events, we need to retrieve the update type from app settings as part of the 
             // event's construction. But for all other object types, we know the update behavior
-            if (objectType != null && this.updateType == null) {
-                this.updateType = objectType.getUpdateType();    
+            if (objectType != null && updateType == null) {
+                updateType = objectType.getUpdateType();    
             }
-            if (this.updateType == null) {
+            if (updateType == null) {
                 throw new IllegalStateException("No update type configured for event: " + getEventId());
             }
             DynamoActivityEvent event = new DynamoActivityEvent();

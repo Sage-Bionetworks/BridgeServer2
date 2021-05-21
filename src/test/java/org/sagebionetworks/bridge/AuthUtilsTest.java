@@ -231,6 +231,19 @@ public class AuthUtilsTest extends Mockito {
     }
 
     @Test
+    public void canEditStudyParticipantsSucceedsForEnrolledParticipant() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of("study1", "study2")).build());
+        
+        assertTrue( CAN_EDIT_STUDY_PARTICIPANTS.check(STUDY_ID, "study2") );
+
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of("study3", "study3")).build());
+        
+        assertFalse( CAN_EDIT_STUDY_PARTICIPANTS.check(STUDY_ID, "study2") );
+    }
+    
+    @Test
     public void isInRoleMethodsAreNullSafe() {
         assertFalse(AuthUtils.isInRole(null, (Roles)null));
         assertFalse(AuthUtils.isInRole(null, (Set<Roles>)null));

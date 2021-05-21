@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules2.timelines;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +65,9 @@ public class Timeline {
         private String lang;
         private List<ScheduledSession> scheduledSessions = new ArrayList<>();
         private Map<String, AssessmentInfo> assessments = new HashMap<>();
-        private Map<String, SessionInfo> sessions = new HashMap<>();
+        // maintain the order the sessions are inserted, which is the order they exist in 
+        // the session.
+        private Map<String, SessionInfo> sessions = new LinkedHashMap<>();
         private List<TimelineMetadata> metadata = new ArrayList<>();
         
         public Builder withSchedule(Schedule2 schedule) {

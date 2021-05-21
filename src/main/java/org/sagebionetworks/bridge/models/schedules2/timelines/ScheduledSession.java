@@ -84,6 +84,9 @@ public class ScheduledSession {
     public TimeWindow getTimeWindow() {
         return window;
     }
+    public String getTimeWindowGuid() {
+        return window.getGuid();
+    }
     
     public static class Builder {
         private String instanceGuid;

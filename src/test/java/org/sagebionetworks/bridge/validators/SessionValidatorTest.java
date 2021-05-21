@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_LONG_PERIOD;
@@ -65,14 +66,14 @@ public class SessionValidatorTest extends Mockito {
     public void startEventIdBlank() {
         Session session = createValidSession();
         session.setStartEventId("");
-        assertValidatorMessage(INSTANCE, session, "startEventId", CANNOT_BE_BLANK);
+        assertValidatorMessage(INSTANCE, session, "startEventId", INVALID_EVENT_ID);
     }
     
     @Test
     public void startEventIdNull() {
         Session session = createValidSession();
         session.setStartEventId(null);
-        assertValidatorMessage(INSTANCE, session, "startEventId", CANNOT_BE_BLANK);
+        assertValidatorMessage(INSTANCE, session, "startEventId", INVALID_EVENT_ID);
     }
     
     @Test
@@ -213,6 +214,20 @@ public class SessionValidatorTest extends Mockito {
         assertValidatorMessage(INSTANCE, session, "assessments[0].guid", CANNOT_BE_BLANK);
     }
 
+    @Test
+    public void assessmentRefIdentifierNull() {
+        Session session = createValidSession();
+        session.getAssessments().get(0).setIdentifier(null);
+        assertValidatorMessage(INSTANCE, session, "assessments[0].identifier", CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void assessmentRefIdnetifierEmpty() {
+        Session session = createValidSession();
+        session.getAssessments().get(0).setIdentifier("");
+        assertValidatorMessage(INSTANCE, session, "assessments[0].identifier", CANNOT_BE_BLANK);
+    }
+    
     @Test
     public void assessmentRefAppIdNull() {
         Session session = createValidSession();

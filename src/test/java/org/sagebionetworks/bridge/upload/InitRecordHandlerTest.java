@@ -90,8 +90,8 @@ public class InitRecordHandlerTest {
         handler.handle(context);
         validateCommonContextAttributes(context);
 
-        // User metadata is null
-        assertNull(context.getHealthDataRecord().getUserMetadata());
+        // User metadata is empty.
+        assertTrue(context.getHealthDataRecord().getUserMetadata().isEmpty());
 
         // No messages.
         assertTrue(context.getMessageList().isEmpty());
@@ -112,8 +112,31 @@ public class InitRecordHandlerTest {
     }
 
     @Test
-    public void withMetadata() throws Exception {
-        // Setup metadata.
+    public void metadataFromRequest() throws Exception {
+        // Setup context with info.json.
+        Map<String, JsonNode> jsonDataMap = ImmutableMap.<String, JsonNode>builder()
+                .put(UploadUtil.FILENAME_INFO_JSON, makeInfoJson()).build();
+        UploadValidationContext context = setupContextWithJsonDataMap(jsonDataMap);
+
+        // Setup metadata in upload request.
+        ObjectNode metadata = BridgeObjectMapper.get().createObjectNode();
+        metadata.put("meta-key", "meta-value");
+        context.getUpload().setMetadata(metadata);
+
+        // execute and validate
+        handler.handle(context);
+        validateCommonContextAttributes(context);
+
+        // user metadata should match.
+        assertEquals(context.getHealthDataRecord().getUserMetadata(), metadata);
+
+        // No messages.
+        assertTrue(context.getMessageList().isEmpty());
+    }
+
+    @Test
+    public void metadataFromFile() throws Exception {
+        // Setup metadata file.
         ObjectNode metadataJsonNode = BridgeObjectMapper.get().createObjectNode();
         metadataJsonNode.put("my-meta-key", "my-meta-value");
 
@@ -129,6 +152,37 @@ public class InitRecordHandlerTest {
 
         // user metadata should match.
         assertEquals(context.getHealthDataRecord().getUserMetadata(), metadataJsonNode);
+
+        // No messages.
+        assertTrue(context.getMessageList().isEmpty());
+    }
+
+    @Test
+    public void metadataFromBoth() throws Exception {
+        // Setup metadata file.
+        ObjectNode metadataFromFile = BridgeObjectMapper.get().createObjectNode();
+        metadataFromFile.put("meta-key-1", "meta-value-1");
+
+        // Setup context with info.json.
+        Map<String, JsonNode> jsonDataMap = ImmutableMap.<String, JsonNode>builder()
+                .put(UploadUtil.FILENAME_INFO_JSON, makeInfoJson())
+                .put(UploadUtil.FILENAME_METADATA_JSON, metadataFromFile).build();
+        UploadValidationContext context = setupContextWithJsonDataMap(jsonDataMap);
+
+        // Setup metadata.
+        ObjectNode metadataFromRequest = BridgeObjectMapper.get().createObjectNode();
+        metadataFromRequest.put("meta-key-2", "meta-value-2");
+        context.getUpload().setMetadata(metadataFromRequest);
+
+        // execute and validate
+        handler.handle(context);
+        validateCommonContextAttributes(context);
+
+        // Validate metadata.
+        JsonNode mergedMetadata = context.getHealthDataRecord().getUserMetadata();
+        assertEquals(mergedMetadata.size(), 2);
+        assertEquals(mergedMetadata.get("meta-key-1").textValue(), "meta-value-1");
+        assertEquals(mergedMetadata.get("meta-key-2").textValue(), "meta-value-2");
 
         // No messages.
         assertTrue(context.getMessageList().isEmpty());

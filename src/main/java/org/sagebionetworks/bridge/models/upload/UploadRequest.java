@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.upload;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 @JsonDeserialize(builder = UploadRequest.Builder.class)
 public class UploadRequest implements BridgeEntity {
@@ -11,15 +12,17 @@ public class UploadRequest implements BridgeEntity {
     private final String contentMd5;
     private final String contentType;
     private final boolean encrypted;
+    private final ObjectNode metadata;
     private final boolean zipped;
 
     private UploadRequest(String name, long contentLength, String contentMd5, String contentType, boolean encrypted,
-            boolean zipped) {
+            ObjectNode metadata, boolean zipped) {
         this.name = name;
         this.contentLength = contentLength;
         this.contentMd5 = contentMd5;
         this.contentType = contentType;
         this.encrypted = encrypted;
+        this.metadata = metadata;
         this.zipped = zipped;
     }
 
@@ -44,6 +47,14 @@ public class UploadRequest implements BridgeEntity {
         return encrypted;
     }
 
+    /**
+     * Metadata fields for this upload, as submitted by the app. This corresponds with the
+     * uploadMetadataFieldDefinitions configured in the app.
+     */
+    public ObjectNode getMetadata() {
+        return metadata;
+    }
+
     /** True if the upload is zipped. False if it is a single file. If not specified, defaults to true. */
     public boolean isZipped() {
         return zipped;
@@ -55,6 +66,7 @@ public class UploadRequest implements BridgeEntity {
         private String contentMd5;
         private String contentType;
         private Boolean encrypted;
+        private ObjectNode metadata;
         private Boolean zipped;
 
         public Builder withName(String name) {
@@ -82,6 +94,11 @@ public class UploadRequest implements BridgeEntity {
             return this;
         }
 
+        public Builder withMetadata(ObjectNode metadata) {
+            this.metadata = metadata;
+            return this;
+        }
+
         public Builder withZipped(Boolean zipped) {
             this.zipped = zipped;
             return this;
@@ -96,7 +113,7 @@ public class UploadRequest implements BridgeEntity {
             boolean actualZipped = zipped != null ? zipped : true;
 
             return new UploadRequest(name, actualContentLength, contentMd5, contentType, actualEncrypted,
-                    actualZipped);
+                    metadata, actualZipped);
         }
     }
 }

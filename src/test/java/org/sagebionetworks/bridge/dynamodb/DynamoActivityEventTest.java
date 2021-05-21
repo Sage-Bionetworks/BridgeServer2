@@ -1,7 +1,8 @@
-package org.sagebionetworks.bridge.models.activities;
+package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestUtils.assertDatesWithTimeZoneEqual;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
@@ -12,15 +13,15 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
 import com.fasterxml.jackson.databind.JsonNode;
+
 import org.joda.time.DateTime;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent.Builder;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.time.DateUtils;
+import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 
-public class ActivityEventTest {
+public class DynamoActivityEventTest {
 
     @Test
     public void canConstructSimpleEventId() {
@@ -68,10 +69,11 @@ public class ActivityEventTest {
     
     @Test
     public void testBuilder() {
+        DateTime timestamp = new DateTime(123L);
         ActivityEvent event = new DynamoActivityEvent.Builder()
                 .withHealthCode("healthCode")
                 .withStudyId("studyId")
-                .withTimestamp(123L)
+                .withTimestamp(timestamp)
                 .withObjectType(CUSTOM)
                 .withObjectId("objectId")
                 .withEventType(FINISHED)
@@ -80,14 +82,14 @@ public class ActivityEventTest {
         
         assertEquals(event.getHealthCode(), "healthCode:studyId");
         assertEquals(event.getStudyId(), "studyId");
-        assertEquals(event.getTimestamp(), Long.valueOf(123L));
+        assertEquals(event.getTimestamp(), timestamp);
         assertEquals(event.getEventId(), "custom:objectId:finished");
         assertEquals(event.getAnswerValue(), "true");
         assertEquals(event.getUpdateType(), IMMUTABLE);
 
         event = new DynamoActivityEvent.Builder()
                 .withHealthCode("healthCode")
-                .withTimestamp(123L)
+                .withTimestamp(timestamp)
                 .withObjectType(CUSTOM)
                 .withObjectId("objectId")
                 .withEventType(FINISHED)
@@ -114,8 +116,8 @@ public class ActivityEventTest {
         assertEquals(activityEvent.getStudyId(), "test-study");
         assertEquals(activityEvent.getEventId(), "test-event");
         assertEquals(activityEvent.getAnswerValue(), "dummy answer");
-        assertEquals(activityEvent.getTimestamp().longValue(),
-                DateUtils.convertToMillisFromEpoch("2018-08-20T16:15:19.913Z"));
+        assertDatesWithTimeZoneEqual(activityEvent.getTimestamp(),
+                DateTime.parse("2018-08-20T16:15:19.913Z"));
         assertNull(activityEvent.getUpdateType());
 
         // Convert back to JSON.
@@ -151,8 +153,7 @@ public class ActivityEventTest {
         assertNull(activityEvent.getStudyId());
         assertEquals(activityEvent.getEventId(), "test-event");
         assertEquals(activityEvent.getAnswerValue(), "dummy answer");
-        assertEquals(activityEvent.getTimestamp().longValue(),
-                DateUtils.convertToMillisFromEpoch("2018-08-20T16:15:19.913Z"));
+        assertEquals(activityEvent.getTimestamp(), DateTime.parse("2018-08-20T16:15:19.913Z"));
 
         // Convert back to JSON.
         activityNode = BridgeObjectMapper.get().valueToTree(activityEvent);

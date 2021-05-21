@@ -15,9 +15,11 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.getClientData;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -25,6 +27,7 @@ import java.util.List;
 import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.Period;
@@ -55,6 +58,7 @@ import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 public class Schedule2ServiceTest extends Mockito {
@@ -311,7 +315,6 @@ public class Schedule2ServiceTest extends Mockito {
                 .build());
         
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of());
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         when(mockDao.createSchedule(any())).then(returnsFirstArg());
@@ -356,7 +359,6 @@ public class Schedule2ServiceTest extends Mockito {
                 .build());
         
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of());
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         Schedule2 schedule = new Schedule2();
@@ -373,7 +375,6 @@ public class Schedule2ServiceTest extends Mockito {
                 .build());
         
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of());
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
@@ -397,7 +398,6 @@ public class Schedule2ServiceTest extends Mockito {
                 .build());
         
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of());
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         when(mockOrganizationService.getOrganization(TEST_APP_ID, null))
@@ -419,7 +419,6 @@ public class Schedule2ServiceTest extends Mockito {
                 .build());
         
         App app = App.create();
-        app.setActivityEventKeys(ImmutableSet.of());
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))
@@ -779,6 +778,50 @@ public class Schedule2ServiceTest extends Mockito {
     }
     
     @Test
+    public void cleanupEventIdsOnCreate() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withCallerAppId(TEST_APP_ID)
+                .build());
+
+        App app = App.create();
+        app.setCustomEvents(ImmutableMap.of("event1", MUTABLE));
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        // This will fail validation unless the app declares it as a custom event
+        schedule.getSessions().get(0).setStartEventId("event1");
+        
+        service.createSchedule(schedule);
+        
+        assertEquals(schedule.getSessions().get(0).getStartEventId(), "custom:event1");
+    }
+    
+    @Test
+    public void cleanupEventIdsOnUpdate() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withCallerAppId(TEST_APP_ID)
+                .build());
+
+        App app = App.create();
+        app.setCustomEvents(ImmutableMap.of("event1", MUTABLE));
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        schedule.setDeleted(false);
+        schedule.setPublished(false);
+        // This will fail validation unless the app declares it as a custom event
+        schedule.getSessions().get(0).setStartEventId("event1");
+        
+        when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(schedule));
+        
+        service.updateSchedule(schedule);
+        
+        assertEquals(schedule.getSessions().get(0).getStartEventId(), "custom:event1");
+    }
+    
+    @Test
     public void getTimelineForScheduleNoPersistence() {
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
@@ -813,5 +856,15 @@ public class Schedule2ServiceTest extends Mockito {
         
         Timeline timeline = service.getTimelineForSchedule(TEST_APP_ID, GUID);
         assertNotNull(timeline);
+    }
+    
+    @Test
+    public void getTimelineMetadata() {
+        TimelineMetadata meta = new TimelineMetadata();
+        
+        when(mockDao.getTimelineMetadata(GUID)).thenReturn(Optional.of(meta));
+        
+        Optional<TimelineMetadata> retValue = service.getTimelineMetadata(GUID);
+        assertSame(retValue.get(), meta);
     }
 }
