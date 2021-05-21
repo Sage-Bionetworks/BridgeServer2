@@ -30,21 +30,19 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
 
     /** {@inheritDoc} */
     @Override
-    public HealthDataDocumentation createOrUpdateDocumentation(@Nonnull HealthDataDocumentation documentation, String s3Key) {
+    public HealthDataDocumentation createOrUpdateDocumentation(@Nonnull HealthDataDocumentation documentation) {
         HealthDataDocumentation dynamoDocumentation = (DynamoHealthDataDocumentation) documentation;
 
         if (dynamoDocumentation.getIdentifier() == null) {
             // Documentation doesn't have ID assigned yet (new documentation). Create ID and assign it.
             dynamoDocumentation.setIdentifier(BridgeUtils.generateGuid());
 
-            // Update created on/by attributes.
+            // Update created on attributes.
             dynamoDocumentation.setCreatedOn(DateTime.now());
         } else {
-            // Update modified on/by attributes.
+            // Update modified on attributes.
             dynamoDocumentation.setModifiedOn(DateTime.now());
         }
-
-        dynamoDocumentation.setS3Key(s3Key);
 
         // Save to DynamoDB.
         mapper.save(dynamoDocumentation);

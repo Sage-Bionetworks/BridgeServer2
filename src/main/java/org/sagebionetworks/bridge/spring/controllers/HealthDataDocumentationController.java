@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.HealthDataDocumentation;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
@@ -31,10 +35,17 @@ public class HealthDataDocumentationController extends BaseController {
 
     /** Create or update a health data documentation. */
     @PostMapping(path="/v3/healthdataDocumentation")
-    public HealthDataDocumentation createOrUpdateHealthDataDocumentation(){
+    public HealthDataDocumentation createOrUpdateHealthDataDocumentation() throws IOException {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.DEVELOPER);
 
-        HealthDataDocumentation documentation = parseJson(HealthDataDocumentation.class);
+        JsonNode requestNode = parseJson(JsonNode.class);
+        HealthDataDocumentation documentation = parseJson(requestNode, HealthDataDocumentation.class);
+
+        byte[] documentationBytes = requestNode.get("documentation").binaryValue();
+        if (documentationBytes == null) {
+            throw new BadRequestException("Documentation is required to store health data documentation.");
+        }
+
         if (documentation.getCreatedOn() == null) {
             documentation.setCreatedOn(DateTime.now());
             documentation.setCreatedBy(session.getId());
@@ -43,7 +54,7 @@ public class HealthDataDocumentationController extends BaseController {
             documentation.setModifiedBy(session.getId());
         }
 
-        return healthDataDocumentationService.createOrUpdateHealthDataDocumentation(documentation);
+        return healthDataDocumentationService.createOrUpdateHealthDataDocumentation(documentation, documentationBytes);
     }
 
     /** Get a health data documentation with the given identifier. */

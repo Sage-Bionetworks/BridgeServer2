@@ -8,7 +8,7 @@ import javax.annotation.Nonnull;
 /** DAO for health data documentation. */
 public interface HealthDataDocumentationDao {
     /** Create or update health data documentation. Returns the created or updated documentation. */
-    HealthDataDocumentation createOrUpdateDocumentation(@Nonnull HealthDataDocumentation documentation, @Nonnull String s3Key);
+    HealthDataDocumentation createOrUpdateDocumentation(@Nonnull HealthDataDocumentation documentation);
 
     /** Deletes all health data documentation for the given parentId. */
     void deleteDocumentationForParentId(@Nonnull String parentId);

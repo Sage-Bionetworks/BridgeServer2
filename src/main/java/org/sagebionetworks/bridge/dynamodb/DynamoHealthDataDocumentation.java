@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.dynamodb;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.HealthDataDocumentation;
 
@@ -51,6 +52,7 @@ public class DynamoHealthDataDocumentation implements HealthDataDocumentation {
         this.identifier = identifier;
     }
 
+    @DynamoDBVersionAttribute
     @Override
     public Long getVersion() {
         return this.version;
