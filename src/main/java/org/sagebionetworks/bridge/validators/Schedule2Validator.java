@@ -49,15 +49,15 @@ public class Schedule2Validator implements Validator {
             Session session = schedule.getSessions().get(i);
             
             if (schedule.getDuration() != null) {
-                int durationMin = periodInMinutes(schedule.getDuration());
+                long durationMin = periodInMinutes(schedule.getDuration());
                 if (session.getDelay() != null) {
-                    int delayMin = periodInMinutes(session.getDelay());
+                    long delayMin = periodInMinutes(session.getDelay());
                     if (delayMin >= durationMin) {
                         errors.rejectValue("delay", "cannot be longer than the schedule’s duration");
                     }
                 }
                 if (session.getInterval() != null) {
-                    int intervalMin = periodInMinutes(session.getInterval());
+                    long intervalMin = periodInMinutes(session.getInterval());
                     if (intervalMin >= durationMin) {
                         errors.rejectValue("interval", "cannot be longer than the schedule’s duration");
                     }

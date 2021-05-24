@@ -63,7 +63,13 @@ public class Session implements BridgeEntity, HasGuid {
         joinColumns = @JoinColumn(name = "sessionGuid", nullable = false))
     @OrderColumn(name = "position")
     private List<TimeWindow> timeWindows;
-    
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "SessionNotifications", 
+        joinColumns = @JoinColumn(name = "sessionGuid", nullable = false))
+    @OrderColumn(name = "position")
+    private List<Notification> notifications;
+
     @Column(columnDefinition = "text", name = "labels", nullable = true)
     @Convert(converter = LabelListConverter.class)
     private List<Label> labels;
@@ -148,5 +154,14 @@ public class Session implements BridgeEntity, HasGuid {
     }
     public void setTimeWindows(List<TimeWindow> timeWindows) {
         this.timeWindows = timeWindows;
+    }
+    public List<Notification> getNotifications() {
+        if (notifications == null) {
+            notifications = new ArrayList<>();
+        }
+        return notifications;
+    }
+    public void setNotifications(List<Notification> notifications) {
+        this.notifications = notifications;
     }
 }

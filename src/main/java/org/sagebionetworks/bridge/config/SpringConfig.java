@@ -126,6 +126,7 @@ import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentC
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.organizations.HibernateOrganization;
+import org.sagebionetworks.bridge.models.schedules2.Notification;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -639,6 +640,7 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(TimelineMetadata.class);
         metadataSources.addAnnotatedClass(AdherenceRecord.class);
         metadataSources.addAnnotatedClass(StudyActivityEvent.class);
+        metadataSources.addAnnotatedClass(Notification.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
         

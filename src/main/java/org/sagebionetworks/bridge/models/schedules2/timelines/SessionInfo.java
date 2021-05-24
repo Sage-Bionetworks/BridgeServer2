@@ -20,6 +20,7 @@ public class SessionInfo {
     private PerformanceOrder performanceOrder;
     private Integer minutesToComplete;
     private List<String> timeWindowGuids;
+    private List<NotificationInfo> notifications;
     
     public static final SessionInfo create(Session session) {
         List<String> languages = RequestContext.get().getCallerLanguages();
@@ -38,7 +39,11 @@ public class SessionInfo {
         info.startEventId = session.getStartEventId();
         info.performanceOrder = session.getPerformanceOrder();
         info.timeWindowGuids = session.getTimeWindows().stream()
-                .map(TimeWindow::getGuid).collect(toList());
+                .map(TimeWindow::getGuid)
+                .collect(toList());
+        info.notifications = session.getNotifications().stream()
+                .map(not -> NotificationInfo.create(not, languages))
+                .collect(toList());
         if (min > 0) {
             info.minutesToComplete = min;    
         }
@@ -62,5 +67,8 @@ public class SessionInfo {
     }
     public List<String> getTimeWindowGuids() {
         return timeWindowGuids;
+    }
+    public List<NotificationInfo> getNotifications() { 
+        return notifications;
     }
 }
