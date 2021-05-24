@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.hibernate.HibernateAccountDao.FULL_QUERY;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
@@ -799,6 +800,7 @@ public class HibernateAccountDaoTest extends Mockito {
         hibernateAccount.setStatus(ENABLED);
         hibernateAccount.setEnrollments(ImmutableSet.of(en1, en2));
         hibernateAccount.setOrgMembership(TEST_ORG_ID);
+        hibernateAccount.setNote(TEST_NOTE);
 
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
@@ -811,6 +813,7 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(accountSummary.getLastName(), LAST_NAME);
         assertEquals(accountSummary.getStatus(), ENABLED);
         assertEquals(accountSummary.getOrgMembership(), TEST_ORG_ID);
+        assertEquals(accountSummary.getNote(), TEST_NOTE);
 
         // createdOn is stored as a long, so just compare epoch milliseconds.
         assertEquals(accountSummary.getCreatedOn().getMillis(), CREATED_ON.getMillis());

@@ -115,7 +115,7 @@ public class HibernateAccount implements Account {
      * specifying a constructor.
      */
     public HibernateAccount(DateTime createdOn, String appId, String orgId, String firstName, String lastName,
-            String email, Phone phone, String id, AccountStatus status, String synapseUserId, String note) {
+            String email, Phone phone, String id, AccountStatus status, String synapseUserId) {
         this.createdOn = createdOn;
         this.appId = appId;
         this.orgMembership = orgId;
@@ -126,7 +126,6 @@ public class HibernateAccount implements Account {
         this.id = id;
         this.status = status;
         this.synapseUserId = synapseUserId;
-        this.note = note;
     }
 
     /**

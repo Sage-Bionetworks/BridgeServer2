@@ -16,6 +16,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
@@ -103,7 +104,7 @@ public class HibernateAccountTest {
         account.setSharingScope(ALL_QUALIFIED_RESEARCHERS);
         account.setNotifyByEmail(true);
         account.setMigrationVersion(3);
-        account.setNote("note");
+        account.setNote(TEST_NOTE);
         
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);
@@ -135,7 +136,7 @@ public class HibernateAccountTest {
         assertEquals(node.get("version").intValue(), 1);
         assertEquals(toSet(node, "dataGroups"), ImmutableSet.of("group1", "group2"));
         assertEquals(toSet(node, "languages"), ImmutableSet.of("en", "fr"));
-        assertEquals(node.get("note").textValue(), "note");
+        assertEquals(node.get("note").textValue(), TEST_NOTE);
         
         // these should be null
         assertNull(node.get("appId"));
@@ -270,7 +271,7 @@ public class HibernateAccountTest {
     @Test
     public void accountSummaryConstructor() {
         HibernateAccount account = new HibernateAccount(new DateTime(123L), TEST_APP_ID, TEST_ORG_ID, "firstName",
-                "lastName", "email", PHONE, "id", UNVERIFIED, SYNAPSE_USER_ID, "note");
+                "lastName", "email", PHONE, "id", UNVERIFIED, SYNAPSE_USER_ID);
 
         assertEquals(account.getCreatedOn().getMillis(), 123L);
         assertEquals(account.getAppId(), TEST_APP_ID);
@@ -282,7 +283,6 @@ public class HibernateAccountTest {
         assertEquals(account.getId(), "id");
         assertEquals(account.getStatus(), ENABLED); // thanks to synapseUserId
         assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
-        assertEquals(account.getNote(), "note");
     }
     
     @Test

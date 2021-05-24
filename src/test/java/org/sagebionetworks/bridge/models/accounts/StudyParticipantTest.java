@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.SPONSORS_AND_PARTNERS;
 import static org.testng.Assert.assertEquals;
@@ -88,7 +89,7 @@ public class StudyParticipantTest {
         assertEquals(node.get("externalIds").get("studyA").textValue(), "externalIdA");
         assertEquals(node.get("orgMembership").textValue(), TEST_ORG_ID);
         assertEquals(node.get("type").textValue(), "StudyParticipant");
-        assertEquals(node.get("note").textValue(), "note");
+        assertEquals(node.get("note").textValue(), TEST_NOTE);
         
         JsonNode clientData = node.get("clientData");
         assertTrue(clientData.get("booleanFlag").booleanValue());
@@ -136,7 +137,7 @@ public class StudyParticipantTest {
         assertEquals(deserParticipant.getId(), ACCOUNT_ID);
         assertEquals(deserParticipant.getExternalIds().get("studyA"), "externalIdA");
         assertEquals(deserParticipant.getOrgMembership(), TEST_ORG_ID);
-        assertEquals(deserParticipant.getNote(), "note");
+        assertEquals(deserParticipant.getNote(), TEST_NOTE);
         
         UserConsentHistory deserHistory = deserParticipant.getConsentHistories().get("AAA").get(0);
         assertEquals(deserHistory.getBirthdate(), "2002-02-02");
@@ -195,7 +196,7 @@ public class StudyParticipantTest {
         assertEquals(copy.getStudyIds(), STUDIES);
         assertEquals(copy.getId(), ACCOUNT_ID);
         assertEquals(copy.getClientData(), TestUtils.getClientData());
-        assertEquals(copy.getNote(), "note");
+        assertEquals(copy.getNote(), TEST_NOTE);
         
         // And they are equal in the Java sense
         assertEquals(copy, participant);
@@ -412,7 +413,7 @@ public class StudyParticipantTest {
                 .withClientData(clientData)
                 .withTimeZone(TIME_ZONE)
                 .withOrgMembership(TEST_ORG_ID)
-                .withNote("note");
+                .withNote(TEST_NOTE);
         
         Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();
         

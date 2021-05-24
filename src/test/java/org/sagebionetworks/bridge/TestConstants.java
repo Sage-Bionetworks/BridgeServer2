@@ -52,6 +52,7 @@ public class TestConstants {
     public static final String TEST_USER_ID = "userId";
     public static final String SYNAPSE_USER_ID = "12345";
     public static final DateTimeZone TIMEZONE_MSK = DateTimeZone.forOffsetHours(3);
+    public static final String TEST_NOTE = "test note";
 
     public static final String HEALTH_CODE = "oneHealthCode";
     public static final String ENCRYPTED_HEALTH_CODE = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";

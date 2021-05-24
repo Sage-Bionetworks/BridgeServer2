@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
@@ -422,7 +423,7 @@ public class TestUtils {
                 .withDataGroups(Sets.newHashSet("group1"))
                 .withAttributes(new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build())
                 .withLanguages(ImmutableList.of("fr"))
-                .withNote("note").build();
+                .withNote(TEST_NOTE).build();
     }
 
     public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, ScheduleContext context) {

@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
@@ -155,7 +156,6 @@ public class ParticipantServiceTest extends Mockito {
     private static final SubpopulationGuid SUBPOP_GUID = SubpopulationGuid.create(APP.getIdentifier());
     private static final SubpopulationGuid SUBPOP_GUID_1 = SubpopulationGuid.create("guid1");
     private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, ID);
-    private static final String NOTE = "note";
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder()
             .withFirstName(FIRST_NAME)
             .withLastName(LAST_NAME)
@@ -172,7 +172,7 @@ public class ParticipantServiceTest extends Mockito {
             .withStatus(DISABLED)
             .withTimeZone(USER_TIME_ZONE)
             .withClientData(TestUtils.getClientData())
-            .withNote(NOTE).build();
+            .withNote(TEST_NOTE).build();
     
     private static final DateTime START_DATE = DateTime.now();
     private static final DateTime END_DATE = START_DATE.plusDays(1);
@@ -362,7 +362,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(account.getLanguages(), ImmutableList.of("de","fr"));
         assertEquals(enrollmentCaptor.getValue().getExternalId(), EXTERNAL_ID);
         assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
-        assertEquals(account.getNote(), NOTE);
+        assertEquals(account.getNote(), TEST_NOTE);
         
         // don't update cache
         Mockito.verifyNoMoreInteractions(cacheProvider);
@@ -993,7 +993,7 @@ public class ParticipantServiceTest extends Mockito {
         // no third external ID, this one is just not in the external IDs map
         account.setEnrollments(ImmutableSet.of(en1, en2, en3));
         account.setOrgMembership(TEST_ORG_ID);
-        account.setNote(NOTE);
+        account.setNote(TEST_NOTE);
         
         List<Subpopulation> subpopulations = Lists.newArrayList();
         // Two subpopulations for mocking.
@@ -1047,7 +1047,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(participant.getExternalIds().get("studyA"), "externalIdA");
         assertEquals(participant.getExternalIds().get("studyB"), "externalIdB");
         assertEquals(participant.getOrgMembership(), TEST_ORG_ID);
-        assertEquals(participant.getNote(), NOTE);
+        assertEquals(participant.getNote(), TEST_NOTE);
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals(participant.getAttributes().get("attr2"), "anAttribute2");

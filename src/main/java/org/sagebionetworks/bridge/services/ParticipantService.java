@@ -458,7 +458,6 @@ public class ParticipantService {
         account.setPhoneVerified(FALSE);
         account.setHealthCode(generateGUID());
         account.setStatus(UNVERIFIED);
-        account.setNote(participant.getNote());
         // Organizational admins create accounts in their organization.
         // Otherwise this field is ignored on create.
         if (CAN_EDIT_MEMBERS.check(ORG_ID, participant.getOrgMembership())) {
