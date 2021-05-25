@@ -169,7 +169,7 @@ public class SessionValidator implements Validator {
             if (notification.getNotifyAt() == null) {
                 errors.rejectValue(NOTIFY_AT_FIELD, CANNOT_BE_NULL);
             }
-            validateFixedLengthPeriod(errors, notification.getOffset(), OFFSET_FIELD, true);
+            validateFixedLengthPeriod(errors, notification.getOffset(), OFFSET_FIELD, false);
             validateFixedLengthPeriod(errors, notification.getInterval(), INTERVAL_FIELD, false);
             if (!session.getTimeWindows().isEmpty()) {
                 TimeWindow shortestWindow = shortestTimeWindow(session);
