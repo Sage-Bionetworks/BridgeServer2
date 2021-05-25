@@ -82,7 +82,7 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
 
     /** {@inheritDoc} */
     @Override
-    public HealthDataDocumentation getDocumentationById(@Nonnull String identifier, @Nonnull String parentId) {
+    public HealthDataDocumentation getDocumentationByIdentifier(@Nonnull String identifier, @Nonnull String parentId) {
         DynamoHealthDataDocumentation hashKey = new DynamoHealthDataDocumentation();
         hashKey.setIdentifier(identifier);
         hashKey.setParentId(parentId);

@@ -86,7 +86,7 @@ public class HealthDataDocumentationService {
 
     /** Get health data documentation for the given identifier. */
     public HealthDataDocumentation getHealthDataDocumentationForId(String identifier, String parentId) {
-        HealthDataDocumentation documentation = healthDataDocumentationDao.getDocumentationById(identifier, parentId);
+        HealthDataDocumentation documentation = healthDataDocumentationDao.getDocumentationByIdentifier(identifier, parentId);
 
         if (documentation == null) {
             throw new EntityNotFoundException(HealthDataDocumentation.class);
