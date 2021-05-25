@@ -102,7 +102,8 @@ public class Scheduler {
                 break;
             }
             if (expiration == null) {
-                expiration = Period.parse("P" + (endDay - startDay) + "D");
+                // but this value is *not* zero indexed. 
+                expiration = Period.parse("P" + (endDay - startDay + 1) + "D");
             }
             
             // This session will be used, so we can add it

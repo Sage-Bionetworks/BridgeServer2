@@ -11,11 +11,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.Duration;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Period;
 import org.springframework.validation.Errors;
@@ -85,9 +87,6 @@ public class ValidatorUtils {
     }
     
     private static void validateLanguageSet(Errors errors, List<? extends HasLang> items, String fieldName) {
-        if (items.isEmpty()) {
-            return;
-        }
         Set<String> visited = new HashSet<>();
         for (int i=0; i < items.size(); i++) {
             HasLang item = items.get(i);
@@ -174,33 +173,6 @@ public class ValidatorUtils {
             errors.popNestedPath();
         }
     }
-
-    /**
-     * This converts the period to minutes, but only those fields that have a 
-     * conventional measurement in minutes (so months and years are ignored).  
-     */
-    public static final int periodInMinutes(Period period) {
-        int minutes = period.getMinutes();
-        minutes += (period.getHours() * 60);
-        minutes += (period.getDays() * 24 * 60);
-        minutes += (period.getWeeks() * 7 * 24 * 60);
-        return minutes;
-    }
-    
-    /**
-     * This converts the period to milliseconds, but only those fields that have 
-     * a conventional measurement in milliseconds (so months and years are 
-     * ignored).
-     */
-    public static final long periodInMilliseconds(Period period) {
-        int millis = period.getMillis();
-        millis += (period.getSeconds() * 1000);
-        millis += (period.getMinutes() * 1000 * 60);
-        millis += (period.getHours() * 60 * 1000 * 60);
-        millis += (period.getDays() * 24 * 60 * 1000 * 60);
-        millis += (period.getWeeks() * 7 * 24 * 60 * 1000 * 60);
-        return millis;
-    }
     
     public static void validateFixedLengthPeriod(Errors errors, Period period, String fieldName, boolean required) {
         validateDuration(FIXED_LENGTH_DURATIONS, errors, period, fieldName, WRONG_PERIOD, required);
@@ -234,9 +206,29 @@ public class ValidatorUtils {
                 break;
             }
         }
-        if (periodInMilliseconds(period) == 0L) {
+        if (periodInMinutes(period) == 0L) {
             errors.rejectValue(fieldName, "cannot be of no duration");
         }
     }
     
+    /**
+     * This converts the period to minutes, but only those fields that have a 
+     * conventional measurement in minutes (so months and years are ignored).  
+     */
+    public static final long periodInMinutes(Period period) {
+        return convertPeriod(period, (d) -> d.getStandardMinutes());
+    }
+    
+    private static final long convertPeriod(Period period, Function<Duration,Long> func) {
+        if (period == null) {
+            return 0L;
+        }
+        try {
+            Duration d = period.toStandardDuration();
+            return func.apply(d);
+        } catch(UnsupportedOperationException e) {
+            return 0L;
+        }
+    }
+
 }
