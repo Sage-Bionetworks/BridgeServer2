@@ -310,6 +310,15 @@ public class SessionValidatorTest extends Mockito {
     }
     
     @Test
+    public void timeWindowOverlapsByOneMinuteAfterMultipleDays() {
+        // The last window goes till the seven days, 8 hours, and 1 minute, which overlaps
+        // the first window by one minute. That is an error.
+        Session session = makeWindows("08:00", "PT4H", "12:00", "PT4H", "16:00", "P6DT7H61M");
+        
+        assertValidatorMessage(INSTANCE, session, TIME_WINDOWS_FIELD+"[2]", WINDOW_OVERLAPS_ERROR);
+    }
+    
+    @Test
     public void assessmentsNullOrEmpty() {
         Session session = createValidSession();
         session.setAssessments(null);
@@ -389,14 +398,6 @@ public class SessionValidatorTest extends Mockito {
         session.getNotifications().get(0).setNotifyAt(null);
         
         assertValidatorMessage(INSTANCE, session, NOTIFICATIONS_FIELD+"[0].notifyAt", CANNOT_BE_NULL);
-    }
-    
-    @Test
-    public void notificationOffsetNull() {
-        Session session = createValidSession();
-        session.getNotifications().get(0).setOffset(null);
-        
-        assertValidatorMessage(INSTANCE, session, NOTIFICATIONS_FIELD+"[0].offset", CANNOT_BE_NULL);
     }
     
     @Test

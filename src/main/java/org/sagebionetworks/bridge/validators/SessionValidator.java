@@ -224,13 +224,15 @@ public class SessionValidator implements Validator {
             }
             minuteInDay = winStartMinute + periodInMinutes(window.getExpiration());
         }
+        // If the session repeats, then the longest time window should not overlap
+        // with the first window in that sequence
         if (session.getInterval() != null) {
             TimeWindow longestWindow = longestTimeWindow(session);
             
             long intervalInMinutes = periodInMinutes(session.getInterval());
             long windowInMinutes = localTimeInMinutes(longestWindow.getStartTime()) + 
                     periodInMinutes(longestWindow.getExpiration());
-            if (windowInMinutes >= intervalInMinutes) {
+            if (windowInMinutes > intervalInMinutes) {
                 addOverlapError(errors, session, longestWindow);
             }
         }
