@@ -988,7 +988,7 @@ public class SchedulerTest extends Mockito {
         
         ScheduledSession schSession = timeline.getSchedule().get(0);
         assertEquals(schSession.getEndDay(), 20);
-        assertEquals(schSession.getExpiration(), Period.parse("P18D"));
+        assertEquals(schSession.getExpiration(), Period.parse("P19D"));
     }
     
     // This behavior was not what I expected 
