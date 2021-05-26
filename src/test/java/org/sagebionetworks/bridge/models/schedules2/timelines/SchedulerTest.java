@@ -41,7 +41,6 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
-import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
@@ -103,7 +102,6 @@ public class SchedulerTest extends Mockito {
         
         Session session = createOneTimeSession(null);
         session.setLabels(createLabels("de", "German", "es", "Spanish"));
-        session.setMessages(createMessages("en", "English", "es", "Spanish"));
         schedule.setSessions(ImmutableList.of(session));
         
         AssessmentReference asmt = createAssessmentRef(ASSESSMENT_1_GUID);
@@ -118,7 +116,6 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getLang(), "ja,es");
         assertEquals(timeline.getAssessments().get(0).getLabel(), "Spanish");
         assertEquals(timeline.getSessions().get(0).getLabel(), "Spanish");
-        assertEquals(timeline.getSessions().get(0).getMessage().getMessage(), "Spanish");
     }
     
     @Test
@@ -130,7 +127,6 @@ public class SchedulerTest extends Mockito {
         
         Session session = createOneTimeSession(null);
         session.setLabels(createLabels("de", "German", "es", "Spanish"));
-        session.setMessages(createMessages("en", "English", "de", "German"));
         schedule.setSessions(ImmutableList.of(session));
         
         AssessmentReference asmt = createAssessmentRef(ASSESSMENT_1_GUID);
@@ -144,7 +140,6 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getLang(), "ja,es");
         assertEquals(timeline.getAssessments().get(0).getLabel(), "Japanese");
         assertEquals(timeline.getSessions().get(0).getLabel(), "Spanish");
-        assertEquals(timeline.getSessions().get(0).getMessage().getMessage(), "English");
     }
     
     @Test
@@ -153,7 +148,6 @@ public class SchedulerTest extends Mockito {
         
         Session session = createOneTimeSession(null);
         session.setLabels(createLabels("de", "German", "en", "English"));
-        session.setMessages(createMessages("en", "English", "de", "German"));
         schedule.setSessions(ImmutableList.of(session));
         
         AssessmentReference asmt = createAssessmentRef(ASSESSMENT_1_GUID);
@@ -167,7 +161,6 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getLang(), "en");
         assertEquals(timeline.getAssessments().get(0).getLabel(), "English");
         assertEquals(timeline.getSessions().get(0).getLabel(), "English");
-        assertEquals(timeline.getSessions().get(0).getMessage().getMessage(), "English");
     }
     
     @Test
@@ -192,7 +185,6 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getLang(), "zh");
         assertEquals(timeline.getAssessments().get(0).getLabel(), "Assessment 1");
         assertEquals(timeline.getSessions().get(0).getLabel(), "One Time Session");
-        assertNull(timeline.getSessions().get(0).getMessage());
     }
     
     @Test
@@ -996,7 +988,7 @@ public class SchedulerTest extends Mockito {
         
         ScheduledSession schSession = timeline.getSchedule().get(0);
         assertEquals(schSession.getEndDay(), 20);
-        assertEquals(schSession.getExpiration(), Period.parse("P18D"));
+        assertEquals(schSession.getExpiration(), Period.parse("P19D"));
     }
     
     // This behavior was not what I expected 
@@ -1103,12 +1095,6 @@ public class SchedulerTest extends Mockito {
         Label label1 = new Label(lang1, value1);
         Label label2 = new Label(lang2, value2);
         return ImmutableList.of(label1, label2);
-    }
-    
-    private List<NotificationMessage> createMessages(String lang1, String value1, String lang2, String value2) {
-        NotificationMessage msg1 = new NotificationMessage.Builder().withLang(lang1).withMessage(value1).build();
-        NotificationMessage msg2 = new NotificationMessage.Builder().withLang(lang2).withMessage(value2).build();
-        return ImmutableList.of(msg1, msg2);
     }
     
     private void assertDayRange(Timeline timeline, int schSessionIndex, int startDay, int endDay) {

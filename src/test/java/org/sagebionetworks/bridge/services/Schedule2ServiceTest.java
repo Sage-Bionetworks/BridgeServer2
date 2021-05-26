@@ -30,6 +30,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -758,6 +759,8 @@ public class Schedule2ServiceTest extends Mockito {
         TimeWindow window1 = SessionTest.createValidSession().getTimeWindows().get(0);
         TimeWindow window2 = SessionTest.createValidSession().getTimeWindows().get(0);
         window2.setGuid(null);
+        window2.setStartTime(LocalTime.parse("14:00"));
+        window2.setExpiration(Period.parse("PT6H"));
         session1.setTimeWindows(ImmutableList.of(window1, window2));
         
         schedule.setSessions(ImmutableList.of(session1, session2));

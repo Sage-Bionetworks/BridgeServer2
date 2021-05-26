@@ -47,9 +47,9 @@ public class TimelineTest extends Mockito {
         assertEquals(schNode.get("refGuid").textValue(), SESSION_GUID_1);
         assertEquals(schNode.get("instanceGuid").textValue(), "XPnIpiOvQMtil857X_ihUw");
         assertEquals(schNode.get("startDay").intValue(), 7);
-        assertEquals(schNode.get("endDay").intValue(), 13);
+        assertEquals(schNode.get("endDay").intValue(), 7);
         assertEquals(schNode.get("startTime").textValue(), "08:00");
-        assertEquals(schNode.get("expiration").textValue(), "P6D");
+        assertEquals(schNode.get("expiration").textValue(), "PT6H");
         assertTrue(schNode.get("persistent").booleanValue());
         assertEquals(schNode.get("type").textValue(), "ScheduledSession");
         assertEquals(schNode.get("assessments")
@@ -75,16 +75,15 @@ public class TimelineTest extends Mockito {
         assertEquals(sessNode.get("label").textValue(), "English");
         assertEquals(sessNode.get("startEventId").textValue(), "activities_retrieved");
         assertEquals(sessNode.get("performanceOrder").textValue(), "randomized");
-        assertEquals(sessNode.get("notifyAt").textValue(), "start_of_window");
-        assertEquals(sessNode.get("remindAt").textValue(), "before_window_end");
-        assertEquals(sessNode.get("reminderPeriod").textValue(), "PT10M");
-        assertTrue(sessNode.get("allowSnooze").booleanValue());
         assertEquals(sessNode.get("minutesToComplete").intValue(), 8);
-        assertEquals(sessNode.get("message").get("lang").textValue(), "en");
-        assertEquals(sessNode.get("message").get("subject").textValue(), "English");
-        assertEquals(sessNode.get("message").get("message").textValue(), "Body");
-        assertEquals(sessNode.get("message").get("type").textValue(), "NotificationMessage");
-        assertEquals(sessNode.get("type").textValue(), "SessionInfo");
+        
+        JsonNode msgNode = sessNode.get("notifications").get(0).get("message"); 
+        assertEquals(msgNode.get("lang").textValue(), "en");
+        assertEquals(msgNode.get("subject").textValue(), "subject");
+        assertEquals(msgNode.get("message").textValue(), "msg");
+        assertEquals(msgNode.get("type").textValue(), "NotificationMessage");
+        
+        assertEquals(sessNode.get("notifications").get(0).get("type").textValue(), "NotificationInfo");
     }
     
     @Test
@@ -107,7 +106,7 @@ public class TimelineTest extends Mockito {
         assertEquals(meta1.getSessionGuid(), SESSION_GUID_1);
         assertEquals(meta1.getSessionStartEventId(), "activities_retrieved");
         assertEquals(meta1.getSessionInstanceStartDay(), Integer.valueOf(7));
-        assertEquals(meta1.getSessionInstanceEndDay(), Integer.valueOf(13));
+        assertEquals(meta1.getSessionInstanceEndDay(), Integer.valueOf(7));
         assertEquals(meta1.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(meta1.getScheduleGuid(), SCHEDULE_GUID);
         assertEquals(meta1.getScheduleModifiedOn(), MODIFIED_ON);
@@ -126,7 +125,7 @@ public class TimelineTest extends Mockito {
         assertEquals(meta2.getSessionGuid(), SESSION_GUID_1);
         assertEquals(meta2.getSessionStartEventId(), "activities_retrieved");
         assertEquals(meta2.getSessionInstanceStartDay(), Integer.valueOf(7));
-        assertEquals(meta2.getSessionInstanceEndDay(), Integer.valueOf(13));
+        assertEquals(meta2.getSessionInstanceEndDay(), Integer.valueOf(7));
         assertEquals(meta2.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(meta2.getScheduleGuid(), SCHEDULE_GUID);
         assertEquals(meta2.getScheduleModifiedOn(), MODIFIED_ON);
@@ -145,7 +144,7 @@ public class TimelineTest extends Mockito {
         assertEquals(meta3.getSessionGuid(), SESSION_GUID_1);
         assertEquals(meta3.getSessionStartEventId(), "activities_retrieved");
         assertEquals(meta3.getSessionInstanceStartDay(), Integer.valueOf(7));
-        assertEquals(meta3.getSessionInstanceEndDay(), Integer.valueOf(13));
+        assertEquals(meta3.getSessionInstanceEndDay(), Integer.valueOf(7));
         assertEquals(meta3.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(meta3.getScheduleGuid(), SCHEDULE_GUID);
         assertEquals(meta3.getScheduleModifiedOn(), MODIFIED_ON);
