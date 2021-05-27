@@ -65,7 +65,7 @@ public class AccountsController extends BaseController  {
     private static final StatusMessage SIGN_OUT_MSG = new StatusMessage("User signed out.");
     private static final Set<String> ACCOUNT_FIELDS = ImmutableSet.of("firstName", "lastName", "synapseUserId", 
             "email", "phone", "attributes", "status", "roles", "dataGroups", "clientData", "languages", 
-            "orgMembership", "password");
+            "orgMembership", "password", "note");
     
     private ParticipantService participantService;
     

@@ -652,7 +652,6 @@ CREATE TABLE `StudyActivityEvents` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- changeset bridge:34
-
 ALTER TABLE `Sessions`
 DROP COLUMN `reminderPeriod`,
 DROP COLUMN `messages`,
@@ -673,3 +672,8 @@ CREATE TABLE `SessionNotifications` (
   PRIMARY KEY (`sessionGuid`, `position`),
   CONSTRAINT `SessionNotifications-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:36
+
+ALTER TABLE `Accounts`
+ADD COLUMN `note` text;

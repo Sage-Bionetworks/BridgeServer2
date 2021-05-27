@@ -47,6 +47,7 @@ public class AccountSummaryTest {
         assertEquals(node.get("externalId").textValue(), "externalId1");
         assertEquals(node.get("orgMembership").textValue(), TEST_ORG_ID);
         assertEquals(node.get("type").textValue(), "AccountSummary");
+        assertEquals(node.get("note").textValue(), "note1");
         
         AccountSummary newSummary = BridgeObjectMapper.get().treeToValue(node, AccountSummary.class);
         assertEquals(newSummary, SUMMARY1);
