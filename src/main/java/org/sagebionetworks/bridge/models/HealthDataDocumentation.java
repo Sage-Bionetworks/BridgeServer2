@@ -27,8 +27,8 @@ public interface HealthDataDocumentation extends BridgeEntity {
     Long getVersion();
     void setVersion(Long version);
 
-    String getS3Key();
-    void setS3Key(String s3Key);
+    String getDocumentation();
+    void setDocumentation(String documentation);
 
     String getCreatedBy();
     void setCreatedBy(String createdBy);

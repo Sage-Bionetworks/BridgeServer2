@@ -14,7 +14,7 @@ public class DynamoHealthDataDocumentation implements HealthDataDocumentation {
     String parentId;
     String identifier;
     Long version;
-    String s3Key;
+    String documentation;
     String createdBy;
     DateTime createdOn;
     String modifiedBy;
@@ -64,13 +64,13 @@ public class DynamoHealthDataDocumentation implements HealthDataDocumentation {
     }
 
     @Override
-    public String getS3Key() {
-        return this.s3Key;
+    public String getDocumentation() {
+        return this.documentation;
     }
 
     @Override
-    public void setS3Key(String s3Key) {
-        this.s3Key = s3Key;
+    public void setDocumentation(String documentation) {
+        this.documentation = documentation;
     }
 
     @Override

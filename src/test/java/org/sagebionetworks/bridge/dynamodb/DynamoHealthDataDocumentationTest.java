@@ -24,7 +24,6 @@ public class DynamoHealthDataDocumentationTest {
 
         documentation.setParentId(TEST_APP_ID); // testing String attributes of HealthDataDocumentation
         documentation.setIdentifier(IDENTIFIER);
-        documentation.setS3Key(S3_KEY);
         documentation.setCreatedOn(NOW); // testing the DateTime attributes of HealthDataDocumentation
         documentation.setVersion(VERSION);
 
@@ -33,14 +32,12 @@ public class DynamoHealthDataDocumentationTest {
         JsonNode node = MAPPER.readTree(json);
         assertEquals(node.get("parentId").textValue(), TEST_APP_ID);
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
-        assertEquals(node.get("s3Key").textValue(), S3_KEY);
         assertEquals(new DateTime(node.get("createdOn").textValue()), NOW);
         assertEquals((Long)node.get("version").longValue(), VERSION);
 
         HealthDataDocumentation deserialize = MAPPER.readValue(json, HealthDataDocumentation.class);
         assertEquals(deserialize.getParentId(), TEST_APP_ID);
         assertEquals(deserialize.getIdentifier(), IDENTIFIER);
-        assertEquals(deserialize.getS3Key(), S3_KEY);
         assertEquals(deserialize.getCreatedOn().getMillis(), NOW.getMillis());
         assertEquals(deserialize.getVersion(), VERSION);
     }
