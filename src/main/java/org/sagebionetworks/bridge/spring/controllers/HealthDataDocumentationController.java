@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
@@ -19,8 +18,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
-
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
 @CrossOrigin
@@ -35,17 +32,19 @@ public class HealthDataDocumentationController extends BaseController {
 
     /** Create or update a health data documentation. */
     @PostMapping(path="/v3/healthdataDocumentation")
-    public HealthDataDocumentation createOrUpdateHealthDataDocumentation() throws IOException {
+    public HealthDataDocumentation createOrUpdateHealthDataDocumentation() {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.DEVELOPER);
 
-        JsonNode requestNode = parseJson(JsonNode.class);
-        HealthDataDocumentation documentation = parseJson(requestNode, HealthDataDocumentation.class);
+        HealthDataDocumentation documentation = parseJson(HealthDataDocumentation.class);
 
-        byte[] documentationBytes = requestNode.get("documentation").binaryValue();
-        if (documentationBytes == null) {
+        if (documentation.getDocumentation() == null) {
             throw new BadRequestException("Documentation is required to store health data documentation.");
         }
 
+        // check documentation size (max allowed is 100 KB)
+
+
+        // update health data documentation attributes
         if (documentation.getCreatedOn() == null) {
             documentation.setCreatedOn(DateTime.now());
             documentation.setCreatedBy(session.getId());
@@ -54,7 +53,7 @@ public class HealthDataDocumentationController extends BaseController {
             documentation.setModifiedBy(session.getId());
         }
 
-        return healthDataDocumentationService.createOrUpdateHealthDataDocumentation(documentation, documentationBytes);
+        return healthDataDocumentationService.createOrUpdateHealthDataDocumentation(documentation);
     }
 
     /** Get a health data documentation with the given identifier. */

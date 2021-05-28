@@ -1,17 +1,15 @@
 package org.sagebionetworks.bridge.services;
 
+import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.dao.HealthDataDocumentationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.HealthDataDocumentation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
-
-import java.io.IOException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
@@ -19,8 +17,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 
 @Component
 public class HealthDataDocumentationService {
-    private static final String DOCUMENTATION_BUCKET = BridgeConfigFactory.getConfig().getProperty("healthdata.docs.bucket");
-
     private HealthDataDocumentationDao healthDataDocumentationDao;
 
     @Autowired
@@ -29,18 +25,22 @@ public class HealthDataDocumentationService {
     }
 
     /** Create or update a health data documentation.*/
-    public HealthDataDocumentation createOrUpdateHealthDataDocumentation(HealthDataDocumentation documentation, byte[] documentationBytes) throws IOException {
-        checkNotNull(documentation);
+    public HealthDataDocumentation createOrUpdateHealthDataDocumentation(HealthDataDocumentation documentation) {
+        if (documentation == null) {
+            throw new InvalidEntityException("Health data documentation must not be null.");
+        }
 
         return healthDataDocumentationDao.createOrUpdateDocumentation(documentation);
     }
 
     /** Delete health data documentation for the given identifier. */
     public void deleteHealthDataDocumentation(String identifier, String parentId) {
-        HealthDataDocumentation documentation = this.getHealthDataDocumentationForId(identifier, parentId);
+        if (StringUtils.isBlank(identifier)) {
+            throw new BadRequestException("Identifier must be specified.");
+        }
 
-        if (documentation == null) {
-            throw new EntityNotFoundException(HealthDataDocumentation.class);
+        if (StringUtils.isBlank(parentId)) {
+            throw new BadRequestException("Parent ID must be specified.");
         }
 
         healthDataDocumentationDao.deleteDocumentationForIdentifier(identifier, parentId);
@@ -55,13 +55,15 @@ public class HealthDataDocumentationService {
 
     /** Get health data documentation for the given identifier. */
     public HealthDataDocumentation getHealthDataDocumentationForId(String identifier, String parentId) {
-        HealthDataDocumentation documentation = healthDataDocumentationDao.getDocumentationByIdentifier(identifier, parentId);
-
-        if (documentation == null) {
-            throw new EntityNotFoundException(HealthDataDocumentation.class);
+        if (StringUtils.isBlank(identifier)) {
+            throw new BadRequestException("Identifier must be specified.");
         }
 
-        return documentation;
+        if (StringUtils.isBlank(parentId)) {
+            throw new BadRequestException("Parent ID must be specified.");
+        }
+
+        return healthDataDocumentationDao.getDocumentationByIdentifier(identifier, parentId);
     }
 
     /** List all health data documentation for the given parentId. */
