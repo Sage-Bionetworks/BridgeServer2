@@ -3,11 +3,14 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.apache.http.HttpHeaders.IF_MODIFIED_SINCE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler.INSTANCE;
 import static org.springframework.http.HttpStatus.NOT_MODIFIED;
 import static org.springframework.http.HttpStatus.OK;
@@ -47,8 +50,8 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.activities.ActivityEvent;
-import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -61,9 +64,9 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.Schedule2Service;
+import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
-import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 
@@ -91,7 +94,7 @@ public class StudyParticipantController extends BaseController {
     
     private EnrollmentService enrollmentService;
     
-    private ActivityEventService activityEventService;
+    private StudyActivityEventService studyActivityEventService;
     
     private StudyService studyService;
     
@@ -113,8 +116,8 @@ public class StudyParticipantController extends BaseController {
     }
     
     @Autowired
-    final void setActivityEventService(ActivityEventService activityEventService) {
-        this.activityEventService = activityEventService;
+    final void setStudyActivityEventService(StudyActivityEventService studyActivityEventService) {
+        this.studyActivityEventService = studyActivityEventService;
     }
     
     @Autowired
@@ -127,6 +130,10 @@ public class StudyParticipantController extends BaseController {
         this.scheduleService = scheduleService;
     }
     
+    DateTime getDateTime() {
+        return DateTime.now();
+    }
+    
     @GetMapping("/v5/studies/{studyId}/participants/self/timeline")
     public ResponseEntity<Timeline> getTimelineForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -134,6 +141,7 @@ public class StudyParticipantController extends BaseController {
         if (!session.getParticipant().getStudyIds().contains(studyId)) {
             throw new UnauthorizedException("Caller is not enrolled in study '" + studyId + "'");
         }
+        
         Study study = studyService.getStudy(session.getAppId(), studyId, true);
         DateTime modifiedSince = modifiedSinceHeader();
         DateTime modifiedOn = modifiedOn(studyId);
@@ -143,6 +151,14 @@ public class StudyParticipantController extends BaseController {
         }
         Schedule2 schedule = scheduleService.getScheduleForStudy(session.getAppId(), study);
         cacheProvider.setObject(scheduleModificationTimestamp(studyId), schedule.getModifiedOn().toString());
+        
+        studyActivityEventService.publishEvent(new StudyActivityEventRequest()
+                .appId(session.getAppId())
+                .studyId(studyId)
+                .userId(session.getId())
+                .objectType(TIMELINE_RETRIEVED)
+                .timestamp(getDateTime()));
+        
         return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
     }
     
@@ -254,13 +270,10 @@ public class StudyParticipantController extends BaseController {
         
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
         
-        App app = appService.getApp(session.getAppId());
         // Verify it's in the same app as the researcher.
         RequestInfo requestInfo = requestInfoService.getRequestInfo(account.getId());
         if (requestInfo == null) {
             requestInfo = new RequestInfo.Builder().build();
-        } else if (!app.getIdentifier().equals(requestInfo.getAppId())) {
-            throw new EntityNotFoundException(StudyParticipant.class);
         }
         return REQUEST_INFO_WRITER.writeValueAsString(requestInfo);
     }
@@ -416,92 +429,76 @@ public class StudyParticipantController extends BaseController {
         return DELETE_MSG;
     }    
     
-    @GetMapping(path = {"/v5/studies/{studyId}/participants/{userId}/activityEvents"},
-            produces={APPLICATION_JSON_UTF8_VALUE})
-    public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String studyId, @PathVariable String userId) throws JsonProcessingException {
+    /* STUDY ACTIVITY EVENT FOR STUDY PARTICIPANT */
+    
+    @GetMapping("/v5/studies/{studyId}/participants/{userId}/activityevents")
+    public ResourceList<StudyActivityEvent> getRecentActivityEvents(
+            @PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
-        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+        getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        App app = appService.getApp(session.getAppId());
-        List<ActivityEvent> events = participantService.getActivityEvents(app, studyId, account.getId());
-        
-        return new ResourceList<>(events);
+        return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), userId, studyId);
     }
     
-    @PostMapping("/v5/studies/{studyId}/participants/{userId}/activityEvents")
-    @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage createActivityEvent(@PathVariable String studyId, @PathVariable String userId) {
+    @GetMapping("/v5/studies/{studyId}/participants/{userId}/activityevents/{eventId}")
+    public ResourceList<StudyActivityEvent> getActivityEventHistory(@PathVariable String studyId,
+            @PathVariable String userId,
+            @PathVariable String eventId,
+            @RequestParam(required = false) String offsetBy,
+            @RequestParam(required = false) String pageSize) {
         UserSession session = getAdministrativeSession();
-        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+        getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        CustomActivityEventRequest event = parseJson(CustomActivityEventRequest.class);
+        Integer offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
+        Integer pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
-        App app = appService.getApp(session.getAppId());
-        activityEventService.publishCustomEvent(app, studyId,
-                account.getHealthCode(), event.getEventKey(), event.getTimestamp());
+        StudyActivityEventRequest request = new StudyActivityEventRequest()
+                .appId(session.getAppId())
+                .studyId(studyId)
+                .userId(userId)
+                .objectId(eventId)
+                .objectType(CUSTOM);
+        
+        return studyActivityEventService.getStudyActivityEventHistory(request, offsetByInt, pageSizeInt);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/participants/{userId}/activityevents")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StatusMessage publishActivityEvent(@PathVariable String studyId, @PathVariable String userId) {
+        UserSession session = getAdministrativeSession();
+        
+        getValidAccountInStudy(session.getAppId(), studyId, userId);
+        
+        StudyActivityEventRequest request = parseJson(StudyActivityEventRequest.class)
+                .appId(session.getAppId())
+                .studyId(studyId)
+                .userId(userId)
+                .objectType(CUSTOM);
+        
+        studyActivityEventService.publishEvent(request);
         
         return EVENT_RECORDED_MSG;
     }
 
-    @DeleteMapping("/v5/studies/{studyId}/participants/{userId}/activityEvents/{eventId}")
-    public StatusMessage deleteActivityEvent(@PathVariable String studyId, @PathVariable String userId,
+    @DeleteMapping("/v5/studies/{studyId}/participants/{userId}/activityevents/{eventId}")
+    public StatusMessage deleteActivityEvent(@PathVariable String studyId, 
+            @PathVariable String userId,
             @PathVariable String eventId) {
         UserSession session = getAdministrativeSession();
-        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        
-        App app = appService.getApp(session.getAppId());
-        activityEventService.deleteCustomEvent(app, studyId, account.getHealthCode(), eventId);
+        getValidAccountInStudy(session.getAppId(), studyId, userId);
+
+        studyActivityEventService.deleteCustomEvent(new StudyActivityEventRequest()
+                .appId(session.getAppId())
+                .studyId(studyId)
+                .userId(userId)
+                .objectId(eventId)
+                .objectType(CUSTOM));
         
         return EVENT_DELETED_MSG;
     }
-    
-    @GetMapping(path = {"/v5/studies/{studyId}/participants/self/activityEvents"},
-            produces={APPLICATION_JSON_UTF8_VALUE})
-    public ResourceList<ActivityEvent> getSelfActivityEvents(@PathVariable String studyId)
-            throws JsonProcessingException {
-        UserSession session = getAuthenticatedAndConsentedSession();
-        
-        getValidAccountInStudy(session.getAppId(), studyId, session.getId());
-        
-        List<ActivityEvent> events = activityEventService.getActivityEventList(
-                session.getAppId(), studyId, session.getHealthCode());
-        
-        return new ResourceList<>(events);
-    }
-
-    @PostMapping("/v5/studies/{studyId}/participants/self/activityEvents")
-    @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage createSelfActivityEvent(@PathVariable String studyId) {
-        UserSession session = getAuthenticatedAndConsentedSession();
-
-        getValidAccountInStudy(session.getAppId(), studyId, session.getId());
-        
-        CustomActivityEventRequest event = parseJson(CustomActivityEventRequest.class);
-
-        App app = appService.getApp(session.getAppId());
-        activityEventService.publishCustomEvent(app, studyId,
-                session.getHealthCode(), event.getEventKey(), event.getTimestamp());
-        
-        return EVENT_RECORDED_MSG;
-    }   
-    
-    @DeleteMapping("/v5/studies/{studyId}/participants/self/activityEvents/{eventId}")
-    public StatusMessage deleteSelfActivityEvent(@PathVariable String studyId, @PathVariable String eventId) {
-        UserSession session = getAuthenticatedAndConsentedSession();
-
-        getValidAccountInStudy(session.getAppId(), studyId, session.getId());
-        
-        App app = appService.getApp(session.getAppId());
-        activityEventService.deleteCustomEvent(app, studyId, session.getHealthCode(), eventId);
-        
-        return EVENT_DELETED_MSG;
-    }   
     
     /**
      * Get the account no matter what identifier is used (in particular, externalId:<externalId> can be

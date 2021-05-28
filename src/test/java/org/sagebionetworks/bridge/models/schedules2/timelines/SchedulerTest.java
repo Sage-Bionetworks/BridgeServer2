@@ -41,7 +41,6 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
-import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
@@ -103,7 +102,6 @@ public class SchedulerTest extends Mockito {
         
         Session session = createOneTimeSession(null);
         session.setLabels(createLabels("de", "German", "es", "Spanish"));
-        session.setMessages(createMessages("en", "English", "es", "Spanish"));
         schedule.setSessions(ImmutableList.of(session));
         
         AssessmentReference asmt = createAssessmentRef(ASSESSMENT_1_GUID);
@@ -118,7 +116,6 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getLang(), "ja,es");
         assertEquals(timeline.getAssessments().get(0).getLabel(), "Spanish");
         assertEquals(timeline.getSessions().get(0).getLabel(), "Spanish");
-        assertEquals(timeline.getSessions().get(0).getMessage().getMessage(), "Spanish");
     }
     
     @Test
@@ -130,7 +127,6 @@ public class SchedulerTest extends Mockito {
         
         Session session = createOneTimeSession(null);
         session.setLabels(createLabels("de", "German", "es", "Spanish"));
-        session.setMessages(createMessages("en", "English", "de", "German"));
         schedule.setSessions(ImmutableList.of(session));
         
         AssessmentReference asmt = createAssessmentRef(ASSESSMENT_1_GUID);
@@ -144,7 +140,6 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getLang(), "ja,es");
         assertEquals(timeline.getAssessments().get(0).getLabel(), "Japanese");
         assertEquals(timeline.getSessions().get(0).getLabel(), "Spanish");
-        assertEquals(timeline.getSessions().get(0).getMessage().getMessage(), "English");
     }
     
     @Test
@@ -153,7 +148,6 @@ public class SchedulerTest extends Mockito {
         
         Session session = createOneTimeSession(null);
         session.setLabels(createLabels("de", "German", "en", "English"));
-        session.setMessages(createMessages("en", "English", "de", "German"));
         schedule.setSessions(ImmutableList.of(session));
         
         AssessmentReference asmt = createAssessmentRef(ASSESSMENT_1_GUID);
@@ -167,7 +161,6 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getLang(), "en");
         assertEquals(timeline.getAssessments().get(0).getLabel(), "English");
         assertEquals(timeline.getSessions().get(0).getLabel(), "English");
-        assertEquals(timeline.getSessions().get(0).getMessage().getMessage(), "English");
     }
     
     @Test
@@ -192,7 +185,6 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getLang(), "zh");
         assertEquals(timeline.getAssessments().get(0).getLabel(), "Assessment 1");
         assertEquals(timeline.getSessions().get(0).getLabel(), "One Time Session");
-        assertNull(timeline.getSessions().get(0).getMessage());
     }
     
     @Test
@@ -249,7 +241,7 @@ public class SchedulerTest extends Mockito {
     }
     
     @Test
-    public void oneRepeatingSession() {
+    public void oneRepeatingSession() throws Exception {
         Schedule2 schedule = createSchedule("P7W");
         schedule.getSessions().add(createRepeatingSession(null, "P1W"));
         
@@ -693,15 +685,15 @@ public class SchedulerTest extends Mockito {
     
     @Test
     public void sessionInstanceGuidsAreCorrect() {
-        String guid = INSTANCE.generateSessionInstanceGuid(SCHEDULE_GUID, SESSION_GUID_1, SESSION_WINDOW_GUID_1, 3);
+        String guid = INSTANCE.generateSessionInstanceGuid(SCHEDULE_GUID, SESSION_GUID_1, 3, SESSION_WINDOW_GUID_1);
         // window guid, window occurrence, session guid, schedule guid
-        assertEquals(guid, "4iov0SHEtt2MuKhS2KBMVg");
+        assertEquals(guid, "U9uuOEIBzUaw0sKTjgaT-Q");
     }
     
     @Test
     public void assessmentInstanceGuidsAreCorrect() {
-        String guid = INSTANCE.generateAssessmentInstanceGuid(SCHEDULE_GUID, SESSION_GUID_1, SESSION_WINDOW_GUID_1, 3, ASSESSMENT_1_GUID, 5);
-        assertEquals(guid, "iOzm0SlReeu5ex0q8cw1PQ");
+        String guid = INSTANCE.generateAssessmentInstanceGuid(SCHEDULE_GUID, SESSION_GUID_1, 3, SESSION_WINDOW_GUID_1, ASSESSMENT_1_GUID, 5);
+        assertEquals(guid, "BREAKQLN7ZoBo1lF0iLT4Q");
     }
     
     @Test
@@ -713,10 +705,10 @@ public class SchedulerTest extends Mockito {
         for (ScheduledSession schSession : timeline.getSchedule()) {
             sessionInstanceGuids.add(schSession.getInstanceGuid());
         }
-        // There are 1,274 scheduled sessions and all must have a unique guid.
+        // There are 1,278 scheduled sessions and all must have a unique guid.
         assertEquals(sessionInstanceGuids.size(), 1274);
         
-        // Just changing the schedule GUID will create 1,274 more unique GUIDs
+        // Just changing the schedule GUID will create 1,278 more unique GUIDs
         schedule.setGuid(ASSESSMENT_4_GUID);
         timeline = INSTANCE.calculateTimeline(schedule);
         for (ScheduledSession schSession : timeline.getSchedule()) {
@@ -753,17 +745,26 @@ public class SchedulerTest extends Mockito {
     @Test
     public void allGuidsAreUnique() {
         Schedule2 schedule = createComplexSchedule();
-        Set<String> allGuids = new HashSet<>();
-            
-        Timeline timeline = INSTANCE.calculateTimeline(schedule);
         
+        Set<String> allGuids = new HashSet<>();
+        Timeline timeline = INSTANCE.calculateTimeline(schedule);
         for (ScheduledSession schSession : timeline.getSchedule()) {
             allGuids.add(schSession.getInstanceGuid());
             for (ScheduledAssessment schAsmt : schSession.getAssessments()) {
                 allGuids.add(schAsmt.getInstanceGuid());
             }
         }
-        assertEquals(allGuids.size(), 2184 + 1274);
+        
+        Set<String> allGuidsAgain = new HashSet<>();
+        timeline = INSTANCE.calculateTimeline(schedule);
+        for (ScheduledSession schSession : timeline.getSchedule()) {
+            allGuidsAgain.add(schSession.getInstanceGuid());
+            for (ScheduledAssessment schAsmt : schSession.getAssessments()) {
+                allGuidsAgain.add(schAsmt.getInstanceGuid());
+            }
+        }
+        assertEquals(allGuids, allGuidsAgain);
+        assertEquals(allGuids.size(), 3458);
     }
     
     @Test
@@ -815,7 +816,7 @@ public class SchedulerTest extends Mockito {
         
         List<TimelineMetadata> metadata = timeline.getMetadata();
         
-        assertEquals(metadata.size(), 2184 + 1274);
+        assertEquals(metadata.size(), 3458);
         
         List<TimelineMetadata> sessionMetadata = metadata.stream()
                 .filter(m -> m.getAssessmentGuid() == null).collect(toList());
@@ -967,7 +968,59 @@ public class SchedulerTest extends Mockito {
     public void startTimeMiddayStartDayTenExpDays() {
         int endDay = INSTANCE.calculateEndDay(20, LocalTime.parse("13:00"), 10, Period.parse("P13D"));
         assertEquals(endDay, 23);
-    }    
+    }
+    
+    // This verifies that we set an expiration for scheduled sessions based on windows without
+    // an expiration, and (since these had an off-by-one error) verifies that we are calculating
+    // the endDay for these sessions correctly.
+    @Test
+    public void expirationDefaultsToLastDayOfStudy() {
+        int endDay = INSTANCE.calculateEndDay(21, LocalTime.parse("10:00"), 7, null);
+        assertEquals(endDay, 20);
+        
+        Schedule2 schedule = createSchedule("P21D");
+        Session session = createOneTimeSession("P2D");
+        session.getTimeWindows().get(0).setExpiration(null); // no expiration
+        schedule.setSessions(ImmutableList.of(session));
+        
+        Timeline timeline = INSTANCE.calculateTimeline(schedule);
+        assertEquals(timeline.getSchedule().size(), 1);
+        
+        ScheduledSession schSession = timeline.getSchedule().get(0);
+        assertEquals(schSession.getEndDay(), 20);
+        assertEquals(schSession.getExpiration(), Period.parse("P19D"));
+    }
+    
+    // This behavior was not what I expected 
+    @Test
+    public void weeklyAppearsAt28Days() {
+        TimeWindow timeWindow = new TimeWindow();
+        timeWindow.setGuid(SESSION_WINDOW_GUID_1);
+        timeWindow.setStartTime(LocalTime.parse("08:00"));
+        timeWindow.setExpiration(Period.parse("PT12H"));
+        
+        Session session = new Session();
+        session.setGuid(SESSION_GUID_1);
+        session.setStartEventId("enrollment");
+        session.setName("Sessions repeating weekly");
+        session.setInterval(Period.parse("P1W"));
+        session.setPerformanceOrder(SEQUENTIAL);
+        session.setTimeWindows(ImmutableList.of(timeWindow));
+        session.setAssessments(ImmutableList.of(createAssessmentRef("AAA")));
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setGuid(SCHEDULE_GUID);
+        schedule.setDuration(Period.parse("P21D"));
+        schedule.setSessions(ImmutableList.of(session));
+        
+        Timeline timeline = INSTANCE.calculateTimeline(schedule);
+        assertEquals(timeline.getSchedule().size(), 3);
+        
+        // but change the expiration past the last day, and it'll be 3
+        timeWindow.setExpiration(Period.parse("PT24H"));        
+        timeline = INSTANCE.calculateTimeline(schedule);
+        assertEquals(timeline.getSchedule().size(), 3);
+    }
     
     /* ============================================================ */
     /* Many helper methods to construct a schedule */
@@ -1042,12 +1095,6 @@ public class SchedulerTest extends Mockito {
         Label label1 = new Label(lang1, value1);
         Label label2 = new Label(lang2, value2);
         return ImmutableList.of(label1, label2);
-    }
-    
-    private List<NotificationMessage> createMessages(String lang1, String value1, String lang2, String value2) {
-        NotificationMessage msg1 = new NotificationMessage.Builder().withLang(lang1).withMessage(value1).build();
-        NotificationMessage msg2 = new NotificationMessage.Builder().withLang(lang2).withMessage(value2).build();
-        return ImmutableList.of(msg1, msg2);
     }
     
     private void assertDayRange(Timeline timeline, int schSessionIndex, int startDay, int endDay) {

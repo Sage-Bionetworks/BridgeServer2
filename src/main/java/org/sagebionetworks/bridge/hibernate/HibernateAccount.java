@@ -86,7 +86,8 @@ public class HibernateAccount implements Account {
     private Set<String> dataGroups;
     private List<String> languages;
     private int migrationVersion;
-    private Set<Enrollment> enrollments; 
+    private Set<Enrollment> enrollments;
+    private String note;
     
     /**
      * Constructor to load information for the AccountRef object. This avoids loading any of the 
@@ -531,5 +532,15 @@ public class HibernateAccount implements Account {
         return getEnrollments().stream()
                 .filter(en -> en.getWithdrawnOn() == null)
                 .collect(toImmutableSet());
+    }
+
+    @Override
+    public String getNote() {
+        return note;
+    }
+
+    @Override
+    public void setNote(String note) {
+        this.note = note;
     }
 }

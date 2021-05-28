@@ -266,7 +266,7 @@ public class AppValidator implements Validator {
     }
     
     private boolean specifiesValidEventKey(Set<String> customKeys, String proposedKey) {
-        for (ActivityEventObjectType type : ActivityEventObjectType.UNARY_EVENTS) {
+        for (ActivityEventObjectType type : ActivityEventObjectType.values()) {
             if (type.name().toLowerCase().equals(proposedKey)) {
                 return true;
             }

@@ -599,3 +599,81 @@ ALTER TABLE `StudyContacts`
 DROP PRIMARY KEY,
 ADD CONSTRAINT PRIMARY KEY (`appId`, `studyId`, `pos`);
 
+-- changeset bridge:32
+
+CREATE TABLE `AdherenceRecords` (
+  `userId` varchar(255) NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `instanceGuid` varchar(128) NOT NULL,
+  `startedOn` bigint(20) unsigned NOT NULL,
+  `eventTimestamp` bigint(20) unsigned,
+  `finishedOn` bigint(20) unsigned,
+  `uploadedOn` bigint(20) unsigned,
+  `clientData` text COLLATE utf8_unicode_ci,
+  `clientTimeZone` varchar(255),
+  PRIMARY KEY (`userId`, `studyId`, `instanceGuid`, `startedOn`),
+  CONSTRAINT `AdherenceRecord-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `AdherenceRecord-Study-Constraint` FOREIGN KEY (`studyId`) REFERENCES `Substudies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:33
+
+DROP TABLE `AdherenceRecords`;
+
+CREATE TABLE `AdherenceRecords` (
+  `appId` varchar(255) NOT NULL,
+  `userId` varchar(255) NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `instanceGuid` varchar(128) NOT NULL,
+  `startedOn` bigint(20) unsigned NOT NULL,
+  `eventTimestamp` bigint(20) unsigned,
+  `finishedOn` bigint(20) unsigned,
+  `uploadedOn` bigint(20) unsigned,
+  `clientData` text COLLATE utf8_unicode_ci,
+  `clientTimeZone` varchar(255),
+  PRIMARY KEY (`userId`, `studyId`, `instanceGuid`, `startedOn`),
+  KEY `AdherenceRecord-appId-studyId` (`appId`,`studyId`),
+  CONSTRAINT `AdherenceRecord-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `AdherenceRecord-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE `StudyActivityEvents` (
+  `appId` varchar(255) NOT NULL,
+  `userId` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `eventId` varchar(255) NOT NULL,
+  `eventTimestamp` bigint(20) unsigned NOT NULL,
+  `answerValue` varchar(255),
+  `clientTimeZone` varchar(255),
+  `createdOn` bigint(20) unsigned NOT NULL,
+  PRIMARY KEY (`userId`, `studyId`, `eventId`, `eventTimestamp`),
+  CONSTRAINT `StudyActivityEvent-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `StudyActivityEvent-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:34
+ALTER TABLE `Sessions`
+DROP COLUMN `reminderPeriod`,
+DROP COLUMN `messages`,
+DROP COLUMN `notifyAt`,
+DROP COLUMN `remindAt`,
+DROP COLUMN `allowSnooze`;
+
+-- changeset bridge:35
+
+CREATE TABLE `SessionNotifications` (
+  `sessionGuid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `notifyAt` enum('AFTER_WINDOW_START','BEFORE_WINDOW_END'),
+  `offsetPeriod` varchar(60),
+  `intervalPeriod` varchar(60),
+  `messages` text DEFAULT NULL,
+  `allowSnooze` tinyint(1) NOT NULL DEFAULT '0',
+  PRIMARY KEY (`sessionGuid`, `position`),
+  CONSTRAINT `SessionNotifications-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:36
+
+ALTER TABLE `Accounts`
+ADD COLUMN `note` text;

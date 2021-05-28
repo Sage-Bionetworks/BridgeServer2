@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
@@ -37,6 +38,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.SendMessageResult;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.DateTime;
@@ -45,6 +49,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -165,7 +171,8 @@ public class ParticipantServiceTest extends Mockito {
             .withLanguages(USER_LANGUAGES)
             .withStatus(DISABLED)
             .withTimeZone(USER_TIME_ZONE)
-            .withClientData(TestUtils.getClientData()).build();
+            .withClientData(TestUtils.getClientData())
+            .withNote(TEST_NOTE).build();
     
     private static final DateTime START_DATE = DateTime.now();
     private static final DateTime END_DATE = START_DATE.plusDays(1);
@@ -232,6 +239,12 @@ public class ParticipantServiceTest extends Mockito {
     
     @Mock
     private OrganizationService organizationService;
+
+    @Mock
+    private AmazonSQSClient sqsClient;
+
+    @Mock
+    private BridgeConfig bridgeConfig;
     
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
@@ -349,6 +362,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(account.getLanguages(), ImmutableList.of("de","fr"));
         assertEquals(enrollmentCaptor.getValue().getExternalId(), EXTERNAL_ID);
         assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
+        assertEquals(account.getNote(), TEST_NOTE);
         
         // don't update cache
         Mockito.verifyNoMoreInteractions(cacheProvider);
@@ -979,6 +993,7 @@ public class ParticipantServiceTest extends Mockito {
         // no third external ID, this one is just not in the external IDs map
         account.setEnrollments(ImmutableSet.of(en1, en2, en3));
         account.setOrgMembership(TEST_ORG_ID);
+        account.setNote(TEST_NOTE);
         
         List<Subpopulation> subpopulations = Lists.newArrayList();
         // Two subpopulations for mocking.
@@ -1032,6 +1047,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(participant.getExternalIds().get("studyA"), "externalIdA");
         assertEquals(participant.getExternalIds().get("studyB"), "externalIdB");
         assertEquals(participant.getOrgMembership(), TEST_ORG_ID);
+        assertEquals(participant.getNote(), TEST_NOTE);
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals(participant.getAttributes().get("attr2"), "anAttribute2");
@@ -2403,7 +2419,44 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
     }
-    
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void getParticipantRosterNullPassword() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(null).build();
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void getParticipantRosterBlankPassword() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("").build();
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void getParticipantRosterInvalidPassword() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("badPassword").build();
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+    }
+
+    @Test
+    public void getParticipantRoster() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
+
+        String queueUrl = "https://sqs.us-east-1.amazonaws.com/420786776710/Bridge-WorkerPlatform-Request-local";
+        when(bridgeConfig.getProperty("workerPlatform.request.sqs.queue.url")).thenReturn(queueUrl);
+
+        when(sqsClient.sendMessage(eq(queueUrl), anyString())).thenReturn(mock(SendMessageResult.class));
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+
+        String requestJson = "{\"service\":\"DownloadParticipantRosterWorker\",\"body\":{\"appId\":\"test-app\"," +
+                "\"userId\":\"userId\",\"password\":\"P@ssword1\",\"studyId\":\"studyId\"}}";
+        verify(sqsClient).sendMessage(queueUrl, requestJson);
+    }
+
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 
     // way to get correct paging.
     

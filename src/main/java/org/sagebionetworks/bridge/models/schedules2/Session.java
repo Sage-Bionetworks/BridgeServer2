@@ -22,12 +22,10 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.joda.time.Period;
 
 import org.sagebionetworks.bridge.hibernate.LabelListConverter;
-import org.sagebionetworks.bridge.hibernate.NotificationMessageListConverter;
 import org.sagebionetworks.bridge.hibernate.PeriodToStringConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.Label;
-import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 
 @Entity
 @Table(name = "Sessions")
@@ -54,13 +52,6 @@ public class Session implements BridgeEntity, HasGuid {
     private Period interval;
     @Enumerated(EnumType.STRING)
     private PerformanceOrder performanceOrder;
-    @Enumerated(EnumType.STRING)
-    private NotificationType notifyAt;
-    @Enumerated(EnumType.STRING)
-    private ReminderType remindAt;
-    @Convert(converter = PeriodToStringConverter.class)
-    private Period reminderPeriod;
-    private boolean allowSnooze;
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "SessionAssessments", 
         joinColumns = @JoinColumn(name = "sessionGuid", nullable = false))
@@ -72,11 +63,13 @@ public class Session implements BridgeEntity, HasGuid {
         joinColumns = @JoinColumn(name = "sessionGuid", nullable = false))
     @OrderColumn(name = "position")
     private List<TimeWindow> timeWindows;
-    
-    @Column(columnDefinition = "text", name = "messages", nullable = true)
-    @Convert(converter = NotificationMessageListConverter.class)
-    private List<NotificationMessage> messages;
-    
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "SessionNotifications", 
+        joinColumns = @JoinColumn(name = "sessionGuid", nullable = false))
+    @OrderColumn(name = "position")
+    private List<Notification> notifications;
+
     @Column(columnDefinition = "text", name = "labels", nullable = true)
     @Convert(converter = LabelListConverter.class)
     private List<Label> labels;
@@ -144,30 +137,6 @@ public class Session implements BridgeEntity, HasGuid {
     public void setPerformanceOrder(PerformanceOrder performanceOrder) {
         this.performanceOrder = performanceOrder;
     }
-    public NotificationType getNotifyAt() {
-        return notifyAt;
-    }
-    public void setNotifyAt(NotificationType notifyAt) {
-        this.notifyAt = notifyAt;
-    }
-    public ReminderType getRemindAt() {
-        return remindAt;
-    }
-    public void setRemindAt(ReminderType remindAt) {
-        this.remindAt = remindAt;
-    }
-    public Period getReminderPeriod() {
-        return reminderPeriod;
-    }
-    public void setReminderPeriod(Period reminderPeriod) {
-        this.reminderPeriod = reminderPeriod;
-    }
-    public boolean isAllowSnooze() {
-        return allowSnooze;
-    }
-    public void setAllowSnooze(boolean allowSnooze) {
-        this.allowSnooze = allowSnooze;
-    }
     public List<AssessmentReference> getAssessments() {
         if (assessments == null) {
             assessments = new ArrayList<>();
@@ -186,13 +155,13 @@ public class Session implements BridgeEntity, HasGuid {
     public void setTimeWindows(List<TimeWindow> timeWindows) {
         this.timeWindows = timeWindows;
     }
-    public List<NotificationMessage> getMessages() {
-        if (messages == null) {
-            messages = new ArrayList<>();
+    public List<Notification> getNotifications() {
+        if (notifications == null) {
+            notifications = new ArrayList<>();
         }
-        return messages;
+        return notifications;
     }
-    public void setMessages(List<NotificationMessage> messages) {
-        this.messages = messages;
+    public void setNotifications(List<Notification> notifications) {
+        this.notifications = notifications;
     }
 }

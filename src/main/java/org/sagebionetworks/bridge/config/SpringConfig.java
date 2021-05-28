@@ -119,14 +119,17 @@ import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.Tag;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.organizations.HibernateOrganization;
+import org.sagebionetworks.bridge.models.schedules2.Notification;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
@@ -635,6 +638,9 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(Session.class);
         metadataSources.addAnnotatedClass(Tag.class);
         metadataSources.addAnnotatedClass(TimelineMetadata.class);
+        metadataSources.addAnnotatedClass(AdherenceRecord.class);
+        metadataSources.addAnnotatedClass(StudyActivityEvent.class);
+        metadataSources.addAnnotatedClass(Notification.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
         

@@ -2,7 +2,12 @@ package org.sagebionetworks.bridge;
 
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
@@ -79,6 +84,7 @@ import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.studies.Address;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -416,7 +422,8 @@ public class TestUtils {
                 .withNotifyByEmail(true)
                 .withDataGroups(Sets.newHashSet("group1"))
                 .withAttributes(new ImmutableMap.Builder<String,String>().put("can_be_recontacted","true").build())
-                .withLanguages(ImmutableList.of("fr")).build();
+                .withLanguages(ImmutableList.of("fr"))
+                .withNote(TEST_NOTE).build();
     }
 
     public static List<ScheduledActivity> runSchedulerForActivities(List<SchedulePlan> plans, ScheduleContext context) {
@@ -644,6 +651,18 @@ public class TestUtils {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+    
+    public static AdherenceRecord getAdherenceRecord(String instanceGuid) { 
+        AdherenceRecord record = new AdherenceRecord();
+        record.setStudyId(TEST_STUDY_ID);
+        record.setUserId(TEST_USER_ID);
+        record.setEventTimestamp(CREATED_ON);
+        record.setClientTimeZone("America/Los_Angeles");
+        record.setStartedOn(MODIFIED_ON);
+        record.setInstanceGuid(instanceGuid);
+        record.setClientTimeZone("America/Los_Angeles");
+        return record;
     }
 
     public static JsonNode getOtherClientData() {
