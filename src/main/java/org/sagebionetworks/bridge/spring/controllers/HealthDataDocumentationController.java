@@ -18,11 +18,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.Charset;
+
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
 @CrossOrigin
 @RestController
 public class HealthDataDocumentationController extends BaseController {
+    private static final Long MAX_DOCUMENTATION_BYTES = 1024L * 100;
+
     private HealthDataDocumentationService healthDataDocumentationService;
 
     @Autowired
@@ -42,7 +46,9 @@ public class HealthDataDocumentationController extends BaseController {
         }
 
         // check documentation size (max allowed is 100 KB)
-
+        if (documentation.getDocumentation().getBytes(Charset.defaultCharset()).length > MAX_DOCUMENTATION_BYTES) {
+            throw new BadRequestException("Documentation must be less than 100 KB");
+        }
 
         // update health data documentation attributes
         if (documentation.getCreatedOn() == null) {
@@ -86,7 +92,7 @@ public class HealthDataDocumentationController extends BaseController {
         String parentId = session.getAppId(); // placeholder
         healthDataDocumentationService.deleteHealthDataDocumentation(identifier, parentId);
 
-        return new StatusMessage("Health data documentation has been deleted for participant");
+        return new StatusMessage("Health data documentation has been deleted for the given identifier.");
     }
 
     /** Delete all health data documentation with the given parentId. */
