@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.AccountSummarySearch.EMPTY_SEARCH;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
@@ -48,6 +49,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -1104,6 +1106,68 @@ public class AccountServiceTest extends Mockito {
         RequestContext.set(null);
     }
 
+    @Test
+    public void createAccountFailsToSaveNote() {
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setEmail(EMAIL);
+        account.setStatus(UNVERIFIED);
+        account.setAppId("wrong-app");
+        account.setNote(TEST_NOTE);
+
+        service.createAccount(app, account);
+        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
+
+        Account createdAccount = accountCaptor.getValue();
+        assertEquals(createdAccount.getId(), TEST_USER_ID);
+        assertEquals(createdAccount.getAppId(), TEST_APP_ID);
+        assertEquals(createdAccount.getCreatedOn().getMillis(), MOCK_DATETIME.getMillis());
+        assertEquals(createdAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
+        assertEquals(createdAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
+        assertEquals(createdAccount.getStatus(), UNVERIFIED);
+        assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
+        assertNull(createdAccount.getNote());
+    }
+
+    @Test
+    public void updateAccountNoteSuccessfulAsAdmin() throws Exception {
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
+
+        assertNull(persistedAccount.getNote());
+        assertTrue(RequestContext.get().isAdministrator());
+
+        Account copyAccount = copyMockAccount(persistedAccount);
+        copyAccount.setNote(TEST_NOTE);
+
+        service.updateAccount(copyAccount);
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
+        Account updatedAccount = accountCaptor.getValue();
+
+        assertEquals(TEST_NOTE, updatedAccount.getNote());
+    }
+
+    @Test
+    public void updateAccountNoteUnsuccessfulAsNonAdmin() throws Exception {
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of()).build());
+
+        assertNull(persistedAccount.getNote());
+        assertFalse(RequestContext.get().isAdministrator());
+
+        Account copyAccount = copyMockAccount(persistedAccount);
+        copyAccount.setNote(TEST_NOTE);
+
+        service.updateAccount(copyAccount);
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
+        Account updatedAccount = accountCaptor.getValue();
+
+        assertNull(updatedAccount.getNote());
+    }
+
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -1121,4 +1185,15 @@ public class AccountServiceTest extends Mockito {
         return account;
     }
 
+    // Only copies limited fields
+    private Account copyMockAccount(Account account) {
+        Account copyAccount = Account.create();
+        copyAccount.setAppId(account.getAppId());
+        copyAccount.setId(account.getId());
+        copyAccount.setEmail(account.getEmail());
+        copyAccount.setEmailVerified(account.getEmailVerified());
+        copyAccount.setHealthCode(account.getHealthCode());
+        copyAccount.setVersion(account.getVersion());
+        return copyAccount;
+    }
 }

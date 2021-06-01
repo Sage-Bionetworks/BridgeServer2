@@ -1108,6 +1108,40 @@ public class HibernateAccountDaoTest extends Mockito {
         assertTrue(results.isEmpty());
     }
 
+    @Test
+    public void getAccountWithNoteAsAdmin() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
+        hibernateAccount.setNote(TEST_NOTE);
+
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), eq(ACCOUNT_ID))).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.update(any())).thenReturn(hibernateAccount);
+
+        // execute and validate - just validate ID and note
+        Account account = dao.getAccount(ACCOUNT_ID_WITH_ID).get();
+        assertEquals(account.getId(), ACCOUNT_ID);
+        assertEquals(account.getNote(), TEST_NOTE);
+    }
+
+    @Test
+    public void getAccountWithoutNoteAsNonAdmin() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of()).build());
+
+        HibernateAccount hibernateAccount = makeValidHibernateAccount(false);
+        hibernateAccount.setNote(TEST_NOTE);
+
+        when(mockHibernateHelper.getById(eq(HibernateAccount.class), eq(ACCOUNT_ID))).thenReturn(hibernateAccount);
+        when(mockHibernateHelper.update(any())).thenReturn(hibernateAccount);
+
+        // execute and validate - just validate ID and note
+        Account account = dao.getAccount(ACCOUNT_ID_WITH_ID).get();
+        assertEquals(account.getId(), ACCOUNT_ID);
+        assertNull(account.getNote());
+    }
+
     private void verifyCreatedHealthCode() {
         ArgumentCaptor<HibernateAccount> updatedAccountCaptor = ArgumentCaptor.forClass(HibernateAccount.class);
         verify(mockHibernateHelper).update(updatedAccountCaptor.capture());
