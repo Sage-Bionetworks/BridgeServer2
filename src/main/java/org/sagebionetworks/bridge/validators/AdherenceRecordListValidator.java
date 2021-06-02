@@ -41,8 +41,9 @@ public class AdherenceRecordListValidator extends AbstractValidator {
             if (isBlank(record.getInstanceGuid())) {
                 errors.rejectValue(INSTANCE_GUID_FIELD, CANNOT_BE_BLANK);
             }
-            if (record.getStartedOn() == null) {
-                errors.rejectValue(STARTED_ON_FIELD, CANNOT_BE_NULL);
+            if (record.getStartedOn() != null && record.getFinishedOn()  != null && 
+                    record.getStartedOn().isAfter(record.getFinishedOn())) {
+                errors.rejectValue(STARTED_ON_FIELD, "cannot be later than finishedOn");
             }
             if (record.getEventTimestamp() == null) {
                 errors.rejectValue(EVENT_TIMESTAMP_FIELD, CANNOT_BE_NULL);

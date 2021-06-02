@@ -6,11 +6,13 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAutoEventValue;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.DELETE_INSTANCE;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.CREATE_INSTANCE;
 
 import java.util.ArrayList;
@@ -128,35 +130,28 @@ public class StudyActivityEventService {
     }
     
     public PagedResourceList<StudyActivityEvent> getStudyActivityEventHistory(
-            StudyActivityEventRequest request, Integer offsetBy, Integer pageSize) {
-        checkNotNull(request);
+            AccountId accountId, String studyId, String eventId, Integer offsetBy, Integer pageSize) {
         
+        if (eventId == null) {
+            throw new BadRequestException("Event ID is required");
+        }
         if (offsetBy != null && offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
         if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        String originalEventId = request.getObjectId();
-        
-        String appId = request.getAppId();
-        App app = appService.getApp(appId);
-        
-        request.customEvents(app.getCustomEvents());
-        request.autoCustomEvents(app.getAutomaticCustomEvents());
-        
-        String userId = request.getUserId();
-        String studyId = request.getStudyId();
-        String eventId = request.getObjectId();
-        
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        App app = appService.getApp(accountId.getAppId());
+        eventId = formatActivityEventId(app.getCustomEvents().keySet(), eventId);
         if (eventId == null) {
-            throw new BadRequestException("Invalid event ID: " + originalEventId);
+            throw new BadRequestException(INVALID_EVENT_ID);
         }
-        // These need to be emulated in the history view, so they don't confuse consumers
+        
+        // createdOn needs to be emulated in the history view, so it doesn't confuse consumers
         if (eventId.equals(CREATED_ON_FIELD)) {
-            
-            Account account = accountService.getAccountNoFilter(AccountId.forId(appId, userId))
-                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
             
             List<StudyActivityEvent> events = new ArrayList<>();
             events.add(new StudyActivityEvent(CREATED_ON_FIELD, account.getCreatedOn()));
@@ -165,7 +160,7 @@ public class StudyActivityEventService {
                     .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
                     .withRequestParam(ResourceList.PAGE_SIZE, pageSize);    
         }
-        return dao.getStudyActivityEventHistory(userId, studyId, eventId, offsetBy, pageSize)
+        return dao.getStudyActivityEventHistory(account.getId(), studyId, eventId, offsetBy, pageSize)
             .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
             .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
     }

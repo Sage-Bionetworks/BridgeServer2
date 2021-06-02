@@ -18,18 +18,18 @@ public final class AdherenceRecordId implements Serializable {
     private String userId;
     private String studyId;
     private String instanceGuid;
-    @Column(name = "startedOn")
+    @Column(name = "eventTimestamp")
     @Convert(converter = DateTimeToLongAttributeConverter.class)
-    private DateTime startedOn;
+    private DateTime eventTimestamp;
 
     public AdherenceRecordId() {
     }
  
-    public AdherenceRecordId(String userId, String studyId, String instanceGuid, DateTime startedOn) {
+    public AdherenceRecordId(String userId, String studyId, String instanceGuid, DateTime eventTimestamp) {
         this.userId = userId;
         this.studyId = studyId;
         this.instanceGuid = instanceGuid;
-        this.startedOn = startedOn;
+        this.eventTimestamp = eventTimestamp;
     }
     
     public String getUserId() {
@@ -41,13 +41,13 @@ public final class AdherenceRecordId implements Serializable {
     public String getInstanceGuid() {
         return instanceGuid;
     }
-    public DateTime getStartedOn() {
-        return startedOn;
+    public DateTime getEventTimestamp() {
+        return eventTimestamp;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(userId, studyId, instanceGuid, startedOn);
+        return Objects.hash(userId, studyId, instanceGuid, eventTimestamp);
     }
 
     @Override
@@ -59,6 +59,12 @@ public final class AdherenceRecordId implements Serializable {
         return Objects.equals(userId, other.userId) &&
                 Objects.equals(studyId, other.studyId) &&
                 Objects.equals(instanceGuid, other.instanceGuid) &&
-                Objects.equals(startedOn, other.startedOn);
+                Objects.equals(eventTimestamp, other.eventTimestamp);
+    }
+
+    @Override
+    public String toString() {
+        return "AdherenceRecordId [userId=" + userId + ", studyId=" + studyId + ", instanceGuid=" + instanceGuid
+                + ", eventTimestamp=" + eventTimestamp + "]";
     }
 }

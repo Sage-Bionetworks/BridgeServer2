@@ -46,11 +46,20 @@ public interface Study extends BridgeEntity {
     JsonNode getClientData();
     void setClientData(JsonNode clientData);
     
-    LocalDate getIrbApprovedOn();
-    void setIrbApprovedOn(LocalDate irbApprovedOn);
+    void setIrbName(String irbName);
+    String getIrbName();
     
-    LocalDate getIrbApprovedUntil();
-    void setIrbApprovedUntil(LocalDate irbApprovedUntil);
+    void setIrbDecisionOn(LocalDate irbDecisionOn);
+    LocalDate getIrbDecisionOn();
+    
+    void setIrbExpiresOn(LocalDate irbExpiresOn);
+    LocalDate getIrbExpiresOn();
+    
+    void setIrbDecisionType(IrbDecisionType irbDecisionType);
+    IrbDecisionType  getIrbDecisionType();
+    
+    String getIrbProtocolName();
+    void setIrbProtocolName(String irbProtocolName); 
     
     String getStudyLogoUrl();
     void setStudyLogoUrl(String studyLogoUrl);

@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.IntentToParticipateValidator.INSTANCE;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 
 import org.testng.annotations.Test;
 
@@ -83,12 +85,12 @@ public class IntentToParticipateValidatorTest {
     @Test
     public void phoneIsInvalid() {
         IntentToParticipate intent = builder().withPhone(new Phone("333333333", "US")).build();
-        assertValidatorMessage(INSTANCE, intent, "phone", "does not appear to be a phone number");
+        assertValidatorMessage(INSTANCE, intent, "phone", INVALID_PHONE_ERROR);
     }
     
     @Test
     public void emailInvalid() {
         IntentToParticipate intent = builder().withPhone(null).withEmail("bad-email").build();
-        assertValidatorMessage(INSTANCE, intent, "email", "does not appear to be an email address");
+        assertValidatorMessage(INSTANCE, intent, "email", INVALID_EMAIL_ERROR);
     }
 }

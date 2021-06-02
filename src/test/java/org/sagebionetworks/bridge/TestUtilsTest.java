@@ -2,13 +2,17 @@ package org.sagebionetworks.bridge;
 
 import static org.sagebionetworks.bridge.models.OperatingSystem.ANDROID;
 import static org.sagebionetworks.bridge.models.OperatingSystem.IOS;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
 import java.util.HashSet;
+import java.util.List;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 import org.testng.annotations.Test;
@@ -18,6 +22,7 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Criteria;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 
 public class TestUtilsTest {
@@ -81,6 +86,26 @@ public class TestUtilsTest {
         assertEquals(newCriteria.getNoneOfGroups(), NONE_OF_GROUPS);
         assertEquals(newCriteria.getAppVersionOperatingSystems(), Sets.newHashSet(IOS, ANDROID));
         assertFalse(criteria == newCriteria);
+    }
+    
+    
+    @Test
+    public void findByEventType_emptyEvents() {
+        List<StudyActivityEvent> events = ImmutableList.of();
+        assertNull( TestUtils.findByEventId(events, TIMELINE_RETRIEVED) );
+    }
+
+    @Test
+    public void findByEventType_eventMatches() {
+        StudyActivityEvent event1 = new StudyActivityEvent();
+        event1.setEventId("enrollment");
+        
+        StudyActivityEvent event2 = new StudyActivityEvent();
+        event2.setEventId("timeline_retrieved");
+        
+        List<StudyActivityEvent> events = ImmutableList.of(event1, event2);
+        
+        assertEquals( TestUtils.findByEventId(events, TIMELINE_RETRIEVED), event2 );
     }
     
     private Criteria newCriteria() {

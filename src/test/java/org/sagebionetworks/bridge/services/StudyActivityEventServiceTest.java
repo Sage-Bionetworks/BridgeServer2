@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -36,7 +37,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -292,7 +293,7 @@ public class StudyActivityEventServiceTest extends Mockito {
                 .getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
         assertEquals(retValue.getItems().size(), 3);
         
-        StudyActivityEvent createdOn = BridgeUtils.findByEventId(
+        StudyActivityEvent createdOn = TestUtils.findByEventId(
                 retValue.getItems(), ActivityEventObjectType.CREATED_ON);
         assertEquals(createdOn.getTimestamp(), CREATED_ON);
     }
@@ -309,9 +310,13 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockDao.getStudyActivityEventHistory(
                 TEST_USER_ID, TEST_STUDY_ID, "custom:event1", 10, 100)).thenReturn(page);
         
-        StudyActivityEventRequest request = makeRequest().objectId("event1");
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        when(mockAccountService.getAccountNoFilter(AccountId.forId(
+                TEST_APP_ID, TEST_USER_ID))).thenReturn(Optional.of(account));
         
-        PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(request, 10, 100);
+        PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(
+                ACCOUNT_ID, TEST_STUDY_ID, "custom:event1", 10, 100);
         assertSame(retValue, page);
         assertEquals(retValue.getRequestParams().get("offsetBy"), Integer.valueOf(10));
         assertEquals(retValue.getRequestParams().get("pageSize"), Integer.valueOf(100));
@@ -319,21 +324,17 @@ public class StudyActivityEventServiceTest extends Mockito {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getStudyActivityEventHistory_negativeOffset() {
-        StudyActivityEventRequest request = makeRequest().objectId("event1");
-        service.getStudyActivityEventHistory(request, -10, 100);
+        service.getStudyActivityEventHistory(ACCOUNT_ID, TEST_STUDY_ID, "event1", -10, 100);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void getStudyActivityEventHistory_minPageSize() {
-        StudyActivityEventRequest request = makeRequest().objectId("event1");
-        service.getStudyActivityEventHistory(request, 0, API_MINIMUM_PAGE_SIZE-1);
+        service.getStudyActivityEventHistory(ACCOUNT_ID, TEST_STUDY_ID, "event1", 0, API_MINIMUM_PAGE_SIZE-1);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void getStudyActivityEventHistory_maxPageSize() {
-        StudyActivityEventRequest request = makeRequest().objectId("event1");
-        service.getStudyActivityEventHistory(request, 0, API_MAXIMUM_PAGE_SIZE+1);
-        
+        service.getStudyActivityEventHistory(ACCOUNT_ID, TEST_STUDY_ID, "event1", 0, API_MAXIMUM_PAGE_SIZE+1);
     }
     
     @Test
@@ -346,9 +347,8 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockAccountService.getAccountNoFilter(AccountId.forId(
                 TEST_APP_ID, TEST_USER_ID))).thenReturn(Optional.of(account));
         
-        StudyActivityEventRequest request = makeRequest().objectId("created_on");
-        
-        PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(request, 0, 50);
+        PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(
+                ACCOUNT_ID, TEST_STUDY_ID, "created_on", 0, 50);
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(retValue.getItems().get(0).getTimestamp(), CREATED_ON);
     }
@@ -362,45 +362,30 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockAccountService.getAccountNoFilter(AccountId.forId(
                 TEST_APP_ID, TEST_USER_ID))).thenReturn(Optional.empty());
         
-        StudyActivityEventRequest request = makeRequest().objectId("created_on");
-        
-        service.getStudyActivityEventHistory(request, 0, 50);
+        service.getStudyActivityEventHistory(
+                ACCOUNT_ID, TEST_STUDY_ID, "created_on", 0, 50);
     }
     
     @Test
     public void getStudyActivityEventHistory_noPaging() {
-        StudyActivityEvent event1 = new StudyActivityEvent();
-        event1.setEventId("custom:event1");
-        event1.setTimestamp(MODIFIED_ON);
+        StudyActivityEvent event = new StudyActivityEvent();
+        event.setEventId("custom:event1");
+        event.setTimestamp(MODIFIED_ON);
 
-        when(mockDao.getStudyActivityEventHistory(
-                TEST_USER_ID, TEST_STUDY_ID, "custom:event1", null, null))
-            .thenReturn(new PagedResourceList<>(Lists.newArrayList(event1), 0, true));
+        when(mockDao.getStudyActivityEventHistory(TEST_USER_ID, TEST_STUDY_ID, 
+                "custom:event1", null, null)).thenReturn(
+                        new PagedResourceList<>(Lists.newArrayList(event), 0, true));
+                
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setCreatedOn(CREATED_ON);
+        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
-        StudyActivityEventRequest request = makeRequest().objectId("event1");
-        
-        PagedResourceList<StudyActivityEvent> retValue = service
-                .getStudyActivityEventHistory(request, null, null);
+        PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(
+                ACCOUNT_ID, TEST_STUDY_ID, "event1", null, null);
         assertEquals(retValue.getItems().size(), 1);
+        assertEquals(retValue.getItems().get(0), event);
         
-        verify(mockDao).getStudyActivityEventHistory(
-                TEST_USER_ID, TEST_STUDY_ID, "custom:event1", null, null);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = "Invalid event ID: nonsense")
-    public void getStudyActivityEventHistory_invalidEventId() {
-        when(mockDao.getStudyActivityEventHistory(
-                eq(TEST_USER_ID), eq(TEST_STUDY_ID), any(), eq(null), eq(null)))
-            .thenReturn(new PagedResourceList<>(Lists.newArrayList(), 0, true));
-        
-        StudyActivityEventRequest request = makeRequest().objectId("nonsense");
-        
-        PagedResourceList<StudyActivityEvent> retValue = service
-                .getStudyActivityEventHistory(request, null, null);
-        assertEquals(retValue.getItems().size(), 1);
-        
-        verify(mockDao).getStudyActivityEventHistory(
-                TEST_USER_ID, TEST_STUDY_ID, "custom:event1", null, null);
+        verify(mockDao).getStudyActivityEventHistory(TEST_USER_ID, TEST_STUDY_ID, "custom:event1", null, null);
     }
 }

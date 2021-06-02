@@ -28,7 +28,7 @@ public class AdherenceRecordIdTest {
         assertEquals(id.getUserId(), TEST_USER_ID);
         assertEquals(id.getStudyId(), TEST_STUDY_ID);
         assertEquals(id.getInstanceGuid(), GUID);
-        assertEquals(id.getStartedOn(), CREATED_ON);
+        assertEquals(id.getEventTimestamp(), CREATED_ON);
     }
 
 }

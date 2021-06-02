@@ -25,6 +25,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
@@ -126,14 +127,10 @@ public class ActivityEventController extends BaseController {
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
-        StudyActivityEventRequest request = new StudyActivityEventRequest()
-                .appId(session.getAppId())
-                .studyId(studyId)
-                .userId(session.getId())
-                .objectId(eventId)
-                .objectType(CUSTOM);
+        AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
         
-        return studyActivityEventService.getStudyActivityEventHistory(request, offsetByInt, pageSizeInt);
+        return studyActivityEventService.getStudyActivityEventHistory(
+                accountId, studyId, eventId, offsetByInt, pageSizeInt);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/self/activityevents")

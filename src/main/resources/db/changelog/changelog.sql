@@ -677,3 +677,34 @@ CREATE TABLE `SessionNotifications` (
 
 ALTER TABLE `Accounts`
 ADD COLUMN `note` text;
+
+-- changeset bridge:37
+
+ALTER TABLE `Substudies`
+DROP COLUMN `irbApprovedOn`,
+DROP COLUMN `irbApprovedUntil`,
+ADD COLUMN `irbName` varchar(60) DEFAULT NULL,
+ADD COLUMN `irbProtocolName` varchar(512) DEFAULT NULL,
+ADD COLUMN `irbDecisionOn` varchar(12) DEFAULT NULL,
+ADD COLUMN `irbExpiresOn` varchar(12) DEFAULT NULL,
+ADD COLUMN `irbDecisionType` enum('EXEMPT','APPROVED') DEFAULT NULL;
+
+DROP TABLE `AdherenceRecords`;
+
+CREATE TABLE `AdherenceRecords` (
+  `appId` varchar(255) NOT NULL,
+  `userId` varchar(255) NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `instanceGuid` varchar(128) NOT NULL,
+  `startedOn` bigint(20) unsigned,
+  `eventTimestamp` bigint(20) unsigned,
+  `finishedOn` bigint(20) unsigned,
+  `uploadedOn` bigint(20) unsigned,
+  `clientData` text COLLATE utf8_unicode_ci,
+  `clientTimeZone` varchar(255),
+  `declined` tinyint(1) DEFAULT 0,
+  PRIMARY KEY (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`),
+  CONSTRAINT `AdherenceRecord-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `AdherenceRecord-Study-Constraint` FOREIGN KEY (`studyId`) REFERENCES `Substudies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+

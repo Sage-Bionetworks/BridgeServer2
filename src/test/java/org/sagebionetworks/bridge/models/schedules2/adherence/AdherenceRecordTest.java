@@ -1,3 +1,4 @@
+
 package org.sagebionetworks.bridge.models.schedules2.adherence;
 
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
@@ -8,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
@@ -33,10 +35,11 @@ public class AdherenceRecordTest extends Mockito {
         record.setEventTimestamp(CREATED_ON.plusHours(1));
         record.setClientData(TestUtils.getClientData());
         record.setClientTimeZone("America/Los_Angeles");
+        record.setDeclined(true);
         record.setInstanceGuid(GUID);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(record);
-        assertEquals(node.size(), 8);
+        assertEquals(node.size(), 9);
         assertEquals(node.get("startedOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("finishedOn").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("uploadedOn").textValue(), MODIFIED_ON.plusHours(1).toString());
@@ -44,6 +47,7 @@ public class AdherenceRecordTest extends Mockito {
         assertEquals(node.get("clientData").get("intValue").intValue(), 4);
         assertEquals(node.get("instanceGuid").textValue(), GUID);
         assertEquals(node.get("clientTimeZone").textValue(), "America/Los_Angeles");
+        assertTrue(node.get("declined").booleanValue());
         assertEquals(node.get("type").textValue(), "AdherenceRecord");
         
         AdherenceRecord deser = BridgeObjectMapper.get()
@@ -55,5 +59,6 @@ public class AdherenceRecordTest extends Mockito {
         assertNotNull(deser.getClientData());
         assertEquals(deser.getClientTimeZone(), "America/Los_Angeles");
         assertEquals(deser.getInstanceGuid(), GUID);
+        assertTrue(deser.isDeclined());
     }
 }

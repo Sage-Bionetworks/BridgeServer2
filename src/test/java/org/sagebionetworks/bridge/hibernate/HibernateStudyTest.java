@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 
 import static org.sagebionetworks.bridge.TestConstants.COLOR_SCHEME;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.ANALYSIS;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.testng.Assert.assertEquals;
@@ -28,7 +29,7 @@ public class HibernateStudyTest {
     private static final DateTime CREATED_ON = DateTime.now().withZone(DateTimeZone.UTC);
     private static final DateTime MODIFIED_ON = DateTime.now().minusHours(1).withZone(DateTimeZone.UTC);
     private static final LocalDate APPROVED_ON = DateTime.now().toLocalDate();
-    private static final LocalDate APPROVED_UNTIL = DateTime.now().plusDays(10).toLocalDate();
+    private static final LocalDate EXPIRES_ON = DateTime.now().plusDays(10).toLocalDate();
     
     @Test
     public void shortConstructor() {
@@ -68,19 +69,22 @@ public class HibernateStudyTest {
         c2.setName("Name2");
         study.setContacts(ImmutableList.of(c1, c2));
         study.setDetails("someDetails");
-        study.setIrbApprovedOn(APPROVED_ON);
-        study.setIrbApprovedUntil(APPROVED_UNTIL);
+        study.setIrbName("WIRB");
+        study.setIrbDecisionOn(APPROVED_ON);
+        study.setIrbExpiresOn(EXPIRES_ON);
+        study.setIrbDecisionType(APPROVED);
         study.setStudyLogoUrl("aStudyLogoUrl");
         study.setColorScheme(COLOR_SCHEME);
         study.setInstitutionId("anInstitutionId");
         study.setIrbProtocolId("anIrbProtocolId");
+        study.setIrbProtocolName("anIrbName");
         study.setScheduleGuid("aScheduleGuid");
         study.setPhase(ANALYSIS);
         study.setDisease("subjective cognitive decline");
         study.setStudyDesignType("observational case control");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        assertEquals(node.size(), 20);
+        assertEquals(node.size(), 23);
         assertEquals(node.get("identifier").textValue(), "oneId");
         assertEquals(node.get("name").textValue(), "name");
         assertTrue(node.get("deleted").booleanValue());
@@ -94,8 +98,11 @@ public class HibernateStudyTest {
         assertEquals(node.get("contacts").get(0).get("name").textValue(), "Name1");
         assertEquals(node.get("contacts").get(1).get("name").textValue(), "Name2");
         assertEquals(node.get("details").textValue(), "someDetails");
-        assertEquals(node.get("irbApprovedOn").textValue(), APPROVED_ON.toString());
-        assertEquals(node.get("irbApprovedUntil").textValue(), APPROVED_UNTIL.toString());
+        assertEquals(node.get("irbName").textValue(), "WIRB");
+        assertEquals(node.get("irbProtocolName").textValue(), "anIrbName");
+        assertEquals(node.get("irbDecisionOn").textValue(), APPROVED_ON.toString());
+        assertEquals(node.get("irbExpiresOn").textValue(), EXPIRES_ON.toString());
+        assertEquals(node.get("irbDecisionType").textValue(), "approved");
         assertEquals(node.get("studyLogoUrl").textValue(), "aStudyLogoUrl");
         assertEquals(node.get("colorScheme").get("type").textValue(), "ColorScheme");
         assertEquals(node.get("institutionId").textValue(), "anInstitutionId");
@@ -115,12 +122,15 @@ public class HibernateStudyTest {
         assertEquals(deser.getCreatedOn(), CREATED_ON);
         assertEquals(deser.getModifiedOn(), MODIFIED_ON);
         assertEquals(deser.getDetails(), "someDetails");
-        assertEquals(deser.getIrbApprovedOn(), APPROVED_ON);
-        assertEquals(deser.getIrbApprovedUntil(), APPROVED_UNTIL);
+        assertEquals(deser.getIrbName(), "WIRB");
+        assertEquals(deser.getIrbDecisionOn(), APPROVED_ON);
+        assertEquals(deser.getIrbExpiresOn(), EXPIRES_ON);
+        assertEquals(deser.getIrbDecisionType(), APPROVED);
         assertEquals(deser.getStudyLogoUrl(), "aStudyLogoUrl");
         assertEquals(deser.getColorScheme(), COLOR_SCHEME);
         assertEquals(deser.getInstitutionId(), "anInstitutionId");
         assertEquals(deser.getIrbProtocolId(), "anIrbProtocolId");
+        assertEquals(deser.getIrbProtocolName(), "anIrbName");
         assertEquals(deser.getScheduleGuid(), "aScheduleGuid");
         assertEquals(deser.getContacts().size(), 2);
         assertEquals(deser.getContacts().get(0).getName(), "Name1");

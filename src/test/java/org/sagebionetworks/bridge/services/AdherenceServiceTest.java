@@ -21,13 +21,17 @@ import static org.sagebionetworks.bridge.models.ResourceList.SORT_ORDER;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.STUDY_ID;
 import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.ASC;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -66,7 +70,9 @@ import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 
 public class AdherenceServiceTest extends Mockito {
     
+    private static final DateTime STARTED_ON = CREATED_ON;
     private static final DateTime FINISHED_ON = MODIFIED_ON;
+    private static final DateTime EVENT_TS = CREATED_ON.minusWeeks(1);
 
     @Mock
     AdherenceRecordDao mockDao;
@@ -85,6 +91,9 @@ public class AdherenceServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<StudyActivityEventRequest> requestCaptor;
+    
+    @Captor
+    ArgumentCaptor<AdherenceRecord> recordCaptor;
 
     @InjectMocks
     AdherenceService service;
@@ -110,9 +119,9 @@ public class AdherenceServiceTest extends Mockito {
         AdherenceRecordList records = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
         service.updateAdherenceRecords(TEST_APP_ID, records);
         
-        verify(mockDao).updateAdherenceRecords(records);
+        verify(mockDao).updateAdherenceRecord(rec1);
+        verify(mockDao).updateAdherenceRecord(rec2);
         verifyNoMoreInteractions(mockStudyActivityEventService);
-        verifyNoMoreInteractions(mockScheduleService);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -154,7 +163,8 @@ public class AdherenceServiceTest extends Mockito {
         
         service.updateAdherenceRecords(TEST_APP_ID, records);
         
-        verify(mockDao).updateAdherenceRecords(records);
+        verify(mockDao).updateAdherenceRecord(rec1);
+        verify(mockDao).updateAdherenceRecord(rec2);
         verify(mockStudyActivityEventService).publishEvent(requestCaptor.capture());
         
         StudyActivityEventRequest request = requestCaptor.getValue();
@@ -177,16 +187,21 @@ public class AdherenceServiceTest extends Mockito {
         meta.setSessionGuid("sessionGuid");
         meta.setAssessmentInstanceGuid("assessmentInstanceGuid");
         meta.setAssessmentId("assessmentId");
+        meta.setSessionStartEventId("enrollment");
         when(mockScheduleService.getTimelineMetadata("BBB")).thenReturn(Optional.of(meta));
+        when(mockDao.getAdherenceRecords(any())).thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
         
         AdherenceRecord rec1 = getAdherenceRecord("AAA");
+        rec1.setEventTimestamp(DateTime.now());
         AdherenceRecord rec2 = getAdherenceRecord("BBB");
         rec2.setFinishedOn(FINISHED_ON);
+        rec2.setEventTimestamp(DateTime.now());
         AdherenceRecordList records = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
         
         service.updateAdherenceRecords(TEST_APP_ID, records);
         
-        verify(mockDao).updateAdherenceRecords(records);
+        verify(mockDao).updateAdherenceRecord(rec1);
+        verify(mockDao).updateAdherenceRecord(rec2);
         verify(mockStudyActivityEventService).publishEvent(requestCaptor.capture());
         
         StudyActivityEventRequest request = requestCaptor.getValue();
@@ -214,6 +229,230 @@ public class AdherenceServiceTest extends Mockito {
         service.updateAdherenceRecords(TEST_APP_ID, records);
         
         verify(mockStudyActivityEventService, never()).publishEvent(any());
+    }
+    
+    private AdherenceRecord mockAssessmentRecord() { 
+        // This is started, but not finished
+        AdherenceRecord asmtRecord = new AdherenceRecord();
+        asmtRecord.setAppId(TEST_APP_ID);
+        asmtRecord.setUserId(TEST_USER_ID);
+        asmtRecord.setStudyId(TEST_STUDY_ID);
+        asmtRecord.setInstanceGuid("assessmentInstanceGuid");
+        asmtRecord.setEventTimestamp(EVENT_TS);
+        
+        TimelineMetadata asmtMeta = new TimelineMetadata();
+        asmtMeta.setSessionInstanceGuid("sessionInstanceGuid");
+        asmtMeta.setAssessmentInstanceGuid("assessmentInstanceGuid");
+        asmtMeta.setSessionStartEventId("enrollment");
+        when(mockScheduleService.getTimelineMetadata("assessmentInstanceGuid"))
+            .thenReturn(Optional.of(asmtMeta));
+        
+        return asmtRecord;
+    }
+    
+    private void mockAssessmentRecordSet(DateTime started1, DateTime finished1, DateTime started2, DateTime finished2,
+            boolean withSessionRecord, DateTime sessionStarted, DateTime sessionFinished) {
+        
+        List<AdherenceRecord> asmtList = new ArrayList<>();
+        
+        AdherenceRecord asmtAr1 = new AdherenceRecord();
+        asmtAr1.setInstanceGuid("assessmentInstanceGuid");
+        asmtAr1.setStartedOn(started1);
+        asmtAr1.setFinishedOn(finished1);
+        asmtList.add(asmtAr1);
+        
+        AdherenceRecord asmtAr2 = new AdherenceRecord();
+        asmtAr2.setInstanceGuid("differentAssessmentInstanceGuid");
+        asmtAr2.setStartedOn(started2);
+        asmtAr2.setFinishedOn(finished2);
+        asmtList.add(asmtAr2);
+        
+        if (withSessionRecord) {
+            AdherenceRecord session = new AdherenceRecord();
+            session.setInstanceGuid("sessionInstanceGuid");
+            session.setStartedOn(sessionStarted);
+            session.setFinishedOn(sessionFinished);
+            session.setDeclined(true); // so we can verify this record was used, not a new one 
+            asmtList.add(session);
+        }
+        
+        when(mockDao.getAdherenceRecords(any())).thenReturn(new PagedResourceList<>(asmtList, asmtList.size()));
+        
+        List<TimelineMetadata> metadataList = ImmutableList.of(new TimelineMetadata(), new TimelineMetadata());
+        when(mockScheduleService.getSessionAssessmentMetadata("sessionInstanceGuid")).thenReturn(metadataList);
+    }
+
+    @Test
+    public void updateAdherenceRecords_doNothingWithStartedSession() {
+        // This is started, but not finished. We don't really care because we're 
+        // going to look at the entire set of assessment records
+        AdherenceRecord asmtRecord = mockAssessmentRecord();
+        
+        // Now mock the set of assessment records (we do want to change these across
+        // a number of tests):
+        mockAssessmentRecordSet(null, null, STARTED_ON, null, true, STARTED_ON, null);
+        
+        service.updateSessionState(TEST_APP_ID, asmtRecord);
+        
+        verify(mockDao, never()).updateAdherenceRecord(any());
+        verify(mockStudyActivityEventService, never()).publishEvent(any());
+    }
+
+    @Test
+    public void updateAdherenceRecords_doNothingWithFinishedSession() {
+        // This is started, but not finished. We don't really care because we're 
+        // going to look at the entire set of assessment records
+        AdherenceRecord asmtRecord = mockAssessmentRecord();
+        
+        // Now mock the set of assessment records (we do want to change these across
+        // a number of tests):
+        mockAssessmentRecordSet(STARTED_ON, FINISHED_ON, STARTED_ON, FINISHED_ON, true, STARTED_ON, FINISHED_ON);
+        
+        service.updateSessionState(TEST_APP_ID, asmtRecord);
+        
+        verify(mockDao, never()).updateAdherenceRecord(any());
+        verify(mockStudyActivityEventService, never()).publishEvent(any());
+    }
+    
+    @Test
+    public void updateAdherenceRecords_createAndStartSessionRecord() {
+        // This is started, but not finished. We don't really care because we're 
+        // going to look at the entire set of assessment records
+        AdherenceRecord asmtRecord = mockAssessmentRecord();
+        
+        // Now mock the set of assessment records (we do want to change these across
+        // a number of tests):
+        mockAssessmentRecordSet(null, null, STARTED_ON, null, false, null, null);
+        
+        service.updateSessionState(TEST_APP_ID, asmtRecord);
+        
+        verify(mockDao).updateAdherenceRecord(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getAppId(), TEST_APP_ID);
+        assertEquals(captured.getUserId(), TEST_USER_ID);
+        assertEquals(captured.getStudyId(), TEST_STUDY_ID);
+        assertEquals(captured.getInstanceGuid(), "sessionInstanceGuid");
+        assertEquals(captured.getStartedOn(), STARTED_ON);
+        assertNull(captured.getFinishedOn());
+        assertEquals(captured.getEventTimestamp(), EVENT_TS);
+    }
+    
+    @Test
+    public void updateAdherenceRecords_createAndFinishSessionRecord() {
+        // This is started, but not finished. We don't really care because we're 
+        // going to look at the entire set of assessment records
+        AdherenceRecord asmtRecord = mockAssessmentRecord();
+        
+        // Now mock the set of assessment records (we do want to change these across
+        // a number of tests):
+        mockAssessmentRecordSet(STARTED_ON, FINISHED_ON, STARTED_ON, FINISHED_ON, false, null, null);
+        
+        service.updateSessionState(TEST_APP_ID, asmtRecord);
+        
+        verify(mockDao).updateAdherenceRecord(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getInstanceGuid(), "sessionInstanceGuid");
+        assertEquals(captured.getStartedOn(), STARTED_ON);
+        assertEquals(captured.getFinishedOn(), FINISHED_ON);
+    }
+
+    @Test
+    public void updateAdherenceRecords_startExistingSessionRecord() {
+        // This is started, but not finished. We don't really care because we're 
+        // going to look at the entire set of assessment records
+        AdherenceRecord asmtRecord = mockAssessmentRecord();
+        
+        // Now mock the set of assessment records (we do want to change these across
+        // a number of tests). 
+        mockAssessmentRecordSet(null, null, STARTED_ON, null, true, null, null);
+        
+        service.updateSessionState(TEST_APP_ID, asmtRecord);
+        
+        verify(mockDao).updateAdherenceRecord(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getAppId(), TEST_APP_ID);
+        assertEquals(captured.getUserId(), TEST_USER_ID);
+        assertEquals(captured.getStudyId(), TEST_STUDY_ID);
+        assertEquals(captured.getInstanceGuid(), "sessionInstanceGuid");
+        assertEquals(captured.getStartedOn(), STARTED_ON);
+        assertNull(captured.getFinishedOn());
+        assertTrue(captured.isDeclined()); // used the persisted record 
+        assertEquals(captured.getEventTimestamp(), EVENT_TS);
+    }
+
+    @Test
+    public void updateAdherenceRecords_finishExistingSessionRecord() {
+        // This is started, but not finished. We don't really care because we're 
+        // going to look at the entire set of assessment records
+        AdherenceRecord asmtRecord = mockAssessmentRecord();
+        
+        // Now mock the set of assessment records (we do want to change these across
+        // a number of tests). 
+        mockAssessmentRecordSet(STARTED_ON, FINISHED_ON, STARTED_ON, FINISHED_ON, true, null, null);
+        
+        TimelineMetadata sessionMeta = new TimelineMetadata();
+        sessionMeta.setSessionGuid("sessionGuid");
+        when(mockScheduleService.getTimelineMetadata("sessionInstanceGuid"))
+            .thenReturn(Optional.of(sessionMeta));
+        
+        service.updateSessionState(TEST_APP_ID, asmtRecord);
+        
+        verify(mockDao).updateAdherenceRecord(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getAppId(), TEST_APP_ID);
+        assertEquals(captured.getUserId(), TEST_USER_ID);
+        assertEquals(captured.getStudyId(), TEST_STUDY_ID);
+        assertEquals(captured.getInstanceGuid(), "sessionInstanceGuid");
+        assertEquals(captured.getStartedOn(), STARTED_ON);
+        assertEquals(captured.getFinishedOn(), FINISHED_ON);
+        assertTrue(captured.isDeclined()); // used the persisted record 
+        assertEquals(captured.getEventTimestamp(), EVENT_TS);
+        
+        verify(mockStudyActivityEventService).publishEvent(requestCaptor.capture());
+        StudyActivityEventRequest request = requestCaptor.getValue();
+        assertEquals(request.getEventType(), FINISHED);
+        assertEquals(request.getObjectType(), ActivityEventObjectType.SESSION);
+        assertEquals(request.getTimestamp(), FINISHED_ON);
+        assertEquals(request.getObjectId(), "sessionGuid");
+    }
+    
+    @Test
+    public void updateAdherenceRecords_unfinishExistingSessionRecord() {
+        // This is started, but not finished. We don't really care because we're 
+        // going to look at the entire set of assessment records
+        AdherenceRecord asmtRecord = mockAssessmentRecord();
+        
+        // Now mock the set of assessment records (we do want to change these across
+        // a number of tests). 
+        mockAssessmentRecordSet(STARTED_ON, null, STARTED_ON, FINISHED_ON, true, STARTED_ON, FINISHED_ON);
+        
+        service.updateSessionState(TEST_APP_ID, asmtRecord);
+        
+        verify(mockDao).updateAdherenceRecord(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertNull(captured.getFinishedOn());
+        assertTrue(captured.isDeclined()); // used the persisted record
+        
+        verify(mockStudyActivityEventService, never()).publishEvent(any());
+    }
+    
+    @Test
+    public void updateAdherenceRecords_unstartExistingSessionRecord() {
+        // This is started, but not finished. We don't really care because we're 
+        // going to look at the entire set of assessment records
+        AdherenceRecord asmtRecord = mockAssessmentRecord();
+        
+        // Now mock the set of assessment records (we do want to change these across
+        // a number of tests). 
+        mockAssessmentRecordSet(null, null, null, null, true, STARTED_ON, FINISHED_ON);
+        
+        service.updateSessionState(TEST_APP_ID, asmtRecord);
+        
+        verify(mockDao).updateAdherenceRecord(recordCaptor.capture());
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertNull(captured.getStartedOn());
+        assertNull(captured.getFinishedOn());
+        assertTrue(captured.isDeclined()); // used the persisted record 
     }
     
     @Test
@@ -297,7 +536,7 @@ public class AdherenceServiceTest extends Mockito {
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
                 .withUserId(TEST_USER_ID)
                 .withStudyId(TEST_STUDY_ID)
-                .withEventTimestamps(ImmutableMap.of("ENROLLMENT", CREATED_ON, 
+                .withEventTimestamps(ImmutableMap.of("enrollment", CREATED_ON, 
                         "custom:event1", CREATED_ON, "event_2", CREATED_ON,
                         "custom:event3", CREATED_ON)).build();
         
