@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -25,4 +26,6 @@ public interface Schedule2Dao {
     void deleteSchedulePermanently(Schedule2 schedule);
     
     Optional<TimelineMetadata> getTimelineMetadata(String instanceGuid);
+    
+    List<TimelineMetadata> getAssessmentsForSessionInstance(String instanceGuid);
 }

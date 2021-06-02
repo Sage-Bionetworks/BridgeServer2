@@ -24,6 +24,7 @@ import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.studies.Contact;
+import org.sagebionetworks.bridge.models.studies.IrbDecisionType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyId;
 import org.sagebionetworks.bridge.models.studies.StudyPhase;
@@ -54,15 +55,19 @@ public class HibernateStudy implements Study {
     @Enumerated(EnumType.STRING)
     private StudyPhase phase;
     private String details;
+    private String irbName;
     @Convert(converter = LocalDateToStringConverter.class)
-    private LocalDate irbApprovedOn;
+    private LocalDate irbDecisionOn;
     @Convert(converter = LocalDateToStringConverter.class)
-    private LocalDate irbApprovedUntil;
+    private LocalDate irbExpiresOn;
+    @Enumerated(EnumType.STRING)
+    private IrbDecisionType irbDecisionType;
+    private String irbProtocolId;
+    private String irbProtocolName;
     private String studyLogoUrl;
     @Convert(converter = ColorSchemeConverter.class)
     private ColorScheme colorScheme;
     private String institutionId;
-    private String irbProtocolId;
     private String scheduleGuid;
     private String disease;
     private String studyDesignType;
@@ -211,25 +216,45 @@ public class HibernateStudy implements Study {
     }
     
     @Override
-    public LocalDate getIrbApprovedOn() {
-        return irbApprovedOn;
+    public String getIrbName() {
+        return irbName;
     }
-
+    
     @Override
-    public void setIrbApprovedOn(LocalDate irbApprovedOn) {
-        this.irbApprovedOn = irbApprovedOn;
+    public void setIrbName(String irbName) {
+        this.irbName = irbName;
     }
-
+    
     @Override
-    public LocalDate getIrbApprovedUntil() {
-        return irbApprovedUntil;
+    public LocalDate getIrbDecisionOn() {
+        return irbDecisionOn;
     }
-
+    
     @Override
-    public void setIrbApprovedUntil(LocalDate irbApprovedUntil) {
-        this.irbApprovedUntil = irbApprovedUntil;
+    public void setIrbDecisionOn(LocalDate irbDecisionOn) {
+        this.irbDecisionOn = irbDecisionOn;
     }
-
+    
+    @Override
+    public LocalDate getIrbExpiresOn() {
+        return irbExpiresOn;
+    }
+    
+    @Override
+    public void setIrbExpiresOn(LocalDate irbExpiresOn) {
+        this.irbExpiresOn = irbExpiresOn;
+    }
+    
+    @Override
+    public IrbDecisionType getIrbDecisionType() {
+        return irbDecisionType;
+    }
+    
+    @Override
+    public void setIrbDecisionType(IrbDecisionType irbDecisionType) {
+        this.irbDecisionType = irbDecisionType;
+    }
+    
     @Override
     public String getStudyLogoUrl() {
         return studyLogoUrl;
@@ -268,6 +293,16 @@ public class HibernateStudy implements Study {
     @Override
     public void setIrbProtocolId(String irbProtocolId) {
         this.irbProtocolId = irbProtocolId;
+    }
+    
+    @Override
+    public String getIrbProtocolName() {
+        return irbProtocolName;
+    }
+    
+    @Override
+    public void setIrbProtocolName(String irbProtocolName) { 
+        this.irbProtocolName = irbProtocolName;
     }
 
     @Override

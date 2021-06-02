@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
+
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -51,7 +53,7 @@ public class AccountIdValidator implements Validator {
             if (identifier.getPhone() == null) {
                 errors.rejectValue("phone", "is required");
             } else if (!Phone.isValid(identifier.getPhone())) {
-                errors.rejectValue("phone", "does not appear to be a phone number");
+                errors.rejectValue("phone", INVALID_PHONE_ERROR);
             }
         } else {
             throw new UnsupportedOperationException("Channel type not implemented");

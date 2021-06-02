@@ -39,7 +39,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordId;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 
 public class HibernateAdherenceRecordDaoTest extends Mockito {
@@ -75,18 +74,6 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
             func.apply(mockSession);
             return args.getArgument(0);
         });
-    }
-    
-    @Test
-    public void updateAdherenceRecords() {
-        AdherenceRecord rec1 = getAdherenceRecord(GUID);
-        AdherenceRecord rec2 = getAdherenceRecord(GUID + "2");
-        AdherenceRecordList list = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
-        
-        dao.updateAdherenceRecords(list);
-        
-        verify(mockSession).saveOrUpdate(rec1);
-        verify(mockSession).saveOrUpdate(rec2);
     }
     
     @Test

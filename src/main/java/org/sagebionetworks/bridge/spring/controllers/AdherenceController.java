@@ -31,13 +31,27 @@ public class AdherenceController extends BaseController {
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence")
-    public StatusMessage updateAdherenceRecords(@PathVariable String studyId) {
+    public StatusMessage updateAdherenceRecordsForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         AdherenceRecordList recordsList = parseJson(AdherenceRecordList.class);
         for (AdherenceRecord oneRecord : recordsList.getRecords()) {
             oneRecord.setAppId(session.getAppId());
             oneRecord.setUserId(session.getId());
+            oneRecord.setStudyId(studyId);
+        }
+        service.updateAdherenceRecords(session.getAppId(), recordsList);
+        return SAVED_MSG;
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/participants/{userId}/adherence")
+    public StatusMessage updateAdherenceRecords(@PathVariable String studyId, @PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        
+        AdherenceRecordList recordsList = parseJson(AdherenceRecordList.class);
+        for (AdherenceRecord oneRecord : recordsList.getRecords()) {
+            oneRecord.setAppId(session.getAppId());
+            oneRecord.setUserId(userId);
             oneRecord.setStudyId(studyId);
         }
         service.updateAdherenceRecords(session.getAppId(), recordsList);

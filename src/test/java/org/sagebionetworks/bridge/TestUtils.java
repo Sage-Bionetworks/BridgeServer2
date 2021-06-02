@@ -68,6 +68,8 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
@@ -729,5 +731,13 @@ public class TestUtils {
         return new ConfigResolver(mockConfig);
     }
     
-
+    public static StudyActivityEvent findByEventId(List<StudyActivityEvent> events, ActivityEventObjectType type) {
+        String eventId = type.name().toLowerCase();
+        for (StudyActivityEvent oneEvent : events) {
+            if (oneEvent.getEventId().equals(eventId)) {
+                return oneEvent;
+            }
+        }
+        return null;
+    }
 }

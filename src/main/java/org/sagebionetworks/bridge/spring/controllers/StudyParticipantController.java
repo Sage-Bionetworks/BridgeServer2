@@ -458,14 +458,10 @@ public class StudyParticipantController extends BaseController {
         Integer offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         Integer pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
-        StudyActivityEventRequest request = new StudyActivityEventRequest()
-                .appId(session.getAppId())
-                .studyId(studyId)
-                .userId(userId)
-                .objectId(eventId)
-                .objectType(CUSTOM);
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
         
-        return studyActivityEventService.getStudyActivityEventHistory(request, offsetByInt, pageSizeInt);
+        return studyActivityEventService.getStudyActivityEventHistory(accountId, 
+                studyId, eventId, offsetByInt, pageSizeInt);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/activityevents")

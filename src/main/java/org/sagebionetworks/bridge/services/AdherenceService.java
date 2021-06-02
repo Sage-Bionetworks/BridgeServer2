@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toMap;
+import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
@@ -26,9 +27,11 @@ import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
@@ -44,13 +47,14 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.timelines.SessionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class AdherenceService {
-
+    
     private AdherenceRecordDao dao;
     
     private AppService appService;
@@ -94,16 +98,74 @@ public class AdherenceService {
                 AuthEvaluatorField.STUDY_ID, recordList.getRecords().get(0).getStudyId(), 
                 AuthEvaluatorField.USER_ID, recordList.getRecords().get(0).getUserId());
 
-        dao.updateAdherenceRecords(recordList);
-
         for (AdherenceRecord record : recordList.getRecords()) {
-            if (record.getFinishedOn() == null) {
-                continue;
+            dao.updateAdherenceRecord(record);
+        }
+        for (AdherenceRecord record : recordList.getRecords()) {
+            updateSessionState(appId, record);
+        }
+    }
+    
+    protected void updateSessionState(String appId, AdherenceRecord record) {
+        checkNotNull(appId);
+        checkNotNull(record);
+        
+        TimelineMetadata meta = scheduleService.getTimelineMetadata(record.getInstanceGuid()).orElse(null);
+        if (meta == null) {
+            return;
+        }
+        publishEvent(appId, meta, record);
+
+        // If this is an assessment update, retrieve all session-related records
+        // and ensure the session’s started/finished state is correct
+        if (meta.getAssessmentInstanceGuid() != null) {
+            
+            String sessionInstanceGuid = meta.getSessionInstanceGuid();
+            
+            List<TimelineMetadata> asmtMetas = scheduleService.getSessionAssessmentMetadata(sessionInstanceGuid);
+
+            Set<String> instanceGuids = asmtMetas.stream()
+                    .map(TimelineMetadata::getAssessmentInstanceGuid)
+                    .collect(toSet());
+            instanceGuids.add(sessionInstanceGuid);
+            
+            AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
+                .withUserId(record.getUserId())
+                .withStudyId(record.getStudyId())
+                .withEventTimestamps(ImmutableMap.of(meta.getSessionStartEventId(), record.getEventTimestamp()))
+                .withInstanceGuids(instanceGuids).build();
+            
+            PagedResourceList<AdherenceRecord> allRecords = dao.getAdherenceRecords(search);
+            
+            AdherenceRecord sessionRecord = null;
+            SessionState state = new SessionState(asmtMetas.size());
+            
+            for (AdherenceRecord oneRecord : allRecords.getItems()) {
+                if (sessionInstanceGuid.equals(oneRecord.getInstanceGuid())) {
+                    sessionRecord = oneRecord;
+                } else {
+                    state.add(oneRecord);
+                }
             }
-            TimelineMetadata meta = scheduleService.getTimelineMetadata(record.getInstanceGuid()).orElse(null);
-            if (meta == null) {
-                continue;
+            if (sessionRecord == null) {
+                sessionRecord = new AdherenceRecord();
             }
+            sessionRecord.setAppId(record.getAppId());
+            sessionRecord.setUserId(record.getUserId());
+            sessionRecord.setStudyId(record.getStudyId());
+            sessionRecord.setInstanceGuid(sessionInstanceGuid);
+            sessionRecord.setEventTimestamp(record.getEventTimestamp());
+            
+            if (state.updateSessionRecord(sessionRecord)) {
+                dao.updateAdherenceRecord(sessionRecord);
+                TimelineMetadata sessionMeta = scheduleService.getTimelineMetadata(sessionInstanceGuid).orElse(null);
+                publishEvent(appId, sessionMeta, sessionRecord);
+            }
+        }
+    }
+
+    protected void publishEvent(String appId, TimelineMetadata meta, AdherenceRecord record) {
+        if (meta != null && record.getFinishedOn() != null) {
             StudyActivityEventRequest request = new StudyActivityEventRequest()
                     .appId(appId)
                     .studyId(record.getStudyId())
@@ -111,18 +173,20 @@ public class AdherenceService {
                     .eventType(FINISHED)
                     .timestamp(record.getFinishedOn());
             if (meta.getAssessmentInstanceGuid() == null) {
-                studyActivityEventService.publishEvent(
-                        request.objectType(SESSION).objectId(meta.getSessionGuid()));
+                request.objectType(SESSION);
+                request.objectId(meta.getSessionGuid());
             } else {
                 // Shared and local assessment ID are conceptually different but not 
                 // differentiated for events scheduling. It might be helpful to end
                 // users or we might need to change this.
-                studyActivityEventService.publishEvent(
-                        request.objectType(ASSESSMENT).objectId(meta.getAssessmentId()));
-            }                
+                request.objectType(ASSESSMENT);
+                request.objectId(meta.getAssessmentId());
+            }
+            studyActivityEventService.publishEvent(request);
         }
     }
-    
+
+
     public PagedResourceList<AdherenceRecord> getAdherenceRecords(String appId, AdherenceRecordsSearch search) {
         
         Set<String> originalInstanceGuids = ImmutableSet.copyOf(search.getInstanceGuids());

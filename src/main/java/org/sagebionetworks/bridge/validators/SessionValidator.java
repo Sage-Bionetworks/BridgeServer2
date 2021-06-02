@@ -48,7 +48,7 @@ public class SessionValidator implements Validator {
     static final String START_TIME_FIELD = "startTime";
     static final String TIME_WINDOWS_FIELD = "timeWindows";
     
-    static final String EXPIRATION_LONGER_THAN_INTERVAL_ERROR = "cannot be longer than the sessioal";
+    static final String EXPIRATION_LONGER_THAN_INTERVAL_ERROR = "cannot be longer than the session interval";
     static final String EXPIRATION_REQUIRED_ERROR = "is required when a session has an interval";
     static final String LONGER_THAN_WINDOW_EXPIRATION_ERROR = "cannot be longer than the shortest window expiration";
     static final String START_TIME_MILLIS_INVALID_ERROR = "cannot specify milliseconds";
