@@ -70,6 +70,9 @@ public final class RequestInfo {
     private DateTimeZone timeZone;
     @Column(name = "studyIdentifier")
     private String appId;
+    @JsonSerialize(using=DateTimeSerializer.class)
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    private DateTime timelineAccessedOn;
 
     // Hibernate needs a default constructor; the easiest thing to do is to remove the 
     // existing constructor and allow the builder to set private fields directly.
@@ -102,6 +105,10 @@ public final class RequestInfo {
         return (activitiesAccessedOn == null) ? null : activitiesAccessedOn.withZone(timeZone);
     }
 
+    public DateTime getTimelineAccessedOn() {
+        return (timelineAccessedOn == null) ? null : timelineAccessedOn.withZone(timeZone);
+    }
+    
     public DateTime getSignedInOn() {
         return (signedInOn == null) ? null : signedInOn.withZone(timeZone);
     }
@@ -120,8 +127,8 @@ public final class RequestInfo {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getActivitiesAccessedOn(), clientInfo, userAgent, languages, getSignedInOn(),
-                userDataGroups, userStudyIds, userId, timeZone, uploadedOn, appId);
+        return Objects.hash(getTimelineAccessedOn(), getActivitiesAccessedOn(), clientInfo, userAgent, languages,
+                getSignedInOn(), userDataGroups, userStudyIds, userId, timeZone, uploadedOn, appId);
     }
 
     @Override
@@ -131,7 +138,8 @@ public final class RequestInfo {
         if (obj == null || getClass() != obj.getClass())
             return false;
         RequestInfo other = (RequestInfo) obj;
-        return Objects.equals(getActivitiesAccessedOn(), other.getActivitiesAccessedOn()) &&
+        return Objects.equals(getTimelineAccessedOn(), other.getTimelineAccessedOn()) &&
+               Objects.equals(getActivitiesAccessedOn(), other.getActivitiesAccessedOn()) &&
                Objects.equals(clientInfo, other.clientInfo) &&
                Objects.equals(userAgent, other.userAgent) &&
                Objects.equals(languages, other.languages) &&
@@ -150,7 +158,7 @@ public final class RequestInfo {
                 + ", userDataGroups=" + userDataGroups + ", userStudyIds=" + userStudyIds 
                 + ", activitiesAccessedOn=" + getActivitiesAccessedOn() + ", signedInOn=" + getSignedInOn() 
                 + ", uploadedOn=" + getUploadedOn() + ", timeZone=" + timeZone + ", appId=" 
-                + appId + "]";
+                + appId + ", timelineAccessedOn=" + getTimelineAccessedOn() + "]";
     }
 
     public static class Builder {
@@ -161,6 +169,7 @@ public final class RequestInfo {
         private Set<String> userDataGroups;
         private Set<String> userStudyIds;
         private DateTime activitiesAccessedOn;
+        private DateTime timelineAccessedOn;
         private DateTime signedInOn;
         private DateTime uploadedOn;
         private DateTimeZone timeZone = DateTimeZone.UTC;
@@ -175,6 +184,7 @@ public final class RequestInfo {
                 withUserDataGroups(requestInfo.getUserDataGroups());
                 withUserStudyIds(requestInfo.getUserStudyIds());
                 withActivitiesAccessedOn(requestInfo.getActivitiesAccessedOn());
+                withTimelineAccessedOn(requestInfo.getTimelineAccessedOn());
                 withSignedInOn(requestInfo.getSignedInOn());
                 withUploadedOn(requestInfo.getUploadedOn());
                 withTimeZone(requestInfo.getTimeZone());
@@ -225,6 +235,12 @@ public final class RequestInfo {
             }
             return this;
         }
+        public Builder withTimelineAccessedOn(DateTime timelineAccessedOn) {
+            if (timelineAccessedOn != null) {
+                this.timelineAccessedOn = timelineAccessedOn;
+            }
+            return this;
+        }
         public Builder withSignedInOn(DateTime signedInOn) {
             if (signedInOn != null) {
                 this.signedInOn = signedInOn;
@@ -259,6 +275,7 @@ public final class RequestInfo {
             info.userDataGroups = userDataGroups;
             info.userStudyIds = userStudyIds;
             info.activitiesAccessedOn = activitiesAccessedOn;
+            info.timelineAccessedOn = timelineAccessedOn;
             info.signedInOn = signedInOn;
             info.uploadedOn = uploadedOn;
             info.timeZone = timeZone;

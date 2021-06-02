@@ -677,3 +677,8 @@ CREATE TABLE `SessionNotifications` (
 
 ALTER TABLE `Accounts`
 ADD COLUMN `note` text;
+
+-- changeset bridge:38
+
+ALTER TABLE `RequestInfos`
+ADD COLUMN `timelineAccessedOn` varchar(255);
