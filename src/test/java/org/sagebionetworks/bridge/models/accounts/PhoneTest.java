@@ -96,7 +96,22 @@ public class PhoneTest {
     public void phoneIsMissingRegionCode() {
         assertFalse(Phone.isValid(new Phone("206.547.2600", null)));
     }
-    
+
+    @Test
+    public void phoneThreeCharacterRegionNotAllowed() {
+        assertFalse(Phone.isValid(new Phone("206.547.2600", "USA")));
+    }
+
+    @Test
+    public void phoneInvalidRegionCode() {
+        assertFalse(Phone.isValid(new Phone("206.547.2600", "gibberish")));
+    }
+
+    @Test
+    public void phoneInvalidRegionCodeInternationalFormat() {
+        assertFalse(Phone.isValid(new Phone("+12065472600", "gibberish")));
+    }
+
     @Test
     public void phoneIsMissingNumber() {
         assertFalse(Phone.isValid(new Phone(null, "US")));
