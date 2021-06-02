@@ -23,7 +23,7 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
     private DynamoDBMapper mapper;
 
     /** DynamoDB mapper for the HealthDataDocumentation table, configured by Spring. */
-    @Resource(name = "healthDataDbMapper")
+    @Resource(name = "healthDataDocumentationDbMapper")
     public void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
