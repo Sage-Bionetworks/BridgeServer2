@@ -141,6 +141,10 @@ public class StudyParticipantController extends BaseController {
         if (!session.getParticipant().getStudyIds().contains(studyId)) {
             throw new UnauthorizedException("Caller is not enrolled in study '" + studyId + "'");
         }
+
+        RequestInfo requestInfo = getRequestInfoBuilder(session)
+                .withTimelineAccessedOn(getDateTime()).build();
+        requestInfoService.updateRequestInfo(requestInfo);
         
         Study study = studyService.getStudy(session.getAppId(), studyId, true);
         DateTime modifiedSince = modifiedSinceHeader();
