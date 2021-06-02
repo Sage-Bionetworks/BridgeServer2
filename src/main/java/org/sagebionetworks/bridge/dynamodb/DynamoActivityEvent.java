@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @JsonFilter("filter")
 public class DynamoActivityEvent implements ActivityEvent {
 
-    private String studyId;
     private String healthCode;
     private String answerValue;
     private DateTime timestamp;
@@ -36,20 +35,10 @@ public class DynamoActivityEvent implements ActivityEvent {
     @DynamoDBHashKey
     @Override
     public String getHealthCode() {
-        if (studyId == null || healthCode == null || healthCode.endsWith(":" + studyId)) {
-            return healthCode;
-        }
-        return (healthCode + ":" + studyId);
+        return healthCode;
     }
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
-    }
-    @Override
-    public String getStudyId() {
-        return studyId;
-    }
-    public void setStudyId(String studyId) {
-        this.studyId = studyId;
     }
     @Override
     public String getAnswerValue() {
@@ -87,7 +76,6 @@ public class DynamoActivityEvent implements ActivityEvent {
     
     public static class Builder {
         private String healthCode;
-        private String studyId;
         private DateTime timestamp;
         private ActivityEventObjectType objectType;
         private String objectId;
@@ -97,10 +85,6 @@ public class DynamoActivityEvent implements ActivityEvent {
         
         public Builder withHealthCode(String healthCode) {
             this.healthCode = healthCode;
-            return this;
-        }
-        public Builder withStudyId(String studyId) {
-            this.studyId = studyId;
             return this;
         }
         public Builder withTimestamp(DateTime timestamp) {
@@ -151,7 +135,6 @@ public class DynamoActivityEvent implements ActivityEvent {
             }
             DynamoActivityEvent event = new DynamoActivityEvent();
             event.setHealthCode(healthCode);
-            event.setStudyId(studyId);
             event.setTimestamp(timestamp);
             event.setEventId(getEventId());
             event.setAnswerValue(answerValue);

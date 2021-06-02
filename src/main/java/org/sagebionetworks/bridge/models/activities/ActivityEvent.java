@@ -11,8 +11,6 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 @JsonDeserialize(as = DynamoActivityEvent.class)
 public interface ActivityEvent extends HasTimestamp, BridgeEntity {
     
-    String getStudyId();
-
     @JsonIgnore
     String getHealthCode();
 

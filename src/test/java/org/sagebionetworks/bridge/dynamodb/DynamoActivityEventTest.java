@@ -72,7 +72,6 @@ public class DynamoActivityEventTest {
         DateTime timestamp = new DateTime(123L);
         ActivityEvent event = new DynamoActivityEvent.Builder()
                 .withHealthCode("healthCode")
-                .withStudyId("studyId")
                 .withTimestamp(timestamp)
                 .withObjectType(CUSTOM)
                 .withObjectId("objectId")
@@ -80,8 +79,7 @@ public class DynamoActivityEventTest {
                 .withUpdateType(IMMUTABLE)
                 .withAnswerValue("true").build();
         
-        assertEquals(event.getHealthCode(), "healthCode:studyId");
-        assertEquals(event.getStudyId(), "studyId");
+        assertEquals(event.getHealthCode(), "healthCode");
         assertEquals(event.getTimestamp(), timestamp);
         assertEquals(event.getEventId(), "custom:objectId:finished");
         assertEquals(event.getAnswerValue(), "true");
@@ -103,7 +101,6 @@ public class DynamoActivityEventTest {
         // Start with JSON.
         String jsonText = "{\n" +
                 "   \"healthCode\":\"test-health-code\",\n" +
-                "   \"studyId\":\"test-study\",\n" +
                 "   \"eventId\":\"test-event\",\n" +
                 "   \"updateType\":\"mutable\",\n" + // should be ignored
                 "   \"answerValue\":\"dummy answer\",\n" +
@@ -113,7 +110,6 @@ public class DynamoActivityEventTest {
         // Convert to POJO.
         ActivityEvent activityEvent = BridgeObjectMapper.get().readValue(jsonText, ActivityEvent.class);
         assertNull(activityEvent.getHealthCode());
-        assertEquals(activityEvent.getStudyId(), "test-study");
         assertEquals(activityEvent.getEventId(), "test-event");
         assertEquals(activityEvent.getAnswerValue(), "dummy answer");
         assertDatesWithTimeZoneEqual(activityEvent.getTimestamp(),
@@ -123,7 +119,6 @@ public class DynamoActivityEventTest {
         // Convert back to JSON.
         JsonNode activityNode = BridgeObjectMapper.get().valueToTree(activityEvent);
         assertNull(activityNode.get("healthCode"));
-        assertEquals(activityNode.get("studyId").textValue(), "test-study");
         assertEquals(activityNode.get("eventId").textValue(), "test-event");
         assertEquals(activityNode.get("answerValue").textValue(), "dummy answer");
         assertEquals(activityNode.get("timestamp").textValue(), "2018-08-20T16:15:19.913Z");
@@ -134,7 +129,6 @@ public class DynamoActivityEventTest {
         JsonNode filteredActivityNode = BridgeObjectMapper.get().readTree(filteredJsonText);
         assertNull(filteredActivityNode.get("healthCode"));
         assertNull(filteredActivityNode.get("updateType"));
-        assertEquals(filteredActivityNode.get("studyId").textValue(), "test-study");
         assertEquals(filteredActivityNode.get("eventId").textValue(), "test-event");
         assertEquals(filteredActivityNode.get("answerValue").textValue(), "dummy answer");
         assertEquals(filteredActivityNode.get("timestamp").textValue(), "2018-08-20T16:15:19.913Z");
@@ -150,7 +144,6 @@ public class DynamoActivityEventTest {
         
         activityEvent = BridgeObjectMapper.get().readValue(jsonText, ActivityEvent.class);
         assertNull(activityEvent.getHealthCode());
-        assertNull(activityEvent.getStudyId());
         assertEquals(activityEvent.getEventId(), "test-event");
         assertEquals(activityEvent.getAnswerValue(), "dummy answer");
         assertEquals(activityEvent.getTimestamp(), DateTime.parse("2018-08-20T16:15:19.913Z"));
@@ -158,7 +151,6 @@ public class DynamoActivityEventTest {
         // Convert back to JSON.
         activityNode = BridgeObjectMapper.get().valueToTree(activityEvent);
         assertNull(activityNode.get("healthCode"));
-        assertNull(activityNode.get("studyId"));
         assertEquals(activityNode.get("eventId").textValue(), "test-event");
         assertEquals(activityNode.get("answerValue").textValue(), "dummy answer");
         assertEquals(activityNode.get("timestamp").textValue(), "2018-08-20T16:15:19.913Z");
@@ -167,38 +159,6 @@ public class DynamoActivityEventTest {
         filteredJsonText = BridgeObjectMapper.get().writeValueAsString(activityEvent);
         filteredActivityNode = BridgeObjectMapper.get().readTree(filteredJsonText);
         assertNull(filteredActivityNode.get("healthCode"));
-    }
-    
-    @Test
-    public void studyScopedHealthCodeWorks() {
-        ActivityEvent event = new DynamoActivityEvent.Builder()
-                .withObjectType(CUSTOM)
-                .withObjectId("test")
-                .withHealthCode("AAA").build();
-        assertEquals(event.getHealthCode(), "AAA");
-
-        event = new DynamoActivityEvent.Builder()
-                .withObjectType(CUSTOM)
-                .withObjectId("test")
-                .withHealthCode("AAA")
-                .withStudyId("BBB").build();
-        assertEquals(event.getHealthCode(), "AAA:BBB");
-    }
-    
-    @Test
-    public void compoundHealthCodeKeyCanBeCopiedMultipleTimes() {
-        DynamoActivityEvent event1 = new DynamoActivityEvent.Builder().withObjectType(ACTIVITIES_RETRIEVED)
-                .withHealthCode(HEALTH_CODE).withStudyId(TEST_STUDY_ID).build();
-        
-        DynamoActivityEvent event2 = new DynamoActivityEvent.Builder().withObjectType(ACTIVITIES_RETRIEVED)
-                .withHealthCode(event1.getHealthCode()).withStudyId(event1.getStudyId()).build();
-
-        DynamoActivityEvent event3 = new DynamoActivityEvent();
-        event3.setHealthCode(event2.getHealthCode());
-        event3.setStudyId(event2.getStudyId());
-        
-        assertEquals(event3.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
-        assertEquals(event3.getStudyId(), TEST_STUDY_ID);
     }
     
     @Test

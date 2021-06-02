@@ -224,8 +224,8 @@ public class AccountService {
         accountDao.createAccount(app, account);
         
         if (!account.getEnrollments().isEmpty()) {
-            activityEventService.publishEnrollmentEvent(app, null, 
-                    account.getHealthCode(), account.getCreatedOn());
+            activityEventService.publishEnrollmentEvent(
+                    app, account.getHealthCode(), account.getCreatedOn());
         }
         for (Enrollment en : account.getEnrollments()) {
             studyActivityEventService.publishEvent(new StudyActivityEventRequest()
@@ -271,7 +271,7 @@ public class AccountService {
         
         if (!newStudies.isEmpty()) {
             App app = appService.getApp(account.getAppId());
-            activityEventService.publishEnrollmentEvent(app, null, 
+            activityEventService.publishEnrollmentEvent(app, 
                     account.getHealthCode(), account.getModifiedOn());
             for (String studyId : newStudies) {
                 studyActivityEventService.publishEvent(new StudyActivityEventRequest()

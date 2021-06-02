@@ -65,8 +65,8 @@ public class ActivityEventController extends BaseController {
         CustomActivityEventRequest activityEvent = parseJson(CustomActivityEventRequest.class);
 
         App app = appService.getApp(session.getAppId());
-        activityEventService.publishCustomEvent(app, null,
-                session.getHealthCode(), activityEvent.getEventKey(), activityEvent.getTimestamp());
+        activityEventService.publishCustomEvent(app, session.getHealthCode(), 
+                activityEvent.getEventKey(), activityEvent.getTimestamp());
         
         return EVENT_RECORDED_MSG;
     }
@@ -76,7 +76,7 @@ public class ActivityEventController extends BaseController {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         App app = appService.getApp(session.getAppId());
-        activityEventService.deleteCustomEvent(app, null, session.getHealthCode(), eventId);
+        activityEventService.deleteCustomEvent(app, session.getHealthCode(), eventId);
         
         return EVENT_DELETED_MSG;
     }

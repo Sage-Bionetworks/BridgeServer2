@@ -800,7 +800,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
         
-        verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any(), any());
+        verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any());
         verify(studyActivityEventService, never()).publishEvent(any());
     }
     
@@ -821,7 +821,7 @@ public class AccountServiceTest extends Mockito {
         service.createAccount(app, account);
 
         verify(mockAccountDao).createAccount(app, account);
-        verify(activityEventService).publishEnrollmentEvent(any(), eq(null), any(), any());
+        verify(activityEventService).publishEnrollmentEvent(any(), any(), any());
         verify(studyActivityEventService, times(2)).publishEvent(requestCaptor.capture());
         
         StudyActivityEventRequest req1 = requestCaptor.getAllValues().get(0);
@@ -894,7 +894,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(updatedAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(updatedAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         
-        verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any(), any());
+        verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any());
         verify(studyActivityEventService, never()).publishEvent(any());
     }
 
@@ -929,7 +929,7 @@ public class AccountServiceTest extends Mockito {
         service.updateAccount(account);
         
         verify(activityEventService).publishEnrollmentEvent(
-                eq(app), eq(null), eq(HEALTH_CODE), any(DateTime.class));
+                eq(app), eq(HEALTH_CODE), any(DateTime.class));
         verify(studyActivityEventService).publishEvent(requestCaptor.capture());
         StudyActivityEventRequest req = requestCaptor.getValue();
         assertEquals(req.getAppId(), TEST_APP_ID);

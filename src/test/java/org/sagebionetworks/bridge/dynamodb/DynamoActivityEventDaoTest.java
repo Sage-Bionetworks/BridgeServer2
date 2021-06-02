@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.dynamodb;
 
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
@@ -56,9 +55,6 @@ public class DynamoActivityEventDaoTest extends Mockito {
     private static final DynamoActivityEvent ACTIVITY_FINISHED_EVENT = new DynamoActivityEvent.Builder()
             .withHealthCode(HEALTH_CODE).withObjectType(ACTIVITY).withObjectId("AAA-BBB-CCC").withEventType(FINISHED)
             .withTimestamp(TIMESTAMP).build();
-    
-    private static final DynamoActivityEvent ENROLLMENT_EVENT_WITH_STUDY_ID = new DynamoActivityEvent.Builder()
-            .withStudyId(TEST_STUDY_ID).withHealthCode(HEALTH_CODE).withObjectType(ENROLLMENT).withTimestamp(TIMESTAMP).build();
 
     @InjectMocks
     DynamoActivityEventDao dao;
@@ -109,19 +105,6 @@ public class DynamoActivityEventDaoTest extends Mockito {
         
         verify(mockMapper).save(eventCaptor.capture());
         assertSame(eventCaptor.getValue(), SURVEY_FINISHED_EVENT);
-    }
-    
-    @Test
-    public void publishEventWithStudyId() {
-        boolean result = dao.publishEvent(ENROLLMENT_EVENT_WITH_STUDY_ID);
-        assertTrue(result);
-        
-        verify(mockMapper).save(eventCaptor.capture());
-        
-        DynamoActivityEvent event = eventCaptor.getValue();
-        assertEquals(event.getEventId(), "enrollment");
-        assertEquals(event.getStudyId(), TEST_STUDY_ID);
-        assertEquals(event.getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
     }
     
     @Test
@@ -328,7 +311,7 @@ public class DynamoActivityEventDaoTest extends Mockito {
         when(queryResults.iterator()).thenReturn(savedEvents.iterator());
         when(mockMapper.query(eq(DynamoActivityEvent.class), any())).thenReturn(queryResults);
         
-        Map<String, DateTime> results = dao.getActivityEventMap(HEALTH_CODE, null);
+        Map<String, DateTime> results = dao.getActivityEventMap(HEALTH_CODE);
         
         assertEquals(results.size(), 4);
         assertEquals(results.get("enrollment"), TIMESTAMP);
@@ -348,7 +331,7 @@ public class DynamoActivityEventDaoTest extends Mockito {
         when(queryResults.iterator()).thenReturn(savedEvents.iterator());
         when(mockMapper.query(eq(DynamoActivityEvent.class), any())).thenReturn(queryResults);
         
-        Map<String, DateTime> results = dao.getActivityEventMap(HEALTH_CODE, null);
+        Map<String, DateTime> results = dao.getActivityEventMap(HEALTH_CODE);
         assertTrue(results.isEmpty());
         
         verify(mockMapper).query(any(), queryCaptor.capture());
@@ -358,50 +341,18 @@ public class DynamoActivityEventDaoTest extends Mockito {
     }
     
     @Test
-    public void getActivityEventMapStudyScoped() {
-        List<DynamoActivityEvent> savedEvents = ImmutableList.of();
-        when(queryResults.iterator()).thenReturn(savedEvents.iterator());
-        when(mockMapper.query(eq(DynamoActivityEvent.class), any())).thenReturn(queryResults);
-        
-        Map<String, DateTime> results = dao.getActivityEventMap(HEALTH_CODE, TEST_STUDY_ID);
-        assertTrue(results.isEmpty());
-        
-        verify(mockMapper).query(any(), queryCaptor.capture());
-        
-        DynamoDBQueryExpression<DynamoActivityEvent> query = queryCaptor.getValue();
-        assertEquals(query.getHashKeyValues().getHealthCode(), HEALTH_CODE + ":" + TEST_STUDY_ID);
-    }
-    
-    @Test
     public void deleteActivityEventsGlobal() {
         List<DynamoActivityEvent> savedEvents = ImmutableList.of(ENROLLMENT_EVENT, SURVEY_FINISHED_EVENT,
                 QUESTION_ANSWERED_EVENT, ACTIVITY_FINISHED_EVENT);
         when(queryResults.toArray()).thenReturn(savedEvents.toArray());
         when(mockMapper.query(eq(DynamoActivityEvent.class), any())).thenReturn(queryResults);
         
-        dao.deleteActivityEvents(HEALTH_CODE, null);
+        dao.deleteActivityEvents(HEALTH_CODE);
         
         verify(mockMapper).batchDelete(listCaptor.capture());
         List<DynamoActivityEvent> eventsToDelete = listCaptor.getValue();
         assertEquals(eventsToDelete, savedEvents);
     }    
-    
-    @Test
-    public void deleteActivityEventsStudyScoped() {
-        List<DynamoActivityEvent> savedEvents = ImmutableList.of(ENROLLMENT_EVENT, SURVEY_FINISHED_EVENT,
-                QUESTION_ANSWERED_EVENT, ACTIVITY_FINISHED_EVENT);
-        when(queryResults.toArray()).thenReturn(savedEvents.toArray());
-        when(mockMapper.query(eq(DynamoActivityEvent.class), any())).thenReturn(queryResults);
-        
-        dao.deleteActivityEvents(HEALTH_CODE, TEST_STUDY_ID);
-        
-        verify(mockMapper).query(eq(DynamoActivityEvent.class), queryCaptor.capture());
-        assertEquals(queryCaptor.getValue().getHashKeyValues().getHealthCode(), 
-                HEALTH_CODE + ":" + TEST_STUDY_ID);
-        verify(mockMapper).batchDelete(listCaptor.capture());
-        List<DynamoActivityEvent> eventsToDelete = listCaptor.getValue();
-        assertEquals(eventsToDelete, savedEvents);
-    }
     
     @Test
     public void publishEventIsImmutableFails() {
