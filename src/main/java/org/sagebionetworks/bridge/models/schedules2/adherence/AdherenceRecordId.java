@@ -61,10 +61,4 @@ public final class AdherenceRecordId implements Serializable {
                 Objects.equals(instanceGuid, other.instanceGuid) &&
                 Objects.equals(eventTimestamp, other.eventTimestamp);
     }
-
-    @Override
-    public String toString() {
-        return "AdherenceRecordId [userId=" + userId + ", studyId=" + studyId + ", instanceGuid=" + instanceGuid
-                + ", eventTimestamp=" + eventTimestamp + "]";
-    }
 }
