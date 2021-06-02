@@ -98,6 +98,11 @@ public class PhoneTest {
     }
 
     @Test
+    public void phoneThreeCharacterRegionNotAllowed() {
+        assertFalse(Phone.isValid(new Phone("206.547.2600", "USA")));
+    }
+
+    @Test
     public void phoneInvalidRegionCode() {
         assertFalse(Phone.isValid(new Phone("206.547.2600", "gibberish")));
     }
