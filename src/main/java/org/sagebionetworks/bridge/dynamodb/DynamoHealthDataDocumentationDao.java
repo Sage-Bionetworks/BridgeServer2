@@ -7,7 +7,6 @@ import com.amazonaws.services.dynamodbv2.model.ComparisonOperator;
 import com.amazonaws.services.dynamodbv2.model.Condition;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.HealthDataDocumentationDao;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -24,7 +23,7 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
 
     /** DynamoDB mapper for the HealthDataDocumentation table, configured by Spring. */
     @Resource(name = "healthDataDocumentationDbMapper")
-    public void setMapper(DynamoDBMapper mapper) {
+    public final void setMapper(DynamoDBMapper mapper) {
         this.mapper = mapper;
     }
 
@@ -36,12 +35,7 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
         if (dynamoDocumentation.getIdentifier() == null) {
             // Documentation doesn't have ID assigned yet (new documentation). Create ID and assign it.
             dynamoDocumentation.setIdentifier(BridgeUtils.generateGuid());
-
-            // Update created on attributes.
-            dynamoDocumentation.setCreatedOn(DateTime.now());
         } else {
-            // Update modified on attributes.
-            dynamoDocumentation.setModifiedOn(DateTime.now());
         }
 
         // Save to DynamoDB.

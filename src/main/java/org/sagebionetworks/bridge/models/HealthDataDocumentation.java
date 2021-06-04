@@ -33,12 +33,12 @@ public interface HealthDataDocumentation extends BridgeEntity {
     String getCreatedBy();
     void setCreatedBy(String createdBy);
 
-    DateTime getCreatedOn();
-    void setCreatedOn(DateTime createdOn);
+    Long getCreatedOn();
+    void setCreatedOn(Long createdOn);
 
     String getModifiedBy();
     void setModifiedBy(String modifiedBy);
 
-    DateTime getModifiedOn();
-    void setModifiedOn(DateTime modifiedOn);
+    Long getModifiedOn();
+    void setModifiedOn(Long modifiedOn);
 }
