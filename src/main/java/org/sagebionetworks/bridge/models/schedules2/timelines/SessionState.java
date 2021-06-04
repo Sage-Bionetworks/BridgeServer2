@@ -10,6 +10,7 @@ public class SessionState {
     int total;
     int started;
     int finished;
+    int declined;
     
     public SessionState(int total) {
         this.total = total;
@@ -20,12 +21,18 @@ public class SessionState {
     boolean isFinished() {
         return finished == total;
     }
+    boolean isDeclined() { 
+        return declined == total;
+    }
     public void add(AdherenceRecord record) {
         if (record.getStartedOn() != null) {
             started++;
         }
         if (record.getFinishedOn() != null) {
             finished++;
+        }
+        if (record.isDeclined()) {
+            declined++;
         }
         replaceEarliest(record.getStartedOn());
         replaceLatest(record.getFinishedOn());
@@ -56,7 +63,7 @@ public class SessionState {
                 sessionRecord.setStartedOn(earliest);
                 updated = true;
             }
-            if (sessionRecord.getFinishedOn() == null) { 
+            if (sessionRecord.getFinishedOn() == null) {
                 sessionRecord.setFinishedOn(latest);
                 updated = true;
             }
@@ -70,6 +77,10 @@ public class SessionState {
                 sessionRecord.setFinishedOn(null);
                 updated = true;
             }
+        }
+        if (isDeclined()) {
+            sessionRecord.setDeclined(true);
+            updated = true;
         }
         return updated;
     }

@@ -655,6 +655,19 @@ public class TestUtils {
         }
     }
     
+    public static AdherenceRecord mockAdherenceRecord(String instanceGuid) {
+        AdherenceRecord record = new AdherenceRecord();
+        record.setStudyId(TEST_STUDY_ID);
+        record.setUserId(TEST_USER_ID);
+        record.setEventTimestamp(CREATED_ON);
+        record.setClientTimeZone("America/Los_Angeles");
+        record.setStartedOn(MODIFIED_ON);
+        record.setInstanceGuid(instanceGuid);
+        record.setClientTimeZone("America/Los_Angeles");
+        return record;
+    }
+
+    
     public static AdherenceRecord getAdherenceRecord(String instanceGuid) { 
         AdherenceRecord record = new AdherenceRecord();
         record.setStudyId(TEST_STUDY_ID);

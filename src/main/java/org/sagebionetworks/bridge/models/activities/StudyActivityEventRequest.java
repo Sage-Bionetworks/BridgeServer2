@@ -184,4 +184,13 @@ public class StudyActivityEventRequest {
         copy.updateType = updateType;
         return copy;
     }
+
+    @Override
+    public String toString() {
+        return "StudyActivityEventRequest [appId=" + appId + ", userId=" + userId + ", studyId=" + studyId
+                + ", timestamp=" + timestamp + ", answerValue=" + answerValue + ", clientTimeZone=" + clientTimeZone
+                + ", createdOn=" + createdOn + ", objectType=" + objectType + ", objectId=" + objectId + ", eventType="
+                + eventType + ", updateType=" + updateType + ", customEvents=" + customEvents + ", eventKeys="
+                + eventKeys + "]";
+    }
 }
