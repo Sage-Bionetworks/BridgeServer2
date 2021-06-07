@@ -29,10 +29,10 @@ public class SessionStateTest extends Mockito {
     
     @Test
     public void testUnstarted() { 
-        SessionState state = new SessionState(4);
+        SessionState state = new SessionState();
         assertTrue(state.isUnstarted());
         
-        state = new SessionState(4);
+        state = new SessionState();
         state.add(unstartedRec());
         state.add(unstartedRec());
         assertTrue(state.isUnstarted());
@@ -43,13 +43,11 @@ public class SessionStateTest extends Mockito {
 
     @Test
     public void testDeclined() { 
-        SessionState state = new SessionState(4);
+        SessionState state = new SessionState();
+        state.add(finishedRec());
         assertFalse(state.isDeclined());
         
-        state = new SessionState(4);
-        state.add(unstartedDeclinedRec());
-        state.add(unstartedDeclinedRec());
-        assertFalse(state.isDeclined());
+        state = new SessionState();
         state.add(unstartedDeclinedRec());
         state.add(unstartedDeclinedRec());
         assertTrue(state.isDeclined());
@@ -57,14 +55,14 @@ public class SessionStateTest extends Mockito {
     
     @Test
     public void testFinished() { 
-        SessionState state = new SessionState(4);
+        SessionState state = new SessionState();
         state.add(finishedRec());
         state.add(finishedRec());
         state.add(finishedRec());
         state.add(finishedRec());
         assertTrue(state.isFinished());
         
-        state = new SessionState(4);
+        state = new SessionState();
         state.add(finishedRec());
         state.add(finishedRec());
         state.add(unstartedRec());
@@ -74,26 +72,24 @@ public class SessionStateTest extends Mockito {
     
     @Test
     public void testStarted() { 
-        SessionState state = new SessionState(4);
+        SessionState state = new SessionState();
         state.add(finishedRec());
         state.add(finishedRec());
         state.add(unstartedRec());
         state.add(unstartedRec());
         assertFalse(state.isUnstarted());
-        assertFalse(state.isFinished());
         
-        state = new SessionState(4);
-        state.add(finishedRec());
-        state.add(finishedRec());
-        assertFalse(state.isUnstarted());
-        assertFalse(state.isFinished());
+        state = new SessionState();
+        state.add(unstartedRec());
+        state.add(unstartedRec());
+        assertTrue(state.isUnstarted());
     }
     
     @Test
     public void selectsTimestamps() {
         List<AdherenceRecord> recs = getRecords();
         
-        SessionState state = new SessionState(4);
+        SessionState state = new SessionState();
         state.add(recs.get(0));
         state.add(recs.get(1));
         state.add(recs.get(2));
@@ -112,7 +108,7 @@ public class SessionStateTest extends Mockito {
     
     @Test
     public void unstartsSessionRecord() { 
-        SessionState state = new SessionState(4);
+        SessionState state = new SessionState();
         
         AdherenceRecord sessionRecord = new AdherenceRecord();
         sessionRecord.setStartedOn(CREATED_ON);
@@ -128,7 +124,7 @@ public class SessionStateTest extends Mockito {
     public void finishSessionRecord() {
         List<AdherenceRecord> recs = getRecords();
         
-        SessionState state = new SessionState(4);
+        SessionState state = new SessionState();
         state.add(recs.get(0));
         state.add(recs.get(1));
         state.add(recs.get(2));
@@ -146,10 +142,13 @@ public class SessionStateTest extends Mockito {
     public void inProcessSessionRecord() {
         List<AdherenceRecord> recs = getRecords();
         
-        SessionState state = new SessionState(4);
+        recs.get(2).setFinishedOn(null);
+        
+        SessionState state = new SessionState();
         state.add(recs.get(0));
         state.add(recs.get(1));
         state.add(recs.get(2));
+        // not the 4th record
         
         AdherenceRecord sessionRecord = new AdherenceRecord();
         sessionRecord.setFinishedOn(MODIFIED_ON);
@@ -162,7 +161,8 @@ public class SessionStateTest extends Mockito {
     
     @Test
     public void unstartsSessionRecordNotChanged() { 
-        SessionState state = new SessionState(4);
+        SessionState state = new SessionState();
+        state.add(unstartedRec());
         
         AdherenceRecord sessionRecord = new AdherenceRecord();
         
@@ -176,7 +176,7 @@ public class SessionStateTest extends Mockito {
     public void finishSessionRecordNotChanged() {
         List<AdherenceRecord> recs = getRecords();
         
-        SessionState state = new SessionState(recs.size());
+        SessionState state = new SessionState();
         for (AdherenceRecord rec : recs) {
             state.add(rec);    
         }
@@ -196,10 +196,11 @@ public class SessionStateTest extends Mockito {
     public void inProcessSessionRecordNotChanged() {
         List<AdherenceRecord> recs = getRecords();
         
-        SessionState state = new SessionState(4);
-        state.add(recs.get(0));
-        state.add(recs.get(1));
-        state.add(recs.get(2));
+        SessionState state = new SessionState();
+        for (AdherenceRecord oneRec : recs) {
+            oneRec.setFinishedOn(null);
+            state.add(oneRec);
+        }
         
         AdherenceRecord sessionRecord = new AdherenceRecord();
         sessionRecord.setStartedOn(CREATED_ON);

@@ -33,6 +33,10 @@ public class AdherenceRecord implements BridgeEntity {
     @Id
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime eventTimestamp;
+    @Id
+    @JsonIgnore
+    @Convert(converter = DateTimeToLongAttributeConverter.class)
+    private DateTime instanceTimestamp;
     
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime startedOn;
@@ -86,6 +90,12 @@ public class AdherenceRecord implements BridgeEntity {
     }
     public void setUploadedOn(DateTime uploadedOn) {
         this.uploadedOn = uploadedOn;
+    }
+    public DateTime getInstanceTimestamp() {
+        return instanceTimestamp;
+    }
+    public void setInstanceTimestamp(DateTime instanceTimestamp) {
+        this.instanceTimestamp = instanceTimestamp;
     }
     public DateTime getEventTimestamp() {
         return eventTimestamp;

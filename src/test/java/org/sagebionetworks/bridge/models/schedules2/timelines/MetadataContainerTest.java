@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -55,8 +56,8 @@ public class MetadataContainerTest extends Mockito {
         );
         MetadataContainer container = createContainer(records);
         
-        assertEquals(container.getSessions().size(), 2);
-        assertEquals(container.getSessions().stream()
+        assertEquals(container.getSessionUpdates().size(), 2);
+        assertEquals(container.getSessionUpdates().stream()
                 .map(AdherenceRecord::getInstanceGuid)
                 .collect(toSet()), ImmutableSet.of("session1", "session2"));
         assertEquals(container.getAssessments().size(), 3);
@@ -90,12 +91,104 @@ public class MetadataContainerTest extends Mockito {
     }
     
     @Test
+    public void addRecord_addPersistentAssessmentAdherenceRecord() { 
+        AdherenceRecord record = new AdherenceRecord();
+        record.setStartedOn(TIMESTAMP);
+        record.setInstanceGuid("instanceGuid");
+        
+        TimelineMetadata meta = new TimelineMetadata();
+        meta.setTimeWindowPersistent(true);
+        meta.setAssessmentInstanceGuid("assessmentInstanceGuid");
+        
+        when(mockScheduleService.getTimelineMetadata("instanceGuid"))
+            .thenReturn(Optional.of(meta));
+        
+        MetadataContainer container = createContainer(ImmutableList.of(record));
+        container.addRecord(record);
+        
+        assertEquals(record, container.getRecord("instanceGuid"));
+        assertEquals(meta, container.getMetadata("instanceGuid"));
+        assertEquals(record.getInstanceTimestamp(), TIMESTAMP);
+        assertFalse(container.getAssessments().isEmpty());
+        assertTrue(container.getSessionUpdates().isEmpty());
+    }
+    
+    @Test
+    public void addRecord_addPersistentSessionAdherenceRecord() {
+        AdherenceRecord record = new AdherenceRecord();
+        record.setStartedOn(TIMESTAMP);
+        record.setInstanceGuid("instanceGuid");
+        
+        TimelineMetadata meta = new TimelineMetadata();
+        meta.setTimeWindowPersistent(true);
+        meta.setGuid("guid");
+        
+        when(mockScheduleService.getTimelineMetadata("instanceGuid"))
+            .thenReturn(Optional.of(meta));
+        
+        MetadataContainer container = createContainer(ImmutableList.of(record));
+        container.addRecord(record);
+        
+        assertEquals(record, container.getRecord("instanceGuid"));
+        assertEquals(meta, container.getMetadata("instanceGuid"));
+        assertEquals(record.getInstanceTimestamp(), TIMESTAMP);
+        assertTrue(container.getAssessments().isEmpty());
+        assertFalse(container.getSessionUpdates().isEmpty());
+    }
+
+    
+    @Test
+    public void addRecord_addNonPersistentAssessmentAdherenceRecord() { 
+        AdherenceRecord record = new AdherenceRecord();
+        record.setEventTimestamp(TIMESTAMP);
+        record.setInstanceGuid("instanceGuid");
+        
+        TimelineMetadata meta = new TimelineMetadata();
+        meta.setTimeWindowPersistent(false);
+        meta.setAssessmentInstanceGuid("assessmentInstanceGuid");
+        
+        when(mockScheduleService.getTimelineMetadata("instanceGuid"))
+            .thenReturn(Optional.of(meta));
+        
+        MetadataContainer container = createContainer(ImmutableList.of(record));
+        container.addRecord(record);
+        
+        assertEquals(record, container.getRecord("instanceGuid"));
+        assertEquals(meta, container.getMetadata("instanceGuid"));
+        assertEquals(record.getInstanceTimestamp(), TIMESTAMP);
+        assertFalse(container.getAssessments().isEmpty());
+        assertTrue(container.getSessionUpdates().isEmpty());
+    }
+    
+    @Test
+    public void addRecord_addNonPersistentSessionAdherenceRecord() { 
+        AdherenceRecord record = new AdherenceRecord();
+        record.setEventTimestamp(TIMESTAMP);
+        record.setInstanceGuid("instanceGuid");
+        
+        TimelineMetadata meta = new TimelineMetadata();
+        meta.setTimeWindowPersistent(false);
+        
+        when(mockScheduleService.getTimelineMetadata("instanceGuid"))
+            .thenReturn(Optional.of(meta));
+        
+        MetadataContainer container = createContainer(ImmutableList.of(record));
+        container.addRecord(record);
+        
+        assertEquals(record, container.getRecord("instanceGuid"));
+        assertEquals(meta, container.getMetadata("instanceGuid"));
+        assertEquals(record.getInstanceTimestamp(), TIMESTAMP);
+        assertTrue(container.getAssessments().isEmpty());
+        assertFalse(container.getSessionUpdates().isEmpty());
+    }
+    
+    @Test
     public void addSessionWorks() {
         MetadataContainer container = createContainer(ImmutableList.of());
-        container.addSession(ar(null, "session3", CREATED_ON, MODIFIED_ON));
+        container.addRecord(ar(null, "session3", CREATED_ON, MODIFIED_ON));
         
-        assertEquals(container.getSessions().size(), 1);
-        assertEquals(container.getSessions().stream()
+        assertEquals(container.getSessionUpdates().size(), 1);
+        assertEquals(container.getSessionUpdates().stream()
                 .map(AdherenceRecord::getInstanceGuid)
                 .collect(toSet()), ImmutableSet.of("session3"));
     }
@@ -124,7 +217,7 @@ public class MetadataContainerTest extends Mockito {
     public void getMetadataLoadsMetadata() {
         MetadataContainer container = createContainer(ImmutableList.of());
         
-        container.addSession(ar(null, "session1", CREATED_ON, MODIFIED_ON));
+        container.addRecord(ar(null, "session1", CREATED_ON, MODIFIED_ON));
         
         TimelineMetadata meta = container.getMetadata("session1");
         assertEquals(meta.getSessionInstanceGuid(), "session1");

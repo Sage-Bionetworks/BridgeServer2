@@ -25,6 +25,7 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRe
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.ASC;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -238,7 +239,7 @@ public class AdherenceServiceTest extends Mockito {
         MetadataContainer container = new MetadataContainer(mockScheduleService, list.getRecords());
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
         
-        AdherenceRecord captured = Iterables.getFirst(container.getSessions(), null);
+        AdherenceRecord captured = Iterables.getFirst(container.getSessionUpdates(), null);
         assertEquals(captured.getStartedOn(), STARTED_ON);
     }
 
@@ -261,7 +262,7 @@ public class AdherenceServiceTest extends Mockito {
         MetadataContainer container = new MetadataContainer(mockScheduleService, list.getRecords());
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
         
-        AdherenceRecord captured = Iterables.getFirst(container.getSessions(), null);
+        AdherenceRecord captured = Iterables.getFirst(container.getSessionUpdates(), null);
         assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getUserId(), TEST_USER_ID);
         assertEquals(captured.getStudyId(), TEST_STUDY_ID);
@@ -280,8 +281,8 @@ public class AdherenceServiceTest extends Mockito {
         
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
         
-        AdherenceRecord captured = Iterables.getFirst(container.getSessions(), null);
-        assertEquals(container.getSessions().size(), 1);
+        AdherenceRecord captured = Iterables.getFirst(container.getSessionUpdates(), null);
+        assertEquals(container.getSessionUpdates().size(), 1);
         assertEquals(captured.getInstanceGuid(), "sessionInstanceGuid");
         assertEquals(captured.getStartedOn(), STARTED_ON);
         assertNull(captured.getFinishedOn());
@@ -295,7 +296,7 @@ public class AdherenceServiceTest extends Mockito {
         MetadataContainer container = new MetadataContainer(mockScheduleService, list.getRecords());
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
         
-        AdherenceRecord captured = Iterables.getFirst(container.getSessions(), null);
+        AdherenceRecord captured = Iterables.getFirst(container.getSessionUpdates(), null);
         assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getUserId(), TEST_USER_ID);
         assertEquals(captured.getStudyId(), TEST_STUDY_ID);
@@ -315,7 +316,7 @@ public class AdherenceServiceTest extends Mockito {
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(1));
         
-        AdherenceRecord captured = Iterables.getFirst(container.getSessions(), null);
+        AdherenceRecord captured = Iterables.getFirst(container.getSessionUpdates(), null);
         assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getUserId(), TEST_USER_ID);
         assertEquals(captured.getStudyId(), TEST_STUDY_ID);
@@ -334,7 +335,7 @@ public class AdherenceServiceTest extends Mockito {
         MetadataContainer container = new MetadataContainer(mockScheduleService, list.getRecords());
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
         
-        AdherenceRecord captured = Iterables.getFirst(container.getSessions(), null);
+        AdherenceRecord captured = Iterables.getFirst(container.getSessionUpdates(), null);
         assertNull(captured.getFinishedOn());
         assertTrue(captured.isDeclined()); // used the persisted record
         
@@ -350,7 +351,7 @@ public class AdherenceServiceTest extends Mockito {
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(1));
         
-        AdherenceRecord captured = Iterables.getFirst(container.getSessions(), null);
+        AdherenceRecord captured = Iterables.getFirst(container.getSessionUpdates(), null);
         assertNull(captured.getStartedOn());
         assertNull(captured.getFinishedOn());
         assertTrue(captured.isDeclined()); // used the persisted record 
@@ -365,14 +366,18 @@ public class AdherenceServiceTest extends Mockito {
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(1));
         
-        assertEquals(container.getSessions().size(), 1);
+        assertEquals(container.getSessionUpdates().size(), 1);
     }
     
     @Test
     public void updateAdherenceRecords_sessionUpdatesMergedCorrectlyWithExistingRecord() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        
         AdherenceRecordList list = mockRecordUpdate(ar(STARTED_ON, FINISHED_ON), 
                 ar(STARTED_ON, FINISHED_ON), ar(STARTED_ON, null, false));
-        
+
         AdherenceRecord sess = new AdherenceRecord();
         sess.setAppId(TEST_APP_ID);
         sess.setUserId(TEST_USER_ID);
@@ -383,16 +388,14 @@ public class AdherenceServiceTest extends Mockito {
         sess.setEventTimestamp(EVENT_TS);
         list.getRecords().add(sess);
         
-        MetadataContainer container = new MetadataContainer(mockScheduleService, list.getRecords());
-        service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
-        service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(1));
-        service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(2));
+        service.updateAdherenceRecords(TEST_APP_ID, list);
         
-        assertEquals(container.getSessions().size(), 1);
-        AdherenceRecord captured = Iterables.getFirst(container.getSessions(), null);
-        assertEquals(captured.getStartedOn(), STARTED_ON);
-        assertEquals(captured.getFinishedOn(), FINISHED_ON.plusHours(1));
-        assertTrue(captured.isDeclined());
+        verify(mockDao, times(3)).updateAdherenceRecord(recordCaptor.capture());
+        
+        AdherenceRecord session = recordCaptor.getAllValues().get(2);
+        assertEquals(session.getStartedOn(), STARTED_ON);
+        assertEquals(session.getFinishedOn(), FINISHED_ON.plusHours(1));
+        assertTrue(session.isDeclined());
     }
     
     @Test
@@ -528,6 +531,48 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(retValue.getEventTimestamps().get("custom:event1"), CREATED_ON);
         // the second one is added
         assertEquals(retValue.getEventTimestamps().get("custom:event2"), MODIFIED_ON);
+    }
+    
+    @Test
+    public void updateSessionState_sessionUpdateUsesPersistedSession() {
+        AdherenceRecord asmt = new AdherenceRecord();
+        asmt.setInstanceGuid("asmtInstanceGuid");
+        asmt.setEventTimestamp(EVENT_TS);
+        asmt.setStartedOn(STARTED_ON);
+        asmt.setFinishedOn(FINISHED_ON);
+        
+        TimelineMetadata asmtMeta = new TimelineMetadata();
+        asmtMeta.setSessionInstanceGuid("sessionInstanceGuid");
+        asmtMeta.setSessionStartEventId("enrollment");
+        when(mockScheduleService.getTimelineMetadata("asmtInstanceGuid"))
+            .thenReturn(Optional.of(asmtMeta));
+
+        AdherenceRecord session = new AdherenceRecord();
+        session.setInstanceGuid("sessionInstanceGuid");
+        session.setEventTimestamp(EVENT_TS);
+        session.setStartedOn(STARTED_ON);
+        session.setClientTimeZone("America/Los_Angeles");
+        
+        TimelineMetadata sessionTm = new TimelineMetadata();
+        sessionTm.setSessionInstanceGuid("sessionInstanceGuid");
+        sessionTm.setSessionStartEventId("enrollment");
+        when(mockScheduleService.getTimelineMetadata("sessionInstanceGuid"))
+            .thenReturn(Optional.of(sessionTm));
+
+        MetadataContainer container = new MetadataContainer(mockScheduleService, ImmutableList.of(asmt));
+        
+        // Note that because we save the assessments, when we later query for them,
+        // they are always present in this call.
+        when(mockDao.getAdherenceRecords(any()))
+                .thenReturn(new PagedResourceList<>(ImmutableList.of(asmt, session), 1, true));
+        
+        service.updateSessionState(TEST_APP_ID, container, asmt);
+        assertFalse(container.getSessionUpdates().isEmpty());
+        
+        AdherenceRecord update = Iterables.getFirst(container.getSessionUpdates(), null);
+        assertEquals(update.getClientTimeZone(), "America/Los_Angeles");
+        assertEquals(update.getStartedOn(), STARTED_ON);
+        assertEquals(update.getFinishedOn(), FINISHED_ON);
     }
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn) {

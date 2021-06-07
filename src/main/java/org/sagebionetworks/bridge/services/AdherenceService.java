@@ -112,7 +112,7 @@ public class AdherenceService {
             updateSessionState(appId, container, record);
         }
         // Update sessions
-        for (AdherenceRecord record : container.getSessions()) {
+        for (AdherenceRecord record : container.getSessionUpdates()) {
             TimelineMetadata sessionMeta = container.getMetadata(record.getInstanceGuid());
             dao.updateAdherenceRecord(record);
             publishEvent(appId, sessionMeta, record);
@@ -136,22 +136,17 @@ public class AdherenceService {
                 .withEventTimestamps(ImmutableMap.of(asmtMeta.getSessionStartEventId(), asmt.getEventTimestamp()))
                 .withInstanceGuids(instanceGuids).build());
         
+        SessionState state = new SessionState();
+        
         // The session record may have been submitted, it may be persisted, or
         // it may not yet exist, and we take the records in that order.
         AdherenceRecord sessionRecord = container.getRecord(sessionInstanceGuid);
-        // The record may already exist
-        SessionState state = new SessionState(asmtMetas.size());
-        
         for (AdherenceRecord oneRecord : allRecords.getItems()) {
             if (sessionInstanceGuid.equals(oneRecord.getInstanceGuid())) {
                 // The record was persisted
                 if (sessionRecord == null) {
                     sessionRecord = oneRecord;
                 }
-//                sessionRecord.setClientData(oneRecord.getClientData());
-//                sessionRecord.setStartedOn(oneRecord.getStartedOn());
-//                sessionRecord.setFinishedOn(oneRecord.getFinishedOn());
-//                sessionRecord.setDeclined(oneRecord.isDeclined());
             } else {
                 state.add(oneRecord);
             }
@@ -166,7 +161,7 @@ public class AdherenceService {
             sessionRecord.setEventTimestamp(asmt.getEventTimestamp());
         }
         if (state.updateSessionRecord(sessionRecord)) {
-            container.addSession(sessionRecord);
+            container.addRecord(sessionRecord);
         }
     }
 
@@ -188,7 +183,6 @@ public class AdherenceService {
                 request.objectType(ASSESSMENT);
                 request.objectId(meta.getAssessmentId());
             }
-            System.out.println(request);
             studyActivityEventService.publishEvent(request);
         }
     }
