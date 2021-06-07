@@ -689,6 +689,9 @@ ADD COLUMN `irbDecisionOn` varchar(12) DEFAULT NULL,
 ADD COLUMN `irbExpiresOn` varchar(12) DEFAULT NULL,
 ADD COLUMN `irbDecisionType` enum('EXEMPT','APPROVED') DEFAULT NULL;
 
+ALTER TABLE `TimelineMetadata`
+ADD COLUMN `timeWindowPersistent` tinyint(1) DEFAULT 0;
+
 DROP TABLE `AdherenceRecords`;
 
 CREATE TABLE `AdherenceRecords` (
@@ -700,10 +703,11 @@ CREATE TABLE `AdherenceRecords` (
   `eventTimestamp` bigint(20) unsigned,
   `finishedOn` bigint(20) unsigned,
   `uploadedOn` bigint(20) unsigned,
+  `instanceTimestamp` bigint(20) unsigned,
   `clientData` text COLLATE utf8_unicode_ci,
   `clientTimeZone` varchar(255),
   `declined` tinyint(1) DEFAULT 0,
-  PRIMARY KEY (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`),
+  PRIMARY KEY (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`),
   CONSTRAINT `AdherenceRecord-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `AdherenceRecord-Study-Constraint` FOREIGN KEY (`studyId`) REFERENCES `Substudies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

@@ -47,6 +47,7 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.SessionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
@@ -97,70 +98,70 @@ public class AdherenceService {
         CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
                 AuthEvaluatorField.STUDY_ID, recordList.getRecords().get(0).getStudyId(), 
                 AuthEvaluatorField.USER_ID, recordList.getRecords().get(0).getUserId());
-
-        for (AdherenceRecord record : recordList.getRecords()) {
+        
+        MetadataContainer container = new MetadataContainer(scheduleService, recordList.getRecords());
+        
+        // Update assessments
+        for (AdherenceRecord record : container.getAssessments()) {
+            TimelineMetadata meta = container.getMetadata(record.getInstanceGuid());
             dao.updateAdherenceRecord(record);
+            publishEvent(appId, meta, record);
         }
-        for (AdherenceRecord record : recordList.getRecords()) {
-            updateSessionState(appId, record);
+        // Update sessions implied by assessments
+        for (AdherenceRecord record : container.getAssessments()) {
+            updateSessionState(appId, container, record);
+        }
+        // Update sessions
+        for (AdherenceRecord record : container.getSessionUpdates()) {
+            TimelineMetadata sessionMeta = container.getMetadata(record.getInstanceGuid());
+            dao.updateAdherenceRecord(record);
+            publishEvent(appId, sessionMeta, record);
         }
     }
     
-    protected void updateSessionState(String appId, AdherenceRecord record) {
-        checkNotNull(appId);
-        checkNotNull(record);
+    protected void updateSessionState(String appId, MetadataContainer container, AdherenceRecord asmt) {
+        TimelineMetadata asmtMeta = container.getMetadata(asmt.getInstanceGuid());
+        String sessionInstanceGuid = asmtMeta.getSessionInstanceGuid();
+
+        List<TimelineMetadata> asmtMetas = scheduleService.getSessionAssessmentMetadata(sessionInstanceGuid);
+
+        Set<String> instanceGuids = asmtMetas.stream()
+                .map(TimelineMetadata::getAssessmentInstanceGuid)
+                .collect(toSet());
+        instanceGuids.add(sessionInstanceGuid);
         
-        TimelineMetadata meta = scheduleService.getTimelineMetadata(record.getInstanceGuid()).orElse(null);
-        if (meta == null) {
-            return;
-        }
-        publishEvent(appId, meta, record);
-
-        // If this is an assessment update, retrieve all session-related records
-        // and ensure the session’s started/finished state is correct
-        if (meta.getAssessmentInstanceGuid() != null) {
-            
-            String sessionInstanceGuid = meta.getSessionInstanceGuid();
-            
-            List<TimelineMetadata> asmtMetas = scheduleService.getSessionAssessmentMetadata(sessionInstanceGuid);
-
-            Set<String> instanceGuids = asmtMetas.stream()
-                    .map(TimelineMetadata::getAssessmentInstanceGuid)
-                    .collect(toSet());
-            instanceGuids.add(sessionInstanceGuid);
-            
-            AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
-                .withUserId(record.getUserId())
-                .withStudyId(record.getStudyId())
-                .withEventTimestamps(ImmutableMap.of(meta.getSessionStartEventId(), record.getEventTimestamp()))
-                .withInstanceGuids(instanceGuids).build();
-            
-            PagedResourceList<AdherenceRecord> allRecords = dao.getAdherenceRecords(search);
-            
-            AdherenceRecord sessionRecord = null;
-            SessionState state = new SessionState(asmtMetas.size());
-            
-            for (AdherenceRecord oneRecord : allRecords.getItems()) {
-                if (sessionInstanceGuid.equals(oneRecord.getInstanceGuid())) {
+        PagedResourceList<AdherenceRecord> allRecords = dao.getAdherenceRecords(new AdherenceRecordsSearch.Builder()
+                .withUserId(asmt.getUserId())
+                .withStudyId(asmt.getStudyId())
+                .withEventTimestamps(ImmutableMap.of(asmtMeta.getSessionStartEventId(), asmt.getEventTimestamp()))
+                .withInstanceGuids(instanceGuids).build());
+        
+        SessionState state = new SessionState();
+        
+        // The session record may have been submitted, it may be persisted, or
+        // it may not yet exist, and we take the records in that order.
+        AdherenceRecord sessionRecord = container.getRecord(sessionInstanceGuid);
+        for (AdherenceRecord oneRecord : allRecords.getItems()) {
+            if (sessionInstanceGuid.equals(oneRecord.getInstanceGuid())) {
+                // The record was persisted
+                if (sessionRecord == null) {
                     sessionRecord = oneRecord;
-                } else {
-                    state.add(oneRecord);
                 }
+            } else {
+                state.add(oneRecord);
             }
-            if (sessionRecord == null) {
-                sessionRecord = new AdherenceRecord();
-            }
-            sessionRecord.setAppId(record.getAppId());
-            sessionRecord.setUserId(record.getUserId());
-            sessionRecord.setStudyId(record.getStudyId());
+        }
+        // The record is new and needs to be created
+        if (sessionRecord == null) {
+            sessionRecord = new AdherenceRecord();
+            sessionRecord.setAppId(asmt.getAppId());
+            sessionRecord.setUserId(asmt.getUserId());
+            sessionRecord.setStudyId(asmt.getStudyId());
             sessionRecord.setInstanceGuid(sessionInstanceGuid);
-            sessionRecord.setEventTimestamp(record.getEventTimestamp());
-            
-            if (state.updateSessionRecord(sessionRecord)) {
-                dao.updateAdherenceRecord(sessionRecord);
-                TimelineMetadata sessionMeta = scheduleService.getTimelineMetadata(sessionInstanceGuid).orElse(null);
-                publishEvent(appId, sessionMeta, sessionRecord);
-            }
+            sessionRecord.setEventTimestamp(asmt.getEventTimestamp());
+        }
+        if (state.updateSessionRecord(sessionRecord)) {
+            container.addRecord(sessionRecord);
         }
     }
 

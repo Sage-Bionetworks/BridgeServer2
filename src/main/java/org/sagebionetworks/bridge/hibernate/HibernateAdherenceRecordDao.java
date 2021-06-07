@@ -38,7 +38,7 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         
         if (record.getStartedOn() == null && !record.isDeclined()) {
             AdherenceRecordId id = new AdherenceRecordId(record.getUserId(), record.getStudyId(),
-                    record.getInstanceGuid(), record.getEventTimestamp());
+                    record.getInstanceGuid(), record.getEventTimestamp(), record.getInstanceTimestamp());
             // Cannot delete if the record is already not there, so check for this.
             AdherenceRecord obj = hibernateHelper.getById(AdherenceRecord.class, id);
             if (obj != null) {
