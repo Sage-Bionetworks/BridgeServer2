@@ -198,6 +198,19 @@ public class SchedulerTest extends Mockito {
     }
     
     @Test
+    public void noAssessments() throws Exception {
+        Schedule2 schedule = createComplexSchedule();
+        for (Session session : schedule.getSessions()) {
+            session.setAssessments(ImmutableList.of());
+        }
+        
+        Timeline timeline = INSTANCE.calculateTimeline(schedule);
+        assertTrue(timeline.getSessions().isEmpty());
+        assertTrue(timeline.getAssessments().isEmpty());
+        assertTrue(timeline.getSchedule().isEmpty());
+    }
+    
+    @Test
     public void oneOneTimeSession() {
         Schedule2 schedule = createSchedule(null);
         
@@ -729,7 +742,7 @@ public class SchedulerTest extends Mockito {
             }
         }
         // There are 2,184 scheduled assessments and all must have a unique guid.
-        assertEquals(asmtInstanceGuids.size(), 2184);
+        assertEquals(asmtInstanceGuids.size(), 2366);
         
         // Just changing the schedule GUID will create 2,184 more unique GUIDs
         schedule.setGuid(ASSESSMENT_4_GUID);
@@ -739,7 +752,7 @@ public class SchedulerTest extends Mockito {
                 asmtInstanceGuids.add(schAsmt.getInstanceGuid());    
             }
         }
-        assertEquals(asmtInstanceGuids.size(), 4368);
+        assertEquals(asmtInstanceGuids.size(), 4732);
     }
     
     @Test
@@ -764,7 +777,7 @@ public class SchedulerTest extends Mockito {
             }
         }
         assertEquals(allGuids, allGuidsAgain);
-        assertEquals(allGuids.size(), 3458);
+        assertEquals(allGuids.size(), 3640);
     }
     
     @Test
@@ -816,7 +829,7 @@ public class SchedulerTest extends Mockito {
         
         List<TimelineMetadata> metadata = timeline.getMetadata();
         
-        assertEquals(metadata.size(), 3458);
+        assertEquals(metadata.size(), 3640);
         
         List<TimelineMetadata> sessionMetadata = metadata.stream()
                 .filter(m -> m.getAssessmentGuid() == null).collect(toList());
@@ -835,7 +848,7 @@ public class SchedulerTest extends Mockito {
         
         List<TimelineMetadata> asmtMetadata = metadata.stream()
                 .filter(m -> m.getAssessmentGuid() != null).collect(toList());
-        assertEquals(asmtMetadata.size(), 2184);
+        assertEquals(asmtMetadata.size(), 2366);
         
         TimelineMetadata am = asmtMetadata.get(0);
         assertEquals(am.getGuid(), am.getAssessmentInstanceGuid());
@@ -1124,6 +1137,7 @@ public class SchedulerTest extends Mockito {
         session1.setStartEventId("activities_retrieved");
         session1.setInterval(Period.parse("P2D"));
         session1.setPerformanceOrder(SEQUENTIAL);
+        session1.setAssessments(ImmutableList.of(createAssessmentRef(ASSESSMENT_1_GUID)));
         
         TimeWindow tw = new TimeWindow();
         tw.setGuid(SESSION_WINDOW_GUID_1);
@@ -1137,6 +1151,7 @@ public class SchedulerTest extends Mockito {
         session2.setStartEventId("enrollment");
         session2.setInterval(Period.parse("P1D"));
         session2.setPerformanceOrder(SEQUENTIAL);
+        session2.setAssessments(ImmutableList.of(createAssessmentRef(ASSESSMENT_2_GUID)));
         
         TimeWindow tw1 = new TimeWindow();
         tw1.setGuid(SESSION_WINDOW_GUID_2);

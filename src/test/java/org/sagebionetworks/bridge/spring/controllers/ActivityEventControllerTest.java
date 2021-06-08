@@ -129,7 +129,7 @@ public class ActivityEventControllerTest extends Mockito {
         StatusMessage message = controller.createCustomActivityEvent();
         assertEquals(message, EVENT_RECORDED_MSG);
         
-        verify(mockActivityEventService).publishCustomEvent(app, null, HEALTH_CODE, "foo", TIMESTAMP);
+        verify(mockActivityEventService).publishCustomEvent(app, HEALTH_CODE, "foo", TIMESTAMP);
     }
     
     @Test
@@ -139,7 +139,7 @@ public class ActivityEventControllerTest extends Mockito {
         StatusMessage retValue = controller.deleteCustomActivityEvent("eventKey");
         assertSame(retValue, EVENT_DELETED_MSG);
         
-        verify(mockActivityEventService).deleteCustomEvent(app, null, HEALTH_CODE, "eventKey");
+        verify(mockActivityEventService).deleteCustomEvent(app, HEALTH_CODE, "eventKey");
     }
     
     @Test
