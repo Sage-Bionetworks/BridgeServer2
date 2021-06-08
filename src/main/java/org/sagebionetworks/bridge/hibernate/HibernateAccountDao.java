@@ -86,16 +86,6 @@ public class HibernateAccountDao implements AccountDao {
     /** {@inheritDoc} */
     @Override
     public Optional<Account> getAccount(AccountId accountId) {
-        Optional<Account> optionalAccount = getAccountNoFilter(accountId);
-
-        if (optionalAccount.isPresent() && !RequestContext.get().isAdministrator()) {
-            optionalAccount.get().setNote(null);
-        }
-
-        return optionalAccount;
-    }
-
-    private Optional<Account> getAccountNoFilter(AccountId accountId) {
         HibernateAccount account = null;
 
         // The fastest retrieval can be done with the ID if it has been provided.

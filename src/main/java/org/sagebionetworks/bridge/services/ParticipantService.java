@@ -366,7 +366,9 @@ public class ParticipantService {
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
         builder.withSynapseUserId(account.getSynapseUserId());
         builder.withOrgMembership(account.getOrgMembership());
-        builder.withNote(account.getNote());
+        if (RequestContext.get().isAdministrator()) {
+            builder.withNote(account.getNote());
+        }
         return builder;
     }
     
@@ -576,7 +578,9 @@ public class ParticipantService {
         account.setNotifyByEmail(participant.isNotifyByEmail());
         account.setDataGroups(participant.getDataGroups());
         account.setLanguages(participant.getLanguages());
-        account.setNote(participant.getNote());
+        if (RequestContext.get().isAdministrator()) {
+            account.setNote(participant.getNote());
+        }
         account.setMigrationVersion(MIGRATION_VERSION);
        
         RequestContext requestContext = RequestContext.get();

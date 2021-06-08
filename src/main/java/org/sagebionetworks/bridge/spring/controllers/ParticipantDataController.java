@@ -41,7 +41,7 @@ public class ParticipantDataController extends BaseController {
     /**
      * User API to get a list identifiers for all of the user's participant data.
      */
-    @GetMapping("/v3/users/self/data")
+    @GetMapping("/Hv3/users/self/data")
     public ForwardCursorPagedResourceList<String> getAllDataForSelf(@RequestParam(required = false) String offsetKey,
                                                                     @RequestParam(required = false) String pageSize) {
         UserSession session = getAuthenticatedAndConsentedSession();
