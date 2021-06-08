@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence;
 
+import static org.sagebionetworks.bridge.BridgeUtils.nullSafeImmutableMap;
+import static org.sagebionetworks.bridge.BridgeUtils.nullSafeImmutableSet;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 
 import java.util.Map;
@@ -12,6 +14,7 @@ import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 /**
@@ -114,15 +117,15 @@ public class AdherenceRecordsSearch implements BridgeEntity {
     private AdherenceRecordsSearch(AdherenceRecordsSearch.Builder builder) {
         this.userId = builder.userId;
         this.studyId = builder.studyId;
-        this.instanceGuids = builder.instanceGuids;
-        this.instanceGuidStartedOnMap = builder.instanceGuidStartedOnMap;
-        this.assessmentIds = builder.assessmentIds;
-        this.sessionGuids = builder.sessionGuids;
-        this.timeWindowGuids = builder.timeWindowGuids;
+        this.instanceGuids = nullSafeImmutableSet(builder.instanceGuids);
+        this.instanceGuidStartedOnMap = nullSafeImmutableMap(builder.instanceGuidStartedOnMap);
+        this.assessmentIds = nullSafeImmutableSet(builder.assessmentIds);
+        this.sessionGuids = nullSafeImmutableSet(builder.sessionGuids);
+        this.timeWindowGuids = nullSafeImmutableSet(builder.timeWindowGuids);
         this.adherenceRecordType = builder.adherenceRecordType;
         this.includeRepeats = builder.includeRepeats;
         this.currentTimestampsOnly = builder.currentTimestampsOnly;
-        this.eventTimestamps = builder.eventTimestamps;
+        this.eventTimestamps = nullSafeImmutableMap(builder.eventTimestamps);
         this.startTime = builder.startTime;
         this.endTime = builder.endTime;
         this.offsetBy = builder.offsetBy;
@@ -198,15 +201,15 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         return new AdherenceRecordsSearch.Builder()
                 .withUserId(userId)
                 .withStudyId(studyId)
-                .withInstanceGuids(ImmutableSet.copyOf(instanceGuids))
-                .withInstanceGuidStartedOnMap(ImmutableMap.copyOf(instanceGuidStartedOnMap))
-                .withAssessmentIds(ImmutableSet.copyOf(assessmentIds))
-                .withSessionGuids(ImmutableSet.copyOf(sessionGuids))
-                .withTimeWindowGuids(ImmutableSet.copyOf(timeWindowGuids))
+                .withInstanceGuids(nullSafeImmutableSet(instanceGuids))
+                .withInstanceGuidStartedOnMap(nullSafeImmutableMap(instanceGuidStartedOnMap))
+                .withAssessmentIds(nullSafeImmutableSet(assessmentIds))
+                .withSessionGuids(nullSafeImmutableSet(sessionGuids))
+                .withTimeWindowGuids(nullSafeImmutableSet(timeWindowGuids))
                 .withAdherenceRecordType(adherenceRecordType)
                 .withIncludeRepeats(includeRepeats)
                 .withCurrentTimestampsOnly(currentTimestampsOnly)
-                .withEventTimestamps(ImmutableMap.copyOf(eventTimestamps))
+                .withEventTimestamps(nullSafeImmutableMap(eventTimestamps))
                 .withStartTime(startTime)
                 .withEndTime(endTime)
                 .withOffsetBy(offsetBy)
