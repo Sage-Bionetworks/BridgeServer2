@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence;
 
+import static com.google.common.base.Predicates.notNull;
+import static com.google.common.collect.FluentIterable.from;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 
 import java.util.Map;
@@ -7,6 +9,8 @@ import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.google.common.base.Predicates;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -198,11 +202,11 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         return new AdherenceRecordsSearch.Builder()
                 .withUserId(userId)
                 .withStudyId(studyId)
-                .withInstanceGuids(ImmutableSet.copyOf(instanceGuids))
+                .withInstanceGuids(from(instanceGuids).filter(notNull()).toSet())
                 .withInstanceGuidStartedOnMap(ImmutableMap.copyOf(instanceGuidStartedOnMap))
-                .withAssessmentIds(ImmutableSet.copyOf(assessmentIds))
-                .withSessionGuids(ImmutableSet.copyOf(sessionGuids))
-                .withTimeWindowGuids(ImmutableSet.copyOf(timeWindowGuids))
+                .withAssessmentIds(from(assessmentIds).filter(notNull()).toSet())
+                .withSessionGuids(from(sessionGuids).filter(notNull()).toSet())
+                .withTimeWindowGuids(from(timeWindowGuids).filter(notNull()).toSet())
                 .withAdherenceRecordType(adherenceRecordType)
                 .withIncludeRepeats(includeRepeats)
                 .withCurrentTimestampsOnly(currentTimestampsOnly)
