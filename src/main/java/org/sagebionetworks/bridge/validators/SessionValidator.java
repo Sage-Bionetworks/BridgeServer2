@@ -140,26 +140,22 @@ public class SessionValidator implements Validator {
             }
             validateTimeWindowOverlaps(errors, session);
         }
-        if (session.getAssessments().isEmpty()) {
-            errors.rejectValue(ASSESSMENTS_FIELD, CANNOT_BE_NULL_OR_EMPTY);
-        } else {
-            for (int i=0; i < session.getAssessments().size(); i++) {
-                AssessmentReference asmt = session.getAssessments().get(i);
-                
-                errors.pushNestedPath(ASSESSMENTS_FIELD+"["+i+"]");
-                if (isBlank(asmt.getGuid())) {
-                    errors.rejectValue(GUID_FIELD, CANNOT_BE_BLANK);
-                }
-                if (isBlank(asmt.getIdentifier())) {
-                    errors.rejectValue(IDENTIFIER_FIELD, CANNOT_BE_BLANK);
-                }
-                if (isBlank(asmt.getAppId())) {
-                    errors.rejectValue(APP_ID_FIELD, CANNOT_BE_BLANK);
-                }
-                validateLabels(errors, asmt.getLabels());
-                validateColorScheme(errors, asmt.getColorScheme(), COLOR_SCHEME_FIELD);
-                errors.popNestedPath();
+        for (int i=0; i < session.getAssessments().size(); i++) {
+            AssessmentReference asmt = session.getAssessments().get(i);
+            
+            errors.pushNestedPath(ASSESSMENTS_FIELD+"["+i+"]");
+            if (isBlank(asmt.getGuid())) {
+                errors.rejectValue(GUID_FIELD, CANNOT_BE_BLANK);
             }
+            if (isBlank(asmt.getIdentifier())) {
+                errors.rejectValue(IDENTIFIER_FIELD, CANNOT_BE_BLANK);
+            }
+            if (isBlank(asmt.getAppId())) {
+                errors.rejectValue(APP_ID_FIELD, CANNOT_BE_BLANK);
+            }
+            validateLabels(errors, asmt.getLabels());
+            validateColorScheme(errors, asmt.getColorScheme(), COLOR_SCHEME_FIELD);
+            errors.popNestedPath();
         }
         for (int i=0; i < session.getNotifications().size(); i++) {
             Notification notification = session.getNotifications().get(i);
