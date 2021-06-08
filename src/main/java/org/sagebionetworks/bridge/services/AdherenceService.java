@@ -136,7 +136,7 @@ public class AdherenceService {
                 .withEventTimestamps(ImmutableMap.of(asmtMeta.getSessionStartEventId(), asmt.getEventTimestamp()))
                 .withInstanceGuids(instanceGuids).build());
         
-        SessionState state = new SessionState();
+        SessionState state = new SessionState(asmtMetas.size());
         
         // The session record may have been submitted, it may be persisted, or
         // it may not yet exist, and we take the records in that order.

@@ -12,6 +12,9 @@ public class SessionState {
     int finished;
     int declined;
     
+    public SessionState(int total) {
+        this.total = total;
+    }
     boolean isUnstarted() {
         return started == 0;
     }
@@ -22,7 +25,6 @@ public class SessionState {
         return declined == total;
     }
     public void add(AdherenceRecord record) {
-        total++;
         if (record.getStartedOn() != null) {
             started++;
         }

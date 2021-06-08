@@ -546,6 +546,8 @@ public class AdherenceServiceTest extends Mockito {
         asmtMeta.setSessionStartEventId("enrollment");
         when(mockScheduleService.getTimelineMetadata("asmtInstanceGuid"))
             .thenReturn(Optional.of(asmtMeta));
+        when(mockScheduleService.getSessionAssessmentMetadata("sessionInstanceGuid"))
+            .thenReturn(ImmutableList.of(asmtMeta));
 
         AdherenceRecord session = new AdherenceRecord();
         session.setInstanceGuid("sessionInstanceGuid");
