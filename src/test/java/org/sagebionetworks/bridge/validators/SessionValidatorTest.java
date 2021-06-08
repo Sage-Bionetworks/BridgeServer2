@@ -319,13 +319,6 @@ public class SessionValidatorTest extends Mockito {
     }
     
     @Test
-    public void assessmentsNullOrEmpty() {
-        Session session = createValidSession();
-        session.setAssessments(null);
-        assertValidatorMessage(INSTANCE, session, ASSESSMENTS_FIELD, CANNOT_BE_NULL_OR_EMPTY);
-    }    
-
-    @Test
     public void assessmentRefGuidNull() {
         Session session = createValidSession();
         session.getAssessments().get(0).setGuid(null);
