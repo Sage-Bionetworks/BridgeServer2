@@ -363,9 +363,7 @@ public class UserAdminServiceTest {
         verify(notificationsService).deleteAllRegistrations(app.getIdentifier(), "healthCode");
         verify(uploadService).deleteUploadsForHealthCode("healthCode");
         verify(scheduledActivityService).deleteActivitiesForUser("healthCode");
-        verify(activityEventService, atLeastOnce()).deleteActivityEvents("studyA", "healthCode");
-        verify(activityEventService, atLeastOnce()).deleteActivityEvents("studyB", "healthCode");
-        verify(activityEventService, atLeastOnce()).deleteActivityEvents(null, "healthCode");
+        verify(activityEventService, atLeastOnce()).deleteActivityEvents("healthCode");
         verify(accountService).deleteAccount(accountId);
         
         assertEquals(account.getHealthCode(), "healthCode");
@@ -384,7 +382,7 @@ public class UserAdminServiceTest {
         verify(notificationsService, never()).deleteAllRegistrations(any(), any());
         verify(uploadService, never()).deleteUploadsForHealthCode(any());
         verify(scheduledActivityService, never()).deleteActivitiesForUser(any());
-        verify(activityEventService, never()).deleteActivityEvents(any(), any());
+        verify(activityEventService, never()).deleteActivityEvents(any());
         verify(accountService, never()).deleteAccount(any());
     }
 }

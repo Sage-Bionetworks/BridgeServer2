@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
@@ -24,7 +23,6 @@ public class ActivityEventValidatorTest {
     private DynamoActivityEvent.Builder getEvent() {
         return new DynamoActivityEvent.Builder()
                 .withHealthCode(HEALTH_CODE)
-                .withStudyId(TEST_STUDY_ID)
                 .withTimestamp(CREATED_ON)
                 .withObjectType(CUSTOM)
                 .withUpdateType(FUTURE_ONLY)
