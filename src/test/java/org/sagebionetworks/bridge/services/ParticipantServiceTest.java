@@ -2457,6 +2457,72 @@ public class ParticipantServiceTest extends Mockito {
         verify(sqsClient).sendMessage(queueUrl, requestJson);
     }
 
+    @Test
+    public void updateParticipantNoteSuccessfulAsAdmin() {
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+
+        assertNull(account.getFirstName());
+        assertNull(account.getNote());
+
+        StudyParticipant participant = withParticipant()
+                .withFirstName(FIRST_NAME)
+                .withNote(TEST_NOTE)
+                .build();
+        participantService.updateParticipant(APP, participant);
+
+        assertEquals(FIRST_NAME, account.getFirstName());
+        assertEquals(TEST_NOTE, account.getNote());
+    }
+
+    @Test
+    public void updateParticipantNoteUnsuccessfulAsNonAdmin() {
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        RequestContext.set(new RequestContext.Builder()
+                .build());
+
+        assertNull(account.getFirstName());
+        assertNull(account.getNote());
+
+        StudyParticipant participant = withParticipant()
+                .withFirstName(FIRST_NAME)
+                .withNote(TEST_NOTE)
+                .build();
+        participantService.updateParticipant(APP, participant);
+
+        assertEquals(FIRST_NAME, account.getFirstName());
+        assertNull(account.getNote());
+    }
+
+    @Test
+    public void getParticipantDoesNotHaveNoteAsNonAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(ID)
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+
+        account.setId(ID);
+        account.setNote(TEST_NOTE);
+
+        when(accountService.getAccount(any())).thenReturn(account);
+
+        // Verifying that the note exists as Admin
+        StudyParticipant adminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
+        assertEquals(adminRetrieved.getId(), CONTEXT.getUserId());
+        assertEquals(TEST_NOTE, adminRetrieved.getNote());
+
+        // Removing Admin role from request and verifying the note is not retrieved
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(ID)
+                .build());
+
+        StudyParticipant nonAdminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
+        assertEquals(nonAdminRetrieved.getId(), CONTEXT.getUserId());
+        assertNull(nonAdminRetrieved.getNote());
+    }
+
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 
     // way to get correct paging.
     
