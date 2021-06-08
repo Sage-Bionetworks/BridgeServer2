@@ -35,7 +35,6 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
-import org.sagebionetworks.bridge.time.DateUtils;
 
 @CrossOrigin
 @RestController
@@ -105,8 +104,10 @@ public class ActivityEventController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
         
+        DateTime timelineRequestedOn = getDateTime();
+        
         RequestInfo requestInfo = getRequestInfoBuilder(session)
-                .withTimelineAccessedOn(getDateTime()).build();
+                .withTimelineAccessedOn(timelineRequestedOn).build();
         requestInfoService.updateRequestInfo(requestInfo);
         
         studyActivityEventService.publishEvent(new StudyActivityEventRequest()
@@ -114,7 +115,7 @@ public class ActivityEventController extends BaseController {
                 .studyId(studyId)
                 .userId(session.getId())
                 .objectType(TIMELINE_RETRIEVED)
-                .timestamp(getDateTime()));
+                .timestamp(timelineRequestedOn));
 
         return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), session.getId(), studyId);
     }

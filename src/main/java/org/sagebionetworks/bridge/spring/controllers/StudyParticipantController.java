@@ -142,8 +142,10 @@ public class StudyParticipantController extends BaseController {
             throw new UnauthorizedException("Caller is not enrolled in study '" + studyId + "'");
         }
 
+        DateTime timelineRequestedOn = getDateTime();        
+        
         RequestInfo requestInfo = getRequestInfoBuilder(session)
-                .withTimelineAccessedOn(getDateTime()).build();
+                .withTimelineAccessedOn(timelineRequestedOn).build();
         requestInfoService.updateRequestInfo(requestInfo);
         
         Study study = studyService.getStudy(session.getAppId(), studyId, true);
@@ -161,7 +163,7 @@ public class StudyParticipantController extends BaseController {
                 .studyId(studyId)
                 .userId(session.getId())
                 .objectType(TIMELINE_RETRIEVED)
-                .timestamp(getDateTime()));
+                .timestamp(timelineRequestedOn));
         
         return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
     }
