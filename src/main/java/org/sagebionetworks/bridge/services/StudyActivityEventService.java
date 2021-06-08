@@ -6,11 +6,14 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAutoEventValue;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.DELETE_INSTANCE;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.CREATE_INSTANCE;
 
 import java.util.ArrayList;
@@ -35,6 +38,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
@@ -44,11 +48,18 @@ import org.sagebionetworks.bridge.validators.Validate;
  * system could not maintain, including a client time zone. This API will replace 
  * the v1 API, so some events that span all studies (like the creation of an 
  * account) are also in the events returned by this system. 
+ * 
+ * The code in this class to insert an enrollment event, when there is no enrollment
+ * event in the tables, is backfill code for accounts that were created and enrolled 
+ * in a study before the deployment of study-specific events. There is no apparent 
+ * reason to actually save them in the table at this point since the records should
+ * only be accessed through this service.
  */
 @Component
 public class StudyActivityEventService {
     
-    private static final String CREATED_ON_FIELD = CREATED_ON.name().toLowerCase();
+    static final String CREATED_ON_FIELD = CREATED_ON.name().toLowerCase();
+    static final String ENROLLMENT_FIELD = ENROLLMENT.name().toLowerCase();
 
     private StudyActivityEventDao dao;
     private AppService appService;
@@ -123,41 +134,34 @@ public class StudyActivityEventService {
 
         List<StudyActivityEvent> events = dao.getRecentStudyActivityEvents(userId, studyId);
         events.add(new StudyActivityEvent(CREATED_ON_FIELD, account.getCreatedOn()));
+        addEnrollmentIfMissing(account, events, studyId);
         
         return new ResourceList<>(events); 
     }
     
     public PagedResourceList<StudyActivityEvent> getStudyActivityEventHistory(
-            StudyActivityEventRequest request, Integer offsetBy, Integer pageSize) {
-        checkNotNull(request);
+            AccountId accountId, String studyId, String eventId, Integer offsetBy, Integer pageSize) {
         
+        if (eventId == null) {
+            throw new BadRequestException("Event ID is required");
+        }
         if (offsetBy != null && offsetBy < 0) {
             throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
         }
         if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        String originalEventId = request.getObjectId();
-        
-        String appId = request.getAppId();
-        App app = appService.getApp(appId);
-        
-        request.customEvents(app.getCustomEvents());
-        request.autoCustomEvents(app.getAutomaticCustomEvents());
-        
-        String userId = request.getUserId();
-        String studyId = request.getStudyId();
-        String eventId = request.getObjectId();
-        
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        App app = appService.getApp(accountId.getAppId());
+        eventId = formatActivityEventId(app.getCustomEvents().keySet(), eventId);
         if (eventId == null) {
-            throw new BadRequestException("Invalid event ID: " + originalEventId);
+            throw new BadRequestException(INVALID_EVENT_ID);
         }
-        // These need to be emulated in the history view, so they don't confuse consumers
+        
+        // createdOn needs to be emulated in the history view, so it doesn't confuse consumers
         if (eventId.equals(CREATED_ON_FIELD)) {
-            
-            Account account = accountService.getAccountNoFilter(AccountId.forId(appId, userId))
-                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
-            
             List<StudyActivityEvent> events = new ArrayList<>();
             events.add(new StudyActivityEvent(CREATED_ON_FIELD, account.getCreatedOn()));
             
@@ -165,8 +169,19 @@ public class StudyActivityEventService {
                     .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
                     .withRequestParam(ResourceList.PAGE_SIZE, pageSize);    
         }
-        return dao.getStudyActivityEventHistory(userId, studyId, eventId, offsetBy, pageSize)
-            .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
+        
+        PagedResourceList<StudyActivityEvent> results = dao.getStudyActivityEventHistory(
+                account.getId(), studyId, eventId, offsetBy, pageSize);
+        
+        if (eventId.equals(ENROLLMENT_FIELD) && results.getItems().size() == 0) {
+            Enrollment en = findEnrollmentByStudyId(account, studyId);
+            if (en != null) {
+                List<StudyActivityEvent> events = new ArrayList<>();
+                events.add(new StudyActivityEvent(ENROLLMENT_FIELD, en.getEnrolledOn()));
+                results = new PagedResourceList<>(events, 1, true);
+            }
+        }
+        return results.withRequestParam(ResourceList.OFFSET_BY, offsetBy)
             .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
     }
     
@@ -194,5 +209,28 @@ public class StudyActivityEventService {
                 dao.publishEvent(automaticEvent);
             }
         }        
+    }
+    
+    private void addEnrollmentIfMissing(Account account, List<StudyActivityEvent> events, String studyId) {
+        // if events do not include enrollment, you can include it. This provides some
+        // migration support.
+        for (StudyActivityEvent oneEvent : events) {
+            if (oneEvent.getEventId().equals(ENROLLMENT_FIELD)) {
+                return;
+            }
+        }
+        Enrollment en = findEnrollmentByStudyId(account, studyId);
+        if (en != null) {
+            events.add(new StudyActivityEvent(ENROLLMENT_FIELD, en.getEnrolledOn()));
+        }
+    }
+    
+    private Enrollment findEnrollmentByStudyId(Account account, String studyId) {
+        for (Enrollment oneEnrollment : account.getEnrollments()) {
+            if (oneEnrollment.getStudyId().equals(studyId)) {
+                return oneEnrollment;
+            }
+        }
+        return null;
     }
 }

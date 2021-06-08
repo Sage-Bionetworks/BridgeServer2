@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.APP;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.EMAIL;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.EMAIL_PHONE_OR_EXTID;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PASSWORD;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.PHONE;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.TOKEN;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.SignInValidator.RequiredFields.REAUTH;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
@@ -22,28 +22,27 @@ import org.springframework.validation.Validator;
 public class SignInValidator implements Validator {
     
     /** Request to sign in via email. */
-    public static final SignInValidator EMAIL_SIGNIN_REQUEST = new SignInValidator(EnumSet.of(APP, EMAIL));
+    public static final SignInValidator EMAIL_SIGNIN_REQUEST = new SignInValidator(EnumSet.of(EMAIL));
     /** Sign in using token sent through email. */    
-    public static final SignInValidator EMAIL_SIGNIN = new SignInValidator(EnumSet.of(APP, EMAIL, TOKEN));
+    public static final SignInValidator EMAIL_SIGNIN = new SignInValidator(EnumSet.of(EMAIL, TOKEN));
 
     /** Request to sign in via phone. */
-    public static final SignInValidator PHONE_SIGNIN_REQUEST = new SignInValidator(EnumSet.of(APP, PHONE));
+    public static final SignInValidator PHONE_SIGNIN_REQUEST = new SignInValidator(EnumSet.of(PHONE));
     /** Sign in using token sent through SMS. */
-    public static final SignInValidator PHONE_SIGNIN = new SignInValidator(EnumSet.of(APP, PHONE, TOKEN));
+    public static final SignInValidator PHONE_SIGNIN = new SignInValidator(EnumSet.of(PHONE, TOKEN));
 
     /** Request a reset password link via email or SMS. */
-    public static final SignInValidator REQUEST_RESET_PASSWORD = new SignInValidator(EnumSet.of(APP, EMAIL_PHONE_OR_EXTID));
+    public static final SignInValidator REQUEST_RESET_PASSWORD = new SignInValidator(EnumSet.of(EMAIL_PHONE_OR_EXTID));
     
     /** The basics of a sign in that must be present for the admin create user API. */
-    public static final SignInValidator MINIMAL = new SignInValidator(EnumSet.of(APP, EMAIL_PHONE_OR_EXTID));
+    public static final SignInValidator MINIMAL = new SignInValidator(EnumSet.of(EMAIL_PHONE_OR_EXTID));
     
     /** Sign in using an email and password. */
-    public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(EnumSet.of(APP, EMAIL_PHONE_OR_EXTID, PASSWORD));
+    public static final SignInValidator PASSWORD_SIGNIN = new SignInValidator(EnumSet.of(EMAIL_PHONE_OR_EXTID, PASSWORD));
     /** Reauthentication. */
-    public static final SignInValidator REAUTH_SIGNIN = new SignInValidator(EnumSet.of(APP, EMAIL_PHONE_OR_EXTID, REAUTH));
+    public static final SignInValidator REAUTH_SIGNIN = new SignInValidator(EnumSet.of(EMAIL_PHONE_OR_EXTID, REAUTH));
     
     static enum RequiredFields {
-        APP,
         EMAIL,
         EMAIL_PHONE_OR_EXTID,
         PASSWORD,
@@ -67,7 +66,7 @@ public class SignInValidator implements Validator {
     public void validate(Object object, Errors errors) {
         SignIn signIn = (SignIn)object;
         
-        if (requiredFields.contains(APP) && isBlank(signIn.getAppId())) {
+        if (isBlank(signIn.getAppId())) {
             errors.rejectValue("appId", "is required");
         }
         if (requiredFields.contains(EMAIL) && isBlank(signIn.getEmail())) {
@@ -93,7 +92,7 @@ public class SignInValidator implements Validator {
                 errors.reject("only provide one of email, phone, or external ID");
             }
             if (signIn.getPhone() != null && !Phone.isValid(signIn.getPhone())) {
-                errors.rejectValue("phone", "does not appear to be a phone number");
+                errors.rejectValue("phone", INVALID_PHONE_ERROR);
             }
         }
         if (requiredFields.contains(TOKEN) && isBlank(signIn.getToken())) {
@@ -106,7 +105,7 @@ public class SignInValidator implements Validator {
             if (signIn.getPhone() == null) {
                 errors.rejectValue("phone", "is required");
             } else if (!Phone.isValid(signIn.getPhone())) {
-                errors.rejectValue("phone", "does not appear to be a phone number");
+                errors.rejectValue("phone", INVALID_PHONE_ERROR);
             }
         }
     }

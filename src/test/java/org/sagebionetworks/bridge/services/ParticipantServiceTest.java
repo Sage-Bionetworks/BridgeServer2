@@ -2114,7 +2114,7 @@ public class ParticipantServiceTest extends Mockito {
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals(e.getErrors().get("externalIds[studyId].externalId").get(0),
-                    "externalIds[studyId].externalId cannot be blank");
+                    "externalIds[studyId].externalId cannot be null or blank");
         }
     }
     

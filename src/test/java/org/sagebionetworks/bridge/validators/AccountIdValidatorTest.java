@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 
 import org.testng.annotations.Test;
 
@@ -64,7 +65,7 @@ public class AccountIdValidatorTest {
     public void phoneValid() throws Exception {
         AccountId accountId = createId("{'appId':'" + TEST_APP_ID + "','phone':"+
                 "{'number':'4082588569','regionCode':'MX'}}");
-        assertValidatorMessage(AccountIdValidator.getInstance(ChannelType.PHONE), accountId, "phone", "does not appear to be a phone number");
+        assertValidatorMessage(AccountIdValidator.getInstance(ChannelType.PHONE), accountId, "phone", INVALID_PHONE_ERROR);
     }
     
     private AccountId createId(String json) throws Exception {

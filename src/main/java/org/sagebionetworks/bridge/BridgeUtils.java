@@ -58,7 +58,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -735,12 +734,13 @@ public class BridgeUtils {
                 return "custom:" + id;
             }
             try {
-                ActivityEventObjectType.valueOf(id.toUpperCase());
+                String[] parts = id.split(":");
+                ActivityEventObjectType.valueOf(parts[0].toUpperCase());
             } catch(IllegalArgumentException e) {
                 return null;
             }
         }
-        return (id == null) ? null : id.toLowerCase();
+        return (id == null) ? null : id;
     }
     
     /**
@@ -766,15 +766,5 @@ public class BridgeUtils {
             }
         }
         return defaultValue;
-    }
-    
-    public static StudyActivityEvent findByEventId(List<StudyActivityEvent> events, ActivityEventObjectType type) {
-        String eventId = type.name().toLowerCase();
-        for (StudyActivityEvent oneEvent : events) {
-            if (oneEvent.getEventId().equals(eventId)) {
-                return oneEvent;
-            }
-        }
-        return null;
     }
 }

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -12,7 +13,6 @@ import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.spring.controllers.ActivityEventController.EVENT_DELETED_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.ActivityEventController.EVENT_RECORDED_MSG;
@@ -228,21 +228,15 @@ public class ActivityEventControllerTest extends Mockito {
         
         List<StudyActivityEvent> list = ImmutableList.of(new StudyActivityEvent(), new StudyActivityEvent());
         PagedResourceList<StudyActivityEvent> page = new PagedResourceList<StudyActivityEvent>(list, 100, true);
-        when(mockStudyActivityEventService.getStudyActivityEventHistory(any(), any(), any()))
+        when(mockStudyActivityEventService.getStudyActivityEventHistory(any(), any(), any(), any(), any()))
             .thenReturn(page);
 
         ResourceList<StudyActivityEvent> retValue = controller.getActivityEventHistoryForSelf(
                 TEST_STUDY_ID, "eventKey", "100", "200");
         assertSame(retValue, page);
         
-        verify(mockStudyActivityEventService).getStudyActivityEventHistory(requestCaptor.capture(), 
-                eq(Integer.valueOf(100)), eq(Integer.valueOf(200)));
-        StudyActivityEventRequest request = requestCaptor.getValue();
-        assertEquals(request.getAppId(), TEST_APP_ID);
-        assertEquals(request.getStudyId(), TEST_STUDY_ID);
-        assertEquals(request.getUserId(), TEST_USER_ID);
-        assertEquals(request.getObjectId(), "eventKey");
-        assertEquals(request.getObjectType(), CUSTOM);
+        verify(mockStudyActivityEventService).getStudyActivityEventHistory(
+                ACCOUNT_ID, TEST_STUDY_ID, "eventKey", Integer.valueOf(100), Integer.valueOf(200));
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -270,15 +264,15 @@ public class ActivityEventControllerTest extends Mockito {
         
         List<StudyActivityEvent> list = ImmutableList.of(new StudyActivityEvent(), new StudyActivityEvent());
         PagedResourceList<StudyActivityEvent> page = new PagedResourceList<StudyActivityEvent>(list, 100, true);
-        when(mockStudyActivityEventService.getStudyActivityEventHistory(any(), any(), any()))
+        when(mockStudyActivityEventService.getStudyActivityEventHistory(any(), any(), any(), any(), any()))
             .thenReturn(page);
 
         ResourceList<StudyActivityEvent> retValue = controller.getActivityEventHistoryForSelf(
                 TEST_STUDY_ID, "eventKey", null, null);
         assertSame(retValue, page);
         
-        verify(mockStudyActivityEventService).getStudyActivityEventHistory(any(), 
-                eq(Integer.valueOf(0)), eq(Integer.valueOf(50)));
+        verify(mockStudyActivityEventService).getStudyActivityEventHistory( 
+                ACCOUNT_ID, TEST_STUDY_ID, "eventKey", Integer.valueOf(0), Integer.valueOf(50));
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,

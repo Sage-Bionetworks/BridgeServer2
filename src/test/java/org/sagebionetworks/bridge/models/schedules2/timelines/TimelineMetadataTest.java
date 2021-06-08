@@ -31,6 +31,7 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(meta.getScheduleGuid(), "scheduleGuid");
         assertEquals(meta.getScheduleModifiedOn(), MODIFIED_ON);
         assertTrue(meta.isSchedulePublished());
+        assertTrue(meta.isTimeWindowPersistent());
         assertEquals(meta.getAppId(), "appId");
     }
 
@@ -52,6 +53,7 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(copy.getScheduleGuid(), "scheduleGuid");
         assertEquals(copy.getScheduleModifiedOn(), MODIFIED_ON);
         assertTrue(copy.isSchedulePublished());
+        assertTrue(copy.isTimeWindowPersistent());
         assertEquals(copy.getAppId(), "appId");
     }
     
@@ -72,6 +74,7 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(map.get("sessionInstanceStartDay"), "5");
         assertEquals(map.get("sessionInstanceEndDay"), "15");
         assertEquals(map.get("timeWindowGuid"), SESSION_WINDOW_GUID_1);
+        assertEquals(map.get("timeWindowPersistent"), "true");
         assertEquals(map.get("scheduleGuid"), "scheduleGuid");
         assertEquals(map.get("scheduleModifiedOn"), MODIFIED_ON.toString());
         assertEquals(map.get("schedulePublished"), "true");
@@ -90,6 +93,7 @@ public class TimelineMetadataTest extends Mockito {
         meta.setSessionInstanceStartDay(5);
         meta.setSessionInstanceEndDay(15);
         meta.setTimeWindowGuid(SESSION_WINDOW_GUID_1);
+        meta.setTimeWindowPersistent(true);
         meta.setScheduleGuid("scheduleGuid");
         meta.setScheduleModifiedOn(MODIFIED_ON);
         meta.setSchedulePublished(true);

@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.validators.Validate.USER_ID_FIELD;
 
 import com.google.common.collect.ImmutableList;
 
+import org.joda.time.DateTime;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
@@ -80,10 +81,11 @@ public class AdherenceRecordListValidatorTest extends Mockito {
     }
     
     @Test
-    public void startedOnNull() {
+    public void startedAfterFinishedOn() {
         AdherenceRecord record = new AdherenceRecord();
-        record.setStartedOn(null);
-        assertValidatorMessage(INSTANCE, asList(record), asField(STARTED_ON_FIELD), CANNOT_BE_NULL);
+        record.setStartedOn(DateTime.now());
+        record.setFinishedOn(DateTime.now().minusHours(1));
+        assertValidatorMessage(INSTANCE, asList(record), asField(STARTED_ON_FIELD), "cannot be later than finishedOn");
     }
     
     @Test
@@ -103,13 +105,13 @@ public class AdherenceRecordListValidatorTest extends Mockito {
     @Test
     public void validatesMultiple() {
         AdherenceRecord rec1 = TestUtils.getAdherenceRecord(GUID);
-        rec1.setStartedOn(null);
+        rec1.setEventTimestamp(null);
         AdherenceRecord rec2 = TestUtils.getAdherenceRecord(GUID);
         rec2.setStudyId(null);
         AdherenceRecordList list = asList(rec1, rec2);
         
         assertValidatorMessage(INSTANCE, list, 
-                asField(STARTED_ON_FIELD), CANNOT_BE_NULL);
+                asField(EVENT_TIMESTAMP_FIELD), CANNOT_BE_NULL);
         assertValidatorMessage(INSTANCE, list, 
                 "records[1]."+STUDY_ID_FIELD, CANNOT_BE_BLANK);
     }
