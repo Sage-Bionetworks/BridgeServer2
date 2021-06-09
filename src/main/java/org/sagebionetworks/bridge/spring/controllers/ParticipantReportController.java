@@ -138,7 +138,7 @@ public class ParticipantReportController extends BaseController {
         
         CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, account.getId());
         
-        return getParticipantReportInternal(session.getAppId(), account, identifier, startDate, endDate);
+        return getParticipantReportInternal(session.getAppId(), account.getHealthCode(), identifier, startDate, endDate);
     }
 
     /** Worker API to get reports for the given user in the given app by date. */
@@ -149,21 +149,18 @@ public class ParticipantReportController extends BaseController {
             @RequestParam(required = false) String endDate) {
         getAuthenticatedSession(WORKER);
         
-        AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        String healthCode = accountService.getAccountHealthCode(appId, userIdToken)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
-        return getParticipantReportInternal(appId, account, reportId, startDate, endDate);
+        return getParticipantReportInternal(appId, healthCode, reportId, startDate, endDate);
     }
 
-    private DateRangeResourceList<? extends ReportData> getParticipantReportInternal(String appId, Account account, String reportId,
+    private DateRangeResourceList<? extends ReportData> getParticipantReportInternal(String appId, String healthCode, String reportId,
             String startDateString, String endDateString) {
         LocalDate startDate = getLocalDateOrDefault(startDateString, null);
         LocalDate endDate = getLocalDateOrDefault(endDateString, null);
 
-        return reportService.getParticipantReport(appId, reportId, account.getHealthCode(), startDate, endDate);
+        return reportService.getParticipantReport(appId, reportId, healthCode, startDate, endDate);
     }
 
     /** API to get reports for the given user by date-time. */
@@ -182,7 +179,7 @@ public class ParticipantReportController extends BaseController {
         
         CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, session.getId());
         
-        return getParticipantReportInternalV4(session.getAppId(), account, identifier, 
+        return getParticipantReportInternalV4(session.getAppId(), account.getHealthCode(), identifier, 
                 startTime, endTime, offsetKey, pageSize);
     }
 
@@ -195,22 +192,20 @@ public class ParticipantReportController extends BaseController {
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize) {
         getAuthenticatedSession(WORKER);
         
-        AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        return getParticipantReportInternalV4(appId, account, reportId, startTime, endTime, offsetKey, pageSize);
+        String healthCode = accountService.getAccountHealthCode(appId, userIdToken)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        return getParticipantReportInternalV4(appId, healthCode, reportId, startTime, endTime, offsetKey, pageSize);
     }
 
     // Helper method, shared by both getParticipantReportV4() and getParticipantReportForWorkerV4().
-    private ForwardCursorPagedResourceList<ReportData> getParticipantReportInternalV4(String appId, Account account,
+    private ForwardCursorPagedResourceList<ReportData> getParticipantReportInternalV4(String appId, String healthCode,
             String reportId, String startTimeString, String endTimeString, String offsetKey, String pageSizeString) {
         DateTime startTime = getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = getDateTimeOrDefault(endTimeString, null);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
 
-        return reportService.getParticipantReportV4(appId, reportId, account.getHealthCode(), 
+        return reportService.getParticipantReportV4(appId, reportId, healthCode, 
                 startTime, endTime, offsetKey, pageSize);
     }
 

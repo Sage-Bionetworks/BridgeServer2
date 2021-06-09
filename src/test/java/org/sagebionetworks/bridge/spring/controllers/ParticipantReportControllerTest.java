@@ -249,7 +249,8 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test
     public void getParticipantReportForWorkerV4_DefaultParams() throws Exception {
         // Mock dependencies
-        when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountHealthCode(TEST_APP_ID, OTHER_PARTICIPANT_ID))
+            .thenReturn(Optional.of(HEALTH_CODE));
 
         ForwardCursorPagedResourceList<ReportData> expectedPage = makePagedResults(START_TIME, END_TIME, null,
                 API_DEFAULT_PAGE_SIZE);
@@ -270,7 +271,8 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test
     public void getParticipantReportForWorkerV4_OptionalParams() throws Exception {
         // Mock dependencies
-        when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountHealthCode(TEST_APP_ID, OTHER_PARTICIPANT_ID))
+            .thenReturn(Optional.of(HEALTH_CODE));
 
         ForwardCursorPagedResourceList<ReportData> expectedPage = makePagedResults(START_TIME, END_TIME, OFFSET_KEY,
                 PAGE_SIZE_INT);
@@ -347,7 +349,8 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test
     public void getParticipantReportForWorker_DefaultParams() throws Exception {
         // Mock dependencies
-        when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountHealthCode(TEST_APP_ID, OTHER_PARTICIPANT_ID))
+            .thenReturn(Optional.of(HEALTH_CODE));
 
         DateRangeResourceList<ReportData> expectedPage = makeResults(START_DATE, END_DATE);
         doReturn(expectedPage).when(mockReportService).getParticipantReport(TEST_APP_ID, REPORT_ID, HEALTH_CODE,
@@ -365,7 +368,8 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test
     public void getParticipantReportForWorker_OptionalParams() throws Exception {
         // Mock dependencies
-        when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccountHealthCode(TEST_APP_ID, OTHER_PARTICIPANT_ID))
+            .thenReturn(Optional.of(HEALTH_CODE));
 
         DateRangeResourceList<ReportData> expectedPage = makeResults(START_DATE, END_DATE);
         doReturn(expectedPage).when(mockReportService).getParticipantReport(TEST_APP_ID, REPORT_ID, HEALTH_CODE,
