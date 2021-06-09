@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import com.google.common.collect.Sets;
 
@@ -358,18 +359,23 @@ public class AccountService {
         return accountDao.getPagedAccountSummaries(appId, search);
     }
     
-    /**
-     * For MailChimp, and other external systems, we need a way to get a healthCode for a given email.
-     */
-    public String getHealthCodeForAccount(AccountId accountId) {
-        checkNotNull(accountId);
-        
-        Account account = getAccount(accountId);
-        if (account != null) {
-            return account.getHealthCode();
-        } else {
-            return null;
+    public Optional<String> getAccountHealthCode(String appId, String userIdToken) {
+        return getAccountField(appId, userIdToken, Account::getHealthCode);
+    }
+    
+    public Optional<String> getAccountId(String appId, String userIdToken) {
+        return getAccountField(appId, userIdToken, Account::getId);
+    }
+    
+    private Optional<String> getAccountField(String appId, String userIdToken, Function<Account,String> func) {
+        if (appId != null && userIdToken != null) {
+            AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
+            Account account = getAccount(accountId);
+            if (account != null) {
+                return Optional.ofNullable(func.apply(account));
+            }
         }
+        return Optional.empty();
     }
     
     protected Account authenticateInternal(App app, Account account, SignIn signIn) {

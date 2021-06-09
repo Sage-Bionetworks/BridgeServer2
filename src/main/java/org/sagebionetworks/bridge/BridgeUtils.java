@@ -245,6 +245,8 @@ public class BridgeUtils {
             return AccountId.forSynapseUserId(appId, userIdToken.substring(14));
         } else if (id.startsWith("syn:")) {
             return AccountId.forSynapseUserId(appId, userIdToken.substring(4));
+        } else if (id.startsWith("email:")) {
+            return AccountId.forEmail(appId, userIdToken.substring(6));
         }
         return AccountId.forId(appId, userIdToken);
     }

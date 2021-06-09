@@ -1407,6 +1407,8 @@ public class StudyParticipantControllerTest extends Mockito {
         doReturn(session).when(controller).getAdministrativeSession();
         
         Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
         Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(en));
         when(mockAccountService.getAccount(any())).thenReturn(account);

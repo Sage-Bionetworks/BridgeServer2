@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertDatesWithTimeZoneEqual;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;

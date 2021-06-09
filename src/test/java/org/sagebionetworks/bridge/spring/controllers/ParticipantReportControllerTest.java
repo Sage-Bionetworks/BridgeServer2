@@ -20,6 +20,7 @@ import static org.testng.Assert.fail;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -127,9 +128,7 @@ public class ParticipantReportControllerTest extends Mockito {
         
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withRoles(Sets.newHashSet(DEVELOPER)).build();
-        
-        doReturn(mockOtherAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
-        
+
         ConsentStatus status = new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("GUID"))
                 .withConsented(true).withRequired(true).withSignedMostRecentConsent(true).build();
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
@@ -292,11 +291,8 @@ public class ParticipantReportControllerTest extends Mockito {
 
     @Test
     public void getParticipantReportDataAsResearcher() throws Exception {
-        // No consents so user is not consented, but is a researcher and can also see these reports
-        session.setConsentStatuses(Maps.newHashMap());
-        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
-                .withRoles(Sets.newHashSet(RESEARCHER)).build();
-        session.setParticipant(participant);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
         doReturn(mockAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
         
@@ -317,7 +313,8 @@ public class ParticipantReportControllerTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
                 .withId(OTHER_PARTICIPANT_ID).withRoles(Sets.newHashSet(DEVELOPER)).build();
         session.setParticipant(participant);
-        
+
+        when(mockAccount.getId()).thenReturn(OTHER_PARTICIPANT_ID);
         doReturn(mockAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
         
         doReturn(makeResults(START_DATE, END_DATE)).when(mockReportService).getParticipantReport(session.getAppId(),
@@ -387,6 +384,8 @@ public class ParticipantReportControllerTest extends Mockito {
     public void saveParticipantReportData() throws Exception {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':{'field1':'Last','field2':'Name'}}");
         mockRequestBody(mockRequest, json);
+        when(mockAccountService.getAccountHealthCode(TEST_APP_ID, OTHER_PARTICIPANT_ID))
+            .thenReturn(Optional.of(OTHER_PARTICIPANT_HEALTH_CODE));
 
         StatusMessage result = controller.saveParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID);
         assertEquals(result.getMessage(), "Report data saved.");
@@ -404,7 +403,9 @@ public class ParticipantReportControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body, fields:.*")
     public void saveParticipantReportForWorkerBadJson() throws Exception {
         mockRequestBody(mockRequest, "\"+1234567890\"");
-        
+        when(mockAccountService.getAccountHealthCode(TEST_APP_ID, OTHER_PARTICIPANT_ID))
+            .thenReturn(Optional.of(OTHER_PARTICIPANT_HEALTH_CODE));
+
         controller.saveParticipantReport(TEST_USER_ID, REPORT_ID);
     }
     
@@ -413,6 +414,8 @@ public class ParticipantReportControllerTest extends Mockito {
     public void saveParticipantEmptyReportData() throws Exception {
         String json = TestUtils.createJson("{'date':'2015-02-12','data':{}}");
         mockRequestBody(mockRequest, json);
+        when(mockAccountService.getAccountHealthCode(TEST_APP_ID, OTHER_PARTICIPANT_ID))
+            .thenReturn(Optional.of(OTHER_PARTICIPANT_HEALTH_CODE));
 
         StatusMessage result = controller.saveParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID);
         assertEquals(result.getMessage(), "Report data saved.");
@@ -484,6 +487,9 @@ public class ParticipantReportControllerTest extends Mockito {
     
     @Test
     public void deleteParticipantReportData() throws Exception {
+        when(mockAccountService.getAccountHealthCode(TEST_APP_ID, OTHER_PARTICIPANT_ID))
+            .thenReturn(Optional.of(OTHER_PARTICIPANT_HEALTH_CODE));
+        
         StatusMessage result = controller.deleteParticipantReport(OTHER_PARTICIPANT_ID, REPORT_ID);
         assertEquals(result.getMessage(), "Report deleted.");
         
@@ -492,6 +498,9 @@ public class ParticipantReportControllerTest extends Mockito {
     
     @Test
     public void deleteParticipantReportDataRecord() throws Exception {
+        when(mockAccountService.getAccountHealthCode(TEST_APP_ID, OTHER_PARTICIPANT_ID))
+            .thenReturn(Optional.of(OTHER_PARTICIPANT_HEALTH_CODE));
+        
         StatusMessage result = controller.deleteParticipantReportRecord(OTHER_PARTICIPANT_ID, REPORT_ID, "2014-05-10");
         assertEquals(result.getMessage(), "Report record deleted.");
         

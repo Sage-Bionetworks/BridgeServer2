@@ -9,8 +9,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
@@ -44,9 +46,12 @@ public class AdherenceController extends BaseController {
         return SAVED_MSG;
     }
     
-    @PostMapping("/v5/studies/{studyId}/participants/{userId}/adherence")
-    public StatusMessage updateAdherenceRecords(@PathVariable String studyId, @PathVariable String userId) {
+    @PostMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence")
+    public StatusMessage updateAdherenceRecords(@PathVariable String studyId, @PathVariable String userIdToken) {
         UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        
+        String userId = accountService.getAccountId(session.getAppId(), userIdToken)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         AdherenceRecordList recordsList = parseJson(AdherenceRecordList.class);
         for (AdherenceRecord oneRecord : recordsList.getRecords()) {
@@ -71,12 +76,14 @@ public class AdherenceController extends BaseController {
         return service.getAdherenceRecords(session.getAppId(), search);
     }
     
-    @PostMapping("/v5/studies/{studyId}/participants/{userId}/adherence/search")
+    @PostMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence/search")
     public PagedResourceList<AdherenceRecord> searchForAdherenceRecords(@PathVariable String studyId,
-            @PathVariable String userId) {
+            @PathVariable String userIdToken) {
         UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
         
         AdherenceRecordsSearch payload = parseJson(AdherenceRecordsSearch.class);
+        String userId = accountService.getAccountId(session.getAppId(), userIdToken)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         AdherenceRecordsSearch search = payload.toBuilder()
                 .withUserId(userId)

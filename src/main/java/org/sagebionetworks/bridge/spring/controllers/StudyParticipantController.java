@@ -436,9 +436,9 @@ public class StudyParticipantController extends BaseController {
             @PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         
-        getValidAccountInStudy(session.getAppId(), studyId, userId);
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), userId, studyId);
+        return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), account.getId(), studyId);
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/activityevents/{eventId}")
@@ -449,12 +449,12 @@ public class StudyParticipantController extends BaseController {
             @RequestParam(required = false) String pageSize) {
         UserSession session = getAdministrativeSession();
         
-        getValidAccountInStudy(session.getAppId(), studyId, userId);
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
         Integer offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         Integer pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
-        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
+        AccountId accountId = AccountId.forId(account.getAppId(),  account.getId());
         
         return studyActivityEventService.getStudyActivityEventHistory(accountId, 
                 studyId, eventId, offsetByInt, pageSizeInt);
@@ -465,12 +465,12 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage publishActivityEvent(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         
-        getValidAccountInStudy(session.getAppId(), studyId, userId);
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
         StudyActivityEventRequest request = parseJson(StudyActivityEventRequest.class)
                 .appId(session.getAppId())
                 .studyId(studyId)
-                .userId(userId)
+                .userId(account.getId())
                 .objectType(CUSTOM);
         
         studyActivityEventService.publishEvent(request);
@@ -484,12 +484,12 @@ public class StudyParticipantController extends BaseController {
             @PathVariable String eventId) {
         UserSession session = getAdministrativeSession();
         
-        getValidAccountInStudy(session.getAppId(), studyId, userId);
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         studyActivityEventService.deleteCustomEvent(new StudyActivityEventRequest()
                 .appId(session.getAppId())
                 .studyId(studyId)
-                .userId(userId)
+                .userId(account.getId())
                 .objectId(eventId)
                 .objectType(CUSTOM));
         
