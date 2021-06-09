@@ -31,9 +31,10 @@ public class RequestInfoTest {
     private static final List<String> LANGUAGES = ImmutableList.of("en", "fr");
     private static final DateTimeZone PST = DateTimeZone.forOffsetHours(-7);
     private static final DateTimeZone MST = DateTimeZone.forOffsetHours(3);
-    private static final DateTime ACTIVITIES_REQUESTED_ON = DateUtils.getCurrentDateTime().withZone(PST);
-    private static final DateTime SIGNED_IN_ON = ACTIVITIES_REQUESTED_ON.minusHours(4).withZone(PST);
-    private static final DateTime UPLOADED_ON = ACTIVITIES_REQUESTED_ON.minusHours(3).withZone(PST);
+    private static final DateTime ACTIVITIES_ACCESSED_ON = DateUtils.getCurrentDateTime().withZone(PST);
+    private static final DateTime SIGNED_IN_ON = ACTIVITIES_ACCESSED_ON.minusHours(4).withZone(PST);
+    private static final DateTime UPLOADED_ON = ACTIVITIES_ACCESSED_ON.minusHours(3).withZone(PST);
+    private static final DateTime TIMELINE_ACCESSED_ON = ACTIVITIES_ACCESSED_ON.minusHours(6).withZone(PST);
     
     @Test
     public void hashCodeEquals() {
@@ -48,7 +49,8 @@ public class RequestInfoTest {
 
         assertEquals(node.get("userId").textValue(), "userId");
         assertEquals(node.get("appId").textValue(), TEST_APP_ID);
-        assertEquals(node.get("activitiesAccessedOn").textValue(), ACTIVITIES_REQUESTED_ON.withZone(MST).toString());
+        assertEquals(node.get("activitiesAccessedOn").textValue(), ACTIVITIES_ACCESSED_ON.withZone(MST).toString());
+        assertEquals(node.get("timelineAccessedOn").textValue(), TIMELINE_ACCESSED_ON.withZone(MST).toString());
         assertEquals(node.get("uploadedOn").textValue(), UPLOADED_ON.withZone(MST).toString());
         assertEquals(node.get("languages").get(0).textValue(), "en");
         assertEquals(node.get("languages").get(1).textValue(), "fr");
@@ -68,7 +70,7 @@ public class RequestInfoTest {
         assertEquals(node.get("type").textValue(), "RequestInfo");
         assertEquals(node.get("userAgent").textValue(), USER_AGENT_STRING);
         assertEquals(node.get("appId").textValue(), TEST_APP_ID);
-        assertEquals(node.size(), 12);
+        assertEquals(node.size(), 13);
         
         JsonNode clientInfoNode = node.get("clientInfo");
         assertEquals(clientInfoNode.get("appName").textValue(), "app");
@@ -81,14 +83,14 @@ public class RequestInfoTest {
     @Test
     public void ifNoTimeZoneUseUTC() {
         RequestInfo requestInfo = new RequestInfo.Builder()
-                .withActivitiesAccessedOn(ACTIVITIES_REQUESTED_ON)
+                .withActivitiesAccessedOn(ACTIVITIES_ACCESSED_ON)
                 .withSignedInOn(SIGNED_IN_ON)
                 .withTimeZone(null) // this won't reset time zone, still going to use UTC
                 .build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(requestInfo);
         
-        assertEquals(node.get("activitiesAccessedOn").textValue(), ACTIVITIES_REQUESTED_ON.withZone(DateTimeZone.UTC).toString());
+        assertEquals(node.get("activitiesAccessedOn").textValue(), ACTIVITIES_ACCESSED_ON.withZone(DateTimeZone.UTC).toString());
         assertEquals(node.get("signedInOn").textValue(), SIGNED_IN_ON.withZone(DateTimeZone.UTC).toString());
     }
     
@@ -105,7 +107,8 @@ public class RequestInfoTest {
         assertEquals(copy.getLanguages(), LANGUAGES);
         assertEquals(copy.getUserId(), USER_ID);
         assertEquals(copy.getTimeZone(), MST);
-        assertEquals(copy.getActivitiesAccessedOn(), ACTIVITIES_REQUESTED_ON.withZone(copy.getTimeZone()));
+        assertEquals(copy.getActivitiesAccessedOn(), ACTIVITIES_ACCESSED_ON.withZone(copy.getTimeZone()));
+        assertEquals(copy.getTimelineAccessedOn(), TIMELINE_ACCESSED_ON.withZone(copy.getTimeZone()));
         assertEquals(copy.getUploadedOn(), UPLOADED_ON.withZone(copy.getTimeZone()));
         assertEquals(copy.getSignedInOn(), SIGNED_IN_ON.withZone(copy.getTimeZone()));
     }
@@ -128,7 +131,8 @@ public class RequestInfoTest {
                 .withLanguages(LANGUAGES)
                 .withUserId(USER_ID)
                 .withTimeZone(MST)
-                .withActivitiesAccessedOn(ACTIVITIES_REQUESTED_ON)
+                .withActivitiesAccessedOn(ACTIVITIES_ACCESSED_ON)
+                .withTimelineAccessedOn(TIMELINE_ACCESSED_ON)
                 .withUploadedOn(UPLOADED_ON)
                 .withSignedInOn(SIGNED_IN_ON).build();
         return requestInfo;

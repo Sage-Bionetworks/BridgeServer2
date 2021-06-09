@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -103,12 +104,18 @@ public class ActivityEventController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
         
+        DateTime timelineRequestedOn = getDateTime();
+        
+        RequestInfo requestInfo = getRequestInfoBuilder(session)
+                .withTimelineAccessedOn(timelineRequestedOn).build();
+        requestInfoService.updateRequestInfo(requestInfo);
+        
         studyActivityEventService.publishEvent(new StudyActivityEventRequest()
                 .appId(session.getAppId())
                 .studyId(studyId)
                 .userId(session.getId())
                 .objectType(TIMELINE_RETRIEVED)
-                .timestamp(getDateTime()));
+                .timestamp(timelineRequestedOn));
 
         return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), session.getId(), studyId);
     }

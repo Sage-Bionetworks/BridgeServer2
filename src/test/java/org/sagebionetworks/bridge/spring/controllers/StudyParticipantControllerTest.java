@@ -149,6 +149,9 @@ public class StudyParticipantControllerTest extends Mockito {
     @Captor
     ArgumentCaptor<StudyActivityEventRequest> requestCaptor;
     
+    @Captor
+    ArgumentCaptor<RequestInfo> requestInfoCaptor;
+    
     @InjectMocks
     @Spy
     StudyParticipantController controller;
@@ -1060,6 +1063,8 @@ public class StudyParticipantControllerTest extends Mockito {
         schedule.setModifiedOn(MODIFIED_ON);
         when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
         
+        when(controller.getDateTime()).thenReturn(CREATED_ON);
+        
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);
         assertTrue(retValue.getBody() instanceof Timeline);
@@ -1067,6 +1072,9 @@ public class StudyParticipantControllerTest extends Mockito {
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_STUDY_ID), MODIFIED_ON.toString());
         verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
+        
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
+        assertEquals(requestInfoCaptor.getValue().getTimelineAccessedOn(), CREATED_ON); 
     }
     
     @Test(expectedExceptions = NotAuthenticatedException.class)

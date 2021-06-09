@@ -711,3 +711,8 @@ CREATE TABLE `AdherenceRecords` (
   CONSTRAINT `AdherenceRecord-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
   CONSTRAINT `AdherenceRecord-Study-Constraint` FOREIGN KEY (`studyId`) REFERENCES `Substudies` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:38
+
+ALTER TABLE `RequestInfos`
+ADD COLUMN `timelineAccessedOn` varchar(255);

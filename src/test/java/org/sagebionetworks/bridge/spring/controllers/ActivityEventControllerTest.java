@@ -37,10 +37,12 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -51,6 +53,7 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.AppService;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 
 public class ActivityEventControllerTest extends Mockito {
@@ -65,6 +68,9 @@ public class ActivityEventControllerTest extends Mockito {
     private StudyActivityEventService mockStudyActivityEventService;
     
     @Mock
+    private RequestInfoService mockRequestInfoService;
+    
+    @Mock
     private HttpServletRequest mockRequest;
     
     @Mock
@@ -76,6 +82,9 @@ public class ActivityEventControllerTest extends Mockito {
     
     @Captor
     ArgumentCaptor<StudyActivityEventRequest> requestCaptor;
+    
+    @Captor
+    ArgumentCaptor<RequestInfo> requestInfoCaptor;
 
     private App app;
     
@@ -175,6 +184,9 @@ public class ActivityEventControllerTest extends Mockito {
         assertEquals(request.getUserId(), TEST_USER_ID);
         assertEquals(request.getObjectType(), TIMELINE_RETRIEVED);
         assertEquals(request.getTimestamp(), CREATED_ON);
+        
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
+        assertEquals(requestInfoCaptor.getValue().getTimelineAccessedOn(), CREATED_ON);
     }
 
     @Test
