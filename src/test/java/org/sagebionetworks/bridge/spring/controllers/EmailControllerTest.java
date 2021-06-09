@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.TestUtils.mockEditAccount;
 import static org.testng.Assert.assertEquals;
 
 import java.util.Map;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -21,7 +22,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AppService;
@@ -36,7 +36,6 @@ public class EmailControllerTest extends Mockito {
     private static final String STUDY = "study";
     private static final String APP_ID = "appId";
     private static final String EMAIL_ADDRESS = "bridge-testing@sagebase.org";
-    private static final AccountId ACCOUNT_ID = AccountId.forEmail(TEST_APP_ID, EMAIL_ADDRESS);
 
     @Mock
     AppService mockAppService;
@@ -66,7 +65,8 @@ public class EmailControllerTest extends Mockito {
     public void before() {
         MockitoAnnotations.initMocks(this);
         when(mockConfig.getEmailUnsubscribeToken()).thenReturn(UNSUBSCRIBE_TOKEN);
-        when(mockAccountService.getHealthCodeForAccount(ACCOUNT_ID)).thenReturn(HEALTH_CODE);
+        when(mockAccountService.getAccountHealthCode(TEST_APP_ID, "email:"+EMAIL_ADDRESS))
+            .thenReturn(Optional.of(HEALTH_CODE));
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
         mockEditAccount(mockAccountService, mockAccount);
@@ -133,7 +133,8 @@ public class EmailControllerTest extends Mockito {
     @Test
     public void noAccountThrowsException() throws Exception {
         mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
-        doReturn(null).when(mockAccountService).getHealthCodeForAccount(ACCOUNT_ID);
+        doReturn(Optional.empty()).when(mockAccountService)
+            .getAccountHealthCode(TEST_APP_ID, "email:"+EMAIL_ADDRESS);
 
         String result = controller.unsubscribeFromEmail();
         assertEquals(result, "Email not found.");

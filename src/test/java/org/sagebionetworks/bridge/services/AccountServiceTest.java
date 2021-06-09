@@ -339,24 +339,43 @@ public class AccountServiceTest extends Mockito {
     }
 
     @Test
-    public void getHealthCodeForAccount() throws Exception {
+    public void getAccountHealthCode() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);
         account.setHealthCode(HEALTH_CODE);
 
-        String healthCode = service.getHealthCodeForAccount(ACCOUNT_ID);
-        assertEquals(healthCode, HEALTH_CODE);
+        Optional<String> healthCode = service.getAccountHealthCode(TEST_APP_ID, TEST_USER_ID);
+        assertEquals(healthCode.get(), HEALTH_CODE);
         verify(mockAccountDao).getAccount(ACCOUNT_ID);
     }
     
     @Test
-    public void getHealthCodeForAccountNoAccount() {
+    public void getAccountHealthCodeNoAccount() {
         when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
         
-        String healthCode = service.getHealthCodeForAccount(ACCOUNT_ID);
-        assertNull(healthCode);
+        Optional<String> healthCode = service.getAccountHealthCode(TEST_APP_ID, TEST_USER_ID);
+        assertFalse(healthCode.isPresent());
         verify(mockAccountDao).getAccount(ACCOUNT_ID);
     }    
 
+    @Test
+    public void getAccountId() throws Exception {
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setId(TEST_USER_ID);
+
+        Optional<String> userId = service.getAccountId(TEST_APP_ID, TEST_USER_ID);
+        assertEquals(userId.get(), TEST_USER_ID);
+        verify(mockAccountDao).getAccount(ACCOUNT_ID);
+    }
+    
+    @Test
+    public void getAccountIdNoAccount() {
+        when(mockAccountDao.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
+        
+        Optional<String> userId = service.getAccountId(TEST_APP_ID, TEST_USER_ID);
+        assertFalse(userId.isPresent());
+        verify(mockAccountDao).getAccount(ACCOUNT_ID);
+    }
+    
     @Test
     public void verifyEmailUsingToken() {
         Account account = Account.create();

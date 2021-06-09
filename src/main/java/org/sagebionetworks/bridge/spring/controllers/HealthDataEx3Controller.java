@@ -18,7 +18,6 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
@@ -57,14 +56,12 @@ public class HealthDataEx3Controller extends BaseController {
     }
 
     /** Deletes all health data records for the given user. */
-    @DeleteMapping(path="/v1/admin/exporter3/participants/{userId}/healthdata")
-    public StatusMessage deleteRecordsForUser(@PathVariable String userId) {
+    @DeleteMapping(path="/v1/admin/exporter3/participants/{userIdToken}/healthdata")
+    public StatusMessage deleteRecordsForUser(@PathVariable String userIdToken) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
-        String healthCode = accountService.getHealthCodeForAccount(AccountId.forId(session.getAppId(), userId));
-        if (healthCode == null) {
-            throw new EntityNotFoundException(StudyParticipant.class);
-        }
+        String healthCode = accountService.getAccountHealthCode(session.getAppId(), userIdToken)
+                .orElseThrow(() -> new EntityNotFoundException(StudyParticipant.class));
 
         healthDataEx3Service.deleteRecordsForHealthCode(healthCode);
 
@@ -88,23 +85,20 @@ public class HealthDataEx3Controller extends BaseController {
     }
 
     /** Retrieves all records for the given user and time range. */
-    @GetMapping(path="/v1/admin/exporter3/participants/{userId}/healthdata")
-    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForUser(@PathVariable String userId,
+    @GetMapping(path="/v1/admin/exporter3/participants/{userIdToken}/healthdata")
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForUser(@PathVariable String userIdToken,
             @RequestParam(required = false) String createdOnStart, @RequestParam(required = false) String createdOnEnd,
             @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
 
-        String healthCode = accountService.getHealthCodeForAccount(AccountId.forId(session.getAppId(), userId));
-        if (healthCode == null) {
-            throw new EntityNotFoundException(StudyParticipant.class);
-        }
-
+        String healthCode = accountService.getAccountHealthCode(session.getAppId(), userIdToken)
+                .orElseThrow(() -> new EntityNotFoundException(StudyParticipant.class));
+        
         DateTime createdOnStartDateTime = BridgeUtils.getDateTimeOrDefault(createdOnStart, null);
         DateTime createdOnEndDateTime = BridgeUtils.getDateTimeOrDefault(createdOnEnd, null);
         Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
         return healthDataEx3Service.getRecordsForHealthCode(healthCode, createdOnStartDateTime, createdOnEndDateTime,
                 pageSizeInt, offsetKey)
-                .withRequestParam("userId", userId)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
                 .withRequestParam(ResourceList.END_TIME, createdOnEnd)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSizeInt)
@@ -141,7 +135,6 @@ public class HealthDataEx3Controller extends BaseController {
         Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
         return healthDataEx3Service.getRecordsForAppAndStudy(session.getAppId(), studyId, createdOnStartDateTime,
                 createdOnEndDateTime, pageSizeInt, offsetKey)
-                .withRequestParam("studyId", studyId)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
                 .withRequestParam(ResourceList.END_TIME, createdOnEnd)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSizeInt)

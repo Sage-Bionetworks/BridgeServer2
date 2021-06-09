@@ -20,9 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 
-import javax.persistence.Column;
-import javax.persistence.Convert;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 

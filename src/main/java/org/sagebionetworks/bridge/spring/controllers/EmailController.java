@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.apps.App;
 
 @CrossOrigin
@@ -60,11 +59,9 @@ public class EmailController extends BaseController {
             }
             
             // This should always return a healthCode under normal circumstances.
-            AccountId accountId = AccountId.forEmail(app.getIdentifier(), email);
-            String healthCode = accountService.getHealthCodeForAccount(accountId);
-            if (healthCode == null) {
-                throw new BadRequestException("Email not found.");
-            }
+            String healthCode = accountService.getAccountHealthCode(app.getIdentifier(), "email:"+email)
+                    .orElseThrow(() -> new BadRequestException("Email not found."));
+
             accountService.editAccount(app.getIdentifier(), healthCode, account -> account.setNotifyByEmail(false));
             
             return "You have been unsubscribed from future email.";

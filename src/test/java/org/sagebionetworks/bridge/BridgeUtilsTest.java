@@ -482,6 +482,10 @@ public class BridgeUtilsTest {
         accountId = BridgeUtils.parseAccountId("test", "syn:IdentifierA12");
         assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getSynapseUserId(), "IdentifierA12");
+
+        accountId = BridgeUtils.parseAccountId("test", "email:bridge-testing@sagebase.org");
+        assertEquals(accountId.getAppId(), "test");
+        assertEquals(accountId.getEmail(), "bridge-testing@sagebase.org");
     }
     
     @Test

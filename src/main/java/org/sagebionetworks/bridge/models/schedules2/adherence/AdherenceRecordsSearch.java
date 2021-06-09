@@ -14,7 +14,6 @@ import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 /**

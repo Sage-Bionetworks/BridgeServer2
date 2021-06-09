@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
-import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -13,6 +12,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -91,6 +91,9 @@ public class AdherenceControllerTest extends Mockito {
     public void updateAdherenceRecords() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
         
+        when(mockAccountService.getAccountId(TEST_APP_ID, TEST_USER_ID))
+            .thenReturn(Optional.of(TEST_USER_ID));
+        
         AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
         AdherenceRecord rec2 = TestUtils.getAdherenceRecord("BBB");
         AdherenceRecordList list = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
@@ -160,7 +163,7 @@ public class AdherenceControllerTest extends Mockito {
     public void searchForAdherenceRecords() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
         
-        when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(HEALTH_CODE);
+        when(mockAccountService.getAccountId(any(), any())).thenReturn(Optional.of("some-other-id"));
 
         AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
         AdherenceRecord rec2 = TestUtils.getAdherenceRecord("BBB");
