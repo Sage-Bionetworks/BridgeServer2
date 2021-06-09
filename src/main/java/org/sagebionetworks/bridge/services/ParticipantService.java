@@ -406,7 +406,7 @@ public class ParticipantService {
      * back to account creation time (for studies that use neither scheduling nor consent).
      */
     public DateTime getStudyStartTime(Account account) {
-        Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getAppId(), null, account.getHealthCode());
+        Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getAppId(), account.getHealthCode());
         DateTime activitiesRetrievedDateTime = activityMap.get(ACTIVITIES_RETRIEVED.name().toLowerCase());
         if (activitiesRetrievedDateTime != null) {
             return activitiesRetrievedDateTime;
@@ -616,8 +616,8 @@ public class ParticipantService {
         
         Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
-        activityEventService.publishCustomEvent(app, null,
-                account.getHealthCode(), request.getEventKey(), request.getTimestamp());
+        activityEventService.publishCustomEvent(app, account.getHealthCode(), 
+                request.getEventKey(), request.getTimestamp());
     }
     
     public void requestResetPassword(App app, String userId) {

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordId;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 
 @Component
@@ -33,15 +33,20 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
     }
     
     @Override
-    public void updateAdherenceRecords(AdherenceRecordList recordList) {
-        checkNotNull(recordList);
+    public void updateAdherenceRecord(AdherenceRecord record) {
+        checkNotNull(record);
         
-        hibernateHelper.executeWithExceptionHandling(recordList, (session) -> {
-            for (AdherenceRecord record: recordList.getRecords()) {
-                session.saveOrUpdate(record);        
+        if (record.getStartedOn() == null && !record.isDeclined()) {
+            AdherenceRecordId id = new AdherenceRecordId(record.getUserId(), record.getStudyId(),
+                    record.getInstanceGuid(), record.getEventTimestamp(), record.getInstanceTimestamp());
+            // Cannot delete if the record is already not there, so check for this.
+            AdherenceRecord obj = hibernateHelper.getById(AdherenceRecord.class, id);
+            if (obj != null) {
+                hibernateHelper.deleteById(AdherenceRecord.class, id);    
             }
-            return recordList;
-        });
+        } else {
+            hibernateHelper.saveOrUpdate(record);    
+        }
     }
 
     @Override

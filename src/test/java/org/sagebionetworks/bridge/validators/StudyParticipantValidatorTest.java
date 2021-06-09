@@ -5,6 +5,9 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.when;
 
@@ -148,19 +151,19 @@ public class StudyParticipantValidatorTest {
     @Test
     public void emailCannotBeEmptyString() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withEmail(""), "email", "does not appear to be an email address");
+        assertValidatorMessage(validator, withEmail(""), "email", INVALID_EMAIL_ERROR);
     }
     
     @Test
     public void emailCannotBeBlankString() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withEmail("    \n    \t "), "email", "does not appear to be an email address");
+        assertValidatorMessage(validator, withEmail("    \n    \t "), "email", INVALID_EMAIL_ERROR);
     }
     
     @Test
     public void emailCannotBeInvalid() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withEmail("a"), "email", "does not appear to be an email address");
+        assertValidatorMessage(validator, withEmail("a"), "email", INVALID_EMAIL_ERROR);
     }
 
     @Test
@@ -208,7 +211,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void emptyStringUserSynapseIdRequired() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withSynapseUserId(""), "synapseUserId", "cannot be blank");
+        assertValidatorMessage(validator, withSynapseUserId(""), "synapseUserId", CANNOT_BE_BLANK);
     }
     
     @Test
@@ -220,7 +223,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void validEmail() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withEmail("belgium"), "email", "does not appear to be an email address");
+        assertValidatorMessage(validator, withEmail("belgium"), "email", INVALID_EMAIL_ERROR);
     }
     
     @Test
@@ -262,25 +265,25 @@ public class StudyParticipantValidatorTest {
     @Test
     public void validatePhoneRegionRequired() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withPhone("1234567890", null), "phone", "does not appear to be a phone number");
+        assertValidatorMessage(validator, withPhone("1234567890", null), "phone", INVALID_PHONE_ERROR);
     }
     
     @Test
     public void validatePhoneRegionIsCode() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withPhone("1234567890", "esg"), "phone", "does not appear to be a phone number");
+        assertValidatorMessage(validator, withPhone("1234567890", "esg"), "phone", INVALID_PHONE_ERROR);
     }
     
     @Test
     public void validatePhoneRequired() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withPhone(null, "US"), "phone", "does not appear to be a phone number");
+        assertValidatorMessage(validator, withPhone(null, "US"), "phone", INVALID_PHONE_ERROR);
     }
     
     @Test
     public void validatePhonePattern() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withPhone("234567890", "US"), "phone", "does not appear to be a phone number");
+        assertValidatorMessage(validator, withPhone("234567890", "US"), "phone", INVALID_PHONE_ERROR);
     }
     
     @Test
@@ -294,7 +297,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void validateTotallyWrongPhone() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withPhone("this isn't a phone number", "US"), "phone", "does not appear to be a phone number");
+        assertValidatorMessage(validator, withPhone("this isn't a phone number", "US"), "phone", INVALID_PHONE_ERROR);
     }
     
     @Test
@@ -341,21 +344,21 @@ public class StudyParticipantValidatorTest {
         StudyParticipant participant = withExternalId(" ");
         
         validator = makeValidator(true);
-        assertValidatorMessage(validator, participant, "externalIds[test-study].externalId", "cannot be blank");
+        assertValidatorMessage(validator, participant, "externalIds[test-study].externalId", CANNOT_BE_BLANK);
     }
     @Test
     public void emptySynapseUserIdOnCreate() {
         StudyParticipant participant = withSynapseUserId(" ");
         
         validator = makeValidator(true);
-        assertValidatorMessage(validator, participant, "synapseUserId", "cannot be blank");
+        assertValidatorMessage(validator, participant, "synapseUserId", CANNOT_BE_BLANK);
     }
     @Test
     public void emptySynapseUserIdOnUpdate() {
         StudyParticipant participant = withSynapseUserId(" ");
         
         validator = makeValidator(false);
-        assertValidatorMessage(validator, participant, "synapseUserId", "cannot be blank");
+        assertValidatorMessage(validator, participant, "synapseUserId", CANNOT_BE_BLANK);
     }
     @Test
     public void validateStudyIdInvalid() {

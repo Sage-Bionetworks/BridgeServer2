@@ -20,6 +20,7 @@ import com.google.common.collect.ImmutableSet;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class AdherenceRecordsSearchTest extends Mockito {
@@ -66,6 +67,21 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(deser.getPageSize(), Integer.valueOf(20));
         assertEquals(deser.getSortOrder(), DESC);
         assertEquals(deser.getInstanceGuidStartedOnMap(), ImmutableMap.of());
+    }
+    
+    // We don't want these to throw 500s. These probably exist elsewhere in our APIs.
+    @Test
+    public void canDeserializeNulls() throws Exception {
+        String json = TestUtils.createJson("{'instanceGuids':[null],'eventTimestamps':{'enrollment':null}}");
+        
+        AdherenceRecordsSearch deser = BridgeObjectMapper.get()
+                .readValue(json, AdherenceRecordsSearch.class);
+        assertTrue(deser.getInstanceGuids().isEmpty());
+        assertTrue(deser.getEventTimestamps().isEmpty());
+        
+        deser = deser.toBuilder().build();
+        assertTrue(deser.getInstanceGuids().isEmpty());
+        assertTrue(deser.getEventTimestamps().isEmpty());
     }
     
     @Test

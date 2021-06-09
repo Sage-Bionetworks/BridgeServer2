@@ -37,6 +37,7 @@ public class TimelineMetadata implements BridgeEntity {
         copy.setScheduleGuid(meta.getScheduleGuid());
         copy.setSessionStartEventId(meta.getSessionStartEventId());
         copy.setTimeWindowGuid(meta.getTimeWindowGuid());
+        copy.setTimeWindowPersistent(meta.isTimeWindowPersistent());
         copy.setScheduleModifiedOn(meta.getScheduleModifiedOn());
         copy.setSchedulePublished(meta.isSchedulePublished());
         copy.setAppId(meta.getAppId());
@@ -56,6 +57,7 @@ public class TimelineMetadata implements BridgeEntity {
         map.put("sessionInstanceEndDay", Integer.toString(sessionInstanceEndDay));
         map.put("sessionStartEventId", sessionStartEventId);
         map.put("timeWindowGuid", timeWindowGuid);
+        map.put("timeWindowPersistent", Boolean.toString(timeWindowPersistent));
         map.put("scheduleGuid", scheduleGuid);
         map.put("scheduleModifiedOn", scheduleModifiedOn.toString());
         map.put("schedulePublished", Boolean.toString(schedulePublished));
@@ -75,6 +77,7 @@ public class TimelineMetadata implements BridgeEntity {
     private Integer sessionInstanceStartDay;
     private Integer sessionInstanceEndDay;
     private String timeWindowGuid;
+    private boolean timeWindowPersistent;
     private String scheduleGuid;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime scheduleModifiedOn;
@@ -146,6 +149,12 @@ public class TimelineMetadata implements BridgeEntity {
     }
     public void setTimeWindowGuid(String timeWindowGuid) {
         this.timeWindowGuid = timeWindowGuid;
+    }
+    public boolean isTimeWindowPersistent( ) {
+        return timeWindowPersistent;
+    }
+    public void setTimeWindowPersistent(boolean timeWindowPersistent) {
+        this.timeWindowPersistent = timeWindowPersistent;
     }
     public String getScheduleGuid() {
         return scheduleGuid;

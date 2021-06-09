@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.hibernate;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.getAdherenceRecord;
@@ -18,6 +19,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+
+import javax.persistence.Column;
+import javax.persistence.Convert;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -39,7 +43,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordId;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 
 public class HibernateAdherenceRecordDaoTest extends Mockito {
@@ -62,6 +65,9 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
     @Captor
     ArgumentCaptor<AdherenceRecordId> recordIdCaptor;
     
+    @Captor
+    ArgumentCaptor<AdherenceRecordId> idCaptor;
+    
     @InjectMocks
     HibernateAdherenceRecordDao dao;
 
@@ -75,18 +81,6 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
             func.apply(mockSession);
             return args.getArgument(0);
         });
-    }
-    
-    @Test
-    public void updateAdherenceRecords() {
-        AdherenceRecord rec1 = getAdherenceRecord(GUID);
-        AdherenceRecord rec2 = getAdherenceRecord(GUID + "2");
-        AdherenceRecordList list = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
-        
-        dao.updateAdherenceRecords(list);
-        
-        verify(mockSession).saveOrUpdate(rec1);
-        verify(mockSession).saveOrUpdate(rec2);
     }
     
     @Test
@@ -298,6 +292,66 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
                 " ORDER BY ar.startedOn DESC");
         assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
         assertEquals(builder.getParameters().get("userId"), TEST_USER_ID);
+    }
+    
+    @Test
+    public void updateAdherenceRecord_saveStarted() { 
+        AdherenceRecord record = new AdherenceRecord();
+        record.setStartedOn(CREATED_ON);
+        
+        dao.updateAdherenceRecord(record);
+        
+        verify(mockHelper).saveOrUpdate(record);
+    }
+    
+    @Test
+    public void updateAdherenceRecord_saveDeclined() { 
+        AdherenceRecord record = new AdherenceRecord();
+        record.setDeclined(true);
+        
+        dao.updateAdherenceRecord(record);
+        
+        verify(mockHelper).saveOrUpdate(record);
+    }
+    
+    @Test
+    public void updateAdherenceRecord_deleteOnUpdate() { 
+        AdherenceRecord record = new AdherenceRecord();
+        record.setAppId(TEST_APP_ID);
+        record.setStudyId(TEST_STUDY_ID);
+        record.setUserId(TEST_USER_ID);
+        record.setInstanceGuid(GUID);
+        record.setEventTimestamp(MODIFIED_ON);
+        record.setInstanceTimestamp(MODIFIED_ON.plusHours(1));
+
+        AdherenceRecord persisted = new AdherenceRecord();
+        when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(persisted);
+        
+        dao.updateAdherenceRecord(record);
+        
+        verify(mockHelper).deleteById(eq(AdherenceRecord.class), idCaptor.capture());
+        assertEquals(idCaptor.getValue().getUserId(), TEST_USER_ID);
+        assertEquals(idCaptor.getValue().getStudyId(), TEST_STUDY_ID);
+        assertEquals(idCaptor.getValue().getInstanceGuid(), GUID);
+        assertEquals(idCaptor.getValue().getEventTimestamp(), MODIFIED_ON);
+        assertEquals(idCaptor.getValue().getInstanceTimestamp(), MODIFIED_ON.plusHours(1));
+    }
+    
+    @Test
+    public void updateAdherenceRecord_deleteRecordThatDoesNotExist() { 
+        AdherenceRecord record = new AdherenceRecord();
+        record.setAppId(TEST_APP_ID);
+        record.setStudyId(TEST_STUDY_ID);
+        record.setUserId(TEST_USER_ID);
+        record.setInstanceGuid(GUID);
+        record.setEventTimestamp(MODIFIED_ON);
+        record.setInstanceTimestamp(MODIFIED_ON.plusHours(1));
+        when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(null);
+        
+        dao.updateAdherenceRecord(record);
+        
+        verify(mockHelper).getById(eq(AdherenceRecord.class), any());
+        verifyNoMoreInteractions(mockHelper);
     }
     
     private AdherenceRecordsSearch.Builder search() {

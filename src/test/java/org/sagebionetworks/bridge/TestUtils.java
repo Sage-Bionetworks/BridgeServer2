@@ -68,6 +68,8 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
@@ -653,6 +655,19 @@ public class TestUtils {
         }
     }
     
+    public static AdherenceRecord mockAdherenceRecord(String instanceGuid) {
+        AdherenceRecord record = new AdherenceRecord();
+        record.setStudyId(TEST_STUDY_ID);
+        record.setUserId(TEST_USER_ID);
+        record.setEventTimestamp(CREATED_ON);
+        record.setClientTimeZone("America/Los_Angeles");
+        record.setStartedOn(MODIFIED_ON);
+        record.setInstanceGuid(instanceGuid);
+        record.setClientTimeZone("America/Los_Angeles");
+        return record;
+    }
+
+    
     public static AdherenceRecord getAdherenceRecord(String instanceGuid) { 
         AdherenceRecord record = new AdherenceRecord();
         record.setStudyId(TEST_STUDY_ID);
@@ -729,5 +744,13 @@ public class TestUtils {
         return new ConfigResolver(mockConfig);
     }
     
-
+    public static StudyActivityEvent findByEventId(List<StudyActivityEvent> events, ActivityEventObjectType type) {
+        String eventId = type.name().toLowerCase();
+        for (StudyActivityEvent oneEvent : events) {
+            if (oneEvent.getEventId().equals(eventId)) {
+                return oneEvent;
+            }
+        }
+        return null;
+    }
 }

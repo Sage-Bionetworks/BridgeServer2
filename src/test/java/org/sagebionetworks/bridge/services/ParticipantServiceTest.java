@@ -1097,7 +1097,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getStudyStartTime_FromActivitiesRetrieved() {
         // Set up mocks.
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase(), ACTIVITIES_RETRIEVED_DATETIME));
 
         // Execute and validate.
@@ -1108,7 +1108,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getStudyStartTime_FromEnrollment() {
         // Set up mocks.
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), ENROLLMENT_DATETIME));
 
         // Execute and validate.
@@ -1120,7 +1120,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getStudyStartTime_FromAccountCreatedOn() {
         // Set up mocks.
         account.setCreatedOn(CREATED_ON_DATETIME);
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of());
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of());
 
         // Execute and validate.
         DateTime result = participantService.getStudyStartTime(account);
@@ -2114,7 +2114,7 @@ public class ParticipantServiceTest extends Mockito {
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals(e.getErrors().get("externalIds[studyId].externalId").get(0),
-                    "externalIds[studyId].externalId cannot be blank");
+                    "externalIds[studyId].externalId cannot be null or blank");
         }
     }
     
@@ -2393,7 +2393,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
         
-        verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
+        verify(activityEventService).publishCustomEvent(APP, HEALTH_CODE, "anEvent", TIMESTAMP);
     }
     
     @Test
@@ -2407,7 +2407,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
         
-        verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
+        verify(activityEventService).publishCustomEvent(APP, HEALTH_CODE, "anEvent", TIMESTAMP);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 

@@ -89,6 +89,27 @@ public class AdherenceControllerTest extends Mockito {
     
     @Test
     public void updateAdherenceRecords() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        
+        AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
+        AdherenceRecord rec2 = TestUtils.getAdherenceRecord("BBB");
+        AdherenceRecordList list = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
+        
+        mockRequestBody(mockRequest, list);
+        
+        StatusMessage retValue = controller.updateAdherenceRecords(TEST_STUDY_ID, TEST_USER_ID);
+        assertEquals(retValue, AdherenceController.SAVED_MSG);
+        
+        verify(mockService).updateAdherenceRecords(eq(TEST_APP_ID), listCaptor.capture());
+        AdherenceRecordList recordsList = listCaptor.getValue();
+        for (AdherenceRecord record : recordsList.getRecords()) {
+            assertEquals(record.getStudyId(), TEST_STUDY_ID);
+            assertEquals(record.getUserId(), TEST_USER_ID);
+        }
+    }    
+    
+    @Test
+    public void updateAdherenceRecordsForSelf() throws Exception {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         
         AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
@@ -97,7 +118,7 @@ public class AdherenceControllerTest extends Mockito {
         
         mockRequestBody(mockRequest, list);
         
-        StatusMessage retValue = controller.updateAdherenceRecords(TEST_STUDY_ID);
+        StatusMessage retValue = controller.updateAdherenceRecordsForSelf(TEST_STUDY_ID);
         assertEquals(retValue, AdherenceController.SAVED_MSG);
         
         verify(mockService).updateAdherenceRecords(eq(TEST_APP_ID), listCaptor.capture());
