@@ -49,7 +49,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.sagebionetworks.bridge.hibernate.HibernateAccount;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
@@ -1112,60 +1111,51 @@ public class AccountServiceTest extends Mockito {
         app.setIdentifier(TEST_APP_ID);
 
         Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        account.setEmail(EMAIL);
-        account.setStatus(UNVERIFIED);
-        account.setAppId("wrong-app");
         account.setNote(TEST_NOTE);
 
         service.createAccount(app, account);
         verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
 
         Account createdAccount = accountCaptor.getValue();
-        assertEquals(createdAccount.getId(), TEST_USER_ID);
-        assertEquals(createdAccount.getAppId(), TEST_APP_ID);
-        assertEquals(createdAccount.getCreatedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertEquals(createdAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertEquals(createdAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
-        assertEquals(createdAccount.getStatus(), UNVERIFIED);
-        assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
         assertNull(createdAccount.getNote());
     }
 
     @Test
     public void updateAccountNoteSuccessfulAsAdmin() throws Exception {
+        // RESEARCHER role set in beforeMethod()
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
+        persistedAccount.setNote("original note");
 
-        assertNull(persistedAccount.getNote());
-        assertTrue(RequestContext.get().isAdministrator());
-
-        Account copyAccount = copyMockAccount(persistedAccount);
-        copyAccount.setNote(TEST_NOTE);
+        Account copyAccount = Account.create();
+        copyAccount.setAppId(persistedAccount.getAppId());
+        copyAccount.setId(persistedAccount.getId());
+        copyAccount.setNote("updated note");
 
         service.updateAccount(copyAccount);
         verify(mockAccountDao).updateAccount(accountCaptor.capture());
         Account updatedAccount = accountCaptor.getValue();
 
-        assertEquals(TEST_NOTE, updatedAccount.getNote());
+        assertEquals(updatedAccount.getNote(), "updated note");
     }
 
     @Test
     public void updateAccountNoteUnsuccessfulAsNonAdmin() throws Exception {
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of()).build());
 
-        assertNull(persistedAccount.getNote());
-        assertFalse(RequestContext.get().isAdministrator());
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
+        persistedAccount.setNote("original note");
 
-        Account copyAccount = copyMockAccount(persistedAccount);
-        copyAccount.setNote(TEST_NOTE);
+        Account copyAccount = Account.create();
+        copyAccount.setAppId(persistedAccount.getAppId());
+        copyAccount.setId(persistedAccount.getId());
+        copyAccount.setNote("updated note");
 
         service.updateAccount(copyAccount);
         verify(mockAccountDao).updateAccount(accountCaptor.capture());
         Account updatedAccount = accountCaptor.getValue();
 
-        assertNull(updatedAccount.getNote());
+        assertEquals(updatedAccount.getNote(), "original note");
     }
 
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {
@@ -1183,17 +1173,5 @@ public class AccountServiceTest extends Mockito {
         }
         when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
         return account;
-    }
-
-    // Only copies limited fields
-    private Account copyMockAccount(Account account) {
-        Account copyAccount = Account.create();
-        copyAccount.setAppId(account.getAppId());
-        copyAccount.setId(account.getId());
-        copyAccount.setEmail(account.getEmail());
-        copyAccount.setEmailVerified(account.getEmailVerified());
-        copyAccount.setHealthCode(account.getHealthCode());
-        copyAccount.setVersion(account.getVersion());
-        return copyAccount;
     }
 }

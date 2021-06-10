@@ -2459,67 +2459,61 @@ public class ParticipantServiceTest extends Mockito {
 
     @Test
     public void updateParticipantNoteSuccessfulAsAdmin() {
+        // RESEARCHER role set in Before method
         when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN))
-                .build());
 
-        assertNull(account.getFirstName());
-        assertNull(account.getNote());
+        account.setNote("original note");
 
         StudyParticipant participant = withParticipant()
-                .withFirstName(FIRST_NAME)
-                .withNote(TEST_NOTE)
+                .withNote("updated note")
                 .build();
         participantService.updateParticipant(APP, participant);
 
-        assertEquals(FIRST_NAME, account.getFirstName());
-        assertEquals(TEST_NOTE, account.getNote());
+        assertEquals(account.getNote(), "updated note");
     }
 
     @Test
     public void updateParticipantNoteUnsuccessfulAsNonAdmin() {
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
         RequestContext.set(new RequestContext.Builder()
                 .build());
 
-        assertNull(account.getFirstName());
-        assertNull(account.getNote());
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+
+        account.setNote("original note");
 
         StudyParticipant participant = withParticipant()
-                .withFirstName(FIRST_NAME)
-                .withNote(TEST_NOTE)
+                .withNote("updated note")
                 .build();
         participantService.updateParticipant(APP, participant);
 
-        assertEquals(FIRST_NAME, account.getFirstName());
-        assertNull(account.getNote());
+        assertEquals(account.getNote(), "original note");
+    }
+
+    @Test
+    public void getParticipantHasNoteAsAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(account.getId())
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .build());
+
+        account.setNote(TEST_NOTE);
+        when(accountService.getAccount(any())).thenReturn(account);
+
+        StudyParticipant adminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
+        assertEquals(adminRetrieved.getNote(), TEST_NOTE);
     }
 
     @Test
     public void getParticipantDoesNotHaveNoteAsNonAdmin() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(ID)
-                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withCallerUserId(account.getId())
+                .withCallerRoles(ImmutableSet.of())
                 .build());
 
-        account.setId(ID);
         account.setNote(TEST_NOTE);
-
         when(accountService.getAccount(any())).thenReturn(account);
 
-        // Verifying that the note exists as Admin
-        StudyParticipant adminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
-        assertEquals(adminRetrieved.getId(), CONTEXT.getUserId());
-        assertEquals(TEST_NOTE, adminRetrieved.getNote());
-
-        // Removing Admin role from request and verifying the note is not retrieved
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(ID)
-                .build());
-
         StudyParticipant nonAdminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
-        assertEquals(nonAdminRetrieved.getId(), CONTEXT.getUserId());
         assertNull(nonAdminRetrieved.getNote());
     }
 
