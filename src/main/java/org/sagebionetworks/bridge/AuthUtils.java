@@ -36,11 +36,12 @@ public class AuthUtils {
             .hasAnyRole(ADMIN);
     
     /**
-     * Can the caller edit assessments? Must be a member of the organization. Probably should be
-     * some kind of developer role as well!
+     * Can the caller edit assessments? Must be a study designer in the organization that 
+     * owns the assessment, or a developer.
      */
-    public static final AuthEvaluator CAN_EDIT_ASSESSMENTS = new AuthEvaluator().isInOrg().or()
-            .hasAnyRole(ADMIN);
+    public static final AuthEvaluator CAN_EDIT_ASSESSMENTS = new AuthEvaluator()
+            .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
+            .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
      * Can the caller and/remove organization members? Must be the organizations's admin. Note 

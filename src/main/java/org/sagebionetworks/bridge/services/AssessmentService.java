@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.NONPOSITIVE_REVISION_ER
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.models.OperatingSystem.SYNONYMS;
 import static org.sagebionetworks.bridge.models.ResourceList.GUID;
 import static org.sagebionetworks.bridge.models.ResourceList.IDENTIFIER;
@@ -394,6 +395,10 @@ public class AssessmentService {
         String osName = assessment.getOsName();
         if (SYNONYMS.get(osName) != null) {
             assessment.setOsName(SYNONYMS.get(osName));
+        }
+        if (!RequestContext.get().isInRole(ADMIN)) {
+            String orgId = RequestContext.get().getCallerOrgMembership();
+            assessment.setOwnerId(orgId);    
         }
         AssessmentValidator validator = new AssessmentValidator(appId, organizationService);
         Validate.entityThrowingException(validator, assessment);
