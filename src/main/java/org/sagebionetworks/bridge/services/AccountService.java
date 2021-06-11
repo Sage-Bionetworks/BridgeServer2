@@ -26,6 +26,7 @@ import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.RequestContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -220,6 +221,8 @@ public class AccountService {
         account.setModifiedOn(timestamp);
         account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(MIGRATION_VERSION);
+        // Prevent notes on account creation.
+        account.setNote(null);
 
         // Create account. We don't verify studies because this is handled by validation
         accountDao.createAccount(app, account);
@@ -260,6 +263,10 @@ public class AccountService {
         account.setOrgMembership(persistedAccount.getOrgMembership());
         // Update modifiedOn.
         account.setModifiedOn(DateUtils.getCurrentDateTime());
+        // Only allow Admins to update notes
+        if (!RequestContext.get().isAdministrator()) {
+            account.setNote(persistedAccount.getNote());
+        }
 
         // Update. We don't verify studies because this is handled by validation
         accountDao.updateAccount(account);

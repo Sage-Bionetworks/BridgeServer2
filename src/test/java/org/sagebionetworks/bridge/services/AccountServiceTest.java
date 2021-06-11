@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.AccountSummarySearch.EMPTY_SEARCH;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
@@ -1123,6 +1124,59 @@ public class AccountServiceTest extends Mockito {
         RequestContext.set(null);
     }
 
+    @Test
+    public void createAccountFailsToSaveNote() {
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+
+        Account account = Account.create();
+        account.setNote(TEST_NOTE);
+
+        service.createAccount(app, account);
+        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
+
+        Account createdAccount = accountCaptor.getValue();
+        assertNull(createdAccount.getNote());
+    }
+
+    @Test
+    public void updateAccountNoteSuccessfulAsAdmin() throws Exception {
+        // RESEARCHER role set in beforeMethod()
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
+        persistedAccount.setNote("original note");
+
+        Account copyAccount = Account.create();
+        copyAccount.setAppId(persistedAccount.getAppId());
+        copyAccount.setId(persistedAccount.getId());
+        copyAccount.setNote("updated note");
+
+        service.updateAccount(copyAccount);
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
+        Account updatedAccount = accountCaptor.getValue();
+
+        assertEquals(updatedAccount.getNote(), "updated note");
+    }
+
+    @Test
+    public void updateAccountNoteUnsuccessfulAsNonAdmin() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of()).build());
+
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
+        persistedAccount.setNote("original note");
+
+        Account copyAccount = Account.create();
+        copyAccount.setAppId(persistedAccount.getAppId());
+        copyAccount.setId(persistedAccount.getId());
+        copyAccount.setNote("updated note");
+
+        service.updateAccount(copyAccount);
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
+        Account updatedAccount = accountCaptor.getValue();
+
+        assertEquals(updatedAccount.getNote(), "original note");
+    }
+
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -1139,5 +1193,4 @@ public class AccountServiceTest extends Mockito {
         when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
         return account;
     }
-
 }
