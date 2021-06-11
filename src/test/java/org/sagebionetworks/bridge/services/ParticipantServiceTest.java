@@ -2457,6 +2457,66 @@ public class ParticipantServiceTest extends Mockito {
         verify(sqsClient).sendMessage(queueUrl, requestJson);
     }
 
+    @Test
+    public void updateParticipantNoteSuccessfulAsAdmin() {
+        // RESEARCHER role set in Before method
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+
+        account.setNote("original note");
+
+        StudyParticipant participant = withParticipant()
+                .withNote("updated note")
+                .build();
+        participantService.updateParticipant(APP, participant);
+
+        assertEquals(account.getNote(), "updated note");
+    }
+
+    @Test
+    public void updateParticipantNoteUnsuccessfulAsNonAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .build());
+
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+
+        account.setNote("original note");
+
+        StudyParticipant participant = withParticipant()
+                .withNote("updated note")
+                .build();
+        participantService.updateParticipant(APP, participant);
+
+        assertEquals(account.getNote(), "original note");
+    }
+
+    @Test
+    public void getParticipantHasNoteAsAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(account.getId())
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .build());
+
+        account.setNote(TEST_NOTE);
+        when(accountService.getAccount(any())).thenReturn(account);
+
+        StudyParticipant adminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
+        assertEquals(adminRetrieved.getNote(), TEST_NOTE);
+    }
+
+    @Test
+    public void getParticipantDoesNotHaveNoteAsNonAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(account.getId())
+                .withCallerRoles(ImmutableSet.of())
+                .build());
+
+        account.setNote(TEST_NOTE);
+        when(accountService.getAccount(any())).thenReturn(account);
+
+        StudyParticipant nonAdminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
+        assertNull(nonAdminRetrieved.getNote());
+    }
+
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 
     // way to get correct paging.
     

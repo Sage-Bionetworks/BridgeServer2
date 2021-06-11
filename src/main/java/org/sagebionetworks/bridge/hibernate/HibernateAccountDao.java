@@ -87,7 +87,7 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public Optional<Account> getAccount(AccountId accountId) {
         HibernateAccount account = null;
-        
+
         // The fastest retrieval can be done with the ID if it has been provided.
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
