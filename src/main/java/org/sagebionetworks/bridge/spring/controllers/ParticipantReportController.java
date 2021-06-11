@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getLocalDateOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -216,7 +217,7 @@ public class ParticipantReportController extends BaseController {
     @PostMapping({"/v4/participants/{userIdToken}/reports/{identifier}", "/v3/participants/{userIdToken}/reports/{identifier}"})
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveParticipantReport(@PathVariable String userIdToken, @PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
 
         String healthCode = accountService.getAccountHealthCode(session.getAppId(), userIdToken)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
@@ -262,7 +263,7 @@ public class ParticipantReportController extends BaseController {
     @DeleteMapping({ "/v4/participants/{userIdToken}/reports/{identifier}",
             "/v3/participants/{userIdToken}/reports/{identifier}" })
     public StatusMessage deleteParticipantReport(@PathVariable String userIdToken, @PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, WORKER);
         
         String healthCode = accountService.getAccountHealthCode(session.getAppId(), userIdToken)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
@@ -278,7 +279,7 @@ public class ParticipantReportController extends BaseController {
     @DeleteMapping("/v3/participants/{userIdToken}/reports/{identifier}/{date}")
     public StatusMessage deleteParticipantReportRecord(@PathVariable String userIdToken, @PathVariable String identifier,
             @PathVariable String date) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, WORKER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, WORKER);
         
         String healthCode = accountService.getAccountHealthCode(session.getAppId(), userIdToken)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));

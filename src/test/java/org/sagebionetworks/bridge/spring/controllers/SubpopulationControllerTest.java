@@ -254,9 +254,9 @@ public class SubpopulationControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void getAllSubpopulationsRequiresDeveloper() throws Exception {
-        session.setParticipant(
-                new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(ADMIN)).build());
+    public void getAllSubpopulationsRequiresAdminUser() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .copyOf(participant).withRoles(ImmutableSet.of()).build());
 
         controller.getAllSubpopulations(false);
     }

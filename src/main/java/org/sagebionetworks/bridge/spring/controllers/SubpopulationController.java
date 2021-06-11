@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
@@ -45,7 +44,7 @@ public class SubpopulationController extends BaseController {
     public String getAllSubpopulations(@RequestParam(defaultValue = "false") boolean includeDeleted) throws Exception {
         // Allowing study coordinator access to subpopulations should be temporary, as we are
         // going to revamp our consent system.
-        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_COORDINATOR);
+        UserSession session = getAdministrativeSession();
 
         List<Subpopulation> subpopulations = subpopService.getSubpopulations(session.getAppId(),
                 includeDeleted);
