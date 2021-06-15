@@ -202,7 +202,7 @@ public class StudyReportController extends BaseController {
      */
     @PostMapping("/v3/reports/{identifier}/index")
     public StatusMessage updateStudyReportIndex(@PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession();
         
         ReportIndex index = parseJson(ReportIndex.class);
         ReportDataKey key = new ReportDataKey.Builder()

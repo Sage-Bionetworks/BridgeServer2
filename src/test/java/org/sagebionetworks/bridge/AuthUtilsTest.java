@@ -537,7 +537,6 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canReadSchedulesFailsForStudyCoordinator() { // for example
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
         
         assertFalse( AuthUtils.CAN_READ_SCHEDULES.check(ORG_ID, TEST_ORG_ID) );

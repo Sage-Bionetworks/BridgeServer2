@@ -72,6 +72,7 @@ public class Schedule2ControllerTest extends Mockito {
         session = new UserSession();
         session.setAppId(TEST_APP_ID);
         
+        doReturn(session).when(controller).getAdministrativeSession();
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
         

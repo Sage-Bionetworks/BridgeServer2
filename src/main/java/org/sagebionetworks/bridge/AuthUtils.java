@@ -42,7 +42,14 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_EDIT_ASSESSMENTS = new AuthEvaluator()
             .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, ADMIN);
-    
+
+    /**
+     * Can the caller and/remove organization members? Must be the organizations's admin. Note 
+     * that this check is currently also used for sponsors...which are not members.
+     */
+    public static final AuthEvaluator CAN_READ_MEMBERS = new AuthEvaluator()
+            .isInOrg().or().hasAnyRole(ADMIN);
+
     /**
      * Can the caller and/remove organization members? Must be the organizations's admin. Note 
      * that this check is currently also used for sponsors...which are not members.
@@ -86,6 +93,14 @@ public class AuthUtils {
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(RESEARCHER, WORKER, ADMIN);
     
+    public static final AuthEvaluator CAN_READ_PARTICIPANT_REPORTS = new AuthEvaluator().isSelf().or()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
+
+    public static final AuthEvaluator CAN_READ_STUDY_REPORTS = new AuthEvaluator()
+            .canAccessStudy().or()
+            .hasAnyRole();
+    
     /**
      * Can the caller enroll or withdraw participants from a study? Must be enrolling self, or 
      * be a study coordinator with access to the study involved, or be a researcher. 
@@ -114,7 +129,7 @@ public class AuthUtils {
      * Can the caller edit studies? Caller must be a study coordinator, or a developer.
      */
     public static final AuthEvaluator CAN_UPDATE_STUDIES = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER).or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
@@ -142,7 +157,7 @@ public class AuthUtils {
      * yet. 
      */
     public static final AuthEvaluator CAN_READ_SCHEDULES = new AuthEvaluator()
-            .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
+            .isInOrg().or()
             .isEnrolledInStudy().or()
             .hasAnyRole(DEVELOPER, ADMIN);
 

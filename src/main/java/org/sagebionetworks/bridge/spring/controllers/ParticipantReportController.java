@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
@@ -9,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.getLocalDateOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -71,8 +70,8 @@ public class ParticipantReportController extends BaseController {
         LocalDate localStartDate = getLocalDateOrDefault(startDate, null);
         LocalDate localEndDate = getLocalDateOrDefault(endDate, null);
         
-        return reportService.getParticipantReport(session.getAppId(), identifier, session.getHealthCode(),
-                localStartDate, localEndDate);
+        return reportService.getParticipantReport(session.getAppId(), session.getId(), identifier,
+                session.getHealthCode(), localStartDate, localEndDate);
     }
 
     @GetMapping("/v4/users/self/reports/{identifier}")
@@ -85,8 +84,8 @@ public class ParticipantReportController extends BaseController {
         DateTime endTimeObj = getDateTimeOrDefault(endTime, null);
         int pageSizeInt = getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
-        return reportService.getParticipantReportV4(session.getAppId(), identifier, session.getHealthCode(),
-                startTimeObj, endTimeObj, offsetKey, pageSizeInt);
+        return reportService.getParticipantReportV4(session.getAppId(), session.getId(), identifier,
+                session.getHealthCode(), startTimeObj, endTimeObj, offsetKey, pageSizeInt);
     }
 
     @PostMapping({"/v4/users/self/reports/{identifier}", "/v3/users/self/reports/{identifier}"})
@@ -97,7 +96,7 @@ public class ParticipantReportController extends BaseController {
         ReportData reportData = parseJson(ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
         
-        reportService.saveParticipantReport(session.getAppId(), identifier, 
+        reportService.saveParticipantReport(session.getAppId(), session.getId(), identifier, 
                 session.getHealthCode(), reportData);
         
         return new StatusMessage("Report data saved.");
@@ -137,9 +136,8 @@ public class ParticipantReportController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
         
-        CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, account.getId());
-        
-        return getParticipantReportInternal(session.getAppId(), account.getHealthCode(), identifier, startDate, endDate);
+        return getParticipantReportInternal(session.getAppId(), account.getId(), account.getHealthCode(), identifier,
+                startDate, endDate);
     }
 
     /** Worker API to get reports for the given user in the given app by date. */
@@ -150,18 +148,21 @@ public class ParticipantReportController extends BaseController {
             @RequestParam(required = false) String endDate) {
         getAuthenticatedSession(WORKER);
         
-        String healthCode = accountService.getAccountHealthCode(appId, userIdToken)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        
-        return getParticipantReportInternal(appId, healthCode, reportId, startDate, endDate);
+        AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
+
+        return getParticipantReportInternal(appId, account.getId(), account.getHealthCode(), reportId, startDate, endDate);
     }
 
-    private DateRangeResourceList<? extends ReportData> getParticipantReportInternal(String appId, String healthCode, String reportId,
-            String startDateString, String endDateString) {
+    private DateRangeResourceList<? extends ReportData> getParticipantReportInternal(String appId, String userId,
+            String healthCode, String reportId, String startDateString, String endDateString) {
         LocalDate startDate = getLocalDateOrDefault(startDateString, null);
         LocalDate endDate = getLocalDateOrDefault(endDateString, null);
 
-        return reportService.getParticipantReport(appId, reportId, healthCode, startDate, endDate);
+        return reportService.getParticipantReport(appId, userId, reportId, healthCode, startDate, endDate);
     }
 
     /** API to get reports for the given user by date-time. */
@@ -178,9 +179,7 @@ public class ParticipantReportController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
         
-        CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, session.getId());
-        
-        return getParticipantReportInternalV4(session.getAppId(), account.getHealthCode(), identifier, 
+        return getParticipantReportInternalV4(session.getAppId(), account.getId(), account.getHealthCode(), identifier,
                 startTime, endTime, offsetKey, pageSize);
     }
 
@@ -193,20 +192,25 @@ public class ParticipantReportController extends BaseController {
             @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize) {
         getAuthenticatedSession(WORKER);
         
-        String healthCode = accountService.getAccountHealthCode(appId, userIdToken)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
 
-        return getParticipantReportInternalV4(appId, healthCode, reportId, startTime, endTime, offsetKey, pageSize);
+        return getParticipantReportInternalV4(appId, account.getId(), account.getHealthCode(), reportId, startTime,
+                endTime, offsetKey, pageSize);
     }
 
     // Helper method, shared by both getParticipantReportV4() and getParticipantReportForWorkerV4().
-    private ForwardCursorPagedResourceList<ReportData> getParticipantReportInternalV4(String appId, String healthCode,
-            String reportId, String startTimeString, String endTimeString, String offsetKey, String pageSizeString) {
+    private ForwardCursorPagedResourceList<ReportData> getParticipantReportInternalV4(String appId, String userId,
+            String healthCode, String reportId, String startTimeString, String endTimeString, String offsetKey,
+            String pageSizeString) {
         DateTime startTime = getDateTimeOrDefault(startTimeString, null);
         DateTime endTime = getDateTimeOrDefault(endTimeString, null);
         int pageSize = getIntOrDefault(pageSizeString, API_DEFAULT_PAGE_SIZE);
 
-        return reportService.getParticipantReportV4(appId, reportId, healthCode, 
+        return reportService.getParticipantReportV4(appId, userId, reportId, healthCode, 
                 startTime, endTime, offsetKey, pageSize);
     }
 
@@ -217,16 +221,19 @@ public class ParticipantReportController extends BaseController {
     @PostMapping({"/v4/participants/{userIdToken}/reports/{identifier}", "/v3/participants/{userIdToken}/reports/{identifier}"})
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveParticipantReport(@PathVariable String userIdToken, @PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_COORDINATOR);
 
-        String healthCode = accountService.getAccountHealthCode(session.getAppId(), userIdToken)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
 
         ReportData reportData = parseJson(ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
         
-        reportService.saveParticipantReport(session.getAppId(), identifier, 
-                healthCode, reportData);
+        reportService.saveParticipantReport(session.getAppId(), account.getId(), identifier, 
+                account.getHealthCode(), reportData);
         
         return new StatusMessage("Report data saved.");
     }
@@ -245,12 +252,15 @@ public class ParticipantReportController extends BaseController {
             throw new BadRequestException("A health code is required to save report data.");
         }
         String healthCode = node.get("healthCode").asText();
-        
+
+        // NOTE: This doesn't allow the worker to switch accounts...this is an error in the API.
+        String userId = accountService.getAccountId(session.getAppId(), "healthCode:"+healthCode)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         ReportData reportData = parseJson(node, ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
         
-        reportService.saveParticipantReport(session.getAppId(), identifier, 
-                healthCode, reportData);
+        reportService.saveParticipantReport(session.getAppId(), userId, identifier, healthCode, reportData);
         
         return new StatusMessage("Report data saved.");
     }
@@ -265,10 +275,13 @@ public class ParticipantReportController extends BaseController {
     public StatusMessage deleteParticipantReport(@PathVariable String userIdToken, @PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, WORKER);
         
-        String healthCode = accountService.getAccountHealthCode(session.getAppId(), userIdToken)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
 
-        reportService.deleteParticipantReport(session.getAppId(), identifier, healthCode);
+        reportService.deleteParticipantReport(session.getAppId(), account.getId(), identifier, account.getHealthCode());
         
         return new StatusMessage("Report deleted.");
     }
@@ -281,10 +294,13 @@ public class ParticipantReportController extends BaseController {
             @PathVariable String date) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, WORKER);
         
-        String healthCode = accountService.getAccountHealthCode(session.getAppId(), userIdToken)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
+        }
 
-        reportService.deleteParticipantReportRecord(session.getAppId(), identifier, date, healthCode);
+        reportService.deleteParticipantReportRecord(session.getAppId(), null, identifier, date, account.getHealthCode());
         
         return new StatusMessage("Report record deleted.");
     }
@@ -293,7 +309,7 @@ public class ParticipantReportController extends BaseController {
     public StatusMessage deleteParticipantReportIndex(@PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(ADMIN);
         
-        reportService.deleteParticipantReportIndex(session.getAppId(), identifier);
+        reportService.deleteParticipantReportIndex(session.getAppId(), null, identifier);
         
         return new StatusMessage("Report index deleted.");
     }
