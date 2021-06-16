@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NONPOSITIVE_REVISION_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
@@ -67,7 +68,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     public void importAssessment() {
         UserSession session = new UserSession();
         session.setAppId(TEST_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.importAssessment(TEST_APP_ID, TEST_OWNER_ID, null, GUID)).thenReturn(assessment);
@@ -82,7 +83,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     public void importAssessmentWithNewId() {
         UserSession session = new UserSession();
         session.setAppId(TEST_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.importAssessment(TEST_APP_ID, TEST_OWNER_ID, NEW_ID, GUID)).thenReturn(assessment);
