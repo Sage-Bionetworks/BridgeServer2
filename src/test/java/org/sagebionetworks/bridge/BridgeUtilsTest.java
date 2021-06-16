@@ -303,6 +303,7 @@ public class BridgeUtilsTest {
     public void filterForStudyAccountRemovesUnsharedStudyIds() {
         Set<String> studies = ImmutableSet.of("studyA");
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withOrgSponsoredStudies(studies).build());
         
         Account account = BridgeUtils.filterForStudy(getAccountWithStudy("studyB", "studyA"));
@@ -332,6 +333,7 @@ public class BridgeUtilsTest {
     
     @Test
     public void filterForStudyAccountNoContextWithStudyDoesNotReturnAccount() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
     
@@ -351,7 +353,9 @@ public class BridgeUtilsTest {
     
     @Test
     public void filterForStudyAccountWithMismatchedStudiesHidesStudyAccount() {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(ImmutableSet.of("notStudyA")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of("notStudyA")).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
     

@@ -131,10 +131,8 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAdministrativeSession();
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         return getParticipantReportInternal(session.getAppId(), account.getId(), account.getHealthCode(), identifier,
                 startDate, endDate);
@@ -149,10 +147,8 @@ public class ParticipantReportController extends BaseController {
         getAuthenticatedSession(WORKER);
         
         AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+            .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         return getParticipantReportInternal(appId, account.getId(), account.getHealthCode(), reportId, startDate, endDate);
     }
@@ -174,10 +170,8 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAdministrativeSession();
 
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         return getParticipantReportInternalV4(session.getAppId(), account.getId(), account.getHealthCode(), identifier,
                 startTime, endTime, offsetKey, pageSize);
@@ -193,10 +187,8 @@ public class ParticipantReportController extends BaseController {
         getAuthenticatedSession(WORKER);
         
         AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         return getParticipantReportInternalV4(appId, account.getId(), account.getHealthCode(), reportId, startTime,
                 endTime, offsetKey, pageSize);
@@ -224,10 +216,8 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_COORDINATOR);
 
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         ReportData reportData = parseJson(ReportData.class);
         reportData.setKey(null); // set in service, but just so no future use depends on it
@@ -253,7 +243,8 @@ public class ParticipantReportController extends BaseController {
         }
         String healthCode = node.get("healthCode").asText();
 
-        // NOTE: This doesn't allow the worker to switch accounts...this is an error in the API.
+        // NOTE: Use of session.getAppId() here and below doesn't allow the worker to switch accounts.
+        // This is an error in the API.
         String userId = accountService.getAccountId(session.getAppId(), "healthCode:"+healthCode)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
@@ -276,10 +267,8 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, WORKER);
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         reportService.deleteParticipantReport(session.getAppId(), account.getId(), identifier, account.getHealthCode());
         
@@ -295,10 +284,8 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, WORKER);
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccountNoFilter(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         reportService.deleteParticipantReportRecord(session.getAppId(), null, identifier, date, account.getHealthCode());
         

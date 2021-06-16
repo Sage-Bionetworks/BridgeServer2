@@ -39,7 +39,7 @@ public class HibernateAssessmentConfigDao implements AssessmentConfigDao {
             session.merge(hibAssessment);
             session.merge(hibConfig);
             // If we don't reload this value, the version we return is not updated. We've
-            // verified this from manual testing through clients applications. It appears
+            // verified through manual testing with client applications. It appears
             // the merge method does not do this like the save method.
             return session.get(HibernateAssessmentConfig.class, hibConfig.getGuid());
         });
@@ -52,7 +52,7 @@ public class HibernateAssessmentConfigDao implements AssessmentConfigDao {
         HibernateAssessmentConfig retValue = hibernateHelper.executeWithExceptionHandling(hibConfig, (session) -> {
             session.merge(hibConfig);
             // If we don't reload this value, the version we return is not updated. We've
-            // verified this from manual testing through clients applications. It appears
+            // verified through manual testing with client applications. It appears
             // the merge method does not do this like the save method.
             return session.get(HibernateAssessmentConfig.class, hibConfig.getGuid());
         });

@@ -93,10 +93,16 @@ public class AuthUtils {
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(RESEARCHER, WORKER, ADMIN);
     
+    /**
+     * Can the caller read participant reports? 
+     */
     public static final AuthEvaluator CAN_READ_PARTICIPANT_REPORTS = new AuthEvaluator().isSelf().or()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(RESEARCHER, WORKER, ADMIN);
-
+    
+    /**
+     * Can the caller read study reports?
+     */
     public static final AuthEvaluator CAN_READ_STUDY_REPORTS = new AuthEvaluator()
             .canAccessStudy().or()
             .hasAnyRole();

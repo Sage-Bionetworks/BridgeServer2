@@ -326,11 +326,11 @@ public class AccountService {
     }
     
     /**
-     * This is used when enrolling a user, since the account itself is not yet in a study
-     * that is visible to the caller. Another use case for bypassing filtering is when an 
-     * unauthenticated request is in the process of authenticating the caller as the 
-     * account that is being retrieved (we have a bootstrapping issue here, since the caller
-     * has no ID and the account does). 
+     * getAccount() checks access to the account with the CAN_READ_PARTICIPANTS rule, 
+     * *and* it removes any enrollments from the record that are not visible to the 
+     * caller. The non-filtering method can be used in cases where CAN_READ_PARTICIPANTS 
+     * is going to be called, and we do not need to hide enrollments from the caller 
+     * (because the account is not going to be returned through the API).
      */
     public Optional<Account> getAccountNoFilter(AccountId accountId) {
         checkNotNull(accountId);

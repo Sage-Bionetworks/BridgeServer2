@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_REPORTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeUtils.isEmpty;
 import static org.sagebionetworks.bridge.models.ResourceList.REPORT_TYPE;
 
 import java.util.List;
@@ -407,7 +408,7 @@ public class ReportService {
     }
     
     protected boolean canAccessParticipantReport(String userId, ReportIndex index) {
-        if (index == null || index.getStudyIds() == null || index.getStudyIds().isEmpty() || index.isPublic()) {
+        if (index == null || isEmpty(index.getStudyIds()) || index.isPublic()) {
             return true;
         }
         for (String studyId : index.getStudyIds()) {
@@ -419,7 +420,7 @@ public class ReportService {
     }
 
     protected boolean canAccessStudyReport(ReportIndex index) {
-        if (index == null || index.getStudyIds() == null || index.getStudyIds().isEmpty() || index.isPublic()) {
+        if (index == null || isEmpty(index.getStudyIds()) || index.isPublic()) {
             return true;
         }
         for (String studyId : index.getStudyIds()) {
