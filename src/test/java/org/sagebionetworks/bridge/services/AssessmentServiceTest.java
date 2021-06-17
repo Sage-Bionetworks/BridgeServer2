@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
@@ -48,6 +49,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.dao.AssessmentResourceDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -534,7 +536,8 @@ public class AssessmentServiceTest extends Mockito {
     public void updateSharedAssessment() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
         when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
             .thenReturn(Organization.create());
@@ -562,7 +565,8 @@ public class AssessmentServiceTest extends Mockito {
     public void updateSharedAssessmentAdjustsOsNameAlias() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
         when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
             .thenReturn(Organization.create());
@@ -586,7 +590,8 @@ public class AssessmentServiceTest extends Mockito {
         
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
         
         when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
             .thenReturn(Organization.create());

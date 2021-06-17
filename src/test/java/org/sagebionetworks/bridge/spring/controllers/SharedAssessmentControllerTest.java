@@ -30,6 +30,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -194,7 +195,7 @@ public class SharedAssessmentControllerTest extends Mockito {
         // You do need a session for this call
         UserSession session = new UserSession();
         session.setAppId(TEST_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setGuid("notCorrectGuid");

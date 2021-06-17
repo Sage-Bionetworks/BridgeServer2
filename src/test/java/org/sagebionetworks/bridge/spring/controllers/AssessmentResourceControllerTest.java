@@ -255,7 +255,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     
     @Test
     public void publishAssessmentResource() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         mockRequestBody(mockRequest, guids);
@@ -269,7 +269,7 @@ public class AssessmentResourceControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void publishAssessmentResourceRejectsSharedAppContext() throws Exception {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.publishAssessmentResource(ASSESSMENT_ID);
     }    

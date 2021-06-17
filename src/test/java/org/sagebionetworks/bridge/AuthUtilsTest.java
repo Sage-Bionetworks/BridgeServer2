@@ -152,13 +152,32 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void canEditSharedAssessmentsSucceedsForOwner() {
+    public void canEditSharedAssessmentsSucceedsForStudyDesignerOwner() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
         CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(OWNER_ID, SHARED_OWNER_ID);
     }
 
+    @Test
+    public void canEditSharedAssessmentsSucceedsForDeveloperOwner() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(TEST_OWNER_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(OWNER_ID, SHARED_OWNER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void canEditSharedAssessmentsFailsForDeveloper() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId("some-other-app")
+                .withCallerOrgMembership("some-other-org")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(OWNER_ID, SHARED_OWNER_ID);
+    }
+    
     @Test(expectedExceptions = UnauthorizedException.class)
     public void canEditSharedAssessmentsFailsWrongOrgId() {
         RequestContext.set(new RequestContext.Builder()

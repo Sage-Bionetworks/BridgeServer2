@@ -105,7 +105,7 @@ public class AuthUtils {
      */
     public static final AuthEvaluator CAN_READ_STUDY_REPORTS = new AuthEvaluator()
             .canAccessStudy().or()
-            .hasAnyRole();
+            .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**
      * Can the caller enroll or withdraw participants from a study? Must be enrolling self, or 
@@ -153,8 +153,8 @@ public class AuthUtils {
      * shared assessments so that organization IDs do not collide between applications). 
      */
     public static final AuthEvaluator CAN_EDIT_SHARED_ASSESSMENTS = new AuthEvaluator()
-            .isSharedOwner().or()
-            .hasAnyRole(ADMIN);
+            .isSharedOwner().hasAnyRole(STUDY_DESIGNER).or()
+            .hasAnyRole(DEVELOPER, ADMIN);
 
     /**
      * Can the caller read the schedules? They must be enrolled in the study, a study-scoped

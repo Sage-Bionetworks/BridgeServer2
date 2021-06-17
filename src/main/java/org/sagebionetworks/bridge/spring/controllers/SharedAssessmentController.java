@@ -115,7 +115,7 @@ public class SharedAssessmentController extends BaseController {
 
     @PostMapping("/v1/sharedassessments/{guid}")
     public Assessment updateSharedAssessment(@PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
         
         Assessment assessment = parseJson(Assessment.class);

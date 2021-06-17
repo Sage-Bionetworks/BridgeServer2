@@ -138,7 +138,7 @@ public class AssessmentResourceController extends BaseController {
     
     @PostMapping("/v1/assessments/identifier:{assessmentId}/resources/publish")
     public ResourceList<AssessmentResource> publishAssessmentResource(@PathVariable String assessmentId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
 
         if (SHARED_APP_ID.equals(appId)) {

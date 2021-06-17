@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeUtils.sanitizeHTML;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.models.OperatingSystem.SYNONYMS;
 import static org.sagebionetworks.bridge.models.ResourceList.GUID;
 import static org.sagebionetworks.bridge.models.ResourceList.IDENTIFIER;
@@ -145,9 +146,10 @@ public class AssessmentService {
         checkNotNull(assessment);
         
         // Verify this is an existing assessment, and that we're trying to add a revision
-        // with the same identifier.
+        // with the same identifier. Keep the same owner or it gets quite confusing.
         Assessment existing = getAssessmentByGuid(appId, guid);
         assessment.setIdentifier(existing.getIdentifier());
+        assessment.setOwnerId(existing.getOwnerId());
 
         return createAssessmentInternal(appId, assessment);
     }
@@ -287,8 +289,7 @@ public class AssessmentService {
         // the shared repository, so check for this as well.
         String ownerId = appId + ":" + assessmentToPublish.getOwnerId();
         String identifier = assessmentToPublish.getIdentifier();
-        Assessment existing = getLatestInternal(
-                SHARED_APP_ID, identifier, true).orElse(null);
+        Assessment existing = getLatestInternal(SHARED_APP_ID, identifier, true).orElse(null);
         if (existing != null && !existing.getOwnerId().equals(ownerId)) {
             throw new UnauthorizedException("Assessment exists in shared library under a different " 
                     +"owner (identifier = " + identifier + ")");
@@ -396,7 +397,7 @@ public class AssessmentService {
         if (SYNONYMS.get(osName) != null) {
             assessment.setOsName(SYNONYMS.get(osName));
         }
-        if (!RequestContext.get().isInRole(ADMIN)) {
+        if (!RequestContext.get().isInRole(DEVELOPER, ADMIN)) {
             String orgId = RequestContext.get().getCallerOrgMembership();
             assessment.setOwnerId(orgId);    
         }

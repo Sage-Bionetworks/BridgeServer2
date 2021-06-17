@@ -243,8 +243,6 @@ public class ParticipantReportController extends BaseController {
         }
         String healthCode = node.get("healthCode").asText();
 
-        // NOTE: Use of session.getAppId() here and below doesn't allow the worker to switch accounts.
-        // This is an error in the API.
         String userId = accountService.getAccountId(session.getAppId(), "healthCode:"+healthCode)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
