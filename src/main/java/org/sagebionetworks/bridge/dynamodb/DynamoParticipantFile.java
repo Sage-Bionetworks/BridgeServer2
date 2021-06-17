@@ -22,6 +22,7 @@ public class DynamoParticipantFile implements ParticipantFile {
     private String appId;
     private String uploadUrl;
     private String downloadUrl;
+    private DateTime expires;
 
     public DynamoParticipantFile() {
     }
@@ -120,5 +121,18 @@ public class DynamoParticipantFile implements ParticipantFile {
     @Override
     public void setAppId(String appId) {
         this.appId = appId;
+    }
+
+    @Override
+    @DynamoDBIgnore
+    @JsonSerialize(using = DateTimeSerializer.class)
+    public DateTime getExpires() {
+        return this.expires;
+    }
+
+    @Override
+    @JsonDeserialize(using = DateTimeDeserializer.class)
+    public void setExpires(DateTime expires) {
+        this.expires = expires;
     }
 }

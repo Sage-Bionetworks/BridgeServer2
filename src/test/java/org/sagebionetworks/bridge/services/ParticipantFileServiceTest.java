@@ -33,6 +33,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 public class ParticipantFileServiceTest {
 
@@ -117,6 +118,8 @@ public class ParticipantFileServiceTest {
         assertEquals(result.getMimeType(), "dummy-type");
         assertEquals(result.getDownloadUrl(), downloadUrl);
         assertEquals(result.getAppId(), "api");
+        assertNull(result.getExpires());
+        assertNull(result.getUploadUrl());
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
@@ -153,6 +156,8 @@ public class ParticipantFileServiceTest {
         assertEquals(result.getUploadUrl(), upload);
         assertEquals(result.getAppId(), "api");
         assertEquals(TestConstants.TIMESTAMP.compareTo(result.getCreatedOn()), 0);
+        assertEquals(TestConstants.TIMESTAMP.plusDays(1).toDate(), result.getExpires().toDate());
+        assertNull(result.getDownloadUrl());
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
@@ -164,7 +169,7 @@ public class ParticipantFileServiceTest {
                 ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
         assertEquals(request.getExpiration(), TestConstants.TIMESTAMP.plusDays(1).toDate());
 
-        verify(mockFileDao).getParticipantFile(eq("test_user"), eq("file_id"));
+//        verify(mockFileDao).getParticipantFile(eq("test_user"), eq("file_id"));
         verify(mockFileDao).uploadParticipantFile(eq(file));
 
     }
@@ -175,7 +180,7 @@ public class ParticipantFileServiceTest {
         service.createParticipantFile("api", "test_user", file);
     }
 
-    @Test(expectedExceptions = EntityAlreadyExistsException.class)
+    @Test
     public void createParticipantFileAlreadyExists() {
         ParticipantFile file = ParticipantFile.create();
         file.setFileId("file_id");
@@ -189,12 +194,20 @@ public class ParticipantFileServiceTest {
         newFile.setUserId("test_user");
         newFile.setAppId("not_api");
         newFile.setMimeType("new-dummy-type");
-        newFile.setCreatedOn(TestConstants.TIMESTAMP);
+        newFile.setCreatedOn(TestConstants.TIMESTAMP.plusDays(1));
 
         when(mockFileDao.getParticipantFile(eq("test_user"), eq("file_id"))).thenReturn(Optional.of(file));
-        service.createParticipantFile("not_api", "test_user", newFile);
+        ParticipantFile result = service.createParticipantFile("not_api", "test_user", newFile);
 
-        verify(mockFileDao, never()).uploadParticipantFile(any());
+//        verify(mockFileDao, never()).uploadParticipantFile(any());
+        verify(mockFileDao).uploadParticipantFile(any());
+        assertEquals("file_id", result.getFileId());
+        assertEquals("test_user", result.getUserId());
+        assertEquals("not_api", result.getAppId());
+        assertEquals("new-dummy-type", result.getMimeType());
+        assertEquals(TestConstants.TIMESTAMP.toDate(), result.getCreatedOn().toDate());
+        assertNotNull(result.getUploadUrl());
+        assertNull(result.getDownloadUrl());
     }
 
     @Test
