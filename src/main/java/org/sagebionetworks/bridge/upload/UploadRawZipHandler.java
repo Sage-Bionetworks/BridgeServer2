@@ -38,7 +38,7 @@ public class UploadRawZipHandler implements UploadValidationHandler {
 
         // Upload raw data as an attachment.
         try {
-            uploadFileHelper.uploadFileToS3(rawDataAttachmentId, context.getDecryptedDataFile());
+            uploadFileHelper.uploadFileAsAttachment(rawDataAttachmentId, context.getDecryptedDataFile());
         } catch (IOException ex) {
             throw new UploadValidationException("Error upload raw data zip for upload " + context.getUploadId());
         }

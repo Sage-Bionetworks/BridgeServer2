@@ -28,6 +28,10 @@ public interface Upload {
     String getContentMd5();
     void setContentMd5(String contentMd5);
 
+    /** MIME content type. */
+    String getContentType();
+    void setContentType(String contentType);
+
     /** The original ID that this upload is a duplicate of, or null if this upload is not a duplicate. */
     String getDuplicateUploadId();
 

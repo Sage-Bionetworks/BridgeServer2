@@ -7,7 +7,6 @@ import java.util.Set;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.upload.ExporterVersion;
 import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
@@ -87,14 +86,13 @@ public interface App extends BridgeEntity {
     /** @see #isAutoVerificationEmailSuppressed */
     void setAutoVerificationEmailSuppressed(boolean autoVerificationEmailSuppressed);
 
-    /**
-     * Selects the version of the exporter to be used by the app. If not set, defaults to LEGACY_EXPORTER. Can only be
-     * set during app creation time, or updated by a super_admin.
-     */
-    ExporterVersion getExporterVersion();
+    /** Configuration required for Exporter 3.0. */
+    Exporter3Configuration getExporter3Configuration();
+    void setExporter3Configuration(Exporter3Configuration exporter3Configuration);
 
-    /** @see #getExporterVersion */
-    void setExporterVersion(ExporterVersion exporterVersion);
+    /** True if Exporter 3.0 is enabled for this app. Note that enabling Exporter 3.0 does not disable Exporter 2.0. */
+    boolean isExporter3Enabled();
+    void setExporter3Enabled(boolean exporter3Enabled);
 
     /**
      * True if sessions for unprivileged participant accounts should be locked to an IP address. (Privileged account
