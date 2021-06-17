@@ -191,11 +191,12 @@ public interface HealthDataRecord extends BridgeEntity {
     void setUserStudyMemberships(Map<String,String> userStudyMemberships);
     
     /**
-     * The “day in study” value for each study this participant is enrolled in. The keys of this map are 
-     * study IDs, and the values are the number of days the participant has been in that study (as defined
-     * by the study, and starting with day 1). Calendar days are calculated using the same timezone as the 
-     * Bridge Exporter (ie, America/Los_Angeles). The value will not be present in the map if the 
-     * participant has not triggered the event that defines the start of the study. 
+     * The “day in study” value for each study this participant is enrolled in (withdrawn studies are 
+     * not included). The keys of this map are study IDs, and the values are the number of days the 
+     * participant has been in that study (as defined by the study via the studyStartEventId, and 
+     * starting with day 1). Calendar days are calculated using the same timezone as the Bridge Exporter 
+     * (ie, America/Los_Angeles). A value for a study will not be present in the map if the participant 
+     * has not triggered the event that defines the start of the study for that study. 
      */
     Map<String, Integer> getDayInEachStudy();
     
