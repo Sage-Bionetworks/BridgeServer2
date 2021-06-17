@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
@@ -28,7 +27,6 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
@@ -169,9 +167,7 @@ public class ParticipantFileServiceTest {
                 ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
         assertEquals(request.getExpiration(), TestConstants.TIMESTAMP.plusDays(1).toDate());
 
-//        verify(mockFileDao).getParticipantFile(eq("test_user"), eq("file_id"));
         verify(mockFileDao).uploadParticipantFile(eq(file));
-
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -199,7 +195,6 @@ public class ParticipantFileServiceTest {
         when(mockFileDao.getParticipantFile(eq("test_user"), eq("file_id"))).thenReturn(Optional.of(file));
         ParticipantFile result = service.createParticipantFile("not_api", "test_user", newFile);
 
-//        verify(mockFileDao, never()).uploadParticipantFile(any());
         verify(mockFileDao).uploadParticipantFile(any());
         assertEquals("file_id", result.getFileId());
         assertEquals("test_user", result.getUserId());
