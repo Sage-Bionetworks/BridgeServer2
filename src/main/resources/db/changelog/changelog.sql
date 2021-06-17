@@ -716,3 +716,8 @@ CREATE TABLE `AdherenceRecords` (
 
 ALTER TABLE `RequestInfos`
 ADD COLUMN `timelineAccessedOn` varchar(255);
+
+-- changeset bridge:39
+
+ALTER TABLE `Substudies`
+ADD COLUMN `studyStartEventId` varchar(255) NOT NULL DEFAULT 'created_on';

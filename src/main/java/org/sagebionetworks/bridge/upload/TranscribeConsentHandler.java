@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.upload;
 import static org.sagebionetworks.bridge.BridgeUtils.collectExternalIds;
 import static org.sagebionetworks.bridge.BridgeUtils.mapStudyMemberships;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import javax.annotation.Nonnull;
@@ -66,15 +68,28 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
             RequestContext.acquireAccountIdentity(account);
             
             DateTime studyStartTime = participantService.getStudyStartTime(account);
-            LocalDate studyStartDate = studyStartTime.withZone(BridgeConstants.LOCAL_TIME_ZONE).toLocalDate();
-            LocalDate todayLocalDate = DateUtils.getCurrentCalendarDateInLocalTime();
-
-            // "dayInStudy" is 1-indexed. The first day of the study is day 1. Therefore, add 1.
-            int dayInStudy = Days.daysBetween(studyStartDate, todayLocalDate).getDays() + 1;
+            int dayInStudy = calculateDaysSince(studyStartTime);
             record.setDayInStudy(dayInStudy);
+            
+            Map<String, DateTime> studyStartTimeMap = participantService.getStartTimeInEachStudy(account);
+            Map<String, Integer> dayInStudyMap = new HashMap<>();
+            for(Map.Entry<String, DateTime> oneStartTime : studyStartTimeMap.entrySet()) {
+                int oneDayInStudy = calculateDaysSince(oneStartTime.getValue());
+                dayInStudyMap.put(oneStartTime.getKey(), oneDayInStudy);
+            }
+            record.setDayInEachStudy(dayInStudyMap);
+
         } else {
             // default sharing to NO_SHARING
             record.setUserSharingScope(SharingScope.NO_SHARING);
         }
+    }
+
+    protected int calculateDaysSince(DateTime studyStartTime) {
+        LocalDate studyStartDate = studyStartTime.withZone(BridgeConstants.LOCAL_TIME_ZONE).toLocalDate();
+        LocalDate todayLocalDate = DateUtils.getCurrentCalendarDateInLocalTime();
+
+        // "dayInStudy" is 1-indexed. The first day of the study is day 1. Therefore, add 1.
+        return Days.daysBetween(studyStartDate, todayLocalDate).getDays() + 1;
     }
 }

@@ -126,6 +126,7 @@ public class StudyActivityEventService {
     }
     
     public ResourceList<StudyActivityEvent> getRecentStudyActivityEvents(String appId, String userId, String studyId) {
+        checkNotNull(appId);
         checkNotNull(userId);
         checkNotNull(studyId);
 
@@ -137,6 +138,20 @@ public class StudyActivityEventService {
         addEnrollmentIfMissing(account, events, studyId);
         
         return new ResourceList<>(events); 
+    }
+    
+    public StudyActivityEvent getRecentStudyActivityEvent(String appId, String userId, String studyId, String eventId) {
+        ResourceList<StudyActivityEvent> events = getRecentStudyActivityEvents(appId, userId, studyId);
+
+        App app = appService.getApp(appId);
+        String adjEventId = formatActivityEventId(app.getCustomEvents().keySet(), eventId);
+
+        for (StudyActivityEvent oneEvent : events.getItems()) {
+            if (oneEvent.getEventId().equals(adjEventId)) {
+                return oneEvent;
+            }
+        }
+        return null;
     }
     
     public PagedResourceList<StudyActivityEvent> getStudyActivityEventHistory(

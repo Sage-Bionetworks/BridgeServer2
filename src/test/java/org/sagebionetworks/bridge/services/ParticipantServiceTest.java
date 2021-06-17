@@ -92,6 +92,7 @@ import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.apps.SmsTemplate;
@@ -239,6 +240,9 @@ public class ParticipantServiceTest extends Mockito {
     
     @Mock
     private OrganizationService organizationService;
+    
+    @Mock
+    private StudyActivityEventService studyActivityEventService;
 
     @Mock
     private AmazonSQSClient sqsClient;
@@ -2515,6 +2519,54 @@ public class ParticipantServiceTest extends Mockito {
 
         StudyParticipant nonAdminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
         assertNull(nonAdminRetrieved.getNote());
+    }
+    
+    @Test
+    public void getStudyStartTimes() throws Exception {
+        Study studyA = Study.create();
+        studyA.setStudyStartEventId("enrollment");
+        when(studyService.getStudy(TEST_APP_ID, "studyA", false)).thenReturn(studyA);
+        
+        Study studyB = Study.create();
+        studyB.setStudyStartEventId("custom:clinic_visit");
+        when(studyService.getStudy(TEST_APP_ID, "studyB", false)).thenReturn(studyB);
+        
+        Study studyC = Study.create();
+        studyC.setStudyStartEventId("activities_retrieved");
+        when(studyService.getStudy(TEST_APP_ID, "studyC", false)).thenReturn(studyC);
+        
+        Study studyD = Study.create();
+        studyD.setStudyStartEventId("timeline_retrieved");
+        when(studyService.getStudy(TEST_APP_ID, "studyD", false)).thenReturn(studyD);
+        
+        StudyActivityEvent event1 = new StudyActivityEvent();
+        event1.setTimestamp(TIMESTAMP);
+        when(studyActivityEventService.getRecentStudyActivityEvent(
+                TEST_APP_ID, ID, "studyA", "enrollment")).thenReturn(event1);
+        
+        StudyActivityEvent event2 = new StudyActivityEvent();
+        event2.setTimestamp(ENROLLMENT_DATETIME);
+        when(studyActivityEventService.getRecentStudyActivityEvent(
+                TEST_APP_ID, ID, "studyB", "custom:clinic_visit")).thenReturn(event2);
+
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", ID);
+        // it's withdrawn so it's not included in map
+        Enrollment en3 = Enrollment.create(TEST_APP_ID, "studyC", ID);
+        en3.setWithdrawnOn(TIMESTAMP); 
+        // There will be no event, so it's not in the map
+        Enrollment en4 = Enrollment.create(TEST_APP_ID, "studyD", ID);
+        
+        Account account = Account.create();
+        account.setId(ID);
+        account.setAppId(TEST_APP_ID);
+        account.setCreatedOn(CREATED_ON_DATETIME);
+        account.setEnrollments(ImmutableSet.of(en1, en2, en3, en4));
+
+        Map<String, DateTime> retValue = participantService.getStartTimeInEachStudy(account);
+        assertEquals(retValue.size(), 2);
+        assertEquals(retValue.get("studyA"), TIMESTAMP);
+        assertEquals(retValue.get("studyB"), ENROLLMENT_DATETIME);
     }
 
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 

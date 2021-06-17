@@ -79,6 +79,7 @@ public class HibernateStudy implements Study {
             @JoinColumn(name="appId"), @JoinColumn(name="studyId")
     })
     private List<Contact> contacts;
+    private String studyStartEventId;
     
     /**
      * For full construction of object by Hibernate.
@@ -334,4 +335,16 @@ public class HibernateStudy implements Study {
     public void setStudyDesignType(String studyDesignType) {
         this.studyDesignType = studyDesignType;
     }
+    
+    @Override
+    public String getStudyStartEventId() {
+        return studyStartEventId;
+    }
+
+    @Override
+    public void setStudyStartEventId(String studyStartEventId) {
+        this.studyStartEventId = studyStartEventId;
+    }
+
+
 }

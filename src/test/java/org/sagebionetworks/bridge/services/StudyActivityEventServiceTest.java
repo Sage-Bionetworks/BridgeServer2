@@ -16,6 +16,7 @@ import static org.sagebionetworks.bridge.services.StudyActivityEventService.CREA
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.ENROLLMENT_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.fail;
 
@@ -53,6 +54,8 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+
+import jdk.nashorn.internal.ir.annotations.Ignore;
 
 public class StudyActivityEventServiceTest extends Mockito {
     private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
@@ -475,5 +478,40 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(retValue.getTotal(), Integer.valueOf(1));
         assertEquals(retValue.getItems().get(0).getTimestamp(), CREATED_ON); // not modifiedOn
+    }
+
+    @Test
+    @Ignore
+    public void getRecentStudyActivityEvent_validId() {
+        Account account = Account.create();
+        account.setCreatedOn(CREATED_ON);
+        when(mockAccountService.getAccountNoFilter(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+            .thenReturn(Optional.of(account));
+        StudyActivityEvent event1 = new StudyActivityEvent();
+        event1.setEventId("enrollment");
+        StudyActivityEvent event2 = new StudyActivityEvent();
+        event2.setEventId("custom:clinic_visit");
+        when(mockDao.getRecentStudyActivityEvents(TEST_USER_ID, TEST_STUDY_ID))
+            .thenReturn(Lists.newArrayList(event1, event2));
+        App app = App.create();
+        app.getCustomEvents().put("clinic_visit", MUTABLE);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        StudyActivityEvent retValue = service.getRecentStudyActivityEvent(
+                TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID, "clinic_visit");
+        assertEquals(retValue, event2);
+    }
+
+    @Test
+    public void getRecentStudyActivityEvent_invalidId() {
+        Account account = Account.create();
+        when(mockAccountService.getAccountNoFilter(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+            .thenReturn(Optional.of(account));
+        when(mockDao.getRecentStudyActivityEvents(TEST_USER_ID, TEST_STUDY_ID))
+            .thenReturn(new ArrayList<>());
+        
+        StudyActivityEvent event = service.getRecentStudyActivityEvent(
+                TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID, INVALID_EVENT_ID);
+        assertNull(event);
     }
 }

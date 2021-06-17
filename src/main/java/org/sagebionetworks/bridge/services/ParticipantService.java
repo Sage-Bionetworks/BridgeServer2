@@ -25,6 +25,7 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.accountHasVal
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -79,6 +80,7 @@ import org.sagebionetworks.bridge.models.accounts.UserConsentHistory;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.MimeType;
 import org.sagebionetworks.bridge.models.apps.SmsTemplate;
@@ -88,6 +90,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
@@ -132,6 +135,8 @@ public class ParticipantService {
     private ScheduledActivityService scheduledActivityService;
 
     private ActivityEventService activityEventService;
+    
+    private StudyActivityEventService studyActivityEventService;
 
     private AccountWorkflowService accountWorkflowService;
     
@@ -199,6 +204,11 @@ public class ParticipantService {
     @Autowired
     final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
+    }
+    
+    @Autowired
+    final void setStudyActivityEventService(StudyActivityEventService studyActivityEventService) {
+        this.studyActivityEventService = studyActivityEventService;
     }
 
     @Autowired
@@ -418,6 +428,27 @@ public class ParticipantService {
         }
 
         return account.getCreatedOn();
+    }
+    
+    /**
+     * If a value is derived from a mutable event, it can change. Time streams are also 
+     * ellided here (the current timestamp is used and there's no history of event 
+     * timestamp values).
+     */
+    public Map<String, DateTime> getStartTimeInEachStudy(Account account) {
+        Map<String, DateTime> mapping = new HashMap<>();
+        for (Enrollment en : account.getActiveEnrollments()) {
+            String studyId = en.getStudyId();
+            Study study = studyService.getStudy(account.getAppId(), studyId, false);
+            if (study != null) {
+                StudyActivityEvent event = studyActivityEventService.getRecentStudyActivityEvent(
+                        account.getAppId(), account.getId(), studyId, study.getStudyStartEventId());
+                if (event != null) {
+                    mapping.put(studyId, event.getTimestamp());
+                }
+            }
+        }
+        return mapping;
     }
 
     public void signUserOut(App app, String userId, boolean deleteReauthToken) {

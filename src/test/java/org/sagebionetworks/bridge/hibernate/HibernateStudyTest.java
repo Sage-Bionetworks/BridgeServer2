@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
 
@@ -30,6 +31,7 @@ public class HibernateStudyTest {
     private static final DateTime MODIFIED_ON = DateTime.now().minusHours(1).withZone(DateTimeZone.UTC);
     private static final LocalDate APPROVED_ON = DateTime.now().toLocalDate();
     private static final LocalDate EXPIRES_ON = DateTime.now().plusDays(10).toLocalDate();
+    private static final String EVENT_ID = ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase();
     
     @Test
     public void shortConstructor() {
@@ -62,6 +64,7 @@ public class HibernateStudyTest {
         study.setModifiedOn(MODIFIED_ON);
         study.setClientData(TestUtils.getClientData());
         study.setVersion(3L);
+        study.setStudyStartEventId(EVENT_ID);
         
         Contact c1 = new Contact();
         c1.setName("Name1");
@@ -84,7 +87,7 @@ public class HibernateStudyTest {
         study.setStudyDesignType("observational case control");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        assertEquals(node.size(), 23);
+        assertEquals(node.size(), 24);
         assertEquals(node.get("identifier").textValue(), "oneId");
         assertEquals(node.get("name").textValue(), "name");
         assertTrue(node.get("deleted").booleanValue());
@@ -111,6 +114,7 @@ public class HibernateStudyTest {
         assertEquals(node.get("phase").textValue(), "analysis");
         assertEquals(node.get("disease").textValue(), "subjective cognitive decline");
         assertEquals(node.get("studyDesignType").textValue(), "observational case control");
+        assertEquals(node.get("studyStartEventId").textValue(), EVENT_ID);
         assertEquals(node.get("type").textValue(), "Study");
         assertNull(node.get("studyId"));
         assertNull(node.get("appId"));
@@ -138,6 +142,7 @@ public class HibernateStudyTest {
         assertEquals(deser.getPhase(), ANALYSIS);
         assertEquals(deser.getDisease(), "subjective cognitive decline");
         assertEquals(deser.getStudyDesignType(), "observational case control");
+        assertEquals(deser.getStudyStartEventId(), EVENT_ID);
         assertEquals(deser.getVersion(), new Long(3));
         
         JsonNode deserClientData = deser.getClientData();

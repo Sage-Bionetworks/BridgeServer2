@@ -51,6 +51,7 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     private String userExternalId;
     private Set<String> userDataGroups;
     private Map<String, String> userStudyMemberships;
+    private Map<String, Integer> dayInEachStudy;
     private String validationErrors;
     private Long version;
     private ExporterStatus synapseExporterStatus;
@@ -333,6 +334,19 @@ public class DynamoHealthDataRecord implements HealthDataRecord {
     public void setUserStudyMemberships(Map<String, String> userStudyMemberships) {
         this.userStudyMemberships = (userStudyMemberships != null && !userStudyMemberships.isEmpty())
                 ? userStudyMemberships : null;
+    }
+    
+    /** {@inheritDoc} */
+    @Override
+    @DynamoDBAttribute
+    public Map<String, Integer> getDayInEachStudy() {
+        return dayInEachStudy;
+    }
+    
+    /** @see #getDayInEachStudy() */
+    @Override
+    public void setDayInEachStudy(Map<String, Integer> dayInEachStudy) {
+        this.dayInEachStudy = dayInEachStudy;
     }
 
     /** {@inheritDoc} */

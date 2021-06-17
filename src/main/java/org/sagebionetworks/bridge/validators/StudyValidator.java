@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAI
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -31,6 +32,7 @@ public class StudyValidator implements Validator {
     static final String PHASE_FIELD = "phase";
     static final String PHONE_FIELD = "phone";
     static final String ROLE_FIELD = "role";
+    static final String STUDY_START_EVENT_ID_FIELD = "studyStartEventId";
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -54,6 +56,9 @@ public class StudyValidator implements Validator {
         }
         if (study.getPhase() == null) {
             errors.rejectValue(PHASE_FIELD, CANNOT_BE_NULL);
+        }
+        if (study.getStudyStartEventId() == null) {
+            errors.rejectValue(STUDY_START_EVENT_ID_FIELD, INVALID_EVENT_ID);
         }
         // If one of these is supplied, all three need to be supplied
         boolean validateIrb = study.getIrbDecisionType() != null ||

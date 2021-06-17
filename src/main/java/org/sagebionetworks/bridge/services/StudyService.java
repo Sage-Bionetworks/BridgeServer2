@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
@@ -23,6 +24,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -38,6 +40,8 @@ public class StudyService {
     
     private SponsorService sponsorService;
     
+    private AppService appService;
+    
     @Autowired
     final void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
@@ -46,6 +50,11 @@ public class StudyService {
     @Autowired
     final void setSponsorService(SponsorService sponsorService) {
         this.sponsorService = sponsorService;
+    }
+    
+    @Autowired
+    final void setAppService(AppService appService) {
+        this.appService = appService;
     }
     
     public Study getStudy(String appId, String studyId, boolean throwsException) {
@@ -105,6 +114,9 @@ public class StudyService {
         
         study.setAppId(appId);
         study.setPhase(DESIGN);
+        App app = appService.getApp(appId);
+        study.setStudyStartEventId(formatActivityEventId(
+                app.getCustomEvents().keySet(), study.getStudyStartEventId()));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
         study.setVersion(null);
@@ -141,6 +153,9 @@ public class StudyService {
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
+        App app = appService.getApp(appId);
+        study.setStudyStartEventId(formatActivityEventId(
+                app.getCustomEvents().keySet(), study.getStudyStartEventId()));
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
         return studyDao.updateStudy(study);

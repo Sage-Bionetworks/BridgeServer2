@@ -1,16 +1,20 @@
 package org.sagebionetworks.bridge.upload;
 
+import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
@@ -71,6 +75,11 @@ public class TranscribeConsentHandlerTest {
         // Set up mocks.
         when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(mockAccount));
         when(participantService.getStudyStartTime(mockAccount)).thenReturn(STUDY_START_TIME);
+        
+        Map<String, DateTime> startTimeInEachStudy = new HashMap<>();
+        startTimeInEachStudy.put("studyA", STUDY_START_TIME);
+        startTimeInEachStudy.put("studyB", STUDY_START_TIME.minusDays(3)); // so 8 days at test time
+        when(participantService.getStartTimeInEachStudy(mockAccount)).thenReturn(startTimeInEachStudy);
 
         // Set up input record and context. Handler expects Health Code and RecordBuilder.
         inputRecord = HealthDataRecord.create();
@@ -104,6 +113,8 @@ public class TranscribeConsentHandlerTest {
         assertEquals(studyMemberships.get("subB"), "extB");
 
         assertEquals(outputRecord.getDayInStudy().intValue(), 5);
+        assertEquals(outputRecord.getDayInEachStudy().get("studyA"), Integer.valueOf(5));
+        assertEquals(outputRecord.getDayInEachStudy().get("studyB"), Integer.valueOf(8));
     }
 
     @Test
@@ -129,5 +140,17 @@ public class TranscribeConsentHandlerTest {
         HealthDataRecord outputRecord = context.getHealthDataRecord();
 
         assertNull(outputRecord.getUserDataGroups());
+    }
+    
+    @Test
+    public void emptyDayInEachStudyMap() {
+        reset(participantService);
+        when(participantService.getStudyStartTime(mockAccount)).thenReturn(STUDY_START_TIME);
+        when(participantService.getStartTimeInEachStudy(mockAccount)).thenReturn(ImmutableMap.of());
+
+        handler.handle(context);
+        HealthDataRecord outputRecord = context.getHealthDataRecord();
+
+        assertTrue(outputRecord.getDayInEachStudy().isEmpty());
     }
 }

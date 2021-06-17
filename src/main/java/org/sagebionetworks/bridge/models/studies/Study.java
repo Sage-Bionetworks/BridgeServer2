@@ -28,6 +28,9 @@ public interface Study extends BridgeEntity {
     String getName();
     void setName(String name);
     
+    String getStudyStartEventId();
+    void setStudyStartEventId(String studyStartEventId);
+    
     String getDetails();
     void setDetails(String details);
     

@@ -15,13 +15,16 @@ import static org.sagebionetworks.bridge.validators.StudyValidator.IDENTIFIER_FI
 import static org.sagebionetworks.bridge.validators.StudyValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_DECISION_ON_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_DECISION_TYPE_FIELD;
+import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_EXPIRES_ON_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.NAME_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.PHASE_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.PHONE_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.ROLE_FIELD;
+import static org.sagebionetworks.bridge.validators.StudyValidator.STUDY_START_EVENT_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.entityThrowingException;
 
@@ -158,7 +161,7 @@ public class StudyValidatorTest {
         study.setIrbDecisionOn(DECISION_ON);
         study.setIrbDecisionType(APPROVED);
         
-        assertValidatorMessage(INSTANCE, study, StudyValidator.IRB_EXPIRES_ON_FIELD, CANNOT_BE_NULL);
+        assertValidatorMessage(INSTANCE, study, IRB_EXPIRES_ON_FIELD, CANNOT_BE_NULL);
     }
     
     @Test
@@ -189,12 +192,21 @@ public class StudyValidatorTest {
         entityThrowingException(INSTANCE, study);
     }
     
+    @Test
+    public void studyStartEventIdNull() {
+        study = createStudy();
+        study.setStudyStartEventId(null);
+        
+        assertValidatorMessage(INSTANCE, study, STUDY_START_EVENT_ID_FIELD, INVALID_EVENT_ID);
+    }
+    
     private Study createStudy() {
         Study study = Study.create();
         study.setIdentifier("id");
         study.setAppId(TEST_APP_ID);
         study.setName("name");
         study.setPhase(DESIGN);
+        study.setStudyStartEventId("enrollment");
         return study;
     }
     

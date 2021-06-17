@@ -41,6 +41,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import com.google.common.collect.ImmutableList;
@@ -60,6 +61,9 @@ public class StudyServiceTest {
     @Mock
     private SponsorService sponsorService;
     
+    @Mock
+    private AppService mockAppService;
+    
     @Captor
     private ArgumentCaptor<Study> studyCaptor;
     
@@ -69,6 +73,9 @@ public class StudyServiceTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
     }
     
     @AfterMethod
@@ -228,6 +235,7 @@ public class StudyServiceTest {
         DateTime timestamp = DateTime.now().minusHours(2);
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
+        study.setStudyStartEventId("enrollment");
 
         when(studyDao.createStudy(any())).thenReturn(VERSION_HOLDER);
         
@@ -254,6 +262,7 @@ public class StudyServiceTest {
         Study study = Study.create();
         study.setIdentifier("oneId");
         study.setName("oneName");
+        study.setStudyStartEventId("enrollment");
 
         when(studyDao.createStudy(any())).thenReturn(VERSION_HOLDER);
         
@@ -278,6 +287,7 @@ public class StudyServiceTest {
         DateTime timestamp = DateTime.now().minusHours(2);
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
+        study.setStudyStartEventId("enrollment");
         
         service.createStudy(TEST_APP_ID, study, false);
         
@@ -295,6 +305,7 @@ public class StudyServiceTest {
         Study study = Study.create();
         study.setIdentifier("oneId");
         study.setName("oneName");
+        study.setStudyStartEventId("enrollment");
         
         when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(study);
         
@@ -316,6 +327,7 @@ public class StudyServiceTest {
         study.setIdentifier("oneId");
         study.setName("newName");
         study.setPhase(DESIGN);
+        study.setStudyStartEventId("enrollment");
         
         VersionHolder versionHolder = service.updateStudy(TEST_APP_ID, study);
         assertEquals(versionHolder, VERSION_HOLDER);
