@@ -138,8 +138,6 @@ public class ParticipantFileServiceTest {
     public void createParticipantFile() {
         String upload = "https://" + UPLOAD_BUCKET + "/test_user/file_id";
 
-        when(mockFileDao.getParticipantFile(any(), any())).thenReturn(Optional.empty());
-
         // UserId and AppId should not depend on file, it should be manually set by the Service.
         ParticipantFile file = ParticipantFile.create();
         file.setFileId("file_id");
