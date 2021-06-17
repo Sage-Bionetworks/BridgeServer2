@@ -40,7 +40,7 @@ public class AuthUtils {
      * some kind of developer role as well!
      */
     public static final AuthEvaluator CAN_EDIT_ASSESSMENTS = new AuthEvaluator().isInOrg().or()
-            .hasAnyRole(ADMIN);
+            .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
      * Can the caller and/remove organization members? Must be the organizations's admin. Note 

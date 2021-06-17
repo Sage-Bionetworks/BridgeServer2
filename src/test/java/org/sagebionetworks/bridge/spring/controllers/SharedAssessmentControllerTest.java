@@ -96,30 +96,30 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void getSharedAssessments() {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100);
-        when(mockService.getAssessments(SHARED_APP_ID, 10, 25, STRING_TAGS, true)).thenReturn(page);
+        when(mockService.getAssessments(SHARED_APP_ID, null, 10, 25, STRING_TAGS, true)).thenReturn(page);
 
         PagedResourceList<Assessment> retValue = controller.getSharedAssessments("10", "25", STRING_TAGS, "true");
         assertSame(retValue, page);
 
-        verify(mockService).getAssessments(SHARED_APP_ID, 10, 25, STRING_TAGS, true);
+        verify(mockService).getAssessments(SHARED_APP_ID, null, 10, 25, STRING_TAGS, true);
     }
 
     @Test
     public void getSharedAssessmentsNoArguments() {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 0);
-        when(mockService.getAssessments(SHARED_APP_ID, 0, API_DEFAULT_PAGE_SIZE, null, false))
+        when(mockService.getAssessments(SHARED_APP_ID, null, 0, API_DEFAULT_PAGE_SIZE, null, false))
                 .thenReturn(page);
 
         PagedResourceList<Assessment> retValue = controller.getSharedAssessments(null, null, null, null);
         assertSame(retValue, page);
 
-        verify(mockService).getAssessments(SHARED_APP_ID, 0, API_DEFAULT_PAGE_SIZE, null, false);
+        verify(mockService).getAssessments(SHARED_APP_ID, null, 0, API_DEFAULT_PAGE_SIZE, null, false);
     }
 
     @Test
     public void getSharedAssessmentByGuid() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.getAssessmentByGuid(SHARED_APP_ID, GUID)).thenReturn(assessment);
+        when(mockService.getAssessmentByGuid(SHARED_APP_ID, null, GUID)).thenReturn(assessment);
 
         Assessment retValue = controller.getSharedAssessmentByGuid(GUID);
         assertSame(retValue, assessment);
@@ -128,7 +128,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void getLatestSharedAssessment() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.getLatestAssessment(SHARED_APP_ID, IDENTIFIER)).thenReturn(assessment);
+        when(mockService.getLatestAssessment(SHARED_APP_ID, null, IDENTIFIER)).thenReturn(assessment);
 
         Assessment retValue = controller.getLatestSharedAssessment(IDENTIFIER);
         assertSame(retValue, assessment);
@@ -137,7 +137,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void getSharedAssessmentById() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.getAssessmentById(SHARED_APP_ID, IDENTIFIER, 10)).thenReturn(assessment);
+        when(mockService.getAssessmentById(SHARED_APP_ID, null, IDENTIFIER, 10)).thenReturn(assessment);
 
         Assessment retValue = controller.getSharedAssessmentById(IDENTIFIER, "10");
         assertSame(retValue, assessment);
@@ -151,7 +151,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void getSharedAssessmentRevisionsByGuid() {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100);
-        when(mockService.getAssessmentRevisionsByGuid(SHARED_APP_ID, GUID, 10, 25, true)).thenReturn(page);
+        when(mockService.getAssessmentRevisionsByGuid(SHARED_APP_ID, null, GUID, 10, 25, true)).thenReturn(page);
 
         PagedResourceList<Assessment> retValue = controller.getSharedAssessmentRevisionsByGuid(GUID, "10", "25",
                 "true");
@@ -161,7 +161,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void getSharedAssessmentRevisionsByGuidWithNullParameters() {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100);
-        when(mockService.getAssessmentRevisionsByGuid(SHARED_APP_ID, GUID, 0, 50, false)).thenReturn(page);
+        when(mockService.getAssessmentRevisionsByGuid(SHARED_APP_ID, null, GUID, 0, 50, false)).thenReturn(page);
 
         PagedResourceList<Assessment> retValue = controller.getSharedAssessmentRevisionsByGuid(GUID, null, null, null);
         assertSame(retValue, page);
@@ -170,7 +170,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void getSharedAssessmentRevisionsById() {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100);
-        when(mockService.getAssessmentRevisionsById(SHARED_APP_ID, IDENTIFIER, 5, 25, false)).thenReturn(page);
+        when(mockService.getAssessmentRevisionsById(SHARED_APP_ID, null, IDENTIFIER, 5, 25, false)).thenReturn(page);
 
         PagedResourceList<Assessment> retValue = controller.getSharedAssessmentRevisionsById(IDENTIFIER, "5", "25",
                 "false");
@@ -180,7 +180,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     @Test
     public void getSharedAssessmentRevisionsByIdWithNullParameters() {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(new Assessment()), 100);
-        when(mockService.getAssessmentRevisionsById(SHARED_APP_ID, IDENTIFIER, 0, API_DEFAULT_PAGE_SIZE,
+        when(mockService.getAssessmentRevisionsById(SHARED_APP_ID, null, IDENTIFIER, 0, API_DEFAULT_PAGE_SIZE,
                 false)).thenReturn(page);
 
         PagedResourceList<Assessment> retValue = controller.getSharedAssessmentRevisionsById(IDENTIFIER, null, null,
@@ -218,7 +218,7 @@ public class SharedAssessmentControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
 
         controller.deleteSharedAssessment(GUID, "false");
-        verify(mockService).deleteAssessment(SHARED_APP_ID, GUID);
+        verify(mockService).deleteAssessment(SHARED_APP_ID, null, GUID);
     }
 
     @Test
@@ -227,7 +227,7 @@ public class SharedAssessmentControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
 
         controller.deleteSharedAssessment(GUID, null);
-        verify(mockService).deleteAssessment(SHARED_APP_ID, GUID);
+        verify(mockService).deleteAssessment(SHARED_APP_ID, null, GUID);
     }
 
     @Test
@@ -236,6 +236,6 @@ public class SharedAssessmentControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
 
         controller.deleteSharedAssessment(GUID, "true");
-        verify(mockService).deleteAssessmentPermanently(SHARED_APP_ID, GUID);
+        verify(mockService).deleteAssessmentPermanently(SHARED_APP_ID, null, GUID);
     }
 }

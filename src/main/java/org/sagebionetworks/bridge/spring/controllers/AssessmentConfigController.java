@@ -37,33 +37,36 @@ public class AssessmentConfigController extends BaseController {
     public AssessmentConfig getAssessmentConfig(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession();
         String appId = session.getAppId();
+        String ownerId = session.getParticipant().getOrgMembership();
         
-        return service.getAssessmentConfig(appId, guid);
+        return service.getAssessmentConfig(appId, ownerId, guid);
     }
     
     @PostMapping("/v1/assessments/{guid}/config")
     public AssessmentConfig updateAssessmentConfig(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getAppId();
+        String ownerId = session.getParticipant().getOrgMembership();
         
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
         AssessmentConfig config = parseJson(AssessmentConfig.class);
         
-        return service.updateAssessmentConfig(appId, guid, config);
+        return service.updateAssessmentConfig(appId, ownerId, guid, config);
     }
     
     @PostMapping("/v1/assessments/{guid}/config/customize")
     public AssessmentConfig customizeAssessmentConfig(@PathVariable String guid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
+        String ownerId = session.getParticipant().getOrgMembership();
         
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
         Map<String, Map<String, JsonNode>> updates = parseJson(UPDATES_TYPEREF);
-        return service.customizeAssessmentConfig(appId, guid, updates);
+        return service.customizeAssessmentConfig(appId, ownerId, guid, updates);
     }
     
 }

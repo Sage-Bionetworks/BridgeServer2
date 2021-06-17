@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.STRING_TAGS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -87,6 +88,9 @@ public class AssessmentControllerTest extends Mockito {
         
         session = new UserSession();
         session.setAppId(TEST_APP_ID);
+        session.setParticipant(new StudyParticipant.Builder()
+                .withOrgMembership(TEST_ORG_ID)
+                .build());
     }
 
     @AfterMethod
@@ -119,7 +123,7 @@ public class AssessmentControllerTest extends Mockito {
                 .withRequestParam(PAGE_SIZE, 25)
                 .withRequestParam(INCLUDE_DELETED, true)
                 .withRequestParam(PagedResourceList.TAGS, STRING_TAGS);
-        when(mockService.getAssessments(TEST_APP_ID, 100, 25, STRING_TAGS, true)).thenReturn(page);
+        when(mockService.getAssessments(TEST_APP_ID, TEST_ORG_ID, 100, 25, STRING_TAGS, true)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessments("100", "25",
                 STRING_TAGS, "true");
@@ -137,11 +141,11 @@ public class AssessmentControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 0);
-        when(mockService.getAssessments(TEST_APP_ID, 0, 50, null, false)).thenReturn(page);
+        when(mockService.getAssessments(TEST_APP_ID, TEST_ORG_ID, 0, 50, null, false)).thenReturn(page);
         
         controller.getAssessments(null, null, null, null);
         
-        verify(mockService).getAssessments(TEST_APP_ID, 0, 50, null, false);
+        verify(mockService).getAssessments(TEST_APP_ID, TEST_ORG_ID, 0, 50, null, false);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class, 
@@ -206,12 +210,12 @@ public class AssessmentControllerTest extends Mockito {
         
         Assessment updated = AssessmentTest.createAssessment();
         updated.setVersion(100);
-        when(mockService.updateAssessment(eq(TEST_APP_ID), any())).thenReturn(updated);
+        when(mockService.updateAssessment(eq(TEST_APP_ID), eq(TEST_ORG_ID), any())).thenReturn(updated);
         
         Assessment retValue = controller.updateAssessmentByGuid(GUID);
         assertNotNull(retValue);
 
-        verify(mockService).updateAssessment(eq(TEST_APP_ID), assessmentCaptor.capture());
+        verify(mockService).updateAssessment(eq(TEST_APP_ID), eq(TEST_ORG_ID), assessmentCaptor.capture());
         Assessment captured = assessmentCaptor.getValue();
         
         assertEquals(captured.getGuid(), GUID);
@@ -230,7 +234,7 @@ public class AssessmentControllerTest extends Mockito {
     public void getAssessmentByGuid() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.getAssessmentByGuid(TEST_APP_ID, GUID)).thenReturn(assessment);
+        when(mockService.getAssessmentByGuid(TEST_APP_ID, TEST_ORG_ID, GUID)).thenReturn(assessment);
         
         Assessment retValue = controller.getAssessmentByGuid(GUID);
         assertSame(retValue, assessment);
@@ -265,7 +269,7 @@ public class AssessmentControllerTest extends Mockito {
     public void getAssessmentById() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.getAssessmentById(TEST_APP_ID, IDENTIFIER, 10)).thenReturn(assessment);
+        when(mockService.getAssessmentById(TEST_APP_ID, TEST_ORG_ID, IDENTIFIER, 10)).thenReturn(assessment);
         
         Assessment retValue = controller.getAssessmentById(IDENTIFIER, "10");
         assertSame(retValue, assessment);
@@ -319,7 +323,7 @@ public class AssessmentControllerTest extends Mockito {
     public void getLatestAssessment() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.getLatestAssessment(TEST_APP_ID, IDENTIFIER)).thenReturn(assessment);
+        when(mockService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, IDENTIFIER)).thenReturn(assessment);
 
         Assessment retValue = controller.getLatestAssessment(IDENTIFIER);
         assertSame(retValue, assessment);
@@ -340,7 +344,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsById(
-                TEST_APP_ID, IDENTIFIER, 20, 5, true)).thenReturn(page);
+                TEST_APP_ID, TEST_ORG_ID, IDENTIFIER, 20, 5, true)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsById(IDENTIFIER, "20", "5", "true");
         assertSame(retValue, page);
@@ -352,7 +356,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsById(
-                TEST_APP_ID, IDENTIFIER, 0, 50, false)).thenReturn(page);
+                TEST_APP_ID, TEST_ORG_ID, IDENTIFIER, 0, 50, false)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsById(IDENTIFIER, null, null, null);
         assertSame(retValue, page);
@@ -373,7 +377,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsByGuid(
-                TEST_APP_ID, GUID, 20, 5, true)).thenReturn(page);
+                TEST_APP_ID, TEST_ORG_ID, GUID, 20, 5, true)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsByGuid(GUID, "20", "5", "true");
         assertSame(retValue, page);
@@ -385,7 +389,7 @@ public class AssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(assessment), 10);
         when(mockService.getAssessmentRevisionsByGuid(
-                TEST_APP_ID, GUID, 0, 50, false)).thenReturn(page);
+                TEST_APP_ID, TEST_ORG_ID, GUID, 0, 50, false)).thenReturn(page);
         
         PagedResourceList<Assessment> retValue = controller.getAssessmentRevisionsByGuid(GUID, null, null, null);
         assertSame(retValue, page);
@@ -408,11 +412,11 @@ public class AssessmentControllerTest extends Mockito {
         
         Assessment updated = AssessmentTest.createAssessment();
         updated.setVersion(100);
-        when(mockService.createAssessmentRevision(eq(TEST_APP_ID), eq(GUID), any())).thenReturn(updated);
+        when(mockService.createAssessmentRevision(eq(TEST_APP_ID), eq(TEST_ORG_ID), eq(GUID), any())).thenReturn(updated);
         
         Assessment retValue = controller.createAssessmentRevision(GUID);
 
-        verify(mockService).createAssessmentRevision(eq(TEST_APP_ID), eq(GUID), assessmentCaptor.capture());
+        verify(mockService).createAssessmentRevision(eq(TEST_APP_ID), eq(TEST_ORG_ID), eq(GUID), assessmentCaptor.capture());
         
         Assessment captured = assessmentCaptor.getValue();
         assertEquals(captured.getGuid(), GUID);
@@ -448,7 +452,7 @@ public class AssessmentControllerTest extends Mockito {
     public void publishAssessment() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.publishAssessment(TEST_APP_ID, null, GUID)).thenReturn(assessment);
+        when(mockService.publishAssessment(TEST_APP_ID, TEST_ORG_ID, null, GUID)).thenReturn(assessment);
         
         Assessment retValue = controller.publishAssessment(GUID, null);
         assertSame(retValue, assessment);
@@ -458,7 +462,7 @@ public class AssessmentControllerTest extends Mockito {
     public void publishAssessmentWithNewIdentifier() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockService.publishAssessment(TEST_APP_ID, NEW_IDENTIFIER, GUID)).thenReturn(assessment);
+        when(mockService.publishAssessment(TEST_APP_ID, TEST_ORG_ID, NEW_IDENTIFIER, GUID)).thenReturn(assessment);
         
         Assessment retValue = controller.publishAssessment(GUID, NEW_IDENTIFIER);
         assertSame(retValue, assessment);
@@ -475,38 +479,46 @@ public class AssessmentControllerTest extends Mockito {
     
     @Test
     public void developerCanLogicallyDelete() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withOrgMembership(TEST_ORG_ID)
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessment(GUID, "false");
-        verify(mockService).deleteAssessment(TEST_APP_ID, GUID);
+        verify(mockService).deleteAssessment(TEST_APP_ID, TEST_ORG_ID, GUID);
     }
 
     @Test
     public void adminCanLogicallyDelete() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withOrgMembership(TEST_ORG_ID)
+                .withRoles(ImmutableSet.of(ADMIN)).build());
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessment(GUID, "false");
-        verify(mockService).deleteAssessment(TEST_APP_ID, GUID);
+        verify(mockService).deleteAssessment(TEST_APP_ID, TEST_ORG_ID, GUID);
     }
 
     @Test
     public void physicalDeleteONotAllowedForDeveloper() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withOrgMembership(TEST_ORG_ID)
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessment(GUID, "true");
-        verify(mockService).deleteAssessment(TEST_APP_ID, GUID);        
+        verify(mockService).deleteAssessment(TEST_APP_ID, TEST_ORG_ID, GUID);        
     }
 
     @Test
     public void physicalDeleteAllowedForAdmin() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withOrgMembership(TEST_ORG_ID)
+                .withRoles(ImmutableSet.of(ADMIN)).build());
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
         controller.deleteAssessment(GUID, "true");
-        verify(mockService).deleteAssessmentPermanently(TEST_APP_ID, GUID);        
+        verify(mockService).deleteAssessmentPermanently(TEST_APP_ID, null, GUID);        
     }
     
     @Test(expectedExceptions = UnauthorizedException.class, 

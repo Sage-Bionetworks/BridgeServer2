@@ -100,7 +100,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void getResources() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         resource.setCreatedAtRevision(5); // assessment revision = 5
@@ -108,7 +108,7 @@ public class AssessmentResourceServiceTest extends Mockito {
             .thenReturn(new PagedResourceList<>(ImmutableList.of(resource), 10));
         
         PagedResourceList<AssessmentResource> retValue = service.getResources(
-                TEST_APP_ID, ASSESSMENT_ID, 10, 40, RESOURCE_CATEGORIES, 1, 100, true);
+                TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, 10, 40, RESOURCE_CATEGORIES, 1, 100, true);
         assertEquals(retValue.getItems().size(), 1);
         assertTrue(retValue.getItems().get(0).isUpToDate());
         assertSame(retValue.getItems().get(0), resource);
@@ -119,14 +119,14 @@ public class AssessmentResourceServiceTest extends Mockito {
         assertEquals(retValue.getRequestParams().get(MAX_REVISION), 100);
         assertTrue((Boolean)retValue.getRequestParams().get(INCLUDE_DELETED));
         
-        verify(mockAssessmentService).getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID);
+        verify(mockAssessmentService).getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID);
         verify(mockDao).getResources(TEST_APP_ID, ASSESSMENT_ID, 10, 40, RESOURCE_CATEGORIES, 1, 100, true);
     }
     
     @Test
     public void getResourcesNullArguments() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         resource.setCreatedAtRevision(4); // assessment revision = 5
@@ -134,31 +134,31 @@ public class AssessmentResourceServiceTest extends Mockito {
             .thenReturn(new PagedResourceList<>(ImmutableList.of(resource), 10));
         
         PagedResourceList<AssessmentResource> retValue = service.getResources(
-                TEST_APP_ID, ASSESSMENT_ID, null, null, null, null, null, false);
+                TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, null, null, null, null, null, false);
         assertEquals(retValue.getItems().size(), 1);
         assertFalse(retValue.getItems().get(0).isUpToDate());
         assertSame(retValue.getItems().get(0), resource);
         
-        verify(mockAssessmentService).getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID);
+        verify(mockAssessmentService).getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID);
         verify(mockDao).getResources(TEST_APP_ID, ASSESSMENT_ID, null, null, null, null, null, false);
     }
     
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp = "maxRevision cannot be greater than minRevision")
     public void getResourcesMaxHigherThanMinRevision() {
-        service.getResources(TEST_APP_ID, ASSESSMENT_ID, null, null, null, 3, 2, false);
+        service.getResources(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, null, null, null, 3, 2, false);
     }
 
     @Test
     public void getResource() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         resource.setCreatedAtRevision(5); // assessment revision = 5
         when(mockDao.getResource(TEST_APP_ID, GUID)).thenReturn(Optional.of(resource));
         
-        AssessmentResource retValue = service.getResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
+        AssessmentResource retValue = service.getResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, GUID);
         assertTrue(retValue.isUpToDate());
     }
 
@@ -166,17 +166,17 @@ public class AssessmentResourceServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = "AssessmentResource not found.")
     public void getResourceNotFound() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         when(mockDao.getResource(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
         
-        service.getResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
+        service.getResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, GUID);
     }
     
     @Test
     public void createResource() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         resource.setGuid(null);
@@ -185,7 +185,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         resource.setDeleted(true);
         when(mockDao.saveResource(eq(TEST_APP_ID), eq(ASSESSMENT_ID), any())).thenReturn(resource);
         
-        AssessmentResource retValue = service.createResource(TEST_APP_ID, ASSESSMENT_ID, resource);
+        AssessmentResource retValue = service.createResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, resource);
         assertSame(retValue, resource);
         assertEquals(resource.getGuid(), GUID);
         assertEquals(resource.getCreatedOn(), CREATED_ON);
@@ -204,28 +204,28 @@ public class AssessmentResourceServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("orgB");
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
-        service.createResource(TEST_APP_ID, ASSESSMENT_ID, new AssessmentResource());
+        service.createResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, new AssessmentResource());
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createResourceValidates() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
-        service.createResource(TEST_APP_ID, ASSESSMENT_ID, new AssessmentResource());
+        service.createResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, new AssessmentResource());
     }
     
     @Test
     public void createResourceSanitizesStringFields() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource resource = createUnsanitizedResource();
         when(mockDao.saveResource(eq(TEST_APP_ID), eq(ASSESSMENT_ID), any())).thenReturn(resource);
         
-        AssessmentResource retValue = service.createResource(TEST_APP_ID, ASSESSMENT_ID, resource);
+        AssessmentResource retValue = service.createResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, resource);
         assertEquals(retValue.getGuid(), GUID);
         assertEquals(retValue.getTitle(), SANITIZED_STRING);
         assertEquals(retValue.getUrl(), SANITIZED_STRING);
@@ -241,7 +241,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void updateResource() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource existing = AssessmentResourceTest.createAssessmentResource();
         existing.setModifiedOn(null);
@@ -253,7 +253,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         resource.setModifiedOn(null);
         when(mockDao.saveResource(eq(TEST_APP_ID), eq(ASSESSMENT_ID), any())).thenReturn(resource);
         
-        AssessmentResource retValue = service.updateResource(TEST_APP_ID, ASSESSMENT_ID, resource);
+        AssessmentResource retValue = service.updateResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, resource);
         assertSame(retValue, resource);
         assertEquals(retValue.getCreatedOn(), CREATED_ON);
         assertEquals(retValue.getModifiedOn(), MODIFIED_ON);
@@ -264,7 +264,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void updateResourceSanitizesStringFields() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource existing = AssessmentResourceTest.createAssessmentResource();
         existing.setDeleted(false);
@@ -274,7 +274,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         resource.setGuid(GUID); // this actually can't be changed, or you get a 404
         when(mockDao.saveResource(eq(TEST_APP_ID), eq(ASSESSMENT_ID), any())).thenReturn(resource);
         
-        AssessmentResource retValue = service.updateResource(TEST_APP_ID, ASSESSMENT_ID, resource);
+        AssessmentResource retValue = service.updateResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, resource);
         assertEquals(retValue.getGuid(), GUID);
         assertEquals(retValue.getTitle(), SANITIZED_STRING);
         assertEquals(retValue.getUrl(), SANITIZED_STRING);
@@ -290,7 +290,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateResourceValidates() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource existing = AssessmentResourceTest.createAssessmentResource();
         existing.setDeleted(false);
@@ -300,25 +300,25 @@ public class AssessmentResourceServiceTest extends Mockito {
         resource.setGuid(GUID); // this actually can't be changed, or you get a 404
         when(mockDao.saveResource(eq(TEST_APP_ID), eq(ASSESSMENT_ID), any())).thenReturn(resource);
         
-        service.updateResource(TEST_APP_ID, ASSESSMENT_ID, resource);
+        service.updateResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, resource);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateResourceChecksAssessmentOwnership() {
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_ORG_ID);
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         
-        service.updateResource(TEST_APP_ID, ASSESSMENT_ID, resource);
+        service.updateResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, resource);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,
           expectedExceptionsMessageRegExp = "AssessmentResource not found.")
     public void updateResourceNotFound() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         when(mockDao.getResource(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
         
@@ -326,14 +326,14 @@ public class AssessmentResourceServiceTest extends Mockito {
         resource.setModifiedOn(null);
         when(mockDao.saveResource(eq(TEST_APP_ID), eq(ASSESSMENT_ID), any())).thenReturn(resource);
         
-        service.updateResource(TEST_APP_ID, ASSESSMENT_ID, resource);
+        service.updateResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, resource);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "AssessmentResource not found.")
     public void updateResourceNotFoundWhenLogicallyDeleted() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource existing = AssessmentResourceTest.createAssessmentResource();
         existing.setDeleted(true);
@@ -342,14 +342,14 @@ public class AssessmentResourceServiceTest extends Mockito {
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         resource.setDeleted(true);
         
-        service.updateResource(TEST_APP_ID, ASSESSMENT_ID, resource);
+        service.updateResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, resource);
     }
     
     @Test
     public void updateSharedResource() { 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID + ":" + TEST_OWNER_ID);
-        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, null, ASSESSMENT_ID)).thenReturn(assessment);
         
         AssessmentResource existing = AssessmentResourceTest.createAssessmentResource();
         existing.setModifiedOn(null);
@@ -376,7 +376,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID + ":anotherOrg");
-        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, null, ASSESSMENT_ID)).thenReturn(assessment);
 
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         
@@ -386,14 +386,14 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void deleteResource() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
 
         AssessmentResource existing = AssessmentResourceTest.createAssessmentResource();
         existing.setModifiedOn(null);
         existing.setDeleted(false);
         when(mockDao.getResource(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
         
-        service.deleteResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
+        service.deleteResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, GUID);
         
         verify(mockDao).saveResource(eq(TEST_APP_ID), eq(ASSESSMENT_ID), resourceCaptor.capture());
         
@@ -409,9 +409,9 @@ public class AssessmentResourceServiceTest extends Mockito {
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("owner-id");
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
 
-        service.deleteResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
+        service.deleteResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, GUID);
     }
     
     
@@ -419,11 +419,11 @@ public class AssessmentResourceServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = "AssessmentResource not found.")
     public void deleteResourceNotFound() { 
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
 
         when(mockDao.getResource(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
         
-        service.deleteResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
+        service.deleteResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, GUID);
     }
 
     @Test
@@ -571,7 +571,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void importAssessmentResources() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
@@ -579,7 +579,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         // We test this separately so we can mock it here.
         doReturn(resources).when(service).copyResources(SHARED_APP_ID, TEST_APP_ID, assessment, guids);
         
-        List<AssessmentResource> retValue = service.importAssessmentResources(TEST_APP_ID, ASSESSMENT_ID, guids);
+        List<AssessmentResource> retValue = service.importAssessmentResources(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, guids);
         assertSame(retValue, resources);
         
         verify(service).copyResources(SHARED_APP_ID, TEST_APP_ID, assessment, guids);
@@ -592,13 +592,13 @@ public class AssessmentResourceServiceTest extends Mockito {
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_OWNER_ID);
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
         doReturn(ImmutableList.of()).when(service).copyResources(SHARED_APP_ID, TEST_APP_ID, assessment, guids);
         
-        service.importAssessmentResources(TEST_APP_ID, ASSESSMENT_ID, guids);
+        service.importAssessmentResources(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, guids);
         
         verify(service).copyResources(SHARED_APP_ID, TEST_APP_ID, assessment, guids);
     }
@@ -610,17 +610,17 @@ public class AssessmentResourceServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_ORG_ID);
-        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
-        service.importAssessmentResources(TEST_APP_ID, ASSESSMENT_ID, guids);
+        service.importAssessmentResources(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, guids);
     }
     
     @Test
     public void publishAssessmentResources() {
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID+":"+TEST_OWNER_ID);
-        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, null, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
@@ -642,7 +642,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID+":"+TEST_OWNER_ID);
-        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, null, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
@@ -662,7 +662,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID+":"+TEST_OWNER_ID);
-        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, null, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         
@@ -676,7 +676,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID+":"+TEST_OWNER_ID);
-        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, ASSESSMENT_ID)).thenReturn(assessment);
+        when(mockAssessmentService.getLatestAssessment(SHARED_APP_ID, null, ASSESSMENT_ID)).thenReturn(assessment);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         

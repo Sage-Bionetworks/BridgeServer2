@@ -24,6 +24,6 @@ public class SharedAssessmentConfigController extends BaseController {
     
     @GetMapping("/v1/sharedassessments/{guid}/config")
     public AssessmentConfig getSharedAssessmentConfig(@PathVariable String guid) {
-        return service.getAssessmentConfig(SHARED_APP_ID, guid);
+        return service.getAssessmentConfig(SHARED_APP_ID, null, guid);
     }
 }

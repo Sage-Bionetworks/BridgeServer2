@@ -61,13 +61,13 @@ public class SharedAssessmentResourceController extends BaseController {
                 .map(s -> getEnumOrDefault(s, ResourceCategory.class, null))
                 .collect(toSet());
         }
-        return service.getResources(SHARED_APP_ID, assessmentId, offsetByInt, pageSizeInt, categories,
+        return service.getResources(SHARED_APP_ID, null, assessmentId, offsetByInt, pageSizeInt, categories,
                 minRevisionInt, maxRevisionInt, incDeletedBool);
     }
     
     @GetMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/{guid}")
     public AssessmentResource getAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid) {
-        return service.getResource(SHARED_APP_ID, assessmentId, guid);
+        return service.getResource(SHARED_APP_ID, null, assessmentId, guid);
     }
 
     @PostMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/{guid}")
@@ -89,7 +89,7 @@ public class SharedAssessmentResourceController extends BaseController {
         if ("true".equals(physical)) {
             service.deleteResourcePermanently(SHARED_APP_ID, assessmentId, guid);
         } else {
-            service.deleteResource(SHARED_APP_ID, assessmentId, guid);
+            service.deleteResource(SHARED_APP_ID, null, assessmentId, guid);
         }
         return new StatusMessage("Assessment resource deleted.");        
     }
@@ -98,10 +98,11 @@ public class SharedAssessmentResourceController extends BaseController {
     public ResourceList<AssessmentResource> importAssessmentResources(@PathVariable String assessmentId) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getAppId();
+        String ownerId = session.getParticipant().getOrgMembership();
 
         Set<String> resourceGuids = parseJson(STRING_SET_TYPEREF);
         
-        List<AssessmentResource> resources = service.importAssessmentResources(appId, assessmentId, resourceGuids);
+        List<AssessmentResource> resources = service.importAssessmentResources(appId, ownerId, assessmentId, resourceGuids);
         return new ResourceList<AssessmentResource>(resources, true);
     }
 }

@@ -13,8 +13,6 @@ import java.util.Set;
 
 import javax.annotation.Resource;
 
-import com.google.common.collect.ImmutableMap;
-
 import org.hibernate.query.NativeQuery;
 import org.springframework.stereotype.Component;
 
@@ -33,6 +31,7 @@ class HibernateAssessmentDao implements AssessmentDao {
     static final String IDENTIFIER = "identifier";
     static final String REVISION = "revision";
     static final String GUID = "guid";
+    static final String OWNER_ID = "ownerId";
         
     static final String SELECT_COUNT = "SELECT COUNT(*)";
     static final String SELECT_ALL = "SELECT *";
@@ -54,8 +53,8 @@ class HibernateAssessmentDao implements AssessmentDao {
     }
 
     @Override
-    public PagedResourceList<Assessment> getAssessments(String appId, int offsetBy, int pageSize,
-            Set<String> tags, boolean includeDeleted) {
+    public PagedResourceList<Assessment> getAssessments(String appId, String ownerId, 
+            int offsetBy, int pageSize, Set<String> tags, boolean includeDeleted) {
         
         boolean includeTags = !isEmpty(tags);
         
@@ -63,12 +62,20 @@ class HibernateAssessmentDao implements AssessmentDao {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM (");
         builder.append("SELECT DISTINCT identifier as id, MAX(revision) AS rev FROM Assessments");
-        builder.append("WHERE appId = :appId GROUP BY identifier) AS latest_assessments");
+        builder.append("WHERE appId = :appId");
+        if (ownerId != null) {
+            builder.append("AND ownerId = :ownerId", OWNER_ID, ownerId);
+        }
+        builder.append("GROUP BY identifier) AS latest_assessments");
         builder.append("INNER JOIN Assessments AS a ON a.identifier = latest_assessments.id AND");
         builder.append("a.revision = latest_assessments.rev");
         
         List<String> clauses = new ArrayList<>();
         clauses.add("WHERE appId = :appId");
+        if (ownerId != null) {
+            clauses.add("ownerId = :ownerId");
+            builder.getParameters().put(OWNER_ID, ownerId);
+        }
         if (includeTags) {
             clauses.add("guid IN (SELECT DISTINCT assessmentGuid FROM AssessmentTags WHERE tagValue IN :tags)");
             builder.getParameters().put("tags", tags);
@@ -89,11 +96,14 @@ class HibernateAssessmentDao implements AssessmentDao {
         return new PagedResourceList<Assessment>(dtos, count, true);
     }
     
-    public PagedResourceList<Assessment> getAssessmentRevisions(String appId, String identifier, 
-            int offsetBy, int pageSize, boolean includeDeleted) {
+    public PagedResourceList<Assessment> getAssessmentRevisions(String appId, String ownerId, 
+            String identifier, int offsetBy, int pageSize, boolean includeDeleted) {
         
         QueryBuilder builder = new QueryBuilder();
         builder.append(GET_REVISIONS, APP_ID, appId, IDENTIFIER, identifier);
+        if (ownerId != null) {
+            builder.append("AND ownerId = :ownerId", OWNER_ID, ownerId);
+        }
         if (!includeDeleted) {
             builder.append(EXCLUDE_DELETED);
         }
@@ -109,9 +119,15 @@ class HibernateAssessmentDao implements AssessmentDao {
     }
     
     @Override
-    public Optional<Assessment> getAssessment(String appId, String guid) {
+    public Optional<Assessment> getAssessment(String appId, String ownerId, String guid) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(GET_BY_GUID, APP_ID, appId, GUID, guid);
+        if (ownerId != null) {
+            builder.append("AND ownerId = :ownerId", OWNER_ID, ownerId); 
+        }
+        
         List<HibernateAssessment> results = hibernateHelper.queryGet(
-                GET_BY_GUID, ImmutableMap.of(APP_ID, appId, GUID, guid), null, null, HibernateAssessment.class);
+                builder.getQuery(), builder.getParameters(), null, null, HibernateAssessment.class);
         if (results.isEmpty()) {
             return Optional.empty();
         }
@@ -119,10 +135,14 @@ class HibernateAssessmentDao implements AssessmentDao {
     }
 
     @Override
-    public Optional<Assessment> getAssessment(String appId, String identifier, int revision) {
+    public Optional<Assessment> getAssessment(String appId, String ownerId, String identifier, int revision) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(GET_BY_IDENTIFIER, APP_ID, appId, IDENTIFIER, identifier, REVISION, revision);
+        if (ownerId != null) {
+            builder.append("AND ownerId = :ownerId", OWNER_ID, ownerId); 
+        }
         List<HibernateAssessment> results = hibernateHelper.queryGet(
-                GET_BY_IDENTIFIER, ImmutableMap.of(APP_ID, appId, IDENTIFIER, identifier, REVISION, revision), 
-                null, null, HibernateAssessment.class);
+                builder.getQuery(), builder.getParameters(), null, null, HibernateAssessment.class);
         if (results.isEmpty()) {
             return Optional.empty();
         }
@@ -156,7 +176,7 @@ class HibernateAssessmentDao implements AssessmentDao {
     @Override
     public void deleteAssessment(String appId, Assessment assessment) {
         // If this is the last revision (logically deleted or not), also delete the resources.
-        int count = getAssessmentRevisions(appId, assessment.getIdentifier(), 0, 1, true).getTotal();
+        int count = getAssessmentRevisions(appId, null, assessment.getIdentifier(), 0, 1, true).getTotal();
         HibernateAssessment hibernateAssessment = HibernateAssessment.create(appId, assessment);
         
         hibernateHelper.executeWithExceptionHandling(hibernateAssessment, (session) -> {
@@ -209,14 +229,14 @@ class HibernateAssessmentDao implements AssessmentDao {
     public boolean hasAssessmentFromOrg(String appId, String orgId) {
         QueryBuilder builder = new QueryBuilder();
         builder.append(SELECT_COUNT);
-        builder.append(GET_FROM_ORG, "appId", appId, "ownerId", orgId);
+        builder.append(GET_FROM_ORG, "appId", appId, OWNER_ID, orgId);
         int resultCount = hibernateHelper.queryCount(builder.getQuery(), builder.getParameters());
         if (resultCount != 0) {
             return true;
         }
         Map<String, Object> params = builder.getParameters();
         params.put("appId", "shared");
-        params.put("ownerId", appId + ":" + orgId);
+        params.put(OWNER_ID, appId + ":" + orgId);
         resultCount = hibernateHelper.queryCount(builder.getQuery(), builder.getParameters());
         return resultCount != 0;
     }
