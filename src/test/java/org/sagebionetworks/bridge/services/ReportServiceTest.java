@@ -10,7 +10,12 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 
 import java.util.List;
 import java.util.Set;
@@ -24,6 +29,7 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -127,8 +133,11 @@ public class ReportServiceTest {
         index.setIdentifier(IDENTIFIER);
         indices = new ReportTypeResourceList<>(Lists.newArrayList(index))
                 .withRequestParam(ResourceList.REPORT_TYPE, ReportType.STUDY);
-        
-        RequestContext.set(new RequestContext.Builder().build());
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        RequestContext.set(NULL_INSTANCE);
     }
     
     private static ReportData createReport(LocalDate date, String fieldValue1, String fieldValue2) {
@@ -144,36 +153,38 @@ public class ReportServiceTest {
     
     @Test
     public void canAccessIfNoIndex() {
-        assertTrue(service.canAccess(null));
+        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, null));
     }
     
     @Test
     public void canAccessIfReportHasNullStudies() {
         ReportIndex index = ReportIndex.create();
-        assertTrue(service.canAccess(index));
+        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, index));
     }
     
     @Test
     public void canAccessIfReportHasEmptyStudies() {
         ReportIndex index = ReportIndex.create();
         index.setStudyIds(ImmutableSet.of());
-        assertTrue(service.canAccess(index));        
+        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, index));        
     }
 
     @Test
-    public void canAccessIfCallerHasNoStudies() {
+    public void canAccessIfCallerIsSelf() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
         ReportIndex index = ReportIndex.create();
-        index.setStudyIds(TestConstants.USER_STUDY_IDS);
-        assertTrue(service.canAccess(index));
+        index.setStudyIds(USER_STUDY_IDS);
+        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, index));
     }
 
     @Test
     public void canAccessIfCallerHasMatchingStudy() {
         ReportIndex index = ReportIndex.create();
-        index.setStudyIds(TestConstants.USER_STUDY_IDS);
-        RequestContext.set(
-                new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyB", "studyC")).build());
-        assertTrue(service.canAccess(index));
+        index.setStudyIds(USER_STUDY_IDS);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerEnrolledStudies(ImmutableSet.of("studyB", "studyC")).build());
+        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, index));
     }
 
     // If the index has studies, and the user doesn't have one of those studies, this fails
@@ -183,7 +194,7 @@ public class ReportServiceTest {
         index.setStudyIds(TestConstants.USER_STUDY_IDS);
         RequestContext.set(
                 new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyC")).build());
-        assertFalse(service.canAccess(index));        
+        assertFalse(service.canAccessParticipantReport(TEST_USER_ID, index));        
     }
     
     @Test
@@ -196,7 +207,7 @@ public class ReportServiceTest {
         
         RequestContext.set(
                 new RequestContext.Builder().withCallerEnrolledStudies(TestConstants.USER_STUDY_IDS).build());
-        assertTrue(service.canAccess(index));        
+        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, index));        
     }
     
     @Test
@@ -252,7 +263,7 @@ public class ReportServiceTest {
         doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, START_DATE, END_DATE);
         
         DateRangeResourceList<? extends ReportData> retrieved = service.getParticipantReport(
-                TEST_APP_ID, IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE);
+                TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE);
 
         verify(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, START_DATE, END_DATE);
         assertEquals(retrieved, results);
@@ -268,7 +279,7 @@ public class ReportServiceTest {
             doReturn(results).when(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, yesterday, today);
             
             DateRangeResourceList<? extends ReportData> retrieved = service.getParticipantReport(
-                    TEST_APP_ID, IDENTIFIER, HEALTH_CODE, null, null);
+                    TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, null, null);
             
             verify(mockReportDataDao).getReportData(eq(PARTICIPANT_REPORT_DATA_KEY), localDateCaptor.capture(),
                     localDateCaptor.capture());
@@ -312,7 +323,7 @@ public class ReportServiceTest {
     @Test
     public void saveParticipantReport() throws Exception {
         ReportData someData = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
-        service.saveParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, someData);
+        service.saveParticipantReport(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, someData);
 
         verify(mockReportDataDao).saveReportData(reportDataCaptor.capture());
         ReportData retrieved = reportDataCaptor.getValue();
@@ -334,7 +345,7 @@ public class ReportServiceTest {
         ReportData someData = createReport(LocalDate.parse("2015-02-10"), "First", "Name");
         when(mockReportIndexDao.getIndex(any())).thenReturn(ReportIndex.create());
         
-        service.saveParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, someData);
+        service.saveParticipantReport(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, someData);
 
         verify(mockReportIndexDao, never()).addIndex(any(), any());
     }
@@ -349,7 +360,7 @@ public class ReportServiceTest {
     
     @Test
     public void deleteParticipantReport() {
-        service.deleteParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE);
+        service.deleteParticipantReport(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE);
         
         verify(mockReportIndexDao).getIndex(any());
         verify(mockReportDataDao).deleteReportData(PARTICIPANT_REPORT_DATA_KEY);
@@ -357,7 +368,7 @@ public class ReportServiceTest {
     
     @Test
     public void deleteParticipantReportIndex() {
-        service.deleteParticipantReportIndex(TEST_APP_ID, IDENTIFIER);
+        service.deleteParticipantReportIndex(TEST_APP_ID, TEST_USER_ID, IDENTIFIER);
         
         verify(mockReportIndexDao).removeIndex(reportDataKeyCaptor.capture());
         verifyNoMoreInteractions(mockReportDataDao);
@@ -426,7 +437,7 @@ public class ReportServiceTest {
     public void deleteParticipantReportRecord() {
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2015-05-05").getMillis());
         try {
-            service.deleteParticipantReportRecord(TEST_APP_ID, IDENTIFIER, DATE.toString(), HEALTH_CODE);
+            service.deleteParticipantReportRecord(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, DATE.toString(), HEALTH_CODE);
 
             verify(mockReportDataDao).deleteReportDataRecord(PARTICIPANT_REPORT_DATA_KEY, DATE.toString());
         } finally {
@@ -436,7 +447,7 @@ public class ReportServiceTest {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void deleteParticipantReportRecordValidatesDate() {
-        service.deleteParticipantReportRecord(TEST_APP_ID, IDENTIFIER, "", HEALTH_CODE);
+        service.deleteParticipantReportRecord(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, "", HEALTH_CODE);
     }
     
     // The following are date range tests from the original MPowerVisualizationService, they should work with this
@@ -447,7 +458,7 @@ public class ReportServiceTest {
         // mock now
         DateTimeUtils.setCurrentMillisFixed(DateTime.parse("2016-02-08T09:00-0800").getMillis());
         try {
-            service.getParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, null, null);
+            service.getParticipantReport(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, null, null);
             
             verify(mockReportDataDao).getReportData(PARTICIPANT_REPORT_DATA_KEY, LocalDate.parse("2016-02-07"), LocalDate.parse("2016-02-08"));
         } finally {
@@ -457,12 +468,12 @@ public class ReportServiceTest {
 
     @Test(expectedExceptions = BadRequestException.class)
     public void startDateAfterEndDateParticipant() {
-        service.getParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, END_DATE, START_DATE);
+        service.getParticipantReport(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, END_DATE, START_DATE);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
     public void dateRangeTooWideParticipant() {
-        service.getParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, START_DATE, START_DATE.plusDays(46));
+        service.getParticipantReport(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, START_DATE, START_DATE.plusDays(46));
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -497,19 +508,19 @@ public class ReportServiceTest {
     
     @Test
     public void getParticipantReportDataNoStudy() {
-        invalid(() -> service.getParticipantReport(null, IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE),
+        invalid(() -> service.getParticipantReport(null, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE),
                 "appId", "is required");
     }
 
     @Test
     public void getParticipantReportDataNoIdentifier() {
-        invalid(() -> service.getParticipantReport(TEST_APP_ID, null, HEALTH_CODE, START_DATE, END_DATE),
+        invalid(() -> service.getParticipantReport(TEST_APP_ID, TEST_USER_ID, null, HEALTH_CODE, START_DATE, END_DATE),
                 "identifier", "cannot be missing or blank");
     }
     
     @Test
     public void getParticipantReportDataNoHealthCode() {
-        invalid(() -> service.getParticipantReport(TEST_APP_ID, IDENTIFIER, null, START_DATE, END_DATE),
+        invalid(() -> service.getParticipantReport(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, null, START_DATE, END_DATE),
                 "healthCode", "is required for participant reports");
     }
     
@@ -532,25 +543,25 @@ public class ReportServiceTest {
 
     @Test
     public void saveParticipantReportDataNoStudy() {
-        invalid(() -> service.saveParticipantReport(null, IDENTIFIER, HEALTH_CODE, CANNED_REPORT),
+        invalid(() -> service.saveParticipantReport(null, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, CANNED_REPORT),
                 "appId", "is required");
     }
     
     @Test
     public void saveParticipantReportDataNoIdentifier() {
-        invalid(() -> service.saveParticipantReport(TEST_APP_ID, null, HEALTH_CODE, CANNED_REPORT),
+        invalid(() -> service.saveParticipantReport(TEST_APP_ID, TEST_USER_ID, null, HEALTH_CODE, CANNED_REPORT),
                 "identifier", "cannot be missing or blank");
     }
     
     @Test
     public void saveParticipantReportDataNoHealthCode() {
-        invalid(() -> service.saveParticipantReport(TEST_APP_ID, IDENTIFIER, null, CANNED_REPORT),
+        invalid(() -> service.saveParticipantReport(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, null, CANNED_REPORT),
                 "healthCode", "is required for participant reports");
     }
 
     @Test
     public void saveParticipantReportDataNoData() {
-        checkNull(() -> service.saveParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, null));
+        checkNull(() -> service.saveParticipantReport(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, null));
     }
     
     @Test
@@ -567,19 +578,19 @@ public class ReportServiceTest {
     
     @Test
     public void deleteParticipantReportNoStudy() {
-        invalid(() -> service.deleteParticipantReport(null, IDENTIFIER, HEALTH_CODE), 
+        invalid(() -> service.deleteParticipantReport(null, TEST_USER_ID, IDENTIFIER, HEALTH_CODE), 
                 "appId", "is required");
     }
     
     @Test
     public void deleteParticipantReportNoIdentifier() {
-        invalid(() -> service.deleteParticipantReport(TEST_APP_ID, null, HEALTH_CODE), 
+        invalid(() -> service.deleteParticipantReport(TEST_APP_ID, TEST_USER_ID, null, HEALTH_CODE), 
                 "identifier", "cannot be missing or blank");
     }
 
     @Test
     public void deleteParticipantReportNoHealthCode() {
-        invalid(() -> service.deleteParticipantReport(TEST_APP_ID, IDENTIFIER, null),
+        invalid(() -> service.deleteParticipantReport(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, null),
                 "healthCode", "is required for participant reports");
     }
     
@@ -663,7 +674,7 @@ public class ReportServiceTest {
     
     @Test
     public void getParticipantReportV4() throws Exception {
-        service.getParticipantReportV4(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE);
+        service.getParticipantReportV4(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY, PAGE_SIZE);
 
         verify(mockReportDataDao).getReportDataV4(reportDataKeyCaptor.capture(), eq(START_TIME), eq(END_TIME),
                 eq(OFFSET_KEY), eq(PAGE_SIZE));
@@ -677,13 +688,13 @@ public class ReportServiceTest {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void getParticipantReportV4MinPageEnforced() {
-        service.getParticipantReportV4(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY,
+        service.getParticipantReportV4(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY,
                 BridgeConstants.API_MINIMUM_PAGE_SIZE - 1);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void getParticipantReportV4MaxPageEnforced() {
-        service.getParticipantReportV4(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY,
+        service.getParticipantReportV4(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, START_TIME, END_TIME, OFFSET_KEY,
                 BridgeConstants.API_MAXIMUM_PAGE_SIZE + 1);
     }
     
@@ -774,6 +785,7 @@ public class ReportServiceTest {
             Set<String> callerStudies, Set<String> indexStudies) {
         // These don't match and the call succeeds
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withOrgSponsoredStudies(callerStudies).build());
         
         ReportIndex index = ReportIndex.create();
@@ -796,20 +808,20 @@ public class ReportServiceTest {
     public void getParticipantReportAuthorizes() {
         setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
-        service.getParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE);
+        service.getParticipantReport(TEST_APP_ID, "not-user-id", IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getParticipantReportV4Authorizes() {
         setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
-        service.getParticipantReportV4(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, 
+        service.getParticipantReportV4(TEST_APP_ID, "not-user-id", IDENTIFIER, HEALTH_CODE, 
                 START_TIME, END_TIME, null, BridgeConstants.API_MINIMUM_PAGE_SIZE);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
     public void getParticipantReportV4VerifiesSameTimeZone() {
-        service.getParticipantReportV4(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, START_TIME,
+        service.getParticipantReportV4(TEST_APP_ID, TEST_USER_ID, IDENTIFIER, HEALTH_CODE, START_TIME,
                 END_TIME.withZone(DateTimeZone.UTC), null, BridgeConstants.API_MINIMUM_PAGE_SIZE);
     }
     
@@ -836,7 +848,7 @@ public class ReportServiceTest {
         
         ReportData data = createReport(START_DATE, "value", "value2");
         
-        service.saveParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE, data);
+        service.saveParticipantReport(TEST_APP_ID, "some-other-user", IDENTIFIER, HEALTH_CODE, data);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -857,14 +869,14 @@ public class ReportServiceTest {
     public void deleteParticipantReportAuthorizes() {
         setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
-        service.deleteParticipantReport(TEST_APP_ID, IDENTIFIER, HEALTH_CODE);
+        service.deleteParticipantReport(TEST_APP_ID, "some-user-id", IDENTIFIER, HEALTH_CODE);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteParticipantReportRecordAuthorizes() {
         setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
-        service.deleteParticipantReportRecord(TEST_APP_ID, 
+        service.deleteParticipantReportRecord(TEST_APP_ID, "some-user-id", 
                 IDENTIFIER, START_DATE.toString(), HEALTH_CODE);
     }
     
@@ -877,7 +889,7 @@ public class ReportServiceTest {
                    .withAppId(TEST_APP_ID).build();
         setupMismatchedStudies(key);
         
-        service.deleteParticipantReportIndex(TEST_APP_ID, IDENTIFIER);
+        service.deleteParticipantReportIndex(TEST_APP_ID, "not-caller", IDENTIFIER);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -902,7 +914,10 @@ public class ReportServiceTest {
     public void updateReportWithStudiesCannotChangeStudies() {
         // This is a removal, and it is not allowed because user has studies memberships
         ReportIndex index = setupMismatchedStudies(STUDY_REPORT_DATA_KEY, 
-                TestConstants.USER_STUDY_IDS, ImmutableSet.of("studyA"));
+                USER_STUDY_IDS, ImmutableSet.of("studyA"));
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA"))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
         
         ReportIndex existingIndex = ReportIndex.create();
         existingIndex.setStudyIds(ImmutableSet.of("studyA", "studyE"));
@@ -920,7 +935,9 @@ public class ReportServiceTest {
         // This is a removal, and it IS allowed because user has no studies
         ReportIndex index = setupMismatchedStudies(STUDY_REPORT_DATA_KEY, 
                 ImmutableSet.of(), ImmutableSet.of("studyA"));
-        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+
         ReportIndex existingIndex = ReportIndex.create();
         existingIndex.setStudyIds(ImmutableSet.of("studyA", "studyE"));
         when(mockReportIndexDao.getIndex(any())).thenReturn(existingIndex);

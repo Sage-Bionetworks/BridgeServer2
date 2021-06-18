@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NONPOSITIVE_REVISION_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
@@ -29,6 +30,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -67,7 +69,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     public void importAssessment() {
         UserSession session = new UserSession();
         session.setAppId(TEST_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.importAssessment(TEST_APP_ID, TEST_OWNER_ID, null, GUID)).thenReturn(assessment);
@@ -82,7 +84,7 @@ public class SharedAssessmentControllerTest extends Mockito {
     public void importAssessmentWithNewId() {
         UserSession session = new UserSession();
         session.setAppId(TEST_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         Assessment assessment = AssessmentTest.createAssessment();
         when(mockService.importAssessment(TEST_APP_ID, TEST_OWNER_ID, NEW_ID, GUID)).thenReturn(assessment);
@@ -193,7 +195,7 @@ public class SharedAssessmentControllerTest extends Mockito {
         // You do need a session for this call
         UserSession session = new UserSession();
         session.setAppId(TEST_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setGuid("notCorrectGuid");

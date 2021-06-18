@@ -100,22 +100,25 @@ public class AuthUtilsTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
-        CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, TEST_ORG_ID);
+        CAN_EDIT_ENROLLMENTS.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void canEditEnrollmentsFailsWrongOrganization() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerOrgMembership("another-organization").build());
         
-        CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, TEST_ORG_ID);
+        CAN_EDIT_ENROLLMENTS.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
     public void canEditEnrollmentsFailsOnNullOrg() {
-        RequestContext.set(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .build());
         
-        CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, TEST_ORG_ID);
+        CAN_EDIT_ENROLLMENTS.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }
     
     @Test
@@ -123,14 +126,16 @@ public class AuthUtilsTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
-        CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, TEST_ORG_ID);
+        CAN_EDIT_ENROLLMENTS.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void canEditEnrollmentsFails() {
-        RequestContext.set(new RequestContext.Builder().build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .build());
         
-        CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, TEST_ORG_ID);
+        CAN_EDIT_ENROLLMENTS.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }
     
     @Test
@@ -147,13 +152,32 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void canEditSharedAssessmentsSucceedsForOwner() {
+    public void canEditSharedAssessmentsSucceedsForStudyDesignerOwner() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
         CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(OWNER_ID, SHARED_OWNER_ID);
     }
 
+    @Test
+    public void canEditSharedAssessmentsSucceedsForDeveloperOwner() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(TEST_OWNER_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(OWNER_ID, SHARED_OWNER_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void canEditSharedAssessmentsFailsForDeveloper() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId("some-other-app")
+                .withCallerOrgMembership("some-other-org")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(OWNER_ID, SHARED_OWNER_ID);
+    }
+    
     @Test(expectedExceptions = UnauthorizedException.class)
     public void canEditSharedAssessmentsFailsWrongOrgId() {
         RequestContext.set(new RequestContext.Builder()
@@ -332,11 +356,29 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void canEditAssessmentsSucceedsForOrgMember() {
+    public void canEditAssessmentsSucceedsForStudyDesignerOrgMember() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
         assertTrue( CAN_EDIT_ASSESSMENTS.check(ORG_ID, TEST_ORG_ID) );
+    }
+    
+    @Test
+    public void canEditAssessmentsSucceedsForDeveloper() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        assertTrue( CAN_EDIT_ASSESSMENTS.check(ORG_ID, TEST_ORG_ID) );
+    }
+    
+    @Test
+    public void canEditAssessmentsSucceedsForStudyCoordinatorOrgMember() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        assertFalse( CAN_EDIT_ASSESSMENTS.check(ORG_ID, TEST_ORG_ID) );
     }
     
     @Test
@@ -514,7 +556,6 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canReadSchedulesFailsForStudyCoordinator() { // for example
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
         
         assertFalse( AuthUtils.CAN_READ_SCHEDULES.check(ORG_ID, TEST_ORG_ID) );

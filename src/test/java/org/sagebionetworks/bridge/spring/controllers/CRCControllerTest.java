@@ -532,7 +532,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         Appointment appointment = new Appointment();
         appointment.setStatus(BOOKED);
@@ -553,8 +553,8 @@ public class CRCControllerTest extends Mockito {
         assertEquals(capturedSignIn.getExternalId(), CUIMC_USERNAME);
         assertEquals(capturedSignIn.getPassword(), "dummy-password");
         
-        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(APPOINTMENT_REPORT), eq(HEALTH_CODE),
-                reportCaptor.capture());
+        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(TEST_USER_ID), eq(APPOINTMENT_REPORT),
+                eq(HEALTH_CODE), reportCaptor.capture());
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifyParticipant(capturedReport.getData());
@@ -584,7 +584,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         Appointment appointment = new Appointment();
         appointment.setStatus(BOOKED);
@@ -623,7 +623,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         Appointment appointment = new Appointment();
         appointment.setStatus(CANCELLED);
@@ -669,7 +669,7 @@ public class CRCControllerTest extends Mockito {
         assertTrue(account.getDataGroups().contains("selected"));
         
         verify(mockAccountService).updateAccount(account);
-        verify(mockReportService).deleteParticipantReportRecord(APP_ID, APPOINTMENT_REPORT,
+        verify(mockReportService).deleteParticipantReportRecord(APP_ID, TEST_USER_ID, APPOINTMENT_REPORT,
                 JAN1.toString(), HEALTH_CODE);
     }
     
@@ -683,7 +683,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         Appointment appointment = new Appointment();
         appointment.setStatus(BOOKED);
@@ -725,7 +725,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, APPOINTMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
 
         Appointment appointment = new Appointment();
         appointment.setStatus(BOOKED);
@@ -751,7 +751,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, PROCEDURE_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, PROCEDURE_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         ResponseEntity<StatusMessage> retValue = controller.postProcedureRequest();
         assertEquals(retValue.getBody().getMessage(), "ProcedureRequest created.");
@@ -775,8 +775,8 @@ public class CRCControllerTest extends Mockito {
         assertEquals(healthData.getMetadata().toString(), "{\"type\":\""+PROCEDURE_REPORT+"\"}");
         assertEquals(healthData.getData().toString(), json);
 
-        inorder.verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(PROCEDURE_REPORT), eq(HEALTH_CODE),
-                reportCaptor.capture());
+        inorder.verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(TEST_USER_ID), eq(PROCEDURE_REPORT),
+                eq(HEALTH_CODE), reportCaptor.capture());
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
@@ -793,7 +793,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, PROCEDURE_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, PROCEDURE_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         ResponseEntity<StatusMessage> retValue = controller.postProcedureRequest();
         assertEquals(retValue.getBody().getMessage(), "ProcedureRequest updated.");
@@ -817,7 +817,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         ResponseEntity<StatusMessage> retValue = controller.postObservation();
         assertEquals(retValue.getBody().getMessage(), "Observation created.");
@@ -829,8 +829,8 @@ public class CRCControllerTest extends Mockito {
         assertEquals(capturedSignIn.getExternalId(), CUIMC_USERNAME);
         assertEquals(capturedSignIn.getPassword(), "dummy-password");
         
-        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(OBSERVATION_REPORT), eq(HEALTH_CODE),
-                reportCaptor.capture());
+        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(TEST_USER_ID), eq(OBSERVATION_REPORT),
+                eq(HEALTH_CODE), reportCaptor.capture());
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
@@ -859,7 +859,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         ResponseEntity<StatusMessage> retValue = controller.postObservation();
         assertEquals(retValue.getBody().getMessage(), "Observation created.");
@@ -871,8 +871,8 @@ public class CRCControllerTest extends Mockito {
         assertEquals(capturedSignIn.getExternalId(), CUIMC_USERNAME);
         assertEquals(capturedSignIn.getPassword(), "dummy-password");
         
-        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(OBSERVATION_REPORT), eq(HEALTH_CODE),
-                reportCaptor.capture());
+        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(TEST_USER_ID), eq(OBSERVATION_REPORT),
+                eq(HEALTH_CODE), reportCaptor.capture());
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
@@ -901,7 +901,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         ResponseEntity<StatusMessage> retValue = controller.postObservation();
         assertEquals(retValue.getBody().getMessage(), "Observation created.");
@@ -913,8 +913,8 @@ public class CRCControllerTest extends Mockito {
         assertEquals(capturedSignIn.getExternalId(), CUIMC_USERNAME);
         assertEquals(capturedSignIn.getPassword(), "dummy-password");
         
-        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(OBSERVATION_REPORT), eq(HEALTH_CODE),
-                reportCaptor.capture());
+        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(TEST_USER_ID), eq(OBSERVATION_REPORT),
+                eq(HEALTH_CODE), reportCaptor.capture());
         ReportData capturedReport = reportCaptor.getValue();
         assertEquals(capturedReport.getDate(), "1970-01-01");
         verifySubject(capturedReport.getData());
@@ -950,7 +950,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of(ReportData.create()));
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, OBSERVATION_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         ResponseEntity<StatusMessage> retValue = controller.postObservation();
         assertEquals(retValue.getBody().getMessage(), "Observation updated.");
@@ -1439,12 +1439,12 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         controller.postUserLabShipmentRequest();
     
-        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(SHIPMENT_REPORT), eq(HEALTH_CODE),
-                reportCaptor.capture());
+        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(TEST_USER_ID), eq(SHIPMENT_REPORT),
+                eq(HEALTH_CODE), reportCaptor.capture());
         verify(controller).internalLabShipmentRequest(any(), any());
         
         ReportData capturedReport = reportCaptor.getValue();
@@ -1464,7 +1464,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
     
     
         controller.postLabShipmentRequest("healthcode:" + HEALTH_CODE);
@@ -1475,8 +1475,8 @@ public class CRCControllerTest extends Mockito {
         assertTrue(accountIdCaptor.getAllValues().stream()
                 .anyMatch(accountId -> accountId.getHealthCode().equals(HEALTH_CODE)));
     
-        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(SHIPMENT_REPORT), eq(HEALTH_CODE),
-                reportCaptor.capture());
+        verify(mockReportService).saveParticipantReport(eq(APP_ID), eq(TEST_USER_ID), eq(SHIPMENT_REPORT),
+                eq(HEALTH_CODE), reportCaptor.capture());
         verify(controller).internalLabShipmentRequest(any(), any());
     
         ReportData capturedReport = reportCaptor.getValue();
@@ -1496,7 +1496,7 @@ public class CRCControllerTest extends Mockito {
     
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
     
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
     
@@ -1515,7 +1515,7 @@ public class CRCControllerTest extends Mockito {
     
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
     
         controller.postUserLabShipmentRequest();
         
@@ -1529,7 +1529,7 @@ public class CRCControllerTest extends Mockito {
     
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
     
         account.setDataGroups(ImmutableSet.of(
                 TEST_USER_GROUP
@@ -1550,7 +1550,7 @@ public class CRCControllerTest extends Mockito {
     
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
     
         account.setDataGroups(ImmutableSet.of(
         ));
@@ -1583,7 +1583,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         controller.postUserLabShipmentRequest();
         
@@ -1597,7 +1597,7 @@ public class CRCControllerTest extends Mockito {
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
-                APP_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
+                APP_ID, TEST_USER_ID, SHIPMENT_REPORT, HEALTH_CODE, JAN1, JAN2);
         
         controller.postUserLabShipmentRequest();
         

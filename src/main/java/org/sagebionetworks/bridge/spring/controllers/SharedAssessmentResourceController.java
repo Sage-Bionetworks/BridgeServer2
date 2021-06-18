@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.STRING_SET_TYPEREF;
 import static org.sagebionetworks.bridge.BridgeUtils.getEnumOrDefault;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
 import java.util.List;
@@ -72,7 +73,7 @@ public class SharedAssessmentResourceController extends BaseController {
 
     @PostMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/{guid}")
     public AssessmentResource updateAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
         
         AssessmentResource resource = parseJson(AssessmentResource.class);
@@ -96,7 +97,7 @@ public class SharedAssessmentResourceController extends BaseController {
     
     @PostMapping("/v1/sharedassessments/identifier:{assessmentId}/resources/import")
     public ResourceList<AssessmentResource> importAssessmentResources(@PathVariable String assessmentId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
 
         Set<String> resourceGuids = parseJson(STRING_SET_TYPEREF);

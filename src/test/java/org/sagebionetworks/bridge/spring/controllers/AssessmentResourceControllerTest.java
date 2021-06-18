@@ -137,7 +137,7 @@ public class AssessmentResourceControllerTest extends Mockito {
     
     @Test
     public void createAssessmentResource() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         mockRequestBody(mockRequest, resource);
@@ -161,7 +161,7 @@ public class AssessmentResourceControllerTest extends Mockito {
 
     @Test
     public void updateAssessmentResource() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         resource.setGuid(null); // verify we set this from the path
@@ -176,14 +176,14 @@ public class AssessmentResourceControllerTest extends Mockito {
 
     @Test
     public void deleteAssessmentResourceDefaultsToLogical() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, null);
         verify(mockService).deleteResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
     }
 
     @Test
     public void deleteAssessmentResourceDeveloperMustBeLogical() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, "true");
         verify(mockService).deleteResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
     }
@@ -193,7 +193,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder()
                 .withRoles(ImmutableSet.of(Roles.ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, "true");
         verify(mockService).deleteResourcePermanently(TEST_APP_ID, ASSESSMENT_ID, GUID);
     }
@@ -203,7 +203,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder()
                 .withRoles(ImmutableSet.of(Roles.ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, "false");
         verify(mockService).deleteResource(TEST_APP_ID, ASSESSMENT_ID, GUID);
     }
@@ -221,7 +221,7 @@ public class AssessmentResourceControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void createAssessmentResourceRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.createAssessmentResource(ASSESSMENT_ID);
     }
@@ -239,7 +239,7 @@ public class AssessmentResourceControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void updateAssessmentResourceRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.updateAssessmentResource(ASSESSMENT_ID, GUID);
     }
@@ -248,14 +248,14 @@ public class AssessmentResourceControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void deleteAssessmentResourceRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
         
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, null);
     }
     
     @Test
     public void publishAssessmentResource() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         mockRequestBody(mockRequest, guids);
@@ -269,7 +269,7 @@ public class AssessmentResourceControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void publishAssessmentResourceRejectsSharedAppContext() throws Exception {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.publishAssessmentResource(ASSESSMENT_ID);
     }    

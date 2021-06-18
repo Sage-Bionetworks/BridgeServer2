@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.ID_FIELD_NAME;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TYPE_FIELD_NAME;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
@@ -146,6 +147,7 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void updateAssessmentConfig() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withCallerOrgMembership(TEST_OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
@@ -181,6 +183,7 @@ public class AssessmentConfigServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = ".*config is required.*")
     public void updateAssessmentConfigInvalid() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withCallerOrgMembership(TEST_OWNER_ID).build());
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOriginGuid(GUID);
@@ -201,6 +204,7 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void customizeAssessmentConfig() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withCallerOrgMembership(TEST_OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
@@ -242,6 +246,7 @@ public class AssessmentConfigServiceTest extends Mockito {
             expectedExceptionsMessageRegExp = ".*identifier is missing.*")
     public void customizeAssessmentConfigInvalid() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withCallerOrgMembership(TEST_OWNER_ID).build());
         
         AssessmentConfigValidator val = new AssessmentConfigValidator.Builder()
@@ -283,6 +288,7 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void customizeAssessmentConfigUnchanged() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withCallerOrgMembership(TEST_OWNER_ID).build());
         
         Assessment assessment = AssessmentTest.createAssessment();

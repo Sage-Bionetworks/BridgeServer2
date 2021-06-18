@@ -42,7 +42,7 @@ public class Schedule2Controller extends BaseController {
     public PagedResourceList<Schedule2> getSchedules(@RequestParam(required = false) String offsetBy,
             @RequestParam(required = false) String pageSize,
             @RequestParam(required = false) String includeDeleted) {
-        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
+        UserSession session = getAdministrativeSession();
         
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0); 
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);

@@ -18,7 +18,6 @@ import java.util.function.Consumer;
 import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -32,6 +31,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -103,10 +103,9 @@ public class MembershipControllerTest extends Mockito {
     @Test
     public void getMembers() throws Exception {
         setContext(b -> b.withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_ORG_ID)
-                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)));
+                .withCallerOrgMembership(TEST_ORG_ID));
         
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAdministrativeSession();
         
         PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(ImmutableList.of(), 0);
         when(mockOrganizationService.getMembers(eq(TEST_APP_ID), eq(TEST_ORG_ID), any())).thenReturn(page);
@@ -119,6 +118,22 @@ public class MembershipControllerTest extends Mockito {
         
         verify(mockOrganizationService).getMembers(eq(TEST_APP_ID), eq(TEST_ORG_ID), searchCaptor.capture());
         assertEquals(searchCaptor.getValue().getEmailFilter(), "email");
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getMembersInaccessibleToOtherOrgs() throws Exception {
+        setContext(b -> b.withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership("another-organization"));
+        
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        PagedResourceList<AccountSummary> page = new PagedResourceList<AccountSummary>(ImmutableList.of(), 0);
+        when(mockOrganizationService.getMembers(eq(TEST_APP_ID), eq(TEST_ORG_ID), any())).thenReturn(page);
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder().withEmailFilter("email").build();
+        mockRequestBody(mockRequest, search);
+        
+        controller.getMembers(TEST_ORG_ID);
     }
     
     @Test

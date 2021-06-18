@@ -168,9 +168,7 @@ public class BridgeUtils {
             
             // If this is a call for one’s own record, or the caller is an admin or 
             // worker, or the account is in the same organization as the caller who 
-            // is an org admin, return the account. Callers that are not associated to an 
-            // organization also gain access, but only while we migrate away from 
-            // this kind of global account.
+            // is an org admin, return the account.
             if (CAN_READ_PARTICIPANTS.check(ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
                 return account;
             }
