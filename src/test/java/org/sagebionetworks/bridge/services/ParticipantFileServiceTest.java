@@ -6,6 +6,7 @@ import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -116,7 +117,7 @@ public class ParticipantFileServiceTest {
         assertEquals(result.getMimeType(), "dummy-type");
         assertEquals(result.getDownloadUrl(), downloadUrl);
         assertEquals(result.getAppId(), "api");
-        assertNull(result.getExpires());
+        assertEquals(result.getExpiresOn().toDateTime(DateTimeZone.UTC), TestConstants.TIMESTAMP.plusDays(1));
         assertNull(result.getUploadUrl());
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
@@ -151,8 +152,8 @@ public class ParticipantFileServiceTest {
         assertNotNull(result.getCreatedOn());
         assertEquals(result.getUploadUrl(), upload);
         assertEquals(result.getAppId(), "api");
-        assertEquals(TestConstants.TIMESTAMP.compareTo(result.getCreatedOn()), 0);
-        assertEquals(TestConstants.TIMESTAMP.plusDays(1).toDate(), result.getExpires().toDate());
+        assertEquals(result.getCreatedOn().toDateTime(DateTimeZone.UTC), TestConstants.TIMESTAMP);
+        assertEquals(result.getExpiresOn().toDateTime(DateTimeZone.UTC), TestConstants.TIMESTAMP.plusDays(1));
         assertNull(result.getDownloadUrl());
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
@@ -172,35 +173,6 @@ public class ParticipantFileServiceTest {
     public void createParticipantFileInvalidFile() {
         ParticipantFile file = ParticipantFile.create();
         service.createParticipantFile("api", "test_user", file);
-    }
-
-    @Test
-    public void createParticipantFileAlreadyExists() {
-        ParticipantFile file = ParticipantFile.create();
-        file.setFileId("file_id");
-        file.setUserId("test_user");
-        file.setAppId("api");
-        file.setMimeType("dummy-type");
-        file.setCreatedOn(TestConstants.TIMESTAMP);
-
-        ParticipantFile newFile = ParticipantFile.create();
-        newFile.setFileId("file_id");
-        newFile.setUserId("test_user");
-        newFile.setAppId("not_api");
-        newFile.setMimeType("new-dummy-type");
-        newFile.setCreatedOn(TestConstants.TIMESTAMP.plusDays(1));
-
-        when(mockFileDao.getParticipantFile(eq("test_user"), eq("file_id"))).thenReturn(Optional.of(file));
-        ParticipantFile result = service.createParticipantFile("not_api", "test_user", newFile);
-
-        verify(mockFileDao).uploadParticipantFile(any());
-        assertEquals("file_id", result.getFileId());
-        assertEquals("test_user", result.getUserId());
-        assertEquals("not_api", result.getAppId());
-        assertEquals("new-dummy-type", result.getMimeType());
-        assertEquals(TestConstants.TIMESTAMP.toDate(), result.getCreatedOn().toDate());
-        assertNotNull(result.getUploadUrl());
-        assertNull(result.getDownloadUrl());
     }
 
     @Test

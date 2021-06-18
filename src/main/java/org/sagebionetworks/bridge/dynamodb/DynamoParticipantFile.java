@@ -22,7 +22,7 @@ public class DynamoParticipantFile implements ParticipantFile {
     private String appId;
     private String uploadUrl;
     private String downloadUrl;
-    private DateTime expires;
+    private DateTime expiresOn;
 
     public DynamoParticipantFile() {
     }
@@ -126,13 +126,13 @@ public class DynamoParticipantFile implements ParticipantFile {
     @Override
     @DynamoDBIgnore
     @JsonSerialize(using = DateTimeSerializer.class)
-    public DateTime getExpires() {
-        return this.expires;
+    public DateTime getExpiresOn() {
+        return this.expiresOn;
     }
 
     @Override
     @JsonDeserialize(using = DateTimeDeserializer.class)
-    public void setExpires(DateTime expires) {
-        this.expires = expires;
+    public void setExpiresOn(DateTime expiresOn) {
+        this.expiresOn = expiresOn;
     }
 }

@@ -19,7 +19,7 @@ public class DynamoParticipantFileTest {
         pFile.setMimeType("image/jpeg");
         pFile.setDownloadUrl("dummy.download");
         pFile.setUploadUrl("dummy.upload");
-        pFile.setExpires(TestConstants.TIMESTAMP);
+        pFile.setExpiresOn(TestConstants.TIMESTAMP);
 
         String json = MAPPER.writeValueAsString(pFile);
         JsonNode node = MAPPER.readTree(json);
@@ -43,7 +43,7 @@ public class DynamoParticipantFileTest {
         assertEquals(deser.getAppId(), "api_test");
         assertEquals(deser.getDownloadUrl(), "dummy.download");
         assertEquals(deser.getUploadUrl(), "dummy.upload");
-        assertEquals(deser.getExpires(), TestConstants.TIMESTAMP);
+        assertEquals(deser.getExpiresOn(), TestConstants.TIMESTAMP);
     }
 
     @Test
@@ -62,6 +62,6 @@ public class DynamoParticipantFileTest {
         assertEquals(file.getMimeType(), "image/jpeg");
         assertEquals(file.getDownloadUrl(), "dummy.download");
         assertEquals(file.getUploadUrl(), "dummy.upload");
-        assertEquals(file.getExpires(), TestConstants.TIMESTAMP);
+        assertEquals(file.getExpiresOn(), TestConstants.TIMESTAMP);
     }
 }
