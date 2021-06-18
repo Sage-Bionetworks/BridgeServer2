@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
@@ -28,11 +27,11 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 
 public class ParticipantFileServiceTest {
 
@@ -117,6 +116,8 @@ public class ParticipantFileServiceTest {
         assertEquals(result.getMimeType(), "dummy-type");
         assertEquals(result.getDownloadUrl(), downloadUrl);
         assertEquals(result.getAppId(), "api");
+        assertEquals(result.getExpiresOn().getMillis(), TestConstants.TIMESTAMP.plusDays(1).getMillis());
+        assertNull(result.getUploadUrl());
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
@@ -137,8 +138,6 @@ public class ParticipantFileServiceTest {
     public void createParticipantFile() {
         String upload = "https://" + UPLOAD_BUCKET + "/test_user/file_id";
 
-        when(mockFileDao.getParticipantFile(any(), any())).thenReturn(Optional.empty());
-
         // UserId and AppId should not depend on file, it should be manually set by the Service.
         ParticipantFile file = ParticipantFile.create();
         file.setFileId("file_id");
@@ -152,7 +151,9 @@ public class ParticipantFileServiceTest {
         assertNotNull(result.getCreatedOn());
         assertEquals(result.getUploadUrl(), upload);
         assertEquals(result.getAppId(), "api");
-        assertEquals(TestConstants.TIMESTAMP.compareTo(result.getCreatedOn()), 0);
+        assertEquals(result.getCreatedOn().getMillis(), TestConstants.TIMESTAMP.getMillis());
+        assertEquals(result.getExpiresOn().getMillis(), TestConstants.TIMESTAMP.plusDays(1).getMillis());
+        assertNull(result.getDownloadUrl());
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
@@ -164,37 +165,13 @@ public class ParticipantFileServiceTest {
                 ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
         assertEquals(request.getExpiration(), TestConstants.TIMESTAMP.plusDays(1).toDate());
 
-        verify(mockFileDao).getParticipantFile(eq("test_user"), eq("file_id"));
         verify(mockFileDao).uploadParticipantFile(eq(file));
-
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void createParticipantFileInvalidFile() {
         ParticipantFile file = ParticipantFile.create();
         service.createParticipantFile("api", "test_user", file);
-    }
-
-    @Test(expectedExceptions = EntityAlreadyExistsException.class)
-    public void createParticipantFileAlreadyExists() {
-        ParticipantFile file = ParticipantFile.create();
-        file.setFileId("file_id");
-        file.setUserId("test_user");
-        file.setAppId("api");
-        file.setMimeType("dummy-type");
-        file.setCreatedOn(TestConstants.TIMESTAMP);
-
-        ParticipantFile newFile = ParticipantFile.create();
-        newFile.setFileId("file_id");
-        newFile.setUserId("test_user");
-        newFile.setAppId("not_api");
-        newFile.setMimeType("new-dummy-type");
-        newFile.setCreatedOn(TestConstants.TIMESTAMP);
-
-        when(mockFileDao.getParticipantFile(eq("test_user"), eq("file_id"))).thenReturn(Optional.of(file));
-        service.createParticipantFile("not_api", "test_user", newFile);
-
-        verify(mockFileDao, never()).uploadParticipantFile(any());
     }
 
     @Test
