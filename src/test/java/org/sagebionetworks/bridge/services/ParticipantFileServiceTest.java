@@ -6,7 +6,6 @@ import com.amazonaws.services.s3.Headers;
 import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.joda.time.DateTimeUtils;
-import org.joda.time.DateTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -117,7 +116,7 @@ public class ParticipantFileServiceTest {
         assertEquals(result.getMimeType(), "dummy-type");
         assertEquals(result.getDownloadUrl(), downloadUrl);
         assertEquals(result.getAppId(), "api");
-        assertEquals(result.getExpiresOn().toDateTime(DateTimeZone.UTC), TestConstants.TIMESTAMP.plusDays(1));
+        assertEquals(result.getExpiresOn().getMillis(), TestConstants.TIMESTAMP.plusDays(1).getMillis());
         assertNull(result.getUploadUrl());
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
@@ -152,8 +151,8 @@ public class ParticipantFileServiceTest {
         assertNotNull(result.getCreatedOn());
         assertEquals(result.getUploadUrl(), upload);
         assertEquals(result.getAppId(), "api");
-        assertEquals(result.getCreatedOn().toDateTime(DateTimeZone.UTC), TestConstants.TIMESTAMP);
-        assertEquals(result.getExpiresOn().toDateTime(DateTimeZone.UTC), TestConstants.TIMESTAMP.plusDays(1));
+        assertEquals(result.getCreatedOn().getMillis(), TestConstants.TIMESTAMP.getMillis());
+        assertEquals(result.getExpiresOn().getMillis(), TestConstants.TIMESTAMP.plusDays(1).getMillis());
         assertNull(result.getDownloadUrl());
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());

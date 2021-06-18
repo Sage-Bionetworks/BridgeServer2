@@ -32,7 +32,7 @@ public class DynamoParticipantFileTest {
         assertEquals(node.get("appId").textValue(), "api_test");
         assertEquals(node.get("downloadUrl").textValue(), "dummy.download");
         assertEquals(node.get("uploadUrl").textValue(), "dummy.upload");
-        assertEquals(node.get("expires").textValue(), TestConstants.TIMESTAMP.toString());
+        assertEquals(node.get("expiresOn").textValue(), TestConstants.TIMESTAMP.toString());
         assertEquals(node.size(), 9);
 
         ParticipantFile deser = MAPPER.readValue(json, ParticipantFile.class);
@@ -52,7 +52,7 @@ public class DynamoParticipantFileTest {
         String json ="{\"fileId\":\"fileId\",\"userId\":\"userId\",\"createdOn\":\"2015-01-27T00:38:32.486Z\"," +
                 "\"mimeType\":\"image/jpeg\",\"appId\":\"api_test\",\"uploadUrl\":\"dummy.upload\"," +
                 "\"downloadUrl\":\"dummy.download\",\"type\":\"ParticipantFile\"," +
-                "\"expires\":\"2015-01-27T00:38:32.486Z\"}";
+                "\"expiresOn\":\"2015-01-27T00:38:32.486Z\"}";
         ParticipantFile file = MAPPER.readValue(json, ParticipantFile.class);
 
         assertEquals(file.getFileId(), "fileId");
