@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -89,6 +90,7 @@ public class AssessmentResourceServiceTest extends Mockito {
         
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withCallerOrgMembership(TEST_OWNER_ID).build());
     }
     
@@ -588,6 +590,7 @@ public class AssessmentResourceServiceTest extends Mockito {
     @Test
     public void importAssessmentResourcesCallerCorrectOrg() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withCallerOrgMembership(TEST_OWNER_ID).build());
 
         Assessment assessment = AssessmentTest.createAssessment();
@@ -638,7 +641,8 @@ public class AssessmentResourceServiceTest extends Mockito {
     public void publishAssessmentResourcesOwnerInOrg() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId(TEST_APP_ID+":"+TEST_OWNER_ID);

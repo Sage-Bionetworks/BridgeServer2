@@ -44,7 +44,7 @@ public class AssessmentConfigController extends BaseController {
     
     @PostMapping("/v1/assessments/{guid}/config")
     public AssessmentConfig updateAssessmentConfig(@PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
         String ownerId = session.getParticipant().getOrgMembership();
         

@@ -94,7 +94,7 @@ public class AssessmentConfigControllerTest extends Mockito {
     
     @Test
     public void updateAssessmentConfig() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         AssessmentConfig config = new AssessmentConfig();
         config.setConfig(TestUtils.getClientData());
@@ -114,7 +114,7 @@ public class AssessmentConfigControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void updateAssessmentConfigRejectsSharedApp() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         session.setAppId(SHARED_APP_ID);
         
         AssessmentConfig config = new AssessmentConfig();

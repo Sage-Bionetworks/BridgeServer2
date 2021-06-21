@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NONPOSITIVE_REVISION_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
@@ -22,7 +21,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -45,7 +43,7 @@ public class SharedAssessmentController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public Assessment importAssessment(@PathVariable String guid, @RequestParam(required = false) String ownerId,
             @RequestParam(required = false) String newIdentifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
         
         return service.importAssessment(appId, ownerId, newIdentifier, guid);
@@ -117,7 +115,7 @@ public class SharedAssessmentController extends BaseController {
 
     @PostMapping("/v1/sharedassessments/{guid}")
     public Assessment updateSharedAssessment(@PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
         
         Assessment assessment = parseJson(Assessment.class);

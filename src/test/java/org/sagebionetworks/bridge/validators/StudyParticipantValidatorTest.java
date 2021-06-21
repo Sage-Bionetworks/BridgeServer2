@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
@@ -408,6 +409,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void organizationOK() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         
         when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_ORG_ID))

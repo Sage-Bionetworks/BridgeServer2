@@ -681,11 +681,11 @@ public class CRCController extends BaseController {
         report.setData(data);
         report.setStudyIds(callerStudyIds);
 
-        DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(appId, reportName,
-                account.getHealthCode(), JAN1, JAN2);
+        DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(appId, userId,
+                reportName, account.getHealthCode(), JAN1, JAN2);
         int status = (results.getItems().isEmpty()) ? 201 : 200;
 
-        reportService.saveParticipantReport(appId, reportName, account.getHealthCode(), report);
+        reportService.saveParticipantReport(appId, userId, reportName, account.getHealthCode(), report);
         return status;
     }
     
@@ -697,8 +697,8 @@ public class CRCController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
 
-        reportService.deleteParticipantReportRecord(app.getIdentifier(), APPOINTMENT_REPORT,
-                JAN1.toString(), account.getHealthCode());
+        reportService.deleteParticipantReportRecord(app.getIdentifier(), userId, APPOINTMENT_REPORT, JAN1.toString(),
+                account.getHealthCode());
 
         updateState(account, SELECTED);
         accountService.updateAccount(account);

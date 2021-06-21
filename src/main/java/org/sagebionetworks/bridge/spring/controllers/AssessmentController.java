@@ -73,7 +73,7 @@ public class AssessmentController extends BaseController {
     @PostMapping("/v1/assessments")
     @ResponseStatus(HttpStatus.CREATED)
     public Assessment createAssessment() {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         String appId = session.getAppId();
         if (SHARED_APP_ID.equals(appId)) {
@@ -98,7 +98,7 @@ public class AssessmentController extends BaseController {
     
     @PostMapping("/v1/assessments/{guid}")
     public Assessment updateAssessmentByGuid(@PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
         String ownerId = getOwnerId(session);
@@ -134,7 +134,7 @@ public class AssessmentController extends BaseController {
     @PostMapping("/v1/assessments/{guid}/revisions")
     @ResponseStatus(HttpStatus.CREATED)
     public Assessment createAssessmentRevision(@PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
         String ownerId = getOwnerId(session);
@@ -156,7 +156,7 @@ public class AssessmentController extends BaseController {
     @ResponseStatus(HttpStatus.CREATED)
     public Assessment publishAssessment(@PathVariable String guid,
             @RequestParam(required = false) String newIdentifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
         String ownerId = getOwnerId(session);
@@ -169,10 +169,12 @@ public class AssessmentController extends BaseController {
         
     @DeleteMapping("/v1/assessments/{guid}")
     public StatusMessage deleteAssessment(@PathVariable String guid, @RequestParam(required = false) String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
 
         String appId = session.getAppId();
-        String ownerId = getOwnerId(session);
+        // An admin can logically delete and in that case, we do want to pass the correct
+        // ownerId, so we don't nullify it here.
+        String ownerId = session.getParticipant().getOrgMembership();
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }

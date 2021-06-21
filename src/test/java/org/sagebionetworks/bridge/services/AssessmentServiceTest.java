@@ -6,6 +6,9 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -104,6 +107,7 @@ public class AssessmentServiceTest extends Mockito {
         // you are an administrator). 
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withCallerOrgMembership(TEST_OWNER_ID).build());
     }
     
@@ -198,7 +202,7 @@ public class AssessmentServiceTest extends Mockito {
         when(mockDao.getAssessmentRevisions(TEST_APP_ID, null, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, "orgD"))
             .thenReturn(mockOrganization);
         
         Assessment assessment = AssessmentTest.createAssessment();
@@ -247,7 +251,43 @@ public class AssessmentServiceTest extends Mockito {
         
         assertMarkupRemoved(assessment);
     }
+    
+    @Test
+    public void createAssessmentSetsOwnerIdToCallerOrg() {
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, "orgD"))
+            .thenReturn(mockOrganization);
+        when(mockDao.getAssessmentRevisions(any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
+            .thenReturn(EMPTY_LIST);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership("orgD")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
 
+        Assessment assessment = AssessmentTest.createAssessment();
+        service.createAssessment(TEST_APP_ID, assessment);
+
+        verify(mockDao).createAssessment(any(), assessmentCaptor.capture(), any());
+        assertEquals(assessmentCaptor.getValue().getOwnerId(), "orgD");
+    }
+
+    @Test
+    public void createAssessmentAllowsAdminsToSetOwnerId() {
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(mockOrganization);
+        when(mockDao.getAssessmentRevisions(any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
+            .thenReturn(EMPTY_LIST);
+    
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership("orgD")
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+
+        Assessment assessment = AssessmentTest.createAssessment();
+        service.createAssessment(TEST_APP_ID, assessment);
+
+        verify(mockDao).createAssessment(any(), assessmentCaptor.capture(), any());
+        assertEquals(assessmentCaptor.getValue().getOwnerId(), TEST_OWNER_ID);
+    }
+    
     @Test
     public void createAssessmentRevision() {
         when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
@@ -281,9 +321,9 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void createAssessmentRevisionUnauthorized() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerEnrolledStudies(ImmutableSet.of("studyD")).build());
+                .withCallerOrgMembership("studyD").build());
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, "studyD"))
             .thenReturn(mockOrganization);
         
         Assessment existing = AssessmentTest.createAssessment();
@@ -496,7 +536,8 @@ public class AssessmentServiceTest extends Mockito {
     public void updateSharedAssessment() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
         when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
             .thenReturn(Organization.create());
@@ -524,7 +565,8 @@ public class AssessmentServiceTest extends Mockito {
     public void updateSharedAssessmentAdjustsOsNameAlias() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
         when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
             .thenReturn(Organization.create());
@@ -548,7 +590,8 @@ public class AssessmentServiceTest extends Mockito {
         
         RequestContext.set(new RequestContext.Builder()
                 .withCallerAppId(TEST_APP_ID)
-                .withCallerOrgMembership(TEST_OWNER_ID).build());
+                .withCallerOrgMembership(TEST_OWNER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
         
         when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
             .thenReturn(Organization.create());
@@ -1117,7 +1160,7 @@ public class AssessmentServiceTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void importAssessmentCallerUnauthorized() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership("notTheOwnerId").build());
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
 
         service.importAssessment(TEST_APP_ID, TEST_OWNER_ID, null, GUID);
     }
@@ -1222,7 +1265,7 @@ public class AssessmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, "orgD"))
             .thenReturn(mockOrganization);
         
         when(mockDao.getAssessmentRevisions(TEST_APP_ID, null, IDENTIFIER, 0, 1, true))
@@ -1238,7 +1281,7 @@ public class AssessmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
+        when(mockOrganizationService.getOrganization(TEST_APP_ID, "orgD"))
             .thenReturn(mockOrganization);
         
         Assessment existing = AssessmentTest.createAssessment();
@@ -1274,7 +1317,7 @@ public class AssessmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void importAssessmentChecksOwnership() {
+    public void importAssessmentChecksAccess() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         service.importAssessment(TEST_APP_ID, TEST_OWNER_ID, null, GUID);

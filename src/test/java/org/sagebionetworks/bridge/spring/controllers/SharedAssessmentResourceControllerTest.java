@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
@@ -128,7 +129,7 @@ public class SharedAssessmentResourceControllerTest extends Mockito {
 
     @Test
     public void updateAssessmentResource() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         AssessmentResource resource = AssessmentResourceTest.createAssessmentResource();
         resource.setGuid("junkGuid");
@@ -175,7 +176,7 @@ public class SharedAssessmentResourceControllerTest extends Mockito {
     
     @Test
     public void importAssessmentResources() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         Set<String> guids = ImmutableSet.of("guid1", "guid2", "guid3");
         mockRequestBody(mockRequest, guids);
 

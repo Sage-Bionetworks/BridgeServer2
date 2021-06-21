@@ -102,6 +102,8 @@ public class FileControllerTest extends Mockito {
     
     @Test
     public void getFilesIncludeDeleted() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
         PagedResourceList<FileMetadata> page = new PagedResourceList<>(ImmutableList.of(new FileMetadata()), 100);
         when(mockFileService.getFiles(TEST_APP_ID, 5, 40, true)).thenReturn(page);
         
@@ -113,6 +115,8 @@ public class FileControllerTest extends Mockito {
     
     @Test
     public void getFilesExcludeDeleted() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
         PagedResourceList<FileMetadata> page = new PagedResourceList<>(ImmutableList.of(new FileMetadata()), 100);
         when(mockFileService.getFiles(TEST_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false)).thenReturn(page);
         

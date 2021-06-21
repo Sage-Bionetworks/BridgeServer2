@@ -173,10 +173,10 @@ public class StudyControllerTest extends Mockito {
     public void updateStudy() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of("id"))
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
 
         Study study = Study.create();
-        study.setIdentifier("oneId");
+        study.setIdentifier("id");
         study.setName("oneName");
         mockRequestBody(mockRequest, study);
 

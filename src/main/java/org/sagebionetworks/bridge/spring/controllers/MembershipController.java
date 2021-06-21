@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_MEMBERS;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.springframework.http.HttpStatus.CREATED;
@@ -36,10 +36,9 @@ public class MembershipController extends BaseController {
     
     @PostMapping("/v1/organizations/{orgId}/members")
     public PagedResourceList<AccountSummary> getMembers(@PathVariable String orgId) {
-        // should this just be scoped to any administrative user?
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAdministrativeSession();
         
-        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, orgId);
+        CAN_READ_MEMBERS.checkAndThrow(ORG_ID, orgId);
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         return organizationService.getMembers(session.getAppId(), orgId, search);

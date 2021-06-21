@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.OWNER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SHARED_ASSESSMENTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_IMPORT_SHARED_ASSESSMENTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -42,7 +43,6 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
@@ -150,6 +150,7 @@ public class AssessmentService {
         // with the same identifier.
         Assessment existing = getAssessmentByGuid(appId, ownerId, guid);
         assessment.setIdentifier(existing.getIdentifier());
+        assessment.setOwnerId(existing.getOwnerId());
 
         return createAssessmentInternal(appId, assessment);
     }
@@ -173,14 +174,11 @@ public class AssessmentService {
         checkArgument(isNotBlank(callerAppId));
         checkNotNull(assessment);
         
-        // TODO: permissions check is handled below (this returns 403 and not 404, so we
-        // may wish to assemble the shared ownerId string and pass it in here.
         Assessment existing = dao.getAssessment(SHARED_APP_ID, null, assessment.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
         if (existing.isDeleted() && assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-
         CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(OWNER_ID, existing.getOwnerId());
         
         return updateAssessmentInternal(SHARED_APP_ID, assessment, existing);
@@ -291,8 +289,7 @@ public class AssessmentService {
         // the shared repository, so check for this as well.
         String sharedOwnerId = appId + ":" + assessmentToPublish.getOwnerId();
         String identifier = assessmentToPublish.getIdentifier();
-        Assessment existing = getLatestInternal(
-                SHARED_APP_ID, null, identifier, true).orElse(null);
+        Assessment existing = getLatestInternal(SHARED_APP_ID, null, identifier, true).orElse(null);
         if (existing != null && !existing.getOwnerId().equals(sharedOwnerId)) {
             throw new UnauthorizedException("Assessment exists in shared library under a different " 
                     +"owner (identifier = " + identifier + ")");
@@ -337,7 +334,7 @@ public class AssessmentService {
         if (isBlank(ownerId)) {
             throw new BadRequestException("ownerId parameter is required");
         }
-        CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(ORG_ID, ownerId);
+        CAN_IMPORT_SHARED_ASSESSMENTS.checkAndThrow(ORG_ID, ownerId);
 
         Assessment sharedAssessment = getAssessmentByGuid(SHARED_APP_ID, null, guid);
         AssessmentConfig sharedConfig = configService.getSharedAssessmentConfig(SHARED_APP_ID, guid);
