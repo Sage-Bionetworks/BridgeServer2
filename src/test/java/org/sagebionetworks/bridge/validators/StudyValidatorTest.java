@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.studies.ContactRole.TECHNICAL_SUPPORT;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
+import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.EXEMPT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.validators.StudyValidator.APP_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.CONTACTS_FIELD;
@@ -159,6 +160,15 @@ public class StudyValidatorTest {
         study.setIrbDecisionType(APPROVED);
         
         assertValidatorMessage(INSTANCE, study, StudyValidator.IRB_EXPIRES_ON_FIELD, CANNOT_BE_NULL);
+    }
+    
+    @Test
+    public void irbExemptionDoesNotRequireExpiration() {
+        study = createStudy();
+        study.setIrbDecisionType(EXEMPT);
+        study.setIrbDecisionOn(DECISION_ON);
+        study.setIrbExpiresOn(null);
+        entityThrowingException(INSTANCE, study);
     }
     
     @Test
