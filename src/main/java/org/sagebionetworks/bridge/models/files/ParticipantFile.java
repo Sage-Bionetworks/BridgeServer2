@@ -20,6 +20,7 @@ public interface ParticipantFile extends BridgeEntity {
     DateTime getCreatedOn();
     String getDownloadUrl();
     String getUploadUrl();
+    DateTime getExpiresOn();
 
     void setFileId(String fileId);
     void setUserId(String userId);
@@ -28,4 +29,5 @@ public interface ParticipantFile extends BridgeEntity {
     void setCreatedOn(DateTime createdOn);
     void setDownloadUrl(String url);
     void setUploadUrl(String url);
+    void setExpiresOn(DateTime expires);
 }
