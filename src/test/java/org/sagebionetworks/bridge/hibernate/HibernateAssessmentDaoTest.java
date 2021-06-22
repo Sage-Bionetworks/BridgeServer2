@@ -140,7 +140,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
                 .thenReturn(list);
         
         PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, null, 0, 20, null, false);
-        assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) " + QUERY_SQL_EXC_DELETED);
+        assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_EXC_DELETED);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_EXC_DELETED);
         
         Map<String,Object> params = paramsCaptor.getValue();
@@ -158,7 +158,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
                 .thenReturn(list);
         
         PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, TEST_ORG_ID, 0, 20, null, false);
-        assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) " + QUERY_SQL_WITH_OWNERID_EXC_DELETED);
+        assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_WITH_OWNERID_EXC_DELETED);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_WITH_OWNERID_EXC_DELETED);
         
         Map<String,Object> params = paramsCaptor.getValue();
@@ -174,7 +174,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
                 .thenReturn(ImmutableList.of());
         
         dao.getAssessments(APP_ID_VALUE, null, 0, 20, null, true);
-        assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) " + QUERY_SQL_INC_DELETED);
+        assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_INC_DELETED);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_INC_DELETED);
     }
     
@@ -185,7 +185,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
                 .thenReturn(ImmutableList.of());
         
         dao.getAssessments(APP_ID_VALUE, null, 0, 20, ImmutableSet.of("tagA", "tagB"), false);
-        assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) " + QUERY_SQL_WITH_TAGS);
+        assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_WITH_TAGS);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_WITH_TAGS);
     }
     
