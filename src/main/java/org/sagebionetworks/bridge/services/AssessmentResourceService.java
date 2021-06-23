@@ -67,16 +67,16 @@ public class AssessmentResourceService {
         return BridgeUtils.generateGuid();
     }
     
-    public PagedResourceList<AssessmentResource> getResources(String appId, String assessmentId, Integer offsetBy,
-            Integer pageSize, Set<ResourceCategory> categories, Integer minRevision, Integer maxRevision,
-            boolean includeDeleted) {
+    public PagedResourceList<AssessmentResource> getResources(String appId, String ownerId, String assessmentId,
+            Integer offsetBy, Integer pageSize, Set<ResourceCategory> categories, Integer minRevision,
+            Integer maxRevision, boolean includeDeleted) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(assessmentId));
         
         if (minRevision != null && maxRevision != null && maxRevision < minRevision) {
             throw new BadRequestException("maxRevision cannot be greater than minRevision");
         }
-        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        Assessment assessment = assessmentService.getLatestAssessment(appId, ownerId, assessmentId);
 
         PagedResourceList<AssessmentResource> page = dao.getResources(appId, assessmentId, offsetBy, pageSize, categories, minRevision, maxRevision, includeDeleted);
         
@@ -91,24 +91,24 @@ public class AssessmentResourceService {
                 .withRequestParam(INCLUDE_DELETED, includeDeleted);
     }
 
-    public AssessmentResource getResource(String appId, String assessmentId, String guid) {
+    public AssessmentResource getResource(String appId, String ownerId, String assessmentId, String guid) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(assessmentId));
         checkArgument(isNotBlank(guid));
         
-        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        Assessment assessment = assessmentService.getLatestAssessment(appId, ownerId, assessmentId);
         AssessmentResource resource = dao.getResource(appId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(AssessmentResource.class));
         resource.setUpToDate(resource.getCreatedAtRevision() == assessment.getRevision());
         return resource;
     }
     
-    public AssessmentResource createResource(String appId, String assessmentId, AssessmentResource resource) {
+    public AssessmentResource createResource(String appId, String ownerId, String assessmentId, AssessmentResource resource) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(assessmentId));
         checkNotNull(resource);
         
-        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        Assessment assessment = assessmentService.getLatestAssessment(appId, ownerId, assessmentId);
         CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, assessment.getOwnerId());
         
         DateTime timestamp = getCreatedOn();
@@ -127,12 +127,12 @@ public class AssessmentResourceService {
         return retValue;
     }
     
-    public AssessmentResource updateResource(String appId, String assessmentId, AssessmentResource resource) {
+    public AssessmentResource updateResource(String appId, String ownerId, String assessmentId, AssessmentResource resource) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(assessmentId));
         checkNotNull(resource);
         
-        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        Assessment assessment = assessmentService.getLatestAssessment(appId, ownerId, assessmentId);
         
         CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, assessment.getOwnerId());
         
@@ -145,7 +145,7 @@ public class AssessmentResourceService {
         checkArgument(isNotBlank(assessmentId));
         checkNotNull(resource);
         
-        Assessment assessment = assessmentService.getLatestAssessment(SHARED_APP_ID, assessmentId);
+        Assessment assessment = assessmentService.getLatestAssessment(SHARED_APP_ID, null, assessmentId);
         
         CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(OWNER_ID, assessment.getOwnerId());
         
@@ -173,13 +173,13 @@ public class AssessmentResourceService {
         return retValue;
     }
     
-    public void deleteResource(String appId, String assessmentId, String guid) {
+    public void deleteResource(String appId, String ownerId, String assessmentId, String guid) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(assessmentId));
         checkArgument(isNotBlank(guid));
         
         // Verify access to this.
-        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        Assessment assessment = assessmentService.getLatestAssessment(appId, ownerId, assessmentId);
         CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, assessment.getOwnerId());
         
         AssessmentResource resource = dao.getResource(appId, guid)
@@ -202,12 +202,12 @@ public class AssessmentResourceService {
         }
     }
     
-    public List<AssessmentResource> importAssessmentResources(String appId, String assessmentId, Set<String> guids) {
+    public List<AssessmentResource> importAssessmentResources(String appId, String ownerId, String assessmentId, Set<String> guids) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(assessmentId));
         
         // Must have imported the assessment already before you move resources
-        Assessment assessment = assessmentService.getLatestAssessment(appId, assessmentId);
+        Assessment assessment = assessmentService.getLatestAssessment(appId, ownerId, assessmentId);
         // Cannot import a resource unless you are member of the org that owns the assessment
         CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, assessment.getOwnerId());
         return copyResources(SHARED_APP_ID, appId, assessment, guids);
@@ -218,7 +218,7 @@ public class AssessmentResourceService {
         checkArgument(isNotBlank(assessmentId));
         
         // Must have published the assessment already before you move resources
-        Assessment assessment = assessmentService.getLatestAssessment(SHARED_APP_ID, assessmentId);
+        Assessment assessment = assessmentService.getLatestAssessment(SHARED_APP_ID, null, assessmentId);
         // Cannot publish a resource unless you are member of the org that owns the shared assessment
         CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(OWNER_ID, assessment.getOwnerId());
         

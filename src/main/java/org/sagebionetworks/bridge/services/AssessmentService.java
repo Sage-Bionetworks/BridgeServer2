@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.OWNER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SHARED_ASSESSMENTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_IMPORT_SHARED_ASSESSMENTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -101,8 +102,8 @@ public class AssessmentService {
         return API_MAXIMUM_PAGE_SIZE;
     }
     
-    public PagedResourceList<Assessment> getAssessments(String appId, int offsetBy, int pageSize,
-            Set<String> tags, boolean includeDeleted) {
+    public PagedResourceList<Assessment> getAssessments(String appId, String ownerId, 
+            int offsetBy, int pageSize, Set<String> tags, boolean includeDeleted) {
         checkArgument(isNotBlank(appId));
         
         if (offsetBy < 0) {
@@ -111,7 +112,7 @@ public class AssessmentService {
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return dao.getAssessments(appId, offsetBy, pageSize, tags, includeDeleted)
+        return dao.getAssessments(appId, ownerId, offsetBy, pageSize, tags, includeDeleted)
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize)
                 .withRequestParam(INCLUDE_DELETED, includeDeleted)
@@ -127,7 +128,7 @@ public class AssessmentService {
             // If an assessment under this identifier exists, use the revisions API. We want to 
             // warn people when they are unintentionally stomping on an existing identifier.
             
-            Optional<Assessment> opt = getLatestInternal(appId, assessment.getIdentifier(), true);
+            Optional<Assessment> opt = getLatestInternal(appId, null, assessment.getIdentifier(), true);
             if (opt.isPresent()) {
                 Assessment e = opt.get();
                 Map<String,Object> map = new ImmutableMap.Builder<String,Object>()
@@ -141,24 +142,24 @@ public class AssessmentService {
         return createAssessmentInternal(appId, assessment);
     }
     
-    public Assessment createAssessmentRevision(String appId, String guid, Assessment assessment) {
+    public Assessment createAssessmentRevision(String appId, String ownerId, String guid, Assessment assessment) {
         checkArgument(isNotBlank(appId));
         checkNotNull(assessment);
         
         // Verify this is an existing assessment, and that we're trying to add a revision
-        // with the same identifier. Keep the same owner or it gets quite confusing.
-        Assessment existing = getAssessmentByGuid(appId, guid);
+        // with the same identifier.
+        Assessment existing = getAssessmentByGuid(appId, ownerId, guid);
         assessment.setIdentifier(existing.getIdentifier());
         assessment.setOwnerId(existing.getOwnerId());
 
         return createAssessmentInternal(appId, assessment);
     }
         
-    public Assessment updateAssessment(String appId, Assessment assessment) {
+    public Assessment updateAssessment(String appId, String ownerId, Assessment assessment) {
         checkArgument(isNotBlank(appId));
         checkNotNull(assessment);
         
-        Assessment existing = dao.getAssessment(appId, assessment.getGuid())
+        Assessment existing = dao.getAssessment(appId, ownerId, assessment.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
         
         if (existing.isDeleted() && assessment.isDeleted()) {
@@ -169,16 +170,14 @@ public class AssessmentService {
         return updateAssessmentInternal(appId, assessment, existing);
     }
     
-    public Assessment updateSharedAssessment(String callerAppId, Assessment assessment) {
-        checkArgument(isNotBlank(callerAppId));
+    public Assessment updateSharedAssessment(Assessment assessment) {
         checkNotNull(assessment);
         
-        Assessment existing = dao.getAssessment(SHARED_APP_ID, assessment.getGuid())
+        Assessment existing = dao.getAssessment(SHARED_APP_ID, null, assessment.getGuid())
                 .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
         if (existing.isDeleted() && assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
-
         CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(OWNER_ID, existing.getOwnerId());
         
         return updateAssessmentInternal(SHARED_APP_ID, assessment, existing);
@@ -203,35 +202,35 @@ public class AssessmentService {
         return dao.updateAssessment(appId, assessment);        
     }
         
-    public Assessment getAssessmentByGuid(String appId, String guid) {
+    public Assessment getAssessmentByGuid(String appId, String ownerId, String guid) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(guid));
         
-        return dao.getAssessment(appId, guid)
+        return dao.getAssessment(appId, ownerId, guid)
                 .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
     }
         
-    public Assessment getAssessmentById(String appId, String identifier, int revision) {
+    public Assessment getAssessmentById(String appId, String ownerId, String identifier, int revision) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
         if (revision < 1) {
             throw new BadRequestException(NONPOSITIVE_REVISION_ERROR);
         }
-        return dao.getAssessment(appId, identifier, revision)
+        return dao.getAssessment(appId, ownerId, identifier, revision)
                 .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
     }
         
-    public Assessment getLatestAssessment(String appId, String identifier) {
+    public Assessment getLatestAssessment(String appId, String ownerId, String identifier) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
-        return getLatestInternal(appId, identifier, false)
+        return getLatestInternal(appId, ownerId, identifier, false)
             .orElseThrow(() -> new EntityNotFoundException(Assessment.class));
     }
         
     public PagedResourceList<Assessment> getAssessmentRevisionsById(
-        String appId, String identifier, int offsetBy, int pageSize, boolean includeDeleted) {
+        String appId, String ownerId, String identifier, int offsetBy, int pageSize, boolean includeDeleted) {
         checkArgument(isNotBlank(appId));
         
         if (isBlank(identifier)) {
@@ -244,7 +243,7 @@ public class AssessmentService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         PagedResourceList<Assessment> page = dao.getAssessmentRevisions(
-                appId, identifier, offsetBy, pageSize, includeDeleted);
+                appId, ownerId, identifier, offsetBy, pageSize, includeDeleted);
         // If there are no matches, this identifier is bogus.
         if (page.getTotal() == 0) {
             throw new EntityNotFoundException(Assessment.class);
@@ -256,11 +255,11 @@ public class AssessmentService {
     }
     
     public PagedResourceList<Assessment> getAssessmentRevisionsByGuid(String appId, 
-            String guid, int offsetBy, int pageSize, boolean includeDeleted) {
+            String ownerId, String guid, int offsetBy, int pageSize, boolean includeDeleted) {
             checkArgument(isNotBlank(appId));
             
-       Assessment assessment = getAssessmentByGuid(appId, guid);
-       return getAssessmentRevisionsById(appId, assessment.getIdentifier(), 
+       Assessment assessment = getAssessmentByGuid(appId, ownerId, guid);
+       return getAssessmentRevisionsById(appId, ownerId, assessment.getIdentifier(), 
                offsetBy, pageSize, includeDeleted).withRequestParam(GUID, guid);
     }
 
@@ -272,11 +271,11 @@ public class AssessmentService {
      * origin app can edit their shared assessments). The caller must be associated to 
      * the organization that own's the assessment locally.
      */
-    public Assessment publishAssessment(String appId, String newIdentifier, String guid) {
+    public Assessment publishAssessment(String appId, String ownerId, String newIdentifier, String guid) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(guid));
         
-        Assessment assessmentToPublish = getAssessmentByGuid(appId, guid);
+        Assessment assessmentToPublish = getAssessmentByGuid(appId, ownerId, guid);
         AssessmentConfig configToPublish =  configService.getAssessmentConfig(appId, guid);
         Assessment original = Assessment.copy(assessmentToPublish);
         
@@ -287,10 +286,11 @@ public class AssessmentService {
         }
         // Only the original owning organization can publish new revisions of an assessment to 
         // the shared repository, so check for this as well.
-        String ownerId = appId + ":" + assessmentToPublish.getOwnerId();
         String identifier = assessmentToPublish.getIdentifier();
-        Assessment existing = getLatestInternal(SHARED_APP_ID, identifier, true).orElse(null);
-        if (existing != null && !existing.getOwnerId().equals(ownerId)) {
+        Assessment existing = getLatestInternal(SHARED_APP_ID, null, identifier, true).orElse(null);
+
+        String sharedOwnerId = appId + ":" + assessmentToPublish.getOwnerId();
+        if (existing != null && !existing.getOwnerId().equals(sharedOwnerId)) {
             throw new UnauthorizedException("Assessment exists in shared library under a different " 
                     +"owner (identifier = " + identifier + ")");
         }
@@ -310,7 +310,7 @@ public class AssessmentService {
         assessmentToPublish.setGuid(generateGuid());
         assessmentToPublish.setRevision(revision);
         assessmentToPublish.setOriginGuid(null);
-        assessmentToPublish.setOwnerId(ownerId);
+        assessmentToPublish.setOwnerId(sharedOwnerId);
         assessmentToPublish.setVersion(0L);
         
         original.setOriginGuid(assessmentToPublish.getGuid());
@@ -334,9 +334,9 @@ public class AssessmentService {
         if (isBlank(ownerId)) {
             throw new BadRequestException("ownerId parameter is required");
         }
-        CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, ownerId);
+        CAN_IMPORT_SHARED_ASSESSMENTS.checkAndThrow(ORG_ID, ownerId);
 
-        Assessment sharedAssessment = getAssessmentByGuid(SHARED_APP_ID, guid);
+        Assessment sharedAssessment = getAssessmentByGuid(SHARED_APP_ID, null, guid);
         AssessmentConfig sharedConfig = configService.getSharedAssessmentConfig(SHARED_APP_ID, guid);
         
         // Check organization because admins and superadmins can provide anything, it's not 
@@ -356,11 +356,11 @@ public class AssessmentService {
         return dao.importAssessment(appId, sharedAssessment, sharedConfig);
     }
         
-    public void deleteAssessment(String appId, String guid) {
+    public void deleteAssessment(String appId, String ownerId, String guid) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(guid));
         
-        Assessment assessment = getAssessmentByGuid(appId, guid);
+        Assessment assessment = getAssessmentByGuid(appId, ownerId, guid);
         if (assessment.isDeleted()) {
             throw new EntityNotFoundException(Assessment.class);
         }
@@ -371,13 +371,14 @@ public class AssessmentService {
         dao.updateAssessment(appId, assessment);
     }
         
-    public void deleteAssessmentPermanently(String appId, String guid) {
+    public void deleteAssessmentPermanently(String appId, String ownerId, String guid) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(guid));
         
-        Optional<Assessment> opt = dao.getAssessment(appId, guid);
+        Optional<Assessment> opt = dao.getAssessment(appId, ownerId, guid);
         if (opt.isPresent()) {
-            dao.deleteAssessment(appId, opt.get());
+            Assessment assessment = opt.get();
+            dao.deleteAssessment(appId, assessment);
         }
     }
 
@@ -397,9 +398,13 @@ public class AssessmentService {
         if (SYNONYMS.get(osName) != null) {
             assessment.setOsName(SYNONYMS.get(osName));
         }
-        if (!RequestContext.get().isInRole(DEVELOPER, ADMIN)) {
-            String orgId = RequestContext.get().getCallerOrgMembership();
-            assessment.setOwnerId(orgId);    
+        
+        // If the ownerId is null, or the caller does not have permissions to set an 
+        // arbitrary ownerId, then set it to the callers organization. If this is null,
+        // it will be caught by validation.
+        String ownerId = RequestContext.get().getCallerOrgMembership();
+        if (assessment.getOwnerId() == null || !RequestContext.get().isInRole(DEVELOPER, ADMIN)) {
+            assessment.setOwnerId(ownerId);
         }
         AssessmentValidator validator = new AssessmentValidator(appId, organizationService);
         Validate.entityThrowingException(validator, assessment);
@@ -414,11 +419,11 @@ public class AssessmentService {
         return dao.createAssessment(appId, assessment, config);
     }
     
-    Optional<Assessment> getLatestInternal(String appId, String identifier, boolean includeDeleted) {
+    Optional<Assessment> getLatestInternal(String appId, String ownerId, String identifier, boolean includeDeleted) {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
-        PagedResourceList<Assessment> page = dao.getAssessmentRevisions(appId, identifier, 0, 1, includeDeleted);
+        PagedResourceList<Assessment> page = dao.getAssessmentRevisions(appId, ownerId, identifier, 0, 1, includeDeleted);
         if (page.getItems().isEmpty()) {
             return Optional.empty();
         }
@@ -431,7 +436,7 @@ public class AssessmentService {
      * revision number.
      */
     private int nextRevisionNumber(String appId, String identifier) {
-        Optional<Assessment> opt = getLatestInternal(appId, identifier, true);
+        Optional<Assessment> opt = getLatestInternal(appId, null, identifier, true);
         return opt.isPresent() ? (opt.get().getRevision()+1) : 1;
     }
     

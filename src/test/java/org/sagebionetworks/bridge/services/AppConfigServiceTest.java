@@ -238,8 +238,8 @@ public class AppConfigServiceTest {
         Assessment sharedAssessment = new Assessment();
         sharedAssessment.setIdentifier("sharedAssessmentId");
         
-        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID)).thenReturn(assessment);
-        when(mockAssessmentService.getAssessmentByGuid(SHARED_APP_ID, "originGuid")).thenReturn(sharedAssessment);
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID)).thenReturn(assessment);
+        when(mockAssessmentService.getAssessmentByGuid(SHARED_APP_ID, null, "originGuid")).thenReturn(sharedAssessment);
         
         AppConfigElement element = AppConfigElement.create();
         element.setAppId(TEST_APP_ID);
@@ -264,7 +264,7 @@ public class AppConfigServiceTest {
         Assessment assessment = new Assessment();
         assessment.setIdentifier("assessmentId");
         
-        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID)).thenReturn(assessment);
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID)).thenReturn(assessment);
         
         CriteriaContext context = new CriteriaContext.Builder()
                 .withClientInfo(ClientInfo.fromUserAgentCache("app/7 (Motorola Flip-Phone; Android/14) BridgeJavaSDK/10"))
@@ -286,8 +286,8 @@ public class AppConfigServiceTest {
         assessment.setIdentifier("assessmentId");
         assessment.setOriginGuid("originGuid");
         
-        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID)).thenReturn(assessment);
-        when(mockAssessmentService.getAssessmentByGuid(SHARED_APP_ID, "originGuid"))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID)).thenReturn(assessment);
+        when(mockAssessmentService.getAssessmentByGuid(SHARED_APP_ID, null, "originGuid"))
             .thenThrow(new EntityNotFoundException(Assessment.class));
         
         CriteriaContext context = new CriteriaContext.Builder()
