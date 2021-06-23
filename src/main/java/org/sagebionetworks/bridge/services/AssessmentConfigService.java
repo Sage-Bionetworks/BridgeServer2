@@ -53,10 +53,14 @@ public class AssessmentConfigService {
         return AssessmentConfigValidator.INSTANCE;
     }
     
-    public AssessmentConfig getAssessmentConfig(String appId, String ownerId, String guid) {
+    /**
+     * Get an assessment’s config. We do not check ownership to read an assessment 
+     * configuration. Anyone can read any configuration.
+     */
+    public AssessmentConfig getAssessmentConfig(String appId, String guid) {
         checkArgument(isNotBlank(guid));
         
-        assessmentService.getAssessmentByGuid(appId, ownerId, guid);
+        assessmentService.getAssessmentByGuid(appId, null, guid);
         
         return dao.getAssessmentConfig(guid).orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
     }

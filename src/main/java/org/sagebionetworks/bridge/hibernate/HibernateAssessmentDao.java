@@ -98,6 +98,7 @@ class HibernateAssessmentDao implements AssessmentDao {
         return new PagedResourceList<Assessment>(dtos, count, true);
     }
     
+    @Override
     public PagedResourceList<Assessment> getAssessmentRevisions(String appId, String ownerId, 
             String identifier, int offsetBy, int pageSize, boolean includeDeleted) {
         

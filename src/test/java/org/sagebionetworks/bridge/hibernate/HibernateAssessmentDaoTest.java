@@ -163,6 +163,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
         
         Map<String,Object> params = paramsCaptor.getValue();
         assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("ownerId"), TEST_ORG_ID);
         assertEquals(page.getItems().size(), 5);
         assertEquals(page.getTotal(), Integer.valueOf(5));
     }

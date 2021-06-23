@@ -3,12 +3,14 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.UPDATES_TYPEREF;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -33,20 +35,26 @@ public class AssessmentConfigController extends BaseController {
         this.service = service;
     }
     
+    private String getOwnerId(UserSession session) {
+        if (session.isInRole(ImmutableSet.of(DEVELOPER, ADMIN))) {
+            return null;
+        }
+        return session.getParticipant().getOrgMembership();
+    }
+    
     @GetMapping("/v1/assessments/{guid}/config")
     public AssessmentConfig getAssessmentConfig(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession();
         String appId = session.getAppId();
-        String ownerId = session.getParticipant().getOrgMembership();
         
-        return service.getAssessmentConfig(appId, ownerId, guid);
+        return service.getAssessmentConfig(appId, guid);
     }
     
     @PostMapping("/v1/assessments/{guid}/config")
     public AssessmentConfig updateAssessmentConfig(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
-        String ownerId = session.getParticipant().getOrgMembership();
+        String ownerId = getOwnerId(session);
         
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
@@ -60,7 +68,7 @@ public class AssessmentConfigController extends BaseController {
     public AssessmentConfig customizeAssessmentConfig(@PathVariable String guid) throws Exception {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
-        String ownerId = session.getParticipant().getOrgMembership();
+        String ownerId = getOwnerId(session);
         
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);

@@ -550,7 +550,7 @@ public class AssessmentServiceTest extends Mockito {
             .thenReturn(Optional.of(existing));
         
         Assessment assessment = AssessmentTest.createAssessment();
-        service.updateSharedAssessment(TEST_APP_ID, assessment);
+        service.updateSharedAssessment(assessment);
         
         verify(mockDao).updateAssessment(SHARED_APP_ID, assessment);
         
@@ -579,7 +579,7 @@ public class AssessmentServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOsName("Both");
-        service.updateSharedAssessment(TEST_APP_ID, assessment);
+        service.updateSharedAssessment(assessment);
         
         assertEquals(assessment.getOsName(), UNIVERSAL);
     }
@@ -612,7 +612,7 @@ public class AssessmentServiceTest extends Mockito {
         assessment.setModifiedOn(MODIFIED_ON.minusDays(1));
         assessment.setDeleted(false);
         
-        Assessment retValue = service.updateSharedAssessment(TEST_APP_ID, assessment);
+        Assessment retValue = service.updateSharedAssessment(assessment);
         assertEquals(retValue.getIdentifier(), IDENTIFIER);
         assertEquals(retValue.getOwnerId(), ownerIdInShared);
         assertEquals(retValue.getOriginGuid(), "originGuid");
@@ -641,7 +641,7 @@ public class AssessmentServiceTest extends Mockito {
             .thenReturn(Optional.of(existing));
         
         Assessment assessment = AssessmentTest.createAssessment();
-        service.updateSharedAssessment(TEST_APP_ID, assessment);
+        service.updateSharedAssessment(assessment);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -657,7 +657,7 @@ public class AssessmentServiceTest extends Mockito {
             .thenReturn(Optional.of(existing));
         
         Assessment assessment = AssessmentTest.createAssessment();
-        service.updateSharedAssessment(TEST_APP_ID, assessment);
+        service.updateSharedAssessment(assessment);
     }
     
     @Test
@@ -675,7 +675,7 @@ public class AssessmentServiceTest extends Mockito {
             .thenReturn(Optional.of(existing));
         
         Assessment assessment = AssessmentTest.createAssessment();
-        service.updateSharedAssessment(TEST_APP_ID, assessment);
+        service.updateSharedAssessment(assessment);
         
         verify(mockDao).updateAssessment(SHARED_APP_ID, assessment);
     }
@@ -686,7 +686,7 @@ public class AssessmentServiceTest extends Mockito {
             .thenReturn(Optional.empty());
         
         Assessment assessment = AssessmentTest.createAssessment();
-        service.updateSharedAssessment(TEST_APP_ID, assessment);
+        service.updateSharedAssessment(assessment);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -696,7 +696,7 @@ public class AssessmentServiceTest extends Mockito {
             .thenReturn(Optional.of(existing));
         
         Assessment assessment = AssessmentTest.createAssessment();
-        service.updateSharedAssessment(TEST_APP_ID, assessment);
+        service.updateSharedAssessment(assessment);
     }
 
     @Test
@@ -714,7 +714,7 @@ public class AssessmentServiceTest extends Mockito {
             .thenReturn(Optional.of(existing));
         when(mockDao.updateAssessment(TEST_APP_ID, assessment)).thenReturn(assessment);
         
-        service.updateSharedAssessment(TEST_APP_ID, assessment);
+        service.updateSharedAssessment(assessment);
         assertTrue(assessment.isDeleted());
     }
     
@@ -733,7 +733,7 @@ public class AssessmentServiceTest extends Mockito {
             .thenReturn(Optional.of(existing));
         when(mockDao.updateAssessment(TEST_APP_ID, assessment)).thenReturn(assessment);
         
-        service.updateSharedAssessment(TEST_APP_ID, assessment);
+        service.updateSharedAssessment(assessment);
         assertFalse(assessment.isDeleted());
     }
     
@@ -932,7 +932,7 @@ public class AssessmentServiceTest extends Mockito {
         
         // Assume no published versions
         when(mockDao.getAssessmentRevisions(SHARED_APP_ID, null, IDENTIFIER, 0, 1, true)).thenReturn(EMPTY_LIST);
-        when(mockConfigService.getAssessmentConfig(TEST_APP_ID, TEST_OWNER_ID, "oldGuid")).thenReturn(new AssessmentConfig());
+        when(mockConfigService.getAssessmentConfig(TEST_APP_ID, "oldGuid")).thenReturn(new AssessmentConfig());
         
         Assessment retValue = service.publishAssessment(TEST_APP_ID, TEST_OWNER_ID, null, "oldGuid");
         assertSame(retValue, ASSESSMENT);
@@ -1004,7 +1004,7 @@ public class AssessmentServiceTest extends Mockito {
         when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, GUID)).thenReturn(Optional.of(local));
         
         AssessmentConfig localConfig = new AssessmentConfig();
-        when(mockConfigService.getAssessmentConfig(TEST_APP_ID, TEST_OWNER_ID, GUID)).thenReturn(localConfig);
+        when(mockConfigService.getAssessmentConfig(TEST_APP_ID, GUID)).thenReturn(localConfig);
         
         // Same as the happy path version, but this time there is a revision in the
         // shared library
@@ -1341,7 +1341,7 @@ public class AssessmentServiceTest extends Mockito {
         sharedAssessment.setOwnerId("wrongApp:wrongOrg");
         when(mockDao.getAssessment(SHARED_APP_ID, null, GUID)).thenReturn(Optional.of(sharedAssessment));
         
-        service.updateSharedAssessment(TEST_APP_ID, sharedAssessment);
+        service.updateSharedAssessment(sharedAssessment);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -1351,7 +1351,7 @@ public class AssessmentServiceTest extends Mockito {
         sharedAssessment.setOwnerId("A:B:C");
         when(mockDao.getAssessment(SHARED_APP_ID, null, GUID)).thenReturn(Optional.of(sharedAssessment));
         
-        service.updateSharedAssessment(TEST_APP_ID, sharedAssessment);
+        service.updateSharedAssessment(sharedAssessment);
     }
     
     private void addMarkupToSensitiveFields(Assessment assessment) {

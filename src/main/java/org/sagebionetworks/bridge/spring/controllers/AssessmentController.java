@@ -172,9 +172,8 @@ public class AssessmentController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
 
         String appId = session.getAppId();
-        // An admin can logically delete and in that case, we do want to pass the correct
-        // ownerId, so we don't nullify it here.
-        String ownerId = session.getParticipant().getOrgMembership();
+        String ownerId = getOwnerId(session);
+        
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }

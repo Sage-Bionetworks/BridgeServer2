@@ -116,14 +116,11 @@ public class SharedAssessmentController extends BaseController {
     @PostMapping("/v1/sharedassessments/{guid}")
     public Assessment updateSharedAssessment(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
-        String appId = session.getAppId();
-        
+
         Assessment assessment = parseJson(Assessment.class);
         assessment.setGuid(guid);
         
-        // Note that we are passing in the appId of the caller, and the assessment is in the 
-        // shared app, which is the opposite of all the other shared calls
-        return service.updateSharedAssessment(appId, assessment);
+        return service.updateSharedAssessment(assessment);
     }
     
     @DeleteMapping("/v1/sharedassessments/{guid}")

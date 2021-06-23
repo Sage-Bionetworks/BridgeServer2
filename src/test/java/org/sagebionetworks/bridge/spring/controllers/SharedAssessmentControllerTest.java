@@ -199,15 +199,15 @@ public class SharedAssessmentControllerTest extends Mockito {
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setGuid("notCorrectGuid");
 
-        when(mockService.updateSharedAssessment(eq(TEST_APP_ID), any()))
-                .thenAnswer(invoke -> invoke.getArgument(1));
+        when(mockService.updateSharedAssessment(any()))
+                .thenAnswer(invoke -> invoke.getArgument(0));
 
         mockRequestBody(mockRequest, assessment);
 
         Assessment retValue = controller.updateSharedAssessment(GUID);
         assertEquals(retValue.getGuid(), GUID);
 
-        verify(mockService).updateSharedAssessment(eq(TEST_APP_ID), assessmentCaptor.capture());
+        verify(mockService).updateSharedAssessment(assessmentCaptor.capture());
         Assessment captured = assessmentCaptor.getValue();
         assertEquals(captured.getIdentifier(), IDENTIFIER);
         assertEquals(captured.getGuid(), GUID);

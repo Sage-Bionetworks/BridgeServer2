@@ -151,7 +151,7 @@ public class AuthUtils {
      * Can the caller import a shared assessment under the supplied organization? Yes if
      * the caller is a developer or admin, or if the caller is a study designer assigning
      * the assessment to their own organization. Note that this expects an orgId to be 
-     * supplied, now a compound ownerId (appId + orgId), because it is verifying the final
+     * supplied, not a compound ownerId (appId + orgId), because it is verifying the final
      * assignment of the supplied orgId.
      */
     public static final AuthEvaluator CAN_IMPORT_SHARED_ASSESSMENTS = new AuthEvaluator()

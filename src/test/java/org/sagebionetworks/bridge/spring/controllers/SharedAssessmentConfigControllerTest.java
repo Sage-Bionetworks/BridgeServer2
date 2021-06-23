@@ -38,11 +38,11 @@ public class SharedAssessmentConfigControllerTest extends Mockito {
     @Test
     public void getSharedAssessmentConfig() {
         AssessmentConfig config = new AssessmentConfig();
-        when(mockService.getAssessmentConfig(SHARED_APP_ID, null, GUID)).thenReturn(config);
+        when(mockService.getAssessmentConfig(SHARED_APP_ID, GUID)).thenReturn(config);
         
         AssessmentConfig retValue = controller.getSharedAssessmentConfig(GUID);
         assertSame(retValue, config);
         
-        verify(mockService).getAssessmentConfig(SHARED_APP_ID, null, GUID);
+        verify(mockService).getAssessmentConfig(SHARED_APP_ID, GUID);
     }
 }

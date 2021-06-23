@@ -170,8 +170,7 @@ public class AssessmentService {
         return updateAssessmentInternal(appId, assessment, existing);
     }
     
-    public Assessment updateSharedAssessment(String callerAppId, Assessment assessment) {
-        checkArgument(isNotBlank(callerAppId));
+    public Assessment updateSharedAssessment(Assessment assessment) {
         checkNotNull(assessment);
         
         Assessment existing = dao.getAssessment(SHARED_APP_ID, null, assessment.getGuid())
@@ -277,7 +276,7 @@ public class AssessmentService {
         checkArgument(isNotBlank(guid));
         
         Assessment assessmentToPublish = getAssessmentByGuid(appId, ownerId, guid);
-        AssessmentConfig configToPublish =  configService.getAssessmentConfig(appId, ownerId, guid);
+        AssessmentConfig configToPublish =  configService.getAssessmentConfig(appId, guid);
         Assessment original = Assessment.copy(assessmentToPublish);
         
         CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID ,assessmentToPublish.getOwnerId());
@@ -287,9 +286,10 @@ public class AssessmentService {
         }
         // Only the original owning organization can publish new revisions of an assessment to 
         // the shared repository, so check for this as well.
-        String sharedOwnerId = appId + ":" + assessmentToPublish.getOwnerId();
         String identifier = assessmentToPublish.getIdentifier();
         Assessment existing = getLatestInternal(SHARED_APP_ID, null, identifier, true).orElse(null);
+
+        String sharedOwnerId = appId + ":" + assessmentToPublish.getOwnerId();
         if (existing != null && !existing.getOwnerId().equals(sharedOwnerId)) {
             throw new UnauthorizedException("Assessment exists in shared library under a different " 
                     +"owner (identifier = " + identifier + ")");

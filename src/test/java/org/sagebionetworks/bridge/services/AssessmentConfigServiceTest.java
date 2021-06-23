@@ -84,13 +84,13 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test
     public void getAssessmentConfig() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, TEST_OWNER_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID))
             .thenReturn(assessment);
         
         AssessmentConfig existing = new AssessmentConfig();
         when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.of(existing));
         
-        AssessmentConfig retValue = service.getAssessmentConfig(TEST_APP_ID, TEST_OWNER_ID, GUID);
+        AssessmentConfig retValue = service.getAssessmentConfig(TEST_APP_ID, GUID);
         assertSame(retValue, existing);
         
         verify(mockDao).getAssessmentConfig(GUID);
@@ -99,22 +99,22 @@ public class AssessmentConfigServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Assessment not found.")
     public void getAssessmentConfigAssessmentNotFound() {
-        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, TEST_OWNER_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID))
             .thenThrow(new EntityNotFoundException(Assessment.class));
         
-        service.getAssessmentConfig(TEST_APP_ID, TEST_OWNER_ID, GUID);
+        service.getAssessmentConfig(TEST_APP_ID, GUID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "AssessmentConfig not found.")
     public void getAssessmentConfigAssessmentConfigNotFound() {
         Assessment assessment = AssessmentTest.createAssessment();
-        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, TEST_OWNER_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID))
             .thenReturn(assessment);
         
         when(mockDao.getAssessmentConfig(GUID)).thenReturn(Optional.empty());
         
-        service.getAssessmentConfig(TEST_APP_ID, TEST_OWNER_ID, GUID);
+        service.getAssessmentConfig(TEST_APP_ID, GUID);
     }
     
     @Test
@@ -341,10 +341,10 @@ public class AssessmentConfigServiceTest extends Mockito {
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOwnerId("orgB");
-        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, TEST_OWNER_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID))
             .thenReturn(assessment);
         
-        service.getAssessmentConfig(TEST_APP_ID, TEST_OWNER_ID, GUID);
+        service.getAssessmentConfig(TEST_APP_ID, GUID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)

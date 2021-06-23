@@ -485,7 +485,7 @@ public class AssessmentControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
         controller.deleteAssessment(GUID, "false");
-        verify(mockService).deleteAssessment(TEST_APP_ID, TEST_ORG_ID, GUID);
+        verify(mockService).deleteAssessment(TEST_APP_ID, null, GUID);
     }
 
     @Test
@@ -496,7 +496,7 @@ public class AssessmentControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
         controller.deleteAssessment(GUID, "false");
-        verify(mockService).deleteAssessment(TEST_APP_ID, TEST_ORG_ID, GUID);
+        verify(mockService).deleteAssessment(TEST_APP_ID, null, GUID);
     }
 
     @Test
@@ -507,7 +507,7 @@ public class AssessmentControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
         controller.deleteAssessment(GUID, "true");
-        verify(mockService).deleteAssessment(TEST_APP_ID, TEST_ORG_ID, GUID);        
+        verify(mockService).deleteAssessment(TEST_APP_ID, null, GUID);        
     }
 
     @Test

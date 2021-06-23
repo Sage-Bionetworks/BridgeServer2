@@ -84,12 +84,12 @@ public class AssessmentConfigControllerTest extends Mockito {
     public void getAssessmentConfig() {
         doReturn(session).when(controller).getAuthenticatedSession();
         AssessmentConfig config = new AssessmentConfig();
-        when(mockService.getAssessmentConfig(TEST_APP_ID, TEST_ORG_ID, GUID)).thenReturn(config);
+        when(mockService.getAssessmentConfig(TEST_APP_ID, GUID)).thenReturn(config);
         
         AssessmentConfig retValue = controller.getAssessmentConfig(GUID);
         assertSame(retValue, config);
         
-        verify(mockService).getAssessmentConfig(TEST_APP_ID, TEST_ORG_ID, GUID);
+        verify(mockService).getAssessmentConfig(TEST_APP_ID, GUID);
     }
     
     @Test
