@@ -722,7 +722,8 @@ ADD COLUMN `timelineAccessedOn` varchar(255);
 ALTER TABLE `Substudies`
 DROP COLUMN `disease`,
 DROP COLUMN `studyDesignType`,
-ADD COLUMN `signInTypes` text;
+ADD COLUMN `signInTypes` text,
+ADD COLUMN `keywords` varchar(255);
 
 CREATE TABLE IF NOT EXISTS `StudyDiseases` (
   `appId` varchar(255) NOT NULL,

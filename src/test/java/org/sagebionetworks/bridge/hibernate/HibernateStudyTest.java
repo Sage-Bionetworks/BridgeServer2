@@ -71,6 +71,7 @@ public class HibernateStudyTest {
         study.setCreatedOn(CREATED_ON);
         study.setModifiedOn(MODIFIED_ON);
         study.setClientData(TestUtils.getClientData());
+        study.setKeywords("keywords");
         study.setVersion(3L);
         
         Contact c1 = new Contact();
@@ -95,7 +96,7 @@ public class HibernateStudyTest {
         study.setSignInTypes(TYPES);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        assertEquals(node.size(), 24);
+        assertEquals(node.size(), 25);
         assertEquals(node.get("identifier").textValue(), "oneId");
         assertEquals(node.get("name").textValue(), "name");
         assertTrue(node.get("deleted").booleanValue());
@@ -124,6 +125,7 @@ public class HibernateStudyTest {
         assertEquals(node.get("studyDesignTypes").get(0).textValue(), "observational case control");
         assertEquals(node.get("signInTypes").get(0).textValue(), "email_message");
         assertEquals(node.get("signInTypes").get(1).textValue(), "email_password");
+        assertEquals(node.get("keywords").textValue(), "keywords");
         assertEquals(node.get("type").textValue(), "Study");
         assertNull(node.get("studyId"));
         assertNull(node.get("appId"));
@@ -151,6 +153,7 @@ public class HibernateStudyTest {
         assertEquals(deser.getPhase(), ANALYSIS);
         assertEquals(deser.getDiseases(), ImmutableSet.of("subjective cognitive decline"));
         assertEquals(deser.getStudyDesignTypes(), ImmutableSet.of("observational case control"));
+        assertEquals(deser.getKeywords(), "keywords");
         assertEquals(deser.getSignInTypes(), TYPES);
         assertEquals(deser.getVersion(), new Long(3));
         

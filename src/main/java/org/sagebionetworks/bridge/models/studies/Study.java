@@ -77,6 +77,9 @@ public interface Study extends BridgeEntity {
     String getScheduleGuid();
     void setScheduleGuid(String scheduleGuid);
     
+    String getKeywords();
+    void setKeywords(String keywords);
+    
     Set<String> getDiseases();
     void setDiseases(Set<String> diseases);
     

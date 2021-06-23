@@ -74,6 +74,7 @@ public class HibernateStudy implements Study {
     private ColorScheme colorScheme;
     private String institutionId;
     private String scheduleGuid;
+    private String keywords;
     @Version
     private Long version;
     
@@ -341,6 +342,16 @@ public class HibernateStudy implements Study {
         this.scheduleGuid = scheduleGuid;
     }
 
+    @Override
+    public String getKeywords() { 
+        return keywords;
+    }
+    
+    @Override
+    public void setKeywords(String keywords) {
+        this.keywords = keywords;
+    }
+    
     @Override
     public Set<String> getDiseases() {
         if (diseases == null) {
