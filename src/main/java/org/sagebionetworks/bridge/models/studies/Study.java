@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 
 import java.util.List;
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -76,14 +77,20 @@ public interface Study extends BridgeEntity {
     String getScheduleGuid();
     void setScheduleGuid(String scheduleGuid);
     
-    String getDisease();
-    void setDisease(String disease);
+    String getKeywords();
+    void setKeywords(String keywords);
     
-    String getStudyDesignType();
-    void setStudyDesignType(String studyDesignType);
+    Set<String> getDiseases();
+    void setDiseases(Set<String> diseases);
+    
+    Set<String> getStudyDesignTypes();
+    void setStudyDesignTypes(Set<String> studyDesignTypes);
     
     List<Contact> getContacts();
     void setContacts(List<Contact> contacts);
+    
+    List<SignInType> getSignInTypes();
+    void setSignInTypes(List<SignInType> signInTypes);
 
     Long getVersion();
     void setVersion(Long version);

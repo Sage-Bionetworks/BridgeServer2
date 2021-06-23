@@ -8,11 +8,14 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Contact;
+import org.sagebionetworks.bridge.models.studies.SignInType;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import static org.sagebionetworks.bridge.TestConstants.COLOR_SCHEME;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
+import static org.sagebionetworks.bridge.models.studies.SignInType.EMAIL_MESSAGE;
+import static org.sagebionetworks.bridge.models.studies.SignInType.EMAIL_PASSWORD;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.ANALYSIS;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.testng.Assert.assertEquals;
@@ -20,9 +23,12 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
+import java.util.List;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 public class HibernateStudyTest {
 
@@ -30,6 +36,7 @@ public class HibernateStudyTest {
     private static final DateTime MODIFIED_ON = DateTime.now().minusHours(1).withZone(DateTimeZone.UTC);
     private static final LocalDate APPROVED_ON = DateTime.now().toLocalDate();
     private static final LocalDate EXPIRES_ON = DateTime.now().plusDays(10).toLocalDate();
+    private static final List<SignInType> TYPES = ImmutableList.of(EMAIL_MESSAGE, EMAIL_PASSWORD);
     
     @Test
     public void shortConstructor() {
@@ -49,6 +56,9 @@ public class HibernateStudyTest {
     public void collectionsNotNull() {
         HibernateStudy study = new HibernateStudy();
         assertNotNull(study.getContacts());
+        assertNotNull(study.getSignInTypes());
+        assertNotNull(study.getDiseases());
+        assertNotNull(study.getStudyDesignTypes());
     }
     
     @Test
@@ -61,6 +71,7 @@ public class HibernateStudyTest {
         study.setCreatedOn(CREATED_ON);
         study.setModifiedOn(MODIFIED_ON);
         study.setClientData(TestUtils.getClientData());
+        study.setKeywords("keywords");
         study.setVersion(3L);
         
         Contact c1 = new Contact();
@@ -80,11 +91,12 @@ public class HibernateStudyTest {
         study.setIrbProtocolName("anIrbName");
         study.setScheduleGuid("aScheduleGuid");
         study.setPhase(ANALYSIS);
-        study.setDisease("subjective cognitive decline");
-        study.setStudyDesignType("observational case control");
+        study.setDiseases(ImmutableSet.of("subjective cognitive decline"));
+        study.setStudyDesignTypes(ImmutableSet.of("observational case control"));
+        study.setSignInTypes(TYPES);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        assertEquals(node.size(), 23);
+        assertEquals(node.size(), 25);
         assertEquals(node.get("identifier").textValue(), "oneId");
         assertEquals(node.get("name").textValue(), "name");
         assertTrue(node.get("deleted").booleanValue());
@@ -109,8 +121,11 @@ public class HibernateStudyTest {
         assertEquals(node.get("irbProtocolId").textValue(), "anIrbProtocolId");
         assertEquals(node.get("scheduleGuid").textValue(), "aScheduleGuid");
         assertEquals(node.get("phase").textValue(), "analysis");
-        assertEquals(node.get("disease").textValue(), "subjective cognitive decline");
-        assertEquals(node.get("studyDesignType").textValue(), "observational case control");
+        assertEquals(node.get("diseases").get(0).textValue(), "subjective cognitive decline");
+        assertEquals(node.get("studyDesignTypes").get(0).textValue(), "observational case control");
+        assertEquals(node.get("signInTypes").get(0).textValue(), "email_message");
+        assertEquals(node.get("signInTypes").get(1).textValue(), "email_password");
+        assertEquals(node.get("keywords").textValue(), "keywords");
         assertEquals(node.get("type").textValue(), "Study");
         assertNull(node.get("studyId"));
         assertNull(node.get("appId"));
@@ -136,8 +151,10 @@ public class HibernateStudyTest {
         assertEquals(deser.getContacts().get(0).getName(), "Name1");
         assertEquals(deser.getContacts().get(1).getName(), "Name2");
         assertEquals(deser.getPhase(), ANALYSIS);
-        assertEquals(deser.getDisease(), "subjective cognitive decline");
-        assertEquals(deser.getStudyDesignType(), "observational case control");
+        assertEquals(deser.getDiseases(), ImmutableSet.of("subjective cognitive decline"));
+        assertEquals(deser.getStudyDesignTypes(), ImmutableSet.of("observational case control"));
+        assertEquals(deser.getKeywords(), "keywords");
+        assertEquals(deser.getSignInTypes(), TYPES);
         assertEquals(deser.getVersion(), new Long(3));
         
         JsonNode deserClientData = deser.getClientData();

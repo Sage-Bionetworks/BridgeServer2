@@ -4,6 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN;
 import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAIL;
+import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
@@ -62,12 +63,11 @@ public class StudyValidator implements Validator {
         if (validateIrb) {
             if (study.getIrbDecisionType() == null) {
                 errors.rejectValue(IRB_DECISION_TYPE_FIELD, CANNOT_BE_NULL);
-            }
+            } else if (study.getIrbDecisionType() == APPROVED && study.getIrbExpiresOn() == null) {
+                errors.rejectValue(IRB_EXPIRES_ON_FIELD, CANNOT_BE_NULL);
+            }                
             if (study.getIrbDecisionOn() == null) { 
                 errors.rejectValue(IRB_DECISION_ON_FIELD, CANNOT_BE_NULL);
-            }
-            if (study.getIrbExpiresOn() == null) {
-                errors.rejectValue(IRB_EXPIRES_ON_FIELD, CANNOT_BE_NULL);
             }
         }
         for (int i=0; i < study.getContacts().size(); i++) {

@@ -716,3 +716,27 @@ CREATE TABLE `AdherenceRecords` (
 
 ALTER TABLE `RequestInfos`
 ADD COLUMN `timelineAccessedOn` varchar(255);
+
+-- changeset bridge:39
+
+ALTER TABLE `Substudies`
+DROP COLUMN `disease`,
+DROP COLUMN `studyDesignType`,
+ADD COLUMN `signInTypes` text,
+ADD COLUMN `keywords` varchar(255);
+
+CREATE TABLE IF NOT EXISTS `StudyDiseases` (
+  `appId` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `disease` varchar(255) NOT NULL,
+  PRIMARY KEY (`appId`, `studyId`, `disease`),
+  CONSTRAINT `StudyDiseases-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `StudyDesignTypes` (
+  `appId` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `designType` varchar(255) NOT NULL,
+  PRIMARY KEY (`appId`, `studyId`, `designType`),
+  CONSTRAINT `StudyDesignTypes-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
