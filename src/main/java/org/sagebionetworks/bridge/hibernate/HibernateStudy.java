@@ -71,6 +71,9 @@ public class HibernateStudy implements Study {
     private String scheduleGuid;
     private String disease;
     private String studyDesignType;
+    @JsonIgnore
+    private String logoGuid;
+    private String logoURL;
     @Version
     private Long version;
     @ElementCollection(fetch = FetchType.EAGER)
@@ -90,7 +93,7 @@ public class HibernateStudy implements Study {
      */
     public HibernateStudy(String name, String identifier, String appId, 
             DateTime createdOn, DateTime modifiedOn, boolean deleted, 
-            StudyPhase phase, Long version) {
+            StudyPhase phase, String logoURL, Long version) {
         this.name = name;
         this.identifier = identifier;
         this.appId = appId;
@@ -98,6 +101,7 @@ public class HibernateStudy implements Study {
         this.modifiedOn = modifiedOn;
         this.deleted = deleted;
         this.phase = phase;
+        this.logoURL = logoURL;
         this.version = version;
     }
     
@@ -334,4 +338,25 @@ public class HibernateStudy implements Study {
     public void setStudyDesignType(String studyDesignType) {
         this.studyDesignType = studyDesignType;
     }
+
+    @Override
+    public String getLogoGuid() {
+        return logoGuid;
+    }
+
+    @Override
+    public void setLogoGuid(String logoGuid) {
+        this.logoGuid = logoGuid;
+    }
+
+    @Override
+    public String getLogoURL() {
+        return logoURL;
+    }
+
+    @Override
+    public void setLogoURL(String logoURL) {
+        this.logoURL = logoURL;
+    }
+
 }

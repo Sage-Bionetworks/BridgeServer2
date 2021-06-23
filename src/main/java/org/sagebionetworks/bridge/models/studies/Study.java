@@ -84,7 +84,13 @@ public interface Study extends BridgeEntity {
     
     List<Contact> getContacts();
     void setContacts(List<Contact> contacts);
+    
+    String getLogoGuid();
+    void setLogoGuid(String logoGuid);
 
+    String getLogoURL();
+    void setLogoURL(String logoURL);
+    
     Long getVersion();
     void setVersion(Long version);
     

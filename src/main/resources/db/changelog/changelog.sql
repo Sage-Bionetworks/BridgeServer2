@@ -716,3 +716,12 @@ CREATE TABLE `AdherenceRecords` (
 
 ALTER TABLE `RequestInfos`
 ADD COLUMN `timelineAccessedOn` varchar(255);
+
+-- changeset bridge:40
+
+ALTER TABLE `FileMetadata`
+ADD COLUMN `disposition` enum('INLINE','ATTACHMENT') NOT NULL DEFAULT 'ATTACHMENT';
+
+ALTER TABLE `Substudies`
+ADD COLUMN `logoGuid` varchar(255),
+ADD COLUMN `logoURL` varchar(255);

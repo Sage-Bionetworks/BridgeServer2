@@ -49,7 +49,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.AssessmentDao;
 import org.sagebionetworks.bridge.dao.AssessmentResourceDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;

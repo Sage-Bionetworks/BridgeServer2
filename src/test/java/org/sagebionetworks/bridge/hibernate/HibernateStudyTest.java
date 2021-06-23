@@ -11,6 +11,7 @@ import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import static org.sagebionetworks.bridge.TestConstants.COLOR_SCHEME;
+import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.ANALYSIS;
@@ -26,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 
 public class HibernateStudyTest {
 
+    private static final String TEST_LINK = "http://some.link/";
     private static final DateTime CREATED_ON = DateTime.now().withZone(DateTimeZone.UTC);
     private static final DateTime MODIFIED_ON = DateTime.now().minusHours(1).withZone(DateTimeZone.UTC);
     private static final LocalDate APPROVED_ON = DateTime.now().toLocalDate();
@@ -34,7 +36,7 @@ public class HibernateStudyTest {
     @Test
     public void shortConstructor() {
         HibernateStudy study = new HibernateStudy("name", "identifier", "appId", 
-                CREATED_ON, MODIFIED_ON, true, DESIGN, 10L);
+                CREATED_ON, MODIFIED_ON, true, DESIGN, TEST_LINK, 10L);
         assertEquals(study.getName(), "name");
         assertEquals(study.getIdentifier(), "identifier");
         assertEquals(study.getAppId(), "appId");
@@ -42,6 +44,7 @@ public class HibernateStudyTest {
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
         assertTrue(study.isDeleted());
         assertEquals(study.getPhase(), DESIGN);
+        assertEquals(study.getLogoURL(), TEST_LINK);
         assertEquals(study.getVersion(), Long.valueOf(10L));
     }
     
@@ -61,6 +64,8 @@ public class HibernateStudyTest {
         study.setCreatedOn(CREATED_ON);
         study.setModifiedOn(MODIFIED_ON);
         study.setClientData(TestUtils.getClientData());
+        study.setLogoGuid(GUID);
+        study.setLogoURL(TEST_LINK);
         study.setVersion(3L);
         
         Contact c1 = new Contact();
@@ -84,7 +89,7 @@ public class HibernateStudyTest {
         study.setStudyDesignType("observational case control");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        assertEquals(node.size(), 23);
+        assertEquals(node.size(), 24);
         assertEquals(node.get("identifier").textValue(), "oneId");
         assertEquals(node.get("name").textValue(), "name");
         assertTrue(node.get("deleted").booleanValue());
@@ -111,6 +116,8 @@ public class HibernateStudyTest {
         assertEquals(node.get("phase").textValue(), "analysis");
         assertEquals(node.get("disease").textValue(), "subjective cognitive decline");
         assertEquals(node.get("studyDesignType").textValue(), "observational case control");
+        assertEquals(node.get("logoURL").textValue(), TEST_LINK);
+        assertNull(node.get("logoGuid"));
         assertEquals(node.get("type").textValue(), "Study");
         assertNull(node.get("studyId"));
         assertNull(node.get("appId"));
@@ -138,6 +145,7 @@ public class HibernateStudyTest {
         assertEquals(deser.getPhase(), ANALYSIS);
         assertEquals(deser.getDisease(), "subjective cognitive decline");
         assertEquals(deser.getStudyDesignType(), "observational case control");
+        assertEquals(deser.getLogoURL(), TEST_LINK);
         assertEquals(deser.getVersion(), new Long(3));
         
         JsonNode deserClientData = deser.getClientData();
