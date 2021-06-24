@@ -450,7 +450,7 @@ public class UploadService {
         // kick off upload validation
         App app = appService.getApp(appId);
         Exporter3Configuration exporter3Config = app.getExporter3Configuration();
-        if (exporter3Config != null && exporter3Config.isConfigured()) {
+        if (app.isExporter3Enabled() && exporter3Config != null && exporter3Config.isConfigured()) {
             exporter3Service.completeUpload(app, upload);
         }
 

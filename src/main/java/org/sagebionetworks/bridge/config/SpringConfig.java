@@ -730,10 +730,18 @@ public class SpringConfig {
         return synapseClient;
     }
 
-    @Bean(name="bridgeSynapseHelper")
-    public SynapseHelper synapseHelper() {
+    @Bean(name="exporterSynapseClient")
+    public SynapseClient exporterSynapseClient() {
+        SynapseClient synapseClient = new SynapseAdminClientImpl();
+        synapseClient.setUsername(bridgeConfig().get("exporter.synapse.user"));
+        synapseClient.setApiKey(bridgeConfig().get("exporter.synapse.api.key"));
+        return synapseClient;
+    }
+
+    @Bean(name="exporterSynapseHelper")
+    public SynapseHelper exporterSynapseHelper() {
         SynapseHelper synapseHelper = new SynapseHelper();
-        synapseHelper.setSynapseClient(synapseClient());
+        synapseHelper.setSynapseClient(exporterSynapseClient());
         return synapseHelper;
     }
 

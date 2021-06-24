@@ -17,17 +17,18 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.io.ByteStreams;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.repo.model.FileEntity;
 import org.sagebionetworks.repo.model.Folder;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.Team;
-import org.sagebionetworks.repo.model.annotation.v2.Annotations;
 import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValue;
 import org.sagebionetworks.repo.model.annotation.v2.AnnotationsValueType;
 import org.sagebionetworks.repo.model.file.S3FileHandle;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
+import org.sagebionetworks.repo.model.table.EntityView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -88,13 +89,16 @@ public class Exporter3Service {
     private static final Logger LOG = LoggerFactory.getLogger(Exporter3Service.class);
 
     // Package-scoped to be available in unit tests.
+    static final String CONFIG_KEY_EXPORTER_SYNAPSE_ID = "exporter.synapse.id";
+    static final String CONFIG_KEY_EXPORTER_SYNAPSE_USER = "exporter.synapse.user";
+    static final String CONFIG_KEY_RAW_HEALTH_DATA_BUCKET = "health.data.bucket.raw";
+    static final String CONFIG_KEY_SYNAPSE_TRACKING_VIEW = "synapse.tracking.view";
     static final String CONFIG_KEY_TEAM_BRIDGE_ADMIN = "team.bridge.admin";
     static final String CONFIG_KEY_TEAM_BRIDGE_STAFF = "team.bridge.staff";
-    static final String CONFIG_KEY_EXPORTER_SYNAPSE_ID = "exporter.synapse.id";
-    static final String CONFIG_KEY_RAW_HEALTH_DATA_BUCKET = "health.data.bucket.raw";
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
     static final String FOLDER_NAME_BRIDGE_RAW_DATA = "Bridge Raw Data";
     static final String METADATA_KEY_CLIENT_INFO = "clientInfo";
+    static final String METADATA_KEY_EXPORTED_ON = "exportedOn";
     static final String METADATA_KEY_HEALTH_CODE = "healthCode";
     static final String METADATA_KEY_RECORD_ID = "recordId";
     static final String METADATA_KEY_UPLOADED_ON = "uploadedOn";
@@ -103,7 +107,9 @@ public class Exporter3Service {
     private Long bridgeAdminTeamId;
     private Long bridgeStaffTeamId;
     private Long exporterSynapseId;
+    private String exporterSynapseUser;
     private String rawHealthDataBucket;
+    private String synapseTrackingViewId;
     private String uploadBucket;
 
     private AppService appService;
@@ -119,7 +125,9 @@ public class Exporter3Service {
         bridgeAdminTeamId = (long) config.getInt(CONFIG_KEY_TEAM_BRIDGE_ADMIN);
         bridgeStaffTeamId = (long) config.getInt(CONFIG_KEY_TEAM_BRIDGE_STAFF);
         exporterSynapseId = (long) config.getInt(CONFIG_KEY_EXPORTER_SYNAPSE_ID);
+        exporterSynapseUser = config.getProperty(CONFIG_KEY_EXPORTER_SYNAPSE_USER);
         rawHealthDataBucket = config.getProperty(CONFIG_KEY_RAW_HEALTH_DATA_BUCKET);
+        synapseTrackingViewId = config.getProperty(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
         uploadBucket = config.getProperty(CONFIG_KEY_UPLOAD_BUCKET);
     }
 
@@ -148,7 +156,7 @@ public class Exporter3Service {
         this.s3Helper = s3Helper;
     }
 
-    @Autowired
+    @Resource(name="exporterSynapseHelper")
     public final void setSynapseHelper(SynapseHelper synapseHelper) {
         this.synapseHelper = synapseHelper;
     }
@@ -165,7 +173,7 @@ public class Exporter3Service {
      * (b) If in the future, we add something new (like a notification queue, or a default view), we can re-run this
      * API to create the new stuff without affecting the old stuff.
      */
-    public Exporter3Configuration initExporter3(String appId) throws SynapseException {
+    public Exporter3Configuration initExporter3(String appId) throws IOException, SynapseException {
         boolean isAppModified = false;
         App app = appService.getApp(appId);
 
@@ -189,8 +197,9 @@ public class Exporter3Service {
             Team team = new Team();
             team.setName(synapseName + " Access Team " + nameScopingToken);
             team = synapseHelper.createTeamWithRetry(team);
-
             dataAccessTeamId = Long.parseLong(team.getId());
+            LOG.info("Created Synapse team " + dataAccessTeamId);
+
             ex3Config.setDataAccessTeamId(dataAccessTeamId);
             isAppModified = true;
         }
@@ -202,6 +211,7 @@ public class Exporter3Service {
             project.setName(synapseName + " Project " + nameScopingToken);
             project = synapseHelper.createEntityWithRetry(project);
             projectId = project.getId();
+            LOG.info("Created Synapse project " + projectId);
 
             // Create ACLs for project.
             synapseHelper.createAclWithRetry(projectId, ImmutableSet.of(exporterSynapseId, bridgeAdminTeamId),
@@ -209,20 +219,21 @@ public class Exporter3Service {
 
             ex3Config.setProjectId(projectId);
             isAppModified = true;
-        }
 
-        // Create storage location.
-        Long storageLocationId = ex3Config.getStorageLocationId();
-        if (storageLocationId == null) {
-            ExternalS3StorageLocationSetting storageLocation = new ExternalS3StorageLocationSetting();
-            storageLocation.setBaseKey(appId);
-            storageLocation.setBucket(rawHealthDataBucket);
-            storageLocation.setStsEnabled(true);
-            storageLocation = synapseHelper.createStorageLocationWithRetry(storageLocation);
-
-            storageLocationId = storageLocation.getStorageLocationId();
-            ex3Config.setStorageLocationId(storageLocationId);
-            isAppModified = true;
+            // We also need to add this project to the tracking view.
+            if (StringUtils.isNotBlank(synapseTrackingViewId)) {
+                try {
+                    EntityView view = synapseHelper.getEntityWithRetry(synapseTrackingViewId, EntityView.class);
+                    if (view != null) {
+                        // For whatever reason, view.getScopes() doesn't include the "syn" prefix.
+                        view.getScopeIds().add(projectId.substring(3));
+                        synapseHelper.updateEntityWithRetry(view);
+                    }
+                } catch (SynapseException ex) {
+                    LOG.error("Error adding new project " + projectId + " to tracking view " + synapseTrackingViewId +
+                            ": " + ex.getMessage(), ex);
+                }
+            }
         }
 
         // Create Folder for raw data.
@@ -233,6 +244,7 @@ public class Exporter3Service {
             folder.setParentId(projectId);
             folder = synapseHelper.createEntityWithRetry(folder);
             rawDataFolderId = folder.getId();
+            LOG.info("Created Synapse folder " + rawDataFolderId);
 
             // Create ACLs for folder. This is a separate ACL because we don't want to allow people to modify the
             // raw data.
@@ -240,6 +252,32 @@ public class Exporter3Service {
                     ImmutableSet.of(bridgeStaffTeamId, dataAccessTeamId));
 
             ex3Config.setRawDataFolderId(rawDataFolderId);
+            isAppModified = true;
+        }
+
+        // Create storage location.
+        Long storageLocationId = ex3Config.getStorageLocationId();
+        if (storageLocationId == null) {
+            // Create owner.txt so that we can create the storage location.
+            s3Helper.writeLinesToS3(rawHealthDataBucket, appId + "/owner.txt",
+                    ImmutableList.of(exporterSynapseUser));
+
+            // Create storage location.
+            ExternalS3StorageLocationSetting storageLocation = new ExternalS3StorageLocationSetting();
+            storageLocation.setBaseKey(appId);
+            storageLocation.setBucket(rawHealthDataBucket);
+            storageLocation.setStsEnabled(true);
+            storageLocation = synapseHelper.createStorageLocationForEntity(rawDataFolderId, storageLocation);
+            storageLocationId = storageLocation.getStorageLocationId();
+            LOG.info("Created Synapse storage location " + storageLocationId);
+
+            ex3Config.setStorageLocationId(storageLocationId);
+            isAppModified = true;
+        }
+
+        // Finally, enable Exporter 3.0 if it's not already enabled.
+        if (!app.isExporter3Enabled()) {
+            app.setExporter3Enabled(true);
             isAppModified = true;
         }
 
@@ -279,6 +317,9 @@ public class Exporter3Service {
         String appId = app.getIdentifier();
         String uploadId = upload.getUploadId();
         try {
+            // Set the exportedOn time on the record. This will be propagated to both S3 and Synapse.
+            record.setExportedOn(DateUtils.getCurrentMillisFromEpoch());
+
             // Copy the file to the raw health data bucket. This includes folderization.
             ExportContext exportContext;
             if (upload.isEncrypted()) {
@@ -332,7 +373,7 @@ public class Exporter3Service {
 
             // Step 3: Upload it to the raw uploads bucket.
             Map<String, String> metadataMap = makeMetadataFromRecord(record);
-            ObjectMetadata s3Metadata = makeS3Metadata(metadataMap);
+            ObjectMetadata s3Metadata = makeS3Metadata(upload, metadataMap);
             String s3Key = getRawS3KeyForUpload(upload);
             s3Helper.writeFileToS3(rawHealthDataBucket, s3Key, decryptedFile, s3Metadata);
 
@@ -360,7 +401,7 @@ public class Exporter3Service {
 
         // Copy the file to the health data bucket.
         Map<String, String> metadataMap = makeMetadataFromRecord(record);
-        ObjectMetadata s3Metadata = makeS3Metadata(metadataMap);
+        ObjectMetadata s3Metadata = makeS3Metadata(upload, metadataMap);
         String s3Key = getRawS3KeyForUpload(upload);
         s3Helper.copyS3File(uploadBucket, uploadId, rawHealthDataBucket, s3Key, s3Metadata);
 
@@ -379,13 +420,17 @@ public class Exporter3Service {
 
         // Bridge-specific metadata.
         metadataMap.put(METADATA_KEY_CLIENT_INFO, RequestContext.get().getCallerClientInfo().toString());
+        metadataMap.put(METADATA_KEY_EXPORTED_ON, DateUtils.convertToISODateTime(record.getExportedOn()));
         metadataMap.put(METADATA_KEY_HEALTH_CODE, record.getHealthCode());
         metadataMap.put(METADATA_KEY_RECORD_ID, record.getId());
         metadataMap.put(METADATA_KEY_UPLOADED_ON, DateUtils.convertToISODateTime(record.getCreatedOn()));
 
         // App-provided metadata.
-        for (Map.Entry<String, String> metadataEntry : record.getMetadata().entrySet()) {
-            metadataMap.put(metadataEntry.getKey(), metadataEntry.getValue());
+        Map<String, String> recordMetadataMap = record.getMetadata();
+        if (recordMetadataMap != null) {
+            for (Map.Entry<String, String> metadataEntry : record.getMetadata().entrySet()) {
+                metadataMap.put(metadataEntry.getKey(), metadataEntry.getValue());
+            }
         }
 
         // In the future, assessment stuff, study-specific stuff, and participant version would go here.
@@ -393,10 +438,12 @@ public class Exporter3Service {
         return metadataMap;
     }
 
-    private ObjectMetadata makeS3Metadata(Map<String, String> metadataMap) {
+    private ObjectMetadata makeS3Metadata(Upload upload, Map<String, String> metadataMap) {
         // Always specify S3 encryption.
         ObjectMetadata metadata = new ObjectMetadata();
         metadata.setSSEAlgorithm(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+
+        metadata.setContentType(upload.getContentType());
 
         // Copy metadata from map.
         for (Map.Entry<String, String> metadataEntry : metadataMap.entrySet()) {
@@ -418,7 +465,6 @@ public class Exporter3Service {
         // Create Synapse S3 file handle.
         S3FileHandle fileHandle = new S3FileHandle();
         fileHandle.setBucketName(rawHealthDataBucket);
-        fileHandle.setContentSize(upload.getContentLength());
         fileHandle.setContentType(upload.getContentType());
         fileHandle.setFileName(filename);
         fileHandle.setKey(s3Key);
@@ -436,18 +482,17 @@ public class Exporter3Service {
         fileEntity.setName(filename);
         fileEntity.setParentId(folderId);
         fileEntity = synapseHelper.createEntityWithRetry(fileEntity);
+        String fileEntityId = fileEntity.getId();
 
         // Add annotations.
-        Annotations annotations = new Annotations();
-        Map<String, AnnotationsValue> annotationsMap = new HashMap<>();
+        Map<String, AnnotationsValue> annotationMap = new HashMap<>();
         for (Map.Entry<String, String> metadataEntry : exportContext.getMetadataMap().entrySet()) {
             AnnotationsValue value = new AnnotationsValue();
             value.setType(AnnotationsValueType.STRING);
             value.setValue(ImmutableList.of(metadataEntry.getValue()));
-            annotationsMap.put(metadataEntry.getKey(), value);
+            annotationMap.put(metadataEntry.getKey(), value);
         }
-        annotations.setAnnotations(annotationsMap);
-        synapseHelper.updateAnnotationsWithRetry(fileEntity.getId(), annotations);
+        synapseHelper.addAnnotationsToEntity(fileEntityId, annotationMap);
     }
 
     private String getRawS3KeyForUpload(Upload upload) {

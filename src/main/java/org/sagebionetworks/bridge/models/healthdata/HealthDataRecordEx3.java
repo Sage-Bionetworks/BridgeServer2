@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.healthdata;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
-import java.util.TreeMap;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -90,6 +89,13 @@ public interface HealthDataRecordEx3 extends BridgeEntity {
     /** This is set to true when the record is exported to Synapse/ */
     boolean isExported();
     void setExported(boolean exported);
+
+    /**
+     * Timestamp (epoch milliseconds) of when this record was exported to Synapse. Due to redrives and re-exports, this
+     * may be different than {@link #getCreatedOn}.
+     */
+    Long getExportedOn();
+    void setExportedOn(Long exportedOn);
 
     /** Client-submitted metadata, as a map of key-value pairs. */
     Map<String, String> getMetadata();

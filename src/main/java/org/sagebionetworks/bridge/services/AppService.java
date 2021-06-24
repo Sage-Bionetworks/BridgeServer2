@@ -212,8 +212,7 @@ public class AppService {
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-    @Autowired
-    @Qualifier("bridgePFSynapseClient")
+    @Resource(name = "bridgePFSynapseClient")
     final void setSynapseClient(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
     }

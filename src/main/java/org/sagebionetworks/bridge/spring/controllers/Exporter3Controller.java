@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
+import java.io.IOException;
+
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -29,7 +31,7 @@ public class Exporter3Controller extends BaseController {
     /** Initializes configs and Synapse resources for Exporter 3.0. */
     @PostMapping(path = "/v1/apps/self/exporter3")
     @ResponseStatus(HttpStatus.CREATED)
-    public Exporter3Configuration initExporter3() throws SynapseException {
+    public Exporter3Configuration initExporter3() throws IOException, SynapseException {
         UserSession session = getAuthenticatedSession(ADMIN, DEVELOPER);
         return exporter3Service.initExporter3(session.getAppId());
     }
