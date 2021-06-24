@@ -212,7 +212,7 @@ public class AppConfigValidator implements Validator {
                         errors.rejectValue("guid", "refers to the same assessment as another reference");
                     } else {
                         try {
-                            assessmentService.getAssessmentByGuid(appConfig.getAppId(), ref.getGuid());
+                            assessmentService.getAssessmentByGuid(appConfig.getAppId(), null, ref.getGuid());
                         } catch(EntityNotFoundException e) {
                             errors.rejectValue("guid", "does not refer to an assessment");
                         }

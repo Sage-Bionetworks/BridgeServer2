@@ -53,13 +53,14 @@ public class AssessmentConfigService {
         return AssessmentConfigValidator.INSTANCE;
     }
     
+    /**
+     * Get an assessment’s config. We do not check ownership to read an assessment 
+     * configuration. Anyone can read any configuration.
+     */
     public AssessmentConfig getAssessmentConfig(String appId, String guid) {
         checkArgument(isNotBlank(guid));
         
-        // Check the assessment exists
-        assessmentService.getAssessmentByGuid(appId, guid);
-        // Note: we were checking organizational access to the config but we've refined our model
-        // such that assessments are public for assignment, so they can be read by anyone.
+        assessmentService.getAssessmentByGuid(appId, null, guid);
         
         return dao.getAssessmentConfig(guid).orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
     }
@@ -70,11 +71,11 @@ public class AssessmentConfigService {
         return dao.getAssessmentConfig(guid).orElseThrow(() -> new EntityNotFoundException(AssessmentConfig.class));
     }
     
-    public AssessmentConfig updateAssessmentConfig(String appId, String guid, AssessmentConfig config) {
+    public AssessmentConfig updateAssessmentConfig(String appId, String ownerId, String guid, AssessmentConfig config) {
         checkArgument(isNotBlank(guid));
         checkNotNull(config);
         
-        Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
+        Assessment assessment = assessmentService.getAssessmentByGuid(appId, ownerId, guid);
         CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, assessment.getOwnerId());
         
         AssessmentConfig existing = dao.getAssessmentConfig(guid)
@@ -91,13 +92,13 @@ public class AssessmentConfigService {
         return dao.updateAssessmentConfig(appId, assessment, guid, config);
     }
     
-    public AssessmentConfig customizeAssessmentConfig(String appId, String guid,
-            Map<String, Map<String, JsonNode>> updates) {        
+    public AssessmentConfig customizeAssessmentConfig(String appId, String ownerId,
+            String guid, Map<String, Map<String, JsonNode>> updates) {        
         
         if (updates == null) {
             throw new BadRequestException("Updates to configuration are missing");
         }
-        Assessment assessment = assessmentService.getAssessmentByGuid(appId, guid);
+        Assessment assessment = assessmentService.getAssessmentByGuid(appId, ownerId, guid);
         CAN_EDIT_ASSESSMENTS.checkAndThrow(ORG_ID, assessment.getOwnerId());
         
         Map<String, Set<PropertyInfo>> fields = assessment.getCustomizationFields();

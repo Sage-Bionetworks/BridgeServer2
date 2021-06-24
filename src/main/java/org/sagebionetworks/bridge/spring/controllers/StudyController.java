@@ -135,9 +135,10 @@ public class StudyController extends BaseController {
             study.setLogoGuid(metadata.getGuid());
             service.updateStudy(session.getAppId(), study);
         }
-        FileRevision revision = new FileRevision();
+        
+        FileRevision revision = parseJson(FileRevision.class);
         revision.setFileGuid(metadata.getGuid());
-        revision.setDescription(study.getName() + " Logo");
+        
         return fileService.createFileRevision(session.getAppId(), revision);
     }
     
@@ -148,16 +149,15 @@ public class StudyController extends BaseController {
         Study study = service.getStudy(session.getAppId(), id, true);
         String guid = study.getLogoGuid();
         if (guid == null) {
-            throw new BadRequestException("Study logo upload cannot be finished because it was not started.");
+            throw new BadRequestException("Study logo upload must be started before it can be finished.");
         }
         DateTime createdOn = DateTime.parse(createdOnStr);
-        
         fileService.finishFileRevision(session.getAppId(), guid, createdOn);
         
         FileRevision revision = fileService.getFileRevision(guid, createdOn)
                 .orElseThrow(() -> new EntityNotFoundException(FileRevision.class));
         
-        study.setLogoURL(revision.getDownloadURL());
+        study.setStudyLogoUrl(revision.getDownloadURL());
         service.updateStudy(session.getAppId(), study);
         
         return study;

@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import javax.persistence.CollectionTable;
 import javax.persistence.Column;
@@ -18,6 +20,8 @@ import javax.persistence.OrderColumn;
 import javax.persistence.Table;
 import javax.persistence.Version;
 
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
@@ -25,6 +29,7 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.IrbDecisionType;
+import org.sagebionetworks.bridge.models.studies.SignInType;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyId;
 import org.sagebionetworks.bridge.models.studies.StudyPhase;
@@ -69,19 +74,41 @@ public class HibernateStudy implements Study {
     private ColorScheme colorScheme;
     private String institutionId;
     private String scheduleGuid;
-    private String disease;
-    private String studyDesignType;
     @JsonIgnore
     private String logoGuid;
-    private String logoURL;
+    private String keywords;
     @Version
     private Long version;
+    
+    // the subselect annotations below reduce the number of SQL queries that
+    // hibernate makes to retrieve the full study object. Tables are being used
+    // for collections that we might use in future queries; JSON for collections
+    // that we'll never reference apart from the study object.
+    
     @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(value = FetchMode.SUBSELECT)
     @OrderColumn(name="pos") // can’t use 'position' in this case
     @CollectionTable(name="StudyContacts", joinColumns= {
             @JoinColumn(name="appId"), @JoinColumn(name="studyId")
     })
     private List<Contact> contacts;
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(value = FetchMode.SUBSELECT)
+    @CollectionTable(name="StudyDiseases", 
+        joinColumns = {@JoinColumn(name="appId"), @JoinColumn(name="studyId")})
+    @Column(name="disease")
+    private Set<String> diseases;
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(value = FetchMode.SUBSELECT)
+    @CollectionTable(name="StudyDesignTypes", 
+        joinColumns = {@JoinColumn(name="appId"), @JoinColumn(name="studyId")})
+    @Column(name = "designType")
+    private Set<String> studyDesignTypes;
+
+    @Convert(converter = SignInTypeListConverter.class)
+    private List<SignInType> signInTypes;
     
     /**
      * For full construction of object by Hibernate.
@@ -101,7 +128,7 @@ public class HibernateStudy implements Study {
         this.modifiedOn = modifiedOn;
         this.deleted = deleted;
         this.phase = phase;
-        this.logoURL = logoURL;
+        this.studyLogoUrl = logoURL;
         this.version = version;
     }
     
@@ -320,23 +347,52 @@ public class HibernateStudy implements Study {
     }
 
     @Override
-    public String getDisease() {
-        return disease;
+    public String getKeywords() { 
+        return keywords;
+    }
+    
+    @Override
+    public void setKeywords(String keywords) {
+        this.keywords = keywords;
+    }
+    
+    @Override
+    public Set<String> getDiseases() {
+        if (diseases == null) {
+            diseases = new HashSet<>();
+        }
+        return diseases;
     }
 
     @Override
-    public void setDisease(String disease) {
-        this.disease = disease;
+    public void setDiseases(Set<String> diseases) {
+        this.diseases = diseases;
     }
 
     @Override
-    public String getStudyDesignType() {
-        return studyDesignType;
+    public Set<String> getStudyDesignTypes() {
+        if (studyDesignTypes == null) {
+            studyDesignTypes = new HashSet<>();
+        }
+        return studyDesignTypes;
     }
 
     @Override
-    public void setStudyDesignType(String studyDesignType) {
-        this.studyDesignType = studyDesignType;
+    public void setStudyDesignTypes(Set<String> studyDesignTypes) {
+        this.studyDesignTypes = studyDesignTypes;
+    }
+    
+    @Override
+    public List<SignInType> getSignInTypes() {
+        if (signInTypes == null) {
+            signInTypes = new ArrayList<>();
+        }
+        return signInTypes;
+    }
+    
+    @Override
+    public void setSignInTypes(List<SignInType> signInTypes) {
+        this.signInTypes = signInTypes;
     }
 
     @Override
@@ -348,15 +404,4 @@ public class HibernateStudy implements Study {
     public void setLogoGuid(String logoGuid) {
         this.logoGuid = logoGuid;
     }
-
-    @Override
-    public String getLogoURL() {
-        return logoURL;
-    }
-
-    @Override
-    public void setLogoURL(String logoURL) {
-        this.logoURL = logoURL;
-    }
-
 }
