@@ -1,12 +1,18 @@
 package org.sagebionetworks.bridge.models.healthdata;
 
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecordEx3;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.upload.Upload;
 
 /**
  * Represents the Health Data Record model for Exporter 3. This is not cross-compatible with the original model for
@@ -18,6 +24,42 @@ public interface HealthDataRecordEx3 extends BridgeEntity {
     /** Convenience method to instantiate a HealthDataRecord. */
     static HealthDataRecordEx3 create() {
         return new DynamoHealthDataRecordEx3();
+    }
+
+    /** Helper method to create a record from an upload. */
+    static HealthDataRecordEx3 createFromUpload(Upload upload) {
+        HealthDataRecordEx3 record = create();
+        record.setId(upload.getUploadId());
+        record.setAppId(upload.getAppId());
+        record.setHealthCode(upload.getHealthCode());
+        record.setCreatedOn(upload.getCompletedOn());
+        record.setClientInfo(RequestContext.get().getCallerClientInfo().toString());
+
+        ObjectNode metadata = upload.getMetadata();
+        if (metadata != null) {
+            Map<String, String> metadataMap = new HashMap<>();
+
+            Iterator<Map.Entry<String, JsonNode>> metadataIter = metadata.fields();
+            while (metadataIter.hasNext()) {
+                Map.Entry<String, JsonNode> entry = metadataIter.next();
+                String name = entry.getKey();
+                JsonNode value = entry.getValue();
+
+                if (value.isNull()) {
+                    // Skip.
+                    continue;
+                } else if (value.isArray() || value.isObject()) {
+                    metadataMap.put(name, value.toString());
+                } else {
+                    // Primitive. Format in asText() to remove the extra formatting.
+                    metadataMap.put(name, value.asText());
+                }
+            }
+
+            record.setMetadata(metadataMap);
+        }
+
+        return record;
     }
 
     /** Record ID, uniquely identifies this record. */
@@ -47,6 +89,13 @@ public interface HealthDataRecordEx3 extends BridgeEntity {
     /** This is set to true when the record is exported to Synapse/ */
     boolean isExported();
     void setExported(boolean exported);
+
+    /**
+     * Timestamp (epoch milliseconds) of when this record was exported to Synapse. Due to redrives and re-exports, this
+     * may be different than {@link #getCreatedOn}.
+     */
+    Long getExportedOn();
+    void setExportedOn(Long exportedOn);
 
     /** Client-submitted metadata, as a map of key-value pairs. */
     Map<String, String> getMetadata();

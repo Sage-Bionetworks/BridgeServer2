@@ -136,6 +136,7 @@ import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
 import org.sagebionetworks.bridge.spring.filters.RequestFilter;
 import org.sagebionetworks.bridge.spring.filters.StaticHeadersFilter;
+import org.sagebionetworks.bridge.synapse.SynapseHelper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.InitRecordHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
@@ -722,11 +723,26 @@ public class SpringConfig {
     }
 
     @Bean(name="bridgePFSynapseClient")
-    public SynapseClient synapseClient() throws IOException {
+    public SynapseClient synapseClient() {
         SynapseClient synapseClient = new SynapseAdminClientImpl();
         synapseClient.setUsername(bridgeConfig().get("synapse.user"));
         synapseClient.setApiKey(bridgeConfig().get("synapse.api.key"));
         return synapseClient;
+    }
+
+    @Bean(name="exporterSynapseClient")
+    public SynapseClient exporterSynapseClient() {
+        SynapseClient synapseClient = new SynapseAdminClientImpl();
+        synapseClient.setUsername(bridgeConfig().get("exporter.synapse.user"));
+        synapseClient.setApiKey(bridgeConfig().get("exporter.synapse.api.key"));
+        return synapseClient;
+    }
+
+    @Bean(name="exporterSynapseHelper")
+    public SynapseHelper exporterSynapseHelper() {
+        SynapseHelper synapseHelper = new SynapseHelper();
+        synapseHelper.setSynapseClient(exporterSynapseClient());
+        return synapseHelper;
     }
 
     @Bean(name = "genericViewCache")

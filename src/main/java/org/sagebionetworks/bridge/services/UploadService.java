@@ -40,6 +40,8 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -64,6 +66,8 @@ public class UploadService {
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
 
+    private AppService appService;
+    private Exporter3Service exporter3Service;
     private HealthDataService healthDataService;
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
@@ -78,6 +82,16 @@ public class UploadService {
     // 30 seconds will have passed.
     private int pollValidationStatusMaxIterations = 7;
     private long pollValidationStatusSleepMillis = 5000;
+
+    @Autowired
+    public final void setAppService(AppService appService) {
+        this.appService = appService;
+    }
+
+    @Autowired
+    public final void setExporter3Service(Exporter3Service exporter3Service) {
+        this.exporter3Service = exporter3Service;
+    }
 
     /** Sets parameters from the specified Bridge config. */
     @Autowired
@@ -434,6 +448,14 @@ public class UploadService {
         }
 
         // kick off upload validation
+        App app = appService.getApp(appId);
+        Exporter3Configuration exporter3Config = app.getExporter3Configuration();
+        if (app.isExporter3Enabled() && exporter3Config != null && exporter3Config.isConfigured()) {
+            exporter3Service.completeUpload(app, upload);
+        }
+
+        // For backwards compatibility, always call Legacy Exporter 2.0. In the future, we may introduce a setting to
+        // disable this for new apps.
         uploadValidationService.validateUpload(appId, upload);
     }
     

@@ -30,6 +30,7 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     private Long createdOn;
     private String clientInfo;
     private boolean exported;
+    private Long exportedOn;
     private Map<String, String> metadata;
     private Long version;
 
@@ -140,6 +141,19 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     @Override
     public void setExported(boolean exported) {
         this.exported = exported;
+    }
+
+    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
+    @Override
+    public Long getExportedOn() {
+        return exportedOn;
+    }
+
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
+    @Override
+    public void setExportedOn(Long exportedOn) {
+        this.exportedOn = exportedOn;
     }
 
     @Override
