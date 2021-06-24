@@ -118,6 +118,10 @@ public class ParticipantFileService {
 
         participantFileDao.uploadParticipantFile(file);
 
+        // Deleting any previous object prevents a user from updating the ParticipantFile
+        // but leaving the previous object on S3.
+        s3Client.deleteObject(bucketName, getFilePath(file));
+
         file.setUploadUrl(generatePresignedRequest(file, PUT).toExternalForm());
         return file;
     }
