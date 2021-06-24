@@ -200,7 +200,6 @@ public class FileService {
         if (metadata.getDisposition() == ATTACHMENT) {
             headers = headers.withContentDisposition("attachment; filename=\""+revision.getName()+"\"");
         } else {
-            System.out.println("Should be setting header to inline");
             headers = headers.withContentDisposition("inline");
         }
         request.setResponseHeaders(headers);

@@ -133,10 +133,12 @@ public class HibernateStudyTest {
         assertEquals(node.get("signInTypes").get(1).textValue(), "email_password");
         assertEquals(node.get("keywords").textValue(), "keywords");
         assertEquals(node.get("type").textValue(), "Study");
+        assertNull(node.get("logoGuid"));
         assertNull(node.get("studyId"));
         assertNull(node.get("appId"));
         
         Study deser = BridgeObjectMapper.get().readValue(node.toString(), Study.class);
+        deser.setLogoGuid(GUID);
         assertEquals(deser.getIdentifier(), "oneId");
         assertEquals(deser.getName(), "name");
         assertTrue(deser.isDeleted());
@@ -162,6 +164,7 @@ public class HibernateStudyTest {
         assertEquals(deser.getStudyDesignTypes(), ImmutableSet.of("observational case control"));
         assertEquals(deser.getKeywords(), "keywords");
         assertEquals(deser.getSignInTypes(), TYPES);
+        assertEquals(deser.getLogoGuid(), GUID);
         assertEquals(deser.getVersion(), new Long(3));
         
         JsonNode deserClientData = deser.getClientData();

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.files;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.models.files.FileDispositionType.ATTACHMENT;
 import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
@@ -60,6 +61,12 @@ public class FileMetadataTest extends Mockito {
         assertEquals(deser.getVersion(), 3L);
         assertEquals(deser.getCreatedOn(), TIMESTAMP);
         assertEquals(deser.getModifiedOn(), TIMESTAMP.plusHours(1));
+    }
+    
+    @Test
+    public void dispositionDefaultsToAttachment() {
+        FileMetadata metadata = new FileMetadata();
+        assertEquals(ATTACHMENT, metadata.getDisposition());
     }
 
 }

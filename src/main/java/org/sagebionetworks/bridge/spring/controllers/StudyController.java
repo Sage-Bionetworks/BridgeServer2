@@ -162,5 +162,4 @@ public class StudyController extends BaseController {
         
         return study;
     }
-
 }

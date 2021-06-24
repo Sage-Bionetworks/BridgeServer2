@@ -119,11 +119,4 @@ public final class FileMetadata implements BridgeEntity {
                 Objects.equals(version, other.version) &&
                 Objects.equals(disposition, other.disposition));
     }
-    @Override
-    public String toString() {
-        return "FileMetadata [appId=" + appId + ", name=" + name + ", guid=" + guid 
-                + ", description=" + description + ", createdOn=" + createdOn 
-                + ", modifiedOn=" + modifiedOn + ", deleted=" + deleted + ", version=" 
-                + version + ", disposition=" + disposition + "]";
-    }
 }
