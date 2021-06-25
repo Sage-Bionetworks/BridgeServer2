@@ -117,7 +117,7 @@ public class StudyController extends BaseController {
     }
     
     @PostMapping("/v5/studies/{id}/logo")
-    @ResponseStatus(HttpStatus.CREATED)
+    @ResponseStatus(HttpStatus.ACCEPTED)
     public FileRevision createStudyLogo(@PathVariable String id) {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
@@ -143,6 +143,7 @@ public class StudyController extends BaseController {
     }
     
     @PostMapping("/v5/studies/{id}/logo/{createdOn}")
+    @ResponseStatus(HttpStatus.CREATED)
     public Study finishStudyLogo(@PathVariable String id, @PathVariable("createdOn") String createdOnStr) {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 

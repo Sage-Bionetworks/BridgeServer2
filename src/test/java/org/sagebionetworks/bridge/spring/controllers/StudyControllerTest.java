@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestUtils.assertAccept;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
@@ -119,6 +120,8 @@ public class StudyControllerTest extends Mockito {
         assertGet(StudyController.class, "getStudy");
         assertPost(StudyController.class, "updateStudy");
         assertDelete(StudyController.class, "deleteStudy");
+        assertAccept(StudyController.class, "createStudyLogo");
+        assertCreate(StudyController.class, "finishStudyLogo");
     }
 
     @Test
