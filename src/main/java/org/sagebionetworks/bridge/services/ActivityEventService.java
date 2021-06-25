@@ -7,7 +7,9 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.FIRST_SIGN_IN;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.QUESTION;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SENT_INSTALL_LINK;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_START_DATE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
@@ -151,6 +153,42 @@ public class ActivityEventService {
             .withHealthCode(healthCode)
             .withTimestamp(timestamp)
             .withObjectType(ACTIVITIES_RETRIEVED).build();
+
+        // If the globalEvent is valid, all other derivations are valid
+        Validate.entityThrowingException(INSTANCE, globalEvent);
+        
+        if (activityEventDao.publishEvent(globalEvent)) {
+            // Create automatic events, as defined in the app
+            createAutomaticCustomEvents(app, healthCode, globalEvent);
+        }
+    }
+    
+    public void publishFirstSignIn(App app, String healthCode, DateTime timestamp) {
+        checkNotNull(app);
+        checkNotNull(healthCode);
+        
+        ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
+            .withHealthCode(healthCode)
+            .withTimestamp(timestamp)
+            .withObjectType(FIRST_SIGN_IN).build();
+
+        // If the globalEvent is valid, all other derivations are valid
+        Validate.entityThrowingException(INSTANCE, globalEvent);
+        
+        if (activityEventDao.publishEvent(globalEvent)) {
+            // Create automatic events, as defined in the app
+            createAutomaticCustomEvents(app, healthCode, globalEvent);
+        }
+    }
+    
+    public void publishSentInstallLink(App app, String healthCode, DateTime timestamp) {
+        checkNotNull(app);
+        checkNotNull(healthCode);
+        
+        ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
+            .withHealthCode(healthCode)
+            .withTimestamp(timestamp)
+            .withObjectType(SENT_INSTALL_LINK).build();
 
         // If the globalEvent is valid, all other derivations are valid
         Validate.entityThrowingException(INSTANCE, globalEvent);

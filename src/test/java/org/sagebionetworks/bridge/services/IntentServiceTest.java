@@ -15,7 +15,6 @@ import static org.sagebionetworks.bridge.models.apps.MimeType.TEXT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 
 import java.util.Map;
 
@@ -469,21 +468,4 @@ public class IntentServiceTest {
         // But we don't send a message because installLinks map is empty
         verify(mockSmsService, never()).sendSmsMessage(any(), any());
     }    
-    
-    @Test
-    public void installLinkCorrectlySelected() {
-        Map<String,String> installLinks = Maps.newHashMap();
-        installLinks.put("iPhone OS", "iphone-os-link");
-        
-        // Lacking android or universal, find the only link that's there.
-        assertEquals(service.getInstallLink("Android", installLinks), "iphone-os-link");
-        
-        installLinks.put("Universal", "universal-link");
-        assertEquals(service.getInstallLink("iPhone OS", installLinks), "iphone-os-link");
-        assertEquals(service.getInstallLink("Android", installLinks), "universal-link");
-        
-        Map<String,String> emptyInstallLinks = Maps.newHashMap();
-        assertNull(service.getInstallLink("iPhone OS", emptyInstallLinks));
-    }
-
 }

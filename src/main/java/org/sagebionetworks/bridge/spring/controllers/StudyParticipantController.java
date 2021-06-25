@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.http.HttpHeaders.IF_MODIFIED_SINCE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
@@ -48,6 +49,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
@@ -87,6 +89,7 @@ public class StudyParticipantController extends BaseController {
     static final StatusMessage NOTIFY_SUCCESS_MSG = new StatusMessage("Message has been sent to external notification service.");
     static final StatusMessage EVENT_RECORDED_MSG = new StatusMessage("Event recorded.");
     static final StatusMessage EVENT_DELETED_MSG = new StatusMessage("Event deleted.");
+    static final StatusMessage INSTALL_LINK_SEND_MSG = new StatusMessage("Install instructions sent to participant.");
 
     private ParticipantService participantService;
     
@@ -417,6 +420,24 @@ public class StudyParticipantController extends BaseController {
         }
         return new StatusMessage(NOTIFY_SUCCESS_MSG.getMessage() + " Some registrations returned errors: "
                 + BridgeUtils.COMMA_SPACE_JOINER.join(erroredNotifications) + ".");
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/participants/{userId}/sendInstallLink")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public StatusMessage sendInstallLink(@PathVariable String studyId, @PathVariable String userId, 
+            @RequestParam(required = false) String osName) {
+        UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
+
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+        
+        App app = appService.getApp(session.getAppId());
+        String email = TRUE.equals(account.getEmailVerified()) ? account.getEmail() : null;
+        Phone phone = TRUE.equals(account.getPhoneVerified()) ? account.getPhone() : null;
+        
+        participantService.sendInstallLinkMessage(app, account.getHealthCode(), email, phone, osName);
+        
+        return INSTALL_LINK_SEND_MSG;
     }
 
     @DeleteMapping("/v5/studies/{studyId}/participants/{userId}")

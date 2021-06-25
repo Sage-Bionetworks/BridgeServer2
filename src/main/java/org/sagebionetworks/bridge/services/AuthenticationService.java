@@ -16,6 +16,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.PasswordGenerator;
@@ -83,6 +84,7 @@ public class AuthenticationService {
     private OAuthProviderService oauthProviderService;
     private SponsorService sponsorService;
     private StudyService studyService;
+    private ActivityEventService activityEventService;
     
     @Autowired
     final void setCacheProvider(CacheProvider cache) {
@@ -136,6 +138,14 @@ public class AuthenticationService {
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    @Autowired
+    final void setActivityEventService(ActivityEventService activityEventService) {
+        this.activityEventService = activityEventService;
+    }
+    
+    protected DateTime getSignInDateTime() {
+        return new DateTime();
     }
     
     /**
@@ -213,6 +223,8 @@ public class AuthenticationService {
             session = getSessionFromAccount(app, context, account);
         }
         cacheProvider.setUserSession(session);
+        
+        activityEventService.publishFirstSignIn(app, session.getHealthCode(), getSignInDateTime());
         
         if (!session.doesConsent() && !session.isInRole(ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
@@ -461,6 +473,7 @@ public class AuthenticationService {
             cachedSession = cacheProvider.getUserSession(cachedSessionToken);
         }
 
+        App app = appService.getApp(signIn.getAppId());
         UserSession session;
         if (cachedSession != null) {
             // If we have a cached session, then just use that session.
@@ -469,7 +482,6 @@ public class AuthenticationService {
             // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
             // Then, create a new session.
             clearSession(context.getAppId(), account);
-            App app = appService.getApp(signIn.getAppId());
             session = getSessionFromAccount(app, context, account);
 
             // Check intent to participate.
@@ -489,6 +501,7 @@ public class AuthenticationService {
             // period, we can return the same session with the same token.
             cacheProvider.setObject(sessionCacheKey, session.getSessionToken(), SIGNIN_GRACE_PERIOD_SECONDS);
         }
+        activityEventService.publishFirstSignIn(app, session.getHealthCode(), getSignInDateTime());
 
         if (!session.doesConsent() && !session.isInRole(ADMINISTRATIVE_ROLES)) {
             throw new ConsentRequiredException(session);
@@ -581,6 +594,8 @@ public class AuthenticationService {
         App app = appService.getApp(authToken.getAppId());
         UserSession session = getSessionFromAccount(app, context, account);
         cacheProvider.setUserSession(session);
+        
+        activityEventService.publishFirstSignIn(app, session.getHealthCode(), getSignInDateTime());
         
         return session;        
     }

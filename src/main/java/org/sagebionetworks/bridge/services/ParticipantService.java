@@ -19,6 +19,8 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIE
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.validators.IdentifierUpdateValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.accountHasValidIdentifier;
 
@@ -34,6 +36,7 @@ import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -64,6 +67,7 @@ import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -93,6 +97,8 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.AccountSummarySearchValidator;
@@ -110,6 +116,7 @@ public class ParticipantService {
     static final String REQUEST_KEY_PASSWORD = "password";
     static final String REQUEST_KEY_STUDY_ID = "studyId";
     static final String DOWNLOAD_ROSTER_SERVICE_TITLE = "DownloadParticipantRosterWorker";
+    static final String APP_INSTALL_URL_KEY = "appInstallUrl";
 
     private AccountService accountService;
 
@@ -144,6 +151,10 @@ public class ParticipantService {
     private BridgeConfig bridgeConfig;
 
     private AmazonSQSClient sqsClient;
+    
+    private TemplateService templateService;
+    
+    private SendMailService sendMailService;
 
     @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -229,6 +240,16 @@ public class ParticipantService {
     @Autowired
     final void setSqsClient(AmazonSQSClient sqsClient) {
         this.sqsClient = sqsClient;
+    }
+    
+    @Autowired
+    final void setTemplateService(TemplateService templateService) {
+        this.templateService = templateService;
+    }
+
+    @Autowired
+    final void setSendMailService(SendMailService sendMailService) {
+        this.sendMailService = sendMailService;
     }
     
     /**
@@ -797,6 +818,66 @@ public class ParticipantService {
             builder.withToken(entry.getKey(), entry.getValue());
         }
         smsService.sendSmsMessage(userId, builder.build());
+    }
+    
+    /**
+     * Send a message by either email or SMS, depending on the configuration of the account. 
+     * IMPORTANT: the email and phone are considered to be verified; pass null for these arguments 
+     * if the values are not verified. We do it this way so the IntentService can provide values 
+     * even before an account exists. 
+     */
+    public void sendInstallLinkMessage(App app, String healthCode, String email, Phone phone, String osName) {
+        if (email == null && phone == null) {
+            throw new BadRequestException("Account unable to be contacted via phone or email");
+        }
+        if (app.getInstallLinks().isEmpty()) {
+            throw new BadRequestException("No install links configured for app");
+        }
+        String url = getInstallLink(osName, app.getInstallLinks());
+        
+        if (phone != null) {
+            // The URL being sent does not expire. We send with a transaction delivery type because
+            // this is a critical step in onboarding through this workflow and message needs to be 
+            // sent immediately after consenting.
+            TemplateRevision revision = templateService.getRevisionForUser(app, SMS_APP_INSTALL_LINK);
+            SmsMessageProvider provider = new SmsMessageProvider.Builder()
+                    .withApp(app)
+                    .withTemplateRevision(revision)
+                    .withTransactionType()
+                    .withPhone(phone)
+                    .withToken(APP_INSTALL_URL_KEY, url).build();
+            // Account hasn't been created yet, so there is no ID yet. Pass in null user ID to
+            // SMS Service.
+            smsService.sendSmsMessage(null, provider);
+        } else {
+            TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_APP_INSTALL_LINK);
+            BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                    .withApp(app)
+                    .withTemplateRevision(revision)
+                    .withRecipientEmail(email)
+                    .withType(EmailType.APP_INSTALL)
+                    .withToken(APP_INSTALL_URL_KEY, url)
+                    .build();
+            sendMailService.sendEmail(provider);
+        }
+        // We don't publish the "sent install link" for the intent sevice, because no account 
+        // exists yet. We only publish it when this template is triggered for an existing account.
+        if (healthCode != null) {
+            activityEventService.publishSentInstallLink(app, healthCode, new DateTime());
+        }
+    }
+    
+    protected String getInstallLink(String osName, Map<String,String> installLinks) {
+        String installLink = installLinks.get(osName);
+        // OS name wasn't submitted or it's wrong, use the universal link
+        if (installLink == null) {
+            installLink = installLinks.get(OperatingSystem.UNIVERSAL);
+        }
+        // Don't have a link named "Universal" so just find ANYTHING
+        if (installLink == null && !installLinks.isEmpty()) {
+            installLink = Iterables.getFirst(installLinks.values(), null);
+        }
+        return installLink;
     }
     
     public List<ActivityEvent> getActivityEvents(App app, String studyId, String userId) {

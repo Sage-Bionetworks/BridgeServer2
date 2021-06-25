@@ -112,6 +112,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 public class ParticipantServiceTest extends Mockito {
@@ -2515,6 +2516,22 @@ public class ParticipantServiceTest extends Mockito {
 
         StudyParticipant nonAdminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
         assertNull(nonAdminRetrieved.getNote());
+    }
+    
+    @Test
+    public void installLinkCorrectlySelected() {
+        Map<String,String> installLinks = Maps.newHashMap();
+        installLinks.put("iPhone OS", "iphone-os-link");
+        
+        // Lacking android or universal, find the only link that's there.
+        assertEquals(participantService.getInstallLink("Android", installLinks), "iphone-os-link");
+        
+        installLinks.put("Universal", "universal-link");
+        assertEquals(participantService.getInstallLink("iPhone OS", installLinks), "iphone-os-link");
+        assertEquals(participantService.getInstallLink("Android", installLinks), "universal-link");
+        
+        Map<String,String> emptyInstallLinks = Maps.newHashMap();
+        assertNull(participantService.getInstallLink("iPhone OS", emptyInstallLinks));
     }
 
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 

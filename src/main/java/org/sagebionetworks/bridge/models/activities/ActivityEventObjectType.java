@@ -149,6 +149,27 @@ public enum ActivityEventObjectType {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
             return this.name().toLowerCase();
         }
+    },
+    
+    /**
+     * An event created the first time the participant signs in to the Bridge server via 
+     * any authentication method.
+     */
+    FIRST_SIGN_IN(IMMUTABLE) {
+        public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
+            return this.name().toLowerCase();
+        }
+    },
+    
+    /**
+     * An event to record that the install link message has been sent to a participant. Note
+     * that this records the message was sent, and does not guarantee that it was received.
+     */
+    SENT_INSTALL_LINK(FUTURE_ONLY) {
+        public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
+            return this.name().toLowerCase();
+        }
+        
     };
     
     ActivityEventObjectType(ActivityEventUpdateType updateType) {
@@ -162,5 +183,4 @@ public enum ActivityEventObjectType {
     public ActivityEventUpdateType getUpdateType() {
         return updateType;
     }
-    
 }

@@ -11,6 +11,8 @@ import static org.sagebionetworks.bridge.BridgeUtils.parseAutoEventValue;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.FIRST_SIGN_IN;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SENT_INSTALL_LINK;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.DELETE_INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
@@ -20,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
@@ -60,10 +63,15 @@ public class StudyActivityEventService {
     
     static final String CREATED_ON_FIELD = CREATED_ON.name().toLowerCase();
     static final String ENROLLMENT_FIELD = ENROLLMENT.name().toLowerCase();
+    static final String SENT_INSTALL_LINK_FIELD = SENT_INSTALL_LINK.name().toLowerCase();
+    static final String FIRST_SIGN_IN_FIELD = FIRST_SIGN_IN.name().toLowerCase();
+    static final List<String> GLOBAL_EVENTS_OF_INTEREST = ImmutableList.of(
+            CREATED_ON_FIELD, FIRST_SIGN_IN_FIELD, SENT_INSTALL_LINK_FIELD);
 
     private StudyActivityEventDao dao;
     private AppService appService;
     private AccountService accountService;
+    private ActivityEventService activityEventService;
     
     @Autowired
     final void setStudyActivityEventDao(StudyActivityEventDao dao) {
@@ -76,6 +84,10 @@ public class StudyActivityEventService {
     @Autowired
     final void setAccountService(AccountService accountService) {
         this.accountService = accountService;
+    }
+    @Autowired
+    final void setActivityEventService(ActivityEventService activityEventService) {
+        this.activityEventService = activityEventService;
     }
     
     DateTime getCreatedOn() { 
@@ -133,10 +145,23 @@ public class StudyActivityEventService {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         List<StudyActivityEvent> events = dao.getRecentStudyActivityEvents(userId, studyId);
-        events.add(new StudyActivityEvent(CREATED_ON_FIELD, account.getCreatedOn()));
         addEnrollmentIfMissing(account, events, studyId);
         
+        // There are some global events related to authentication and account creation that 
+        // are useful when working with study-specific events, so add these from the global
+        // system.
+        Map<String, DateTime> map = activityEventService.getActivityEventMap(
+                account.getAppId(), account.getHealthCode());
+        for (String fieldName : GLOBAL_EVENTS_OF_INTEREST) {
+            addIfMissing(events, map, fieldName);    
+        }
         return new ResourceList<>(events); 
+    }
+    
+    private void addIfMissing(List<StudyActivityEvent> events, Map<String, DateTime> map, String field) {
+        if (map.containsKey(field)) {
+            events.add(new StudyActivityEvent(field, map.get(field)));
+        }
     }
     
     public PagedResourceList<StudyActivityEvent> getStudyActivityEventHistory(
@@ -160,10 +185,13 @@ public class StudyActivityEventService {
             throw new BadRequestException(INVALID_EVENT_ID);
         }
         
-        // createdOn needs to be emulated in the history view, so it doesn't confuse consumers
-        if (eventId.equals(CREATED_ON_FIELD)) {
+        // Global events emulate history for a cleaner and less confusing API, but there is only ever one value.
+        if (GLOBAL_EVENTS_OF_INTEREST.contains(eventId)) {
+            
+            Map<String, DateTime> map = activityEventService.getActivityEventMap(
+                    account.getAppId(), account.getHealthCode());
             List<StudyActivityEvent> events = new ArrayList<>();
-            events.add(new StudyActivityEvent(CREATED_ON_FIELD, account.getCreatedOn()));
+            addIfMissing(events, map, eventId);
             
             return new PagedResourceList<>(events, 1, true)
                     .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
@@ -211,9 +239,11 @@ public class StudyActivityEventService {
         }        
     }
     
+    /**
+     * If events do not include enrollment, you can include it. This provides some
+     * migration support.
+     */
     private void addEnrollmentIfMissing(Account account, List<StudyActivityEvent> events, String studyId) {
-        // if events do not include enrollment, you can include it. This provides some
-        // migration support.
         for (StudyActivityEvent oneEvent : events) {
             if (oneEvent.getEventId().equals(ENROLLMENT_FIELD)) {
                 return;
