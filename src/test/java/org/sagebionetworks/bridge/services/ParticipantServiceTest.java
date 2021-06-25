@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
@@ -23,6 +24,12 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
+import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.services.ParticipantService.ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR;
+import static org.sagebionetworks.bridge.services.ParticipantService.APP_INSTALL_URL_KEY;
+import static org.sagebionetworks.bridge.services.ParticipantService.NO_INSTALL_LINKS_ERROR;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -105,7 +112,10 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
 import com.google.common.collect.ImmutableMap;
@@ -135,6 +145,7 @@ public class ParticipantServiceTest extends Mockito {
         APP.setDataGroups(APP_DATA_GROUPS);
         APP.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         APP.getUserProfileAttributes().add("can_be_recontacted");
+        APP.setInstallLinks(ImmutableMap.of("Android", "some.link"));
     }
     private static final String EXTERNAL_ID = "externalId";
     private static final String HEALTH_CODE = "healthCode";
@@ -240,12 +251,18 @@ public class ParticipantServiceTest extends Mockito {
     
     @Mock
     private OrganizationService organizationService;
+    
+    @Mock
+    private TemplateService templateService;
 
     @Mock
     private AmazonSQSClient sqsClient;
 
     @Mock
     private BridgeConfig bridgeConfig;
+    
+    @Mock
+    private SendMailService sendMailService;
     
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
@@ -263,7 +280,10 @@ public class ParticipantServiceTest extends Mockito {
     ArgumentCaptor<AccountId> accountIdCaptor;
 
     @Captor
-    ArgumentCaptor<SmsMessageProvider> providerCaptor;
+    ArgumentCaptor<SmsMessageProvider> smsProviderCaptor;
+    
+    @Captor
+    ArgumentCaptor<BasicEmailProvider> emailProviderCaptor;
     
     @Captor
     ArgumentCaptor<Enrollment> enrollmentCaptor;
@@ -2183,9 +2203,9 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.sendSmsMessage(APP, ID, template);
 
-        verify(smsService).sendSmsMessage(eq(ID), providerCaptor.capture());
+        verify(smsService).sendSmsMessage(eq(ID), smsProviderCaptor.capture());
         
-        SmsMessageProvider provider = providerCaptor.getValue();
+        SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(provider.getPhone(), TestConstants.PHONE);
         assertEquals(provider.getSmsRequest().getMessage(), "This is a test Bridge");
         assertEquals(provider.getSmsType(), "Promotional");
@@ -2532,6 +2552,69 @@ public class ParticipantServiceTest extends Mockito {
         
         Map<String,String> emptyInstallLinks = Maps.newHashMap();
         assertNull(participantService.getInstallLink("iPhone OS", emptyInstallLinks));
+    }
+    
+    @Test
+    public void sendInstallLinkMessage_sendsPhone() {
+        when(participantService.getInstallDateTime()).thenReturn(CREATED_ON);
+        
+        TemplateRevision revision = TemplateRevision.create();
+        when(templateService.getRevisionForUser(APP, SMS_APP_INSTALL_LINK)).thenReturn(revision);
+        
+        participantService.sendInstallLinkMessage(APP, HEALTH_CODE, EMAIL, PHONE, "Android");
+        
+        verify(smsService).sendSmsMessage(eq(null), smsProviderCaptor.capture());
+        SmsMessageProvider provider = smsProviderCaptor.getValue();
+        assertEquals(provider.getApp(), APP);
+        assertEquals(provider.getTemplateRevision(), revision);
+        assertEquals(provider.getSmsTypeEnum(), PROMOTIONAL);
+        assertEquals(provider.getPhone(), PHONE);
+        assertEquals(provider.getTokenMap().get(APP_INSTALL_URL_KEY), "some.link");
+        
+        verify(activityEventService).publishSentInstallLink(APP, HEALTH_CODE, CREATED_ON);
+    }
+    
+    @Test
+    public void sendInstallLinkMessage_sendsEmail() {
+        TemplateRevision revision = TemplateRevision.create();
+        when(templateService.getRevisionForUser(APP, EMAIL_APP_INSTALL_LINK)).thenReturn(revision);
+        
+        participantService.sendInstallLinkMessage(APP, HEALTH_CODE, EMAIL, null, "Android");
+        
+        verify(sendMailService).sendEmail(emailProviderCaptor.capture());
+        BasicEmailProvider provider = emailProviderCaptor.getValue();
+        assertEquals(provider.getApp(), APP);
+        assertEquals(provider.getTemplateRevision(), revision);
+        assertEquals(provider.getRecipientEmails(), ImmutableSet.of(EMAIL));
+        assertEquals(provider.getType(), EmailType.APP_INSTALL);
+        assertEquals(provider.getTokenMap().get(APP_INSTALL_URL_KEY), "some.link");
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR)
+    public void sendInstallLinkMessage_noPhoneOrEmail() {
+        participantService.sendInstallLinkMessage(APP, HEALTH_CODE, null, null, null);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = NO_INSTALL_LINKS_ERROR)
+    public void sendInstallLinkMessage_noInstallLinks() {
+        App app = App.create();
+        app.setInstallLinks(ImmutableMap.of());
+        
+        participantService.sendInstallLinkMessage(app, HEALTH_CODE, EMAIL, null, "Android");
+    }
+
+    @Test
+    public void sendInstallLinkMessage_skipsEventWithNoHealthCode() {
+        when(participantService.getInstallDateTime()).thenReturn(CREATED_ON);
+        
+        TemplateRevision revision = TemplateRevision.create();
+        when(templateService.getRevisionForUser(APP, SMS_APP_INSTALL_LINK)).thenReturn(revision);
+        
+        participantService.sendInstallLinkMessage(APP, null, EMAIL, PHONE, "Android");
+        
+        verify(activityEventService, never()).publishSentInstallLink(any(), any(), any());
     }
 
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 

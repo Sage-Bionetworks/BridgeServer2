@@ -7,9 +7,11 @@ import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -24,6 +26,7 @@ import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.EVENT_DELETED_MSG;
+import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.NOTIFY_SUCCESS_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -1425,6 +1428,58 @@ public class StudyParticipantControllerTest extends Mockito {
         
         verify(mockStudyActivityEventService).getStudyActivityEventHistory(ACCOUNT_ID, TEST_STUDY_ID, "eventKey",
                 Integer.valueOf(100), Integer.valueOf(250));
+    }
+    
+    @Test
+    public void sendInstallLink() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setHealthCode(HEALTH_CODE);
+        account.setEmail(EMAIL);
+        account.setEmailVerified(true);
+        account.setPhone(PHONE);
+        account.setPhoneVerified(true);
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
+        when(mockAccountService.getAccount(any())).thenReturn(account);
+        
+        StatusMessage retValue = controller.sendInstallLink(TEST_STUDY_ID, TEST_USER_ID, "Android");
+        assertSame(retValue, INSTALL_LINK_SEND_MSG);
+        
+        verify(mockParticipantService).sendInstallLinkMessage(
+                app, HEALTH_CODE, EMAIL, PHONE, "Android");
+    }
+    
+    @Test
+    public void sendInstallLinkNoVerifiedChannels() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setHealthCode(HEALTH_CODE);
+        account.setEmail(EMAIL);
+        account.setPhone(PHONE);
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
+        when(mockAccountService.getAccount(any())).thenReturn(account);
+        
+        StatusMessage retValue = controller.sendInstallLink(TEST_STUDY_ID, TEST_USER_ID, null);
+        assertSame(retValue, INSTALL_LINK_SEND_MSG);
+        
+        verify(mockParticipantService).sendInstallLinkMessage(
+                app, HEALTH_CODE, null, null, null);
     }
     
     private void mockAccountInStudy() {

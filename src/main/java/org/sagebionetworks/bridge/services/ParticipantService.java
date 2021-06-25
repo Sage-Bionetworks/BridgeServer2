@@ -108,6 +108,9 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class ParticipantService {
     private static final Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
+
+    static final String NO_INSTALL_LINKS_ERROR = "No install links configured for app";
+    static final String ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR = "Account unable to be contacted via phone or email";
     static final String CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL = "workerPlatform.request.sqs.queue.url";
     static final String REQUEST_KEY_BODY = "body";
     static final String REQUEST_KEY_SERVICE = "service";
@@ -245,6 +248,10 @@ public class ParticipantService {
     @Autowired
     final void setTemplateService(TemplateService templateService) {
         this.templateService = templateService;
+    }
+    
+    protected DateTime getInstallDateTime() {
+        return new DateTime();
     }
 
     @Autowired
@@ -828,10 +835,10 @@ public class ParticipantService {
      */
     public void sendInstallLinkMessage(App app, String healthCode, String email, Phone phone, String osName) {
         if (email == null && phone == null) {
-            throw new BadRequestException("Account unable to be contacted via phone or email");
+            throw new BadRequestException(ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR);
         }
         if (app.getInstallLinks().isEmpty()) {
-            throw new BadRequestException("No install links configured for app");
+            throw new BadRequestException(NO_INSTALL_LINKS_ERROR);
         }
         String url = getInstallLink(osName, app.getInstallLinks());
         
@@ -843,7 +850,7 @@ public class ParticipantService {
             SmsMessageProvider provider = new SmsMessageProvider.Builder()
                     .withApp(app)
                     .withTemplateRevision(revision)
-                    .withTransactionType()
+                    .withPromotionType()
                     .withPhone(phone)
                     .withToken(APP_INSTALL_URL_KEY, url).build();
             // Account hasn't been created yet, so there is no ID yet. Pass in null user ID to
@@ -863,7 +870,7 @@ public class ParticipantService {
         // We don't publish the "sent install link" for the intent sevice, because no account 
         // exists yet. We only publish it when this template is triggered for an existing account.
         if (healthCode != null) {
-            activityEventService.publishSentInstallLink(app, healthCode, new DateTime());
+            activityEventService.publishSentInstallLink(app, healthCode, getInstallDateTime());
         }
     }
     

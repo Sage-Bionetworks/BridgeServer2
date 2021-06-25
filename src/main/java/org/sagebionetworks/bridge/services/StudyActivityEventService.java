@@ -185,9 +185,9 @@ public class StudyActivityEventService {
             throw new BadRequestException(INVALID_EVENT_ID);
         }
         
-        // Global events emulate history for a cleaner and less confusing API, but there is only ever one value.
+        // Global events emulate history for a cleaner and less confusing API, but there 
+        // will only ever one value.
         if (GLOBAL_EVENTS_OF_INTEREST.contains(eventId)) {
-            
             Map<String, DateTime> map = activityEventService.getActivityEventMap(
                     account.getAppId(), account.getHealthCode());
             List<StudyActivityEvent> events = new ArrayList<>();

@@ -89,7 +89,7 @@ public class StudyParticipantController extends BaseController {
     static final StatusMessage NOTIFY_SUCCESS_MSG = new StatusMessage("Message has been sent to external notification service.");
     static final StatusMessage EVENT_RECORDED_MSG = new StatusMessage("Event recorded.");
     static final StatusMessage EVENT_DELETED_MSG = new StatusMessage("Event deleted.");
-    static final StatusMessage INSTALL_LINK_SEND_MSG = new StatusMessage("Install instructions sent to participant.");
+    public static final StatusMessage INSTALL_LINK_SEND_MSG = new StatusMessage("Install instructions sent to participant.");
 
     private ParticipantService participantService;
     
