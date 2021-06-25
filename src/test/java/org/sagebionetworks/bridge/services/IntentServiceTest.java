@@ -134,13 +134,7 @@ public class IntentServiceTest {
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals(keyCaptor.getValue(), cacheKey);
 
-        verify(mockSmsService).sendSmsMessage(isNull(), smsMessageProviderCaptor.capture());
-
-        SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
-        assertEquals(provider.getApp(), mockApp);
-        assertEquals(provider.getPhone(), intent.getPhone());
-        assertEquals(provider.getSmsRequest().getMessage(), "this-is-a-link");
-        assertEquals(provider.getSmsType(), "Transactional");
+        verify(mockParticipantService).sendInstallLinkMessage(mockApp, null, null, PHONE, null);
     }
     
     // In this case when there isn't an install link for the OS or that is marked
@@ -172,13 +166,7 @@ public class IntentServiceTest {
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals(keyCaptor.getValue(), cacheKey);
 
-        verify(mockSmsService).sendSmsMessage(isNull(), smsMessageProviderCaptor.capture());
-
-        SmsMessageProvider provider = smsMessageProviderCaptor.getValue();
-        assertEquals(provider.getApp(), mockApp);
-        assertEquals(provider.getPhone(), intent.getPhone());
-        assertEquals(provider.getSmsRequest().getMessage(), "this-is-a-link");
-        assertEquals(provider.getSmsType(), "Transactional");        
+        verify(mockParticipantService).sendInstallLinkMessage(mockApp, null, null, PHONE, null);
     }
     
     @Test
@@ -211,21 +199,7 @@ public class IntentServiceTest {
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals(keyCaptor.getValue(), cacheKey);
 
-        verify(mockSendMailService).sendEmail(mimeTypeEmailProviderCaptor.capture());
-
-        BasicEmailProvider provider = (BasicEmailProvider)mimeTypeEmailProviderCaptor.getValue();
-        assertEquals(provider.getApp(), mockApp);
-        assertEquals(Iterables.getFirst(provider.getRecipientEmails(), null), "email@email.com");
-        assertEquals(provider.getType(), EmailType.APP_INSTALL);
-        
-        MimeTypeEmail email = provider.getMimeTypeEmail();
-        assertEquals(email.getSenderAddress(), "\"null\" <null>");
-        assertEquals(email.getSubject(), "subject");
-        MimeBodyPart body = email.getMessageParts().get(0);
-        assertEquals(body.getContent(), "body this-is-a-link");
-        assertEquals(email.getRecipientAddresses().get(0), "email@email.com");
-        assertEquals(email.getRecipientAddresses().size(), 1);
-        assertEquals(email.getType(), EmailType.APP_INSTALL);
+        verify(mockParticipantService).sendInstallLinkMessage(mockApp, null, "email@email.com", null, "iPhone OS");
     }    
     
     @Test(expectedExceptions = InvalidEntityException.class)

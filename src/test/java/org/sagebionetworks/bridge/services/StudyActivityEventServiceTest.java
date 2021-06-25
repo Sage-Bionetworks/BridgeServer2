@@ -3,17 +3,22 @@ package org.sagebionetworks.bridge.services;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.FIRST_SIGN_IN;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SENT_INSTALL_LINK;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.CREATED_ON_FIELD;
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.ENROLLMENT_FIELD;
+import static org.sagebionetworks.bridge.services.StudyActivityEventService.FIRST_SIGN_IN_FIELD;
+import static org.sagebionetworks.bridge.services.StudyActivityEventService.SENT_INSTALL_LINK_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -21,6 +26,7 @@ import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
@@ -39,6 +45,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -58,6 +65,8 @@ public class StudyActivityEventServiceTest extends Mockito {
     private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
     private static final DateTime TIMELINE_RETRIEVED_TS = DateTime.parse("2019-03-05T01:34:53.395Z");
     private static final DateTime ENROLLMENT_TS = DateTime.parse("2019-10-14T01:34:53.395Z");
+    private static final DateTime FIRST_SIGN_IN_TS = DateTime.parse("2019-10-11T03:34:53.395Z");
+    private static final DateTime SENT_INSTALL_LINK_TS = DateTime.parse("2018-10-11T03:34:53.395Z");
 
     @Mock
     StudyActivityEventDao mockDao;
@@ -67,6 +76,9 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Mock
     AccountService mockAccountService;
+    
+    @Mock
+    ActivityEventService mockActivityEventService;
     
     @InjectMocks
     @Spy
@@ -288,17 +300,29 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockDao.getRecentStudyActivityEvents(
                 TEST_USER_ID, TEST_STUDY_ID)).thenReturn(list);
         
+        Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, CREATED_ON, 
+                FIRST_SIGN_IN_FIELD, FIRST_SIGN_IN_TS, SENT_INSTALL_LINK_FIELD, SENT_INSTALL_LINK_TS);
+        when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
+        
         Account account = Account.create();
-        account.setCreatedOn(CREATED_ON);
+        account.setHealthCode(HEALTH_CODE);
         when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         ResourceList<StudyActivityEvent> retValue = service
                 .getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
-        assertEquals(retValue.getItems().size(), 3);
+        assertEquals(retValue.getItems().size(), 5);
         
         StudyActivityEvent createdOn = TestUtils.findByEventId(
                 retValue.getItems(), ActivityEventObjectType.CREATED_ON);
         assertEquals(createdOn.getTimestamp(), CREATED_ON);
+
+        StudyActivityEvent firstSignIn = TestUtils.findByEventId(
+                retValue.getItems(), FIRST_SIGN_IN);
+        assertEquals(firstSignIn.getTimestamp(), FIRST_SIGN_IN_TS);
+
+        StudyActivityEvent installLinkSentOn = TestUtils.findByEventId(
+                retValue.getItems(), SENT_INSTALL_LINK);
+        assertEquals(installLinkSentOn.getTimestamp(), SENT_INSTALL_LINK_TS);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -345,8 +369,12 @@ public class StudyActivityEventServiceTest extends Mockito {
                 TEST_USER_ID, TEST_STUDY_ID)).thenReturn(ImmutableList.of());
         
         Account account = Account.create();
-        account.setCreatedOn(CREATED_ON);
+        account.setAppId(TEST_APP_ID);
+        account.setHealthCode(HEALTH_CODE);
         when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        
+        Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, CREATED_ON);
+        when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
         
         PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(
                 ACCOUNT_ID, TEST_STUDY_ID, CREATED_ON_FIELD, 0, 50);
@@ -410,16 +438,19 @@ public class StudyActivityEventServiceTest extends Mockito {
         Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         en.setEnrolledOn(MODIFIED_ON);
         Account account = Account.create();
-        account.setCreatedOn(CREATED_ON);
+        account.setHealthCode(HEALTH_CODE);
         account.setEnrollments(ImmutableSet.of(en));
         when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
+        Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, CREATED_ON);
+        when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
+        
         ResourceList<StudyActivityEvent> retValue = service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
         assertEquals(retValue.getItems().size(), 2);
-        assertEquals(retValue.getItems().get(0).getEventId(), CREATED_ON_FIELD);
-        assertEquals(retValue.getItems().get(0).getTimestamp(), CREATED_ON);
-        assertEquals(retValue.getItems().get(1).getEventId(), ENROLLMENT_FIELD);
-        assertEquals(retValue.getItems().get(1).getTimestamp(), MODIFIED_ON);
+        assertEquals(retValue.getItems().get(0).getEventId(), ENROLLMENT_FIELD);
+        assertEquals(retValue.getItems().get(0).getTimestamp(), MODIFIED_ON);
+        assertEquals(retValue.getItems().get(1).getEventId(), CREATED_ON_FIELD);
+        assertEquals(retValue.getItems().get(1).getTimestamp(), CREATED_ON);
     }
 
     @Test

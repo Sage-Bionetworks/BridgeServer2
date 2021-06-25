@@ -151,7 +151,7 @@ public class StudyActivityEventService {
         // are useful when working with study-specific events, so add these from the global
         // system.
         Map<String, DateTime> map = activityEventService.getActivityEventMap(
-                account.getAppId(), account.getHealthCode());
+                appId, account.getHealthCode());
         for (String fieldName : GLOBAL_EVENTS_OF_INTEREST) {
             addIfMissing(events, map, fieldName);    
         }
