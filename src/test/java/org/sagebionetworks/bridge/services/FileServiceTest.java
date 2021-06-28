@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.sagebionetworks.bridge.config.Environment.UAT;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.AVAILABLE;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.PENDING;
+import static org.sagebionetworks.bridge.services.FileService.DOCS_WEBSITE_URL_CONFIG_PROPERTY;
 import static org.sagebionetworks.bridge.services.FileService.EXPIRATION_IN_MINUTES;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -48,9 +49,10 @@ public class FileServiceTest extends Mockito {
 
     private static final String UPLOAD_BUCKET = "docs.sagebridge.org";
     private static final String UPLOAD_BUCKET_STAGING = "docs-staging.sagebridge.org";
+    private static final String UPLOAD_WEBSITE = "docs-website.sagebridge.org";
     private static final String NAME = "oneName";
-    private static final String DOWNLOAD_URL_1 = "https://docs.sagebridge.org/oneGuid.1422319112486";
-    private static final String DOWNLOAD_URL_2 = "https://docs.sagebridge.org/oneGuid.1422311912486";
+    private static final String DOWNLOAD_URL_1 = "https://docs-website.sagebridge.org/oneGuid.1422319112486";
+    private static final String DOWNLOAD_URL_2 = "https://docs-website.sagebridge.org/oneGuid.1422311912486";
     
     @Mock
     FileMetadataDao mockFileDao;
@@ -82,6 +84,7 @@ public class FileServiceTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         when(mockConfig.getHostnameWithPostfix("docs")).thenReturn(UPLOAD_BUCKET);
+        when(mockConfig.get(DOCS_WEBSITE_URL_CONFIG_PROPERTY)).thenReturn(UPLOAD_WEBSITE);
         when(mockConfig.getEnvironment()).thenReturn(PROD);
         service.setConfig(mockConfig);
         
@@ -323,7 +326,7 @@ public class FileServiceTest extends Mockito {
         assertEquals(returned.getCreatedOn(), TIMESTAMP);
         assertEquals(returned.getStatus(), PENDING);
         assertEquals(returned.getUploadURL(), "https://" + UPLOAD_BUCKET);
-        assertEquals(returned.getDownloadURL(), "https://docs.sagebridge.org/oneGuid.1422319112486");
+        assertEquals(returned.getDownloadURL(), DOWNLOAD_URL_1);
         
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
@@ -359,7 +362,7 @@ public class FileServiceTest extends Mockito {
     public void createFileRevisionInStaging() throws Exception {
         reset(mockConfig);
         when(mockConfig.getEnvironment()).thenReturn(UAT);
-        when(mockConfig.getHostnameWithPostfix("docs")).thenReturn(UPLOAD_BUCKET_STAGING);
+        when(mockConfig.get(DOCS_WEBSITE_URL_CONFIG_PROPERTY)).thenReturn(UPLOAD_BUCKET_STAGING);
         service.setConfig(mockConfig);
         
         FileMetadata metadata = new FileMetadata();

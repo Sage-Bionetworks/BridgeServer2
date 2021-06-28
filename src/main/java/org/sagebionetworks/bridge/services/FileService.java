@@ -42,6 +42,8 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class FileService {
     
+    static final String DOCS_WEBSITE_URL_CONFIG_PROPERTY = "docs.website.url";
+
     static final int EXPIRATION_IN_MINUTES = 10;
     
     private FileMetadataDao fileMetadataDao;
@@ -51,6 +53,8 @@ public class FileService {
     private Environment env;
     
     private String revisionsBucket;
+    
+    private String documentWebsiteUrl;
     
     private AmazonS3 s3Client;
     
@@ -68,10 +72,11 @@ public class FileService {
     final void setConfig(BridgeConfig config) {
         revisionsBucket = config.getHostnameWithPostfix("docs");
         env = config.getEnvironment();
+        documentWebsiteUrl = config.get(DOCS_WEBSITE_URL_CONFIG_PROPERTY);
     }
     
     @Resource(name = "fileUploadS3Client")
-    public void setS3Client(AmazonS3 s3Client) {
+    final void setS3Client(AmazonS3 s3Client) {
         this.s3Client = s3Client;
     }
     
@@ -228,7 +233,7 @@ public class FileService {
     protected String getDownloadURL(FileRevision revision) {
         String protocol = (env == LOCAL) ? "http" : "https";
         String fileName = getFileName(revision);
-        return protocol + "://" + revisionsBucket + "/" + fileName;
+        return protocol + "://" + documentWebsiteUrl + "/" + fileName;
     }
 
     protected String getFileName(FileRevision revision) {
