@@ -2571,7 +2571,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(provider.getPhone(), PHONE);
         assertEquals(provider.getTokenMap().get(APP_INSTALL_URL_KEY), "some.link");
         
-        verify(activityEventService).publishSentInstallLink(APP, HEALTH_CODE, CREATED_ON);
+        verify(activityEventService).publishInstallLinkSent(APP, HEALTH_CODE, CREATED_ON);
     }
     
     @Test
@@ -2614,7 +2614,7 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.sendInstallLinkMessage(APP, null, EMAIL, PHONE, "Android");
         
-        verify(activityEventService, never()).publishSentInstallLink(any(), any(), any());
+        verify(activityEventService, never()).publishInstallLinkSent(any(), any(), any());
     }
 
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 

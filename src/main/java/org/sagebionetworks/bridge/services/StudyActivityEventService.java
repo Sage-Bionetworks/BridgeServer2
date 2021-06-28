@@ -12,7 +12,7 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.FIRST_SIGN_IN;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SENT_INSTALL_LINK;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.DELETE_INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
@@ -63,10 +63,10 @@ public class StudyActivityEventService {
     
     static final String CREATED_ON_FIELD = CREATED_ON.name().toLowerCase();
     static final String ENROLLMENT_FIELD = ENROLLMENT.name().toLowerCase();
-    static final String SENT_INSTALL_LINK_FIELD = SENT_INSTALL_LINK.name().toLowerCase();
+    static final String INSTALL_LINK_SENT_FIELD = INSTALL_LINK_SENT.name().toLowerCase();
     static final String FIRST_SIGN_IN_FIELD = FIRST_SIGN_IN.name().toLowerCase();
     static final List<String> GLOBAL_EVENTS_OF_INTEREST = ImmutableList.of(
-            CREATED_ON_FIELD, FIRST_SIGN_IN_FIELD, SENT_INSTALL_LINK_FIELD);
+            CREATED_ON_FIELD, FIRST_SIGN_IN_FIELD, INSTALL_LINK_SENT_FIELD);
 
     private StudyActivityEventDao dao;
     private AppService appService;

@@ -11,14 +11,14 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.FIRST_SIGN_IN;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SENT_INSTALL_LINK;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.CREATED_ON_FIELD;
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.ENROLLMENT_FIELD;
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.FIRST_SIGN_IN_FIELD;
-import static org.sagebionetworks.bridge.services.StudyActivityEventService.SENT_INSTALL_LINK_FIELD;
+import static org.sagebionetworks.bridge.services.StudyActivityEventService.INSTALL_LINK_SENT_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -45,7 +45,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -66,7 +65,7 @@ public class StudyActivityEventServiceTest extends Mockito {
     private static final DateTime TIMELINE_RETRIEVED_TS = DateTime.parse("2019-03-05T01:34:53.395Z");
     private static final DateTime ENROLLMENT_TS = DateTime.parse("2019-10-14T01:34:53.395Z");
     private static final DateTime FIRST_SIGN_IN_TS = DateTime.parse("2019-10-11T03:34:53.395Z");
-    private static final DateTime SENT_INSTALL_LINK_TS = DateTime.parse("2018-10-11T03:34:53.395Z");
+    private static final DateTime INSTALL_LINK_SENT_TS = DateTime.parse("2018-10-11T03:34:53.395Z");
 
     @Mock
     StudyActivityEventDao mockDao;
@@ -301,7 +300,7 @@ public class StudyActivityEventServiceTest extends Mockito {
                 TEST_USER_ID, TEST_STUDY_ID)).thenReturn(list);
         
         Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, CREATED_ON, 
-                FIRST_SIGN_IN_FIELD, FIRST_SIGN_IN_TS, SENT_INSTALL_LINK_FIELD, SENT_INSTALL_LINK_TS);
+                FIRST_SIGN_IN_FIELD, FIRST_SIGN_IN_TS, INSTALL_LINK_SENT_FIELD, INSTALL_LINK_SENT_TS);
         when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
         
         Account account = Account.create();
@@ -321,8 +320,8 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(firstSignIn.getTimestamp(), FIRST_SIGN_IN_TS);
 
         StudyActivityEvent installLinkSentOn = TestUtils.findByEventId(
-                retValue.getItems(), SENT_INSTALL_LINK);
-        assertEquals(installLinkSentOn.getTimestamp(), SENT_INSTALL_LINK_TS);
+                retValue.getItems(), INSTALL_LINK_SENT);
+        assertEquals(installLinkSentOn.getTimestamp(), INSTALL_LINK_SENT_TS);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)

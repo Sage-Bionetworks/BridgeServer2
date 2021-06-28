@@ -2,7 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -17,8 +16,6 @@ import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_I
 import static org.testng.Assert.assertEquals;
 
 import java.util.Map;
-
-import javax.mail.internet.MimeBodyPart;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -43,13 +40,9 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
-import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
-import org.sagebionetworks.bridge.services.email.EmailType;
-import org.sagebionetworks.bridge.services.email.MimeTypeEmail;
 import org.sagebionetworks.bridge.services.email.MimeTypeEmailProvider;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 

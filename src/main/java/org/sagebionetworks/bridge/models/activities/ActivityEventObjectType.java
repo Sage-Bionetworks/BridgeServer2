@@ -165,7 +165,7 @@ public enum ActivityEventObjectType {
      * An event to record that the install link message has been sent to a participant. Note
      * that this records the message was sent, and does not guarantee that it was received.
      */
-    SENT_INSTALL_LINK(FUTURE_ONLY) {
+    INSTALL_LINK_SENT(FUTURE_ONLY) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
             return this.name().toLowerCase();
         }

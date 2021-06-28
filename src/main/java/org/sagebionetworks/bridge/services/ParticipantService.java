@@ -870,7 +870,7 @@ public class ParticipantService {
         // We don't publish the "sent install link" for the intent sevice, because no account 
         // exists yet. We only publish it when this template is triggered for an existing account.
         if (healthCode != null) {
-            activityEventService.publishSentInstallLink(app, healthCode, getInstallDateTime());
+            activityEventService.publishInstallLinkSent(app, healthCode, getInstallDateTime());
         }
     }
     

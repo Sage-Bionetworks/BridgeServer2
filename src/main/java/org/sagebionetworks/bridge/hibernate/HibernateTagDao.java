@@ -19,7 +19,7 @@ public class HibernateTagDao implements TagDao {
 
     private HibernateHelper hibernateHelper;
     
-    @Resource(name = "basicHibernateHelper")
+    @Resource(name = "mysqlHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
     }
