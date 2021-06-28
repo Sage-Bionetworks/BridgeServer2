@@ -154,6 +154,8 @@ public class ParticipantFileServiceTest {
         assertEquals(result.getCreatedOn().getMillis(), TestConstants.TIMESTAMP.getMillis());
         assertEquals(result.getExpiresOn().getMillis(), TestConstants.TIMESTAMP.plusDays(1).getMillis());
         assertNull(result.getDownloadUrl());
+        
+        verify(mockS3Client).deleteObject(eq(UPLOAD_BUCKET), eq("test_user/file_id"));
 
         verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
         GeneratePresignedUrlRequest request = requestCaptor.getValue();
