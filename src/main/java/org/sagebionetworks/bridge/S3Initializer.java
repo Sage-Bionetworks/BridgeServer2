@@ -138,12 +138,11 @@ public class S3Initializer {
                     String policy = resolveTemplate(type.policy, ImmutableMap.of("bucketName", bucketName));
                     s3Client.setBucketPolicy(bucketName, policy);
                 }
-                // For public buckets to serve for HTTP downloads, they must also be set as 
-                // web hosting buckets. (This folder hosts files like study icons and unsigned
-                // consent documents).
+                // For public buckets to serve for retrieving documents via HTTP, they 
+                // must also be configured as web hosting buckets. index file is required, 
+                // but does not need to exist (and does not exist) 
                 if (type.policy == PUBLIC_ACCESS_POLICY) {
                     BucketWebsiteConfiguration config = new BucketWebsiteConfiguration();
-                    // index file is required, but does not need to exist (and does not exist)
                     config.setIndexDocumentSuffix("index.html"); 
                     s3Client.setBucketWebsiteConfiguration(bucketName, config);
                 }
