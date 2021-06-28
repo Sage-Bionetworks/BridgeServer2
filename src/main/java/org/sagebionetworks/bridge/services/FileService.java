@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.config.Environment.LOCAL;
+import static org.sagebionetworks.bridge.models.files.FileDispositionType.ATTACHMENT;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.AVAILABLE;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.PENDING;
 import static org.sagebionetworks.bridge.validators.FileRevisionValidator.INSTANCE;
@@ -183,7 +184,7 @@ public class FileService {
         Validate.entityThrowingException(INSTANCE, revision);
         
         // Will throw if the file doesn't exist in the caller's app
-        getFile(appId, revision.getFileGuid());
+        FileMetadata metadata = getFile(appId, revision.getFileGuid());
         
         // Set system properties.
         revision.setCreatedOn(getDateTime());
@@ -195,8 +196,12 @@ public class FileService {
         GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(revisionsBucket, fileName, PUT);
         request.setExpiration(expiration);
         request.setContentType(revision.getMimeType());
-        ResponseHeaderOverrides headers = new ResponseHeaderOverrides()
-                .withContentDisposition("attachment; filename=\""+revision.getName()+"\"");
+        ResponseHeaderOverrides headers = new ResponseHeaderOverrides();
+        if (metadata.getDisposition() == ATTACHMENT) {
+            headers = headers.withContentDisposition("attachment; filename=\""+revision.getName()+"\"");
+        } else {
+            headers = headers.withContentDisposition("inline");
+        }
         request.setResponseHeaders(headers);
         
         URL uploadURL = s3Client.generatePresignedUrl(request);

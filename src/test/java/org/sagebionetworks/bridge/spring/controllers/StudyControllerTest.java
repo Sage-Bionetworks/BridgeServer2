@@ -3,17 +3,26 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestUtils.assertAccept;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
+import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
+
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -33,13 +42,19 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.files.FileMetadata;
+import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.FileService;
 import org.sagebionetworks.bridge.services.StudyService;
 
 public class StudyControllerTest extends Mockito {
@@ -52,6 +67,9 @@ public class StudyControllerTest extends Mockito {
     StudyService service;
 
     @Mock
+    FileService mockFileService;
+    
+    @Mock
     HttpServletRequest mockRequest;
 
     @Mock
@@ -59,7 +77,13 @@ public class StudyControllerTest extends Mockito {
 
     @Captor
     ArgumentCaptor<Study> studyCaptor;
+    
+    @Captor
+    ArgumentCaptor<FileMetadata> metadataCaptor;
 
+    @Captor
+    ArgumentCaptor<FileRevision> revisionCaptor;
+    
     @Spy
     @InjectMocks
     StudyController controller;
@@ -96,6 +120,8 @@ public class StudyControllerTest extends Mockito {
         assertGet(StudyController.class, "getStudy");
         assertPost(StudyController.class, "updateStudy");
         assertDelete(StudyController.class, "deleteStudy");
+        assertAccept(StudyController.class, "createStudyLogo");
+        assertCreate(StudyController.class, "finishStudyLogo");
     }
 
     @Test
@@ -156,56 +182,163 @@ public class StudyControllerTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         Study study = Study.create();
-        study.setIdentifier("oneId");
+        study.setIdentifier(TEST_STUDY_ID);
         study.setName("oneName");
-        when(service.getStudy(TEST_APP_ID, "id", true)).thenReturn(study);
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
 
-        Study result = controller.getStudy("id");
+        Study result = controller.getStudy(TEST_STUDY_ID);
         assertEquals(result, study);
 
-        assertEquals(result.getIdentifier(), "oneId");
+        assertEquals(result.getIdentifier(), TEST_STUDY_ID);
         assertEquals(result.getName(), "oneName");
 
-        verify(service).getStudy(TEST_APP_ID, "id", true);
+        verify(service).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
     }
 
     @Test
     public void updateStudy() throws Exception {
         RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of("id"))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
 
         Study study = Study.create();
-        study.setIdentifier("id");
+        study.setIdentifier(TEST_STUDY_ID);
         study.setName("oneName");
         mockRequestBody(mockRequest, study);
 
         when(service.updateStudy(eq(TEST_APP_ID), any())).thenReturn(VERSION_HOLDER);
 
-        VersionHolder result = controller.updateStudy("id");
+        VersionHolder result = controller.updateStudy(TEST_STUDY_ID);
 
         assertEquals(result, VERSION_HOLDER);
 
         verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
         Study persisted = studyCaptor.getValue();
-        assertEquals(persisted.getIdentifier(), "id");
+        assertEquals(persisted.getIdentifier(), TEST_STUDY_ID);
         assertEquals(persisted.getName(), "oneName");
     }
 
     @Test
     public void deleteStudyLogical() throws Exception {
-        StatusMessage result = controller.deleteStudy("id", false);
+        StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, false);
         assertEquals(result, StudyController.DELETED_MSG);
 
-        verify(service).deleteStudy(TEST_APP_ID, "id");
+        verify(service).deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
 
     @Test
     public void deleteStudyPhysical() throws Exception {
-        StatusMessage result = controller.deleteStudy("id", true);
+        StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, true);
         assertEquals(result, StudyController.DELETED_MSG);
 
-        verify(service).deleteStudyPermanently(TEST_APP_ID, "id");
+        verify(service).deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void createStudyLogoNoExistingFile() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        session.setAppId(TEST_APP_ID);
+        
+        Study study = Study.create();
+        study.setName("Study Name");
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        FileMetadata created = new FileMetadata();
+        created.setGuid(GUID);
+        when(mockFileService.createFile(eq(TEST_APP_ID), any())).thenReturn(created);
+        
+        TestUtils.mockRequestBody(mockRequest, new FileRevision());
+        
+        FileRevision createdRevision = new FileRevision();
+        when(mockFileService.createFileRevision(eq(TEST_APP_ID), any())).thenReturn(createdRevision);
+        
+        FileRevision retValue = controller.createStudyLogo(TEST_STUDY_ID);
+        assertSame(retValue, createdRevision);
+        
+        verify(mockFileService).createFile(eq(TEST_APP_ID), metadataCaptor.capture());
+        FileMetadata captured = metadataCaptor.getValue();
+        assertEquals(captured.getName(), "Study Name Logo");
+        assertEquals(captured.getAppId(), TEST_APP_ID);
+        assertEquals(captured.getDisposition(), INLINE);
+        
+        verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
+        assertEquals(studyCaptor.getValue().getLogoGuid(), GUID);
+        
+        verify(mockFileService).createFileRevision(eq(TEST_APP_ID), revisionCaptor.capture());
+        assertEquals(revisionCaptor.getValue().getFileGuid(), GUID);
+    }
+    
+    @Test
+    public void createStudyLogoWithExistingFile() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        session.setAppId(TEST_APP_ID);
+        
+        Study study = Study.create();
+        study.setName("Study Name");
+        study.setLogoGuid(GUID);
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        FileMetadata created = new FileMetadata();
+        created.setGuid(GUID);
+        when(mockFileService.getFile(TEST_APP_ID, GUID)).thenReturn(created);
+        
+        TestUtils.mockRequestBody(mockRequest, new FileRevision());
+        
+        FileRevision createdRevision = new FileRevision();
+        when(mockFileService.createFileRevision(eq(TEST_APP_ID), any())).thenReturn(createdRevision);
+        
+        FileRevision retValue = controller.createStudyLogo(TEST_STUDY_ID);
+        assertSame(retValue, createdRevision);
+        
+        verify(mockFileService, never()).createFile(any(), any());
+        verify(service, never()).updateStudy(any(), any());
+        
+        verify(mockFileService).createFileRevision(eq(TEST_APP_ID), revisionCaptor.capture());
+        assertEquals(revisionCaptor.getValue().getFileGuid(), GUID);
+    }
+    
+    @Test
+    public void finishStudyLogo() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        
+        Study study = Study.create();
+        study.setLogoGuid(GUID);
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        FileRevision revision = new FileRevision();
+        revision.setDownloadURL("test url");
+        when(mockFileService.getFileRevision(GUID, CREATED_ON)).thenReturn(Optional.of(revision));
+        
+        Study retValue = controller.finishStudyLogo(TEST_STUDY_ID, CREATED_ON.toString());
+        assertEquals(retValue.getStudyLogoUrl(), "test url");
+        
+        verify(mockFileService).finishFileRevision(TEST_APP_ID, GUID, CREATED_ON);
+        
+        verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
+        assertEquals(studyCaptor.getValue().getStudyLogoUrl(), "test url");
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void finishStudyLogo_noGuid() { 
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        
+        Study study = Study.create();
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        controller.finishStudyLogo(TEST_STUDY_ID, CREATED_ON.toString());
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void finishStudyLogo_noFinishedRevision() { 
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        
+        Study study = Study.create();
+        study.setLogoGuid(GUID);
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        when(mockFileService.getFileRevision(GUID, CREATED_ON)).thenReturn(Optional.empty());
+        
+        controller.finishStudyLogo(TEST_STUDY_ID, CREATED_ON.toString());
     }
 }

@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.models.files;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.models.files.FileDispositionType.ATTACHMENT;
+import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -31,6 +33,7 @@ public class FileMetadataTest extends Mockito {
         metadata.setGuid(GUID);
         metadata.setDescription("oneDescription");
         metadata.setDeleted(true);
+        metadata.setDisposition(INLINE);
         metadata.setVersion(3L);
         metadata.setCreatedOn(TIMESTAMP);
         metadata.setModifiedOn(TIMESTAMP.plusHours(1));
@@ -40,6 +43,7 @@ public class FileMetadataTest extends Mockito {
         assertEquals(node.get("guid").textValue(), GUID);
         assertEquals(node.get("description").textValue(), "oneDescription");
         assertTrue(node.get("deleted").booleanValue());
+        assertEquals(node.get("disposition").textValue(), "inline");
         assertEquals(node.get("version").intValue(), 3);
         assertEquals(node.get("createdOn").textValue(), TIMESTAMP.toString());
         assertEquals(node.get("modifiedOn").textValue(), TIMESTAMP.plusHours(1).toString());        
@@ -53,9 +57,16 @@ public class FileMetadataTest extends Mockito {
         assertEquals(deser.getGuid(), GUID);
         assertEquals(deser.getDescription(), "oneDescription");
         assertTrue(deser.isDeleted());
+        assertEquals(deser.getDisposition(), INLINE);
         assertEquals(deser.getVersion(), 3L);
         assertEquals(deser.getCreatedOn(), TIMESTAMP);
         assertEquals(deser.getModifiedOn(), TIMESTAMP.plusHours(1));
+    }
+    
+    @Test
+    public void dispositionDefaultsToAttachment() {
+        FileMetadata metadata = new FileMetadata();
+        assertEquals(ATTACHMENT, metadata.getDisposition());
     }
 
 }

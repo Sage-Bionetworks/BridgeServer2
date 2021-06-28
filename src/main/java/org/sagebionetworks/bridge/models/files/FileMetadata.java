@@ -5,6 +5,8 @@ import java.util.Objects;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Version;
@@ -31,6 +33,8 @@ public final class FileMetadata implements BridgeEntity {
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime modifiedOn;
     private boolean deleted;
+    @Enumerated(EnumType.STRING)
+    private FileDispositionType disposition;
     @Version
     private long version;
     
@@ -83,10 +87,20 @@ public final class FileMetadata implements BridgeEntity {
     public void setModifiedOn(DateTime modifiedOn) {
         this.modifiedOn = modifiedOn;
     }
+    public FileDispositionType getDisposition() {
+        if (disposition == null) {
+            disposition = FileDispositionType.ATTACHMENT;
+        }
+        return disposition;
+    }
+    public void setDisposition(FileDispositionType disposition) {
+        this.disposition = disposition;
+    }
     
     @Override
     public int hashCode() {
-        return Objects.hash(appId, deleted, description, guid, name, createdOn, modifiedOn, version);
+        return Objects.hash(appId, deleted, description, guid, name, createdOn, modifiedOn, version,
+                disposition);
     }
     @Override
     public boolean equals(Object obj) {
@@ -96,18 +110,13 @@ public final class FileMetadata implements BridgeEntity {
             return false;
         FileMetadata other = (FileMetadata) obj;
         return (Objects.equals(appId, other.appId) &&
-                Objects.equals(deleted, other.deleted) && 
+                Objects.equals(deleted, other.deleted) &&
                 Objects.equals(description, other.description) &&
                 Objects.equals(guid, other.guid) &&
                 Objects.equals(name, other.name) &&
                 Objects.equals(createdOn, other.createdOn) &&
                 Objects.equals(modifiedOn, other.modifiedOn) &&
-                Objects.equals(version, other.version));
-    }
-    @Override
-    public String toString() {
-        return "FileMetadata [appId=" + appId + ", name=" + name + ", guid=" + guid + ", description=" + description
-                + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", deleted=" + deleted + ", version="
-                + version + "]";
+                Objects.equals(version, other.version) &&
+                Objects.equals(disposition, other.disposition));
     }
 }
