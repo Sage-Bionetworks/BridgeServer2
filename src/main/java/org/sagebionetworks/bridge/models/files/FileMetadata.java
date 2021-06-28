@@ -88,9 +88,6 @@ public final class FileMetadata implements BridgeEntity {
         this.modifiedOn = modifiedOn;
     }
     public FileDispositionType getDisposition() {
-        if (disposition == null) {
-            disposition = FileDispositionType.ATTACHMENT;
-        }
         return disposition;
     }
     public void setDisposition(FileDispositionType disposition) {

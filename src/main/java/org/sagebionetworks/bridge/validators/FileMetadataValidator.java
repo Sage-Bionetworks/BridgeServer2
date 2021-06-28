@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -20,6 +22,9 @@ public class FileMetadataValidator implements Validator {
         
         if (StringUtils.isBlank(file.getName())) {
             errors.rejectValue("name", "is required");
+        }
+        if (file.getDisposition() == null) {
+            errors.rejectValue("disposition", CANNOT_BE_NULL);
         }
     }
 
