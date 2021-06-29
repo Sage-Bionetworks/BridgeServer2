@@ -10,14 +10,12 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.FIRST_SIGN_IN;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.CREATED_ON_FIELD;
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.ENROLLMENT_FIELD;
-import static org.sagebionetworks.bridge.services.StudyActivityEventService.FIRST_SIGN_IN_FIELD;
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.INSTALL_LINK_SENT_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.testng.Assert.assertEquals;
@@ -64,7 +62,6 @@ public class StudyActivityEventServiceTest extends Mockito {
     private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
     private static final DateTime TIMELINE_RETRIEVED_TS = DateTime.parse("2019-03-05T01:34:53.395Z");
     private static final DateTime ENROLLMENT_TS = DateTime.parse("2019-10-14T01:34:53.395Z");
-    private static final DateTime FIRST_SIGN_IN_TS = DateTime.parse("2019-10-11T03:34:53.395Z");
     private static final DateTime INSTALL_LINK_SENT_TS = DateTime.parse("2018-10-11T03:34:53.395Z");
 
     @Mock
@@ -300,7 +297,7 @@ public class StudyActivityEventServiceTest extends Mockito {
                 TEST_USER_ID, TEST_STUDY_ID)).thenReturn(list);
         
         Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, CREATED_ON, 
-                FIRST_SIGN_IN_FIELD, FIRST_SIGN_IN_TS, INSTALL_LINK_SENT_FIELD, INSTALL_LINK_SENT_TS);
+                INSTALL_LINK_SENT_FIELD, INSTALL_LINK_SENT_TS);
         when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
         
         Account account = Account.create();
@@ -309,15 +306,11 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         ResourceList<StudyActivityEvent> retValue = service
                 .getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
-        assertEquals(retValue.getItems().size(), 5);
+        assertEquals(retValue.getItems().size(), 4);
         
         StudyActivityEvent createdOn = TestUtils.findByEventId(
                 retValue.getItems(), ActivityEventObjectType.CREATED_ON);
         assertEquals(createdOn.getTimestamp(), CREATED_ON);
-
-        StudyActivityEvent firstSignIn = TestUtils.findByEventId(
-                retValue.getItems(), FIRST_SIGN_IN);
-        assertEquals(firstSignIn.getTimestamp(), FIRST_SIGN_IN_TS);
 
         StudyActivityEvent installLinkSentOn = TestUtils.findByEventId(
                 retValue.getItems(), INSTALL_LINK_SENT);
