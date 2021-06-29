@@ -174,6 +174,8 @@ public class AuthenticationServiceTest {
     private AccountSecretDao accountSecretDao;
     @Mock 
     private StudyService studyService;
+    @Mock
+    private ActivityEventService activityEventService;
     @Captor
     private ArgumentCaptor<UserSession> sessionCaptor;
     @Captor
