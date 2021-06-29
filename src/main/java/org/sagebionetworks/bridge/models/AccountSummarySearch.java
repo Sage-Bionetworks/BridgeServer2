@@ -9,6 +9,8 @@ import java.util.Set;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.DateTimeDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
+import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
@@ -29,10 +31,14 @@ public final class AccountSummarySearch implements BridgeEntity {
     private final String orgMembership;
     private final Boolean adminOnly;
     private final String enrolledInStudyId;
+    private final String externalIdFilter;
+    private final AccountStatus statusFilter;
+    private final EnrollmentFilter enrollmentFilter;
 
     private AccountSummarySearch(int offsetBy, int pageSize, String emailFilter, String phoneFilter,
             Set<String> allOfGroups, Set<String> noneOfGroups, String language, DateTime startTime, DateTime endTime,
-            String orgId, Boolean adminOnly, String enrolledInStudyId) {
+            String orgId, Boolean adminOnly, String enrolledInStudyId, String externalIdFilter,
+            AccountStatus statusFilter, EnrollmentFilter enrollmentFilter) {
         this.offsetBy = offsetBy;
         this.pageSize = pageSize;
         this.emailFilter = emailFilter;
@@ -45,6 +51,9 @@ public final class AccountSummarySearch implements BridgeEntity {
         this.orgMembership = orgId;
         this.adminOnly = adminOnly;
         this.enrolledInStudyId = enrolledInStudyId;
+        this.externalIdFilter = externalIdFilter;
+        this.statusFilter = statusFilter;
+        this.enrollmentFilter = enrollmentFilter;
     }
 
     public int getOffsetBy() {
@@ -106,6 +115,15 @@ public final class AccountSummarySearch implements BridgeEntity {
     public String getEnrolledInStudyId() {
         return enrolledInStudyId;
     }
+    public String getExternalIdFilter() {
+        return externalIdFilter;
+    }
+    public AccountStatus getStatusFilter() {
+        return statusFilter;
+    }
+    public EnrollmentFilter getEnrollmentFilter() {
+        return enrollmentFilter;
+    }
 
     @Override
     public int hashCode() {
@@ -114,7 +132,8 @@ public final class AccountSummarySearch implements BridgeEntity {
         // versus ISOChronology[-07:00] if that's the offset at the time of serialization). Using the ISO String
         // representation of the DateTime gives us equality across serialization.
         return Objects.hash(allOfGroups, emailFilter, nullsafeDateString(endTime), language, noneOfGroups, offsetBy,
-                pageSize, phoneFilter, nullsafeDateString(startTime), orgMembership, adminOnly, enrolledInStudyId);
+                pageSize, phoneFilter, nullsafeDateString(startTime), orgMembership, adminOnly, enrolledInStudyId,
+                externalIdFilter, statusFilter, enrollmentFilter);
     }
 
     @Override
@@ -136,7 +155,10 @@ public final class AccountSummarySearch implements BridgeEntity {
                 && Objects.equals(nullsafeDateString(startTime), nullsafeDateString(other.startTime))
                 && Objects.equals(orgMembership, other.orgMembership)
                 && Objects.equals(adminOnly, other.adminOnly)
-                && Objects.equals(enrolledInStudyId, other.enrolledInStudyId);
+                && Objects.equals(enrolledInStudyId, other.enrolledInStudyId)
+                && Objects.equals(externalIdFilter, other.externalIdFilter)
+                && Objects.equals(statusFilter, other.statusFilter)
+                && Objects.equals(enrollmentFilter, other.enrollmentFilter);
     }
     
     private String nullsafeDateString(DateTime dateTime) {
@@ -148,9 +170,11 @@ public final class AccountSummarySearch implements BridgeEntity {
         return "AccountSummarySearch [offsetBy=" + offsetBy + ", pageSize=" + pageSize + ", emailFilter=" + emailFilter
                 + ", phoneFilter=" + phoneFilter + ", allOfGroups=" + allOfGroups + ", noneOfGroups=" + noneOfGroups
                 + ", language=" + language + ", startTime=" + startTime + ", endTime=" + endTime + ", orgMembership="
-                + orgMembership + ", adminOnly=" + adminOnly + ", enrolledInStudyId=" + enrolledInStudyId + "]";
+                + orgMembership + ", adminOnly=" + adminOnly + ", enrolledInStudyId=" + enrolledInStudyId
+                + ", externalIdFilter=" + externalIdFilter + ", statusFilter=" + statusFilter + ", enrollmentFilter="
+                + enrollmentFilter + "]";
     }
-    
+
     public static class Builder {
         private Integer offsetBy;
         private Integer pageSize;
@@ -164,6 +188,9 @@ public final class AccountSummarySearch implements BridgeEntity {
         private String orgMembership;
         private Boolean adminOnly;
         private String enrolledInStudyId;
+        private String externalIdFilter;
+        private AccountStatus statusFilter;
+        private EnrollmentFilter enrollmentFilter;
         
         public Builder withOffsetBy(Integer offsetBy) {
             this.offsetBy = offsetBy;
@@ -219,6 +246,18 @@ public final class AccountSummarySearch implements BridgeEntity {
             this.enrolledInStudyId = enrolledInStudyId;
             return this;
         }
+        public Builder withExternalIdFilter(String externalIdFilter) {
+            this.externalIdFilter = externalIdFilter;
+            return this;
+        }
+        public Builder withStatusFilter(AccountStatus statusFilter) {
+            this.statusFilter = statusFilter;
+            return this;
+        }
+        public Builder withEnrollmentFilter(EnrollmentFilter enrollmentFilter) {
+            this.enrollmentFilter = enrollmentFilter;
+            return this;
+        }
         public Builder copyOf(AccountSummarySearch search) {
             this.offsetBy = search.offsetBy;
             this.pageSize = search.pageSize;
@@ -232,13 +271,17 @@ public final class AccountSummarySearch implements BridgeEntity {
             this.orgMembership = search.orgMembership;
             this.adminOnly = search.adminOnly;
             this.enrolledInStudyId = search.enrolledInStudyId;
+            this.externalIdFilter = search.externalIdFilter;
+            this.statusFilter = search.statusFilter;
+            this.enrollmentFilter = search.enrollmentFilter;
             return this;
         }
         public AccountSummarySearch build() {
             int defaultedOffsetBy = (offsetBy == null) ? 0 : offsetBy;
             int defaultedPageSize = (pageSize == null) ? API_DEFAULT_PAGE_SIZE : pageSize;
             return new AccountSummarySearch(defaultedOffsetBy, defaultedPageSize, emailFilter, phoneFilter, allOfGroups,
-                    noneOfGroups, language, startTime, endTime, orgMembership, adminOnly, enrolledInStudyId);
+                    noneOfGroups, language, startTime, endTime, orgMembership, adminOnly, enrolledInStudyId,
+                    externalIdFilter, statusFilter, enrollmentFilter);
         }
     }
 }

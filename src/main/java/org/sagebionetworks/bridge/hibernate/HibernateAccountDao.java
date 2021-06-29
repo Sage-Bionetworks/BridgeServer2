@@ -4,6 +4,8 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
+import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.WITHDRAWN;
 
 import java.util.List;
 import java.util.Optional;
@@ -33,6 +35,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -164,6 +167,19 @@ public class HibernateAccountDao implements AccountDao {
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
             
+            if (StringUtils.isNotBlank(search.getExternalIdFilter())) {
+                builder.append("AND enrollment.externalId LIKE :extId", "extId", "%" + search.getExternalIdFilter() + "%");
+            }
+            if (search.getStatusFilter() != null) {
+                builder.append("AND status = :status", "status", search.getStatusFilter().name());
+            }
+            if (search.getEnrollmentFilter() != null) {
+                if (search.getEnrollmentFilter() == ENROLLED) {
+                    builder.append("AND enrollment.withdrawnOn IS NULL");
+                } else if (search.getEnrollmentFilter() == WITHDRAWN) {
+                    builder.append("AND enrollment.withdrawnOn IS NOT NULL");
+                }
+            }
             String enrolledInStudy = search.getEnrolledInStudyId();
             if (search.getOrgMembership() != null) {
                 builder.orgMembership(search.getOrgMembership());
