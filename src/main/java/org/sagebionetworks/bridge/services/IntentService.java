@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.models.sms.SmsType.TRANSACTIONAL;
+
 import java.util.List;
 
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -98,9 +100,12 @@ public class IntentService {
             cacheProvider.setObject(cacheKey, intent, EXPIRATION_IN_SECONDS);
             
             // send an app store link to download the app, if we have something to send.
+            // The URL being sent does not expire. We send with a transaction delivery type because
+            // this is a critical step in onboarding through this workflow and message needs to be 
+            // sent immediately after consenting.
             if (!app.getInstallLinks().isEmpty()) {
                 participantService.sendInstallLinkMessage(
-                        app, null, intent.getEmail(), intent.getPhone(), intent.getOsName());
+                        app, TRANSACTIONAL, null, intent.getEmail(), intent.getPhone(), intent.getOsName());
             }
         }
     }

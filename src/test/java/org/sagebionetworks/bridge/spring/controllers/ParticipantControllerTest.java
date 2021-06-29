@@ -39,6 +39,7 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.SPONSORS_AND_PARTNERS;
+import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -1686,7 +1687,7 @@ public class ParticipantControllerTest extends Mockito {
         assertSame(retValue, INSTALL_LINK_SEND_MSG);
         
         verify(mockParticipantService).sendInstallLinkMessage(
-                app, HEALTH_CODE, EMAIL, PHONE, "Android");
+                app, PROMOTIONAL, HEALTH_CODE, EMAIL, PHONE, "Android");
     }
     
     @Test
@@ -1705,7 +1706,7 @@ public class ParticipantControllerTest extends Mockito {
         assertSame(retValue, INSTALL_LINK_SEND_MSG);
         
         verify(mockParticipantService).sendInstallLinkMessage(
-                app, HEALTH_CODE, null, null, null);
+                app, PROMOTIONAL, HEALTH_CODE, null, null, null);
     }
     
     private AccountSummarySearch setAccountSummarySearch() throws Exception {

@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.START_DATE;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
+import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
@@ -535,7 +536,7 @@ public class ParticipantController extends BaseController {
         String email = TRUE.equals(account.getEmailVerified()) ? account.getEmail() : null;
         Phone phone = TRUE.equals(account.getPhoneVerified()) ? account.getPhone() : null;
         
-        participantService.sendInstallLinkMessage(app, account.getHealthCode(), email, phone, osName);
+        participantService.sendInstallLinkMessage(app, PROMOTIONAL, account.getHealthCode(), email, phone, osName);
         
         return INSTALL_LINK_SEND_MSG;
     }

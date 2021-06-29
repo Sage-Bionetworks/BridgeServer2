@@ -153,15 +153,9 @@ public class StudyActivityEventService {
         Map<String, DateTime> map = activityEventService.getActivityEventMap(
                 appId, account.getHealthCode());
         for (String fieldName : GLOBAL_EVENTS_OF_INTEREST) {
-            addIfMissing(events, map, fieldName);    
+            addIfPresent(events, map, fieldName);    
         }
         return new ResourceList<>(events); 
-    }
-    
-    private void addIfMissing(List<StudyActivityEvent> events, Map<String, DateTime> map, String field) {
-        if (map.containsKey(field)) {
-            events.add(new StudyActivityEvent(field, map.get(field)));
-        }
     }
     
     public PagedResourceList<StudyActivityEvent> getStudyActivityEventHistory(
@@ -186,12 +180,12 @@ public class StudyActivityEventService {
         }
         
         // Global events emulate history for a cleaner and less confusing API, but there 
-        // will only ever one value.
+        // will only ever be one value.
         if (GLOBAL_EVENTS_OF_INTEREST.contains(eventId)) {
             Map<String, DateTime> map = activityEventService.getActivityEventMap(
                     account.getAppId(), account.getHealthCode());
             List<StudyActivityEvent> events = new ArrayList<>();
-            addIfMissing(events, map, eventId);
+            addIfPresent(events, map, eventId);
             
             return new PagedResourceList<>(events, 1, true)
                     .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
@@ -213,6 +207,12 @@ public class StudyActivityEventService {
             .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
     }
     
+    private void addIfPresent(List<StudyActivityEvent> events, Map<String, DateTime> map, String field) {
+        if (map.containsKey(field)) {
+            events.add(new StudyActivityEvent(field, map.get(field)));
+        }
+    }
+
     /**
      * If the triggering event is mutable, these events can be created as well.
      */
@@ -240,8 +240,7 @@ public class StudyActivityEventService {
     }
     
     /**
-     * If events do not include enrollment, you can include it. This provides some
-     * migration support.
+     * If events do not include enrollment, you can include it. This provides some migration support.
      */
     private void addEnrollmentIfMissing(Account account, List<StudyActivityEvent> events, String studyId) {
         for (StudyActivityEvent oneEvent : events) {

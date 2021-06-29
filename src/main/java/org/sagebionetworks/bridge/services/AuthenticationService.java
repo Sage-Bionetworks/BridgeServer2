@@ -144,6 +144,7 @@ public class AuthenticationService {
         this.activityEventService = activityEventService;
     }
     
+    // Accessor so we can mock during tests
     protected DateTime getSignInDateTime() {
         return new DateTime();
     }

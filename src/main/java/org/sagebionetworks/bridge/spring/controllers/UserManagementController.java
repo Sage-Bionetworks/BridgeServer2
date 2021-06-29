@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.accounts.UserSessionInfo;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 
 @CrossOrigin
@@ -37,15 +36,9 @@ public class UserManagementController extends BaseController {
 
     private UserAdminService userAdminService;
     
-    private ActivityEventService activityEventService;
-    
     @Autowired
     final void setUserAdminService(UserAdminService userAdminService) {
         this.userAdminService = userAdminService;
-    }
-    @Autowired
-    final void setActivityEventService(ActivityEventService activityEventService) {
-        this.activityEventService = activityEventService;
     }
     
     @PostMapping("/v3/auth/admin/signIn")

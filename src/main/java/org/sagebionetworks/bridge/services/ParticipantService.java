@@ -91,6 +91,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -109,7 +110,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 public class ParticipantService {
     private static final Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
 
-    static final String NO_INSTALL_LINKS_ERROR = "No install links configured for app";
+    static final String NO_INSTALL_LINKS_ERROR = "No install links configured for app.";
     static final String ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR = "Account unable to be contacted via phone or email";
     static final String CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL = "workerPlatform.request.sqs.queue.url";
     static final String REQUEST_KEY_BODY = "body";
@@ -249,14 +250,15 @@ public class ParticipantService {
     final void setTemplateService(TemplateService templateService) {
         this.templateService = templateService;
     }
-    
-    protected DateTime getInstallDateTime() {
-        return new DateTime();
-    }
 
     @Autowired
     final void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
+    }
+    
+    // Accessor so we can mock the value
+    protected DateTime getInstallDateTime() {
+        return new DateTime();
     }
     
     /**
@@ -833,7 +835,7 @@ public class ParticipantService {
      * if the values are not verified. We do it this way so the IntentService can provide values 
      * even before an account exists. 
      */
-    public void sendInstallLinkMessage(App app, String healthCode, String email, Phone phone, String osName) {
+    public void sendInstallLinkMessage(App app, SmsType type, String healthCode, String email, Phone phone, String osName) {
         if (email == null && phone == null) {
             throw new BadRequestException(ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR);
         }
@@ -843,19 +845,21 @@ public class ParticipantService {
         String url = getInstallLink(osName, app.getInstallLinks());
         
         if (phone != null) {
-            // The URL being sent does not expire. We send with a transaction delivery type because
-            // this is a critical step in onboarding through this workflow and message needs to be 
-            // sent immediately after consenting.
             TemplateRevision revision = templateService.getRevisionForUser(app, SMS_APP_INSTALL_LINK);
-            SmsMessageProvider provider = new SmsMessageProvider.Builder()
+            SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder()
                     .withApp(app)
                     .withTemplateRevision(revision)
                     .withPromotionType()
                     .withPhone(phone)
-                    .withToken(APP_INSTALL_URL_KEY, url).build();
+                    .withToken(APP_INSTALL_URL_KEY, url);
+            if (type == SmsType.PROMOTIONAL) {
+                builder.withPromotionType();
+            } else {
+                builder.withTransactionType();
+            }
             // Account hasn't been created yet, so there is no ID yet. Pass in null user ID to
             // SMS Service.
-            smsService.sendSmsMessage(null, provider);
+            smsService.sendSmsMessage(null, builder.build());
         } else {
             TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_APP_INSTALL_LINK);
             BasicEmailProvider provider = new BasicEmailProvider.Builder()

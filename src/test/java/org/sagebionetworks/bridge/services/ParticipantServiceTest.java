@@ -25,6 +25,7 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIE
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
 import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
+import static org.sagebionetworks.bridge.models.sms.SmsType.TRANSACTIONAL;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.services.ParticipantService.ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR;
@@ -2561,7 +2562,7 @@ public class ParticipantServiceTest extends Mockito {
         TemplateRevision revision = TemplateRevision.create();
         when(templateService.getRevisionForUser(APP, SMS_APP_INSTALL_LINK)).thenReturn(revision);
         
-        participantService.sendInstallLinkMessage(APP, HEALTH_CODE, EMAIL, PHONE, "Android");
+        participantService.sendInstallLinkMessage(APP, PROMOTIONAL, HEALTH_CODE, EMAIL, PHONE, "Android");
         
         verify(smsService).sendSmsMessage(eq(null), smsProviderCaptor.capture());
         SmsMessageProvider provider = smsProviderCaptor.getValue();
@@ -2579,7 +2580,7 @@ public class ParticipantServiceTest extends Mockito {
         TemplateRevision revision = TemplateRevision.create();
         when(templateService.getRevisionForUser(APP, EMAIL_APP_INSTALL_LINK)).thenReturn(revision);
         
-        participantService.sendInstallLinkMessage(APP, HEALTH_CODE, EMAIL, null, "Android");
+        participantService.sendInstallLinkMessage(APP, TRANSACTIONAL, HEALTH_CODE, EMAIL, null, "Android");
         
         verify(sendMailService).sendEmail(emailProviderCaptor.capture());
         BasicEmailProvider provider = emailProviderCaptor.getValue();
@@ -2593,7 +2594,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp = ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR)
     public void sendInstallLinkMessage_noPhoneOrEmail() {
-        participantService.sendInstallLinkMessage(APP, HEALTH_CODE, null, null, null);
+        participantService.sendInstallLinkMessage(APP, TRANSACTIONAL, HEALTH_CODE, null, null, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class,
@@ -2602,7 +2603,7 @@ public class ParticipantServiceTest extends Mockito {
         App app = App.create();
         app.setInstallLinks(ImmutableMap.of());
         
-        participantService.sendInstallLinkMessage(app, HEALTH_CODE, EMAIL, null, "Android");
+        participantService.sendInstallLinkMessage(app, TRANSACTIONAL, HEALTH_CODE, EMAIL, null, "Android");
     }
 
     @Test
@@ -2612,7 +2613,7 @@ public class ParticipantServiceTest extends Mockito {
         TemplateRevision revision = TemplateRevision.create();
         when(templateService.getRevisionForUser(APP, SMS_APP_INSTALL_LINK)).thenReturn(revision);
         
-        participantService.sendInstallLinkMessage(APP, null, EMAIL, PHONE, "Android");
+        participantService.sendInstallLinkMessage(APP, TRANSACTIONAL, null, EMAIL, PHONE, "Android");
         
         verify(activityEventService, never()).publishInstallLinkSent(any(), any(), any());
     }

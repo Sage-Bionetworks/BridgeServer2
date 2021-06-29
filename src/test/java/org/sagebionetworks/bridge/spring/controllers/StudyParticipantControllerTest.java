@@ -25,6 +25,7 @@ import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
+import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.EVENT_DELETED_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.NOTIFY_SUCCESS_MSG;
@@ -1454,7 +1455,7 @@ public class StudyParticipantControllerTest extends Mockito {
         assertSame(retValue, INSTALL_LINK_SEND_MSG);
         
         verify(mockParticipantService).sendInstallLinkMessage(
-                app, HEALTH_CODE, EMAIL, PHONE, "Android");
+                app, PROMOTIONAL, HEALTH_CODE, EMAIL, PHONE, "Android");
     }
     
     @Test
@@ -1479,7 +1480,7 @@ public class StudyParticipantControllerTest extends Mockito {
         assertSame(retValue, INSTALL_LINK_SEND_MSG);
         
         verify(mockParticipantService).sendInstallLinkMessage(
-                app, HEALTH_CODE, null, null, null);
+                app, PROMOTIONAL, HEALTH_CODE, null, null, null);
     }
     
     private void mockAccountInStudy() {

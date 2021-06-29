@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.apps.MimeType.TEXT;
+import static org.sagebionetworks.bridge.models.sms.SmsType.TRANSACTIONAL;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.testng.Assert.assertEquals;
@@ -127,7 +128,7 @@ public class IntentServiceTest {
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals(keyCaptor.getValue(), cacheKey);
 
-        verify(mockParticipantService).sendInstallLinkMessage(mockApp, null, null, PHONE, null);
+        verify(mockParticipantService).sendInstallLinkMessage(mockApp, TRANSACTIONAL, null, null, PHONE, null);
     }
     
     // In this case when there isn't an install link for the OS or that is marked
@@ -159,7 +160,7 @@ public class IntentServiceTest {
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals(keyCaptor.getValue(), cacheKey);
 
-        verify(mockParticipantService).sendInstallLinkMessage(mockApp, null, null, PHONE, null);
+        verify(mockParticipantService).sendInstallLinkMessage(mockApp, TRANSACTIONAL, null, null, PHONE, null);
     }
     
     @Test
@@ -192,7 +193,7 @@ public class IntentServiceTest {
         verify(mockCacheProvider).setObject(keyCaptor.capture(), eq(intent), eq(4 * 60 * 60));
         assertEquals(keyCaptor.getValue(), cacheKey);
 
-        verify(mockParticipantService).sendInstallLinkMessage(mockApp, null, "email@email.com", null, "iPhone OS");
+        verify(mockParticipantService).sendInstallLinkMessage(mockApp, TRANSACTIONAL, null, "email@email.com", null, "iPhone OS");
     }    
     
     @Test(expectedExceptions = InvalidEntityException.class)
