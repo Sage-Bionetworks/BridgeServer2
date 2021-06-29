@@ -148,8 +148,7 @@ public class StudyActivityEventService {
         // There are some global events related to authentication and account creation that 
         // are useful when working with study-specific events, so add these from the global
         // system.
-        Map<String, DateTime> map = activityEventService.getActivityEventMap(
-                appId, account.getHealthCode());
+        Map<String, DateTime> map = activityEventService.getActivityEventMap(appId, account.getHealthCode());
         for (String fieldName : GLOBAL_EVENTS_OF_INTEREST) {
             addIfPresent(events, map, fieldName);    
         }

@@ -461,7 +461,6 @@ public class AuthenticationService {
             cachedSession = cacheProvider.getUserSession(cachedSessionToken);
         }
 
-        App app = appService.getApp(signIn.getAppId());
         UserSession session;
         if (cachedSession != null) {
             // If we have a cached session, then just use that session.
@@ -470,6 +469,7 @@ public class AuthenticationService {
             // We don't have a cached session. This is a new sign-in. Clear all old sessions for security reasons.
             // Then, create a new session.
             clearSession(context.getAppId(), account);
+            App app = appService.getApp(signIn.getAppId());
             session = getSessionFromAccount(app, context, account);
 
             // Check intent to participate.
