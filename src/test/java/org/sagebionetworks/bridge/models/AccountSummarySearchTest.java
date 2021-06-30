@@ -10,6 +10,8 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
+import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -50,6 +52,11 @@ public class AccountSummarySearchTest {
                 .withEndTime(endTime)
                 .withOrgMembership(TEST_ORG_ID)
                 .withEnrolledInStudyId(TEST_STUDY_ID)
+                .withExternalIdFilter("externalId")
+                .withStatusFilter(ENABLED)
+                .withEnrollmentFilter(ENROLLED)
+                .withAttributeKey("foo")
+                .withAttributeValue("bar")
                 .build();
         
         ObjectMapper mapper = BridgeObjectMapper.get();
@@ -80,7 +87,13 @@ public class AccountSummarySearchTest {
             // but they can all be tested for serialization at one time.
             .withOrgMembership(TEST_ORG_ID)
             .withAdminOnly(true)
-            .withEnrolledInStudyId(TEST_STUDY_ID).build();
+            .withEnrolledInStudyId(TEST_STUDY_ID)
+            .withExternalIdFilter("externalId")
+            .withStatusFilter(ENABLED)
+            .withEnrollmentFilter(ENROLLED)
+            .withAttributeKey("foo")
+            .withAttributeValue("bar")
+            .build();
         
         String json = BridgeObjectMapper.get().writeValueAsString(search);
         JsonNode node = BridgeObjectMapper.get().readTree(json);
@@ -102,6 +115,11 @@ public class AccountSummarySearchTest {
         assertEquals(deser.getOrgMembership(), TEST_ORG_ID);
         assertTrue(deser.isAdminOnly());
         assertEquals(deser.getEnrolledInStudyId(), TEST_STUDY_ID);
+        assertEquals(deser.getExternalIdFilter(), "externalId");
+        assertEquals(deser.getStatusFilter(), ENABLED);
+        assertEquals(deser.getEnrollmentFilter(), ENROLLED);
+        assertEquals(deser.getAttributeKey(), "foo");
+        assertEquals(deser.getAttributeValue(), "bar");
     }
     
     @Test
@@ -121,7 +139,13 @@ public class AccountSummarySearchTest {
             .withEndTime(endTime)
             .withAdminOnly(false)
             .withOrgMembership(TEST_ORG_ID)
-            .withEnrolledInStudyId(TEST_STUDY_ID).build();
+            .withEnrolledInStudyId(TEST_STUDY_ID)
+            .withExternalIdFilter("externalId")
+            .withStatusFilter(ENABLED)
+            .withEnrollmentFilter(ENROLLED)
+            .withAttributeKey("foo")
+            .withAttributeValue("bar")
+            .build();
 
         AccountSummarySearch copy = new AccountSummarySearch.Builder().copyOf(search).build();
         assertEquals(copy.getOffsetBy(), 10);
@@ -136,6 +160,11 @@ public class AccountSummarySearchTest {
         assertEquals(copy.getOrgMembership(), TEST_ORG_ID);
         assertEquals(copy.isAdminOnly(), Boolean.FALSE);
         assertEquals(copy.getEnrolledInStudyId(), TEST_STUDY_ID);
+        assertEquals(copy.getExternalIdFilter(), "externalId");
+        assertEquals(copy.getStatusFilter(), ENABLED);
+        assertEquals(copy.getEnrollmentFilter(), ENROLLED);
+        assertEquals(copy.getAttributeKey(), "foo");
+        assertEquals(copy.getAttributeValue(), "bar");
     }
     
     @Test

@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -35,7 +36,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 
 /** Hibernate implementation of Account Dao. */
 @Component
@@ -146,10 +146,10 @@ public class HibernateAccountDao implements AccountDao {
         }
         if (search != null) {
             // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
-            if (StringUtils.isNotBlank(search.getEmailFilter())) {
+            if (isNotBlank(search.getEmailFilter())) {
                 builder.append("AND acct.email LIKE :email", "email", "%"+search.getEmailFilter()+"%");
             }
-            if (StringUtils.isNotBlank(search.getPhoneFilter())) {
+            if (isNotBlank(search.getPhoneFilter())) {
                 String phoneString = search.getPhoneFilter().replaceAll("\\D*", "");
                 builder.append("AND acct.phone.number LIKE :number", "number", "%"+phoneString+"%");
             }
@@ -166,21 +166,45 @@ public class HibernateAccountDao implements AccountDao {
             builder.adminOnly(search.isAdminOnly());
             builder.dataGroups(search.getAllOfGroups(), "IN");
             builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
-            
-            if (StringUtils.isNotBlank(search.getExternalIdFilter())) {
-                builder.append("AND enrollment.externalId LIKE :extId", "extId", "%" + search.getExternalIdFilter() + "%");
+            if (isNotBlank(search.getAttributeKey()) && isNotBlank(search.getAttributeValue())) {
+                builder.append("AND acct.attributes[:attKey] LIKE :attValue",
+                        "attKey", search.getAttributeKey(), "attValue", "%"+search.getAttributeValue()+"%");
             }
             if (search.getStatusFilter() != null) {
                 builder.append("AND status = :status", "status", search.getStatusFilter().name());
             }
+
+            String enrolledInStudy = search.getEnrolledInStudyId();
+            // These values must be matched to the current study, if this query is for accounts
+            // in a specific study.
+            if (isNotBlank(search.getExternalIdFilter())) {
+                if (enrolledInStudy != null) {
+                    builder.append("AND enrollment.studyId = :studyId AND enrollment.externalId LIKE :extId", 
+                            "studyId", enrolledInStudy,
+                            "extId", "%" + search.getExternalIdFilter() + "%");    
+                } else {
+                    builder.append("AND enrollment.externalId LIKE :extId", "extId", "%" + search.getExternalIdFilter() + "%");    
+                }
+                
+            }
             if (search.getEnrollmentFilter() != null) {
-                if (search.getEnrollmentFilter() == ENROLLED) {
-                    builder.append("AND enrollment.withdrawnOn IS NULL");
-                } else if (search.getEnrollmentFilter() == WITHDRAWN) {
-                    builder.append("AND enrollment.withdrawnOn IS NOT NULL");
+                if (enrolledInStudy != null) {
+                    if (search.getEnrollmentFilter() == ENROLLED) {
+                        builder.append("AND enrollment.studyId = :studyId AND enrollment.withdrawnOn IS NULL",
+                                "studyId", enrolledInStudy);
+                    } else if (search.getEnrollmentFilter() == WITHDRAWN) {
+                        builder.append("AND enrollment.studyId = :studyId AND enrollment.withdrawnOn IS NOT NULL",
+                                "studyId", enrolledInStudy);
+                    }
+                } else {
+                    if (search.getEnrollmentFilter() == ENROLLED) {
+                        builder.append("AND enrollment.withdrawnOn IS NULL");
+                    } else if (search.getEnrollmentFilter() == WITHDRAWN) {
+                        builder.append("AND enrollment.withdrawnOn IS NOT NULL");
+                    }
                 }
             }
-            String enrolledInStudy = search.getEnrolledInStudyId();
+            
             if (search.getOrgMembership() != null) {
                 builder.orgMembership(search.getOrgMembership());
             } else if (enrolledInStudy != null) { // this always takes precedence

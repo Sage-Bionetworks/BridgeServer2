@@ -34,11 +34,13 @@ public final class AccountSummarySearch implements BridgeEntity {
     private final String externalIdFilter;
     private final AccountStatus statusFilter;
     private final EnrollmentFilter enrollmentFilter;
+    private final String attributeKey;
+    private final String attributeValue;
 
     private AccountSummarySearch(int offsetBy, int pageSize, String emailFilter, String phoneFilter,
             Set<String> allOfGroups, Set<String> noneOfGroups, String language, DateTime startTime, DateTime endTime,
             String orgId, Boolean adminOnly, String enrolledInStudyId, String externalIdFilter,
-            AccountStatus statusFilter, EnrollmentFilter enrollmentFilter) {
+            AccountStatus statusFilter, EnrollmentFilter enrollmentFilter, String attributeKey, String attributeValue) {
         this.offsetBy = offsetBy;
         this.pageSize = pageSize;
         this.emailFilter = emailFilter;
@@ -54,6 +56,8 @@ public final class AccountSummarySearch implements BridgeEntity {
         this.externalIdFilter = externalIdFilter;
         this.statusFilter = statusFilter;
         this.enrollmentFilter = enrollmentFilter;
+        this.attributeKey = attributeKey;
+        this.attributeValue = attributeValue;
     }
 
     public int getOffsetBy() {
@@ -124,6 +128,12 @@ public final class AccountSummarySearch implements BridgeEntity {
     public EnrollmentFilter getEnrollmentFilter() {
         return enrollmentFilter;
     }
+    public String getAttributeKey() {
+        return attributeKey;
+    }
+    public String getAttributeValue() {
+        return attributeValue;
+    }
 
     @Override
     public int hashCode() {
@@ -133,7 +143,7 @@ public final class AccountSummarySearch implements BridgeEntity {
         // representation of the DateTime gives us equality across serialization.
         return Objects.hash(allOfGroups, emailFilter, nullsafeDateString(endTime), language, noneOfGroups, offsetBy,
                 pageSize, phoneFilter, nullsafeDateString(startTime), orgMembership, adminOnly, enrolledInStudyId,
-                externalIdFilter, statusFilter, enrollmentFilter);
+                externalIdFilter, statusFilter, enrollmentFilter, attributeKey, attributeValue);
     }
 
     @Override
@@ -158,7 +168,9 @@ public final class AccountSummarySearch implements BridgeEntity {
                 && Objects.equals(enrolledInStudyId, other.enrolledInStudyId)
                 && Objects.equals(externalIdFilter, other.externalIdFilter)
                 && Objects.equals(statusFilter, other.statusFilter)
-                && Objects.equals(enrollmentFilter, other.enrollmentFilter);
+                && Objects.equals(enrollmentFilter, other.enrollmentFilter)
+                && Objects.equals(attributeKey, other.attributeKey)
+                && Objects.equals(attributeValue, other.attributeValue);
     }
     
     private String nullsafeDateString(DateTime dateTime) {
@@ -172,7 +184,7 @@ public final class AccountSummarySearch implements BridgeEntity {
                 + ", language=" + language + ", startTime=" + startTime + ", endTime=" + endTime + ", orgMembership="
                 + orgMembership + ", adminOnly=" + adminOnly + ", enrolledInStudyId=" + enrolledInStudyId
                 + ", externalIdFilter=" + externalIdFilter + ", statusFilter=" + statusFilter + ", enrollmentFilter="
-                + enrollmentFilter + "]";
+                + enrollmentFilter + ", attributeKey=" + attributeKey + ", attributeValue=" + attributeValue + "]";
     }
 
     public static class Builder {
@@ -191,6 +203,8 @@ public final class AccountSummarySearch implements BridgeEntity {
         private String externalIdFilter;
         private AccountStatus statusFilter;
         private EnrollmentFilter enrollmentFilter;
+        private String attributeKey;
+        private String attributeValue;
         
         public Builder withOffsetBy(Integer offsetBy) {
             this.offsetBy = offsetBy;
@@ -258,6 +272,14 @@ public final class AccountSummarySearch implements BridgeEntity {
             this.enrollmentFilter = enrollmentFilter;
             return this;
         }
+        public Builder withAttributeKey(String attributeKey) {
+            this.attributeKey = attributeKey;
+            return this;
+        }
+        public Builder withAttributeValue(String attributeValue) {
+            this.attributeValue = attributeValue;
+            return this;
+        }
         public Builder copyOf(AccountSummarySearch search) {
             this.offsetBy = search.offsetBy;
             this.pageSize = search.pageSize;
@@ -274,6 +296,8 @@ public final class AccountSummarySearch implements BridgeEntity {
             this.externalIdFilter = search.externalIdFilter;
             this.statusFilter = search.statusFilter;
             this.enrollmentFilter = search.enrollmentFilter;
+            this.attributeKey = search.attributeKey;
+            this.attributeValue = search.attributeValue;
             return this;
         }
         public AccountSummarySearch build() {
@@ -281,7 +305,7 @@ public final class AccountSummarySearch implements BridgeEntity {
             int defaultedPageSize = (pageSize == null) ? API_DEFAULT_PAGE_SIZE : pageSize;
             return new AccountSummarySearch(defaultedOffsetBy, defaultedPageSize, emailFilter, phoneFilter, allOfGroups,
                     noneOfGroups, language, startTime, endTime, orgMembership, adminOnly, enrolledInStudyId,
-                    externalIdFilter, statusFilter, enrollmentFilter);
+                    externalIdFilter, statusFilter, enrollmentFilter, attributeKey, attributeValue);
         }
     }
 }
