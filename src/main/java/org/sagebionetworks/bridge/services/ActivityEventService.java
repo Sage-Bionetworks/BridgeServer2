@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.QUESTION;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_START_DATE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.ANSWERED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
@@ -151,6 +152,24 @@ public class ActivityEventService {
             .withHealthCode(healthCode)
             .withTimestamp(timestamp)
             .withObjectType(ACTIVITIES_RETRIEVED).build();
+
+        // If the globalEvent is valid, all other derivations are valid
+        Validate.entityThrowingException(INSTANCE, globalEvent);
+        
+        if (activityEventDao.publishEvent(globalEvent)) {
+            // Create automatic events, as defined in the app
+            createAutomaticCustomEvents(app, healthCode, globalEvent);
+        }
+    }
+    
+    public void publishInstallLinkSent(App app, String healthCode, DateTime timestamp) {
+        checkNotNull(app);
+        checkNotNull(healthCode);
+        
+        ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
+            .withHealthCode(healthCode)
+            .withTimestamp(timestamp)
+            .withObjectType(INSTALL_LINK_SENT).build();
 
         // If the globalEvent is valid, all other derivations are valid
         Validate.entityThrowingException(INSTANCE, globalEvent);
