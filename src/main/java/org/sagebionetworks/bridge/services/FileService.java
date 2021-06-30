@@ -7,7 +7,8 @@ import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.config.Environment.LOCAL;
+import static org.sagebionetworks.bridge.config.Environment.PROD;
+import static org.sagebionetworks.bridge.config.Environment.UAT;
 import static org.sagebionetworks.bridge.models.files.FileDispositionType.ATTACHMENT;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.AVAILABLE;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.PENDING;
@@ -236,7 +237,7 @@ public class FileService {
     }
     
     protected String getDownloadURL(FileRevision revision) {
-        String protocol = (env == LOCAL) ? "http" : "https";
+        String protocol = (env == PROD || env == UAT) ? "https" : "http";
         String fileName = getFileName(revision);
         return protocol + "://" + documentWebsiteUrl + "/" + fileName;
     }
