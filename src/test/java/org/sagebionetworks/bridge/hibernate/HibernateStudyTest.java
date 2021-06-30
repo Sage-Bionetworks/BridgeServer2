@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.models.studies.SignInType;
 import org.sagebionetworks.bridge.models.studies.Study;
 
 import static org.sagebionetworks.bridge.TestConstants.COLOR_SCHEME;
+import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.models.studies.SignInType.EMAIL_MESSAGE;
@@ -32,6 +33,7 @@ import com.google.common.collect.ImmutableSet;
 
 public class HibernateStudyTest {
 
+    private static final String TEST_LINK = "http://some.link/";
     private static final DateTime CREATED_ON = DateTime.now().withZone(DateTimeZone.UTC);
     private static final DateTime MODIFIED_ON = DateTime.now().minusHours(1).withZone(DateTimeZone.UTC);
     private static final LocalDate APPROVED_ON = DateTime.now().toLocalDate();
@@ -41,7 +43,7 @@ public class HibernateStudyTest {
     @Test
     public void shortConstructor() {
         HibernateStudy study = new HibernateStudy("name", "identifier", "appId", 
-                CREATED_ON, MODIFIED_ON, true, DESIGN, 10L);
+                CREATED_ON, MODIFIED_ON, true, DESIGN, TEST_LINK, 10L);
         assertEquals(study.getName(), "name");
         assertEquals(study.getIdentifier(), "identifier");
         assertEquals(study.getAppId(), "appId");
@@ -49,6 +51,7 @@ public class HibernateStudyTest {
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
         assertTrue(study.isDeleted());
         assertEquals(study.getPhase(), DESIGN);
+        assertEquals(study.getStudyLogoUrl(), TEST_LINK);
         assertEquals(study.getVersion(), Long.valueOf(10L));
     }
     
@@ -71,6 +74,8 @@ public class HibernateStudyTest {
         study.setCreatedOn(CREATED_ON);
         study.setModifiedOn(MODIFIED_ON);
         study.setClientData(TestUtils.getClientData());
+        study.setLogoGuid(GUID);
+        study.setStudyLogoUrl(TEST_LINK);
         study.setKeywords("keywords");
         study.setVersion(3L);
         
@@ -84,7 +89,7 @@ public class HibernateStudyTest {
         study.setIrbDecisionOn(APPROVED_ON);
         study.setIrbExpiresOn(EXPIRES_ON);
         study.setIrbDecisionType(APPROVED);
-        study.setStudyLogoUrl("aStudyLogoUrl");
+        study.setStudyLogoUrl(TEST_LINK);
         study.setColorScheme(COLOR_SCHEME);
         study.setInstitutionId("anInstitutionId");
         study.setIrbProtocolId("anIrbProtocolId");
@@ -115,22 +120,25 @@ public class HibernateStudyTest {
         assertEquals(node.get("irbDecisionOn").textValue(), APPROVED_ON.toString());
         assertEquals(node.get("irbExpiresOn").textValue(), EXPIRES_ON.toString());
         assertEquals(node.get("irbDecisionType").textValue(), "approved");
-        assertEquals(node.get("studyLogoUrl").textValue(), "aStudyLogoUrl");
+        assertEquals(node.get("studyLogoUrl").textValue(), TEST_LINK);
         assertEquals(node.get("colorScheme").get("type").textValue(), "ColorScheme");
         assertEquals(node.get("institutionId").textValue(), "anInstitutionId");
         assertEquals(node.get("irbProtocolId").textValue(), "anIrbProtocolId");
         assertEquals(node.get("scheduleGuid").textValue(), "aScheduleGuid");
         assertEquals(node.get("phase").textValue(), "analysis");
+        assertNull(node.get("logoGuid"));
         assertEquals(node.get("diseases").get(0).textValue(), "subjective cognitive decline");
         assertEquals(node.get("studyDesignTypes").get(0).textValue(), "observational case control");
         assertEquals(node.get("signInTypes").get(0).textValue(), "email_message");
         assertEquals(node.get("signInTypes").get(1).textValue(), "email_password");
         assertEquals(node.get("keywords").textValue(), "keywords");
         assertEquals(node.get("type").textValue(), "Study");
+        assertNull(node.get("logoGuid"));
         assertNull(node.get("studyId"));
         assertNull(node.get("appId"));
         
         Study deser = BridgeObjectMapper.get().readValue(node.toString(), Study.class);
+        deser.setLogoGuid(GUID);
         assertEquals(deser.getIdentifier(), "oneId");
         assertEquals(deser.getName(), "name");
         assertTrue(deser.isDeleted());
@@ -141,7 +149,7 @@ public class HibernateStudyTest {
         assertEquals(deser.getIrbDecisionOn(), APPROVED_ON);
         assertEquals(deser.getIrbExpiresOn(), EXPIRES_ON);
         assertEquals(deser.getIrbDecisionType(), APPROVED);
-        assertEquals(deser.getStudyLogoUrl(), "aStudyLogoUrl");
+        assertEquals(deser.getStudyLogoUrl(), TEST_LINK);
         assertEquals(deser.getColorScheme(), COLOR_SCHEME);
         assertEquals(deser.getInstitutionId(), "anInstitutionId");
         assertEquals(deser.getIrbProtocolId(), "anIrbProtocolId");
@@ -151,10 +159,12 @@ public class HibernateStudyTest {
         assertEquals(deser.getContacts().get(0).getName(), "Name1");
         assertEquals(deser.getContacts().get(1).getName(), "Name2");
         assertEquals(deser.getPhase(), ANALYSIS);
+        assertEquals(deser.getStudyLogoUrl(), TEST_LINK);
         assertEquals(deser.getDiseases(), ImmutableSet.of("subjective cognitive decline"));
         assertEquals(deser.getStudyDesignTypes(), ImmutableSet.of("observational case control"));
         assertEquals(deser.getKeywords(), "keywords");
         assertEquals(deser.getSignInTypes(), TYPES);
+        assertEquals(deser.getLogoGuid(), GUID);
         assertEquals(deser.getVersion(), new Long(3));
         
         JsonNode deserClientData = deser.getClientData();

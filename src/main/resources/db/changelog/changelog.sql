@@ -740,3 +740,11 @@ CREATE TABLE IF NOT EXISTS `StudyDesignTypes` (
   PRIMARY KEY (`appId`, `studyId`, `designType`),
   CONSTRAINT `StudyDesignTypes-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:40
+
+ALTER TABLE `FileMetadata`
+ADD COLUMN `disposition` enum('INLINE','ATTACHMENT') NOT NULL DEFAULT 'ATTACHMENT';
+
+ALTER TABLE `Substudies`
+ADD COLUMN `logoGuid` varchar(255);

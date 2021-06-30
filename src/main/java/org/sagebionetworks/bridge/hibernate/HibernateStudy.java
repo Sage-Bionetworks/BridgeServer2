@@ -74,6 +74,8 @@ public class HibernateStudy implements Study {
     private ColorScheme colorScheme;
     private String institutionId;
     private String scheduleGuid;
+    @JsonIgnore
+    private String logoGuid;
     private String keywords;
     @Version
     private Long version;
@@ -116,8 +118,9 @@ public class HibernateStudy implements Study {
     /**
      * For partial construction of object by Hibernate, excluding expensive fields like clientData.
      */
-    public HibernateStudy(String name, String identifier, String appId, DateTime createdOn, 
-            DateTime modifiedOn, boolean deleted, StudyPhase phase, Long version) {
+    public HibernateStudy(String name, String identifier, String appId, 
+            DateTime createdOn, DateTime modifiedOn, boolean deleted, 
+            StudyPhase phase, String logoURL, Long version) {
         this.name = name;
         this.identifier = identifier;
         this.appId = appId;
@@ -125,6 +128,7 @@ public class HibernateStudy implements Study {
         this.modifiedOn = modifiedOn;
         this.deleted = deleted;
         this.phase = phase;
+        this.studyLogoUrl = logoURL;
         this.version = version;
     }
     
@@ -389,5 +393,15 @@ public class HibernateStudy implements Study {
     @Override
     public void setSignInTypes(List<SignInType> signInTypes) {
         this.signInTypes = signInTypes;
+    }
+
+    @Override
+    public String getLogoGuid() {
+        return logoGuid;
+    }
+
+    @Override
+    public void setLogoGuid(String logoGuid) {
+        this.logoGuid = logoGuid;
     }
 }

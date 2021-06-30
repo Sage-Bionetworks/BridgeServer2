@@ -5,6 +5,8 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.sagebionetworks.bridge.config.Environment.UAT;
+import static org.sagebionetworks.bridge.models.files.FileDispositionType.ATTACHMENT;
+import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.AVAILABLE;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.PENDING;
 import static org.sagebionetworks.bridge.services.FileService.DOCS_WEBSITE_URL_CONFIG_PROPERTY;
@@ -138,6 +140,7 @@ public class FileServiceTest extends Mockito {
     public void createFile() {
         FileMetadata metadata = new FileMetadata();
         metadata.setName(NAME);
+        metadata.setDisposition(INLINE);
         metadata.setAppId("garbage"); // ignored
         metadata.setVersion(10L); // ignored
         metadata.setDeleted(true); // ignored
@@ -178,6 +181,7 @@ public class FileServiceTest extends Mockito {
         FileMetadata metadata = new FileMetadata();
         metadata.setName(NAME);
         metadata.setGuid(GUID);
+        metadata.setDisposition(ATTACHMENT);
         FileMetadata returned = service.updateFile(TEST_APP_ID, metadata);
         assertEquals(returned, persisted);
         
@@ -312,6 +316,7 @@ public class FileServiceTest extends Mockito {
     @Test
     public void createFileRevision() throws Exception {
         FileMetadata metadata = new FileMetadata();
+        metadata.setDisposition(ATTACHMENT);
         doReturn(metadata).when(service).getFile(TEST_APP_ID, GUID);
         
         URL url = new URL("https://" + UPLOAD_BUCKET);
@@ -338,6 +343,27 @@ public class FileServiceTest extends Mockito {
         
         verify(mockFileRevisionDao).createFileRevision(revisionCaptor.capture());
         assertSame(revisionCaptor.getValue(), returned);
+    }
+    
+    @Test
+    public void createFileRevisionWithInlineDownload() throws Exception {
+        FileMetadata metadata = new FileMetadata();
+        metadata.setDisposition(INLINE);
+        doReturn(metadata).when(service).getFile(TEST_APP_ID, GUID);
+        
+        URL url = new URL("https://" + UPLOAD_BUCKET);
+        when(mockS3Client.generatePresignedUrl(any())).thenReturn(url);
+        
+        FileRevision revision = new FileRevision();
+        revision.setName("name.pdf");
+        revision.setFileGuid(GUID);
+        revision.setMimeType("application/pdf");
+        
+        service.createFileRevision(TEST_APP_ID, revision);
+        
+        verify(mockS3Client).generatePresignedUrl(requestCaptor.capture());
+        GeneratePresignedUrlRequest request = requestCaptor.getValue();
+        assertEquals(request.getResponseHeaders().getContentDisposition(), "inline");
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
