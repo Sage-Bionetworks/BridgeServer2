@@ -221,8 +221,6 @@ public class AccountService {
         account.setModifiedOn(timestamp);
         account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(MIGRATION_VERSION);
-        // Prevent notes on account creation.
-        account.setNote(null);
 
         // Create account. We don't verify studies because this is handled by validation
         accountDao.createAccount(app, account);
