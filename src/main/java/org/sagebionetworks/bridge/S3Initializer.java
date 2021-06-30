@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
+import com.amazonaws.services.s3.model.BucketWebsiteConfiguration;
 import com.amazonaws.services.s3.model.CORSRule;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
 import com.amazonaws.services.s3.model.Region;
@@ -79,7 +80,7 @@ public class S3Initializer {
         INTERNAL(null, null),
         INTERNAL_UPLOAD_ACCESSIBLE(null, ALLOW_PUT),
         SYNAPSE_ACCESSIBLE(SYNAPSE_ACCESS_POLICY, null),
-        PUBLIC_ACCESSIBLE(PUBLIC_ACCESS_POLICY, null);
+        PUBLIC_ACCESSIBLE(PUBLIC_ACCESS_POLICY, ALLOW_PUT);
         
         String policy;
         BucketCrossOriginConfiguration corsConfig;
@@ -136,6 +137,14 @@ public class S3Initializer {
                 if (type.policy != null) {
                     String policy = resolveTemplate(type.policy, ImmutableMap.of("bucketName", bucketName));
                     s3Client.setBucketPolicy(bucketName, policy);
+                }
+                // For public buckets to serve for retrieving documents via HTTP, they 
+                // must also be configured as web hosting buckets. index file is required, 
+                // but does not need to exist (and does not exist) 
+                if (type.policy == PUBLIC_ACCESS_POLICY) {
+                    BucketWebsiteConfiguration config = new BucketWebsiteConfiguration();
+                    config.setIndexDocumentSuffix("index.html"); 
+                    s3Client.setBucketWebsiteConfiguration(bucketName, config);
                 }
                 if (type.corsConfig != null) {
                     s3Client.setBucketCrossOriginConfiguration(bucketName, type.corsConfig);
