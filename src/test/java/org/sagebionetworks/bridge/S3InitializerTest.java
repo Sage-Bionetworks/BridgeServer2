@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.BucketCrossOriginConfiguration;
+import com.amazonaws.services.s3.model.BucketWebsiteConfiguration;
 import com.amazonaws.services.s3.model.CORSRule;
 import com.amazonaws.services.s3.model.CORSRule.AllowedMethods;
 import com.amazonaws.services.s3.model.CreateBucketRequest;
@@ -42,6 +43,9 @@ public class S3InitializerTest extends Mockito {
     
     @Captor
     ArgumentCaptor<BucketCrossOriginConfiguration> corsConfigCaptor;
+    
+    @Captor
+    ArgumentCaptor<BucketWebsiteConfiguration> websiteConfigCaptor;
     
     @BeforeMethod
     public void beforeMethod() {
@@ -101,8 +105,20 @@ public class S3InitializerTest extends Mockito {
         
         verify(mockS3Client).createBucket(requestCaptor.capture());
         verify(mockS3Client).setBucketPolicy(BUCKET_NAME, resolvedPolicy);
+        verify(mockS3Client).setBucketWebsiteConfiguration(eq(BUCKET_NAME), websiteConfigCaptor.capture());
+        verify(mockS3Client).setBucketCrossOriginConfiguration(eq(BUCKET_NAME), corsConfigCaptor.capture());
         
         assertEquals(requestCaptor.getValue().getBucketName(), BUCKET_NAME);
+        
+        // Not a lot to check here, but
+        BucketWebsiteConfiguration config = websiteConfigCaptor.getValue();
+        assertEquals(config.getIndexDocumentSuffix(), "index.html");
+        
+        CORSRule rule = corsConfigCaptor.getValue().getRules().get(0);
+        assertEquals(rule.getAllowedHeaders(), ImmutableList.of("*"));
+        assertEquals(rule.getAllowedOrigins(), ImmutableList.of("*"));
+        assertEquals(rule.getAllowedMethods(), ImmutableList.of(AllowedMethods.PUT));
+        assertEquals(rule.getMaxAgeSeconds(), 3000);
     }
     
     @Test
