@@ -7,7 +7,8 @@ import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.config.Environment.LOCAL;
+import static org.sagebionetworks.bridge.config.Environment.PROD;
+import static org.sagebionetworks.bridge.config.Environment.UAT;
 import static org.sagebionetworks.bridge.models.files.FileDispositionType.ATTACHMENT;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.AVAILABLE;
 import static org.sagebionetworks.bridge.models.files.FileRevisionStatus.PENDING;
@@ -43,6 +44,8 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class FileService {
     
+    static final String DOCS_WEBSITE_URL_CONFIG_PROPERTY = "docs.website.url";
+
     static final int EXPIRATION_IN_MINUTES = 10;
     
     private FileMetadataDao fileMetadataDao;
@@ -52,6 +55,8 @@ public class FileService {
     private Environment env;
     
     private String revisionsBucket;
+    
+    private String documentWebsiteUrl;
     
     private AmazonS3 s3Client;
     
@@ -69,10 +74,11 @@ public class FileService {
     final void setConfig(BridgeConfig config) {
         revisionsBucket = config.getHostnameWithPostfix("docs");
         env = config.getEnvironment();
+        documentWebsiteUrl = config.get(DOCS_WEBSITE_URL_CONFIG_PROPERTY);
     }
     
     @Resource(name = "fileUploadS3Client")
-    public void setS3Client(AmazonS3 s3Client) {
+    final void setS3Client(AmazonS3 s3Client) {
         this.s3Client = s3Client;
     }
     
@@ -231,9 +237,9 @@ public class FileService {
     }
     
     protected String getDownloadURL(FileRevision revision) {
-        String protocol = (env == LOCAL) ? "http" : "https";
+        String protocol = (env == PROD || env == UAT) ? "https" : "http";
         String fileName = getFileName(revision);
-        return protocol + "://" + revisionsBucket + "/" + fileName;
+        return protocol + "://" + documentWebsiteUrl + "/" + fileName;
     }
 
     protected String getFileName(FileRevision revision) {
