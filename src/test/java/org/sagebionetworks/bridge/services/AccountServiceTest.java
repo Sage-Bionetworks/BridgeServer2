@@ -247,6 +247,7 @@ public class AccountServiceTest extends Mockito {
         account.setEmail(EMAIL);
         account.setStatus(UNVERIFIED);
         account.setAppId("wrong-app");
+        account.setNote(TEST_NOTE);
 
         service.createAccount(app, account);
         verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
@@ -259,6 +260,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(createdAccount.getStatus(), UNVERIFIED);
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
+        assertEquals(createdAccount.getNote(), TEST_NOTE);
     }
 
     @Test
@@ -1122,21 +1124,6 @@ public class AccountServiceTest extends Mockito {
         assertTrue(account.isPresent());
         
         RequestContext.set(null);
-    }
-
-    @Test
-    public void createAccountFailsToSaveNote() {
-        App app = App.create();
-        app.setIdentifier(TEST_APP_ID);
-
-        Account account = Account.create();
-        account.setNote(TEST_NOTE);
-
-        service.createAccount(app, account);
-        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
-
-        Account createdAccount = accountCaptor.getValue();
-        assertNull(createdAccount.getNote());
     }
 
     @Test
