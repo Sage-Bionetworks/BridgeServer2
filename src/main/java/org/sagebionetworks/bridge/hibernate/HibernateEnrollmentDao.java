@@ -40,11 +40,14 @@ public class HibernateEnrollmentDao implements EnrollmentDao {
         if (!includeTesters) {
             builder.append("INNER JOIN org.sagebionetworks.bridge.hibernate.HibernateAccount AS acct ON acct.id = h.accountId");    
         }
-        builder.append("WHERE h.appId = :appId AND h.studyId = :studyId", "appId", appId, "studyId", studyId);
-        builder.enrollment(filter);
+        QueryBuilder where = builder.startWhere();
+        where.append("h.appId = :appId", "appId", appId);
+        where.append("h.studyId = :studyId", "studyId", studyId);
+        where.enrollment(filter, false);
         if (!includeTesters) {
-            builder.dataGroups(ImmutableSet.of(TEST_USER_GROUP), "NOT IN");
+            where.dataGroups(ImmutableSet.of(TEST_USER_GROUP), "NOT IN");
         }
+        
         int total = hibernateHelper.queryCount("SELECT COUNT(*) " + builder.getQuery(), builder.getParameters());
         
         List<HibernateEnrollment> enrollments = hibernateHelper.queryGet("SELECT h " + builder.getQuery(),

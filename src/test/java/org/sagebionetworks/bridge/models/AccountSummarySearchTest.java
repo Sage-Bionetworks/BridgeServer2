@@ -53,10 +53,10 @@ public class AccountSummarySearchTest {
                 .withOrgMembership(TEST_ORG_ID)
                 .withEnrolledInStudyId(TEST_STUDY_ID)
                 .withExternalIdFilter("externalId")
-                .withStatusFilter(ENABLED)
-                .withEnrollmentFilter(ENROLLED)
+                .withStatus(ENABLED)
+                .withEnrollment(ENROLLED)
                 .withAttributeKey("foo")
-                .withAttributeValue("bar")
+                .withAttributeValueFilter("bar")
                 .build();
         
         ObjectMapper mapper = BridgeObjectMapper.get();
@@ -89,10 +89,10 @@ public class AccountSummarySearchTest {
             .withAdminOnly(true)
             .withEnrolledInStudyId(TEST_STUDY_ID)
             .withExternalIdFilter("externalId")
-            .withStatusFilter(ENABLED)
-            .withEnrollmentFilter(ENROLLED)
+            .withStatus(ENABLED)
+            .withEnrollment(ENROLLED)
             .withAttributeKey("foo")
-            .withAttributeValue("bar")
+            .withAttributeValueFilter("bar")
             .build();
         
         String json = BridgeObjectMapper.get().writeValueAsString(search);
@@ -116,10 +116,10 @@ public class AccountSummarySearchTest {
         assertTrue(deser.isAdminOnly());
         assertEquals(deser.getEnrolledInStudyId(), TEST_STUDY_ID);
         assertEquals(deser.getExternalIdFilter(), "externalId");
-        assertEquals(deser.getStatusFilter(), ENABLED);
-        assertEquals(deser.getEnrollmentFilter(), ENROLLED);
+        assertEquals(deser.getStatus(), ENABLED);
+        assertEquals(deser.getEnrollment(), ENROLLED);
         assertEquals(deser.getAttributeKey(), "foo");
-        assertEquals(deser.getAttributeValue(), "bar");
+        assertEquals(deser.getAttributeValueFilter(), "bar");
     }
     
     @Test
@@ -141,10 +141,10 @@ public class AccountSummarySearchTest {
             .withOrgMembership(TEST_ORG_ID)
             .withEnrolledInStudyId(TEST_STUDY_ID)
             .withExternalIdFilter("externalId")
-            .withStatusFilter(ENABLED)
-            .withEnrollmentFilter(ENROLLED)
+            .withStatus(ENABLED)
+            .withEnrollment(ENROLLED)
             .withAttributeKey("foo")
-            .withAttributeValue("bar")
+            .withAttributeValueFilter("bar")
             .build();
 
         AccountSummarySearch copy = new AccountSummarySearch.Builder().copyOf(search).build();
@@ -161,10 +161,10 @@ public class AccountSummarySearchTest {
         assertEquals(copy.isAdminOnly(), Boolean.FALSE);
         assertEquals(copy.getEnrolledInStudyId(), TEST_STUDY_ID);
         assertEquals(copy.getExternalIdFilter(), "externalId");
-        assertEquals(copy.getStatusFilter(), ENABLED);
-        assertEquals(copy.getEnrollmentFilter(), ENROLLED);
+        assertEquals(copy.getStatus(), ENABLED);
+        assertEquals(copy.getEnrollment(), ENROLLED);
         assertEquals(copy.getAttributeKey(), "foo");
-        assertEquals(copy.getAttributeValue(), "bar");
+        assertEquals(copy.getAttributeValueFilter(), "bar");
     }
     
     @Test
