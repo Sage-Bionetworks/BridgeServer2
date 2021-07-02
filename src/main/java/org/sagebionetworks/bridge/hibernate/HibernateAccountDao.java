@@ -19,12 +19,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -123,55 +123,53 @@ public class HibernateAccountDao implements AccountDao {
         builder.append(prefix);
         builder.append("LEFT JOIN acct.enrollments AS enrollment");
         builder.append("WITH acct.id = enrollment.accountId");
-        builder.append("WHERE acct.appId = :appId", "appId", appId);
         
+        WhereClauseBuilder where = builder.startWhere();
+        
+        where.append("acct.appId = :appId", "appId", appId);
         if (accountId != null) {
             AccountId unguarded = accountId.getUnguardedAccountId();
             if (unguarded.getEmail() != null) {
-                builder.append("AND acct.email=:email", "email", unguarded.getEmail());
+                where.append("acct.email=:email", "email", unguarded.getEmail());
             } else if (unguarded.getHealthCode() != null) {
-                builder.append("AND acct.healthCode=:healthCode","healthCode", unguarded.getHealthCode());
+                where.append("acct.healthCode=:healthCode","healthCode", unguarded.getHealthCode());
             } else if (unguarded.getPhone() != null) {
-                builder.append("AND acct.phone.number=:number AND acct.phone.regionCode=:regionCode",
+                where.append("acct.phone.number=:number AND acct.phone.regionCode=:regionCode",
                         "number", unguarded.getPhone().getNumber(),
                         "regionCode", unguarded.getPhone().getRegionCode());
             } else if (unguarded.getSynapseUserId() != null) {
-                builder.append("AND acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
+                where.append("acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
             } else {
-                builder.append("AND enrollment.externalId=:externalId", "externalId", unguarded.getExternalId());
+                where.append("enrollment.externalId=:externalId", "externalId", unguarded.getExternalId());
             }
         }
         if (search != null) {
-            // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
-            if (StringUtils.isNotBlank(search.getEmailFilter())) {
-                builder.append("AND acct.email LIKE :email", "email", "%"+search.getEmailFilter()+"%");
-            }
-            if (StringUtils.isNotBlank(search.getPhoneFilter())) {
-                String phoneString = search.getPhoneFilter().replaceAll("\\D*", "");
-                builder.append("AND acct.phone.number LIKE :number", "number", "%"+phoneString+"%");
-            }
-            // Note: start- and endTime are inclusive.            
-            if (search.getStartTime() != null) {
-                builder.append("AND acct.createdOn >= :startTime", "startTime", search.getStartTime());
-            }
-            if (search.getEndTime() != null) {
-                builder.append("AND acct.createdOn <= :endTime", "endTime", search.getEndTime());
-            }
-            if (search.getLanguage() != null) {
-                builder.append("AND :language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
-            }
-            builder.adminOnly(search.isAdminOnly());
-            builder.dataGroups(search.getAllOfGroups(), "IN");
-            builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
+            where.like("acct.email LIKE :email", "email", search.getEmailFilter());
+            where.phone(search.getPhoneFilter());
+            where.append("acct.createdOn >= :startTime", "startTime", search.getStartTime());
+            where.append("acct.createdOn <= :endTime", "endTime", search.getEndTime());
+            where.append(":language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
+            where.like("enrollment.externalId LIKE :extId", "extId", search.getExternalIdFilter());
+            where.append("acct.status = :status", "status", search.getStatus());
+            where.adminOnly(search.isAdminOnly());
+            where.dataGroups(search.getAllOfGroups(), "IN");
+            where.dataGroups(search.getNoneOfGroups(), "NOT IN");
+            where.like("acct.attributes['"+search.getAttributeKey()+"'] LIKE :attValue", "attValue", search.getAttributeValueFilter());
             
-            String enrolledInStudy = search.getEnrolledInStudyId();
+            // Perhaps confusing with the below enrollment code, this is a filter based on enrolled/withdrawn state.
+            where.enrollment(search.getEnrollment(), true);
+            
+            // Search for an organization member, or search based on enrollment, either a specified study, 
+            // or the studies accessible to the caller. For some app-scoped roles, the study filter is ignored.
             if (search.getOrgMembership() != null) {
-                builder.orgMembership(search.getOrgMembership());
-            } else if (enrolledInStudy != null) { // this always takes precedence
-                Set<String> studies = ImmutableSet.of(search.getEnrolledInStudyId());
-                builder.append("AND enrollment.studyId IN (:studies)", "studies", studies);
-            } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, RESEARCHER, WORKER)) {
-                builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
+                where.orgMembership(search.getOrgMembership());    
+            } else {
+                String enrolledInStudy = search.getEnrolledInStudyId();
+                if (enrolledInStudy != null) {
+                    where.append("enrollment.studyId = :studyId", "studyId", enrolledInStudy);
+                } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, RESEARCHER, WORKER)) {
+                    where.append("enrollment.studyId IN (:studies)", "studies", callerStudies);
+                }
             }
         }
         if (!isCount) {
@@ -220,7 +218,13 @@ public class HibernateAccountDao implements AccountDao {
                 .withRequestParam(ResourceList.ORG_MEMBERSHIP, search.getOrgMembership())
                 .withRequestParam(ResourceList.PAGE_SIZE, search.getPageSize())
                 .withRequestParam(ResourceList.PHONE_FILTER, search.getPhoneFilter())
-                .withRequestParam(ResourceList.START_TIME, search.getStartTime());
+                .withRequestParam(ResourceList.START_TIME, search.getStartTime())
+                .withRequestParam(ResourceList.EXTERNAL_ID_FILTER, search.getExternalIdFilter())
+                .withRequestParam(ResourceList.STATUS, search.getStatus())
+                .withRequestParam(ResourceList.ENROLLMENT, search.getEnrollment())
+                .withRequestParam(ResourceList.ATTRIBUTE_KEY, search.getAttributeKey())
+                .withRequestParam(ResourceList.ATTRIBUTE_VALUE_FILTER, search.getAttributeValueFilter())
+                .withRequestParam(ResourceList.ENROLLED_IN_STUDY_ID, search.getEnrolledInStudyId());
     }
     
     // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created
