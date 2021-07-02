@@ -24,6 +24,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -123,7 +124,7 @@ public class HibernateAccountDao implements AccountDao {
         builder.append("LEFT JOIN acct.enrollments AS enrollment");
         builder.append("WITH acct.id = enrollment.accountId");
         
-        QueryBuilder where = builder.startWhere();
+        WhereClauseBuilder where = builder.startWhere();
         
         where.append("acct.appId = :appId", "appId", appId);
         if (accountId != null) {

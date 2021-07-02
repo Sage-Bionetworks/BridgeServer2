@@ -99,6 +99,7 @@ public class BridgeUtils {
     }
 
     public static final Joiner AND_JOINER = Joiner.on(" AND ");
+    public static final Joiner OR_JOINER = Joiner.on(" OR ");
     public static final Joiner COMMA_SPACE_JOINER = Joiner.on(", ");
     public static final Joiner COMMA_JOINER = Joiner.on(",");
     public static final Joiner SEMICOLON_SPACE_JOINER = Joiner.on("; ");
