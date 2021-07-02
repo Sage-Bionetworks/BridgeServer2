@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -24,6 +25,7 @@ import org.sagebionetworks.bridge.services.AdherenceService;
 public class AdherenceController extends BaseController {
     
     static final StatusMessage SAVED_MSG = new StatusMessage("Adherence records saved.");
+    static final StatusMessage DELETED_MSG = new StatusMessage("Adherence records deleted");
     
     private AdherenceService service;
 
@@ -90,5 +92,38 @@ public class AdherenceController extends BaseController {
                 .withStudyId(studyId).build();
         
         return service.getAdherenceRecords(session.getAppId(), search);
+    }
+
+    @DeleteMapping("/v5/studies/{studyId}/participants/self/adherence")
+    public StatusMessage deleteAdherenceRecordsForSelf(@PathVariable String studyId) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+
+        AdherenceRecordList recordsList = parseJson(AdherenceRecordList.class);
+        for (AdherenceRecord oneRecord : recordsList.getRecords()) {
+            oneRecord.setAppId(session.getAppId());
+            oneRecord.setUserId(session.getId());
+            oneRecord.setStudyId(studyId);
+        }
+//        TODO: Build deletion method in service
+//        service.deleteAdherenceRecords(session.getAppId(), recordsList);
+        return DELETED_MSG;
+    }
+
+    @DeleteMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence")
+    public StatusMessage deleteAdherenceRecords(@PathVariable String studyId, @PathVariable String userIdToken) {
+        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+
+        String userId = accountService.getAccountId(session.getAppId(), userIdToken)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        AdherenceRecordList recordsList = parseJson(AdherenceRecordList.class);
+        for (AdherenceRecord oneRecord : recordsList.getRecords()) {
+            oneRecord.setAppId(session.getAppId());
+            oneRecord.setUserId(userId);
+            oneRecord.setStudyId(studyId);
+        }
+
+//        service.deleteAdherenceRecords(session.getAppId(), recordsList);
+        return DELETED_MSG;
     }
 }

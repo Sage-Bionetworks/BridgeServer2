@@ -117,4 +117,6 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         builder.append("ORDER BY ar.startedOn " + search.getSortOrder().name());
         return builder;
     }
+
+//    TODO: Delete method (should override interface)
 }

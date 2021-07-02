@@ -576,6 +576,11 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(update.getStartedOn(), STARTED_ON);
         assertEquals(update.getFinishedOn(), FINISHED_ON);
     }
+
+    /* TODO:
+    *   Verify delete service can delete.
+    *   Verify errors for missing records. (should it even throw an error?)
+    *   Verify errors for authorization. */
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn) {
         AdherenceRecord asmt1 = new AdherenceRecord();

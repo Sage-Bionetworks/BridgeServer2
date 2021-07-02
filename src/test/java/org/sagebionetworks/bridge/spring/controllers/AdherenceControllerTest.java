@@ -187,4 +187,9 @@ public class AdherenceControllerTest extends Mockito {
         assertEquals(captured.getOffsetBy(), Integer.valueOf(10));
         assertEquals(captured.getPageSize(), Integer.valueOf(50));        
     }
+
+    /* TODO: Create tests for:
+    *   Must verify successful delete for self.
+    *   Must verify successful delete by ID.
+    *   Maybe verify unsuccessful delete, check errors thrown  */
 }

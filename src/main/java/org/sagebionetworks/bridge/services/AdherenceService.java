@@ -276,4 +276,7 @@ public class AdherenceService {
             }
         }
     }
+
+    /* TODO: Add deleteAR method. Should delete AdherenceRecord but might also need
+    *   to update Assessments or Sessions. Also might need to validate input. */
 }
