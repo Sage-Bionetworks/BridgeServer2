@@ -2,6 +2,15 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.OR;
+import static org.sagebionetworks.bridge.models.StringSearchPosition.EXACT;
+import static org.sagebionetworks.bridge.models.StringSearchPosition.INFIX;
+import static org.sagebionetworks.bridge.models.StringSearchPosition.POSTFIX;
+import static org.sagebionetworks.bridge.models.StringSearchPosition.PREFIX;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.ASSESSMENT;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.SESSION;
 import static org.testng.Assert.assertEquals;
 
 import java.util.Map;
@@ -18,7 +27,7 @@ import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 public class QueryBuilderTest {
 
     @Test
-    public void testSimpleParams() {
+    public void append() {
         QueryBuilder builder = new QueryBuilder();
         builder.append("phrase");
         builder.append("phrase one=:one", "one", "valueForOne");
@@ -35,9 +44,9 @@ public class QueryBuilderTest {
     }
     
     @Test
-    public void testDataGroups() {
+    public void whereClause_dataGroups() {
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
+        WhereClauseBuilder where = builder.startWhere(AND);
         where.dataGroups(ImmutableSet.of("A", "B"), "IN");
         where.dataGroups(ImmutableSet.of("C", "D"), "NOT IN");
         
@@ -51,91 +60,91 @@ public class QueryBuilderTest {
     }
     
     @Test
-    public void testAdmin() {
+    public void whereClause_adminOnlyRequred() {
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
-        where.adminOnly(null);
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.adminOnlyRequired(null);
         assertEquals(builder.getQuery(), "");
         
         builder = new QueryBuilder();
-        where = builder.startWhere();
-        where.adminOnly(true);
+        where = builder.startWhere(AND);
+        where.adminOnlyRequired(true);
         assertEquals(builder.getQuery(), "WHERE size(acct.roles) > 0");
 
         builder = new QueryBuilder();
-        where = builder.startWhere();
-        where.adminOnly(false);
+        where = builder.startWhere(AND);
+        where.adminOnlyRequired(false);
         assertEquals(builder.getQuery(), "WHERE size(acct.roles) = 0");
     }
     
     @Test
-    public void testOrgMembership() {
+    public void whereClause_orgMembershipRequired() {
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
-        where.orgMembership(null);
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.orgMembershipRequired(null);
         assertEquals(builder.getQuery(), "");
         
         builder = new QueryBuilder();
-        where = builder.startWhere();
-        where.orgMembership("<NONE>");
+        where = builder.startWhere(AND);
+        where.orgMembershipRequired("<NONE>");
         assertEquals(builder.getQuery(), "WHERE acct.orgMembership IS NULL");
 
         builder = new QueryBuilder();
-        where = builder.startWhere();
-        where.orgMembership("foo");
+        where = builder.startWhere(AND);
+        where.orgMembershipRequired("foo");
         assertEquals(builder.getQuery(), "WHERE acct.orgMembership = :orgId");
         assertEquals(builder.getParameters().get("orgId"), "foo");
     }
     
     @Test
-    public void enrollment() {
+    public void whereClause_enrollment() {
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
+        WhereClauseBuilder where = builder.startWhere(AND);
         where.enrollment(EnrollmentFilter.ENROLLED, false);
         assertEquals(builder.getQuery(), "WHERE withdrawnOn IS NULL");
         
         builder = new QueryBuilder();
-        where = builder.startWhere();
+        where = builder.startWhere(AND);
         where.enrollment(EnrollmentFilter.WITHDRAWN, false);
         assertEquals(builder.getQuery(), "WHERE withdrawnOn IS NOT NULL");
         
         builder = new QueryBuilder();
-        where = builder.startWhere();
+        where = builder.startWhere(AND);
         where.enrollment(EnrollmentFilter.ALL, false);
         assertEquals(builder.getQuery(), "");
         
         builder = new QueryBuilder();
-        where = builder.startWhere();
+        where = builder.startWhere(AND);
         where.enrollment(null, false);
         assertEquals(builder.getQuery(), "");
 
         builder = new QueryBuilder();
-        where = builder.startWhere();
+        where = builder.startWhere(AND);
         where.enrollment(EnrollmentFilter.ENROLLED, true);
         assertEquals(builder.getQuery(), "WHERE enrollment.withdrawnOn IS NULL");
         
         builder = new QueryBuilder();
-        where = builder.startWhere();
+        where = builder.startWhere(AND);
         where.enrollment(EnrollmentFilter.WITHDRAWN, true);
         assertEquals(builder.getQuery(), "WHERE enrollment.withdrawnOn IS NOT NULL");
         
         builder = new QueryBuilder();
-        where = builder.startWhere();
+        where = builder.startWhere(AND);
         where.enrollment(EnrollmentFilter.ALL, true);
         assertEquals(builder.getQuery(), "");
         
         builder = new QueryBuilder();
-        where = builder.startWhere();
+        where = builder.startWhere(AND);
         where.enrollment(null, true);
         assertEquals(builder.getQuery(), "");
     }
     
     @Test
-    public void alternativeMatchedPairs() {
+    public void whereClause_alternativeMatchedPairs() {
         Map<String, DateTime> map = ImmutableMap.of("event_1", CREATED_ON, "event_2", MODIFIED_ON);
         
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
+        WhereClauseBuilder where = builder.startWhere(AND);
         where.alternativeMatchedPairs(map, "e", "tm.sessionStartEventId", "ar.eventTimestamp");
         
         assertEquals(builder.getQuery(), "WHERE ( (tm.sessionStartEventId = :eKey0 AND " +
@@ -150,27 +159,27 @@ public class QueryBuilderTest {
     }
     
     @Test
-    public void alternativeMatchedPairs_nullSkipped() { 
+    public void whereClause_alternativeMatchedPairsIsNull() { 
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
+        WhereClauseBuilder where = builder.startWhere(AND);
         where.alternativeMatchedPairs(null, "e", "tm.sessionStartEventId", "ar.eventTimestamp");
         assertEquals(builder.getQuery(), "");
     }
 
     @Test
-    public void alternativeMatchedPairs_emptySkipped() { 
+    public void whereClause_alternativeMatchedPairsIsEmpty() { 
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
+        WhereClauseBuilder where = builder.startWhere(AND);
         where.alternativeMatchedPairs(ImmutableMap.of(), "e", "tm.sessionStartEventId", "ar.eventTimestamp");
         assertEquals(builder.getQuery(), "");
     }
     
     @Test
-    public void whereClause() {
+    public void whereClause_append() {
         QueryBuilder builder = new QueryBuilder();
         builder.append("SELECT * FROM TABLE");
         
-        WhereClauseBuilder where = builder.startWhere();
+        WhereClauseBuilder where = builder.startWhere(AND);
         where.append("foo1 = :bar1", "bar1", "baz1");
         where.append("foo2 = :bar2", "bar2", "baz2");
         builder.append("ORDER BY name");
@@ -181,104 +190,240 @@ public class QueryBuilderTest {
     }
     
     @Test
-    public void appendSkipsMissingValue1of1() {
+    public void whereClause_appendNoValue() {
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.append("a = :a", "a", null);
+    }
+    
+    @Test
+    public void whereClause_orPredicate() { 
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(OR);
+        where.appendRequired("appId = :appId", "appId", "appIdValue");
+        where.appendRequired("studyId = :studyId", "studyId", "studyIdValue");
+        where.adherenceRecordType(SESSION);
+        where.dataGroups(USER_DATA_GROUPS, "IN");
+        
+        assertEquals(builder.getQuery(), "WHERE appId = :appId AND studyId = "
+                + ":studyId AND (tm.assessmentGuid IS NULL OR (:IN1 IN elements("
+                + "acct.dataGroups) AND :IN2 IN elements(acct.dataGroups)))");
+    }
+    
+    @Test
+    public void whereClause_andPredicate() { 
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.appendRequired("appId = :appId", "appId", "appIdValue");
+        where.appendRequired("studyId = :studyId", "studyId", "studyIdValue");
+        where.adherenceRecordType(SESSION);
+        where.dataGroups(USER_DATA_GROUPS, "IN");
+        
+        assertEquals(builder.getQuery(), "WHERE appId = :appId AND studyId = "
+                + ":studyId AND tm.assessmentGuid IS NULL AND (:IN1 IN elements("
+                + "acct.dataGroups) AND :IN2 IN elements(acct.dataGroups))");
+    }
+    
+    @Test
+    public void append_phraseOnly() {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("from Table");
+        
+        assertEquals(builder.getQuery(), "from Table");
+    }
+    
+    @Test
+    public void append_missingValue1of1() {
         QueryBuilder builder = new QueryBuilder();
         builder.append("phrase", "key", null);
         assertEquals(builder.getQuery(), "");
     }
     
     @Test
-    public void appendSkipsMissingValue1of2() {
+    public void append_missingValue1of2() {
         QueryBuilder builder = new QueryBuilder();
         builder.append("phrase", "key1", null, "key2", "value2");
         assertEquals(builder.getQuery(), "");
     }
     
     @Test
-    public void appendSkipsMissingValue2of2() {
+    public void append_missingValue2of2() {
         QueryBuilder builder = new QueryBuilder();
         builder.append("phrase", "key1", "value1", "key2", null);
         assertEquals(builder.getQuery(), "");
     }
     
     @Test
-    public void appendSkipsMissingValue1of3() {
+    public void append_missingValue1of3() {
         QueryBuilder builder = new QueryBuilder();
         builder.append("phrase", "key1", null, "key2", "value2", "key3", "value3");
         assertEquals(builder.getQuery(), "");
     }
     
     @Test
-    public void appendSkipsMissingValue2of3() {
+    public void append_missingValue2of3() {
         QueryBuilder builder = new QueryBuilder();
         builder.append("phrase", "key1", "value1", "key2", null, "key3", "value3");
         assertEquals(builder.getQuery(), "");
     }
     
     @Test
-    public void appendSkipsMissingValue3of3() {
+    public void append_missingValue3of3() {
         QueryBuilder builder = new QueryBuilder();
         builder.append("phrase", "key1", "value1", "key2", "value2", "key3", null);
         assertEquals(builder.getQuery(), "");
     }
-    
+
     @Test
-    public void testLike() {
+    public void whereClause_likeWithPrefix() {
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
-        where.like("phrase", "key", "value");
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.like(PREFIX, "phrase", "key", "value");
+        
+        assertEquals(builder.getQuery(), "WHERE phrase");
+        assertEquals(builder.getParameters().get("key"), "value%");
+    }
+
+    @Test
+    public void whereClause_likeWithInfix() {
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.like(INFIX, "phrase", "key", "value");
         
         assertEquals(builder.getQuery(), "WHERE phrase");
         assertEquals(builder.getParameters().get("key"), "%value%");
     }
     
     @Test
-    public void likeSkipsNullValue() {
+    public void whereClause_likeWithPostfix() {
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
-        where.like("phrase", "key", null);
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.like(POSTFIX, "phrase", "key", "value");
+        
+        assertEquals(builder.getQuery(), "WHERE phrase");
+        assertEquals(builder.getParameters().get("key"), "%value");
+    }
+    
+    @Test
+    public void whereClause_likeWithExact() {
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.like(EXACT, "phrase", "key", "value");
+        
+        assertEquals(builder.getQuery(), "WHERE phrase");
+        assertEquals(builder.getParameters().get("key"), "value");
+    }
+    
+    @Test
+    public void whereClause_likeWithNullValue() {
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.like(INFIX, "phrase", "key", null);
         assertEquals(builder.getQuery(), "");
     }
     
     @Test
-    public void likeSkipsBlankValue() {
+    public void whereClause_likeWithBlankValue() {
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
-        where.like("phrase", "key", "");
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.like(INFIX, "phrase", "key", "");
         assertEquals(builder.getQuery(), "");
     }
     
     @Test
-    public void testPhone() {
+    public void whereClause_phone() {
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
-        where.phone("(971) 248-6796");
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.phone(INFIX, "(971) 248-6796");
         assertEquals(builder.getQuery(), "WHERE acct.phone.number LIKE :number");
         assertEquals(builder.getParameters().get("number"), "%9712486796%");
     }
     
     @Test
-    public void phoneSkipsNullValue() {
+    public void whereClause_phoneWithNullValue() {
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
-        where.phone(null);
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.phone(INFIX, null);
         assertEquals(builder.getQuery(), "");
     }
     
     @Test
-    public void dataGroupsSkipsNullValue() {
+    public void whereClause_dataGroupsWithNullValue() {
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
-        where.phone("---");
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.phone(INFIX, "---");
         assertEquals(builder.getQuery(), "");
     }
     
     @Test
-    public void dataGroupsSkipsEmptyValue() {
+    public void whereClause_dataGroupsWithEmptyValue() {
         QueryBuilder builder = new QueryBuilder();
-        WhereClauseBuilder where = builder.startWhere();
+        WhereClauseBuilder where = builder.startWhere(AND);
         where.dataGroups(null, "IN");
         assertEquals(builder.getQuery(), "");
+    }
+    
+    @Test
+    public void whereClause_appendWithMissingValue() {
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.appendRequired("from Table", "foo", null);
         
+        assertEquals(builder.getQuery(), "");
+    }
+    
+    @Test
+    public void startWhere_withPredicate() { 
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(OR);
+        where.append("a = :a", "a", "a");
+        where.append("b = :b", "b", "b");
+        
+        assertEquals(builder.getQuery(), "WHERE a = :a OR b = :b");
+    }
+    
+    @Test
+    public void whereClause_adherenceRecordTypeIsNull() {
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.adherenceRecordType(null);
+        
+        assertEquals(builder.getQuery(), "");
+    }
+    
+    @Test
+    public void whereClause_adherenceRecordTypeIsSession() {
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.adherenceRecordType(SESSION);
+        
+        assertEquals(builder.getQuery(), "WHERE tm.assessmentGuid IS NULL");
+    }
+
+    @Test
+    public void whereClause_adherenceRecordTypeIsAssessment() {
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.adherenceRecordType(ASSESSMENT);
+        
+        assertEquals(builder.getQuery(), "WHERE tm.assessmentGuid IS NOT NULL");
+    }
+    
+    @Test
+    public void whereClause_appendPhraseOnly() {
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.append("a IS NOT NULL");
+        
+        assertEquals(builder.getQuery(), "WHERE a IS NOT NULL");
+    }
+    
+    @Test
+    public void whereClause_appendMissingValue1of1() {
+        QueryBuilder builder = new QueryBuilder();
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.append("a = :a", "a", null);
+        
+        assertEquals(builder.getQuery(), "");
     }
 }

@@ -4,6 +4,26 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.models.ResourceList.ADMIN_ONLY;
+import static org.sagebionetworks.bridge.models.ResourceList.ALL_OF_GROUPS;
+import static org.sagebionetworks.bridge.models.ResourceList.ATTRIBUTE_KEY;
+import static org.sagebionetworks.bridge.models.ResourceList.ATTRIBUTE_VALUE_FILTER;
+import static org.sagebionetworks.bridge.models.ResourceList.EMAIL_FILTER;
+import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
+import static org.sagebionetworks.bridge.models.ResourceList.ENROLLED_IN_STUDY_ID;
+import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT;
+import static org.sagebionetworks.bridge.models.ResourceList.EXTERNAL_ID_FILTER;
+import static org.sagebionetworks.bridge.models.ResourceList.LANGUAGE;
+import static org.sagebionetworks.bridge.models.ResourceList.NONE_OF_GROUPS;
+import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
+import static org.sagebionetworks.bridge.models.ResourceList.ORG_MEMBERSHIP;
+import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.ResourceList.PHONE_FILTER;
+import static org.sagebionetworks.bridge.models.ResourceList.PREDICATE;
+import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
+import static org.sagebionetworks.bridge.models.ResourceList.STATUS;
+import static org.sagebionetworks.bridge.models.ResourceList.STRING_SEARCH_POSITION;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 
 import java.util.List;
 import java.util.Optional;
@@ -28,7 +48,7 @@ import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.SearchTermPredicate;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
@@ -124,9 +144,10 @@ public class HibernateAccountDao implements AccountDao {
         builder.append("LEFT JOIN acct.enrollments AS enrollment");
         builder.append("WITH acct.id = enrollment.accountId");
         
-        WhereClauseBuilder where = builder.startWhere();
+        SearchTermPredicate predicate = (search != null) ? search.getPredicate() : AND;
+        WhereClauseBuilder where = builder.startWhere(predicate);
+        where.appendRequired("acct.appId = :appId", "appId", appId);
         
-        where.append("acct.appId = :appId", "appId", appId);
         if (accountId != null) {
             AccountId unguarded = accountId.getUnguardedAccountId();
             if (unguarded.getEmail() != null) {
@@ -134,9 +155,8 @@ public class HibernateAccountDao implements AccountDao {
             } else if (unguarded.getHealthCode() != null) {
                 where.append("acct.healthCode=:healthCode","healthCode", unguarded.getHealthCode());
             } else if (unguarded.getPhone() != null) {
-                where.append("acct.phone.number=:number AND acct.phone.regionCode=:regionCode",
-                        "number", unguarded.getPhone().getNumber(),
-                        "regionCode", unguarded.getPhone().getRegionCode());
+                where.appendRequired("acct.phone.number=:number", "number", unguarded.getPhone().getNumber());
+                where.appendRequired("acct.phone.regionCode=:regionCode", "regionCode", unguarded.getPhone().getRegionCode());
             } else if (unguarded.getSynapseUserId() != null) {
                 where.append("acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
             } else {
@@ -144,17 +164,17 @@ public class HibernateAccountDao implements AccountDao {
             }
         }
         if (search != null) {
-            where.like("acct.email LIKE :email", "email", search.getEmailFilter());
-            where.phone(search.getPhoneFilter());
+            where.like(search.getStringSearchPosition(), "acct.email LIKE :email", "email", search.getEmailFilter());
+            where.phone(search.getStringSearchPosition(), search.getPhoneFilter());
             where.append("acct.createdOn >= :startTime", "startTime", search.getStartTime());
             where.append("acct.createdOn <= :endTime", "endTime", search.getEndTime());
             where.append(":language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
-            where.like("enrollment.externalId LIKE :extId", "extId", search.getExternalIdFilter());
+            where.like(search.getStringSearchPosition(), "enrollment.externalId LIKE :extId", "extId", search.getExternalIdFilter());
             where.append("acct.status = :status", "status", search.getStatus());
-            where.adminOnly(search.isAdminOnly());
+            where.adminOnlyRequired(search.isAdminOnly());
             where.dataGroups(search.getAllOfGroups(), "IN");
             where.dataGroups(search.getNoneOfGroups(), "NOT IN");
-            where.like("acct.attributes['"+search.getAttributeKey()+"'] LIKE :attValue", "attValue", search.getAttributeValueFilter());
+            where.like(search.getStringSearchPosition(), "acct.attributes['"+search.getAttributeKey()+"'] LIKE :attValue", "attValue", search.getAttributeValueFilter());
             
             // Perhaps confusing with the below enrollment code, this is a filter based on enrolled/withdrawn state.
             where.enrollment(search.getEnrollment(), true);
@@ -162,13 +182,13 @@ public class HibernateAccountDao implements AccountDao {
             // Search for an organization member, or search based on enrollment, either a specified study, 
             // or the studies accessible to the caller. For some app-scoped roles, the study filter is ignored.
             if (search.getOrgMembership() != null) {
-                where.orgMembership(search.getOrgMembership());    
+                where.orgMembershipRequired(search.getOrgMembership());
             } else {
                 String enrolledInStudy = search.getEnrolledInStudyId();
                 if (enrolledInStudy != null) {
-                    where.append("enrollment.studyId = :studyId", "studyId", enrolledInStudy);
+                    where.appendRequired("enrollment.studyId = :studyId", "studyId", enrolledInStudy);
                 } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, RESEARCHER, WORKER)) {
-                    where.append("enrollment.studyId IN (:studies)", "studies", callerStudies);
+                    where.appendRequired("enrollment.studyId IN (:studies)", "studies", callerStudies);
                 }
             }
         }
@@ -208,23 +228,25 @@ public class HibernateAccountDao implements AccountDao {
         
         // Package results and return.
         return new PagedResourceList<>(accountSummaryList, count)
-                .withRequestParam(ResourceList.ADMIN_ONLY, search.isAdminOnly())
-                .withRequestParam(ResourceList.ALL_OF_GROUPS, search.getAllOfGroups())
-                .withRequestParam(ResourceList.EMAIL_FILTER, search.getEmailFilter())
-                .withRequestParam(ResourceList.END_TIME, search.getEndTime())
-                .withRequestParam(ResourceList.LANGUAGE, search.getLanguage())
-                .withRequestParam(ResourceList.NONE_OF_GROUPS, search.getNoneOfGroups())
-                .withRequestParam(ResourceList.OFFSET_BY, search.getOffsetBy())
-                .withRequestParam(ResourceList.ORG_MEMBERSHIP, search.getOrgMembership())
-                .withRequestParam(ResourceList.PAGE_SIZE, search.getPageSize())
-                .withRequestParam(ResourceList.PHONE_FILTER, search.getPhoneFilter())
-                .withRequestParam(ResourceList.START_TIME, search.getStartTime())
-                .withRequestParam(ResourceList.EXTERNAL_ID_FILTER, search.getExternalIdFilter())
-                .withRequestParam(ResourceList.STATUS, search.getStatus())
-                .withRequestParam(ResourceList.ENROLLMENT, search.getEnrollment())
-                .withRequestParam(ResourceList.ATTRIBUTE_KEY, search.getAttributeKey())
-                .withRequestParam(ResourceList.ATTRIBUTE_VALUE_FILTER, search.getAttributeValueFilter())
-                .withRequestParam(ResourceList.ENROLLED_IN_STUDY_ID, search.getEnrolledInStudyId());
+                .withRequestParam(ADMIN_ONLY, search.isAdminOnly())
+                .withRequestParam(ALL_OF_GROUPS, search.getAllOfGroups())
+                .withRequestParam(EMAIL_FILTER, search.getEmailFilter())
+                .withRequestParam(END_TIME, search.getEndTime())
+                .withRequestParam(LANGUAGE, search.getLanguage())
+                .withRequestParam(NONE_OF_GROUPS, search.getNoneOfGroups())
+                .withRequestParam(OFFSET_BY, search.getOffsetBy())
+                .withRequestParam(ORG_MEMBERSHIP, search.getOrgMembership())
+                .withRequestParam(PAGE_SIZE, search.getPageSize())
+                .withRequestParam(PHONE_FILTER, search.getPhoneFilter())
+                .withRequestParam(PREDICATE, search.getPredicate())
+                .withRequestParam(START_TIME, search.getStartTime())
+                .withRequestParam(STRING_SEARCH_POSITION, search.getStringSearchPosition())
+                .withRequestParam(EXTERNAL_ID_FILTER, search.getExternalIdFilter())
+                .withRequestParam(STATUS, search.getStatus())
+                .withRequestParam(ENROLLMENT, search.getEnrollment())
+                .withRequestParam(ATTRIBUTE_KEY, search.getAttributeKey())
+                .withRequestParam(ATTRIBUTE_VALUE_FILTER, search.getAttributeValueFilter())
+                .withRequestParam(ENROLLED_IN_STUDY_ID, search.getEnrolledInStudyId());
     }
     
     // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created

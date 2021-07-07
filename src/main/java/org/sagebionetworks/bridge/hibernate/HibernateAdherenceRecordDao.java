@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.FALSE;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 
 import java.util.List;
 
@@ -66,12 +67,11 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
 
     protected QueryBuilder createQuery(AdherenceRecordsSearch search) {
         QueryBuilder builder = new QueryBuilder();
-        builder.append(BASE_QUERY/*, "userId", 
-                search.getUserId(), "studyId", search.getStudyId()*/);
+        builder.append(BASE_QUERY);
         
-        WhereClauseBuilder where = builder.startWhere();
-        where.append("ar.userId = :userId AND ar.studyId = :studyId", 
-                "userId", search.getUserId(), "studyId", search.getStudyId());
+        WhereClauseBuilder where = builder.startWhere(AND);
+        where.appendRequired("ar.userId = :userId", "userId", search.getUserId());
+        where.appendRequired("ar.studyId = :studyId", "studyId", search.getStudyId());
         
         // Note that by design, this finds both shared/local assessments with the
         // same ID

@@ -5,6 +5,10 @@ import static java.lang.String.format;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.AND_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.OR_JOINER;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
+import static org.sagebionetworks.bridge.models.StringSearchPosition.INFIX;
+import static org.sagebionetworks.bridge.models.StringSearchPosition.POSTFIX;
+import static org.sagebionetworks.bridge.models.StringSearchPosition.PREFIX;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.SESSION;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.WITHDRAWN;
@@ -15,9 +19,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
+
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.SearchTermPredicate;
+import org.sagebionetworks.bridge.models.StringSearchPosition;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 
@@ -30,13 +39,13 @@ class QueryBuilder {
     private final Map<String,Object> params = new HashMap<>();
     private WhereClauseBuilder whereClause;
     
-    public WhereClauseBuilder startWhere() {
-        whereClause = new WhereClauseBuilder();
+    public WhereClauseBuilder startWhere(SearchTermPredicate predicate) {
+        whereClause = new WhereClauseBuilder(predicate);
         return whereClause;
     }
     
     void finishWhere() {
-        if (whereClause != null && !whereClause.phrases.isEmpty()) {
+        if (whereClause != null) {
             phrases.add(whereClause.getWhereClause());
             params.putAll(whereClause.getParameters());
         }
@@ -80,36 +89,65 @@ class QueryBuilder {
     }
     
     static final class WhereClauseBuilder {
-        private final List<String> phrases = new ArrayList<>();
-        private final Map<String,Object> params = new HashMap<>();
+        private final SearchTermPredicate predicate;
+        private final List<String> required = new ArrayList<>();
+        private final List<String> predicated = new ArrayList<>();
+        private final Map<String,Object> whereParams = new HashMap<>();
         
+        private WhereClauseBuilder(SearchTermPredicate predicate) {
+            this.predicate = predicate;
+        }
+        public void appendRequired(String phrase) { 
+            required.add(phrase);
+        }
+        public void appendRequired(String phrase, String key, Object value) { 
+            if (value != null) {
+                required.add(phrase);
+                whereParams.put(key, value);
+            }
+        }
+        public void adminOnlyRequired(Boolean isAdmin) {
+            if (isAdmin != null) {
+                if (TRUE.equals(isAdmin)) {
+                    appendRequired("size(acct.roles) > 0");
+                } else {
+                    appendRequired("size(acct.roles) = 0");
+                }
+            }
+        }
+        public void orgMembershipRequired(String orgMembership) {
+            if (orgMembership != null) {
+                if ("<none>".equals(orgMembership.toLowerCase())) {
+                    appendRequired("acct.orgMembership IS NULL");
+                } else {
+                    appendRequired("acct.orgMembership = :orgId", "orgId", orgMembership);
+                }
+            }
+        }
         public void append(String phrase) {
-            phrases.add(phrase);
+            predicated.add(phrase);
         }
         public void append(String phrase, String key, Object value) {
             if (value != null) {
-                phrases.add(phrase);
-                params.put(key, value);
+                predicated.add(phrase);
+                whereParams.put(key, value);
             }
         }
-        public void append(String phrase, String key1, Object value1, String key2, Object value2) {
-            if (value1 != null && value2 != null) {
-                phrases.add(phrase);
-                params.put(key1, value1);
-                params.put(key2, value2);
-            }
-        }
-        public void like(String phrase, String key, String value) {
+        public void like(StringSearchPosition pos, String phrase, String key, String value) {
             if (isNotBlank(value)) {
-                phrases.add(phrase);
-                params.put(key, "%"+value.toString()+"%");
+                predicated.add(phrase);
+                String searchString = 
+                        ((pos == POSTFIX || pos == INFIX) ? "%" : "") +
+                        value.toString() +
+                        ((pos == PREFIX || pos == INFIX) ? "%" : "");
+                whereParams.put(key, searchString);
             }
         }
         // HQL
-        public void phone(String phoneFilter) {
+        public void phone(StringSearchPosition pos, String phoneFilter) {
             if (isNotBlank(phoneFilter)) {
                 String phoneString = phoneFilter.replaceAll("\\D*", "");
-                like("acct.phone.number LIKE :number", "number", phoneString);
+                like(pos, "acct.phone.number LIKE :number", "number", phoneString);
             }
         }
         public void dataGroups(Set<String> dataGroups, String operator) {
@@ -119,27 +157,9 @@ class QueryBuilder {
                 for (String oneDataGroup : dataGroups) {
                     String varName = operator.replace(" ", "") + (++i);
                     clauses.add(":"+varName+" "+operator+" elements(acct.dataGroups)");
-                    params.put(varName, oneDataGroup);
+                    whereParams.put(varName, oneDataGroup);
                 }
-                phrases.add("(" + AND_JOINER.join(clauses) + ")");
-            }
-        }
-        public void adminOnly(Boolean isAdmin) {
-            if (isAdmin != null) {
-                if (TRUE.equals(isAdmin)) {
-                    phrases.add("size(acct.roles) > 0");
-                } else {
-                    phrases.add("size(acct.roles) = 0");
-                }
-            }
-        }
-        public void orgMembership(String orgMembership) {
-            if (orgMembership != null) {
-                if ("<none>".equals(orgMembership.toLowerCase())) {
-                    phrases.add("acct.orgMembership IS NULL");
-                } else {
-                    append("acct.orgMembership = :orgId", "orgId", orgMembership);
-                }
+                predicated.add("(" + AND_JOINER.join(clauses) + ")");
             }
         }
         public void enrollment(EnrollmentFilter filter, boolean prefixed) {
@@ -147,9 +167,9 @@ class QueryBuilder {
                 // We prefix this query for acounts, but for enrollments, it's a primary 
                 // property, not a collection on the entity.
                 if (filter == ENROLLED) {
-                    phrases.add((prefixed ? "enrollment." : "") + "withdrawnOn IS NULL");
+                    predicated.add((prefixed ? "enrollment." : "") + "withdrawnOn IS NULL");
                 } else if (filter == WITHDRAWN) {
-                    phrases.add((prefixed ? "enrollment." : "") + "withdrawnOn IS NOT NULL");
+                    predicated.add((prefixed ? "enrollment." : "") + "withdrawnOn IS NOT NULL");
                 }
             }
         }
@@ -163,28 +183,48 @@ class QueryBuilder {
                     String valName = varPrefix + "Val" + count++;
                     String q = format("(%s = :%s AND %s = :%s)", field1, keyName, field2, valName);
                     clauses.add(q);
-                    params.put(keyName, entry.getKey());
-                    params.put(valName, entry.getValue().getMillis());
+                    whereParams.put(keyName, entry.getKey());
+                    whereParams.put(valName, entry.getValue().getMillis());
                 }
-                phrases.add("( "+OR_JOINER.join(clauses)+" )");
+                predicated.add("( "+OR_JOINER.join(clauses)+" )");
             }
         }
         public void adherenceRecordType(AdherenceRecordType type) {
             if (type != null) {
                 if (type == SESSION) {
-                    append("tm.assessmentGuid IS NULL");
+                    predicated.add("tm.assessmentGuid IS NULL");
                 } else {
-                    append("tm.assessmentGuid IS NOT NULL");
+                    predicated.add("tm.assessmentGuid IS NOT NULL");
                 }
             }
             
         }
         
         public String getWhereClause() {
-            return "WHERE " + BridgeUtils.AND_JOINER.join(phrases);
+            Joiner predJoiner = (predicate == AND) ? AND_JOINER : OR_JOINER;
+            
+            // There's always a where clause, or else this would be problematic.
+            StringBuilder sb = new StringBuilder();
+            if (!required.isEmpty() || !predicated.isEmpty()) {
+                sb.append("WHERE ");
+            }
+            // This is a special case to simplify the syntax. If we didn't do this
+            // it would still be valid, but overly nested, and would require rewriting
+            // many tests.
+            if (!required.isEmpty() && !predicated.isEmpty() && predicate == AND) {
+                sb.append(AND_JOINER.join(Iterables.concat(required, predicated)));
+            } else if (!required.isEmpty()) { 
+                sb.append(AND_JOINER.join(required));
+                if (!predicated.isEmpty()) {
+                    sb.append(" AND (" + predJoiner.join(predicated) + ")");
+                }
+            } else if (!predicated.isEmpty()) {
+                sb.append(predJoiner.join(predicated));
+            }
+            return sb.toString();
         }
         public Map<String,Object> getParameters() {
-            return params;
+            return whereParams;
         }
     }
 }

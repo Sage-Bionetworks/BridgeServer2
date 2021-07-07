@@ -4,6 +4,8 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.OR;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.SESSION;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.ASC;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.DESC;
@@ -30,7 +32,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         AdherenceRecordsSearch search = createSearch();
                 
         JsonNode node = BridgeObjectMapper.get().valueToTree(search);
-        assertEquals(node.size(), 16);
+        assertEquals(node.size(), 18);
         assertEquals(node.get("userId").textValue(), TEST_USER_ID);
         assertEquals(node.get("studyId").textValue(), TEST_STUDY_ID);
         assertEquals(node.get("instanceGuids").get(0).textValue(), "A");
@@ -47,6 +49,8 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(node.get("pageSize").intValue(), 20);
         assertEquals(node.get("sortOrder").textValue(), "desc");
         assertEquals(node.get("type").textValue(), "AdherenceRecordsSearch");
+        assertEquals(node.get("predicate").textValue(), "or");
+        assertEquals(node.get("stringSearchPosition").textValue(), "infix");
         assertNull(node.get("guidToStartedOnMap"));
         
         AdherenceRecordsSearch deser = BridgeObjectMapper.get()
@@ -67,12 +71,13 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(deser.getPageSize(), Integer.valueOf(20));
         assertEquals(deser.getSortOrder(), DESC);
         assertEquals(deser.getInstanceGuidStartedOnMap(), ImmutableMap.of());
+        assertEquals(deser.getPredicate(), OR);
     }
     
     // We don't want these to throw 500s. These probably exist elsewhere in our APIs.
     @Test
     public void canDeserializeNulls() throws Exception {
-        String json = TestUtils.createJson("{'instanceGuids':[null],'eventTimestamps':{'enrollment':null}}");
+        String json = TestUtils.createJson("{'instanceGuids':[null],'eventTimestamps':{'enrollment':null}, 'searchTermPredicate':null}");
         
         AdherenceRecordsSearch deser = BridgeObjectMapper.get()
                 .readValue(json, AdherenceRecordsSearch.class);
@@ -82,6 +87,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         deser = deser.toBuilder().build();
         assertTrue(deser.getInstanceGuids().isEmpty());
         assertTrue(deser.getEventTimestamps().isEmpty());
+        assertEquals(deser.getPredicate(), AND);
     }
     
     @Test
@@ -105,6 +111,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(copy.getOffsetBy(), Integer.valueOf(100));
         assertEquals(copy.getPageSize(), Integer.valueOf(20));
         assertEquals(copy.getSortOrder(), DESC);
+        assertEquals(copy.getPredicate(), OR);
     }
 
     protected AdherenceRecordsSearch createSearch() {
@@ -125,6 +132,7 @@ public class AdherenceRecordsSearchTest extends Mockito {
                 .withOffsetBy(100)
                 .withPageSize(20)
                 .withSortOrder(DESC)
+                .withPredicate(OR)
                 .build();
         return search;
     }
@@ -142,5 +150,6 @@ public class AdherenceRecordsSearchTest extends Mockito {
         assertEquals(search.getOffsetBy(), Integer.valueOf(0));
         assertEquals(search.getPageSize(), Integer.valueOf(DEFAULT_PAGE_SIZE));
         assertEquals(search.getSortOrder(), ASC);
+        assertEquals(search.getPredicate(), AND);
     }
 }

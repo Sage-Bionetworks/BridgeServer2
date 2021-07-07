@@ -10,6 +10,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.OR;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
 import static org.testng.Assert.assertEquals;
@@ -93,6 +94,7 @@ public class AccountSummarySearchTest {
             .withEnrollment(ENROLLED)
             .withAttributeKey("foo")
             .withAttributeValueFilter("bar")
+            .withPredicate(OR)
             .build();
         
         String json = BridgeObjectMapper.get().writeValueAsString(search);
@@ -120,6 +122,7 @@ public class AccountSummarySearchTest {
         assertEquals(deser.getEnrollment(), ENROLLED);
         assertEquals(deser.getAttributeKey(), "foo");
         assertEquals(deser.getAttributeValueFilter(), "bar");
+        assertEquals(deser.getPredicate(), OR);
     }
     
     @Test
@@ -145,9 +148,10 @@ public class AccountSummarySearchTest {
             .withEnrollment(ENROLLED)
             .withAttributeKey("foo")
             .withAttributeValueFilter("bar")
+            .withPredicate(OR)
             .build();
 
-        AccountSummarySearch copy = new AccountSummarySearch.Builder().copyOf(search).build();
+        AccountSummarySearch copy = search.toBuilder().build();
         assertEquals(copy.getOffsetBy(), 10);
         assertEquals(copy.getPageSize(), 100);
         assertEquals(copy.getEmailFilter(), "email");
@@ -165,11 +169,13 @@ public class AccountSummarySearchTest {
         assertEquals(copy.getEnrollment(), ENROLLED);
         assertEquals(copy.getAttributeKey(), "foo");
         assertEquals(copy.getAttributeValueFilter(), "bar");
+        assertEquals(copy.getPredicate(), OR);
     }
     
     @Test
     public void setsDefaults() {
         assertEquals(AccountSummarySearch.EMPTY_SEARCH.getOffsetBy(), 0);
         assertEquals(AccountSummarySearch.EMPTY_SEARCH.getPageSize(), BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        assertEquals(AccountSummarySearch.EMPTY_SEARCH.getPredicate(), SearchTermPredicate.AND);
     }
 }
