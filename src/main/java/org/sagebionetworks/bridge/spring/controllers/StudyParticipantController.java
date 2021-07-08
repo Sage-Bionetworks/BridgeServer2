@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.apache.http.HttpHeaders.IF_MODIFIED_SINCE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
@@ -222,7 +221,7 @@ public class StudyParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         
-        search = search.toBuilder().withEnrolledInStudyId(studyId).withAdminOnly(FALSE).build();
+        search = search.toBuilder().withEnrolledInStudyId(studyId).build();
         
         return participantService.getPagedAccountSummaries(app, search);
     }

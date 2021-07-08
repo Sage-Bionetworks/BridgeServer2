@@ -151,16 +151,16 @@ public class HibernateAccountDao implements AccountDao {
         if (accountId != null) {
             AccountId unguarded = accountId.getUnguardedAccountId();
             if (unguarded.getEmail() != null) {
-                where.append("acct.email=:email", "email", unguarded.getEmail());
+                where.appendRequired("acct.email=:email", "email", unguarded.getEmail());
             } else if (unguarded.getHealthCode() != null) {
-                where.append("acct.healthCode=:healthCode","healthCode", unguarded.getHealthCode());
+                where.appendRequired("acct.healthCode=:healthCode","healthCode", unguarded.getHealthCode());
             } else if (unguarded.getPhone() != null) {
                 where.appendRequired("acct.phone.number=:number", "number", unguarded.getPhone().getNumber());
                 where.appendRequired("acct.phone.regionCode=:regionCode", "regionCode", unguarded.getPhone().getRegionCode());
             } else if (unguarded.getSynapseUserId() != null) {
-                where.append("acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
+                where.appendRequired("acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
             } else {
-                where.append("enrollment.externalId=:externalId", "externalId", unguarded.getExternalId());
+                where.appendRequired("enrollment.externalId=:externalId", "externalId", unguarded.getExternalId());
             }
         }
         if (search != null) {

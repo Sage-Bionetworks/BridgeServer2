@@ -386,7 +386,6 @@ public class StudyParticipantControllerTest extends Mockito {
         AccountSummarySearch captured = searchCaptor.getValue();
         assertEquals(captured.getEnrolledInStudyId(), TEST_STUDY_ID);
         assertEquals(captured.getEmailFilter(), "emailFilter");
-        assertFalse(captured.isAdminOnly());
     }
     
     @Test
