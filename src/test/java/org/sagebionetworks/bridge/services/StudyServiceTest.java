@@ -33,6 +33,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.OrganizationDao;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -52,13 +54,16 @@ public class StudyServiceTest {
     private static final VersionHolder VERSION_HOLDER = new VersionHolder(1L);
     
     @Mock
-    private StudyDao studyDao;
+    private StudyDao mockStudyDao;
     
     @Mock
-    private OrganizationDao organizationDao;
+    private OrganizationDao mockOrganizationDao;
     
     @Mock
-    private SponsorService sponsorService;
+    private SponsorService mockSponsorService;
+    
+    @Mock
+    private CacheProvider mockCacheProvider;
     
     @Captor
     private ArgumentCaptor<Study> studyCaptor;
@@ -84,12 +89,12 @@ public class StudyServiceTest {
     @Test
     public void getStudy() {
         Study study = Study.create();
-        when(studyDao.getStudy(TEST_APP_ID, "id")).thenReturn(study);
+        when(mockStudyDao.getStudy(TEST_APP_ID, "id")).thenReturn(study);
         
         Study returnedValue = service.getStudy(TEST_APP_ID, "id", true);
         assertEquals(returnedValue, study);
         
-        verify(studyDao).getStudy(TEST_APP_ID, "id");
+        verify(mockStudyDao).getStudy(TEST_APP_ID, "id");
     }
     
     @Test
@@ -101,12 +106,12 @@ public class StudyServiceTest {
         studyB.setIdentifier("studyB");
         
         PagedResourceList<Study> studies = new PagedResourceList<>(ImmutableList.of(studyA, studyB), 2); 
-        when(studyDao.getStudies(TEST_APP_ID, null, null, null, false)).thenReturn(studies);
+        when(mockStudyDao.getStudies(TEST_APP_ID, null, null, null, false)).thenReturn(studies);
         
         Set<String> studyIds = service.getStudyIds(TEST_APP_ID);
         assertEquals(studyIds, ImmutableSet.of("studyA","studyB"));
         
-        verify(studyDao).getStudies(TEST_APP_ID, null, null, null, false);
+        verify(mockStudyDao).getStudies(TEST_APP_ID, null, null, null, false);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -122,22 +127,22 @@ public class StudyServiceTest {
     
     @Test
     public void getStudiesIncludeDeleted() {
-        when(studyDao.getStudies(TEST_APP_ID, null, 0, 50, true)).thenReturn(STUDIES);
+        when(mockStudyDao.getStudies(TEST_APP_ID, null, 0, 50, true)).thenReturn(STUDIES);
         
         PagedResourceList<Study> returnedValue = service.getStudies(TEST_APP_ID, 0, 50, true);
         assertEquals(returnedValue, STUDIES);
         
-        verify(studyDao).getStudies(TEST_APP_ID, null, 0, 50, true);
+        verify(mockStudyDao).getStudies(TEST_APP_ID, null, 0, 50, true);
     }
     
     @Test
     public void getStudiesExcludeDeleted() {
-        when(studyDao.getStudies(TEST_APP_ID, null, 10, 20, false)).thenReturn(STUDIES);
+        when(mockStudyDao.getStudies(TEST_APP_ID, null, 10, 20, false)).thenReturn(STUDIES);
         
         PagedResourceList<Study> returnedValue = service.getStudies(TEST_APP_ID, 10, 20, false);
         assertEquals(returnedValue, STUDIES);
         
-        verify(studyDao).getStudies(TEST_APP_ID, null, 10, 20, false);
+        verify(mockStudyDao).getStudies(TEST_APP_ID, null, 10, 20, false);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -157,12 +162,12 @@ public class StudyServiceTest {
     
     @Test
     public void getStudiesWithNullParams() {
-        when(studyDao.getStudies(TEST_APP_ID, null, null, null, false))
+        when(mockStudyDao.getStudies(TEST_APP_ID, null, null, null, false))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
     
         service.getStudies(TEST_APP_ID, null, null, false);
         
-        verify(studyDao).getStudies(TEST_APP_ID, null, null, null, false);
+        verify(mockStudyDao).getStudies(TEST_APP_ID, null, null, null, false);
     }
     
     @Test
@@ -173,12 +178,12 @@ public class StudyServiceTest {
                 .withOrgSponsoredStudies(studies)
                 .build());
         
-        when(studyDao.getStudies(TEST_APP_ID, studies, null, null, false))
+        when(mockStudyDao.getStudies(TEST_APP_ID, studies, null, null, false))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
 
         service.getStudies(TEST_APP_ID, null, null, false);
     
-        verify(studyDao).getStudies(TEST_APP_ID, studies, null, null, false);
+        verify(mockStudyDao).getStudies(TEST_APP_ID, studies, null, null, false);
     }
     
     @Test
@@ -189,12 +194,12 @@ public class StudyServiceTest {
                 .withOrgSponsoredStudies(studies)
                 .build());
         
-        when(studyDao.getStudies(TEST_APP_ID, studies, null, null, false))
+        when(mockStudyDao.getStudies(TEST_APP_ID, studies, null, null, false))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
 
         service.getStudies(TEST_APP_ID, null, null, false);
     
-        verify(studyDao).getStudies(TEST_APP_ID, studies, null, null, false);
+        verify(mockStudyDao).getStudies(TEST_APP_ID, studies, null, null, false);
     }
     
     @Test
@@ -204,12 +209,12 @@ public class StudyServiceTest {
                 .withCallerRoles(ImmutableSet.of(RESEARCHER))
                 .withOrgSponsoredStudies(studies).build());
         
-        when(studyDao.getStudies(TEST_APP_ID, null, null, null, false))
+        when(mockStudyDao.getStudies(TEST_APP_ID, null, null, null, false))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
 
         service.getStudies(TEST_APP_ID, null, null, false);
     
-        verify(studyDao).getStudies(TEST_APP_ID, null, null, null, false);
+        verify(mockStudyDao).getStudies(TEST_APP_ID, null, null, null, false);
     }
     
     @Test
@@ -229,12 +234,12 @@ public class StudyServiceTest {
         study.setCreatedOn(timestamp);
         study.setModifiedOn(timestamp);
 
-        when(studyDao.createStudy(any())).thenReturn(VERSION_HOLDER);
+        when(mockStudyDao.createStudy(any())).thenReturn(VERSION_HOLDER);
         
         VersionHolder returnedValue = service.createStudy(TEST_APP_ID, study, true);
         assertEquals(returnedValue, VERSION_HOLDER);
         
-        verify(studyDao).createStudy(studyCaptor.capture());
+        verify(mockStudyDao).createStudy(studyCaptor.capture());
         
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getIdentifier(), "oneId");
@@ -246,7 +251,7 @@ public class StudyServiceTest {
         assertNotEquals(persisted.getCreatedOn(), timestamp);
         assertNotEquals(persisted.getModifiedOn(), timestamp);
         
-        verify(sponsorService).createStudyWithSponsorship(TEST_APP_ID, "oneId", TEST_ORG_ID);
+        verify(mockSponsorService).createStudyWithSponsorship(TEST_APP_ID, "oneId", TEST_ORG_ID);
     }
     
     @Test
@@ -255,12 +260,12 @@ public class StudyServiceTest {
         study.setIdentifier("oneId");
         study.setName("oneName");
 
-        when(studyDao.createStudy(any())).thenReturn(VERSION_HOLDER);
+        when(mockStudyDao.createStudy(any())).thenReturn(VERSION_HOLDER);
         
         service.createStudy(TEST_APP_ID, study, true);
         
-        verify(studyDao).createStudy(studyCaptor.capture());
-        verify(sponsorService, never()).addStudySponsor(any(), any(), any());
+        verify(mockStudyDao).createStudy(studyCaptor.capture());
+        verify(mockSponsorService, never()).addStudySponsor(any(), any(), any());
     }
     
     @Test
@@ -281,8 +286,8 @@ public class StudyServiceTest {
         
         service.createStudy(TEST_APP_ID, study, false);
         
-        verify(studyDao).createStudy(any());
-        verify(sponsorService, never()).addStudySponsor(any(), any(), any());
+        verify(mockStudyDao).createStudy(any());
+        verify(mockSponsorService, never()).addStudySponsor(any(), any(), any());
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -296,7 +301,7 @@ public class StudyServiceTest {
         study.setIdentifier("oneId");
         study.setName("oneName");
         
-        when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(study);
+        when(mockStudyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(study);
         
         service.createStudy(TEST_APP_ID, study, true);
     }
@@ -308,8 +313,8 @@ public class StudyServiceTest {
         existing.setName("oldName");
         existing.setPhase(IN_FLIGHT);
         existing.setCreatedOn(DateTime.now());
-        when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(existing);
-        when(studyDao.updateStudy(any())).thenReturn(VERSION_HOLDER);
+        when(mockStudyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(existing);
+        when(mockStudyDao.updateStudy(any())).thenReturn(VERSION_HOLDER);
 
         Study study = Study.create();
         study.setAppId("wrongAppId");
@@ -320,7 +325,7 @@ public class StudyServiceTest {
         VersionHolder versionHolder = service.updateStudy(TEST_APP_ID, study);
         assertEquals(versionHolder, VERSION_HOLDER);
         
-        verify(studyDao).updateStudy(studyCaptor.capture());
+        verify(mockStudyDao).updateStudy(studyCaptor.capture());
         
         Study returnedValue = studyCaptor.getValue();
         assertEquals(returnedValue.getAppId(), TEST_APP_ID);
@@ -329,6 +334,8 @@ public class StudyServiceTest {
         assertEquals(returnedValue.getPhase(), IN_FLIGHT);
         assertNotNull(returnedValue.getCreatedOn());
         assertNotNull(returnedValue.getModifiedOn());
+        
+        verify(mockCacheProvider).removeObject(CacheKey.publicStudy(TEST_APP_ID, "oneId"));
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -352,7 +359,7 @@ public class StudyServiceTest {
     public void updateStudyEntityDeleted() {
         Study existing = Study.create();
         existing.setDeleted(true);
-        when(studyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(existing);
+        when(mockStudyDao.getStudy(TEST_APP_ID, "oneId")).thenReturn(existing);
 
         Study study = Study.create();
         study.setIdentifier("oneId");
@@ -364,14 +371,16 @@ public class StudyServiceTest {
 
     @Test
     public void deleteStudy() {
-        when(studyDao.getStudy(TEST_APP_ID, "id")).thenReturn(Study.create());
+        when(mockStudyDao.getStudy(TEST_APP_ID, "id")).thenReturn(Study.create());
         
         service.deleteStudy(TEST_APP_ID, "id");
         
-        verify(studyDao).updateStudy(studyCaptor.capture());
+        verify(mockStudyDao).updateStudy(studyCaptor.capture());
         Study persisted = studyCaptor.getValue();
         assertTrue(persisted.isDeleted());
         assertNotNull(persisted.getModifiedOn());
+        
+        verify(mockCacheProvider).removeObject(CacheKey.publicStudy(TEST_APP_ID, "id"));
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -381,11 +390,12 @@ public class StudyServiceTest {
     
     @Test
     public void deleteStudyPermanently() {
-        when(studyDao.getStudy(TEST_APP_ID, "id")).thenReturn(Study.create());
+        when(mockStudyDao.getStudy(TEST_APP_ID, "id")).thenReturn(Study.create());
         
         service.deleteStudyPermanently(TEST_APP_ID, "id");
         
-        verify(studyDao).deleteStudyPermanently(TEST_APP_ID, "id");
+        verify(mockStudyDao).deleteStudyPermanently(TEST_APP_ID, "id");
+        verify(mockCacheProvider).removeObject(CacheKey.publicStudy(TEST_APP_ID, "id"));
     }    
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -396,6 +406,6 @@ public class StudyServiceTest {
     @Test
     public void deleteAllStudies() {
         service.deleteAllStudies(TEST_APP_ID);
-        verify(studyDao).deleteAllStudies(TEST_APP_ID);
+        verify(mockStudyDao).deleteAllStudies(TEST_APP_ID);
     }
 }

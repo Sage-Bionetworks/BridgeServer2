@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.ONE_DAY_IN_SECONDS;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -20,6 +21,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
 import java.util.Optional;
@@ -27,6 +29,7 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -43,8 +46,12 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -54,6 +61,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.FileService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -68,6 +76,12 @@ public class StudyControllerTest extends Mockito {
 
     @Mock
     FileService mockFileService;
+    
+    @Mock
+    AppService mockAppService;
+    
+    @Mock
+    CacheProvider mockCacheProvider;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -122,6 +136,7 @@ public class StudyControllerTest extends Mockito {
         assertDelete(StudyController.class, "deleteStudy");
         assertAccept(StudyController.class, "createStudyLogo");
         assertCreate(StudyController.class, "finishStudyLogo");
+        assertGet(StudyController.class, "getStudyForApp");
     }
 
     @Test
@@ -181,6 +196,8 @@ public class StudyControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
+        doReturn(session).when(controller).getAuthenticatedSession();
+        
         Study study = Study.create();
         study.setIdentifier(TEST_STUDY_ID);
         study.setName("oneName");
@@ -195,6 +212,32 @@ public class StudyControllerTest extends Mockito {
         verify(service).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
     }
 
+    @Test
+    public void getStudyForParticipant() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession();
+        
+        Study study = Study.create();
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        Study result = controller.getStudy(TEST_STUDY_ID);
+        assertEquals(result, study);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getStudyFailsForUnenrolledParticipant() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of("some-other-study"))
+                .build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession();
+        
+        controller.getStudy(TEST_STUDY_ID);
+    }
+    
     @Test
     public void updateStudy() throws Exception {
         RequestContext.set(new RequestContext.Builder()
@@ -237,7 +280,10 @@ public class StudyControllerTest extends Mockito {
     
     @Test
     public void createStudyLogoNoExistingFile() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         session.setAppId(TEST_APP_ID);
         
         Study study = Study.create();
@@ -271,7 +317,10 @@ public class StudyControllerTest extends Mockito {
     
     @Test
     public void createStudyLogoWithExistingFile() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         session.setAppId(TEST_APP_ID);
         
         Study study = Study.create();
@@ -300,7 +349,10 @@ public class StudyControllerTest extends Mockito {
     
     @Test
     public void finishStudyLogo() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         
         Study study = Study.create();
         study.setLogoGuid(GUID);
@@ -321,7 +373,10 @@ public class StudyControllerTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void finishStudyLogo_noGuid() { 
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         
         Study study = Study.create();
         when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
@@ -331,7 +386,10 @@ public class StudyControllerTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void finishStudyLogo_noFinishedRevision() { 
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         
         Study study = Study.create();
         study.setLogoGuid(GUID);
@@ -340,5 +398,48 @@ public class StudyControllerTest extends Mockito {
         when(mockFileService.getFileRevision(GUID, CREATED_ON)).thenReturn(Optional.empty());
         
         controller.finishStudyLogo(TEST_STUDY_ID, CREATED_ON.toString());
+    }
+    
+    @Test
+    public void getStudyForApp_noCache() throws JsonProcessingException {
+        Study study = Study.create();
+        study.setName("Name1");
+        study.setIdentifier("id1");
+        study.setVersion(10L);
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        String retValue = controller.getStudyForApp(TEST_APP_ID, TEST_STUDY_ID);
+        
+        Study deser = BridgeObjectMapper.get().readValue(retValue, Study.class);
+        assertEquals(deser.getName(), "Name1");
+        assertEquals(deser.getIdentifier(), "id1");
+        assertNull(deser.getVersion());
+        
+        CacheKey key = CacheKey.publicStudy(TEST_APP_ID, TEST_STUDY_ID);
+        String json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
+        
+        verify(mockCacheProvider).setObject(key, json, ONE_DAY_IN_SECONDS);
+    }
+    
+    @Test
+    public void getStudyForApp_cached() throws JsonProcessingException {
+        Study study = Study.create();
+        study.setName("Name1");
+        study.setIdentifier("id1");
+        study.setVersion(10L);
+
+        CacheKey key = CacheKey.publicStudy(TEST_APP_ID, TEST_STUDY_ID);
+        String json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
+        when(mockCacheProvider.getObject(key, String.class)).thenReturn(json);
+        
+        String retValue = controller.getStudyForApp(TEST_APP_ID, TEST_STUDY_ID);
+        
+        Study deser = BridgeObjectMapper.get().readValue(retValue, Study.class);
+        assertEquals(deser.getName(), "Name1");
+        assertEquals(deser.getIdentifier(), "id1");
+        assertNull(deser.getVersion());
+        
+        verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
+        verify(service, never()).getStudy(any(), any(), anyBoolean());
     }
 }
