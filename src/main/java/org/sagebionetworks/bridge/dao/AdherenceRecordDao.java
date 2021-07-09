@@ -10,4 +10,6 @@ public interface AdherenceRecordDao {
     
     PagedResourceList<AdherenceRecord> getAdherenceRecords(AdherenceRecordsSearch search);
 
+    void deleteAdherenceRecord(AdherenceRecord record);
+
 }

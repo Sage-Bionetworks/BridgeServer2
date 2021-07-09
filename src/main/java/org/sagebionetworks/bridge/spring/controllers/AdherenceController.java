@@ -111,6 +111,7 @@ public class AdherenceController extends BaseController {
 
     @DeleteMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence")
     public StatusMessage deleteAdherenceRecords(@PathVariable String studyId, @PathVariable String userIdToken) {
+//        TODO: Verify roles with access to Delete. Currently same as Update.
         UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
 
         String userId = accountService.getAccountId(session.getAppId(), userIdToken)

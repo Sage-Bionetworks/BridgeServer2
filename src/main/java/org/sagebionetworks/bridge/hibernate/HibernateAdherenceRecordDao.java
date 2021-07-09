@@ -119,4 +119,15 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
     }
 
 //    TODO: Delete method (should override interface)
+    @Override
+    public void deleteAdherenceRecord(AdherenceRecord record) {
+        checkNotNull(record);
+
+        AdherenceRecordId id = new AdherenceRecordId(record.getUserId(), record.getStudyId(),
+                record.getInstanceGuid(), record.getEventTimestamp(), record.getInstanceTimestamp());
+        AdherenceRecord existingRecord = hibernateHelper.getById(AdherenceRecord.class, id);
+        if (existingRecord != null) {
+            hibernateHelper.deleteById(AdherenceRecord.class, id);
+        }
+    }
 }
