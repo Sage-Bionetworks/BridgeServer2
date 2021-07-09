@@ -372,10 +372,10 @@ public class AdherenceServiceTest extends Mockito {
     }
 
     @Test
-    public void updateAdherenceRecords_setsDeclinedSessionRecord() { 
+    public void updateAdherenceRecords_doesNotSetDeclinedSessionRecord() { 
         AdherenceRecordList list = mockRecordUpdate(
                 ar(STARTED_ON, FINISHED_ON, "AAA", true), 
-                ar(STARTED_ON, FINISHED_ON, "BBB", true), 
+                ar(STARTED_ON, FINISHED_ON, "BBB", false), 
                 sar(null, null, false));
      
         MetadataContainer container = new MetadataContainer(mockScheduleService, list.getRecords());
@@ -385,7 +385,7 @@ public class AdherenceServiceTest extends Mockito {
         AdherenceRecord captured = Iterables.getFirst(container.getSessionUpdates(), null);
         assertEquals(captured.getStartedOn(), STARTED_ON);
         assertEquals(captured.getFinishedOn(), FINISHED_ON);
-        assertTrue(captured.isDeclined());
+        assertFalse(captured.isDeclined());
     }
 
     @Test
