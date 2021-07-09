@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 
 import java.util.List;
 
@@ -41,7 +42,7 @@ public class HibernateEnrollmentDao implements EnrollmentDao {
         if (!includeTesters) {
             builder.append("INNER JOIN org.sagebionetworks.bridge.hibernate.HibernateAccount AS acct ON acct.id = h.accountId");    
         }
-        WhereClauseBuilder where = builder.startWhere();
+        WhereClauseBuilder where = builder.startWhere(AND);
         where.append("h.appId = :appId", "appId", appId);
         where.append("h.studyId = :studyId", "studyId", studyId);
         where.enrollment(filter, false);

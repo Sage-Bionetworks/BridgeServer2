@@ -13,6 +13,8 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.hibernate.HibernateAccountDao.FULL_QUERY;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
+import static org.sagebionetworks.bridge.models.StringSearchPosition.INFIX;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
@@ -454,12 +456,11 @@ public class HibernateAccountDaoTest extends Mockito {
         String expQuery = "SELECT acct.id FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
                 + "WHERE acct.appId = :appId AND size(acct.roles) > 0 AND acct.orgMembership "
-                +"= :orgId GROUP BY acct.id";
+                + "= :orgId GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct "
                 + "LEFT JOIN acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
-                +"WHERE acct.appId = :appId AND size(acct.roles) > 0 AND acct.orgMembership = "
-                +":orgId";
+                +"WHERE acct.appId = :appId AND size(acct.roles) > 0 AND acct.orgMembership = :orgId";
         
         Set<Enrollment> set = ImmutableSet.of(
                 Enrollment.create(TEST_APP_ID, STUDY_A, ACCOUNT_ID),
@@ -597,20 +598,20 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void getPagedWithOptionalParams() throws Exception {
         String expQuery = "SELECT acct.id FROM HibernateAccount AS acct LEFT JOIN acct.enrollments AS "
-                + "enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
-                + "acct.email LIKE :email AND acct.phone.number LIKE :number AND acct.createdOn >= "
-                + ":startTime AND acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) "
-                + "AND size(acct.roles) > 0 AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN "
-                + "elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND "
-                + ":NOTIN2 NOT IN elements(acct.dataGroups)) AND acct.orgMembership = :orgId GROUP BY acct.id";
+                + "enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId "
+                + "AND size(acct.roles) > 0 AND acct.orgMembership = :orgId AND acct.email LIKE :email "
+                + "AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND acct.createdOn "
+                + "<= :endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) "
+                + "AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) "
+                + "AND :NOTIN2 NOT IN elements(acct.dataGroups)) GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.enrollments AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = "
-                + ":appId AND acct.email LIKE :email AND acct.phone.number LIKE :number AND acct.createdOn "
-                + ">= :startTime AND acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) "
-                + "AND size(acct.roles) > 0 AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN "
-                + "elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND :NOTIN2 "
-                + "NOT IN elements(acct.dataGroups)) AND acct.orgMembership = :orgId";
+                + ":appId AND size(acct.roles) > 0 AND acct.orgMembership = :orgId AND acct.email LIKE "
+                + ":email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND "
+                + "acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN "
+                + "elements(acct.dataGroups) AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN "
+                + "elements(acct.dataGroups) AND :NOTIN2 NOT IN elements(acct.dataGroups))";
 
         // Setup start and end dates.
         DateTime startDate = DateTime.parse("2017-05-19T11:40:06.247-0700");
@@ -633,7 +634,7 @@ public class HibernateAccountDaoTest extends Mockito {
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(TEST_APP_ID, search);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
-        assertEquals(paramsMap.size(), 12);
+        assertEquals(paramsMap.size(), 14);
         assertEquals(paramsMap.get("pageSize"), 5);
         assertEquals(paramsMap.get("offsetBy"), 10);
         assertEquals(paramsMap.get("emailFilter"), EMAIL);
@@ -644,6 +645,8 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(paramsMap.get("noneOfGroups"), Sets.newHashSet("c", "d"));
         assertEquals(paramsMap.get("language"), "de");
         assertEquals(paramsMap.get("orgMembership"), TEST_ORG_ID);
+        assertEquals(paramsMap.get("stringSearchPosition"), INFIX);
+        assertEquals(paramsMap.get("predicate"), AND);
         assertTrue((Boolean)paramsMap.get("adminOnly"));
         assertEquals(paramsMap.get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
 
@@ -748,7 +751,7 @@ public class HibernateAccountDaoTest extends Mockito {
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(TEST_APP_ID, search);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
-        assertEquals(paramsMap.size(), 10);
+        assertEquals(paramsMap.size(), 12);
         assertEquals(paramsMap.get("pageSize"), 5);
         assertEquals(paramsMap.get("offsetBy"), 10);
         assertEquals(paramsMap.get("emailFilter"), EMAIL);
@@ -758,6 +761,8 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(paramsMap.get("allOfGroups"), Sets.newHashSet());
         assertEquals(paramsMap.get("noneOfGroups"), Sets.newHashSet());
         assertEquals(paramsMap.get("language"), "de");
+        assertEquals(paramsMap.get("stringSearchPosition"), INFIX);
+        assertEquals(paramsMap.get("predicate"), AND);
         assertEquals(paramsMap.get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
 
         String phoneString = PHONE.getNationalFormat().replaceAll("\\D*", "");

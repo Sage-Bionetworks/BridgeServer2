@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
+import static org.sagebionetworks.bridge.models.StringSearchPosition.INFIX;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -36,28 +38,29 @@ public final class AccountSummarySearch implements BridgeEntity {
     private final EnrollmentFilter enrollment;
     private final String attributeKey;
     private final String attributeValueFilter;
+    private final SearchTermPredicate predicate;
+    private final StringSearchPosition stringSearchPosition;
 
-    private AccountSummarySearch(int offsetBy, int pageSize, String emailFilter, String phoneFilter,
-            Set<String> allOfGroups, Set<String> noneOfGroups, String language, DateTime startTime, DateTime endTime,
-            String orgId, Boolean adminOnly, String enrolledInStudyId, String externalIdFilter, AccountStatus status,
-            EnrollmentFilter enrollment, String attributeKey, String attributeValueFilter) {
-        this.offsetBy = offsetBy;
-        this.pageSize = pageSize;
-        this.emailFilter = emailFilter;
-        this.phoneFilter = phoneFilter;
-        this.allOfGroups = allOfGroups;
-        this.noneOfGroups = noneOfGroups;
-        this.language = language;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.orgMembership = orgId;
-        this.adminOnly = adminOnly;
-        this.enrolledInStudyId = enrolledInStudyId;
-        this.externalIdFilter = externalIdFilter;
-        this.status = status;
-        this.enrollment = enrollment;
-        this.attributeKey = attributeKey;
-        this.attributeValueFilter = attributeValueFilter;
+    private AccountSummarySearch(AccountSummarySearch.Builder builder) {
+        this.offsetBy = builder.offsetBy;
+        this.pageSize = builder.pageSize;
+        this.emailFilter = builder.emailFilter;
+        this.phoneFilter = builder.phoneFilter;
+        this.allOfGroups = builder.allOfGroups;
+        this.noneOfGroups = builder.noneOfGroups;
+        this.language = builder.language;
+        this.startTime = builder.startTime;
+        this.endTime = builder.endTime;
+        this.orgMembership = builder.orgMembership;
+        this.adminOnly = builder.adminOnly;
+        this.enrolledInStudyId = builder.enrolledInStudyId;
+        this.externalIdFilter = builder.externalIdFilter;
+        this.status = builder.status;
+        this.enrollment = builder.enrollment;
+        this.attributeKey = builder.attributeKey;
+        this.attributeValueFilter = builder.attributeValueFilter;
+        this.predicate = builder.predicate;
+        this.stringSearchPosition = builder.stringSearchPosition;
     }
 
     public int getOffsetBy() {
@@ -134,6 +137,34 @@ public final class AccountSummarySearch implements BridgeEntity {
     public String getAttributeValueFilter() {
         return attributeValueFilter;
     }
+    public SearchTermPredicate getPredicate() {
+        return predicate;
+    }
+    public StringSearchPosition getStringSearchPosition() {
+        return stringSearchPosition;
+    }
+    public AccountSummarySearch.Builder toBuilder() {
+        return new AccountSummarySearch.Builder()
+            .withOffsetBy(offsetBy)
+            .withPageSize(pageSize)
+            .withEmailFilter(emailFilter)
+            .withPhoneFilter(phoneFilter)
+            .withAllOfGroups(allOfGroups)
+            .withNoneOfGroups(noneOfGroups)
+            .withLanguage(language)
+            .withStartTime(startTime)
+            .withEndTime(endTime)
+            .withOrgMembership(orgMembership)
+            .withAdminOnly(adminOnly)
+            .withEnrolledInStudyId(enrolledInStudyId)
+            .withExternalIdFilter(externalIdFilter)
+            .withStatus(status)
+            .withEnrollment(enrollment)
+            .withAttributeKey(attributeKey)
+            .withAttributeValueFilter(attributeValueFilter)
+            .withPredicate(predicate)
+            .withStringSearchPosition(stringSearchPosition);
+    }
 
     @Override
     public int hashCode() {
@@ -143,7 +174,8 @@ public final class AccountSummarySearch implements BridgeEntity {
         // representation of the DateTime gives us equality across serialization.
         return Objects.hash(allOfGroups, emailFilter, nullsafeDateString(endTime), language, noneOfGroups, offsetBy,
                 pageSize, phoneFilter, nullsafeDateString(startTime), orgMembership, adminOnly, enrolledInStudyId,
-                externalIdFilter, status, enrollment, attributeKey, attributeValueFilter);
+                externalIdFilter, status, enrollment, attributeKey, attributeValueFilter, predicate,
+                stringSearchPosition);
     }
 
     @Override
@@ -170,21 +202,24 @@ public final class AccountSummarySearch implements BridgeEntity {
                 && Objects.equals(status, other.status)
                 && Objects.equals(enrollment, other.enrollment)
                 && Objects.equals(attributeKey, other.attributeKey)
-                && Objects.equals(attributeValueFilter, other.attributeValueFilter);
+                && Objects.equals(attributeValueFilter, other.attributeValueFilter)
+                && Objects.equals(predicate, other.predicate)
+                && Objects.equals(stringSearchPosition, other.stringSearchPosition);
     }
     
     private String nullsafeDateString(DateTime dateTime) {
         return (dateTime == null) ? null : dateTime.toString();
     }
-    
+
     @Override
     public String toString() {
         return "AccountSummarySearch [offsetBy=" + offsetBy + ", pageSize=" + pageSize + ", emailFilter=" + emailFilter
                 + ", phoneFilter=" + phoneFilter + ", allOfGroups=" + allOfGroups + ", noneOfGroups=" + noneOfGroups
                 + ", language=" + language + ", startTime=" + startTime + ", endTime=" + endTime + ", orgMembership="
                 + orgMembership + ", adminOnly=" + adminOnly + ", enrolledInStudyId=" + enrolledInStudyId
-                + ", externalIdFilter=" + externalIdFilter + ", status=" + status + ", enrollment="
-                + enrollment + ", attributeKey=" + attributeKey + ", attributeValueFilter=" + attributeValueFilter + "]";
+                + ", externalIdFilter=" + externalIdFilter + ", status=" + status + ", enrollment=" + enrollment
+                + ", attributeKey=" + attributeKey + ", attributeValueFilter=" + attributeValueFilter + ", predicate="
+                + predicate + ", stringSearchPosition=" + stringSearchPosition + "]";
     }
 
     public static class Builder {
@@ -205,6 +240,8 @@ public final class AccountSummarySearch implements BridgeEntity {
         private EnrollmentFilter enrollment;
         private String attributeKey;
         private String attributeValueFilter;
+        private SearchTermPredicate predicate;
+        private StringSearchPosition stringSearchPosition;
         
         public Builder withOffsetBy(Integer offsetBy) {
             this.offsetBy = offsetBy;
@@ -280,32 +317,28 @@ public final class AccountSummarySearch implements BridgeEntity {
             this.attributeValueFilter = attributeValueFilter;
             return this;
         }
-        public Builder copyOf(AccountSummarySearch search) {
-            this.offsetBy = search.offsetBy;
-            this.pageSize = search.pageSize;
-            this.emailFilter = search.emailFilter;
-            this.phoneFilter = search.phoneFilter;
-            this.allOfGroups = search.allOfGroups;
-            this.noneOfGroups = search.noneOfGroups;
-            this.language = search.language;
-            this.startTime = search.startTime;
-            this.endTime = search.endTime;
-            this.orgMembership = search.orgMembership;
-            this.adminOnly = search.adminOnly;
-            this.enrolledInStudyId = search.enrolledInStudyId;
-            this.externalIdFilter = search.externalIdFilter;
-            this.status = search.status;
-            this.enrollment = search.enrollment;
-            this.attributeKey = search.attributeKey;
-            this.attributeValueFilter = search.attributeValueFilter;
+        public Builder withPredicate(SearchTermPredicate predicate) {
+            this.predicate = predicate;
+            return this;
+        }
+        public Builder withStringSearchPosition(StringSearchPosition stringSearchPosition) {
+            this.stringSearchPosition = stringSearchPosition;
             return this;
         }
         public AccountSummarySearch build() {
-            int defaultedOffsetBy = (offsetBy == null) ? 0 : offsetBy;
-            int defaultedPageSize = (pageSize == null) ? API_DEFAULT_PAGE_SIZE : pageSize;
-            return new AccountSummarySearch(defaultedOffsetBy, defaultedPageSize, emailFilter, phoneFilter, allOfGroups,
-                    noneOfGroups, language, startTime, endTime, orgMembership, adminOnly, enrolledInStudyId,
-                    externalIdFilter, status, enrollment, attributeKey, attributeValueFilter);
+            if (offsetBy == null) {
+                offsetBy = 0;
+            }
+            if (pageSize == null) {
+                pageSize = API_DEFAULT_PAGE_SIZE;
+            }
+            if (predicate == null) {
+                predicate = AND;
+            }
+            if (stringSearchPosition == null) {
+                stringSearchPosition = INFIX;
+            }
+            return new AccountSummarySearch(this);
         }
     }
 }

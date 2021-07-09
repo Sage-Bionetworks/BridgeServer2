@@ -15,6 +15,8 @@ import com.google.common.collect.ImmutableSet;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.SearchTermPredicate;
+import org.sagebionetworks.bridge.models.StringSearchPosition;
 
 /**
  * Search criteria for retrieving adherence records. The criteria listed in this
@@ -112,6 +114,12 @@ public class AdherenceRecordsSearch implements BridgeEntity {
      * order. The default is ascending order.
      */
     private final SortOrder sortOrder;
+    /**
+     * Should search terms be joined by "and" or "or".
+     */
+    private final SearchTermPredicate predicate;
+    
+    private final StringSearchPosition stringSearchPosition;
     
     private AdherenceRecordsSearch(AdherenceRecordsSearch.Builder builder) {
         this.userId = builder.userId;
@@ -130,6 +138,8 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         this.offsetBy = builder.offsetBy;
         this.pageSize = builder.pageSize;
         this.sortOrder = builder.sortOrder;
+        this.predicate = builder.predicate;
+        this.stringSearchPosition = builder.stringSearchPosition;
     }
     
     public String getUserId() {
@@ -196,6 +206,14 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         return sortOrder;
     }
     
+    public SearchTermPredicate getPredicate() {
+        return predicate;
+    }
+    
+    public StringSearchPosition getStringSearchPosition() { 
+        return stringSearchPosition;
+    }
+    
     public AdherenceRecordsSearch.Builder toBuilder() {
         return new AdherenceRecordsSearch.Builder()
                 .withUserId(userId)
@@ -213,7 +231,9 @@ public class AdherenceRecordsSearch implements BridgeEntity {
                 .withEndTime(endTime)
                 .withOffsetBy(offsetBy)
                 .withPageSize(pageSize)
-                .withSortOrder(sortOrder);
+                .withSortOrder(sortOrder)
+                .withPredicate(predicate)
+                .withStringSearchPosition(stringSearchPosition);
     }
 
     public static class Builder {
@@ -233,6 +253,8 @@ public class AdherenceRecordsSearch implements BridgeEntity {
         private Integer offsetBy;
         private Integer pageSize;
         private SortOrder sortOrder;
+        private SearchTermPredicate predicate;
+        private StringSearchPosition stringSearchPosition;
         
         public Builder withUserId(String userId) {
             this.userId = userId;
@@ -298,6 +320,14 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             this.sortOrder = sortOrder;
             return this;
         }
+        public Builder withPredicate(SearchTermPredicate predicate) {
+            this.predicate = predicate;
+            return this;
+        }
+        public Builder withStringSearchPosition(StringSearchPosition stringSearchPosition) {
+            this.stringSearchPosition = stringSearchPosition;
+            return this;
+        }
         
         public AdherenceRecordsSearch build() {
             if (instanceGuids == null) {
@@ -332,6 +362,12 @@ public class AdherenceRecordsSearch implements BridgeEntity {
             }
             if (sortOrder == null) {
                 sortOrder = SortOrder.ASC;
+            }
+            if (predicate == null) {
+                predicate = SearchTermPredicate.AND;
+            }
+            if (stringSearchPosition == null) {
+                stringSearchPosition = StringSearchPosition.INFIX;
             }
             return new AdherenceRecordsSearch(this);
         }

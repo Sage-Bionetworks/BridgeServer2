@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -30,6 +31,7 @@ import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantCont
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.NOTIFY_SUCCESS_MSG;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -372,7 +374,8 @@ public class StudyParticipantControllerTest extends Mockito {
         when(mockParticipantService.getPagedAccountSummaries(eq(app), any())).thenReturn(page);
         
         AccountSummarySearch search = new AccountSummarySearch.Builder()
-                .withAdminOnly(true).build();
+                .withAdminOnly(TRUE)
+                .withEmailFilter("emailFilter").build();
         mockRequestBody(mockRequest, search);
         
         PagedResourceList<AccountSummary> retValue = controller.searchForAccountSummaries(TEST_STUDY_ID);
@@ -382,7 +385,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         AccountSummarySearch captured = searchCaptor.getValue();
         assertEquals(captured.getEnrolledInStudyId(), TEST_STUDY_ID);
-        assertTrue(captured.isAdminOnly());
+        assertEquals(captured.getEmailFilter(), "emailFilter");
     }
     
     @Test

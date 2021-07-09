@@ -15,11 +15,15 @@ import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_REPEATS;
 import static org.sagebionetworks.bridge.models.ResourceList.INSTANCE_GUIDS;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.ResourceList.PREDICATE;
 import static org.sagebionetworks.bridge.models.ResourceList.SESSION_GUIDS;
 import static org.sagebionetworks.bridge.models.ResourceList.SORT_ORDER;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
+import static org.sagebionetworks.bridge.models.ResourceList.STRING_SEARCH_POSITION;
 import static org.sagebionetworks.bridge.models.ResourceList.STUDY_ID;
 import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
+import static org.sagebionetworks.bridge.models.StringSearchPosition.INFIX;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.ASC;
@@ -428,7 +432,7 @@ public class AdherenceServiceTest extends Mockito {
         assertSame(retValue, page);
         
         Map<String, Object> rp = retValue.getRequestParams();
-        assertEquals(rp.size(), 15);
+        assertEquals(rp.size(), 17);
         assertEquals(rp.get(ASSESSMENT_IDS), ImmutableSet.of());
         assertEquals(rp.get(START_TIME).toString(), CREATED_ON.toString());
         assertEquals(rp.get(END_TIME).toString(), MODIFIED_ON.toString());
@@ -443,6 +447,8 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(rp.get(SORT_ORDER), ASC);
         assertEquals(rp.get(STUDY_ID), TEST_STUDY_ID);
         assertEquals(rp.get(TIME_WINDOW_GUIDS), ImmutableSet.of("CCC"));
+        assertEquals(rp.get(PREDICATE), AND);
+        assertEquals(rp.get(STRING_SEARCH_POSITION), INFIX);
         
         verify(mockDao).getAdherenceRecords(searchCaptor.capture());
         AdherenceRecordsSearch adjSearch = searchCaptor.getValue();

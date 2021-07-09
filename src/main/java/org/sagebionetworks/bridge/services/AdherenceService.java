@@ -15,9 +15,11 @@ import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_REPEATS;
 import static org.sagebionetworks.bridge.models.ResourceList.INSTANCE_GUIDS;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.ResourceList.PREDICATE;
 import static org.sagebionetworks.bridge.models.ResourceList.SESSION_GUIDS;
 import static org.sagebionetworks.bridge.models.ResourceList.SORT_ORDER;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
+import static org.sagebionetworks.bridge.models.ResourceList.STRING_SEARCH_POSITION;
 import static org.sagebionetworks.bridge.models.ResourceList.STUDY_ID;
 import static org.sagebionetworks.bridge.models.ResourceList.TIME_WINDOW_GUIDS;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ASSESSMENT;
@@ -208,10 +210,12 @@ public class AdherenceService {
                 .withRequestParam(INSTANCE_GUIDS, originalInstanceGuids)
                 .withRequestParam(OFFSET_BY, search.getOffsetBy())
                 .withRequestParam(PAGE_SIZE, search.getPageSize())
+                .withRequestParam(PREDICATE, search.getPredicate())
                 .withRequestParam(ADHERENCE_RECORD_TYPE, search.getAdherenceRecordType())
                 .withRequestParam(SESSION_GUIDS, search.getSessionGuids())
                 .withRequestParam(SORT_ORDER, search.getSortOrder())
                 .withRequestParam(START_TIME, search.getStartTime())
+                .withRequestParam(STRING_SEARCH_POSITION, search.getStringSearchPosition())
                 .withRequestParam(STUDY_ID, search.getStudyId())
                 .withRequestParam(TIME_WINDOW_GUIDS, search.getTimeWindowGuids());
     }
