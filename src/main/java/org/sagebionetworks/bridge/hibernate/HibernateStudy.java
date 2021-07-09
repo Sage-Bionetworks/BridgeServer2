@@ -118,18 +118,19 @@ public class HibernateStudy implements Study {
     /**
      * For partial construction of object by Hibernate, excluding expensive fields like clientData.
      */
-    public HibernateStudy(String name, String identifier, String appId, 
-            DateTime createdOn, DateTime modifiedOn, boolean deleted, 
-            StudyPhase phase, String logoURL, Long version) {
+    public HibernateStudy(String name, String identifier, String details, StudyPhase phase,
+            boolean deleted, DateTime createdOn, DateTime modifiedOn, String studyLogoUrl,
+            ColorScheme colorScheme, List<SignInType> signInTypes) {
         this.name = name;
         this.identifier = identifier;
-        this.appId = appId;
+        this.details = details;
+        this.phase = phase;
+        this.deleted = deleted;
         this.createdOn = createdOn;
         this.modifiedOn = modifiedOn;
-        this.deleted = deleted;
-        this.phase = phase;
-        this.studyLogoUrl = logoURL;
-        this.version = version;
+        this.studyLogoUrl = studyLogoUrl;
+        this.colorScheme = colorScheme;
+        this.signInTypes = signInTypes;
     }
     
     @Override

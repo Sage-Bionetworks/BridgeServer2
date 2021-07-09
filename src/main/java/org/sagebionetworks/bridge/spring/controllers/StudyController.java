@@ -10,6 +10,9 @@ import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
+import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,7 +58,7 @@ public class StudyController extends BaseController {
     final void setFileService(FileService fileService) {
         this.fileService = fileService;
     }
-
+    
     @GetMapping(path = {"/v5/studies", "/v3/substudies"})
     public PagedResourceList<Study> getStudies(
             @RequestParam(required = false) String offsetBy, 
@@ -162,5 +165,28 @@ public class StudyController extends BaseController {
         service.updateStudy(session.getAppId(), study);
         
         return study;
+    }
+
+    @GetMapping(path = "/v1/apps/{appId}/studies", produces = {
+            APPLICATION_JSON_UTF8_VALUE })
+    public String getStudiesForApp(@PathVariable String appId,
+            @RequestParam(required = false) String offsetBy, 
+            @RequestParam(required = false) String pageSize) throws JsonProcessingException {
+        
+        appService.getApp(appId);
+        int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
+        int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
+        
+        PagedResourceList<Study> page = service.getStudies(appId, offsetByInt, pageSizeInt, false);
+        return Study.STUDY_SUMMARY_WRITER.writeValueAsString(page);
+    }
+    
+    @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", produces = {
+            APPLICATION_JSON_UTF8_VALUE })
+    public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId) throws JsonProcessingException {
+        
+        appService.getApp(appId);
+        Study study = service.getStudy(appId, studyId, true);
+        return Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
     }
 }

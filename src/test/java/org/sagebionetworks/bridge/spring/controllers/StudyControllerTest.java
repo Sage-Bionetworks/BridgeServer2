@@ -20,6 +20,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
 import java.util.Optional;
@@ -27,6 +28,8 @@ import java.util.Optional;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -45,6 +48,7 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -54,6 +58,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.FileService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -68,6 +73,9 @@ public class StudyControllerTest extends Mockito {
 
     @Mock
     FileService mockFileService;
+    
+    @Mock
+    AppService mockAppService;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -122,6 +130,8 @@ public class StudyControllerTest extends Mockito {
         assertDelete(StudyController.class, "deleteStudy");
         assertAccept(StudyController.class, "createStudyLogo");
         assertCreate(StudyController.class, "finishStudyLogo");
+        assertGet(StudyController.class, "getStudiesForApp");
+        assertGet(StudyController.class, "getStudyForApp");
     }
 
     @Test
@@ -340,5 +350,51 @@ public class StudyControllerTest extends Mockito {
         when(mockFileService.getFileRevision(GUID, CREATED_ON)).thenReturn(Optional.empty());
         
         controller.finishStudyLogo(TEST_STUDY_ID, CREATED_ON.toString());
+    }
+    
+    @Test
+    public void getStudiesForApp() throws JsonProcessingException {
+        Study study1 = Study.create();
+        study1.setName("Name1");
+        study1.setIdentifier("id1");
+        study1.setVersion(10L);
+        
+        Study study2 = Study.create();
+        study2.setName("Name2");
+        study2.setIdentifier("id2");
+        study2.setVersion(20L);
+        PagedResourceList<Study> page = new PagedResourceList<>(
+                ImmutableList.of(study1, study2), 10, true);
+        when(service.getStudies(TEST_APP_ID, 5, 10, false)).thenReturn(page);
+        
+        String retValue = controller.getStudiesForApp(TEST_APP_ID, "5", "10");
+        
+        PagedResourceList<Study> deser = BridgeObjectMapper.get()
+                .readValue(retValue, new TypeReference<PagedResourceList<Study>>() {});
+        
+        // The filter has removed some fields, and kept others
+        assertEquals(deser.getItems().get(0).getName(), "Name1");
+        assertEquals(deser.getItems().get(0).getIdentifier(), "id1");
+        assertNull(deser.getItems().get(0).getVersion());
+        
+        assertEquals(deser.getItems().get(1).getName(), "Name2");
+        assertEquals(deser.getItems().get(1).getIdentifier(), "id2");
+        assertNull(deser.getItems().get(1).getVersion());
+    }
+    
+    @Test
+    public void getStudyForApp() throws JsonProcessingException {
+        Study study = Study.create();
+        study.setName("Name1");
+        study.setIdentifier("id1");
+        study.setVersion(10L);
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        String retValue = controller.getStudyForApp(TEST_APP_ID, TEST_STUDY_ID);
+        
+        Study deser = BridgeObjectMapper.get().readValue(retValue, Study.class);
+        assertEquals(deser.getName(), "Name1");
+        assertEquals(deser.getIdentifier(), "id1");
+        assertNull(deser.getVersion());
     }
 }

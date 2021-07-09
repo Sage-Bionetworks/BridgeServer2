@@ -42,17 +42,19 @@ public class HibernateStudyTest {
     
     @Test
     public void shortConstructor() {
-        HibernateStudy study = new HibernateStudy("name", "identifier", "appId", 
-                CREATED_ON, MODIFIED_ON, true, DESIGN, TEST_LINK, 10L);
+        HibernateStudy study = new HibernateStudy("name", "identifier", "details", 
+                DESIGN, true, CREATED_ON, MODIFIED_ON, TEST_LINK, COLOR_SCHEME, 
+                ImmutableList.of(EMAIL_MESSAGE));
         assertEquals(study.getName(), "name");
         assertEquals(study.getIdentifier(), "identifier");
-        assertEquals(study.getAppId(), "appId");
+        assertEquals(study.getDetails(), "details");
         assertEquals(study.getCreatedOn(), CREATED_ON);
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
         assertTrue(study.isDeleted());
+        assertEquals(study.getColorScheme(), COLOR_SCHEME);
         assertEquals(study.getPhase(), DESIGN);
         assertEquals(study.getStudyLogoUrl(), TEST_LINK);
-        assertEquals(study.getVersion(), Long.valueOf(10L));
+        assertEquals(study.getSignInTypes(), ImmutableList.of(EMAIL_MESSAGE));
     }
     
     @Test

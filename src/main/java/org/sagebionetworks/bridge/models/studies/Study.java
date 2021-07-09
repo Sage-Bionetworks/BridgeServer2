@@ -4,17 +4,33 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import org.sagebionetworks.bridge.hibernate.HibernateStudy;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 
 import java.util.List;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 @JsonDeserialize(as=HibernateStudy.class)
+@JsonFilter("filter")
 public interface Study extends BridgeEntity {
+    
+    // For the summary view, we do suppress many of these fields...
+    ObjectWriter STUDY_SUMMARY_WRITER = new BridgeObjectMapper().writer(
+            new SimpleFilterProvider().addFilter("filter", 
+            SimpleBeanPropertyFilter.serializeAllExcept("appId", "clientData", 
+                    "logoGuid", "irbName", "irbDecisionOn", "irbExpiresOn", 
+                    "irbDecisionType", "irbProtocolName", "institutionId", 
+                    "irbProtocolId", "scheduleGuid", "keywords", "diseases", 
+                    "studyDesignTypes", "contacts", "deleted", "version")));
+
     
     public static Study create() {
         return new HibernateStudy();
