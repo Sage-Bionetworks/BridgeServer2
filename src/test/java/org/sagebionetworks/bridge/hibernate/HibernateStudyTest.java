@@ -44,19 +44,17 @@ public class HibernateStudyTest {
     
     @Test
     public void shortConstructor() {
-        HibernateStudy study = new HibernateStudy("name", "identifier", "details", 
-                DESIGN, true, CREATED_ON, MODIFIED_ON, TEST_LINK, COLOR_SCHEME, 
-                ImmutableList.of(EMAIL_MESSAGE));
+        HibernateStudy study = new HibernateStudy("name", "identifier", "appId", 
+                CREATED_ON, MODIFIED_ON, true, DESIGN, TEST_LINK, 10L);
         assertEquals(study.getName(), "name");
         assertEquals(study.getIdentifier(), "identifier");
-        assertEquals(study.getDetails(), "details");
+        assertEquals(study.getAppId(), "appId");
         assertEquals(study.getCreatedOn(), CREATED_ON);
         assertEquals(study.getModifiedOn(), MODIFIED_ON);
         assertTrue(study.isDeleted());
-        assertEquals(study.getColorScheme(), COLOR_SCHEME);
         assertEquals(study.getPhase(), DESIGN);
         assertEquals(study.getStudyLogoUrl(), TEST_LINK);
-        assertEquals(study.getSignInTypes(), ImmutableList.of(EMAIL_MESSAGE));
+        assertEquals(study.getVersion(), Long.valueOf(10L));
     }
     
     @Test
@@ -156,13 +154,11 @@ public class HibernateStudyTest {
         
         JsonNode summary = BridgeObjectMapper.get().readTree(
                 Study.STUDY_SUMMARY_WRITER.writeValueAsString(study));
-        assertEquals(summary.size(), 10);
+        assertEquals(summary.size(), 8);
         assertEquals(summary.get("name").textValue(), "name");
         assertEquals(summary.get("identifier").textValue(), "oneId");
         assertEquals(summary.get("details").textValue(), "someDetails");
         assertEquals(summary.get("phase").textValue(), "analysis");
-        assertEquals(summary.get("createdOn").textValue(), CREATED_ON.toString());
-        assertEquals(summary.get("modifiedOn").textValue(), MODIFIED_ON.toString());
         assertEquals(summary.get("studyLogoUrl").textValue(), TEST_LINK);
         assertEquals(summary.get("colorScheme").get("background").textValue(), "#000000");
         assertEquals(summary.get("colorScheme").get("foreground").textValue(), "#FFFFFF");

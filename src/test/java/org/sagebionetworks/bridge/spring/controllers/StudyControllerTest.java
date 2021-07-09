@@ -427,7 +427,6 @@ public class StudyControllerTest extends Mockito {
         study.setName("Name1");
         study.setIdentifier("id1");
         study.setVersion(10L);
-        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
 
         CacheKey key = CacheKey.publicStudy(TEST_APP_ID, TEST_STUDY_ID);
         String json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
@@ -440,6 +439,7 @@ public class StudyControllerTest extends Mockito {
         assertEquals(deser.getIdentifier(), "id1");
         assertNull(deser.getVersion());
         
-        verify(mockCacheProvider, never()).setObject(key, json, ONE_DAY_IN_SECONDS);
+        verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
+        verify(service, never()).getStudy(any(), any(), anyBoolean());
     }
 }

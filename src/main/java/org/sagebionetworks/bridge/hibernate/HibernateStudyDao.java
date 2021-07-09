@@ -24,9 +24,8 @@ public class HibernateStudyDao implements StudyDao {
     
     static final String COUNT_PHRASE = "select count(*) ";
     static final String SELECT_PHRASE = "select new org.sagebionetworks.bridge.hibernate."
-            + "HibernateStudy(study.name, study.identifier, study.details, study.phase, "
-            + "study.deleted, study.createdOn, study.modifiedOn, study.studyLogoUrl, "
-            + "study.colorScheme, study.signInTypes) ";
+            + "HibernateStudy(study.name, study.identifier, study.appId, study.createdOn, "
+            + "study.modifiedOn, study.deleted, study.phase, study.studyLogoUrl, study.version) ";
     static final String FROM_PHRASE = "from HibernateStudy as study where appId = :appId"; 
     
     private HibernateHelper hibernateHelper;
