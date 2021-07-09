@@ -137,6 +137,8 @@ public class BridgeConstants {
     public static final String EXPIRATION_PERIOD_KEY = "expirationPeriod";
     
     public static final String CONSENT_URL = "consentUrl";
+    
+    public static final int ONE_DAY_IN_SECONDS = 60*60*24;
 
     /** We want app links to fit in a single SMS, so limit them to 140 chars. */
     public static final int APP_LINK_MAX_LENGTH = 140;

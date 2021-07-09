@@ -30,11 +30,8 @@ public final class CacheKey {
         }
         return false;
     }
-    public static final CacheKey publicStudies(String appId) {
-        return new CacheKey(appId, "PublicAppStudies");
-    }
     public static final CacheKey publicStudy(String appId, String studyId) {
-        return new CacheKey(appId, studyId, "PublicAppStudy");
+        return new CacheKey(appId, studyId, "PublicStudy");
     }
     public static final CacheKey scheduleModificationTimestamp(String studyId) {
         return new CacheKey(studyId, "ScheduleModifiedOnByStudy");

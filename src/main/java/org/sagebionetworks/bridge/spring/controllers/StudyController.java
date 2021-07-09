@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_UPDATE_STUDIES;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDIES;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.ONE_DAY_IN_SECONDS;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
@@ -27,6 +28,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -167,26 +169,18 @@ public class StudyController extends BaseController {
         return study;
     }
 
-    @GetMapping(path = "/v1/apps/{appId}/studies", produces = {
-            APPLICATION_JSON_UTF8_VALUE })
-    public String getStudiesForApp(@PathVariable String appId,
-            @RequestParam(required = false) String offsetBy, 
-            @RequestParam(required = false) String pageSize) throws JsonProcessingException {
-        
-        appService.getApp(appId);
-        int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
-        int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
-        
-        PagedResourceList<Study> page = service.getStudies(appId, offsetByInt, pageSizeInt, false);
-        return Study.STUDY_SUMMARY_WRITER.writeValueAsString(page);
-    }
-    
-    @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", produces = {
-            APPLICATION_JSON_UTF8_VALUE })
-    public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId) throws JsonProcessingException {
-        
-        appService.getApp(appId);
-        Study study = service.getStudy(appId, studyId, true);
-        return Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
+    @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", 
+            produces = { APPLICATION_JSON_UTF8_VALUE })
+    public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId)
+            throws JsonProcessingException {
+        CacheKey key = CacheKey.publicStudy(appId, studyId);
+        String json = cacheProvider.getObject(key, String.class);
+        if (json == null) {
+            appService.getApp(appId);
+            Study study = service.getStudy(appId, studyId, true);
+            json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
+            cacheProvider.setObject(key, json, ONE_DAY_IN_SECONDS);
+        }
+        return json;
     }
 }

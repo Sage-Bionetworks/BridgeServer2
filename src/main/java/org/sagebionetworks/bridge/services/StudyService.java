@@ -17,6 +17,8 @@ import java.util.Set;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -38,6 +40,8 @@ public class StudyService {
     
     private SponsorService sponsorService;
     
+    private CacheProvider cacheProvider;
+    
     @Autowired
     final void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
@@ -46,6 +50,11 @@ public class StudyService {
     @Autowired
     final void setSponsorService(SponsorService sponsorService) {
         this.sponsorService = sponsorService;
+    }
+    
+    @Autowired
+    final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
     }
     
     public Study getStudy(String appId, String studyId, boolean throwsException) {
@@ -143,7 +152,12 @@ public class StudyService {
         study.setPhase(existing.getPhase());
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
-        return studyDao.updateStudy(study);
+        VersionHolder keys = studyDao.updateStudy(study);
+        
+        CacheKey cacheKey = CacheKey.publicStudy(appId, study.getIdentifier());
+        cacheProvider.removeObject(cacheKey);
+        
+        return keys;
     }
     
     public void deleteStudy(String appId, String studyId) {
@@ -154,6 +168,9 @@ public class StudyService {
         existing.setDeleted(true);
         existing.setModifiedOn(DateTime.now());
         studyDao.updateStudy(existing);
+        
+        CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
+        cacheProvider.removeObject(cacheKey);
     }
     
     public void deleteStudyPermanently(String appId, String studyId) {
@@ -163,6 +180,9 @@ public class StudyService {
         // Throws exception if the element does not exist.
         getStudy(appId, studyId, true);
         studyDao.deleteStudyPermanently(appId, studyId);
+        
+        CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
+        cacheProvider.removeObject(cacheKey);
     }
     
     public void deleteAllStudies(String appId) {

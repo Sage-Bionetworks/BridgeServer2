@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.ONE_DAY_IN_SECONDS;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -29,7 +30,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
@@ -46,6 +46,8 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -76,6 +78,9 @@ public class StudyControllerTest extends Mockito {
     
     @Mock
     AppService mockAppService;
+    
+    @Mock
+    CacheProvider mockCacheProvider;
     
     @Mock
     HttpServletRequest mockRequest;
@@ -130,7 +135,6 @@ public class StudyControllerTest extends Mockito {
         assertDelete(StudyController.class, "deleteStudy");
         assertAccept(StudyController.class, "createStudyLogo");
         assertCreate(StudyController.class, "finishStudyLogo");
-        assertGet(StudyController.class, "getStudiesForApp");
         assertGet(StudyController.class, "getStudyForApp");
     }
 
@@ -353,37 +357,7 @@ public class StudyControllerTest extends Mockito {
     }
     
     @Test
-    public void getStudiesForApp() throws JsonProcessingException {
-        Study study1 = Study.create();
-        study1.setName("Name1");
-        study1.setIdentifier("id1");
-        study1.setVersion(10L);
-        
-        Study study2 = Study.create();
-        study2.setName("Name2");
-        study2.setIdentifier("id2");
-        study2.setVersion(20L);
-        PagedResourceList<Study> page = new PagedResourceList<>(
-                ImmutableList.of(study1, study2), 10, true);
-        when(service.getStudies(TEST_APP_ID, 5, 10, false)).thenReturn(page);
-        
-        String retValue = controller.getStudiesForApp(TEST_APP_ID, "5", "10");
-        
-        PagedResourceList<Study> deser = BridgeObjectMapper.get()
-                .readValue(retValue, new TypeReference<PagedResourceList<Study>>() {});
-        
-        // The filter has removed some fields, and kept others
-        assertEquals(deser.getItems().get(0).getName(), "Name1");
-        assertEquals(deser.getItems().get(0).getIdentifier(), "id1");
-        assertNull(deser.getItems().get(0).getVersion());
-        
-        assertEquals(deser.getItems().get(1).getName(), "Name2");
-        assertEquals(deser.getItems().get(1).getIdentifier(), "id2");
-        assertNull(deser.getItems().get(1).getVersion());
-    }
-    
-    @Test
-    public void getStudyForApp() throws JsonProcessingException {
+    public void getStudyForApp_noCache() throws JsonProcessingException {
         Study study = Study.create();
         study.setName("Name1");
         study.setIdentifier("id1");
@@ -396,5 +370,32 @@ public class StudyControllerTest extends Mockito {
         assertEquals(deser.getName(), "Name1");
         assertEquals(deser.getIdentifier(), "id1");
         assertNull(deser.getVersion());
+        
+        CacheKey key = CacheKey.publicStudy(TEST_APP_ID, TEST_STUDY_ID);
+        String json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
+        
+        verify(mockCacheProvider).setObject(key, json, ONE_DAY_IN_SECONDS);
+    }
+    
+    @Test
+    public void getStudyForApp_cached() throws JsonProcessingException {
+        Study study = Study.create();
+        study.setName("Name1");
+        study.setIdentifier("id1");
+        study.setVersion(10L);
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        CacheKey key = CacheKey.publicStudy(TEST_APP_ID, TEST_STUDY_ID);
+        String json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
+        when(mockCacheProvider.getObject(key, String.class)).thenReturn(json);
+        
+        String retValue = controller.getStudyForApp(TEST_APP_ID, TEST_STUDY_ID);
+        
+        Study deser = BridgeObjectMapper.get().readValue(retValue, Study.class);
+        assertEquals(deser.getName(), "Name1");
+        assertEquals(deser.getIdentifier(), "id1");
+        assertNull(deser.getVersion());
+        
+        verify(mockCacheProvider, never()).setObject(key, json, ONE_DAY_IN_SECONDS);
     }
 }
