@@ -22,14 +22,12 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 @JsonFilter("filter")
 public interface Study extends BridgeEntity {
     
-    // For the summary view, we do suppress many of these fields...
+    // For the summary view, we suppress many of the internal management fields
     public static ObjectWriter STUDY_SUMMARY_WRITER = new BridgeObjectMapper().writer(
-            new SimpleFilterProvider().addFilter("filter", 
-            SimpleBeanPropertyFilter.serializeAllExcept("appId", "clientData", 
-                    "logoGuid", "irbName", "irbDecisionOn", "irbExpiresOn", 
-                    "irbDecisionType", "irbProtocolName", "institutionId", 
-                    "irbProtocolId", "scheduleGuid", "keywords", "diseases", 
-                    "studyDesignTypes", "contacts", "deleted", "version")));
+            new SimpleFilterProvider().addFilter("filter",
+                    SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier",
+                            "details", "phase", "createdOn", "modifiedOn", "studyLogoUrl",
+                            "colorScheme", "signInTypes")));
 
     
     public static Study create() {
