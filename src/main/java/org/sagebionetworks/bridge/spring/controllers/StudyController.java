@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDIES;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.ONE_DAY_IN_SECONDS;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
@@ -89,11 +88,12 @@ public class StudyController extends BaseController {
 
     @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public Study getStudy(@PathVariable String id) {
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession();
         
+        Study study = service.getStudy(session.getAppId(), id, true);
         CAN_READ_STUDIES.checkAndThrow(STUDY_ID, id);
         
-        return service.getStudy(session.getAppId(), id, true);
+        return study;
     }
 
     @PostMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
@@ -124,9 +124,10 @@ public class StudyController extends BaseController {
     @PostMapping("/v5/studies/{id}/logo")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public FileRevision createStudyLogo(@PathVariable String id) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        UserSession session = getAdministrativeSession();
         
         Study study = service.getStudy(session.getAppId(), id, true);
+        CAN_UPDATE_STUDIES.checkAndThrow(STUDY_ID, id);
         
         FileMetadata metadata = null;
         if (study.getLogoGuid() != null) {
@@ -150,9 +151,11 @@ public class StudyController extends BaseController {
     @PostMapping("/v5/studies/{id}/logo/{createdOn}")
     @ResponseStatus(HttpStatus.CREATED)
     public Study finishStudyLogo(@PathVariable String id, @PathVariable("createdOn") String createdOnStr) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
-
+        UserSession session = getAdministrativeSession();
+        
         Study study = service.getStudy(session.getAppId(), id, true);
+        CAN_UPDATE_STUDIES.checkAndThrow(STUDY_ID, id);
+        
         String guid = study.getLogoGuid();
         if (guid == null) {
             throw new BadRequestException("Study logo upload must be started before it can be finished.");

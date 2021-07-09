@@ -128,6 +128,7 @@ public class AuthUtils {
      * study.
      */
     public static final AuthEvaluator CAN_READ_STUDIES = new AuthEvaluator()
+            .isEnrolledInStudy().or()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER, ORG_ADMIN).or()
             .hasAnyRole(DEVELOPER, ADMIN);
     

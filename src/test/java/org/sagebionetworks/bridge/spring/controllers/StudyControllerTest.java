@@ -50,6 +50,7 @@ import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -195,6 +196,8 @@ public class StudyControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
+        doReturn(session).when(controller).getAuthenticatedSession();
+        
         Study study = Study.create();
         study.setIdentifier(TEST_STUDY_ID);
         study.setName("oneName");
@@ -209,6 +212,32 @@ public class StudyControllerTest extends Mockito {
         verify(service).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
     }
 
+    @Test
+    public void getStudyForParticipant() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession();
+        
+        Study study = Study.create();
+        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        Study result = controller.getStudy(TEST_STUDY_ID);
+        assertEquals(result, study);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getStudyFailsForUnenrolledParticipant() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(ImmutableSet.of("some-other-study"))
+                .build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession();
+        
+        controller.getStudy(TEST_STUDY_ID);
+    }
+    
     @Test
     public void updateStudy() throws Exception {
         RequestContext.set(new RequestContext.Builder()
@@ -251,7 +280,10 @@ public class StudyControllerTest extends Mockito {
     
     @Test
     public void createStudyLogoNoExistingFile() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         session.setAppId(TEST_APP_ID);
         
         Study study = Study.create();
@@ -285,7 +317,10 @@ public class StudyControllerTest extends Mockito {
     
     @Test
     public void createStudyLogoWithExistingFile() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         session.setAppId(TEST_APP_ID);
         
         Study study = Study.create();
@@ -314,7 +349,10 @@ public class StudyControllerTest extends Mockito {
     
     @Test
     public void finishStudyLogo() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         
         Study study = Study.create();
         study.setLogoGuid(GUID);
@@ -335,7 +373,10 @@ public class StudyControllerTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void finishStudyLogo_noGuid() { 
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         
         Study study = Study.create();
         when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
@@ -345,7 +386,10 @@ public class StudyControllerTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void finishStudyLogo_noFinishedRevision() { 
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        doReturn(session).when(controller).getAdministrativeSession();
         
         Study study = Study.create();
         study.setLogoGuid(GUID);

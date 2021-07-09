@@ -26,9 +26,7 @@ public interface Study extends BridgeEntity {
     public static ObjectWriter STUDY_SUMMARY_WRITER = new BridgeObjectMapper().writer(
             new SimpleFilterProvider().addFilter("filter",
                     SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier",
-                            "details", "phase", "createdOn", "modifiedOn", "studyLogoUrl",
-                            "colorScheme", "signInTypes")));
-
+                            "details", "phase", "studyLogoUrl", "colorScheme", "signInTypes")));
     
     public static Study create() {
         return new HibernateStudy();
