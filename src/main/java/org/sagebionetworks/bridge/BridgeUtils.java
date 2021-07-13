@@ -768,4 +768,12 @@ public class BridgeUtils {
         }
         return defaultValue;
     }
+    
+    /**
+     * Adds an item to an immutable set (or to a mutable set) and returns the
+     * new set as an immutable set.
+     */
+    public static <T> Set<T> addToSet(Set<T> set, T element) {
+        return new ImmutableSet.Builder<T>().addAll(set).add(element).build();
+    }
 }

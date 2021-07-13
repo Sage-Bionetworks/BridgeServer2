@@ -172,8 +172,7 @@ public class StudyController extends BaseController {
         return study;
     }
 
-    @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", 
-            produces = { APPLICATION_JSON_UTF8_VALUE })
+    @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", produces = { APPLICATION_JSON_UTF8_VALUE })
     public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId)
             throws JsonProcessingException {
         CacheKey key = CacheKey.publicStudy(appId, studyId);
@@ -185,5 +184,47 @@ public class StudyController extends BaseController {
             cacheProvider.setObject(key, json, ONE_DAY_IN_SECONDS);
         }
         return json;
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/design")
+    public Study design(@PathVariable String studyId) {
+        UserSession session = getAdministrativeSession();
+        
+        return service.transitionToDesign(session.getAppId(), studyId);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/recruit")
+    public Study recruitment(@PathVariable String studyId) {
+        UserSession session = getAdministrativeSession();
+        
+        return service.transitionToRecruitment(session.getAppId(), studyId);
+    }
+
+    @PostMapping("/v5/studies/{studyId}/conduct")
+    public Study closeEnrollment(@PathVariable String studyId) {
+        UserSession session = getAdministrativeSession();
+        
+        return service.transitionToInFlight(session.getAppId(), studyId);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/analyze")
+    public Study analysis(@PathVariable String studyId) { 
+        UserSession session = getAdministrativeSession();
+        
+        return service.transitionToAnalysis(session.getAppId(), studyId);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/complete")
+    public Study completed(@PathVariable String studyId) { 
+        UserSession session = getAdministrativeSession();
+        
+        return service.transitionToCompleted(session.getAppId(), studyId);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/withdraw")
+    public Study withdrawn(@PathVariable String studyId) {
+        UserSession session = getAdministrativeSession();
+       
+        return service.transitionToWithdrawn(session.getAppId(), studyId);
     }
 }

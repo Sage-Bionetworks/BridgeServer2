@@ -46,4 +46,8 @@ public enum StudyPhase {
      * would appear to be no longer available to participants.
      */
     WITHDRAWN;
+    
+    public String label() {
+        return "“" + this.name().toLowerCase() + "”";
+    }
 }
