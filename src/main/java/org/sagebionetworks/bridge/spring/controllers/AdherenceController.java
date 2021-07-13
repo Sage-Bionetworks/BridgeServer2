@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 
+import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -25,7 +26,7 @@ import org.sagebionetworks.bridge.services.AdherenceService;
 public class AdherenceController extends BaseController {
     
     static final StatusMessage SAVED_MSG = new StatusMessage("Adherence records saved.");
-    static final StatusMessage DELETED_MSG = new StatusMessage("Adherence records deleted");
+    static final StatusMessage DELETED_MSG = new StatusMessage("Adherence record deleted");
     
     private AdherenceService service;
 
@@ -94,37 +95,27 @@ public class AdherenceController extends BaseController {
         return service.getAdherenceRecords(session.getAppId(), search);
     }
 
-    @DeleteMapping("/v5/studies/{studyId}/participants/self/adherence")
-    public StatusMessage deleteAdherenceRecordsForSelf(@PathVariable String studyId) {
-        UserSession session = getAuthenticatedAndConsentedSession();
-
-        AdherenceRecordList recordsList = parseJson(AdherenceRecordList.class);
-        for (AdherenceRecord oneRecord : recordsList.getRecords()) {
-            oneRecord.setAppId(session.getAppId());
-            oneRecord.setUserId(session.getId());
-            oneRecord.setStudyId(studyId);
-        }
-//        TODO: Build deletion method in service
-//        service.deleteAdherenceRecords(session.getAppId(), recordsList);
-        return DELETED_MSG;
-    }
-
-    @DeleteMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence")
-    public StatusMessage deleteAdherenceRecords(@PathVariable String studyId, @PathVariable String userIdToken) {
-//        TODO: Verify roles with access to Delete. Currently same as Update.
+    @DeleteMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence/{instanceGuid}/{eventTimestamp}/{startedOn}")
+    public StatusMessage deleteAdherenceRecord(
+            @PathVariable String studyId,
+            @PathVariable String userIdToken,
+            @PathVariable String instanceGuid,
+            @PathVariable String eventTimestamp,
+            @PathVariable String startedOn) {
         UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
 
         String userId = accountService.getAccountId(session.getAppId(), userIdToken)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        AdherenceRecordList recordsList = parseJson(AdherenceRecordList.class);
-        for (AdherenceRecord oneRecord : recordsList.getRecords()) {
-            oneRecord.setAppId(session.getAppId());
-            oneRecord.setUserId(userId);
-            oneRecord.setStudyId(studyId);
-        }
+        AdherenceRecord record = new AdherenceRecord();
+        record.setAppId(session.getAppId());
+        record.setUserId(userId);
+        record.setStudyId(studyId);
+        record.setInstanceGuid(instanceGuid);
+        record.setInstanceTimestamp(DateTime.parse(startedOn));
+        record.setEventTimestamp(DateTime.parse(eventTimestamp));
 
-//        service.deleteAdherenceRecords(session.getAppId(), recordsList);
+        service.deleteAdherenceRecord(session.getAppId(), record);
         return DELETED_MSG;
     }
 }

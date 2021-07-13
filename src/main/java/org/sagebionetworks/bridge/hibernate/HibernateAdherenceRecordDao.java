@@ -8,6 +8,7 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
@@ -120,7 +121,7 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
 
 //    TODO: Delete method (should override interface)
     @Override
-    public void deleteAdherenceRecord(AdherenceRecord record) {
+    public void deleteAdherenceRecordPermanently(AdherenceRecord record) {
         checkNotNull(record);
 
         AdherenceRecordId id = new AdherenceRecordId(record.getUserId(), record.getStudyId(),
@@ -128,6 +129,8 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         AdherenceRecord existingRecord = hibernateHelper.getById(AdherenceRecord.class, id);
         if (existingRecord != null) {
             hibernateHelper.deleteById(AdherenceRecord.class, id);
+        } else {
+            throw new EntityNotFoundException(AdherenceRecord.class);
         }
     }
 }

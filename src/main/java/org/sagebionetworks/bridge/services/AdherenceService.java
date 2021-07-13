@@ -30,6 +30,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Collections;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -279,25 +280,14 @@ public class AdherenceService {
 
     /* TODO: Add deleteAR method. Should delete AdherenceRecord but might also need
     *   to update Assessments or Sessions. Also might need to validate input. */
-    public void deleteAdherenceRecords(String appId, AdherenceRecordList recordList) {
-        checkNotNull(recordList);
-
-//        TODO: Is this necessary or should it just "return".
-        if (recordList.getRecords().isEmpty()) {
-            throw new BadRequestException("No Adherence Records submitted for deletion.");
-        }
+    public void deleteAdherenceRecord(String appId, AdherenceRecord record) {
+        checkNotNull(record);
 
         CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
-                AuthEvaluatorField.STUDY_ID, recordList.getRecords().get(0).getStudyId(),
-                AuthEvaluatorField.USER_ID, recordList.getRecords().get(0).getUserId()
+                AuthEvaluatorField.STUDY_ID, record.getStudyId(),
+                AuthEvaluatorField.USER_ID, record.getUserId()
         );
 
-//        TODO: Check if MetadataContainer is necessary to create accurate AdherenceRecordId in dao.
-        for (AdherenceRecord record : recordList.getRecords()) {
-            dao.deleteAdherenceRecord(record);
-        }
-
-        /* TODO: Consider if it's worth it to create a new hibernate method to delete many records
-        *        with one request, instead of deleting by one id at a time. */
+        dao.deleteAdherenceRecordPermanently(record);
     }
 }
