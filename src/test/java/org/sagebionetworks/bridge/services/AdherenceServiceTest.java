@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -577,19 +578,22 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(update.getFinishedOn(), FINISHED_ON);
     }
 
-    /* TODO:
-    *   Verify delete service can delete.
-    *   Verify errors for authorization. */
+    @Test
+    public void deleteAdherenceRecord() {
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
 
-//    @Test
-//    public void deleteAdherenceRecord() {
-//        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON);
-//        when(mockDao)
-//
-//        service.deleteAdherenceRecord(record);
-//
-//        verify(mockDao).deleteAdherenceRecordPermanently(any());
-//    }
+        service.deleteAdherenceRecord(record);
+
+        verify(mockDao).deleteAdherenceRecordPermanently(any());
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void deleteAdherenceRecord_notAuthorized() {
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON);
+        service.deleteAdherenceRecord(record);
+    }
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn) {
         AdherenceRecord asmt1 = new AdherenceRecord();
