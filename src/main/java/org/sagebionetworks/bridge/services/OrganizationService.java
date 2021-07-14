@@ -197,8 +197,7 @@ public class OrganizationService {
         
         CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
         
-        AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
-                .copyOf(search)
+        AccountSummarySearch scopedSearch = search.toBuilder()
                 // only needed for legacy APIs
                 .withAdminOnly(null) 
                 .withOrgMembership(identifier).build();
@@ -210,8 +209,7 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkNotNull(search);
 
-        AccountSummarySearch scopedSearch = new AccountSummarySearch.Builder()
-            .copyOf(search)
+        AccountSummarySearch scopedSearch = search.toBuilder()
             .withAdminOnly(true)
             .withOrgMembership("<none>").build();
 

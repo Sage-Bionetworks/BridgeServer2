@@ -290,6 +290,7 @@ public class ParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
+
         return participantService.getPagedAccountSummaries(app, search);
     }
     

@@ -28,13 +28,18 @@ public class ResourceList<T> {
     public static final String ALL_OF_GROUPS = "allOfGroups";
     public static final String ASSESSMENT_IDS = "assessmentIds";
     public static final String ASSIGNMENT_FILTER = "assignmentFilter";
+    public static final String ATTRIBUTE_KEY = "attributeKey";
+    public static final String ATTRIBUTE_VALUE_FILTER = "attributeValueFilter";
     public static final String CATEGORIES = "categories"; // should be a set or list
     public static final String CURRENT_TIMESTAMPS_ONLY = "currentTimestampsOnly";
     public static final String EMAIL_FILTER = "emailFilter";
     public static final String END_DATE = "endDate";
     public static final String END_TIME = "endTime";
+    public static final String ENROLLED_IN_STUDY_ID = "enrolledInStudyId";
+    public static final String ENROLLMENT = "enrollment";
     public static final String ENROLLMENT_FILTER = "enrollmentFilter";
     public static final String EVENT_TIMESTAMPS = "eventTimestamps";
+    public static final String EXTERNAL_ID_FILTER = "externalIdFilter";
     public static final String GUID = "guid";
     public static final String ID_FILTER = "idFilter";
     public static final String IDENTIFIER = "identifier";
@@ -51,6 +56,7 @@ public class ResourceList<T> {
     public static final String ORG_MEMBERSHIP = "orgMembership";
     public static final String PAGE_SIZE = "pageSize";
     public static final String PHONE_FILTER = "phoneFilter";
+    public static final String PREDICATE = "predicate";
     public static final String REPORT_TYPE = "reportType";
     public static final String SCHEDULED_ON_END = "scheduledOnEnd";
     public static final String SCHEDULED_ON_START = "scheduledOnStart";
@@ -58,6 +64,8 @@ public class ResourceList<T> {
     public static final String SORT_ORDER = "sortOrder";
     public static final String START_DATE = "startDate";
     public static final String START_TIME = "startTime";
+    public static final String STATUS = "status";
+    public static final String STRING_SEARCH_POSITION = "stringSearchPosition";
     public static final String STUDY_ID = "studyId";
     public static final String TAGS = "tags";
     public static final String TEMPLATE_TYPE = "templateType";

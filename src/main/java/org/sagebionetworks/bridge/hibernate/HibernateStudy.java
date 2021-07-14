@@ -124,10 +124,10 @@ public class HibernateStudy implements Study {
         this.name = name;
         this.identifier = identifier;
         this.appId = appId;
-        this.createdOn = createdOn;
-        this.modifiedOn = modifiedOn;
         this.deleted = deleted;
         this.phase = phase;
+        this.createdOn = createdOn;
+        this.modifiedOn = modifiedOn;
         this.studyLogoUrl = logoURL;
         this.version = version;
     }

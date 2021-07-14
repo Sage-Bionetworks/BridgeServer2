@@ -4,6 +4,7 @@ import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -12,9 +13,13 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.hibernate.HibernateAccountDao.FULL_QUERY;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
+import static org.sagebionetworks.bridge.models.StringSearchPosition.INFIX;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
+import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
+import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.WITHDRAWN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -52,10 +57,12 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
 
 public class HibernateAccountDaoTest extends Mockito {
     private static final String ACCOUNT_ID = "account-id";
@@ -449,12 +456,11 @@ public class HibernateAccountDaoTest extends Mockito {
         String expQuery = "SELECT acct.id FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
                 + "WHERE acct.appId = :appId AND size(acct.roles) > 0 AND acct.orgMembership "
-                +"= :orgId GROUP BY acct.id";
+                + "= :orgId GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct "
                 + "LEFT JOIN acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
-                +"WHERE acct.appId = :appId AND size(acct.roles) > 0 AND acct.orgMembership = "
-                +":orgId";
+                +"WHERE acct.appId = :appId AND size(acct.roles) > 0 AND acct.orgMembership = :orgId";
         
         Set<Enrollment> set = ImmutableSet.of(
                 Enrollment.create(TEST_APP_ID, STUDY_A, ACCOUNT_ID),
@@ -514,6 +520,50 @@ public class HibernateAccountDaoTest extends Mockito {
         verify(mockHibernateHelper).getById(HibernateAccount.class, "account-2");
         verify(mockHibernateHelper).queryCount(expCountQuery, APP_QUERY_PARAMS);
     }
+    
+    @Test
+    public void getPagedReturnsQueryParams() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withOffsetBy(10)
+                .withAdminOnly(true)
+                .withOrgMembership(TEST_ORG_ID)
+                .withPageSize(5)
+                .withEmailFilter("emailFilter")
+                .withPhoneFilter("phoneFilter")
+                .withAllOfGroups(ImmutableSet.of("all"))
+                .withNoneOfGroups(ImmutableSet.of("none"))
+                .withLanguage("en")
+                .withStartTime(CREATED_ON)
+                .withEndTime(MODIFIED_ON)
+                .withEnrolledInStudyId(TEST_STUDY_ID)
+                .withExternalIdFilter("externalIdFilter")
+                .withStatus(AccountStatus.DISABLED)
+                .withEnrollment(EnrollmentFilter.WITHDRAWN)
+                .withAttributeKey("key")
+                .withAttributeValueFilter("value")
+                .build();
+
+        PagedResourceList<AccountSummary> retValue = dao.getPagedAccountSummaries(TEST_APP_ID, search);
+        
+        Map<String, Object> rp = retValue.getRequestParams();
+        assertEquals(rp.get("offsetBy"), 10);
+        assertEquals(rp.get("pageSize"), 5);
+        assertEquals(rp.get("orgMembership"), TEST_ORG_ID);
+        assertTrue((Boolean)rp.get("adminOnly"));
+        assertEquals(rp.get("emailFilter"), "emailFilter");
+        assertEquals(rp.get("phoneFilter"), "phoneFilter");
+        assertEquals(rp.get("allOfGroups"), ImmutableSet.of("all"));
+        assertEquals(rp.get("noneOfGroups"), ImmutableSet.of("none"));
+        assertEquals(rp.get("language"), "en");
+        assertEquals(rp.get("startTime"), CREATED_ON.toString());
+        assertEquals(rp.get("endTime"), MODIFIED_ON.toString());
+        assertEquals(rp.get("enrolledInStudyId"), TEST_STUDY_ID);
+        assertEquals(rp.get("externalIdFilter"), "externalIdFilter");
+        assertEquals(rp.get("status"), AccountStatus.DISABLED);
+        assertEquals(rp.get("enrollment"), EnrollmentFilter.WITHDRAWN);
+        assertEquals(rp.get("attributeKey"), "key");
+        assertEquals(rp.get("attributeValueFilter"), "value");
+    }
 
     @Test
     public void getPagedRemovesStudiesNotInCaller() throws Exception {
@@ -548,20 +598,20 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void getPagedWithOptionalParams() throws Exception {
         String expQuery = "SELECT acct.id FROM HibernateAccount AS acct LEFT JOIN acct.enrollments AS "
-                + "enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
-                + "acct.email LIKE :email AND acct.phone.number LIKE :number AND acct.createdOn >= "
-                + ":startTime AND acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) "
-                + "AND size(acct.roles) > 0 AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN "
-                + "elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND "
-                + ":NOTIN2 NOT IN elements(acct.dataGroups)) AND acct.orgMembership = :orgId GROUP BY acct.id";
+                + "enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId "
+                + "AND size(acct.roles) > 0 AND acct.orgMembership = :orgId AND acct.email LIKE :email "
+                + "AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND acct.createdOn "
+                + "<= :endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) "
+                + "AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) "
+                + "AND :NOTIN2 NOT IN elements(acct.dataGroups)) GROUP BY acct.id";
 
         String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct LEFT JOIN "
                 + "acct.enrollments AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = "
-                + ":appId AND acct.email LIKE :email AND acct.phone.number LIKE :number AND acct.createdOn "
-                + ">= :startTime AND acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) "
-                + "AND size(acct.roles) > 0 AND (:IN1 IN elements(acct.dataGroups) AND :IN2 IN "
-                + "elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND :NOTIN2 "
-                + "NOT IN elements(acct.dataGroups)) AND acct.orgMembership = :orgId";
+                + ":appId AND size(acct.roles) > 0 AND acct.orgMembership = :orgId AND acct.email LIKE "
+                + ":email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND "
+                + "acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN "
+                + "elements(acct.dataGroups) AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN "
+                + "elements(acct.dataGroups) AND :NOTIN2 NOT IN elements(acct.dataGroups))";
 
         // Setup start and end dates.
         DateTime startDate = DateTime.parse("2017-05-19T11:40:06.247-0700");
@@ -584,7 +634,7 @@ public class HibernateAccountDaoTest extends Mockito {
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(TEST_APP_ID, search);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
-        assertEquals(paramsMap.size(), 12);
+        assertEquals(paramsMap.size(), 14);
         assertEquals(paramsMap.get("pageSize"), 5);
         assertEquals(paramsMap.get("offsetBy"), 10);
         assertEquals(paramsMap.get("emailFilter"), EMAIL);
@@ -595,6 +645,8 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(paramsMap.get("noneOfGroups"), Sets.newHashSet("c", "d"));
         assertEquals(paramsMap.get("language"), "de");
         assertEquals(paramsMap.get("orgMembership"), TEST_ORG_ID);
+        assertEquals(paramsMap.get("stringSearchPosition"), INFIX);
+        assertEquals(paramsMap.get("predicate"), AND);
         assertTrue((Boolean)paramsMap.get("adminOnly"));
         assertEquals(paramsMap.get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
 
@@ -699,7 +751,7 @@ public class HibernateAccountDaoTest extends Mockito {
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(TEST_APP_ID, search);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
-        assertEquals(paramsMap.size(), 10);
+        assertEquals(paramsMap.size(), 12);
         assertEquals(paramsMap.get("pageSize"), 5);
         assertEquals(paramsMap.get("offsetBy"), 10);
         assertEquals(paramsMap.get("emailFilter"), EMAIL);
@@ -709,6 +761,8 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(paramsMap.get("allOfGroups"), Sets.newHashSet());
         assertEquals(paramsMap.get("noneOfGroups"), Sets.newHashSet());
         assertEquals(paramsMap.get("language"), "de");
+        assertEquals(paramsMap.get("stringSearchPosition"), INFIX);
+        assertEquals(paramsMap.get("predicate"), AND);
         assertEquals(paramsMap.get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
 
         String phoneString = PHONE.getNationalFormat().replaceAll("\\D*", "");
@@ -868,8 +922,7 @@ public class HibernateAccountDaoTest extends Mockito {
     public void noLanguageQueryCorrect() throws Exception {
         AccountSummarySearch search = new AccountSummarySearch.Builder().build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments AS enrollment "
                 + "WITH acct.id = enrollment.accountId WHERE acct.appId = :appId GROUP BY acct.id";
@@ -882,8 +935,8 @@ public class HibernateAccountDaoTest extends Mockito {
     public void languageQueryCorrect() throws Exception {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withLanguage("en").build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
+        
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments AS enrollment "
                 + "WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
                 + ":language IN ELEMENTS(acct.languages) GROUP BY acct.id";
@@ -897,8 +950,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withNoneOfGroups(Sets.newHashSet("sdk-int-1"))
                 .withAllOfGroups(Sets.newHashSet("group1")).build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
                 + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
@@ -916,8 +968,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withAllOfGroups(Sets.newHashSet("group1"))
                 .build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
                 + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
@@ -933,8 +984,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder()
                 .withAllOfGroups(Sets.newHashSet("sdk-int-1", "group1")).build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
                 + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
@@ -951,8 +1001,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withNoneOfGroups(Sets.newHashSet("group1"))
                 .build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
                 + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
@@ -968,8 +1017,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder()
                 .withNoneOfGroups(Sets.newHashSet("sdk-int-1", "group1")).build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
                 + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
@@ -983,12 +1031,83 @@ public class HibernateAccountDaoTest extends Mockito {
     }
     
     @Test
+    public void externalIdFilterQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withExternalIdFilter("filter").build();
+        
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
+                + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND enrollment.externalId LIKE :extId GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+        assertEquals(builder.getParameters().get("extId"), "%filter%");
+    }
+    
+    @Test
+    public void statusFilterQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withStatus(ENABLED).build();
+        
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
+                + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
+                + "acct.status = :status GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+        assertEquals(builder.getParameters().get("status"), ENABLED);
+    }
+
+    @Test
+    public void enrollmentFilterWithdrawnQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withEnrollment(WITHDRAWN).build();
+        
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
+                + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
+                + "enrollment.withdrawnOn IS NOT NULL GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+    }
+
+    @Test
+    public void enrollmentFilterEnrolledQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withEnrollment(ENROLLED).build();
+        
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
+                + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND "
+                + "enrollment.withdrawnOn IS NULL GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+    }
+    
+    @Test
+    public void attributeKeyQueryCorrect() throws Exception {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withAttributeKey("foo").withAttributeValueFilter("bar").build();
+        
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
+                + "AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId AND " 
+                + "acct.attributes['foo'] LIKE :attValue GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+        assertEquals(builder.getParameters().get("attValue"), "%bar%");
+    }
+    
+    @Test
     public void orgMembershipQueryCorrect() throws Exception {
         AccountSummarySearch search = new AccountSummarySearch.Builder()
                 .withOrgMembership(TEST_ORG_ID).build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "
                 +"acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
@@ -1003,8 +1122,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder()
                 .withOrgMembership("<none>").build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "
                 +"acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
@@ -1019,8 +1137,7 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder()
                 .withAdminOnly(true).build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "
                 +"acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
@@ -1038,16 +1155,15 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder()
                 .withEnrolledInStudyId(TEST_STUDY_ID).build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct " 
                 + "LEFT JOIN acct.enrollments AS enrollment WITH acct.id = " 
                 + "enrollment.accountId WHERE acct.appId = :appId AND " 
-                + "enrollment.studyId IN (:studies) GROUP BY acct.id";
+                + "enrollment.studyId = :studyId GROUP BY acct.id";
 
         assertEquals(builder.getQuery(), finalQuery);
-        assertEquals(builder.getParameters().get("studies"), ImmutableSet.of(TEST_STUDY_ID));
+        assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
     }
 
     @Test
@@ -1058,16 +1174,15 @@ public class HibernateAccountDaoTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder()
                 .withEnrolledInStudyId(TEST_STUDY_ID).build();
 
-        QueryBuilder builder = dao.makeQuery(HibernateAccountDao.FULL_QUERY, TEST_APP_ID, null,
-                search, false);
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
 
         String finalQuery = "SELECT acct FROM HibernateAccount AS acct " 
                 + "LEFT JOIN acct.enrollments AS enrollment WITH acct.id = " 
                 + "enrollment.accountId WHERE acct.appId = :appId AND " 
-                + "enrollment.studyId IN (:studies) GROUP BY acct.id";
+                + "enrollment.studyId = :studyId GROUP BY acct.id";
 
         assertEquals(builder.getQuery(), finalQuery);
-        assertEquals(builder.getParameters().get("studies"), ImmutableSet.of(TEST_STUDY_ID));
+        assertEquals(builder.getParameters().get("studyId"), TEST_STUDY_ID);
     }
     
     @Test

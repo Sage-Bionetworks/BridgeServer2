@@ -173,8 +173,12 @@ public class SessionStateTest extends Mockito {
     }
 
     @Test
-    public void finishSessionRecordNotChanged() {
+    public void finishSessionRecordIsChanged() {
         List<AdherenceRecord> recs = getRecords();
+        recs.get(0).setDeclined(true);
+        recs.get(1).setDeclined(true);
+        recs.get(2).setDeclined(true);
+        recs.get(3).setDeclined(true);
         
         SessionState state = new SessionState(4);
         for (AdherenceRecord rec : recs) {
@@ -186,14 +190,14 @@ public class SessionStateTest extends Mockito {
         sessionRecord.setFinishedOn(MODIFIED_ON);
         
         boolean retValue = state.updateSessionRecord(sessionRecord);
-        assertFalse(retValue);
-        assertEquals(sessionRecord.getStartedOn(), CREATED_ON);
-        assertEquals(sessionRecord.getFinishedOn(), MODIFIED_ON);
-        assertFalse(sessionRecord.isDeclined());
+        assertTrue(retValue);
+        assertEquals(sessionRecord.getStartedOn(), TS1);
+        assertEquals(sessionRecord.getFinishedOn(), TS8);
+        assertTrue(sessionRecord.isDeclined());
     }
     
     @Test
-    public void inProcessSessionRecordNotChanged() {
+    public void inProcessSessionRecordIsChanged() {
         List<AdherenceRecord> recs = getRecords();
         
         SessionState state = new SessionState(4);
@@ -206,8 +210,8 @@ public class SessionStateTest extends Mockito {
         sessionRecord.setStartedOn(CREATED_ON);
         
         boolean retValue = state.updateSessionRecord(sessionRecord);
-        assertFalse(retValue);
-        assertEquals(sessionRecord.getStartedOn(), CREATED_ON);
+        assertTrue(retValue);
+        assertEquals(sessionRecord.getStartedOn(), TS1);
         assertNull(sessionRecord.getFinishedOn());
     }
     

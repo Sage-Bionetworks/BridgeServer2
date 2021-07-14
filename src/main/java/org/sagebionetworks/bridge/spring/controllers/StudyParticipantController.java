@@ -221,8 +221,7 @@ public class StudyParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         
-        search = new AccountSummarySearch.Builder().copyOf(search)
-                .withEnrolledInStudyId(studyId).build();
+        search = search.toBuilder().withEnrolledInStudyId(studyId).build();
         
         return participantService.getPagedAccountSummaries(app, search);
     }

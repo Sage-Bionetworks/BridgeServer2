@@ -59,16 +59,16 @@ public class SessionState {
                 updated = true;
             }
         } else if (isFinished()) {
-            if (sessionRecord.getStartedOn() == null) {
+            if (sessionRecord.getStartedOn() == null || !sessionRecord.getStartedOn().isEqual(earliest)) {
                 sessionRecord.setStartedOn(earliest);
                 updated = true;
             }
-            if (sessionRecord.getFinishedOn() == null) {
+            if (sessionRecord.getFinishedOn() == null || !sessionRecord.getFinishedOn().isEqual(latest)) {
                 sessionRecord.setFinishedOn(latest);
                 updated = true;
             }
         } else {
-            if (sessionRecord.getStartedOn() == null) {
+            if (sessionRecord.getStartedOn() == null || !sessionRecord.getStartedOn().isEqual(earliest)) {
                 sessionRecord.setStartedOn(earliest);
                 updated = true;
             }
@@ -78,8 +78,8 @@ public class SessionState {
                 updated = true;
             }
         }
-        if (isDeclined()) {
-            sessionRecord.setDeclined(true);
+        if (isDeclined() != sessionRecord.isDeclined()) {
+            sessionRecord.setDeclined(isDeclined());
             updated = true;
         }
         return updated;
