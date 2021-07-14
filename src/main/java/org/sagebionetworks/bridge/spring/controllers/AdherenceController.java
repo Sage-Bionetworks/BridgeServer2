@@ -115,7 +115,7 @@ public class AdherenceController extends BaseController {
         record.setInstanceTimestamp(DateTime.parse(startedOn));
         record.setEventTimestamp(DateTime.parse(eventTimestamp));
 
-        service.deleteAdherenceRecord(session.getAppId(), record);
+        service.deleteAdherenceRecord(record);
         return DELETED_MSG;
     }
 }

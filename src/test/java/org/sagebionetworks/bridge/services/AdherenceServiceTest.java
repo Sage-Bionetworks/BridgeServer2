@@ -579,8 +579,17 @@ public class AdherenceServiceTest extends Mockito {
 
     /* TODO:
     *   Verify delete service can delete.
-    *   Verify errors for missing records. (should it even throw an error?)
     *   Verify errors for authorization. */
+
+//    @Test
+//    public void deleteAdherenceRecord() {
+//        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON);
+//        when(mockDao)
+//
+//        service.deleteAdherenceRecord(record);
+//
+//        verify(mockDao).deleteAdherenceRecordPermanently(any());
+//    }
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn) {
         AdherenceRecord asmt1 = new AdherenceRecord();

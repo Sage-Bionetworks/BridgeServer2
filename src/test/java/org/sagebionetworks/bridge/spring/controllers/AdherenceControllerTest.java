@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -19,6 +20,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
 
+import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -26,6 +28,8 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -63,6 +67,9 @@ public class AdherenceControllerTest extends Mockito {
     
     @Captor
     ArgumentCaptor<AdherenceRecordsSearch> searchCaptor;
+
+    @Captor
+    ArgumentCaptor<AdherenceRecord> recordCaptor;
     
     UserSession session;
     
@@ -85,6 +92,7 @@ public class AdherenceControllerTest extends Mockito {
         assertPost(AdherenceController.class, "updateAdherenceRecords");
         assertPost(AdherenceController.class, "searchForAdherenceRecordsForSelf");
         assertPost(AdherenceController.class, "searchForAdherenceRecords");
+        assertDelete(AdherenceController.class, "deleteAdherenceRecord");
     }
     
     @Test
@@ -188,8 +196,44 @@ public class AdherenceControllerTest extends Mockito {
         assertEquals(captured.getPageSize(), Integer.valueOf(50));        
     }
 
-    /* TODO: Create tests for:
-    *   Must verify successful delete for self.
-    *   Must verify successful delete by ID.
-    *   Maybe verify unsuccessful delete, check errors thrown  */
+    @Test
+    public void deleteAdherenceRecords() {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+
+        when(mockAccountService.getAccountId(TEST_APP_ID, TEST_USER_ID))
+                .thenReturn(Optional.of(TEST_USER_ID));
+
+        AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
+
+        StatusMessage retValue = controller.deleteAdherenceRecord(
+                TEST_STUDY_ID, TEST_USER_ID,
+                rec1.getInstanceGuid(),
+                rec1.getEventTimestamp().toString(),
+                rec1.getStartedOn().toString()
+        );
+
+        assertEquals(retValue, AdherenceController.DELETED_MSG);
+
+        verify(mockService).deleteAdherenceRecord(recordCaptor.capture());
+
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getInstanceGuid(), rec1.getInstanceGuid());
+        assertEquals(captured.getStudyId(), rec1.getStudyId());
+        assertEquals(captured.getUserId(), rec1.getUserId());
+        assertEquals(captured.getInstanceTimestamp(), rec1.getStartedOn());
+        assertEquals(captured.getEventTimestamp(), rec1.getEventTimestamp());
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void deleteWithInvalidUserIdThrowsException() {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+
+        controller.deleteAdherenceRecord(
+                "fake-study-id", "fake-user-id",
+                "fake-instance-guid",
+                "2021-07-06T18:03:23.009Z",
+                "2021-07-06T18:03:23.009Z"
+        );
+    }
 }

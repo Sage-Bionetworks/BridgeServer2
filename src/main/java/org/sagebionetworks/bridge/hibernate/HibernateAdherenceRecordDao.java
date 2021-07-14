@@ -119,7 +119,6 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         return builder;
     }
 
-//    TODO: Delete method (should override interface)
     @Override
     public void deleteAdherenceRecordPermanently(AdherenceRecord record) {
         checkNotNull(record);
@@ -129,8 +128,6 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
         AdherenceRecord existingRecord = hibernateHelper.getById(AdherenceRecord.class, id);
         if (existingRecord != null) {
             hibernateHelper.deleteById(AdherenceRecord.class, id);
-        } else {
-            throw new EntityNotFoundException(AdherenceRecord.class);
         }
     }
 }

@@ -30,7 +30,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Collections;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -280,7 +279,7 @@ public class AdherenceService {
 
     /* TODO: Add deleteAR method. Should delete AdherenceRecord but might also need
     *   to update Assessments or Sessions. Also might need to validate input. */
-    public void deleteAdherenceRecord(String appId, AdherenceRecord record) {
+    public void deleteAdherenceRecord(AdherenceRecord record) {
         checkNotNull(record);
 
         CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(

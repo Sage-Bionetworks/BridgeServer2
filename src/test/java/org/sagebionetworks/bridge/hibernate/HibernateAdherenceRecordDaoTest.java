@@ -23,6 +23,7 @@ import java.util.function.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import org.checkerframework.checker.units.qual.A;
 import org.hibernate.Session;
 import org.hibernate.query.NativeQuery;
 import org.joda.time.DateTime;
@@ -355,5 +356,40 @@ public class HibernateAdherenceRecordDaoTest extends Mockito {
         return new AdherenceRecordsSearch.Builder()
                 .withUserId(TEST_USER_ID)
                 .withStudyId(TEST_STUDY_ID);
+    }
+
+    @Test
+    public void deleteAdherenceRecord() {
+        AdherenceRecord record = new AdherenceRecord();
+        record.setUserId(TEST_USER_ID);
+        record.setStudyId(TEST_STUDY_ID);
+        record.setInstanceGuid(GUID);
+        record.setEventTimestamp(MODIFIED_ON);
+        record.setInstanceTimestamp(MODIFIED_ON.plusHours(1));
+
+        when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(record);
+
+        dao.deleteAdherenceRecordPermanently(record);
+
+        verify(mockHelper).deleteById(eq(AdherenceRecord.class), idCaptor.capture());
+
+        AdherenceRecordId capturedId = idCaptor.getValue();
+        assertEquals(capturedId.getUserId(), TEST_USER_ID);
+        assertEquals(capturedId.getStudyId(), TEST_STUDY_ID);
+        assertEquals(capturedId.getInstanceGuid(), GUID);
+        assertEquals(capturedId.getEventTimestamp(), MODIFIED_ON);
+        assertEquals(capturedId.getInstanceTimestamp(), MODIFIED_ON.plusHours(1));
+    }
+
+    @Test
+    public void deleteNonExistentAdherenceRecord() {
+        AdherenceRecord record = new AdherenceRecord();
+
+        when(mockHelper.getById(eq(AdherenceRecord.class), any())).thenReturn(null);
+
+        dao.deleteAdherenceRecordPermanently(record);
+
+        verify(mockHelper).getById(eq(AdherenceRecord.class), any());
+        verifyNoMoreInteractions(mockHelper);
     }
 }
