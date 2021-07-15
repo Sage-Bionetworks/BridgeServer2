@@ -7,11 +7,6 @@ import static org.sagebionetworks.bridge.models.ResourceList.ID_FILTER;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 
-import java.util.Optional;
-
-import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -20,33 +15,25 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
- * Service for managing external IDs. These methods can be called whether or not strict validation of IDs is enabled. 
- * If it's enabled, reservation and assignment will work as expected, otherwise these silently do nothing. The external 
- * ID will be associated via the Enrollment collection, thus assignment of an external ID associates an account 
- * to a study (and removing an external ID removes that assignment).
+ * Service for managing external IDs. These used to be maintained in a table separate from Accounts, but 
+ * they are now a property of the enrollment of accounts in studies, so they defer to AccountService.
  */
 @Component
 public class ExternalIdService {
     
     static final String PAGE_SIZE_ERROR = "pageSize must be from 1-"+API_MAXIMUM_PAGE_SIZE+" records";
     
-    private ExternalIdDao externalIdDao;
-    
-    private AccountDao accountDao;
+    private AccountService accountService;
 
     @Autowired
-    public final void setExternalIdDao(ExternalIdDao externalIdDao) {
-        this.externalIdDao = externalIdDao;
-    }
-    
-    @Autowired
-    public final void setAccountDao(AccountDao accountDao) {
-        this.accountDao = accountDao;
+    public final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
     
     public PagedResourceList<ExternalIdentifierInfo> getPagedExternalIds(String appId, String studyId, String idFilter,
@@ -57,7 +44,7 @@ public class ExternalIdService {
         if (pageSize != null && (pageSize < 1 || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        return externalIdDao.getPagedExternalIds(appId, studyId, idFilter, offsetBy, pageSize)
+        return accountService.getPagedExternalIds(appId, studyId, idFilter, offsetBy, pageSize)
                 .withRequestParam(ID_FILTER, idFilter)
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize);
@@ -67,11 +54,16 @@ public class ExternalIdService {
         checkNotNull(app);
         checkNotNull(externalId);
         
-        AccountId accountId = AccountId.forExternalId(app.getIdentifier(), externalId.getIdentifier());
-        Optional<Account> opt = accountDao.getAccount(accountId);
-        if (!opt.isPresent() || BridgeUtils.filterForStudy(opt.get()) == null) {
-            throw new EntityNotFoundException(ExternalIdentifier.class);
+        AccountId accountId = AccountId.forExternalId(externalId.getAppId(), externalId.getIdentifier());
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
+            throw new EntityNotFoundException(Account.class);
         }
-        externalIdDao.deleteExternalId(externalId);
+        Enrollment enrollment = account.getEnrollments().stream()
+                .filter(en -> externalId.getIdentifier().equals(en.getExternalId()))
+                .findFirst()
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        enrollment.setExternalId(null);
+        accountService.updateAccount(account);
     }
 }

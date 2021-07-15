@@ -45,6 +45,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
@@ -381,6 +382,14 @@ public class AccountService {
             }
         }
         return Optional.empty();
+    }
+    
+    public PagedResourceList<ExternalIdentifierInfo> getPagedExternalIds(String appId, String studyId, String idFilter,
+            Integer offsetBy, Integer pageSize) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+
+        return accountDao.getPagedExternalIds(appId, studyId, idFilter, offsetBy, pageSize);
     }
     
     protected Account authenticateInternal(App app, Account account, SignIn signIn) {

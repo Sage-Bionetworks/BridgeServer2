@@ -8,6 +8,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.apps.App;
 
 /**
@@ -58,4 +59,11 @@ public interface AccountDao {
      *      paging parameters.
      */
     PagedResourceList<AccountSummary> getPagedAccountSummaries(String appId, AccountSummarySearch search);
+    
+    /**
+     * Get a page of external IDs associated to the indicated study. These are really accounts, but 
+     * older APIs continue to view these as paged external ID records.  
+     */
+    PagedResourceList<ExternalIdentifierInfo> getPagedExternalIds(String appId, String studyId, String idFilter,
+            Integer offsetBy, Integer pageSize);
 }    
