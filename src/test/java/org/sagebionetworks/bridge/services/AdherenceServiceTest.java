@@ -685,14 +685,51 @@ public class AdherenceServiceTest extends Mockito {
     }
 
     @Test
-    public void deleteAdherenceRecord() {
+    public void deleteAdherenceRecord_persistentTimeWindow() {
         AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
 
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setTimeWindowPersistent(true);
+
+        when(mockScheduleService.getTimelineMetadata(any())).thenReturn(Optional.of(timelineMetadata));
+
         service.deleteAdherenceRecord(record);
 
-        verify(mockDao).deleteAdherenceRecordPermanently(any());
+        verify(mockDao).deleteAdherenceRecordPermanently(eq(record));
+        assertEquals(record.getInstanceTimestamp(), record.getStartedOn());
+    }
+
+    @Test
+    public void deleteAdherenceRecord_notPersistentTimeWindow() {
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setTimeWindowPersistent(false);
+
+        when(mockScheduleService.getTimelineMetadata(any())).thenReturn(Optional.of(timelineMetadata));
+
+        service.deleteAdherenceRecord(record);
+
+        verify(mockDao).deleteAdherenceRecordPermanently(eq(record));
+        assertEquals(record.getInstanceTimestamp(), record.getEventTimestamp());
+    }
+
+    @Test
+    public void deleteAdherenceRecord_missingMetadata() {
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        when(mockScheduleService.getTimelineMetadata(any())).thenReturn(Optional.empty());
+
+        service.deleteAdherenceRecord(record);
+
+        verifyZeroInteractions(mockDao);
+        assertNull(record.getInstanceTimestamp());
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
