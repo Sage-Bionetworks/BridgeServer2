@@ -299,11 +299,11 @@ public class AccountService {
         checkNotNull(healthCode);
         
         AccountId accountId = AccountId.forHealthCode(appId, healthCode);
-        Account account = getAccount(accountId);
+        Account account = accountDao.getAccount(accountId).orElse(null);
         if (account != null) {
             accountEdits.accept(account);
             accountDao.updateAccount(account);
-        }        
+        }
     }
     
     /**

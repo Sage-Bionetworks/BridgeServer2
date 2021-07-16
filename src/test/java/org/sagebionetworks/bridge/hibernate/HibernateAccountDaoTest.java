@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.hibernate.HibernateAccountDao.FULL_QUERY;
@@ -568,6 +569,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void getPagedRemovesStudiesNotInCaller() throws Exception {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID) // it's not the same as ACCOUNT_ID
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_A)).build());
         
@@ -883,6 +885,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void unmarshallAccountSummaryFiltersStudies() throws Exception {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID) // it's not the same as ACCOUNT_ID
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of("studyB", "studyC")).build());
 

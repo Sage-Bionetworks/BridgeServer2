@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -214,9 +213,11 @@ public class AccountWorkflowService {
         checkArgument(isNotBlank(userId));
         
         if (phone == null) {
+            System.out.println("1");
             return;
         }
         if (isRequestThrottled(ThrottleRequestType.VERIFY_PHONE, userId)) {
+            System.out.println("2");
             // Too many requests. Throttle.
             return;
         }
@@ -239,6 +240,7 @@ public class AccountWorkflowService {
                 .withTransactionType()
                 .withExpirationPeriod(PHONE_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
                 .withPhone(phone).build();
+        System.out.println("3");
         smsService.sendSmsMessage(userId, provider);
     }
         
@@ -251,9 +253,8 @@ public class AccountWorkflowService {
         
         App app = appService.getApp(accountId.getAppId());
         Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+        
         if (account != null) {
-            RequestContext.acquireAccountIdentity(account);
-            
             if (type == ChannelType.EMAIL) {
                 sendEmailVerificationToken(app, account.getId(), account.getEmail());
             } else if (type == ChannelType.PHONE) {
@@ -309,8 +310,6 @@ public class AccountWorkflowService {
         boolean verifiedPhone = account.getPhone() != null && Boolean.TRUE.equals(account.getPhoneVerified());
         boolean sendEmail = app.isEmailVerificationEnabled() && !app.isAutoVerificationEmailSuppressed();
         boolean sendPhone = !app.isAutoVerificationPhoneSuppressed();
-        
-        RequestContext.acquireAccountIdentity(account);
 
         if (verifiedEmail && sendEmail) {
             TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_ACCOUNT_EXISTS);
@@ -573,8 +572,6 @@ public class AccountWorkflowService {
             cacheProvider.setObject(cacheKey, token, SIGNIN_EXPIRE_IN_SECONDS);
         }
         
-        RequestContext.acquireAccountIdentity(account);
-
         messageSender.accept(app, account, token);
         atomicLong.set(System.currentTimeMillis()-startTime);
 

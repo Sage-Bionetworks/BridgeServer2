@@ -212,6 +212,7 @@ public class HibernateExternalIdDaoTest extends Mockito {
     public void deletedExternalIdNotAssociatedtoStudyAccessibleToCaller() {
         // User is associated to study 
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("other-user-id") // not the same as TEST_USER_ID
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         
         // The enrollment has the external ID the caller is looking for, but it's not in study A

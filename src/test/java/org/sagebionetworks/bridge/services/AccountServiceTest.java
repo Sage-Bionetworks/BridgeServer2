@@ -87,12 +87,12 @@ public class AccountServiceTest extends Mockito {
     private static final String REAUTH_TOKEN = "reauth-token";
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
     private static final String OTHER_EMAIL = "other-email@example.com";
+    private static final String OTHER_USER_ID = "other-user-id";
     
     private static final String STUDY_A = "studyA";
     private static final String STUDY_B = "studyB";
     private static final Set<Enrollment> ACCOUNT_ENROLLMENTS = ImmutableSet
             .of(Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID));
-    private static final ImmutableSet<String> CALLER_STUDIES = ImmutableSet.of(STUDY_B);
     
     private static final SignIn PASSWORD_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(DUMMY_PASSWORD).build();
@@ -1070,20 +1070,6 @@ public class AccountServiceTest extends Mockito {
     }
     
     @Test
-    public void editAccountFailsAcrossStudies() throws Exception {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(CALLER_STUDIES).build());
-
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
-        persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
-        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
-
-        service.editAccount(TEST_APP_ID, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
-
-        verify(mockAccountDao, never()).updateAccount(any());
-        RequestContext.set(null);
-    }
-    
-    @Test
     public void getAccountMatchesStudies() throws Exception {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID, true);
         persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
@@ -1104,6 +1090,7 @@ public class AccountServiceTest extends Mockito {
         persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
         
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(OTHER_USER_ID)
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_B)).build());
 
         Account account = service.getAccount(ACCOUNT_ID);

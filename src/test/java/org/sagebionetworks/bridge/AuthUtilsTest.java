@@ -43,6 +43,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 
 public class AuthUtilsTest extends Mockito {
     private static final String SHARED_OWNER_ID = TEST_APP_ID + ":" + TEST_OWNER_ID;
+    private static final String OTHER_USER_ID = "otherUserId";
     
     @AfterMethod
     public void afterMethod() {
@@ -78,6 +79,7 @@ public class AuthUtilsTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void canEditEnrollmentsFailsForNonStudyCoordinator() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(OTHER_USER_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of("someOtherStudy"))
                 .build());
@@ -88,6 +90,7 @@ public class AuthUtilsTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void canEditEnrollmentsFailsForDev() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(OTHER_USER_ID)
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
@@ -447,6 +450,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canReadStudyAssociationsFails() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(OTHER_USER_ID)
                 // we have to set this because we still make an exception for accounts
                 // associated to no studies (ie not in an org or in an org that isn't
                 // sponsoring any studies).
@@ -459,6 +463,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canReadParticipantsFails() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(OTHER_USER_ID)
                 // we have to set this because we still make an exception for accounts
                 // associated to no studies (ie not in an org or in an org that isn't
                 // sponsoring any studies).
