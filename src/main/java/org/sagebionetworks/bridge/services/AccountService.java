@@ -295,12 +295,12 @@ public class AccountService {
      * Load, and if it exists, edit and save an account. Note that constraints are not
      * enforced here (which is intentional).
      */
-    public void editAccount(String appId, String healthCode, Consumer<Account> accountEdits) {
+    public void editAccount(String appId, String userId, Consumer<Account> accountEdits) {
         checkNotNull(appId);
-        checkNotNull(healthCode);
+        checkNotNull(userId);
         
-        AccountId accountId = AccountId.forHealthCode(appId, healthCode);
-        Account account = getAccount(accountId);
+        AccountId accountId = AccountId.forId(appId, userId);
+        Account account = accountDao.getAccount(accountId).orElse(null);
         if (account != null) {
             accountEdits.accept(account);
             accountDao.updateAccount(account);

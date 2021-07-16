@@ -45,7 +45,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -95,7 +94,6 @@ public class AccountServiceTest extends Mockito {
     private static final String STUDY_B = "studyB";
     private static final Set<Enrollment> ACCOUNT_ENROLLMENTS = ImmutableSet
             .of(Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID));
-    private static final ImmutableSet<String> CALLER_STUDIES = ImmutableSet.of(STUDY_B);
     
     private static final SignIn PASSWORD_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(DUMMY_PASSWORD).build();
@@ -294,22 +292,19 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void editAccount() throws Exception {
-        AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, HEALTH_CODE);
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
         Account account = mockGetAccountById(accountId, false);
 
-        service.editAccount(TEST_APP_ID, HEALTH_CODE, mockConsumer);
+        service.editAccount(TEST_APP_ID, TEST_USER_ID, mockConsumer);
 
-        InOrder inOrder = inOrder(mockConsumer, mockAccountDao);
-        inOrder.verify(mockConsumer).accept(account);
-        inOrder.verify(mockAccountDao).updateAccount(account);
+        verify(mockConsumer).accept(account);
     }
 
     @Test
     public void editAccountWhenAccountNotFound() throws Exception {
-        service.editAccount(TEST_APP_ID, "bad-health-code", mockConsumer);
+        service.editAccount(TEST_APP_ID, "bad-user-id", mockConsumer);
 
         verify(mockConsumer, never()).accept(any());
-        verify(mockAccountDao, never()).updateAccount(any());
     }
 
     @Test
@@ -1070,20 +1065,6 @@ public class AccountServiceTest extends Mockito {
 
         // execute and verify - Verify just ID, app, and email, and health code mapping is enough. 
         service.authenticate(app, phoneSignIn);
-    }
-    
-    @Test
-    public void editAccountFailsAcrossStudies() throws Exception {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(CALLER_STUDIES).build());
-
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
-        persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
-        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
-
-        service.editAccount(TEST_APP_ID, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
-
-        verify(mockAccountDao, never()).updateAccount(any());
-        RequestContext.set(null);
     }
     
     @Test

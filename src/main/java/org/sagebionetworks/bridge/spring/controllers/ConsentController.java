@@ -171,7 +171,7 @@ public class ConsentController extends BaseController {
     private JsonNode changeSharingScope(SharingScope sharingScope, String message) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        accountService.editAccount(session.getAppId(), session.getHealthCode(),
+        accountService.editAccount(session.getAppId(), session.getId(),
                 account -> account.setSharingScope(sharingScope));
 
         sessionUpdateService.updateSharingScope(session, sharingScope);

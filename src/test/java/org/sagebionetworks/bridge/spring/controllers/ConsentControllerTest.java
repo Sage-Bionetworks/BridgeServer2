@@ -163,7 +163,7 @@ public class ConsentControllerTest extends Mockito {
         UserSession retrievedSession = BridgeObjectMapper.get().treeToValue(result, UserSession.class);
         assertEquals(retrievedSession.getSessionToken(), ORIGINAL_SESSION_TOKEN);
         
-        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(HEALTH_CODE), accountConsumerCaptor.capture());
+        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), accountConsumerCaptor.capture());
         verify(mockSessionUpdateService).updateSharingScope(session, SharingScope.ALL_QUALIFIED_RESEARCHERS);
         
         // This works as a verification because the lambda carries a closure that includes the correct sharing 
@@ -398,7 +398,7 @@ public class ConsentControllerTest extends Mockito {
 
         verify(account).setSharingScope(SharingScope.NO_SHARING);
         
-        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
     }
     
     @Test

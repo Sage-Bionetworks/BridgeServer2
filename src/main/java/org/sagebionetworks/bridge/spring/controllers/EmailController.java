@@ -59,10 +59,10 @@ public class EmailController extends BaseController {
             }
             
             // This should always return a healthCode under normal circumstances.
-            String healthCode = accountService.getAccountHealthCode(app.getIdentifier(), "email:"+email)
+            String userId = accountService.getAccountId(app.getIdentifier(), "email:"+email)
                     .orElseThrow(() -> new BadRequestException("Email not found."));
 
-            accountService.editAccount(app.getIdentifier(), healthCode, account -> account.setNotifyByEmail(false));
+            accountService.editAccount(app.getIdentifier(), userId, account -> account.setNotifyByEmail(false));
             
             return "You have been unsubscribed from future email.";
         } catch(Throwable throwable) {

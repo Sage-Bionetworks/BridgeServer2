@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.testng.Assert.assertEquals;
@@ -976,12 +977,12 @@ public class AuthenticationServiceTest {
         doReturn(mockAccount).when(accountService).getAccount(any());
         
         // No languages.
-        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode("healthCode").build();
+        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).build();
         doReturn(participant).when(participantService).getParticipant(app, mockAccount, false);
         
         service.getSession(app, context);
         
-        verify(accountService).editAccount(eq(TEST_APP_ID), eq("healthCode"), any());
+        verify(accountService).editAccount(eq(TEST_APP_ID), eq(USER_ID), any());
         verify(mockAccount).setLanguages(ImmutableList.copyOf(LANGUAGES));
     }
 
@@ -1442,7 +1443,7 @@ public class AuthenticationServiceTest {
         when(accountService.authenticate(app, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withHealthCode(HEALTH_CODE).build();
+                .withId(TEST_USER_ID).build();
         
         when(participantService.getParticipant(app, account, false)).thenReturn(participant);
         when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
@@ -1456,7 +1457,7 @@ public class AuthenticationServiceTest {
         assertEquals(session.getParticipant().getLanguages(), TestConstants.LANGUAGES);
         
         // Note that the context does not have the healthCode, you must use the participant
-        verify(accountService).editAccount(eq(TEST_APP_ID), eq(HEALTH_CODE), any());
+        verify(accountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
    }
     
    @Test

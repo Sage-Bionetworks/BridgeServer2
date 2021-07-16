@@ -354,13 +354,13 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void getLanguagesInits() {
         session.setAppId(TEST_APP_ID);
-        session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build());
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
         when(mockRequest.getHeader(ACCEPT_LANGUAGE))
                 .thenReturn("fr-fr;q=0.4,fr;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
         
         controller.getLanguages(session);
         
-        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
         verify(mockSessionUpdateService).updateLanguage(eq(session), contextCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
@@ -371,7 +371,7 @@ public class BaseControllerTest extends Mockito {
     public void getLanguagesDoesNotOverwrite() {
         session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder().withLanguages(ImmutableList.of("fr"))
-                .withHealthCode(HEALTH_CODE).build());
+                .withId(TEST_USER_ID).build());
         when(mockRequest.getHeader(ACCEPT_LANGUAGE))
                 .thenReturn("de-de;q=0.4,de;q=0.2,en-ca,en;q=0.8,en-us;q=0.6");
         
@@ -621,7 +621,7 @@ public class BaseControllerTest extends Mockito {
         
         // Set up mocks.
         when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en,fr");
-        session.setParticipant(new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID)
                 .withLanguages(ImmutableList.of()).build());
         session.setSessionToken(SESSION_TOKEN);
         session.setAppId(TEST_APP_ID);
@@ -631,7 +631,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(LANGUAGES, languages);
 
         // Verify we saved the language to the account.
-        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(HEALTH_CODE), any());
+        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
         assertEquals(account.getLanguages(), LANGUAGES);
 
         // Verify we call through to the session update service. (This updates both the cache and the participant, as

@@ -261,7 +261,7 @@ public class ScheduledActivityController extends BaseController {
     }
 
     DateTimeZone persistTimeZone(UserSession session, DateTimeZone timeZone) {
-        accountService.editAccount(session.getAppId(), session.getHealthCode(),
+        accountService.editAccount(session.getAppId(), session.getId(),
                 account -> account.setTimeZone(timeZone));
         sessionUpdateService.updateTimeZone(session, timeZone);
         return timeZone;

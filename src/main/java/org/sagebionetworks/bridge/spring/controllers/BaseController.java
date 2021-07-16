@@ -287,7 +287,7 @@ public abstract class BaseController {
         RequestContext reqContext = RequestContext.get();
         List<String> languages = reqContext.getCallerLanguages();
         if (!languages.isEmpty()) {
-            accountService.editAccount(session.getAppId(), session.getHealthCode(),
+            accountService.editAccount(session.getAppId(), session.getId(),
                     account -> account.setLanguages(languages));
 
             CriteriaContext newContext = new CriteriaContext.Builder()

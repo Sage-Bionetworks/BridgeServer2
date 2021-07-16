@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.mockEditAccount;
 import static org.testng.Assert.assertEquals;
 
@@ -30,7 +31,6 @@ public class EmailControllerTest extends Mockito {
 
     private static final String EMAIL = "email";
     private static final String DATA_BRACKET_EMAIL = "data[email]";
-    private static final String HEALTH_CODE = "healthCode";
     private static final String UNSUBSCRIBE_TOKEN = "unsubscribeToken";
     private static final String TOKEN = "token";
     private static final String STUDY = "study";
@@ -65,8 +65,8 @@ public class EmailControllerTest extends Mockito {
     public void before() {
         MockitoAnnotations.initMocks(this);
         when(mockConfig.getEmailUnsubscribeToken()).thenReturn(UNSUBSCRIBE_TOKEN);
-        when(mockAccountService.getAccountHealthCode(TEST_APP_ID, "email:"+EMAIL_ADDRESS))
-            .thenReturn(Optional.of(HEALTH_CODE));
+        when(mockAccountService.getAccountId(TEST_APP_ID, "email:"+EMAIL_ADDRESS))
+            .thenReturn(Optional.of(TEST_USER_ID));
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
         mockEditAccount(mockAccountService, mockAccount);
@@ -134,7 +134,7 @@ public class EmailControllerTest extends Mockito {
     public void noAccountThrowsException() throws Exception {
         mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
         doReturn(Optional.empty()).when(mockAccountService)
-            .getAccountHealthCode(TEST_APP_ID, "email:"+EMAIL_ADDRESS);
+            .getAccountId(TEST_APP_ID, "email:"+EMAIL_ADDRESS);
 
         String result = controller.unsubscribeFromEmail();
         assertEquals(result, "Email not found.");

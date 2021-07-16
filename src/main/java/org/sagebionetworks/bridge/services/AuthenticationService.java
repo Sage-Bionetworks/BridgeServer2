@@ -526,7 +526,7 @@ public class AuthenticationService {
                     .withLanguages(context.getLanguages()).build();
             
             // Note that the context does not have the healthCode, you must use the participant
-            accountService.editAccount(app.getIdentifier(), participant.getHealthCode(),
+            accountService.editAccount(app.getIdentifier(), participant.getId(),
                     accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
         }
 

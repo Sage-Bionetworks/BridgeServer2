@@ -142,10 +142,7 @@ public class MembershipControllerTest extends Mockito {
         
         controller.addMember(TEST_ORG_ID, TEST_USER_ID);
         
-        verify(mockOrganizationService).addMember(eq(TEST_APP_ID), eq(TEST_ORG_ID), accountIdCaptor.capture());
-        AccountId accountId = accountIdCaptor.getValue();
-        assertEquals(TEST_APP_ID, accountId.getAppId());
-        assertEquals(TEST_USER_ID, accountId.getId());
+        verify(mockOrganizationService).addMember(TEST_APP_ID, TEST_ORG_ID, TEST_USER_ID);
     }
 
     @Test
@@ -154,10 +151,7 @@ public class MembershipControllerTest extends Mockito {
         
         controller.removeMember(TEST_ORG_ID, TEST_USER_ID);
         
-        verify(mockOrganizationService).removeMember(eq(TEST_APP_ID), eq(TEST_ORG_ID), accountIdCaptor.capture());
-        AccountId accountId = accountIdCaptor.getValue();
-        assertEquals(TEST_APP_ID, accountId.getAppId());
-        assertEquals(TEST_USER_ID, accountId.getId());
+        verify(mockOrganizationService).removeMember(TEST_APP_ID, TEST_ORG_ID, TEST_USER_ID);
     }
 
     @Test

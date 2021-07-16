@@ -102,7 +102,7 @@ public class EnrollmentController extends BaseController {
         if (acct == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        accountService.editAccount(session.getAppId(), acct.getHealthCode(), (account) -> {
+        accountService.editAccount(session.getAppId(), acct.getId(), (account) -> {
             account.getEnrollments().clear();
             account.getEnrollments().addAll(migrations.stream().map(m -> m.asEnrollment()).collect(toSet()));
         });

@@ -56,7 +56,7 @@ public class FPHSController extends BaseController {
         UserSession session = getAuthenticatedSession();
         
         ExternalIdentifier externalId = parseJson(ExternalIdentifier.class);
-        fphsService.registerExternalIdentifier(session.getAppId(), session.getHealthCode(), externalId);
+        fphsService.registerExternalIdentifier(session.getAppId(), session.getId(), externalId);
 
         // The service saves the external identifier and saves this as an option. We also need 
         // to update the user's session.

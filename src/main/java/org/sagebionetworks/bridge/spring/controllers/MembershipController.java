@@ -14,11 +14,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.OrganizationService;
@@ -51,8 +49,7 @@ public class MembershipController extends BaseController {
         
         // organization membership checked in service
         
-        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
-        organizationService.addMember(session.getAppId(), orgId, accountId);
+        organizationService.addMember(session.getAppId(), orgId, userId);
         
         return new StatusMessage("User added as a member.");
     }
@@ -63,8 +60,7 @@ public class MembershipController extends BaseController {
 
         // organization membership checked in service
         
-        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
-        organizationService.removeMember(session.getAppId(), orgId, accountId);
+        organizationService.removeMember(session.getAppId(), orgId, userId);
         
         return new StatusMessage("User removed as a member.");
     }
