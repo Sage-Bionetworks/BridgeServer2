@@ -213,11 +213,9 @@ public class AccountWorkflowService {
         checkArgument(isNotBlank(userId));
         
         if (phone == null) {
-            System.out.println("1");
             return;
         }
         if (isRequestThrottled(ThrottleRequestType.VERIFY_PHONE, userId)) {
-            System.out.println("2");
             // Too many requests. Throttle.
             return;
         }
@@ -240,7 +238,6 @@ public class AccountWorkflowService {
                 .withTransactionType()
                 .withExpirationPeriod(PHONE_VERIFICATION_EXPIRATION_PERIOD, VERIFY_OR_RESET_EXPIRE_IN_SECONDS)
                 .withPhone(phone).build();
-        System.out.println("3");
         smsService.sendSmsMessage(userId, provider);
     }
         
