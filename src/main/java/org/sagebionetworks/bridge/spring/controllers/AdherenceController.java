@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 
-import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -11,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -91,7 +91,7 @@ public class AdherenceController extends BaseController {
         AdherenceRecordsSearch search = payload.toBuilder()
                 .withUserId(userId)
                 .withStudyId(studyId).build();
-        
+
         return service.getAdherenceRecords(session.getAppId(), search);
     }
 
@@ -112,8 +112,8 @@ public class AdherenceController extends BaseController {
         record.setUserId(userId);
         record.setStudyId(studyId);
         record.setInstanceGuid(instanceGuid);
-        record.setInstanceTimestamp(DateTime.parse(startedOn));
-        record.setEventTimestamp(DateTime.parse(eventTimestamp));
+        record.setEventTimestamp(BridgeUtils.getDateTimeOrDefault(eventTimestamp, null));
+        record.setStartedOn(BridgeUtils.getDateTimeOrDefault(startedOn, null));
 
         service.deleteAdherenceRecord(record);
         return DELETED_MSG;

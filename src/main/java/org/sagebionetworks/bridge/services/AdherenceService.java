@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -289,6 +290,15 @@ public class AdherenceService {
                 AuthEvaluatorField.USER_ID, record.getUserId()
         );
 
-        dao.deleteAdherenceRecordPermanently(record);
+        Optional<TimelineMetadata> timelineMetadata = scheduleService.getTimelineMetadata(record.getInstanceGuid());
+        if (timelineMetadata.isPresent()) {
+            if (timelineMetadata.get().isTimeWindowPersistent()) {
+                record.setInstanceTimestamp(record.getStartedOn());
+            } else {
+                record.setInstanceTimestamp(record.getEventTimestamp());
+            }
+
+            dao.deleteAdherenceRecordPermanently(record);
+        }
     }
 }

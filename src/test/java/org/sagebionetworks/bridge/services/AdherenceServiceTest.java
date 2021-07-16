@@ -686,7 +686,7 @@ public class AdherenceServiceTest extends Mockito {
 
     @Test
     public void deleteAdherenceRecord() {
-        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON);
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
 
@@ -697,7 +697,7 @@ public class AdherenceServiceTest extends Mockito {
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteAdherenceRecord_notAuthorized() {
-        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON);
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
         service.deleteAdherenceRecord(record);
     }
     
