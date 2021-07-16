@@ -60,6 +60,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
@@ -101,6 +102,11 @@ public class HibernateAccountDaoTest extends Mockito {
             .put("appId", TEST_APP_ID).put("externalId", EXTERNAL_ID).build();
     private static final Map<String, Object> SYNAPSE_QUERY_PARAMS = new ImmutableMap.Builder<String, Object>()
             .put("appId", TEST_APP_ID).put("synapseUserId", SYNAPSE_USER_ID).build();
+
+    private static final String EXTID_FULL_QUERY = "SELECT en from HibernateEnrollment as en WHERE en.appId = :appId AND en.studyId = :studyId AND en.externalId IS NOT NULL AND en.externalId LIKE :idFilter ORDER BY en.externalId";
+    private static final String EXTID_FULL_COUNT_QUERY = "SELECT count(en) from HibernateEnrollment as en WHERE en.appId = :appId AND en.studyId = :studyId AND en.externalId IS NOT NULL AND en.externalId LIKE :idFilter ORDER BY en.externalId";
+    private static final String EXTID_QUERY = "SELECT en from HibernateEnrollment as en WHERE en.appId = :appId AND en.studyId = :studyId AND en.externalId IS NOT NULL ORDER BY en.externalId";
+    private static final String EXTID_COUNT_QUERY = "SELECT count(en) from HibernateEnrollment as en WHERE en.appId = :appId AND en.studyId = :studyId AND en.externalId IS NOT NULL ORDER BY en.externalId";
 
     @Captor
     ArgumentCaptor<Map<String, Object>> paramCaptor;
@@ -1224,6 +1230,75 @@ public class HibernateAccountDaoTest extends Mockito {
     public void getAppIdsForUserNoSynapseUserId() throws Exception {
         List<String> results = dao.getAppIdForUser(null);
         assertTrue(results.isEmpty());
+    }
+    
+    @Test
+    public void getPagedExternalIds() {
+        HibernateEnrollment en1 = new HibernateEnrollment();
+        en1.setAppId(TEST_APP_ID);
+        en1.setStudyId(TEST_STUDY_ID);
+        en1.setExternalId("extId1");
+        
+        HibernateEnrollment en2 = new HibernateEnrollment();
+        en2.setAppId(TEST_APP_ID);
+        en2.setStudyId(TEST_STUDY_ID);
+        en2.setExternalId("extId2");
+        
+        List<HibernateEnrollment> list = ImmutableList.of(en1, en2);
+        
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), eq(HibernateEnrollment.class)))
+            .thenReturn(list);
+        
+        when(mockHibernateHelper.queryCount(any(), any())).thenReturn(100);
+        
+        PagedResourceList<ExternalIdentifierInfo> retValue = dao.getPagedExternalIds(TEST_APP_ID, TEST_STUDY_ID, "idFilter", 100, 50);
+        assertEquals(retValue.getTotal(), new Integer(100));
+        
+        ExternalIdentifierInfo info1 = retValue.getItems().get(0);
+        assertEquals(info1.getIdentifier(), "extId1");
+        assertEquals(info1.getStudyId(), TEST_STUDY_ID);
+        assertTrue(info1.isAssigned());
+        
+        ExternalIdentifierInfo info2 = retValue.getItems().get(1);
+        assertEquals(info2.getIdentifier(), "extId2");
+        assertEquals(info2.getStudyId(), TEST_STUDY_ID);
+        assertTrue(info2.isAssigned());
+        
+        verify(mockHibernateHelper).queryGet(eq(EXTID_FULL_QUERY), paramCaptor.capture(), eq(100), eq(50), eq(HibernateEnrollment.class));
+        verify(mockHibernateHelper).queryCount(eq(EXTID_FULL_COUNT_QUERY), paramCaptor.capture());
+        
+        Map<String,Object> params1 = paramCaptor.getAllValues().get(0);
+        assertEquals(params1.get("appId"), TEST_APP_ID);
+        assertEquals(params1.get("studyId"), TEST_STUDY_ID);
+        assertEquals(params1.get("idFilter"), "idFilter%");
+        
+        Map<String,Object> params2 = paramCaptor.getAllValues().get(1);
+        assertEquals(params2.get("appId"), TEST_APP_ID);
+        assertEquals(params2.get("studyId"), TEST_STUDY_ID);
+        assertEquals(params2.get("idFilter"), "idFilter%");
+    }
+    
+    @Test
+    public void getPagedExternalIdsNoIdFilter() {
+        List<HibernateEnrollment> list = ImmutableList.of();
+        when(mockHibernateHelper.queryGet(any(), any(), any(), any(), eq(HibernateEnrollment.class)))
+            .thenReturn(list);
+        when(mockHibernateHelper.queryCount(any(), any())).thenReturn(100);
+        
+        dao.getPagedExternalIds(TEST_APP_ID, TEST_STUDY_ID, null, 100, 50);
+        
+        verify(mockHibernateHelper).queryGet(eq(EXTID_QUERY), paramCaptor.capture(), eq(100), eq(50), eq(HibernateEnrollment.class));
+        verify(mockHibernateHelper).queryCount(eq(EXTID_COUNT_QUERY), paramCaptor.capture());
+        
+        Map<String,Object> params1 = paramCaptor.getAllValues().get(0);
+        assertEquals(params1.get("appId"), TEST_APP_ID);
+        assertEquals(params1.get("studyId"), TEST_STUDY_ID);
+        assertNull(params1.get("idFilter"));
+        
+        Map<String,Object> params2 = paramCaptor.getAllValues().get(1);
+        assertEquals(params2.get("appId"), TEST_APP_ID);
+        assertEquals(params2.get("studyId"), TEST_STUDY_ID);
+        assertNull(params1.get("idFilter"));        
     }
 
     private void verifyCreatedHealthCode() {

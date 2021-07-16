@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
@@ -27,6 +28,7 @@ import static org.sagebionetworks.bridge.services.AccountService.ROTATIONS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -67,6 +69,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSecret;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -1149,6 +1152,17 @@ public class AccountServiceTest extends Mockito {
         Account updatedAccount = accountCaptor.getValue();
 
         assertEquals(updatedAccount.getNote(), "original note");
+    }
+    
+    @Test
+    public void getPagedExternalIds() throws Exception { 
+        PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<ExternalIdentifierInfo>(
+                ImmutableList.of(), 100);
+        when(mockAccountDao.getPagedExternalIds(TEST_APP_ID, TEST_STUDY_ID, "idFilter", 10, 50)).thenReturn(page);
+        
+        PagedResourceList<ExternalIdentifierInfo> retValue = service.getPagedExternalIds(
+                TEST_APP_ID, TEST_STUDY_ID, "idFilter", 10, 50);
+        assertSame(retValue, page);
     }
 
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {

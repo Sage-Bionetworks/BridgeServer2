@@ -5,11 +5,16 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+<<<<<<< HEAD
+=======
+import static org.testng.Assert.assertNull;
+>>>>>>> 8f4f2bf21ceea29e11f5e948afaee81895bf7b52
 import static org.testng.Assert.assertSame;
 
 import java.util.List;
-import java.util.Optional;
 
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -18,8 +23,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.dao.AccountDao;
-import org.sagebionetworks.bridge.dao.ExternalIdDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -42,16 +45,16 @@ public class ExternalIdServiceTest {
     private ExternalIdentifier extId;
     
     @Mock
-    private ExternalIdDao mockExternalIdDao;
+    private AccountService mockAccountService;
     
     @Mock
     private StudyService mockStudyService;
     
-    @Mock
-    private AccountDao mockAccountDao;
-    
     @InjectMocks
     private ExternalIdService externalIdService;
+    
+    @Captor
+    private ArgumentCaptor<Account> accountCaptor;
 
     @BeforeMethod
     public void before() {
@@ -76,13 +79,13 @@ public class ExternalIdServiceTest {
                 new ExternalIdentifierInfo(null, null, true));
         PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<>(list, 100);
         
-        when(mockExternalIdDao.getPagedExternalIds(TEST_APP_ID, STUDY_ID, "idFilter", 10, 50))
+        when(mockAccountService.getPagedExternalIds(TEST_APP_ID, STUDY_ID, "idFilter", 10, 50))
             .thenReturn(page);
         
         PagedResourceList<ExternalIdentifierInfo> retValue = externalIdService.getPagedExternalIds(TEST_APP_ID, STUDY_ID, "idFilter", 10, 50);
         assertSame(retValue, page);
         
-        verify(mockExternalIdDao).getPagedExternalIds(TEST_APP_ID, STUDY_ID, "idFilter", 10, 50);
+        verify(mockAccountService).getPagedExternalIds(TEST_APP_ID, STUDY_ID, "idFilter", 10, 50);
     }
     
     @Test
@@ -91,12 +94,12 @@ public class ExternalIdServiceTest {
                 new ExternalIdentifierInfo(null, null, true));
         PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<>(list, 100);
         
-        when(mockExternalIdDao.getPagedExternalIds(TEST_APP_ID, STUDY_ID, null, null, null)).thenReturn(page);
+        when(mockAccountService.getPagedExternalIds(TEST_APP_ID, STUDY_ID, null, null, null)).thenReturn(page);
         
         PagedResourceList<ExternalIdentifierInfo> retValue = externalIdService.getPagedExternalIds(TEST_APP_ID, STUDY_ID, null, null, null);
         assertSame(retValue, page);
         
-        verify(mockExternalIdDao).getPagedExternalIds(TEST_APP_ID, STUDY_ID, null, null, null);
+        verify(mockAccountService).getPagedExternalIds(TEST_APP_ID, STUDY_ID, null, null, null);
     }
     
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
@@ -119,17 +122,25 @@ public class ExternalIdServiceTest {
     @Test
     public void deleteExternalIdPermanently() {
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(Account.create()));
+        
+        Account account = Account.create();
+        account.setEnrollments(ImmutableSet.of(
+                Enrollment.create(TEST_APP_ID, STUDY_ID, TEST_USER_ID, ID)));
+        when(mockAccountService.getAccount(accountId)).thenReturn(account);
         
         externalIdService.deleteExternalIdPermanently(app, extId);
         
-        verify(mockExternalIdDao).deleteExternalId(extId);
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
+        Enrollment en = account.getEnrollments().stream()
+                .filter(e -> e.getStudyId().equals(STUDY_ID)).findFirst()
+                .orElseThrow(() -> new EntityNotFoundException(Enrollment.class));
+        assertNull(en.getExternalId());
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteExternalIdPermanentlyMissingThrows() {
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.empty());
+        when(mockAccountService.getAccount(accountId)).thenReturn(null);
         
         externalIdService.deleteExternalIdPermanently(app, extId);
     }
@@ -148,7 +159,7 @@ public class ExternalIdServiceTest {
         account.getEnrollments().add(en);
         
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, ID);
-        when(mockAccountDao.getAccount(accountId)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(accountId)).thenReturn(account);
         
         externalIdService.deleteExternalIdPermanently(app, extId);
     }
