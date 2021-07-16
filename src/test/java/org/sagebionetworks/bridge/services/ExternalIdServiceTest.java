@@ -5,10 +5,7 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
-<<<<<<< HEAD
-=======
 import static org.testng.Assert.assertNull;
->>>>>>> 8f4f2bf21ceea29e11f5e948afaee81895bf7b52
 import static org.testng.Assert.assertSame;
 
 import java.util.List;

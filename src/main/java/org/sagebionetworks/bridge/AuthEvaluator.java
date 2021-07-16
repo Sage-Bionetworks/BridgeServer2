@@ -107,7 +107,8 @@ public class AuthEvaluator {
         predicates.add((factMap) -> {
             String userId = factMap.get(USER_ID);
             String callerUserId = RequestContext.get().getCallerUserId();
-            return callerUserId == null || (userId != null && userId.equals(callerUserId));
+            // return callerUserId == null || (userId != null && userId.equals(callerUserId));
+            return callerUserId == null || callerUserId.equals(userId);
         });
         return this;
     }
