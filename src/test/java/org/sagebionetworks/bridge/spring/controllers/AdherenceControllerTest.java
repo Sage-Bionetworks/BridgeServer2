@@ -20,7 +20,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
 
-import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -29,7 +28,6 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.accounts.Account;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -197,7 +195,7 @@ public class AdherenceControllerTest extends Mockito {
     }
 
     @Test
-    public void deleteAdherenceRecords() {
+    public void deleteAdherenceRecord() {
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
 
         when(mockAccountService.getAccountId(TEST_APP_ID, TEST_USER_ID))
@@ -220,7 +218,7 @@ public class AdherenceControllerTest extends Mockito {
         assertEquals(captured.getInstanceGuid(), rec1.getInstanceGuid());
         assertEquals(captured.getStudyId(), rec1.getStudyId());
         assertEquals(captured.getUserId(), rec1.getUserId());
-        assertEquals(captured.getInstanceTimestamp(), rec1.getStartedOn());
+        assertEquals(captured.getStartedOn(), rec1.getStartedOn());
         assertEquals(captured.getEventTimestamp(), rec1.getEventTimestamp());
     }
 
