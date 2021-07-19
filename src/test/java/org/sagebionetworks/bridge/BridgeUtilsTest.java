@@ -201,6 +201,7 @@ public class BridgeUtilsTest {
     public void externalIdsVisibleToCaller() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(callerStudies).build());
 
@@ -328,6 +329,7 @@ public class BridgeUtilsTest {
     
     @Test
     public void filterForStudyAccountNoContextNoStudyDoesNotReturnAccount() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
     }
     
@@ -339,7 +341,9 @@ public class BridgeUtilsTest {
     
     @Test
     public void filterForStudyAccountWithStudiesHidesNormalAccount() {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
         RequestContext.set(null);
     }
