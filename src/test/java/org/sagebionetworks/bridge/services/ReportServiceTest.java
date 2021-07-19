@@ -191,9 +191,10 @@ public class ReportServiceTest {
     @Test
     public void canAccessFailsIfCallerDoesNotMatchStudies() {
         ReportIndex index = ReportIndex.create();
-        index.setStudyIds(TestConstants.USER_STUDY_IDS);
-        RequestContext.set(
-                new RequestContext.Builder().withCallerEnrolledStudies(ImmutableSet.of("studyC")).build());
+        index.setStudyIds(USER_STUDY_IDS);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("some-other-user-id")
+                .withCallerEnrolledStudies(ImmutableSet.of("studyC")).build());
         assertFalse(service.canAccessParticipantReport(TEST_USER_ID, index));        
     }
     
