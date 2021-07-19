@@ -300,7 +300,7 @@ public class AccountService {
         checkNotNull(healthCode);
         
         AccountId accountId = AccountId.forHealthCode(appId, healthCode);
-        Account account = accountDao.getAccount(accountId).orElse(null);
+        Account account = getAccount(accountId);
         if (account != null) {
             accountEdits.accept(account);
             accountDao.updateAccount(account);

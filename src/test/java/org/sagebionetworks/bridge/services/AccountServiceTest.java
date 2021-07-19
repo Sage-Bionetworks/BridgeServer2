@@ -96,6 +96,7 @@ public class AccountServiceTest extends Mockito {
     private static final String STUDY_B = "studyB";
     private static final Set<Enrollment> ACCOUNT_ENROLLMENTS = ImmutableSet
             .of(Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID));
+    private static final ImmutableSet<String> CALLER_STUDIES = ImmutableSet.of(STUDY_B);    
     
     private static final SignIn PASSWORD_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(DUMMY_PASSWORD).build();
@@ -1070,6 +1071,22 @@ public class AccountServiceTest extends Mockito {
 
         // execute and verify - Verify just ID, app, and email, and health code mapping is enough. 
         service.authenticate(app, phoneSignIn);
+    }
+
+    @Test
+    public void editAccountFailsAcrossStudies() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("some-other-id")
+                .withOrgSponsoredStudies(CALLER_STUDIES).build());
+
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
+        persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
+        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
+
+        service.editAccount(TEST_APP_ID, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
+
+        verify(mockAccountDao, never()).updateAccount(any());
+        RequestContext.set(null);
     }
     
     @Test
