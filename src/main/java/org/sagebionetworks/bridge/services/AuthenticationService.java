@@ -511,12 +511,6 @@ public class AuthenticationService {
      * APIs, which creates the session. Package-scoped for unit tests.
      */
     public UserSession getSessionFromAccount(App app, CriteriaContext context, Account account) {
-        
-        // We are about to retrieve a participant and the security check must pass. In this case,
-        // an authenticating user is retrieving their own account, and we want the IDs to match
-        // during the authentication check.
-        RequestContext.acquireAccountIdentity(account);
-        
         StudyParticipant participant = participantService.getParticipant(app, account, false);
 
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 

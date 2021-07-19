@@ -11,7 +11,6 @@ import com.google.common.collect.Sets;
 
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
-import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.SponsorService;
@@ -56,19 +55,6 @@ public class RequestContext {
         builder.withCallerRoles(participant.getRoles());
         builder.withCallerUserId(participant.getId());
 
-        RequestContext reqContext = builder.build();
-        set(reqContext);
-        return reqContext;
-    }
-    
-    /**
-     * Due mostly to code complexity, we have cases where requests need to acquire the identity 
-     * of the account they are going to manipulate. This happens on unauthenticated calls to 
-     * resent email/phone verification, for example. 
-     */
-    public static RequestContext acquireAccountIdentity(Account account) {
-        RequestContext.Builder builder = get().toBuilder();
-        builder.withCallerUserId(account.getId());
         RequestContext reqContext = builder.build();
         set(reqContext);
         return reqContext;

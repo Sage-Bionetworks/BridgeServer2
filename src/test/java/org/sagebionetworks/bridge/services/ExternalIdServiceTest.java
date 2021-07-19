@@ -145,13 +145,14 @@ public class ExternalIdServiceTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteExternalIdPermanentlyOutsideStudiesThrows() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("some-other-user-id")
                 .withCallerAppId(TEST_APP_ID)
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyB")).build());
         
         Enrollment en = Enrollment.create(TEST_APP_ID, "studyC", "userId");
         
         Account account = Account.create();
-        account.setId("userId");
+        account.setId(TEST_USER_ID);
         account.getEnrollments().add(en);
         
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, ID);
