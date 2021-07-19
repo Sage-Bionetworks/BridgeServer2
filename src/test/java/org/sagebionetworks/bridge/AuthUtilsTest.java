@@ -78,6 +78,7 @@ public class AuthUtilsTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void canEditEnrollmentsFailsForNonStudyCoordinator() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("study-coordinator-id")
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of("someOtherStudy"))
                 .build());
@@ -88,6 +89,7 @@ public class AuthUtilsTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void canEditEnrollmentsFailsForDev() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("dev-id")
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
@@ -447,10 +449,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canReadStudyAssociationsFails() {
         RequestContext.set(new RequestContext.Builder()
-                // we have to set this because we still make an exception for accounts
-                // associated to no studies (ie not in an org or in an org that isn't
-                // sponsoring any studies).
-                .withOrgSponsoredStudies(ImmutableSet.of("study1"))
+                .withCallerUserId("some-other-id")
                 .build());
         
         assertFalse( CAN_READ_STUDY_ASSOCIATIONS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID) );
@@ -459,10 +458,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canReadParticipantsFails() {
         RequestContext.set(new RequestContext.Builder()
-                // we have to set this because we still make an exception for accounts
-                // associated to no studies (ie not in an org or in an org that isn't
-                // sponsoring any studies).
-                .withOrgSponsoredStudies(ImmutableSet.of("study1"))
+                .withCallerUserId("some-other-id")
                 .build());
         
         assertFalse( CAN_READ_PARTICIPANTS.check(ORG_ID, TEST_ORG_ID, USER_ID, TEST_USER_ID) );

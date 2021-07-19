@@ -1072,19 +1072,8 @@ public class AccountServiceTest extends Mockito {
         service.authenticate(app, phoneSignIn);
     }
     
-    @Test
-    public void editAccountFailsAcrossStudies() throws Exception {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(CALLER_STUDIES).build());
-
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
-        persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
-        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
-
-        service.editAccount(TEST_APP_ID, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
-
-        verify(mockAccountDao, never()).updateAccount(any());
-        RequestContext.set(null);
-    }
+    // editAccountFailsAcrossStudies removed because editAccount is now the preferred way
+    // for the system to update the accounts table, avoiding security checks.
     
     @Test
     public void getAccountMatchesStudies() throws Exception {
@@ -1107,6 +1096,7 @@ public class AccountServiceTest extends Mockito {
         persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
         
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("some-other-id")
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_B)).build());
 
         Account account = service.getAccount(ACCOUNT_ID);

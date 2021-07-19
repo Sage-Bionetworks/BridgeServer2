@@ -201,6 +201,7 @@ public class BridgeUtilsTest {
     public void externalIdsVisibleToCaller() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(callerStudies).build());
 
@@ -326,10 +327,10 @@ public class BridgeUtilsTest {
         assertNull(BridgeUtils.filterForStudy((Account)null));
     }
     
-    @Test
-    public void filterForStudyAccountNoContextNoStudyDoesNotReturnAccount() {
-        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
-    }
+    // filterForStudyAccountNoContextNoStudyDoesNotReturnAccount deleted because it’s testing
+    // a scenario we don’t need to support—a non-public call where we haven’t set a context.
+    // If you request a session in the controller...there’s a context with the caller’s 
+    // identity.
     
     @Test
     public void filterForStudyAccountNoContextWithStudyDoesNotReturnAccount() {
@@ -339,7 +340,9 @@ public class BridgeUtilsTest {
     
     @Test
     public void filterForStudyAccountWithStudiesHidesNormalAccount() {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
         RequestContext.set(null);
     }

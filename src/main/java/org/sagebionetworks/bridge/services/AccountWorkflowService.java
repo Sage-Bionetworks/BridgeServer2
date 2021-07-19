@@ -250,6 +250,7 @@ public class AccountWorkflowService {
         checkNotNull(accountId);
         
         App app = appService.getApp(accountId.getAppId());
+        
         Account account = accountService.getAccountNoFilter(accountId).orElse(null);
         if (account != null) {
             RequestContext.acquireAccountIdentity(account);

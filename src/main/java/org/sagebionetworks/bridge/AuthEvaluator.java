@@ -103,11 +103,9 @@ public class AuthEvaluator {
             String userId = factMap.get(USER_ID);
             String callerUserId = RequestContext.get().getCallerUserId();
             // Calls like signUp happen without a session so there is no caller user ID in the 
-            // request context. In this case, if we’re also not comparing the user ID to a 
-            // known ID, allow this test to pass. This removes some special case code elsewhere
-            // in the system.
-            return (userId == null && callerUserId == null) ||
-                   (userId != null && userId.equals(callerUserId));
+            // request context. In this case, we allow this test to pass. This removes some 
+            // special case code elsewhere in the system.
+            return callerUserId == null || callerUserId.equals(userId);
         });
         return this;
     }
