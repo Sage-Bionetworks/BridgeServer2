@@ -32,6 +32,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Optional;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -278,6 +279,34 @@ public class AdherenceService {
             if (fixedEventId != null) {
                 fixedMap.put(fixedEventId, entry.getValue());    
             }
+        }
+    }
+    
+    public void deleteAdherenceRecord(AdherenceRecord record) {
+        checkNotNull(record);
+
+        CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
+                AuthEvaluatorField.STUDY_ID, record.getStudyId(),
+                AuthEvaluatorField.USER_ID, record.getUserId()
+        );
+
+        if (record.getEventTimestamp() == null) {
+            throw new BadRequestException("eventTimestamp can not be null");
+        }
+        if (record.getStartedOn() == null) {
+            throw new BadRequestException("startedOn can not be null");
+        }
+
+
+        Optional<TimelineMetadata> timelineMetadata = scheduleService.getTimelineMetadata(record.getInstanceGuid());
+        if (timelineMetadata.isPresent()) {
+            if (timelineMetadata.get().isTimeWindowPersistent()) {
+                record.setInstanceTimestamp(record.getStartedOn());
+            } else {
+                record.setInstanceTimestamp(record.getEventTimestamp());
+            }
+
+            dao.deleteAdherenceRecordPermanently(record);
         }
     }
 }
