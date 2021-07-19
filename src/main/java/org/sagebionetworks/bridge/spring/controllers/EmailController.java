@@ -59,7 +59,9 @@ public class EmailController extends BaseController {
                 throw new BadRequestException("Email not found.");
             }
             
-            // This should always return a healthCode under normal circumstances.
+            // This should always return an ID under normal circumstances. We could eliminate
+            // this and just call editAccount but there would be no bad request if the email
+            // is invalid.
             String userId = accountService.getAccountId(app.getIdentifier(), "email:"+email)
                     .orElseThrow(() -> new BadRequestException("Email not found."));
 
