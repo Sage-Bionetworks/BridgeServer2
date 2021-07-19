@@ -290,6 +290,14 @@ public class AdherenceService {
                 AuthEvaluatorField.USER_ID, record.getUserId()
         );
 
+        if (record.getEventTimestamp() == null) {
+            throw new BadRequestException("eventTimestamp can not be null");
+        }
+        if (record.getStartedOn() == null) {
+            throw new BadRequestException("startedOn can not be null");
+        }
+
+
         Optional<TimelineMetadata> timelineMetadata = scheduleService.getTimelineMetadata(record.getInstanceGuid());
         if (timelineMetadata.isPresent()) {
             if (timelineMetadata.get().isTimeWindowPersistent()) {

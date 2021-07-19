@@ -737,6 +737,28 @@ public class AdherenceServiceTest extends Mockito {
         AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
         service.deleteAdherenceRecord(record);
     }
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void deleteAdherenceRecord_missingEventTimestamp() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
+        record.setEventTimestamp(null);
+
+        service.deleteAdherenceRecord(record);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void deleteAdherenceRecord_missingStartedOnTimestamp() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
+        record.setStartedOn(null);
+
+        service.deleteAdherenceRecord(record);
+    }
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {
         AdherenceRecord sess = new AdherenceRecord();
