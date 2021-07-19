@@ -1069,21 +1069,9 @@ public class AccountServiceTest extends Mockito {
         service.authenticate(app, phoneSignIn);
     }
 
-    @Test
-    public void editAccountFailsAcrossStudies() throws Exception {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("some-other-id")
-                .withOrgSponsoredStudies(CALLER_STUDIES).build());
-
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
-        persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
-        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
-
-        service.editAccount(TEST_APP_ID, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
-
-        verify(mockAccountDao, never()).updateAccount(any());
-        RequestContext.set(null);
-    }
+    // The editAccountFailsAcrossStudies test was removed because editAccount no longer enforces 
+    // authorization checks. It's intended to be used internally, not as a result of a direct
+    // operation by an API caller.
     
     @Test
     public void getAccountMatchesStudies() throws Exception {
