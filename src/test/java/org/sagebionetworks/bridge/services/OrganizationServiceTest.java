@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -367,7 +368,7 @@ public class OrganizationServiceTest extends Mockito {
         
         service.addMember(TEST_APP_ID, IDENTIFIER, TEST_USER_ID);
         
-        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
         assertEquals(account.getOrgMembership(), IDENTIFIER);
         
         verify(mockSessionUpdateService).updateOrgMembership(TEST_USER_ID, IDENTIFIER);
@@ -384,7 +385,7 @@ public class OrganizationServiceTest extends Mockito {
         
         service.addMember(TEST_APP_ID, IDENTIFIER, TEST_USER_ID);
         
-        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
         assertEquals(account.getOrgMembership(), IDENTIFIER);
     }
     
@@ -403,7 +404,7 @@ public class OrganizationServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
         doThrow(new EntityNotFoundException(Account.class)).when(mockAccountService)
-            .editAccount(any(), any(), any());
+            .editAccount(any(), any());
         
         service.addMember(TEST_APP_ID, IDENTIFIER, TEST_USER_ID);
     }
@@ -432,7 +433,7 @@ public class OrganizationServiceTest extends Mockito {
 
         service.addMember(TEST_APP_ID, IDENTIFIER, TEST_USER_ID);
         
-        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
         assertEquals(account.getOrgMembership(), IDENTIFIER);
     }
     
@@ -467,7 +468,7 @@ public class OrganizationServiceTest extends Mockito {
 
         service.removeMember(TEST_APP_ID, IDENTIFIER, TEST_USER_ID);
         
-        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
         assertNull(account.getOrgMembership());
         
         verify(mockSessionUpdateService).updateOrgMembership(TEST_USER_ID, null);
@@ -484,7 +485,7 @@ public class OrganizationServiceTest extends Mockito {
 
         service.removeMember(TEST_APP_ID, IDENTIFIER, TEST_USER_ID);
         
-        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
         assertNull(account.getOrgMembership());
     }
 
@@ -520,7 +521,7 @@ public class OrganizationServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         doThrow(new EntityNotFoundException(Account.class))
-            .when(mockAccountService).editAccount(any(), any(), any());
+            .when(mockAccountService).editAccount(any(), any());
 
         service.removeMember(TEST_APP_ID, IDENTIFIER, TEST_USER_ID);
     }

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.apps.App;
 
 @CrossOrigin
@@ -62,7 +63,8 @@ public class EmailController extends BaseController {
             String userId = accountService.getAccountId(app.getIdentifier(), "email:"+email)
                     .orElseThrow(() -> new BadRequestException("Email not found."));
 
-            accountService.editAccount(app.getIdentifier(), userId, account -> account.setNotifyByEmail(false));
+            AccountId accountId = AccountId.forId(app.getIdentifier(), userId);
+            accountService.editAccount(accountId, account -> account.setNotifyByEmail(false));
             
             return "You have been unsubscribed from future email.";
         } catch(Throwable throwable) {

@@ -34,6 +34,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -223,7 +224,8 @@ public class OrganizationService {
         
         CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
         
-        accountService.editAccount(appId, userId, (acct) -> {
+        AccountId accountId = AccountId.forId(appId, userId);
+        accountService.editAccount(accountId, (acct) -> {
             RequestContext context = RequestContext.get();
             if (!context.isInRole(ADMIN) && acct.getOrgMembership() != null) {
                 throw new BadRequestException("Account already assigned to an organization.");
@@ -240,7 +242,8 @@ public class OrganizationService {
         
         CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
 
-        accountService.editAccount(appId, userId, (acct) -> {
+        AccountId accountId = AccountId.forId(appId, userId);
+        accountService.editAccount(accountId, (acct) -> {
             if (acct.getOrgMembership() == null || !acct.getOrgMembership().equals(identifier)) {
                 throw new BadRequestException("Account is not a member of organization " + identifier);
             }

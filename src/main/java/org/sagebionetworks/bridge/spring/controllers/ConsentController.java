@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingOption;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -171,8 +172,8 @@ public class ConsentController extends BaseController {
     private JsonNode changeSharingScope(SharingScope sharingScope, String message) {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        accountService.editAccount(session.getAppId(), session.getId(),
-                account -> account.setSharingScope(sharingScope));
+        AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
+        accountService.editAccount(accountId, account -> account.setSharingScope(sharingScope));
 
         sessionUpdateService.updateSharingScope(session, sharingScope);
         

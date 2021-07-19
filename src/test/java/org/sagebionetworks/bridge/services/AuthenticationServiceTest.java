@@ -971,8 +971,8 @@ public class AuthenticationServiceTest {
         // This specifically has to be a mock to easily mock the editAccount method on the DAO.
         Account mockAccount = mock(Account.class);
 
-        CriteriaContext context = new CriteriaContext.Builder().withLanguages(LANGUAGES).withUserId(USER_ID)
-                .withAppId(TEST_APP_ID).build();
+        CriteriaContext context = new CriteriaContext.Builder().withLanguages(LANGUAGES)
+                .withUserId(USER_ID).withAppId(TEST_APP_ID).build();
         TestUtils.mockEditAccount(accountService, mockAccount);
         doReturn(mockAccount).when(accountService).getAccount(any());
         
@@ -982,7 +982,7 @@ public class AuthenticationServiceTest {
         
         service.getSession(app, context);
         
-        verify(accountService).editAccount(eq(TEST_APP_ID), eq(USER_ID), any());
+        verify(accountService).editAccount(eq(ACCOUNT_ID), any());
         verify(mockAccount).setLanguages(ImmutableList.copyOf(LANGUAGES));
     }
 
@@ -1434,7 +1434,7 @@ public class AuthenticationServiceTest {
         
         assertEquals(session.getParticipant().getLanguages(), TestConstants.LANGUAGES);
         
-        verify(accountService, never()).editAccount(any(), any(), any());
+        verify(accountService, never()).editAccount(any(), any());
    }
     
     @Test
@@ -1443,7 +1443,7 @@ public class AuthenticationServiceTest {
         when(accountService.authenticate(app, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withId(TEST_USER_ID).build();
+                .withId(USER_ID).build();
         
         when(participantService.getParticipant(app, account, false)).thenReturn(participant);
         when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
@@ -1457,7 +1457,7 @@ public class AuthenticationServiceTest {
         assertEquals(session.getParticipant().getLanguages(), TestConstants.LANGUAGES);
         
         // Note that the context does not have the healthCode, you must use the participant
-        verify(accountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
+        verify(accountService).editAccount(eq(ACCOUNT_ID), any());
    }
     
    @Test

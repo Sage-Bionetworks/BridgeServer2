@@ -273,10 +273,10 @@ public class TestUtils {
         Mockito.mockingDetails(mockAccountService).isMock();
         Mockito.mockingDetails(mockAccount).isMock();
         doAnswer(invocation -> {
-            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgument(2);
+            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgument(1);
             accountEdits.accept(mockAccount);
             return null;
-        }).when(mockAccountService).editAccount(any(), any(), any());
+        }).when(mockAccountService).editAccount(any(), any());
     }
 
     public static void assertDatesWithTimeZoneEqual(DateTime date1, DateTime date2) {

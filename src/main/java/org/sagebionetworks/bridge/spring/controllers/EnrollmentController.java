@@ -98,13 +98,14 @@ public class EnrollmentController extends BaseController {
         List<EnrollmentMigration> migrations = parseJson(new TypeReference<List<EnrollmentMigration>>() {});
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
-        Account acct = accountService.getAccount(accountId);
-        if (acct == null) {
+        
+        Account account = accountService.getAccount(accountId);
+        if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        accountService.editAccount(session.getAppId(), acct.getId(), (account) -> {
-            account.getEnrollments().clear();
-            account.getEnrollments().addAll(migrations.stream().map(m -> m.asEnrollment()).collect(toSet()));
+        accountService.editAccount(accountId, (acct) -> {
+            acct.getEnrollments().clear();
+            acct.getEnrollments().addAll(migrations.stream().map(m -> m.asEnrollment()).collect(toSet()));
         });
         return new StatusMessage("Enrollments updated.");
     }    

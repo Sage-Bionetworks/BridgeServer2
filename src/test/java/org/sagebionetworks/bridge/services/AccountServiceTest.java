@@ -297,14 +297,15 @@ public class AccountServiceTest extends Mockito {
         AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
         Account account = mockGetAccountById(accountId, false);
 
-        service.editAccount(TEST_APP_ID, TEST_USER_ID, mockConsumer);
+        service.editAccount(ACCOUNT_ID, mockConsumer);
 
         verify(mockConsumer).accept(account);
     }
 
     @Test
     public void editAccountWhenAccountNotFound() throws Exception {
-        service.editAccount(TEST_APP_ID, "bad-user-id", mockConsumer);
+        AccountId accountId = AccountId.forId(TEST_APP_ID, "bad-user-id");
+        service.editAccount(accountId, mockConsumer);
 
         verify(mockConsumer, never()).accept(any());
     }

@@ -46,6 +46,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
@@ -204,6 +205,7 @@ public class EnrollmentControllerTest extends Mockito {
     public void updateUserEnrollmentsAccountNotFound() throws Exception {
         UserSession session = new UserSession();
         session.setAppId(TEST_APP_ID);
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
 
         Enrollment newEnrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", TEST_USER_ID);

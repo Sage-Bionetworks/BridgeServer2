@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.STRING_SET_TYPEREF;
 import static org.sagebionetworks.bridge.BridgeConstants.WARN_NO_ACCEPT_LANGUAGE;
 import static org.sagebionetworks.bridge.BridgeConstants.X_REQUEST_ID_HEADER;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.IP_ADDRESS;
@@ -186,6 +187,7 @@ public class BaseControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
@@ -206,6 +208,7 @@ public class BaseControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
         session.setConsentStatuses(UNCONSENTED_STATUS_MAP);
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
@@ -219,7 +222,8 @@ public class BaseControllerTest extends Mockito {
     public void getAuthenticatedSessionRolesSucceeds() {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
+        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER))
+                .withId(TEST_USER_ID).build());
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
@@ -235,8 +239,9 @@ public class BaseControllerTest extends Mockito {
     public void getAuthenticatedSessionRolesFailsRolesMismatched() {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN)).build());
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
+        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN))
+                .withId(TEST_USER_ID).build());
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
@@ -251,6 +256,7 @@ public class BaseControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
@@ -285,7 +291,8 @@ public class BaseControllerTest extends Mockito {
     public void getSessionEitherConsentedOrInRoleSucceedsOnRole() {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER)).build());
+        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER))
+                .withId(TEST_USER_ID).build());
         session.setConsentStatuses(UNCONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
@@ -302,6 +309,7 @@ public class BaseControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
 
@@ -316,7 +324,8 @@ public class BaseControllerTest extends Mockito {
     public void getSessionEitherConsentedOrInRoleFails() {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.RESEARCHER)).build());
+        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.RESEARCHER))
+                .withId(TEST_USER_ID).build());
         session.setConsentStatuses(UNCONSENTED_STATUS_MAP);
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);
@@ -360,7 +369,7 @@ public class BaseControllerTest extends Mockito {
         
         controller.getLanguages(session);
         
-        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
         verify(mockSessionUpdateService).updateLanguage(eq(session), contextCaptor.capture());
         
         CriteriaContext context = contextCaptor.getValue();
@@ -378,7 +387,7 @@ public class BaseControllerTest extends Mockito {
         List<String> returnedLangs = controller.getLanguages(session);
         assertEquals(returnedLangs, ImmutableList.of("fr"));
         
-        verify(mockAccountService, never()).editAccount(any(), any(), any());
+        verify(mockAccountService, never()).editAccount(any(), any());
         verify(mockSessionUpdateService, never()).updateLanguage(any(), any());
     }
 
@@ -478,6 +487,7 @@ public class BaseControllerTest extends Mockito {
     public void updateRequestInfoFromSessionTest() {
         session.setSessionToken(SESSION_TOKEN);
         session.setAppId(TEST_APP_ID);
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
         when(mockBridgeConfig.getEnvironment()).thenReturn(Environment.LOCAL);
         
         controller.updateRequestInfoFromSession(session);
@@ -560,6 +570,7 @@ public class BaseControllerTest extends Mockito {
     public void roleEnforcedWhenRetrievingSession() throws Exception {
         // Mock participant and session.
         StudyParticipant participant = new StudyParticipant.Builder()
+                .withId(TEST_USER_ID)
                 .withRoles(Sets.newHashSet(Roles.RESEARCHER)).build();
         
         session.setAuthenticated(true);
@@ -614,10 +625,10 @@ public class BaseControllerTest extends Mockito {
     public void canGetLanguagesWhenInHeader() throws Exception {
         Account account = Account.create();
         doAnswer(invocation -> {
-            Consumer<Account> consumer = invocation.getArgument(2);
+            Consumer<Account> consumer = invocation.getArgument(1);
             consumer.accept(account);
             return null;
-        }).when(mockAccountService).editAccount(any(), any(), any());
+        }).when(mockAccountService).editAccount(any(), any());
         
         // Set up mocks.
         when(mockRequest.getHeader(ACCEPT_LANGUAGE)).thenReturn("en,fr");
@@ -631,7 +642,7 @@ public class BaseControllerTest extends Mockito {
         assertEquals(LANGUAGES, languages);
 
         // Verify we saved the language to the account.
-        verify(mockAccountService).editAccount(eq(TEST_APP_ID), eq(TEST_USER_ID), any());
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
         assertEquals(account.getLanguages(), LANGUAGES);
 
         // Verify we call through to the session update service. (This updates both the cache and the participant, as
@@ -751,7 +762,7 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void getSessionWithRoleSucceed() {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER))
-                .build();
+                .withId(TEST_USER_ID).build();
         session.setAuthenticated(true);
         session.setParticipant(participant);
         session.setAppId(TEST_APP_ID);
@@ -811,6 +822,7 @@ public class BaseControllerTest extends Mockito {
     public void getSessionWithNoRolesConsentedOrRoleFails() {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
         
         doReturn(session).when(controller).getSessionIfItExists();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
@@ -822,7 +834,7 @@ public class BaseControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getSessionWithNoConsentConsentedOrRoleFails() {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.RESEARCHER))
-                .build();
+                .withId(TEST_USER_ID).build();
         session.setAuthenticated(true);
         session.setParticipant(participant);
         session.setAppId(TEST_APP_ID);
@@ -836,7 +848,7 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void getSessionWithConsentedUserNotInRoleSuccess() {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.RESEARCHER))
-                .build();
+                .withId(TEST_USER_ID).build();
         session.setAuthenticated(true);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         session.setParticipant(participant);
@@ -852,7 +864,7 @@ public class BaseControllerTest extends Mockito {
     @Test
     public void getSessionWithConsentedUserInRoleSuccess() {
         StudyParticipant participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.DEVELOPER))
-                .build();
+                .withId(TEST_USER_ID).build();
         session.setAuthenticated(true);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
         session.setParticipant(participant);

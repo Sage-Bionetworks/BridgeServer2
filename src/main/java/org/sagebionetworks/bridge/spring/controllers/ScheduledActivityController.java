@@ -37,6 +37,7 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
@@ -261,8 +262,8 @@ public class ScheduledActivityController extends BaseController {
     }
 
     DateTimeZone persistTimeZone(UserSession session, DateTimeZone timeZone) {
-        accountService.editAccount(session.getAppId(), session.getId(),
-                account -> account.setTimeZone(timeZone));
+        AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
+        accountService.editAccount(accountId, account -> account.setTimeZone(timeZone));
         sessionUpdateService.updateTimeZone(session, timeZone);
         return timeZone;
     }

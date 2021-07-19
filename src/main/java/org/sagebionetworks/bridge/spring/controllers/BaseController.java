@@ -42,6 +42,7 @@ import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.RequestInfo;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -287,8 +288,8 @@ public abstract class BaseController {
         RequestContext reqContext = RequestContext.get();
         List<String> languages = reqContext.getCallerLanguages();
         if (!languages.isEmpty()) {
-            accountService.editAccount(session.getAppId(), session.getId(),
-                    account -> account.setLanguages(languages));
+            AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
+            accountService.editAccount(accountId, account -> account.setLanguages(languages));
 
             CriteriaContext newContext = new CriteriaContext.Builder()
                 .withLanguages(languages)
