@@ -292,26 +292,25 @@ public class AccountService {
     }
     
     /**
-     * Load, and if it exists, edit and save an account. Note that constraints are not
-     * enforced here (which is intentional).
+     * Load, and if it exists, edit and save an account. Authorization constraints are not enforced
+     * by this method. It is intended to be used internally to update the account table state, and 
+     * should not be used to propagate changes that come from an API caller.
      */
-    public void editAccount(String appId, String healthCode, Consumer<Account> accountEdits) {
-        checkNotNull(appId);
-        checkNotNull(healthCode);
+    public void editAccount(AccountId accountId, Consumer<Account> accountEdits) {
+        checkNotNull(accountId);
         
-        AccountId accountId = AccountId.forHealthCode(appId, healthCode);
-        Account account = getAccount(accountId);
-        if (account != null) {
-            accountEdits.accept(account);
-            accountDao.updateAccount(account);
-        }
+        Account account = accountDao.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        accountEdits.accept(account);
+        accountDao.updateAccount(account);
     }
     
     /**
      * Get an account in the context of a app by the user's ID, email address, health code,
      * or phone number. Returns null if the account cannot be found, or the caller does not have 
-     * the correct study associations to access the account. (Other methods in this service 
-     * also make a check for study associations by relying on this method internally).
+     * the correct permissions to access the account. The account’s enrollments will be filtered
+     * so the caller can only see the enrollments in studies they have access to.
      */
     public Account getAccount(AccountId accountId) {
         checkNotNull(accountId);
@@ -365,10 +364,16 @@ public class AccountService {
         return accountDao.getPagedAccountSummaries(appId, search);
     }
     
+    /**
+     * Get the health code for an account.
+     */
     public Optional<String> getAccountHealthCode(String appId, String userIdToken) {
         return getAccountField(appId, userIdToken, Account::getHealthCode);
     }
     
+    /**
+     * Get the ID for an account.
+     */
     public Optional<String> getAccountId(String appId, String userIdToken) {
         return getAccountField(appId, userIdToken, Account::getId);
     }
@@ -376,7 +381,7 @@ public class AccountService {
     private Optional<String> getAccountField(String appId, String userIdToken, Function<Account,String> func) {
         if (appId != null && userIdToken != null) {
             AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
-            Account account = getAccount(accountId);
+            Account account = accountDao.getAccount(accountId).orElse(null);
             if (account != null) {
                 return Optional.ofNullable(func.apply(account));
             }
