@@ -6,7 +6,6 @@ import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
-import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -58,7 +57,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
@@ -97,7 +95,6 @@ public class AccountServiceTest extends Mockito {
     private static final String STUDY_B = "studyB";
     private static final Set<Enrollment> ACCOUNT_ENROLLMENTS = ImmutableSet
             .of(Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID));
-    private static final ImmutableSet<String> CALLER_STUDIES = ImmutableSet.of(STUDY_B);    
     
     private static final SignIn PASSWORD_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(DUMMY_PASSWORD).build();
