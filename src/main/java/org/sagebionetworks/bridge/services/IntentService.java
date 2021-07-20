@@ -78,7 +78,7 @@ public class IntentService {
         } else {
             accountId = AccountId.forEmail(intent.getAppId(), intent.getEmail());
         }
-        Account account = accountService.getAccount(accountId);
+        Account account = accountService.getAccount(accountId).orElse(null);
         if (account != null) {
             return;
         }

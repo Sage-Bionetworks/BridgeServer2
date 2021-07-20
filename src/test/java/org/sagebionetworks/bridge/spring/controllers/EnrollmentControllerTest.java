@@ -18,6 +18,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+import java.util.Optional;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -189,7 +190,7 @@ public class EnrollmentControllerTest extends Mockito {
         Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, "externalId");
         Set<Enrollment> enrollments = Sets.newHashSet(en1);
         when(mockAccount.getEnrollments()).thenReturn(enrollments);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(mockAccount));
         
         mockEditAccount(mockAccountService, mockAccount);
         
@@ -212,7 +213,7 @@ public class EnrollmentControllerTest extends Mockito {
         AccountService mockAccountService = mock(AccountService.class);
         controller.setAccountService(mockAccountService);
         
-        when(mockAccountService.getAccount(any())).thenReturn(null);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.empty());
         
         controller.updateUserEnrollments(TEST_USER_ID);
     }
@@ -234,7 +235,7 @@ public class EnrollmentControllerTest extends Mockito {
         Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, "externalId");
         Set<Enrollment> enrollments = Sets.newHashSet(en1);
         when(mockAccount.getEnrollments()).thenReturn(enrollments);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(mockAccount));
         
         mockEditAccount(mockAccountService, mockAccount);
         

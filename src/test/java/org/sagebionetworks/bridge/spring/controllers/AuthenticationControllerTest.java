@@ -1284,7 +1284,7 @@ public class AuthenticationControllerTest extends Mockito {
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
         AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_ACCOUNT_ID);
-        when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(Account.create()));
         
         App newApp = App.create();
         newApp.setIdentifier("my-new-study");

@@ -55,10 +55,9 @@ public class ExternalIdService {
         checkNotNull(externalId);
         
         AccountId accountId = AccountId.forExternalId(externalId.getAppId(), externalId.getIdentifier());
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+                
         Enrollment enrollment = account.getEnrollments().stream()
                 .filter(en -> externalId.getIdentifier().equals(en.getExternalId()))
                 .findFirst()

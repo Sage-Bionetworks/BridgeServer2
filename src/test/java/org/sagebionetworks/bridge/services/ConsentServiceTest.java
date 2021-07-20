@@ -17,6 +17,7 @@ import java.net.URL;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.amazonaws.HttpMethod;
@@ -165,7 +166,7 @@ public class ConsentServiceTest extends Mockito {
         
         when(subpopulation.getStudyId()).thenReturn(TEST_STUDY_ID);
 
-        when(accountService.getAccount(any(AccountId.class))).thenReturn(account);
+        when(accountService.getAccount(any(AccountId.class))).thenReturn(Optional.of(account));
 
         when(s3Helper.generatePresignedUrl(eq(ConsentService.USERSIGNED_CONSENTS_BUCKET), any(), any(),
                 eq(HttpMethod.GET))).thenReturn(new URL(LONG_URL));
@@ -373,7 +374,7 @@ public class ConsentServiceTest extends Mockito {
         account.setDataGroups(dataGroups);
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
 
         consentService.withdrawConsent(app, SUBPOP_GUID, PARTICIPANT, CONTEXT, WITHDRAWAL, WITHDREW_ON);
 
@@ -468,7 +469,7 @@ public class ConsentServiceTest extends Mockito {
 
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(TestConstants.USER_DATA_GROUPS);
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
 
         consentService.withdrawFromApp(app, PARTICIPANT, WITHDRAWAL, WITHDREW_ON);
 
@@ -966,7 +967,7 @@ public class ConsentServiceTest extends Mockito {
         when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(USER_DATA_GROUPS);
 
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
 
         consentService.consentToResearch(app, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
                 SharingScope.NO_SHARING, false);
@@ -986,7 +987,7 @@ public class ConsentServiceTest extends Mockito {
         // We do not want it to have a studyId in this test.
         reset(subpopulation);
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
 
         consentService.consentToResearch(app, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
                 SharingScope.NO_SHARING, false);

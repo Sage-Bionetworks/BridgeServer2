@@ -169,10 +169,9 @@ public class EnrollmentService {
         Validate.entityThrowingException(INSTANCE, enrollment);
         
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         enrollment = unenroll(account, enrollment);
         accountService.updateAccount(account);
         return enrollment;

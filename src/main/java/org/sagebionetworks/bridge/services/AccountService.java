@@ -313,15 +313,15 @@ public class AccountService {
      * the correct study associations to access the account. (Other methods in this service 
      * also make a check for study associations by relying on this method internally).
      */
-    public Account getAccount(AccountId accountId) {
+    public Optional<Account> getAccount(AccountId accountId) {
         checkNotNull(accountId);
 
         Optional<Account> optional = accountDao.getAccount(accountId);
         if (optional.isPresent()) {
             // filtering based on the study associations of the caller.
-            return filterForStudy(optional.get());
+            return Optional.ofNullable( filterForStudy(optional.get()) );
         }
-        return null;
+        return Optional.empty();
     }
     
     /**

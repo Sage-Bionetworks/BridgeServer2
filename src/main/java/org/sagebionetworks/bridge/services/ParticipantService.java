@@ -1019,11 +1019,8 @@ public class ParticipantService {
     }
     
     private Account getAccountThrowingException(AccountId accountId) {
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        return account;
+        return accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
     }
 
 }

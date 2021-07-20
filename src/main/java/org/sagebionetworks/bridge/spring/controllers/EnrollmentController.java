@@ -98,10 +98,9 @@ public class EnrollmentController extends BaseController {
         List<EnrollmentMigration> migrations = parseJson(new TypeReference<List<EnrollmentMigration>>() {});
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
-        Account acct = accountService.getAccount(accountId);
-        if (acct == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account acct = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         accountService.editAccount(session.getAppId(), acct.getHealthCode(), (account) -> {
             account.getEnrollments().clear();
             account.getEnrollments().addAll(migrations.stream().map(m -> m.asEnrollment()).collect(toSet()));

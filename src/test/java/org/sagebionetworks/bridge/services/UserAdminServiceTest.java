@@ -16,6 +16,7 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.mockito.ArgumentCaptor;
@@ -324,7 +325,7 @@ public class UserAdminServiceTest {
         when(consentService.getConsentStatuses(any())).thenReturn(statuses);
         
         AccountId accountId = AccountId.forId(app.getIdentifier(), USER_ID);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         when(participantService.getParticipant(app, USER_ID, false))
                 .thenThrow(new IllegalStateException("System is unable to complete call"));        
@@ -351,7 +352,7 @@ public class UserAdminServiceTest {
         doReturn("healthCode").when(account).getHealthCode();
         doReturn(enrollments).when(account).getActiveEnrollments();
         doReturn(enrollments).when(account).getEnrollments();
-        doReturn(account).when(accountService).getAccount(accountId);
+        doReturn(Optional.of(account)).when(accountService).getAccount(accountId);
         
         service.deleteUser(app, "userId");
         

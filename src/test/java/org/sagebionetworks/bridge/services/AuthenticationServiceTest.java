@@ -973,7 +973,7 @@ public class AuthenticationServiceTest {
         CriteriaContext context = new CriteriaContext.Builder().withLanguages(LANGUAGES).withUserId(USER_ID)
                 .withAppId(TEST_APP_ID).build();
         TestUtils.mockEditAccount(accountService, mockAccount);
-        doReturn(mockAccount).when(accountService).getAccount(any());
+        doReturn(Optional.of(mockAccount)).when(accountService).getAccount(any());
         
         // No languages.
         StudyParticipant participant = new StudyParticipant.Builder().withHealthCode("healthCode").build();
@@ -1056,7 +1056,7 @@ public class AuthenticationServiceTest {
     public void generatePasswordExternalIdNotFound() {
         Account account = Account.create();
         account.setEnrollments(new HashSet<>());
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         try {
             service.generatePassword(app, EXTERNAL_ID);
@@ -1078,7 +1078,7 @@ public class AuthenticationServiceTest {
         enrollment.setExternalId(EXTERNAL_ID);
         account.setEnrollments(ImmutableSet.of(enrollment));
         
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         account.setHealthCode(HEALTH_CODE);
         
         GeneratedPassword password = service.generatePassword(app, EXTERNAL_ID);
@@ -1116,7 +1116,7 @@ public class AuthenticationServiceTest {
                 .withCallerUserId("callerUserId")
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         Enrollment en = Enrollment.create(app.getIdentifier(), "studyB", "id", EXTERNAL_ID);
         account.setEnrollments(Sets.newHashSet(en));
         
@@ -1130,7 +1130,7 @@ public class AuthenticationServiceTest {
         
         // The account is returned but filtering has been applied such that the
         // external ID is not there, despite using it to retrieve the account.
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         Enrollment en = Enrollment.create(app.getIdentifier(), "studyB", "id");
         account.setEnrollments(Sets.newHashSet(en));
         

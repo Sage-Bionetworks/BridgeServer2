@@ -181,9 +181,7 @@ public class ParticipantDataController extends BaseController {
     }
 
     private void checkAccountExists(String appId, String userId) {
-        Account account = accountService.getAccount(AccountId.forId(appId, userId));
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        accountService.getAccount(AccountId.forId(appId, userId))
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
     }
 }

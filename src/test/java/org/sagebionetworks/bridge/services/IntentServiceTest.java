@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_I
 import static org.testng.Assert.assertEquals;
 
 import java.util.Map;
+import java.util.Optional;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -236,7 +237,7 @@ public class IntentServiceTest {
         AccountId accountId = AccountId.forPhone(TEST_APP_ID, intent.getPhone()); 
         
         Account account = Account.create();
-        when(mockAccountService.getAccount(accountId)).thenReturn(account);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         service.submitIntentToParticipate(intent);
         
