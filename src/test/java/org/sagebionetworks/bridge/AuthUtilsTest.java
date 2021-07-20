@@ -451,10 +451,6 @@ public class AuthUtilsTest extends Mockito {
     public void canReadStudyAssociationsFails() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(OTHER_USER_ID)
-                // we have to set this because we still make an exception for accounts
-                // associated to no studies (ie not in an org or in an org that isn't
-                // sponsoring any studies).
-                .withOrgSponsoredStudies(ImmutableSet.of("study1"))
                 .build());
         
         assertFalse( CAN_READ_STUDY_ASSOCIATIONS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID) );
@@ -464,10 +460,6 @@ public class AuthUtilsTest extends Mockito {
     public void canReadParticipantsFails() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(OTHER_USER_ID)
-                // we have to set this because we still make an exception for accounts
-                // associated to no studies (ie not in an org or in an org that isn't
-                // sponsoring any studies).
-                .withOrgSponsoredStudies(ImmutableSet.of("study1"))
                 .build());
         
         assertFalse( CAN_READ_PARTICIPANTS.check(ORG_ID, TEST_ORG_ID, USER_ID, TEST_USER_ID) );

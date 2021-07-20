@@ -9,6 +9,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 
 import java.util.List;
+import java.util.Optional;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -123,7 +124,7 @@ public class ExternalIdServiceTest {
         Account account = Account.create();
         account.setEnrollments(ImmutableSet.of(
                 Enrollment.create(TEST_APP_ID, STUDY_ID, TEST_USER_ID, ID)));
-        when(mockAccountService.getAccount(accountId)).thenReturn(account);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         externalIdService.deleteExternalIdPermanently(app, extId);
         
@@ -137,7 +138,7 @@ public class ExternalIdServiceTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteExternalIdPermanentlyMissingThrows() {
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, ID);
-        when(mockAccountService.getAccount(accountId)).thenReturn(null);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.empty());
         
         externalIdService.deleteExternalIdPermanently(app, extId);
     }
@@ -156,7 +157,7 @@ public class ExternalIdServiceTest {
         account.getEnrollments().add(en);
         
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, ID);
-        when(mockAccountService.getAccount(accountId)).thenReturn(account);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         externalIdService.deleteExternalIdPermanently(app, extId);
     }

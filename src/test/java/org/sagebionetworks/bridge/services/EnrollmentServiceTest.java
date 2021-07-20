@@ -362,7 +362,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
 
@@ -388,7 +388,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(otherStudy, existing));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setWithdrawnOn(MODIFIED_ON.minusHours(1));
@@ -416,7 +416,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(existing));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setWithdrawalNote("Withdrawal reason");
@@ -440,7 +440,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(existing));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setWithdrawnOn(MODIFIED_ON);
@@ -472,7 +472,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(existing));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setWithdrawnOn(MODIFIED_ON);
@@ -497,7 +497,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.unenroll(enrollment);
@@ -527,7 +527,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(existing));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.unenroll(enrollment);
@@ -541,7 +541,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.unenroll(enrollment);
@@ -557,7 +557,7 @@ public class EnrollmentServiceTest extends Mockito {
 
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.unenroll(enrollment);

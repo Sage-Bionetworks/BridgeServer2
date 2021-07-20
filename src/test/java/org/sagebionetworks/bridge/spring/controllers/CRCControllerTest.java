@@ -37,6 +37,7 @@ import static org.testng.Assert.fail;
 
 import java.io.IOException;
 import java.util.Base64;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 import javax.servlet.http.HttpServletRequest;
@@ -381,7 +382,7 @@ public class CRCControllerTest extends Mockito {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
         
-        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(Optional.of(account));
         
         HttpResponse mockResponse = mock(HttpResponse.class);
         StatusLine mockStatusLine = mock(StatusLine.class);
@@ -413,7 +414,7 @@ public class CRCControllerTest extends Mockito {
     @Test
     public void externalIdAccountSubmitsCorrectCredentials() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
-        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(Optional.of(account));
         when(mockAppService.getApp(APP_ID)).thenReturn(mockApp);
         when(mockApp.getIdentifier()).thenReturn(APP_ID);
         when(mockAccountService.authenticate(eq(mockApp), any())).thenReturn(account);
@@ -431,7 +432,7 @@ public class CRCControllerTest extends Mockito {
         String authHeader = "Basic "
                 + new String(Base64.getEncoder().encode(credentials.getBytes()));
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(authHeader);
-        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID_FOR_HC)).thenReturn(Optional.of(account));
         when(mockAppService.getApp(APP_ID)).thenReturn(mockApp);
         when(mockApp.getIdentifier()).thenReturn(APP_ID);
         when(mockAccountService.authenticate(eq(mockApp), any())).thenReturn(account);
@@ -525,7 +526,7 @@ public class CRCControllerTest extends Mockito {
     public void postAppointmentCreated() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         mockGetLocation(LOCATION_JSON);
 //        mockGetGeocoding();
@@ -577,7 +578,7 @@ public class CRCControllerTest extends Mockito {
     public void postAppointmentUpdated() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         mockGetLocation(LOCATION_JSON);
 //        mockGetGeocoding();
@@ -616,7 +617,7 @@ public class CRCControllerTest extends Mockito {
     public void postAppointmentCancelled() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         mockGetLocation(LOCATION_JSON);
 //        mockGetGeocoding();
@@ -652,7 +653,7 @@ public class CRCControllerTest extends Mockito {
     public void postAppointmentMistakeRollsBackAccount() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Appointment appointment = new Appointment();
         appointment.setStatus(ENTEREDINERROR);
@@ -677,7 +678,7 @@ public class CRCControllerTest extends Mockito {
     public void postAppointmentFailsWhenLocationCallFails() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
 //        mockGetGeocoding();
         
@@ -721,7 +722,7 @@ public class CRCControllerTest extends Mockito {
     public void postAppointmentSkipsLocationIfNotPresent() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         DateRangeResourceList<? extends ReportData> results = new  DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -743,7 +744,7 @@ public class CRCControllerTest extends Mockito {
     public void postProcedureCreated() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         String json = makeProcedureRequest();
         mockRequestBody(mockRequest, json);
         
@@ -787,7 +788,7 @@ public class CRCControllerTest extends Mockito {
     public void postProcedureUpdated() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         String json = makeProcedureRequest();
         mockRequestBody(mockRequest, json);
         
@@ -811,7 +812,7 @@ public class CRCControllerTest extends Mockito {
     public void postObservationCreated() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         String json = makeObservation(VALID_SERUM_OBSERVATION_JSON);
         mockRequestBody(mockRequest, json);
         
@@ -853,7 +854,7 @@ public class CRCControllerTest extends Mockito {
     public void postObservationFailsOnUnknownTestCode() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         String json = makeObservation(VALID_PCR_OBSERVATION_JSON);
         mockRequestBody(mockRequest, json);
         
@@ -895,7 +896,7 @@ public class CRCControllerTest extends Mockito {
     public void postObservationFailsOnInvalidSerumTestValue() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         String json = makeObservation(INVALID_SERUM_OBSERVATION_JSON);
         mockRequestBody(mockRequest, json);
         
@@ -944,7 +945,7 @@ public class CRCControllerTest extends Mockito {
     public void postObservationUpdated() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         String json = makeObservation(VALID_SERUM_OBSERVATION_JSON);
         mockRequestBody(mockRequest, json);
         
@@ -1119,7 +1120,7 @@ public class CRCControllerTest extends Mockito {
     public void appointmentMissingIdentifiers() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         mockRequestBody(mockRequest, makeAppointment(null, BOOKED));
         
         mockGetLocation(LOCATION_JSON);
@@ -1132,7 +1133,7 @@ public class CRCControllerTest extends Mockito {
     public void appointmentWrongIdentifier() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         mockRequestBody(mockRequest, makeAppointment("not-the-right-id", BOOKED));
         
         mockGetLocation(LOCATION_JSON);
@@ -1146,7 +1147,7 @@ public class CRCControllerTest extends Mockito {
     public void procedureMissingIdentifiers() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         ProcedureRequest procedure = new ProcedureRequest();
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(procedure);
@@ -1160,7 +1161,7 @@ public class CRCControllerTest extends Mockito {
     public void procedureWrongIdentifier() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Identifier identifier = new Identifier();
         identifier.setSystem("wrong-system");
@@ -1178,7 +1179,7 @@ public class CRCControllerTest extends Mockito {
     public void operationMissingIdentifiers() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Observation observation = new Observation();
         String json = FHIR_CONTEXT.newJsonParser().encodeResourceToString(observation);
@@ -1192,7 +1193,7 @@ public class CRCControllerTest extends Mockito {
     public void operationWrongIdentifier() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Identifier identifier = new Identifier();
         identifier.setSystem("wrong-system");
@@ -1210,7 +1211,7 @@ public class CRCControllerTest extends Mockito {
     public void targetAccountNotFound() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(any())).thenReturn(null);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.empty());
         mockRequestBody(mockRequest, makeAppointment(TEST_USER_ID, BOOKED));
         mockGetLocation(LOCATION_JSON);
         
@@ -1435,7 +1436,7 @@ public class CRCControllerTest extends Mockito {
         doNothing().when(mockGBFOrderService).placeOrder(any(), eq(true));
         
         ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
-        when(mockAccountService.getAccount(accountIdCaptor.capture())).thenReturn(account);
+        when(mockAccountService.getAccount(accountIdCaptor.capture())).thenReturn(Optional.of(account));
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -1460,7 +1461,7 @@ public class CRCControllerTest extends Mockito {
         setupShippingAddress();
         
         ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
-        when(mockAccountService.getAccount(accountIdCaptor.capture())).thenReturn(account);
+        when(mockAccountService.getAccount(accountIdCaptor.capture())).thenReturn(Optional.of(account));
         
         DateRangeResourceList<? extends ReportData> results = new DateRangeResourceList<>(ImmutableList.of());
         doReturn(results).when(mockReportService).getParticipantReport(
@@ -1500,7 +1501,7 @@ public class CRCControllerTest extends Mockito {
     
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
     
-        controller.internalLabShipmentRequest(mockApp, account);
+        controller.internalLabShipmentRequest(mockApp, AccountId.forId(APP_ID, TEST_USER_ID));
     
         verify(mockGBFOrderService).placeOrder(orderCaptor.capture(),anyBoolean());
     
@@ -1535,7 +1536,7 @@ public class CRCControllerTest extends Mockito {
                 TEST_USER_GROUP
         ));
         
-        controller.internalLabShipmentRequest(mockApp, account);
+        controller.internalLabShipmentRequest(mockApp, AccountId.forId(APP_ID, TEST_USER_ID));
     
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         verify(mockGBFOrderService).placeOrder(orderCaptor.capture(),eq(true));
@@ -1555,7 +1556,7 @@ public class CRCControllerTest extends Mockito {
         account.setDataGroups(ImmutableSet.of(
         ));
         
-        controller.internalLabShipmentRequest(mockApp, account);
+        controller.internalLabShipmentRequest(mockApp, AccountId.forId(APP_ID, TEST_USER_ID));
     
         ArgumentCaptor<Order> orderCaptor = ArgumentCaptor.forClass(Order.class);
         verify(mockGBFOrderService).placeOrder(orderCaptor.capture(),eq(false));
@@ -1573,7 +1574,7 @@ public class CRCControllerTest extends Mockito {
                 SHIP_TESTS_REQUESTED.name().toLowerCase()
         ));
     
-        controller.internalLabShipmentRequest(mockApp, account);
+        controller.internalLabShipmentRequest(mockApp, AccountId.forId(APP_ID, TEST_USER_ID));
     }
     
     @Test
@@ -1674,13 +1675,13 @@ public class CRCControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder().withCallerIpAddress(IP_ADDRESS)
                 .withCallerEnrolledStudies(ImmutableSet.of("studyA", "studyB")).withCallerAppId(APP_ID).build());
         
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         when(mockSession.getAppId()).thenReturn(APP_ID);
         when(mockSession.getId()).thenReturn(TEST_USER_ID);
         
         when(mockAppService.getApp(eq(APP_ID))).thenReturn(app);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
     }
     
     private void setupShippingAddress() {
@@ -1702,7 +1703,7 @@ public class CRCControllerTest extends Mockito {
     public void getShippingConfirmation() throws Exception {
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         LocalDate startDate = LocalDate.now().minusDays(10);
         LocalDate endDate = LocalDate.now();
@@ -1725,7 +1726,7 @@ public class CRCControllerTest extends Mockito {
         AccountId accountId = AccountId.forHealthCode(APP_ID, HEALTH_CODE);
         when(mockRequest.getHeader(AUTHORIZATION)).thenReturn(AUTHORIZATION_HEADER_VALUE);
         when(mockAccountService.authenticate(any(), any())).thenReturn(account);
-        when(mockAccountService.getAccount(accountId)).thenReturn(account);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         doReturn(null).when(controller).internalLabShipmentRequest(any(), any());
         
         controller.postLabShipmentRequest("healthcode:"+HEALTH_CODE);

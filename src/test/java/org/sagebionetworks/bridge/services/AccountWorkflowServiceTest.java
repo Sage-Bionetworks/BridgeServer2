@@ -805,7 +805,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         AccountId accountId = AccountId.forPhone(TEST_APP_ID, TestConstants.PHONE);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(mockAccount));
         
         service.notifyAccountExists(app, accountId);
         
@@ -823,7 +823,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         AccountId accountId = AccountId.forId(TEST_APP_ID, USER_ID);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(mockAccount));
         
         service.notifyAccountExists(app, accountId);
         
@@ -842,7 +842,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         AccountId accountId = AccountId.forId(TEST_APP_ID, USER_ID);
         when(mockAccount.getEmail()).thenReturn(EMAIL);
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.TRUE);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(mockAccount));
         
         service.notifyAccountExists(app, accountId);
         
@@ -863,7 +863,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         when(mockAccount.getEmailVerified()).thenReturn(Boolean.FALSE);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(Boolean.FALSE);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(mockAccount));
 
         // Execute.
         service.notifyAccountExists(app, accountId);
@@ -886,7 +886,7 @@ public class AccountWorkflowServiceTest extends Mockito {
         when(mockAccount.getEmailVerified()).thenReturn(null);
         when(mockAccount.getPhone()).thenReturn(TestConstants.PHONE);
         when(mockAccount.getPhoneVerified()).thenReturn(null);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(mockAccount));
 
         // Execute.
         service.notifyAccountExists(app, accountId);
@@ -1045,7 +1045,7 @@ public class AccountWorkflowServiceTest extends Mockito {
     
     @Test
     public void requestResetPasswordQuietlyFailsForDisabledAccount() {
-        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(mockAccount));
         when(mockAccount.getStatus()).thenReturn(AccountStatus.DISABLED);
         
         service.requestResetPassword(app, false, ACCOUNT_ID_WITH_PHONE);

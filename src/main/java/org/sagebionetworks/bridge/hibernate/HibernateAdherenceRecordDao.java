@@ -8,7 +8,6 @@ import java.util.List;
 
 import javax.annotation.Resource;
 
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;

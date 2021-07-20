@@ -143,7 +143,8 @@ public class ConsentService {
         // This will throw an EntityNotFoundException if the subpopulation is not in the user's app
         subpopService.getSubpopulation(app.getIdentifier(), subpopGuid);
         
-        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId));
+        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), userId))
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         ConsentSignature signature = account.getActiveConsentSignature(subpopGuid);
         if (signature == null) {
             throw new EntityNotFoundException(ConsentSignature.class);    
@@ -182,7 +183,8 @@ public class ConsentService {
         
         // If there's a signature to the current and active consent, user cannot consent again. They can sign
         // any other consent, including more recent consents.
-        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), participant.getId()));
+        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), participant.getId()))
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         ConsentSignature active = account.getActiveConsentSignature(subpopGuid);
         if (active != null && active.getConsentCreatedOn() == studyConsent.getCreatedOn()) {
             throw new EntityAlreadyExistsException(ConsentSignature.class, null);
@@ -255,7 +257,9 @@ public class ConsentService {
     public Map<SubpopulationGuid,ConsentStatus> getConsentStatuses(CriteriaContext context) {
         checkNotNull(context);
         
-        Account account = accountService.getAccount(context.getAccountId());
+        Account account = accountService.getAccount(context.getAccountId())
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         return getConsentStatuses(context, account);
     }
     
@@ -300,7 +304,8 @@ public class ConsentService {
         checkArgument(withdrewOn > 0);
         
         Subpopulation subpop = subpopService.getSubpopulation(app.getIdentifier(), subpopGuid);
-        Account account = accountService.getAccount(context.getAccountId());
+        Account account = accountService.getAccount(context.getAccountId())
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         if(!withdrawSignatures(account, subpopGuid, withdrewOn)) {
             throw new EntityNotFoundException(ConsentSignature.class);
@@ -341,7 +346,8 @@ public class ConsentService {
         checkArgument(withdrewOn > 0);
 
         AccountId accountId = AccountId.forId(app.getIdentifier(), participant.getId());
-        Account account = accountService.getAccount(accountId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         for (SubpopulationGuid subpopGuid : account.getAllConsentSignatureHistories().keySet()) {
             if (withdrawSignatures(account, subpopGuid, withdrewOn)) {

@@ -30,6 +30,7 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -156,7 +157,7 @@ public class AppControllerTest extends Mockito {
         app.setSynapseDataAccessTeamId(TEST_TEAM_ID);
         app.setActive(true);
      
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(Account.create()));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         when(mockAppService.createSynapseProjectTeam(any(), any())).thenReturn(app);
         when(mockVerificationService.getEmailStatus(EMAIL_ADDRESS)).thenReturn(VERIFIED);

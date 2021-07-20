@@ -186,10 +186,9 @@ public class AuthenticationService {
         checkNotNull(app);
         checkNotNull(context);
 
-        Account account = accountService.getAccount(context.getAccountId());
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccount(context.getAccountId())
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         return getSessionFromAccount(app, context, account);
     }
 
@@ -408,11 +407,9 @@ public class AuthenticationService {
         }
 
         AccountId accountId = AccountId.forExternalId(app.getIdentifier(), externalId);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+                
         Enrollment en = account.getEnrollments().stream()
                 .filter(enrollment -> externalId.equals(enrollment.getExternalId()))
                 .findAny()

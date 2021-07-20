@@ -315,8 +315,8 @@ public class AccountServiceTest extends Mockito {
     public void getAccount() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);
 
-        Account returnVal = service.getAccount(ACCOUNT_ID);
-        assertEquals(returnVal, account);
+        Optional<Account> returnVal = service.getAccount(ACCOUNT_ID);
+        assertEquals(returnVal.get(), account);
         verify(mockAccountDao).getAccount(ACCOUNT_ID);
     }
 
@@ -797,9 +797,9 @@ public class AccountServiceTest extends Mockito {
     public void getByEmail() throws Exception {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
 
-        Account account = service.getAccount(ACCOUNT_ID_WITH_EMAIL);
+        Optional<Account> retValue = service.getAccount(ACCOUNT_ID_WITH_EMAIL);
 
-        assertEquals(account, persistedAccount);
+        assertEquals(retValue.get(), persistedAccount);
     }
 
     @Test
@@ -1084,8 +1084,8 @@ public class AccountServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_A)).build());
 
-        Account account = service.getAccount(ACCOUNT_ID);
-        assertEquals(persistedAccount, account);
+        Optional<Account> retValue = service.getAccount(ACCOUNT_ID);
+        assertEquals(persistedAccount, retValue.get());
         
         RequestContext.set(null);
     }
@@ -1099,8 +1099,8 @@ public class AccountServiceTest extends Mockito {
                 .withCallerUserId(OTHER_USER_ID)
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_B)).build());
 
-        Account account = service.getAccount(ACCOUNT_ID);
-        assertNull(account);
+        Optional<Account> retValue = service.getAccount(ACCOUNT_ID);
+        assertFalse(retValue.isPresent());
         
         RequestContext.set(null);
     }

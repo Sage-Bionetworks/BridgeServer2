@@ -142,7 +142,7 @@ public class ParticipantReportControllerTest extends Mockito {
         doReturn(app).when(mockAppService).getApp(TEST_APP_ID);
         doReturn(OTHER_PARTICIPANT_ID).when(mockOtherAccount).getId();
         doReturn(OTHER_PARTICIPANT_HEALTH_CODE).when(mockOtherAccount).getHealthCode();
-        doReturn(mockOtherAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
+        doReturn(Optional.of(mockOtherAccount)).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
         doReturn(HEALTH_CODE).when(mockAccount).getHealthCode();
         doReturn(TEST_USER_ID).when(mockAccount).getId();
         doReturn(session).when(controller).getSessionIfItExists();

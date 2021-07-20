@@ -22,7 +22,6 @@ import java.util.function.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import org.checkerframework.checker.units.qual.A;
 import org.hibernate.Session;
 import org.hibernate.query.NativeQuery;
 import org.joda.time.DateTime;

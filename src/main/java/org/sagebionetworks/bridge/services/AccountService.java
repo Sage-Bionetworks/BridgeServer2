@@ -312,15 +312,15 @@ public class AccountService {
      * the correct permissions to access the account. The account’s enrollments will be filtered
      * so the caller can only see the enrollments in studies they have access to.
      */
-    public Account getAccount(AccountId accountId) {
+    public Optional<Account> getAccount(AccountId accountId) {
         checkNotNull(accountId);
 
         Optional<Account> optional = accountDao.getAccount(accountId);
         if (optional.isPresent()) {
             // filtering based on the study associations of the caller.
-            return filterForStudy(optional.get());
+            return Optional.ofNullable( filterForStudy(optional.get()) );
         }
-        return null;
+        return Optional.empty();
     }
     
     /**

@@ -328,9 +328,9 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void filterForStudyAccountNoContextNoStudyDoesNotReturnAccount() {
-        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
-        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
+    public void filterForStudyAccountNoContextReturnsAccount() {
+        RequestContext.set(RequestContext.NULL_INSTANCE);
+        assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
     }
     
     @Test

@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.testng.Assert.assertEquals;
 
+import java.util.Optional;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -81,7 +82,7 @@ public class CacheAdminControllerTest extends Mockito {
     @Test
     public void listItems() throws Exception {
         session.setAppId(TEST_APP_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(Account.create()));
         
         Set<String> items = ImmutableSet.of("A", "B", "C");
         when(mockCacheAdminService.listItems()).thenReturn(items);
@@ -108,7 +109,7 @@ public class CacheAdminControllerTest extends Mockito {
     @Test
     public void removeItem() throws Exception {
         session.setAppId(TEST_APP_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(Account.create()));
         
         StatusMessage result = controller.removeItem("cacheKey");
         assertEquals("Item removed from cache.", result.getMessage());

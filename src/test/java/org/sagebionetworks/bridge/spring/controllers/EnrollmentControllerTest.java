@@ -18,6 +18,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+import java.util.Optional;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -40,13 +41,11 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.hibernate.HibernateEnrollment;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
@@ -190,7 +189,7 @@ public class EnrollmentControllerTest extends Mockito {
         Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, "externalId");
         Set<Enrollment> enrollments = Sets.newHashSet(en1);
         when(mockAccount.getEnrollments()).thenReturn(enrollments);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(mockAccount));
         
         mockEditAccount(mockAccountService, mockAccount);
         
@@ -220,7 +219,7 @@ public class EnrollmentControllerTest extends Mockito {
         Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, "externalId");
         Set<Enrollment> enrollments = Sets.newHashSet(en1);
         when(mockAccount.getEnrollments()).thenReturn(enrollments);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(mockAccount));
         
         mockEditAccount(mockAccountService, mockAccount);
         

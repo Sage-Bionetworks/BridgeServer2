@@ -230,10 +230,9 @@ public class AccountsController extends BaseController  {
      */
     public Account verifyOrgAdminIsActingOnOrgMember(UserSession session, String userIdToken) {
         AccountId accountId = parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+                
         if (session.isInRole(ADMIN_ROLES)) {
             return account;
         }

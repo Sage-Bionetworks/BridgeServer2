@@ -107,6 +107,9 @@ public class AuthEvaluator {
         predicates.add((factMap) -> {
             String userId = factMap.get(USER_ID);
             String callerUserId = RequestContext.get().getCallerUserId();
+            // Calls like signUp happen without a session so there is no caller user ID in the 
+            // request context. In this case, we allow this test to pass. This removes some 
+            // special case code elsewhere in the system that ultimately isn’t verifying anything.
             return callerUserId == null || callerUserId.equals(userId);
         });
         return this;
