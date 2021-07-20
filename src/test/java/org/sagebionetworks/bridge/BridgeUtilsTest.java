@@ -327,10 +327,11 @@ public class BridgeUtilsTest {
         assertNull(BridgeUtils.filterForStudy((Account)null));
     }
     
-    // filterForStudyAccountNoContextNoStudyDoesNotReturnAccount deleted because it’s testing
-    // a scenario we don’t need to support—a non-public call where we haven’t set a context.
-    // If you request a session in the controller...there’s a context with the caller’s 
-    // identity.
+    @Test
+    public void filterForStudyAccountNoContextReturnsAccount() {
+        RequestContext.set(RequestContext.NULL_INSTANCE);
+        assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
+    }
     
     @Test
     public void filterForStudyAccountNoContextWithStudyDoesNotReturnAccount() {

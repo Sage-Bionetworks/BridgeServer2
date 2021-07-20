@@ -575,7 +575,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void getPagedRemovesStudiesNotInCaller() throws Exception {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(TEST_USER_ID)
+                .withCallerUserId(TEST_USER_ID) // it's not the same as ACCOUNT_I
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_A)).build());
         
