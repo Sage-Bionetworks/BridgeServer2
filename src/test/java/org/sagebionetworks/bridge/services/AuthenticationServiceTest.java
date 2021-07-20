@@ -141,9 +141,10 @@ public class AuthenticationServiceTest {
     private static final CriteriaContext CONTEXT = new CriteriaContext.Builder()
             .withAppId(TEST_APP_ID).build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withId(USER_ID).build();
-    private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, USER_ID);
     private static final String EXTERNAL_ID = "ext-id";
     private static final String HEALTH_CODE = "health-code";
+    private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, USER_ID);
+    private static final AccountId ACCOUNT_ID_WITH_HEALTHCODE = AccountId.forHealthCode(TEST_APP_ID, HEALTH_CODE);
 
     private static final StudyParticipant PARTICIPANT_WITH_ATTRIBUTES = new StudyParticipant.Builder().withId(USER_ID)
             .withHealthCode(HEALTH_CODE).withDataGroups(DATA_GROUP_SET).withStudyIds(TestConstants.USER_STUDY_IDS)
@@ -977,12 +978,12 @@ public class AuthenticationServiceTest {
         doReturn(mockAccount).when(accountService).getAccount(any());
         
         // No languages.
-        StudyParticipant participant = new StudyParticipant.Builder().withId(USER_ID).build();
+        StudyParticipant participant = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build();
         doReturn(participant).when(participantService).getParticipant(app, mockAccount, false);
         
         service.getSession(app, context);
         
-        verify(accountService).editAccount(eq(ACCOUNT_ID), any());
+        verify(accountService).editAccount(eq(ACCOUNT_ID_WITH_HEALTHCODE), any());
         verify(mockAccount).setLanguages(ImmutableList.copyOf(LANGUAGES));
     }
 
@@ -1443,7 +1444,7 @@ public class AuthenticationServiceTest {
         when(accountService.authenticate(app, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
-                .withId(USER_ID).build();
+                .withHealthCode(HEALTH_CODE).build();
         
         when(participantService.getParticipant(app, account, false)).thenReturn(participant);
         when(consentService.getConsentStatuses(any(), any())).thenReturn(CONSENTED_STATUS_MAP);
@@ -1457,7 +1458,7 @@ public class AuthenticationServiceTest {
         assertEquals(session.getParticipant().getLanguages(), TestConstants.LANGUAGES);
         
         // Note that the context does not have the healthCode, you must use the participant
-        verify(accountService).editAccount(eq(ACCOUNT_ID), any());
+        verify(accountService).editAccount(eq(ACCOUNT_ID_WITH_HEALTHCODE), any());
    }
     
    @Test

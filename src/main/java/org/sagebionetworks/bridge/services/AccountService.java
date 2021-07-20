@@ -298,11 +298,11 @@ public class AccountService {
     public void editAccount(AccountId accountId, Consumer<Account> accountEdits) {
         checkNotNull(accountId);
         
-        Account account = accountDao.getAccount(accountId).orElse(null);
-        if (account != null) {
-            accountEdits.accept(account);
-            accountDao.updateAccount(account);
-        }
+        Account account = accountDao.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        accountEdits.accept(account);
+        accountDao.updateAccount(account);
     }
     
     /**

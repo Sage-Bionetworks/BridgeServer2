@@ -59,13 +59,7 @@ public class EmailController extends BaseController {
                 throw new BadRequestException("Email not found.");
             }
             
-            // This should always return an ID under normal circumstances. We could eliminate
-            // this and just call editAccount but there would be no bad request if the email
-            // is invalid.
-            String userId = accountService.getAccountId(app.getIdentifier(), "email:"+email)
-                    .orElseThrow(() -> new BadRequestException("Email not found."));
-
-            AccountId accountId = AccountId.forId(app.getIdentifier(), userId);
+            AccountId accountId = AccountId.forEmail(app.getIdentifier(), email);
             accountService.editAccount(accountId, account -> account.setNotifyByEmail(false));
             
             return "You have been unsubscribed from future email.";

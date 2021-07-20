@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID_WITH_HEALTHCODE;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_TOKEN;
 import static org.sagebionetworks.bridge.TestConstants.SIGNATURE;
@@ -164,7 +165,7 @@ public class ConsentControllerTest extends Mockito {
         UserSession retrievedSession = BridgeObjectMapper.get().treeToValue(result, UserSession.class);
         assertEquals(retrievedSession.getSessionToken(), ORIGINAL_SESSION_TOKEN);
         
-        verify(mockAccountService).editAccount(eq(TestConstants.ACCOUNT_ID), accountConsumerCaptor.capture());
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID_WITH_HEALTHCODE), accountConsumerCaptor.capture());
         verify(mockSessionUpdateService).updateSharingScope(session, SharingScope.ALL_QUALIFIED_RESEARCHERS);
         
         // This works as a verification because the lambda carries a closure that includes the correct sharing 
@@ -399,7 +400,7 @@ public class ConsentControllerTest extends Mockito {
 
         verify(account).setSharingScope(SharingScope.NO_SHARING);
         
-        verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
+        verify(mockAccountService).editAccount(eq(ACCOUNT_ID_WITH_HEALTHCODE), any());
     }
     
     @Test

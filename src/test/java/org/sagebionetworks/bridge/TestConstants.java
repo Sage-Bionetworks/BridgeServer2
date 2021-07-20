@@ -64,6 +64,7 @@ public class TestConstants {
     public static final String MOCK_MD5_HEX_ENCODED = "980ae2db198f5cf7458ad2a90bf226c3";
 
     public static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+    public static final AccountId ACCOUNT_ID_WITH_HEALTHCODE = AccountId.forHealthCode(TEST_APP_ID, HEALTH_CODE);
     public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
             .withUserId("user-id").withAppId(TEST_APP_ID).build();
 

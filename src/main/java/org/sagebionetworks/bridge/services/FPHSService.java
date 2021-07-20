@@ -41,9 +41,9 @@ public class FPHSService {
         fphsDao.verifyExternalId(externalId);
     }
 
-    public void registerExternalIdentifier(String appId, String userId, ExternalIdentifier externalId) {
+    public void registerExternalIdentifier(String appId, String healthCode, ExternalIdentifier externalId) {
         checkNotNull(appId);
-        checkNotNull(userId);
+        checkNotNull(healthCode);
         checkNotNull(externalId);
         
         if (isBlank(externalId.getIdentifier())) {
@@ -53,7 +53,7 @@ public class FPHSService {
         
         fphsDao.registerExternalId(externalId);
 
-        AccountId accountId = AccountId.forId(appId, userId);
+        AccountId accountId = AccountId.forHealthCode(appId, healthCode);
         accountService.editAccount(accountId, account -> {
             Enrollment enrollment = Enrollment.create(appId, "harvard", account.getId(), externalId.getIdentifier());
             account.getDataGroups().add("football_player");

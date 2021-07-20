@@ -130,15 +130,7 @@ public class EmailControllerTest extends Mockito {
         assertEquals(result, "Email not found.");
     }
 
-    @Test
-    public void noAccountThrowsException() throws Exception {
-        mockContext(DATA_BRACKET_EMAIL, EMAIL_ADDRESS, STUDY, TEST_APP_ID, TOKEN, UNSUBSCRIBE_TOKEN);
-        doReturn(Optional.empty()).when(mockAccountService)
-            .getAccountId(TEST_APP_ID, "email:"+EMAIL_ADDRESS);
-
-        String result = controller.unsubscribeFromEmail();
-        assertEquals(result, "Email not found.");
-    }
+    // noAccountThrowsException is now handled by the call to editAccount
 
     @Test
     public void missingTokenThrowsException() throws Exception {

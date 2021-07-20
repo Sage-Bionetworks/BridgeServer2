@@ -201,23 +201,7 @@ public class EnrollmentControllerTest extends Mockito {
         assertEquals(enrollments.size(), 1);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void updateUserEnrollmentsAccountNotFound() throws Exception {
-        UserSession session = new UserSession();
-        session.setAppId(TEST_APP_ID);
-        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
-        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
-
-        Enrollment newEnrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", TEST_USER_ID);
-        mockRequestBody(mockRequest, ImmutableSet.of(EnrollmentMigration.create(newEnrollment)));
-        
-        AccountService mockAccountService = mock(AccountService.class);
-        controller.setAccountService(mockAccountService);
-        
-        when(mockAccountService.getAccount(any())).thenReturn(null);
-        
-        controller.updateUserEnrollments(TEST_USER_ID);
-    }
+    // updateUserEnrollmentsAccountNotFound now happens in the accountService.editAccount
     
     @Test
     public void updateUserEnrollmentsRemovingAll() throws Exception {

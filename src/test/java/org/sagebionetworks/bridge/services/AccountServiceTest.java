@@ -304,9 +304,12 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void editAccountWhenAccountNotFound() throws Exception {
-        AccountId accountId = AccountId.forId(TEST_APP_ID, "bad-user-id");
-        service.editAccount(accountId, mockConsumer);
-
+        try {
+            AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, "bad-health-code");
+            service.editAccount(accountId, mockConsumer);    
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
         verify(mockConsumer, never()).accept(any());
     }
 
