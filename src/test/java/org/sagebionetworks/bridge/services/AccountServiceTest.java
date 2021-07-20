@@ -6,6 +6,7 @@ import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -57,6 +58,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
@@ -294,8 +296,7 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void editAccount() throws Exception {
-        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-        Account account = mockGetAccountById(accountId, false);
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
 
         service.editAccount(ACCOUNT_ID, mockConsumer);
 
