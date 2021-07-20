@@ -47,6 +47,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
@@ -201,22 +202,7 @@ public class EnrollmentControllerTest extends Mockito {
         assertEquals(enrollments.size(), 1);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void updateUserEnrollmentsAccountNotFound() throws Exception {
-        UserSession session = new UserSession();
-        session.setAppId(TEST_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
-
-        Enrollment newEnrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", TEST_USER_ID);
-        mockRequestBody(mockRequest, ImmutableSet.of(EnrollmentMigration.create(newEnrollment)));
-        
-        AccountService mockAccountService = mock(AccountService.class);
-        controller.setAccountService(mockAccountService);
-        
-        when(mockAccountService.getAccount(any())).thenReturn(Optional.empty());
-        
-        controller.updateUserEnrollments(TEST_USER_ID);
-    }
+    // updateUserEnrollmentsAccountNotFound now happens in the accountService.editAccount
     
     @Test
     public void updateUserEnrollmentsRemovingAll() throws Exception {

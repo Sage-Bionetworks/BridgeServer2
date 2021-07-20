@@ -1020,7 +1020,7 @@ public class StudyParticipantControllerTest extends Mockito {
                 .build());
         
         AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
-        when(mockAccountService.getAccount(accountId)).thenReturn(null);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.empty());
         
         controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }    

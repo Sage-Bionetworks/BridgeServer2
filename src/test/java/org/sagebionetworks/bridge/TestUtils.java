@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
@@ -41,7 +42,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import com.google.common.collect.Maps;
 
@@ -273,10 +273,10 @@ public class TestUtils {
         Mockito.mockingDetails(mockAccountService).isMock();
         Mockito.mockingDetails(mockAccount).isMock();
         doAnswer(invocation -> {
-            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgument(2);
+            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgument(1);
             accountEdits.accept(mockAccount);
             return null;
-        }).when(mockAccountService).editAccount(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any());
+        }).when(mockAccountService).editAccount(any(), any());
     }
 
     public static void assertDatesWithTimeZoneEqual(DateTime date1, DateTime date2) {

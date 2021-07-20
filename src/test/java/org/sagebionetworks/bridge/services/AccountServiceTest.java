@@ -45,7 +45,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -96,7 +95,6 @@ public class AccountServiceTest extends Mockito {
     private static final String STUDY_B = "studyB";
     private static final Set<Enrollment> ACCOUNT_ENROLLMENTS = ImmutableSet
             .of(Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID));
-    private static final ImmutableSet<String> CALLER_STUDIES = ImmutableSet.of(STUDY_B);    
     
     private static final SignIn PASSWORD_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(DUMMY_PASSWORD).build();
@@ -295,22 +293,22 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void editAccount() throws Exception {
-        AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, HEALTH_CODE);
-        Account account = mockGetAccountById(accountId, false);
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
 
-        service.editAccount(TEST_APP_ID, HEALTH_CODE, mockConsumer);
+        service.editAccount(ACCOUNT_ID, mockConsumer);
 
-        InOrder inOrder = inOrder(mockConsumer, mockAccountDao);
-        inOrder.verify(mockConsumer).accept(account);
-        inOrder.verify(mockAccountDao).updateAccount(account);
+        verify(mockConsumer).accept(account);
     }
 
     @Test
     public void editAccountWhenAccountNotFound() throws Exception {
-        service.editAccount(TEST_APP_ID, "bad-health-code", mockConsumer);
-
+        try {
+            AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, "bad-health-code");
+            service.editAccount(accountId, mockConsumer);    
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
         verify(mockConsumer, never()).accept(any());
-        verify(mockAccountDao, never()).updateAccount(any());
     }
 
     @Test
@@ -1072,9 +1070,10 @@ public class AccountServiceTest extends Mockito {
         // execute and verify - Verify just ID, app, and email, and health code mapping is enough. 
         service.authenticate(app, phoneSignIn);
     }
-    
-    // editAccountFailsAcrossStudies removed because editAccount is now the preferred way
-    // for the system to update the accounts table, avoiding security checks.
+
+    // The editAccountFailsAcrossStudies test was removed because editAccount no longer enforces 
+    // authorization checks. It's intended to be used internally, not as a result of a direct
+    // operation by an API caller.
     
     @Test
     public void getAccountMatchesStudies() throws Exception {
