@@ -1113,7 +1113,7 @@ public class AccountServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_B)).build());
 
-        Optional<Account> account = service.getAccountNoFilter(ACCOUNT_ID);
+        Optional<Account> account = service.getAccount(ACCOUNT_ID);
         assertTrue(account.isPresent());
         
         RequestContext.set(null);

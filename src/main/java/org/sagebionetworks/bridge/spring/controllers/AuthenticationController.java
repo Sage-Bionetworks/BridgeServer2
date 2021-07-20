@@ -342,20 +342,23 @@ public class AuthenticationController extends BaseController {
             throw new BadRequestException("Account has not been assigned a Synapse user ID");
         }
         
-        AccountId accountId = AccountId.forSynapseUserId(targetAppId, participant.getSynapseUserId());
-        Account account = accountService.getAccountNoFilter(accountId)
+        String userId = accountService.getAccountId(targetAppId, "synapseuserid:"+participant.getSynapseUserId())
                 .orElseThrow(() -> new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG));
         
         // Make the switch
         authenticationService.signOut(session);
         
-        // RequestContext reqContext = BridgeUtils.getRequestContext();
         CriteriaContext context = new CriteriaContext.Builder()
-            .withUserId(account.getId())
+            .withUserId(userId)
             .withAppId(targetApp.getIdentifier())
             .build();
         
-        RequestContext.set(RequestContext.get().toBuilder().withCallerUserId(account.getId()).build());
+        RequestContext.set(RequestContext.get().toBuilder().withCallerUserId(userId).build());
+
+        // It should be impossible to get an exception here as we just checked the account...
+        AccountId accountId = AccountId.forId(targetAppId, userId);
+        Account account = accountService.getAccount(accountId)
+              .orElseThrow(() -> new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG));
         
         UserSession newSession = authenticationService.getSessionFromAccount(targetApp, context, account);
         cacheProvider.setUserSession(newSession);
