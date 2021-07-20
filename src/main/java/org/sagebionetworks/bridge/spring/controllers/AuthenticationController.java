@@ -353,6 +353,7 @@ public class AuthenticationController extends BaseController {
             .withAppId(targetApp.getIdentifier())
             .build();
         
+        // In this one case, the caller’s ID changes during an authenticated request.
         RequestContext.set(RequestContext.get().toBuilder().withCallerUserId(userId).build());
 
         // It should be impossible to get an exception here as we just checked the account...

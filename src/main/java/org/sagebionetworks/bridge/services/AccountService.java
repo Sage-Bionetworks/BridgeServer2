@@ -320,14 +320,6 @@ public class AccountService {
             return Optional.empty();
         }
         return optional;
-        /*
-        Optional<Account> optional = accountDao.getAccount(accountId);
-        if (optional.isPresent()) {
-            // filtering based on the study associations of the caller.
-            return Optional.ofNullable( filterForStudy(optional.get()) );
-        }
-        return Optional.empty();
-        */
     }
     
     /**
