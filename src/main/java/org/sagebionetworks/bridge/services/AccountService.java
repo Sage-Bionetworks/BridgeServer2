@@ -304,7 +304,7 @@ public class AccountService {
         if (account != null) {
             accountEdits.accept(account);
             accountDao.updateAccount(account);
-        }        
+        }
     }
     
     /**

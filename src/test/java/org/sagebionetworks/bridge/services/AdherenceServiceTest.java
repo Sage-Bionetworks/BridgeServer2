@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -681,6 +682,82 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(update.getClientTimeZone(), "America/Los_Angeles");
         assertEquals(update.getStartedOn(), STARTED_ON);
         assertEquals(update.getFinishedOn(), FINISHED_ON);
+    }
+
+    @Test
+    public void deleteAdherenceRecord_persistentTimeWindow() {
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setTimeWindowPersistent(true);
+
+        when(mockScheduleService.getTimelineMetadata(any())).thenReturn(Optional.of(timelineMetadata));
+
+        service.deleteAdherenceRecord(record);
+
+        verify(mockDao).deleteAdherenceRecordPermanently(eq(record));
+        assertEquals(record.getInstanceTimestamp(), record.getStartedOn());
+    }
+
+    @Test
+    public void deleteAdherenceRecord_notPersistentTimeWindow() {
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        TimelineMetadata timelineMetadata = new TimelineMetadata();
+        timelineMetadata.setTimeWindowPersistent(false);
+
+        when(mockScheduleService.getTimelineMetadata(any())).thenReturn(Optional.of(timelineMetadata));
+
+        service.deleteAdherenceRecord(record);
+
+        verify(mockDao).deleteAdherenceRecordPermanently(eq(record));
+        assertEquals(record.getInstanceTimestamp(), record.getEventTimestamp());
+    }
+
+    @Test
+    public void deleteAdherenceRecord_missingMetadata() {
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        when(mockScheduleService.getTimelineMetadata(any())).thenReturn(Optional.empty());
+
+        service.deleteAdherenceRecord(record);
+
+        verifyZeroInteractions(mockDao);
+        assertNull(record.getInstanceTimestamp());
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void deleteAdherenceRecord_notAuthorized() {
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
+        service.deleteAdherenceRecord(record);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void deleteAdherenceRecord_missingEventTimestamp() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
+        record.setEventTimestamp(null);
+
+        service.deleteAdherenceRecord(record);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void deleteAdherenceRecord_missingStartedOnTimestamp() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        AdherenceRecord record = ar(STARTED_ON, FINISHED_ON, "fake-guid", false);
+        record.setStartedOn(null);
+
+        service.deleteAdherenceRecord(record);
     }
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {

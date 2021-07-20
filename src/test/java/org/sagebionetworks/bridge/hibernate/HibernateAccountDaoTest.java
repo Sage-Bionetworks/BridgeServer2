@@ -891,7 +891,7 @@ public class HibernateAccountDaoTest extends Mockito {
     @Test
     public void unmarshallAccountSummaryFiltersStudies() throws Exception {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(TEST_USER_ID)
+                .withCallerUserId(TEST_USER_ID) // it's not the same as ACCOUNT_ID
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of("studyB", "studyC")).build());
 

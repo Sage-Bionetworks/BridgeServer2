@@ -43,6 +43,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 
 public class AuthUtilsTest extends Mockito {
     private static final String SHARED_OWNER_ID = TEST_APP_ID + ":" + TEST_OWNER_ID;
+    private static final String OTHER_USER_ID = "otherUserId";
     
     @AfterMethod
     public void afterMethod() {
@@ -78,7 +79,7 @@ public class AuthUtilsTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void canEditEnrollmentsFailsForNonStudyCoordinator() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("study-coordinator-id")
+                .withCallerUserId(OTHER_USER_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of("someOtherStudy"))
                 .build());
@@ -89,7 +90,7 @@ public class AuthUtilsTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void canEditEnrollmentsFailsForDev() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("dev-id")
+                .withCallerUserId(OTHER_USER_ID)
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
@@ -449,7 +450,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canReadStudyAssociationsFails() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("some-other-id")
+                .withCallerUserId(OTHER_USER_ID)
                 .build());
         
         assertFalse( CAN_READ_STUDY_ASSOCIATIONS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID) );
@@ -458,7 +459,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canReadParticipantsFails() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("some-other-id")
+                .withCallerUserId(OTHER_USER_ID)
                 .build());
         
         assertFalse( CAN_READ_PARTICIPANTS.check(ORG_ID, TEST_ORG_ID, USER_ID, TEST_USER_ID) );
