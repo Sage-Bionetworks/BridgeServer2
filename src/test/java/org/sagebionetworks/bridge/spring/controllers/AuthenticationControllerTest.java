@@ -1235,9 +1235,13 @@ public class AuthenticationControllerTest extends Mockito {
                 .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(DEVELOPER, ADMIN)).build());
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
+        AccountId accountId = AccountId.forId("my-new-study", TEST_ACCOUNT_ID);
+        when(mockAccountService.getAccountId("my-new-study", "synapseuserid:"+SYNAPSE_USER_ID))
+            .thenReturn(Optional.of(TEST_ACCOUNT_ID));
+        
         Account account = Account.create();
-        AccountId accountId = AccountId.forSynapseUserId("my-new-study", SYNAPSE_USER_ID);
-        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(accountId))
+            .thenReturn(Optional.of(account));
         
         App newApp = App.create();
         newApp.setIdentifier("my-new-study");

@@ -1681,7 +1681,7 @@ public class ParticipantControllerTest extends Mockito {
         account.setEmailVerified(true);
         account.setPhone(PHONE);
         account.setPhoneVerified(true);
-        when(mockAccountService.getAccountNoFilter(any())).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
         
         StatusMessage retValue = controller.sendInstallLink(TEST_USER_ID, "Android");
         assertSame(retValue, INSTALL_LINK_SEND_MSG);
@@ -1700,7 +1700,7 @@ public class ParticipantControllerTest extends Mockito {
         account.setHealthCode(HEALTH_CODE);
         account.setEmail(EMAIL);
         account.setPhone(PHONE);
-        when(mockAccountService.getAccountNoFilter(any())).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
         
         StatusMessage retValue = controller.sendInstallLink(TEST_USER_ID, null);
         assertSame(retValue, INSTALL_LINK_SEND_MSG);

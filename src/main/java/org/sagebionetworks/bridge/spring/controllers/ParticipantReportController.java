@@ -131,7 +131,7 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAdministrativeSession();
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         return getParticipantReportInternal(session.getAppId(), account.getId(), account.getHealthCode(), identifier,
@@ -147,7 +147,7 @@ public class ParticipantReportController extends BaseController {
         getAuthenticatedSession(WORKER);
         
         AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
             .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         return getParticipantReportInternal(appId, account.getId(), account.getHealthCode(), reportId, startDate, endDate);
@@ -170,7 +170,7 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAdministrativeSession();
 
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         return getParticipantReportInternalV4(session.getAppId(), account.getId(), account.getHealthCode(), identifier,
@@ -187,7 +187,7 @@ public class ParticipantReportController extends BaseController {
         getAuthenticatedSession(WORKER);
         
         AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         return getParticipantReportInternalV4(appId, account.getId(), account.getHealthCode(), reportId, startTime,
@@ -216,7 +216,7 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_COORDINATOR);
 
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         ReportData reportData = parseJson(ReportData.class);
@@ -265,7 +265,7 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, WORKER);
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         reportService.deleteParticipantReport(session.getAppId(), account.getId(), identifier, account.getHealthCode());
@@ -282,7 +282,7 @@ public class ParticipantReportController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, WORKER);
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         reportService.deleteParticipantReportRecord(session.getAppId(), null, identifier, date, account.getHealthCode());

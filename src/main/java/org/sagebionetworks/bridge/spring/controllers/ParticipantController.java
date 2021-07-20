@@ -530,7 +530,7 @@ public class ParticipantController extends BaseController {
         CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
 
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         App app = appService.getApp(session.getAppId());

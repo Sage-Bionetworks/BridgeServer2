@@ -125,7 +125,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 public class ParticipantServiceTest extends Mockito {
     private static final DateTime ACTIVITIES_RETRIEVED_DATETIME = DateTime.parse("2019-08-01T18:32:36.487-0700");
@@ -887,25 +886,8 @@ public class ParticipantServiceTest extends Mockito {
         participantService.getParticipant(APP, "externalId:some-junk", false);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getParticiantAccountFilteredOutByStudyAssocation() {
-        when(participantService.getAccount()).thenReturn(account);
-        when(participantService.generateGUID()).thenReturn(ID);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
-
-        // Account is in studyA
-        account.setAppId(APP.getIdentifier());
-        account.setId(ID);
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ID, "externalIdA");
-        account.setEnrollments(Sets.newHashSet(en1));
-        
-        // The caller is not in studyA
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("callerUserId")
-                .withOrgSponsoredStudies(ImmutableSet.of("studyB")).build());
-        
-        participantService.getParticipant(APP, ID, true);
-    }
+    // getParticiantAccountFilteredOutByStudyAssocation removed because all accounts are
+    // now filtered in AccountService, and only in AccountService.
     
     @Test
     public void getSelfParticipantWithHistory() throws Exception {

@@ -43,6 +43,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -155,7 +156,7 @@ public class EnrollmentServiceTest extends Mockito {
         AccountId accountId = AccountId.forExternalId(TEST_APP_ID, "extId");
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         List<EnrollmentDetail> details = ImmutableList.of();
         when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID)).thenReturn(details);
@@ -170,7 +171,7 @@ public class EnrollmentServiceTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getEnrollmentsForUserNotFound() {
         AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-        when(mockAccountService.getAccountNoFilter(accountId)).thenReturn(Optional.empty());
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.empty());
         
         service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
@@ -187,8 +188,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(otherStudy));
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
-            .thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         DateTime timestamp = DateTime.now();
         
@@ -219,8 +219,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
-            .thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
 
@@ -239,8 +238,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
-            .thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
 
@@ -257,8 +255,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
-            .thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
 
@@ -275,12 +272,13 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         Enrollment otherStudy = Enrollment.create(TEST_APP_ID, "otherStudy", TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(existing, otherStudy));
         
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+        when(mockAccountService.getAccount(ACCOUNT_ID))
             .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
@@ -293,6 +291,9 @@ public class EnrollmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        doThrow(new EntityNotFoundException(Account.class))
+            .when(mockAccountService).editAccount(any(), any());
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setExternalId("extId");
@@ -308,6 +309,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment unrelatedEnrollment = Enrollment.create(TEST_APP_ID, "someOtherStudy", TEST_USER_ID);
         
@@ -316,7 +318,7 @@ public class EnrollmentServiceTest extends Mockito {
         existing.setWithdrawnOn(MODIFIED_ON);
         account.setEnrollments(Sets.newHashSet(unrelatedEnrollment, existing));
         
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+        when(mockAccountService.getAccount(ACCOUNT_ID))
             .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
@@ -343,7 +345,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID))
+        when(mockAccountService.getAccount(ACCOUNT_ID))
             .thenReturn(Optional.of(account));
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
@@ -388,7 +390,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(otherStudy, existing));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setWithdrawnOn(MODIFIED_ON.minusHours(1));
@@ -399,8 +401,8 @@ public class EnrollmentServiceTest extends Mockito {
         assertNull(retValue.getWithdrawnBy());
         assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
 
-        verify(mockAccountService).updateAccount(accountCaptor.capture());
-        Enrollment captured = Iterables.getLast(accountCaptor.getValue().getEnrollments(), null);
+        verify(mockAccountService).editAccount(any(), any());
+        Enrollment captured = Iterables.getLast(account.getEnrollments(), null);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(captured.getWithdrawnBy());
         assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");        
@@ -416,7 +418,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(existing));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setWithdrawalNote("Withdrawal reason");
@@ -424,8 +426,8 @@ public class EnrollmentServiceTest extends Mockito {
         Enrollment retValue = service.unenroll(enrollment);
         assertEquals(retValue.getWithdrawnOn(), MODIFIED_ON);
 
-        verify(mockAccountService).updateAccount(accountCaptor.capture());
-        Enrollment captured = Iterables.getLast(accountCaptor.getValue().getEnrollments(), null);
+        verify(mockAccountService).editAccount(any(), any());
+        Enrollment captured = Iterables.getLast(account.getEnrollments(), null);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON);
     }
     
@@ -440,7 +442,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(existing));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setWithdrawnOn(MODIFIED_ON);
@@ -451,8 +453,8 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(retValue.getWithdrawnBy(), "adminUser");
         assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
 
-        verify(mockAccountService).updateAccount(accountCaptor.capture());
-        Enrollment captured = Iterables.getFirst(accountCaptor.getValue().getEnrollments(), null);
+        verify(mockAccountService).editAccount(any(), any());
+        Enrollment captured = Iterables.getFirst(account.getEnrollments(), null);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON);
         assertEquals(captured.getWithdrawnBy(), "adminUser");
         assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");
@@ -472,7 +474,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(existing));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setWithdrawnOn(MODIFIED_ON);
@@ -483,8 +485,8 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(retValue.getWithdrawnBy(), "adminUser");
         assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
 
-        verify(mockAccountService).updateAccount(accountCaptor.capture());
-        Enrollment captured = Iterables.getFirst(accountCaptor.getValue().getEnrollments(), null);
+        verify(mockAccountService).editAccount(any(), any());
+        Enrollment captured = Iterables.getFirst(account.getEnrollments(), null);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON);
         assertEquals(captured.getWithdrawnBy(), "adminUser");
         assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");
@@ -497,7 +499,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.unenroll(enrollment);
@@ -509,13 +511,13 @@ public class EnrollmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
+        doThrow(new EntityNotFoundException(Account.class))
+            .when(mockAccountService).editAccount(any(), any());
+        
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.unenroll(enrollment);
     }
     
-    // TODO: Should this throw an exception, or not? I think during  migration it cannot.
-//    @Test(expectedExceptions = EntityAlreadyExistsException.class, 
-//            expectedExceptionsMessageRegExp = "Participant is already withdrawn from study.")
     @Test
     public void unenrollAlreadyExistsButIsWithdrawn() {
         RequestContext.set(new RequestContext.Builder()
@@ -527,7 +529,7 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(existing));
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.unenroll(enrollment);
@@ -541,7 +543,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.unenroll(enrollment);
@@ -557,7 +559,7 @@ public class EnrollmentServiceTest extends Mockito {
 
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        TestUtils.mockEditAccount(mockAccountService, account);
 
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.unenroll(enrollment);

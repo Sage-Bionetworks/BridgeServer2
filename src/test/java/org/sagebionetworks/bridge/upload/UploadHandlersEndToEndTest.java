@@ -300,7 +300,7 @@ public class UploadHandlersEndToEndTest {
         account.setEnrollments(ImmutableSet.of(enrollment));
 
         AccountService mockAccountService = mock(AccountService.class);
-        when(mockAccountService.getAccountNoFilter(any())).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
 
         ParticipantService mockParticipantService = mock(ParticipantService.class);
         when(mockParticipantService.getStudyStartTime(any())).thenReturn(STUDY_START_TIME);
