@@ -139,7 +139,7 @@ public class StudyActivityEventService {
         checkNotNull(userId);
         checkNotNull(studyId);
 
-        Account account = accountService.getAccountNoFilter(AccountId.forId(appId, userId))
+        Account account = accountService.getAccount(AccountId.forId(appId, userId))
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         List<StudyActivityEvent> events = dao.getRecentStudyActivityEvents(userId, studyId);
@@ -167,7 +167,7 @@ public class StudyActivityEventService {
         if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         App app = appService.getApp(accountId.getAppId());

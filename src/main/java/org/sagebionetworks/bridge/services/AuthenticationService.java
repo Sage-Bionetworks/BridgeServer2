@@ -207,7 +207,7 @@ public class AuthenticationService {
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
         if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
             AccountId accountId = AccountId.forId(app.getIdentifier(), account.getId());
-            account = accountService.getAccountNoFilter(accountId)
+            account = accountService.getAccount(accountId)
                     .orElseThrow(() -> new EntityNotFoundException(Account.class));
             session = getSessionFromAccount(app, context, account);
         }
@@ -260,7 +260,7 @@ public class AuthenticationService {
     public void signOut(final UserSession session) {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
-            Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+            Account account = accountService.getAccount(accountId).orElse(null);
             if (account != null) {
                 accountService.deleteReauthToken(account);
                 // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
@@ -282,7 +282,7 @@ public class AuthenticationService {
             // For apps that create accounts prior to calling sign up from the app (which happens), check and if 
             // the account with this external ID already exists, return quietly.
             AccountId accountId = AccountId.forExternalId(app.getIdentifier(), participant.getExternalId());
-            Account account = accountService.getAccountNoFilter(accountId).orElse(null); 
+            Account account = accountService.getAccount(accountId).orElse(null); 
             if (account != null) {
                 return new IdentifierHolder(account.getId());
             }
@@ -441,7 +441,7 @@ public class AuthenticationService {
         }
 
         AccountId accountId = signIn.getAccountId();
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         if (account.getStatus() == AccountStatus.DISABLED) {
@@ -471,7 +471,7 @@ public class AuthenticationService {
 
             // Check intent to participate.
             if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
-                account = accountService.getAccountNoFilter(accountId)
+                account = accountService.getAccount(accountId)
                         .orElseThrow(() -> new EntityNotFoundException(Account.class));
                 session = getSessionFromAccount(app, context, account);
             }
@@ -564,7 +564,7 @@ public class AuthenticationService {
         if (accountId == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         if (account.getRoles().isEmpty()) {
             throw new UnauthorizedException("Only administrative accounts can sign in via OAuth.");

@@ -44,7 +44,7 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
         HealthDataRecord record = context.getHealthDataRecord();
 
         AccountId accountId = AccountId.forHealthCode(context.getAppId(), context.getHealthCode());
-        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+        Account account = accountService.getAccount(accountId).orElse(null);
         if (account != null) {
             
             Set<String> externalIds = collectExternalIds(account);

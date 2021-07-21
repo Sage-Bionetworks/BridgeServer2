@@ -69,7 +69,7 @@ public class TranscribeConsentHandlerTest {
         MockitoAnnotations.initMocks(this);
 
         // Set up mocks.
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(mockAccount));
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(mockAccount));
         when(participantService.getStudyStartTime(mockAccount)).thenReturn(STUDY_START_TIME);
 
         // Set up input record and context. Handler expects Health Code and RecordBuilder.
@@ -109,7 +109,7 @@ public class TranscribeConsentHandlerTest {
     @Test
     public void testNoParticipantOptions() {
         // account is null
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
 
         handler.handle(context);
         HealthDataRecord outputRecord = context.getHealthDataRecord();

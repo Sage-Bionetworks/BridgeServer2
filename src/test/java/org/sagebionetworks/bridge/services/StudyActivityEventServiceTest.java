@@ -302,7 +302,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setHealthCode(HEALTH_CODE);
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         ResourceList<StudyActivityEvent> retValue = service
                 .getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
@@ -331,7 +331,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(
                 ACCOUNT_ID, TEST_STUDY_ID, "custom:event1", 10, 100);
@@ -363,7 +363,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setHealthCode(HEALTH_CODE);
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, CREATED_ON);
         when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
@@ -380,7 +380,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockDao.getRecentStudyActivityEvents(
                 TEST_USER_ID, TEST_STUDY_ID)).thenReturn(ImmutableList.of());
         
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.empty());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
         
         service.getStudyActivityEventHistory(
                 ACCOUNT_ID, TEST_STUDY_ID, CREATED_ON_FIELD, 0, 50);
@@ -397,7 +397,7 @@ public class StudyActivityEventServiceTest extends Mockito {
     public void getStudyActivityEventHistory_invalidEventId() {
         Account account = Account.create();
         account.setCreatedOn(CREATED_ON);
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         service.getStudyActivityEventHistory(ACCOUNT_ID, TEST_STUDY_ID, "nonsense", 0, 50);
     }
@@ -415,7 +415,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setCreatedOn(CREATED_ON);
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(
                 ACCOUNT_ID, TEST_STUDY_ID, "event1", null, null);
@@ -432,7 +432,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Account account = Account.create();
         account.setHealthCode(HEALTH_CODE);
         account.setEnrollments(ImmutableSet.of(en));
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, CREATED_ON);
         when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
@@ -452,7 +452,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Account account = Account.create();
         account.setCreatedOn(CREATED_ON);
         account.setEnrollments(ImmutableSet.of(en));
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         List<StudyActivityEvent> list = Lists.newArrayList(new StudyActivityEvent(ENROLLMENT_FIELD, CREATED_ON));
         when(mockDao.getRecentStudyActivityEvents(TEST_USER_ID, TEST_STUDY_ID))
@@ -470,7 +470,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Account account = Account.create();
         account.setCreatedOn(CREATED_ON);
         account.setEnrollments(ImmutableSet.of(en));
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         PagedResourceList<StudyActivityEvent> results = new PagedResourceList<>(ImmutableList.of(), 0, true);
         when(mockDao.getStudyActivityEventHistory(any(), any(), any(), any(), any())).thenReturn(results);
@@ -488,7 +488,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         Account account = Account.create();
         account.setCreatedOn(CREATED_ON);
         account.setEnrollments(ImmutableSet.of(en));
-        when(mockAccountService.getAccountNoFilter(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         PagedResourceList<StudyActivityEvent> results = new PagedResourceList<>(
                 ImmutableList.of(new StudyActivityEvent(ENROLLMENT_FIELD, CREATED_ON)), 1, true);
