@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestUtils.mockEditAccount;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -94,6 +95,8 @@ public class OrganizationServiceTest extends Mockito {
     
     @Test
     public void getOrganizations() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+
         PagedResourceList<Organization> page = new PagedResourceList<>(
                 ImmutableList.of(Organization.create(), Organization.create()), 10);
         when(mockOrgDao.getOrganizations(TEST_APP_ID, 100, 20)).thenReturn(page);
@@ -106,7 +109,26 @@ public class OrganizationServiceTest extends Mockito {
     }
     
     @Test
+    public void getOrganizationsOnlyReturnsMemberOrgForNonAdmins() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        Organization org = Organization.create();
+        when(mockOrgDao.getOrganization(TEST_APP_ID, TEST_ORG_ID))
+            .thenReturn(Optional.of(org));
+        
+        PagedResourceList<Organization> retList = service.getOrganizations(TEST_APP_ID, 100, 20);
+        assertEquals(retList.getRequestParams().get("offsetBy"), 100);
+        assertEquals(retList.getRequestParams().get("pageSize"), 20);
+        assertEquals(retList.getTotal(), Integer.valueOf(1));
+        assertEquals(retList.getItems().size(), 1);
+        assertEquals(retList.getItems().get(0), org);
+    }
+    @Test
     public void getOrganizationsNullArguments() {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
         PagedResourceList<Organization> page = new PagedResourceList<>(
                 ImmutableList.of(Organization.create(), Organization.create()), 10);
         when(mockOrgDao.getOrganizations(TEST_APP_ID, null, null)).thenReturn(page);

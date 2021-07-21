@@ -208,6 +208,32 @@ public class AccountsControllerTest extends Mockito {
     }
     
     @Test
+    public void createAccountAdminCanAssignAnyOrganization() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(ID);
+        
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withFirstName("firstName")
+                .withOrgMembership("different-membership").build();
+        mockRequestBody(mockRequest, participant);
+        
+        IdentifierHolder retValue = controller.createAccount();
+        assertEquals(retValue.getIdentifier(), TEST_USER_ID);
+        
+        verify(mockParticipantService)
+            .createParticipant(eq(app), participantCaptor.capture(), eq(true));
+        
+        StudyParticipant submitted = participantCaptor.getValue();
+        assertEquals(submitted.getOrgMembership(), "different-membership");
+        assertEquals(submitted.getFirstName(), "firstName");
+    }
+    
+    @Test
     public void getAccount() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)

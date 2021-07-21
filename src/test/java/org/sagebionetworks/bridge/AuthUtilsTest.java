@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SHARED_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_EXTERNAL_IDS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_ORGANIZATIONS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
@@ -640,4 +641,20 @@ public class AuthUtilsTest extends Mockito {
                 
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }
- }
+    
+    @Test
+    public void canReadOrganizationsSucceedsForAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+                
+        CAN_READ_ORGANIZATIONS.checkAndThrow();
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void canReadOrganizationsFailsForOrgAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+                
+        CAN_READ_ORGANIZATIONS.checkAndThrow();
+    }
+}

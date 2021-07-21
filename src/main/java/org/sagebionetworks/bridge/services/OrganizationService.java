@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.validators.OrganizationValidator.INSTAN
 
 import java.util.Optional;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
@@ -22,6 +23,7 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -86,6 +88,15 @@ public class OrganizationService {
         }
         if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
+        }
+        if (!AuthUtils.CAN_READ_ORGANIZATIONS.check()) {
+            String orgId = RequestContext.get().getCallerOrgMembership();
+            Organization org = orgDao.getOrganization(appId, orgId)
+                    .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
+
+            return new PagedResourceList<>(ImmutableList.of(org), 1, true)
+                    .withRequestParam(OFFSET_BY, offsetBy)
+                    .withRequestParam(PAGE_SIZE, pageSize);
         }
         return orgDao.getOrganizations(appId, offsetBy, pageSize)
                 .withRequestParam(OFFSET_BY, offsetBy)
