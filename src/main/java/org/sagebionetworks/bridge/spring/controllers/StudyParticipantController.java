@@ -530,10 +530,9 @@ public class StudyParticipantController extends BaseController {
      */
     private Account getValidAccountInStudy(String appId, String studyId, String idToken) {
         AccountId accountId = BridgeUtils.parseAccountId(appId, idToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));        
+
         boolean matches = account.getEnrollments().stream().anyMatch(en -> studyId.equals(en.getStudyId()));
         if (!matches) {
             throw new EntityNotFoundException(Account.class);

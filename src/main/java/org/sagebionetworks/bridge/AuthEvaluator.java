@@ -96,21 +96,25 @@ public class AuthEvaluator {
     }
     
     /**
-     * The caller is operating on their own account (the target user ID).
+     * The caller is operating on their own account (the target user ID), OR the call 
+     * is anonymous (and is thus also about operating on one’s own account). In the 
+     * latter case, we don’t verify access to the account through security rules, 
+     * because the caller is not directly selecting the account. Instead, we’ll use 
+     * something like password verification or sending email/SMS to verify the 
+     * operation is allowed. 
      */
     public AuthEvaluator isSelf() {
         predicates.add((factMap) -> {
             String userId = factMap.get(USER_ID);
             String callerUserId = RequestContext.get().getCallerUserId();
             // Calls like signUp happen without a session so there is no caller user ID in the 
-            // request context. In this case, if we’re also not comparing the user ID to a 
-            // known ID, allow this test to pass. This removes some special case code elsewhere
-            // in the system.
-            return (userId == null && callerUserId == null) ||
-                   (userId != null && userId.equals(callerUserId));
+            // request context. In this case, we allow this test to pass. This removes some 
+            // special case code elsewhere in the system that ultimately isn’t verifying anything.
+            return callerUserId == null || callerUserId.equals(userId);
         });
         return this;
     }
+
     public AuthEvaluator isSharedOwner() {
         predicates.add((factMap) -> {
             String ownerId = factMap.get(OWNER_ID);

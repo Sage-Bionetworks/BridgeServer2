@@ -20,6 +20,8 @@ import static org.sagebionetworks.bridge.config.Environment.LOCAL;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
+import java.util.Optional;
+
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -190,7 +192,7 @@ public class UserManagementControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
         
         AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-        when(mockAccountService.getAccount(accountId)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(Account.create()));
 
         SignIn signIn = new SignIn.Builder().withAppId("nextStudy").build();
         mockRequestBody(mockRequest, signIn);
@@ -232,7 +234,7 @@ public class UserManagementControllerTest extends Mockito {
         mockRequestBody(mockRequest, "{}");
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
 
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(Account.create()));
         
         // same app id as above test
         StatusMessage result = controller.createUserWithAppId(TEST_APP_ID);

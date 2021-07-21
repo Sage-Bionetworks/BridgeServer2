@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -52,6 +53,7 @@ import org.sagebionetworks.bridge.models.SearchTermPredicate;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.apps.App;
 
 /** Hibernate implementation of Account Dao. */
@@ -61,10 +63,14 @@ public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
     static final String ID_QUERY = "SELECT acct.id FROM HibernateAccount AS acct";
-    
     static final String FULL_QUERY = "SELECT acct FROM HibernateAccount AS acct";
-    
     static final String COUNT_QUERY = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct";
+    
+    static final String EXTID_BASE_QUERY = "from HibernateEnrollment as en "
+            + "WHERE en.appId = :appId AND en.studyId = :studyId "
+            + "AND en.externalId IS NOT NULL";
+    static final String EXTID_FILTER_QUERY = "AND en.externalId LIKE :idFilter";
+    static final String EXTID_ORDER_QUERY = "ORDER BY en.externalId";
     
     private HibernateHelper hibernateHelper;
 
@@ -289,5 +295,32 @@ public class HibernateAccountDao implements AccountDao {
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
         builder.withStudyIds(assoc.getStudyIdsVisibleToCaller());
         return builder.build();
+    }
+    
+    @Override
+    public PagedResourceList<ExternalIdentifierInfo> getPagedExternalIds(String appId, String studyId, String idFilter,
+            Integer offsetBy, Integer pageSize) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(offsetBy);
+        checkNotNull(pageSize);
+        
+        QueryBuilder query = new QueryBuilder();
+        query.append(EXTID_BASE_QUERY, "appId", appId, "studyId", studyId);
+        if (StringUtils.isNotBlank(idFilter)) {
+            query.append(EXTID_FILTER_QUERY, "idFilter", idFilter + "%");
+        }
+        query.append(EXTID_ORDER_QUERY);
+
+        List<HibernateEnrollment> enrollments = hibernateHelper.queryGet("SELECT en " + query.getQuery(), 
+                query.getParameters(), offsetBy, pageSize, HibernateEnrollment.class);
+
+        List<ExternalIdentifierInfo> infos = enrollments.stream()
+                .map(en -> new ExternalIdentifierInfo(en.getExternalId(), en.getStudyId(), true))
+                .collect(Collectors.toList());
+
+        int count = hibernateHelper.queryCount("SELECT count(en) " + query.getQuery(), query.getParameters());
+
+        return new PagedResourceList<>(infos, count, true);
     }
 }

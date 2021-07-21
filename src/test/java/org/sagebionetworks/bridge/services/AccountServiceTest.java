@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
@@ -27,6 +28,7 @@ import static org.sagebionetworks.bridge.services.AccountService.ROTATIONS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -43,7 +45,6 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InOrder;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -67,6 +68,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSecret;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
@@ -87,12 +89,12 @@ public class AccountServiceTest extends Mockito {
     private static final String REAUTH_TOKEN = "reauth-token";
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
     private static final String OTHER_EMAIL = "other-email@example.com";
+    private static final String OTHER_USER_ID = "other-user-id";
     
     private static final String STUDY_A = "studyA";
     private static final String STUDY_B = "studyB";
     private static final Set<Enrollment> ACCOUNT_ENROLLMENTS = ImmutableSet
             .of(Enrollment.create(TEST_APP_ID, STUDY_A, TEST_USER_ID));
-    private static final ImmutableSet<String> CALLER_STUDIES = ImmutableSet.of(STUDY_B);
     
     private static final SignIn PASSWORD_SIGNIN = new SignIn.Builder().withAppId(TEST_APP_ID).withEmail(EMAIL)
             .withPassword(DUMMY_PASSWORD).build();
@@ -291,30 +293,30 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void editAccount() throws Exception {
-        AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, HEALTH_CODE);
-        Account account = mockGetAccountById(accountId, false);
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
 
-        service.editAccount(TEST_APP_ID, HEALTH_CODE, mockConsumer);
+        service.editAccount(ACCOUNT_ID, mockConsumer);
 
-        InOrder inOrder = inOrder(mockConsumer, mockAccountDao);
-        inOrder.verify(mockConsumer).accept(account);
-        inOrder.verify(mockAccountDao).updateAccount(account);
+        verify(mockConsumer).accept(account);
     }
 
     @Test
     public void editAccountWhenAccountNotFound() throws Exception {
-        service.editAccount(TEST_APP_ID, "bad-health-code", mockConsumer);
-
+        try {
+            AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, "bad-health-code");
+            service.editAccount(accountId, mockConsumer);    
+            fail("Should have thrown exception");
+        } catch(EntityNotFoundException e) {
+        }
         verify(mockConsumer, never()).accept(any());
-        verify(mockAccountDao, never()).updateAccount(any());
     }
 
     @Test
     public void getAccount() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);
 
-        Account returnVal = service.getAccount(ACCOUNT_ID);
-        assertEquals(returnVal, account);
+        Optional<Account> returnVal = service.getAccount(ACCOUNT_ID);
+        assertEquals(returnVal.get(), account);
         verify(mockAccountDao).getAccount(ACCOUNT_ID);
     }
 
@@ -795,9 +797,9 @@ public class AccountServiceTest extends Mockito {
     public void getByEmail() throws Exception {
         Account persistedAccount = mockGetAccountById(ACCOUNT_ID_WITH_EMAIL, false);
 
-        Account account = service.getAccount(ACCOUNT_ID_WITH_EMAIL);
+        Optional<Account> retValue = service.getAccount(ACCOUNT_ID_WITH_EMAIL);
 
-        assertEquals(account, persistedAccount);
+        assertEquals(retValue.get(), persistedAccount);
     }
 
     @Test
@@ -1068,20 +1070,10 @@ public class AccountServiceTest extends Mockito {
         // execute and verify - Verify just ID, app, and email, and health code mapping is enough. 
         service.authenticate(app, phoneSignIn);
     }
-    
-    @Test
-    public void editAccountFailsAcrossStudies() throws Exception {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(CALLER_STUDIES).build());
 
-        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
-        persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
-        when(mockAccountDao.getAccount(any())).thenReturn(Optional.of(persistedAccount));
-
-        service.editAccount(TEST_APP_ID, HEALTH_CODE, (account) -> fail("Should have thrown exception"));
-
-        verify(mockAccountDao, never()).updateAccount(any());
-        RequestContext.set(null);
-    }
+    // The editAccountFailsAcrossStudies test was removed because editAccount no longer enforces 
+    // authorization checks. It's intended to be used internally, not as a result of a direct
+    // operation by an API caller.
     
     @Test
     public void getAccountMatchesStudies() throws Exception {
@@ -1092,8 +1084,8 @@ public class AccountServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_A)).build());
 
-        Account account = service.getAccount(ACCOUNT_ID);
-        assertEquals(persistedAccount, account);
+        Optional<Account> retValue = service.getAccount(ACCOUNT_ID);
+        assertEquals(persistedAccount, retValue.get());
         
         RequestContext.set(null);
     }
@@ -1104,10 +1096,11 @@ public class AccountServiceTest extends Mockito {
         persistedAccount.setEnrollments(Sets.newHashSet(ACCOUNT_ENROLLMENTS));
         
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(OTHER_USER_ID)
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_B)).build());
 
-        Account account = service.getAccount(ACCOUNT_ID);
-        assertNull(account);
+        Optional<Account> retValue = service.getAccount(ACCOUNT_ID);
+        assertFalse(retValue.isPresent());
         
         RequestContext.set(null);
     }
@@ -1120,7 +1113,7 @@ public class AccountServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of(STUDY_B)).build());
 
-        Optional<Account> account = service.getAccountNoFilter(ACCOUNT_ID);
+        Optional<Account> account = service.getAccount(ACCOUNT_ID);
         assertTrue(account.isPresent());
         
         RequestContext.set(null);
@@ -1162,6 +1155,17 @@ public class AccountServiceTest extends Mockito {
         Account updatedAccount = accountCaptor.getValue();
 
         assertEquals(updatedAccount.getNote(), "original note");
+    }
+    
+    @Test
+    public void getPagedExternalIds() throws Exception { 
+        PagedResourceList<ExternalIdentifierInfo> page = new PagedResourceList<ExternalIdentifierInfo>(
+                ImmutableList.of(), 100);
+        when(mockAccountDao.getPagedExternalIds(TEST_APP_ID, TEST_STUDY_ID, "idFilter", 10, 50)).thenReturn(page);
+        
+        PagedResourceList<ExternalIdentifierInfo> retValue = service.getPagedExternalIds(
+                TEST_APP_ID, TEST_STUDY_ID, "idFilter", 10, 50);
+        assertSame(retValue, page);
     }
 
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {

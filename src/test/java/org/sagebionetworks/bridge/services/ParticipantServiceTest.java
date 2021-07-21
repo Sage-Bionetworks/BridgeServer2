@@ -125,7 +125,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 public class ParticipantServiceTest extends Mockito {
     private static final DateTime ACTIVITIES_RETRIEVED_DATETIME = DateTime.parse("2019-08-01T18:32:36.487-0700");
@@ -332,14 +331,14 @@ public class ParticipantServiceTest extends Mockito {
         account.setAppId(TEST_APP_ID);
         when(participantService.getAccount()).thenReturn(account);
         when(participantService.generateGUID()).thenReturn(ID);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
     }
     
     private void mockAccountNoEmail() {
         account.setId(ID);
         account.setHealthCode(HEALTH_CODE);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
     }
     
     @Test
@@ -877,7 +876,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantEmailDoesNotExist() {
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(null);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
         
         participantService.getParticipant(APP, ID, false);
     }
@@ -887,25 +886,8 @@ public class ParticipantServiceTest extends Mockito {
         participantService.getParticipant(APP, "externalId:some-junk", false);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getParticiantAccountFilteredOutByStudyAssocation() {
-        when(participantService.getAccount()).thenReturn(account);
-        when(participantService.generateGUID()).thenReturn(ID);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-
-        // Account is in studyA
-        account.setAppId(APP.getIdentifier());
-        account.setId(ID);
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ID, "externalIdA");
-        account.setEnrollments(Sets.newHashSet(en1));
-        
-        // The caller is not in studyA
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("callerUserId")
-                .withOrgSponsoredStudies(ImmutableSet.of("studyB")).build());
-        
-        participantService.getParticipant(APP, ID, true);
-    }
+    // getParticiantAccountFilteredOutByStudyAssocation removed because all accounts are
+    // now filtered in AccountService, and only in AccountService.
     
     @Test
     public void getSelfParticipantWithHistory() throws Exception {
@@ -925,7 +907,7 @@ public class ParticipantServiceTest extends Mockito {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create("foo1");
         account.setConsentSignatureHistory(subpopGuid, ImmutableList.of(new ConsentSignature.Builder()
                 .withConsentCreatedOn(START_DATE.getMillis()).build()));
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         when(consentService.getConsentStatuses(CONTEXT, account)).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuid(SubpopulationGuid.create("foo1"));
@@ -965,7 +947,7 @@ public class ParticipantServiceTest extends Mockito {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create("foo1");
         account.setConsentSignatureHistory(subpopGuid, ImmutableList.of(new ConsentSignature.Builder()
                 .withConsentCreatedOn(START_DATE.getMillis()).build()));
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         when(consentService.getConsentStatuses(CONTEXT, account)).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
         
         StudyParticipant retrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
@@ -984,7 +966,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getParticipant() {
         when(participantService.getAccount()).thenReturn(account);
         when(participantService.generateGUID()).thenReturn(ID);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
         DateTime createdOn = DateTime.now();
@@ -1161,7 +1143,7 @@ public class ParticipantServiceTest extends Mockito {
         AccountId accountId = AccountId.forId(APP.getIdentifier(), ID);
         
         // Setup
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         account.setId(ID);
 
         // Execute
@@ -1179,7 +1161,7 @@ public class ParticipantServiceTest extends Mockito {
         AccountId accountId = AccountId.forId(APP.getIdentifier(), ID);
         
         // Setup
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         account.setId(ID);
 
         // Execute
@@ -1257,7 +1239,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateParticipantDoesNotUpdateImmutableFields() {
         mockHealthCodeAndAccountRetrieval(null, null, null);
         account.setEmailVerified(null);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         RequestContext.set(new RequestContext.Builder().build());
  
         // There's a long list of fields you cannot update, set them all: 
@@ -1525,7 +1507,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getParticipantWithHealthCode() {
         String id = "healthCode:" + ID;
         AccountId accountId = AccountId.forHealthCode(APP.getIdentifier(), ID);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         StudyParticipant participant = participantService.getParticipant(APP, id, true);
         assertNotNull(participant);
@@ -1539,7 +1521,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getParticipantWithExternalId() {
         String id = "externalId:" + ID;
         AccountId accountId = AccountId.forExternalId(APP.getIdentifier(), ID);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         StudyParticipant participant = participantService.getParticipant(APP, id, true);
         assertNotNull(participant);
@@ -1552,7 +1534,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getParticipantWithStringId() {
         AccountId accountId = AccountId.forId(APP.getIdentifier(), ID);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         StudyParticipant participant = participantService.getParticipant(APP, ID, true);
         assertNotNull(participant);
@@ -1851,7 +1833,7 @@ public class ParticipantServiceTest extends Mockito {
         // participant is returned... the common happy path.
         mockHealthCodeAndAccountRetrieval();
         when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, PHONE, null);
         
@@ -1871,7 +1853,7 @@ public class ParticipantServiceTest extends Mockito {
         // Also tests the common path of creating unverified email address with verification email sent
         mockAccountNoEmail();
         when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         APP.setEmailVerificationEnabled(true);
         APP.setAutoVerificationEmailSuppressed(false);
@@ -1910,7 +1892,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateIdentifiersUsingReauthentication() {
         mockHealthCodeAndAccountRetrieval();
         when(accountService.reauthenticate(APP, REAUTH_REQUEST)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         IdentifierUpdate update = new IdentifierUpdate(REAUTH_REQUEST, null, TestConstants.PHONE, null);
         
@@ -1940,7 +1922,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateIdentifiersCreatesUnverifiedEmailWithoutVerification() {
         mockAccountNoEmail();
         when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         APP.setEmailVerificationEnabled(true);
         APP.setAutoVerificationEmailSuppressed(true);
@@ -1958,7 +1940,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateIdentifiersAddsSynapseUserId() {
         mockAccountNoEmail();
         when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, EMAIL, null, SYNAPSE_USER_ID);
         participantService.updateIdentifiers(APP, CONTEXT, update);
@@ -2012,7 +1994,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateIdentifiersDoesNotReassignExternalIdOnOtherUpdate() throws Exception {
         mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
         when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         // Add phone
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("4082588569", "US"),
@@ -2196,7 +2178,7 @@ public class ParticipantServiceTest extends Mockito {
 
     @Test
     public void sendSmsMessage() {
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         account.setHealthCode(HEALTH_CODE);
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(true);
@@ -2215,7 +2197,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void sendSmsMessageThrowsIfNoPhone() { 
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         SmsTemplate template = new SmsTemplate("This is a test ${appShortName}"); 
         
@@ -2224,7 +2206,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void sendSmsMessageThrowsIfPhoneUnverified() { 
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(false);
         
@@ -2255,7 +2237,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setHealthCode(HEALTH_CODE);
         account.setAppId(TEST_APP_ID);
         AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, HEALTH_CODE);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         // This directly calls getAccountThrowingException(); it should recognize and
@@ -2353,7 +2335,7 @@ public class ParticipantServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withStudyIds(ImmutableSet.of(STUDY_ID)).build();
@@ -2393,7 +2375,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         // participant does not have the study. This should throw an error
         participantService.updateParticipant(APP, PARTICIPANT);
@@ -2412,7 +2394,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withTimestamp(TIMESTAMP).build();
         
         AccountId accountId = AccountId.forId(APP.getIdentifier(), TEST_USER_ID);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
         
@@ -2426,7 +2408,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withTimestamp(TIMESTAMP).build();
         
         AccountId accountId = AccountId.forId(APP.getIdentifier(), TEST_USER_ID);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
         
@@ -2483,7 +2465,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void updateParticipantNoteSuccessfulAsAdmin() {
         // RESEARCHER role set in Before method
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         account.setNote("original note");
 
@@ -2500,7 +2482,7 @@ public class ParticipantServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .build());
 
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         account.setNote("original note");
 
@@ -2520,7 +2502,7 @@ public class ParticipantServiceTest extends Mockito {
                 .build());
 
         account.setNote(TEST_NOTE);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
 
         StudyParticipant adminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
         assertEquals(adminRetrieved.getNote(), TEST_NOTE);
@@ -2534,7 +2516,7 @@ public class ParticipantServiceTest extends Mockito {
                 .build());
 
         account.setNote(TEST_NOTE);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
 
         StudyParticipant nonAdminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
         assertNull(nonAdminRetrieved.getNote());

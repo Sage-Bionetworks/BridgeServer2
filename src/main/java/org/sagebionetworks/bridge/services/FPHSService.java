@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.sagebionetworks.bridge.dao.FPHSExternalIdentifierDao;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifier;
 import org.sagebionetworks.bridge.models.accounts.FPHSExternalIdentifier;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
@@ -54,7 +55,8 @@ public class FPHSService {
         
         fphsDao.registerExternalId(externalId);
 
-        accountService.editAccount(appId, healthCode, account -> {
+        AccountId accountId = AccountId.forHealthCode(appId, healthCode);
+        accountService.editAccount(accountId, account -> {
             Enrollment enrollment = Enrollment.create(appId, "harvard", account.getId(), externalId.getIdentifier());
             account.setDataGroups(addToSet(account.getDataGroups(), "football_player"));
             account.getEnrollments().add(enrollment);

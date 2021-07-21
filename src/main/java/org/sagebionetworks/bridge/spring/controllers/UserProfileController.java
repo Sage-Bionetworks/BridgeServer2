@@ -131,10 +131,9 @@ public class UserProfileController extends BaseController {
         UserSession session = getAuthenticatedSession();
         
         AccountId accountId = AccountId.forHealthCode(session.getAppId(), session.getHealthCode());
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));        
+        
         Set<String> dataGroups = account.getDataGroups();
         
         ArrayNode array = JsonNodeFactory.instance.arrayNode();

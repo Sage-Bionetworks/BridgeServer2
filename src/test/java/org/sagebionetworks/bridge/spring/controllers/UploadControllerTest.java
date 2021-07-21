@@ -17,6 +17,7 @@ import static org.testng.Assert.fail;
 
 import java.net.URL;
 import java.util.EnumSet;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -452,7 +453,7 @@ public class UploadControllerTest extends Mockito {
         doReturn(mockResearcherSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN, WORKER);
         doReturn(true).when(mockResearcherSession).isInRole(EnumSet.of(Roles.SUPERADMIN, Roles.WORKER));
         
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(Account.create()));
 
         HealthDataRecord record = HealthDataRecord.create();
         record.setAppId("some-other-app");

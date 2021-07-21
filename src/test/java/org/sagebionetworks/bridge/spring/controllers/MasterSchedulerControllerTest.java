@@ -5,6 +5,7 @@ import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -93,7 +94,7 @@ public class MasterSchedulerControllerTest extends Mockito {
         mockSession.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
         
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Account.create());
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(Account.create()));
         
         mockConfig = TestUtils.getMasterSchedulerConfig();
         

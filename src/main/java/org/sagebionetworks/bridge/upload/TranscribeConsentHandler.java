@@ -16,7 +16,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
-import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -45,7 +44,7 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
         HealthDataRecord record = context.getHealthDataRecord();
 
         AccountId accountId = AccountId.forHealthCode(context.getAppId(), context.getHealthCode());
-        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+        Account account = accountService.getAccount(accountId).orElse(null);
         if (account != null) {
             
             Set<String> externalIds = collectExternalIds(account);
@@ -61,9 +60,6 @@ public class TranscribeConsentHandler implements UploadValidationHandler {
             // Snap to a calendar date in the local time zone. For example, a participant has an
             // activities_retrieved with calendar date 2019-07-24. Therefore, 2019-07-24 would be day 1, 2019-07-25
             // would be day 2, etc.
-            // Note that this call must pass the isSelf() call and the handler is not running
-            // in a thread that includes the RequestContext.
-            RequestContext.acquireAccountIdentity(account);
             
             DateTime studyStartTime = participantService.getStudyStartTime(account);
             LocalDate studyStartDate = studyStartTime.withZone(BridgeConstants.LOCAL_TIME_ZONE).toLocalDate();

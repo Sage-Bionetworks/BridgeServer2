@@ -47,6 +47,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
@@ -298,49 +299,34 @@ public class AccountService {
     }
     
     /**
-     * Load, and if it exists, edit and save an account. Note that constraints are not
-     * enforced here (which is intentional).
+     * Load, and if it exists, edit and save an account. Authorization constraints are not enforced
+     * by this method. It is intended to be used internally to update the account table state, and 
+     * should not be used to propagate changes that come from an API caller.
      */
-    public void editAccount(String appId, String healthCode, Consumer<Account> accountEdits) {
-        checkNotNull(appId);
-        checkNotNull(healthCode);
+    public void editAccount(AccountId accountId, Consumer<Account> accountEdits) {
+        checkNotNull(accountId);
         
-        AccountId accountId = AccountId.forHealthCode(appId, healthCode);
-        Account account = getAccount(accountId);
-        if (account != null) {
-            accountEdits.accept(account);
-            accountDao.updateAccount(account);
-        }        
+        Account account = accountDao.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        accountEdits.accept(account);
+        accountDao.updateAccount(account);
     }
     
     /**
      * Get an account in the context of a app by the user's ID, email address, health code,
      * or phone number. Returns null if the account cannot be found, or the caller does not have 
-     * the correct study associations to access the account. (Other methods in this service 
-     * also make a check for study associations by relying on this method internally).
+     * the correct permissions to access the account. The account’s enrollments will be filtered
+     * so the caller can only see the enrollments in studies they have access to.
      */
-    public Account getAccount(AccountId accountId) {
+    public Optional<Account> getAccount(AccountId accountId) {
         checkNotNull(accountId);
 
         Optional<Account> optional = accountDao.getAccount(accountId);
-        if (optional.isPresent()) {
-            // filtering based on the study associations of the caller.
-            return filterForStudy(optional.get());
+        if (!optional.isPresent() || filterForStudy(optional.get()) == null) {
+            return Optional.empty();
         }
-        return null;
-    }
-    
-    /**
-     * getAccount() checks access to the account with the CAN_READ_PARTICIPANTS rule, 
-     * *and* it removes any enrollments from the record that are not visible to the 
-     * caller. The non-filtering method can be used in cases where CAN_READ_PARTICIPANTS 
-     * is going to be called, and we do not need to hide enrollments from the caller 
-     * (because the account is not going to be returned through the API).
-     */
-    public Optional<Account> getAccountNoFilter(AccountId accountId) {
-        checkNotNull(accountId);
-        
-        return accountDao.getAccount(accountId);
+        return optional;
     }
     
     /**
@@ -371,10 +357,16 @@ public class AccountService {
         return accountDao.getPagedAccountSummaries(appId, search);
     }
     
+    /**
+     * Get the health code for an account.
+     */
     public Optional<String> getAccountHealthCode(String appId, String userIdToken) {
         return getAccountField(appId, userIdToken, Account::getHealthCode);
     }
     
+    /**
+     * Get the ID for an account.
+     */
     public Optional<String> getAccountId(String appId, String userIdToken) {
         return getAccountField(appId, userIdToken, Account::getId);
     }
@@ -382,12 +374,20 @@ public class AccountService {
     private Optional<String> getAccountField(String appId, String userIdToken, Function<Account,String> func) {
         if (appId != null && userIdToken != null) {
             AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
-            Account account = getAccount(accountId);
+            Account account = accountDao.getAccount(accountId).orElse(null);
             if (account != null) {
                 return Optional.ofNullable(func.apply(account));
             }
         }
         return Optional.empty();
+    }
+    
+    public PagedResourceList<ExternalIdentifierInfo> getPagedExternalIds(String appId, String studyId, String idFilter,
+            Integer offsetBy, Integer pageSize) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+
+        return accountDao.getPagedExternalIds(appId, studyId, idFilter, offsetBy, pageSize);
     }
     
     protected Account authenticateInternal(App app, Account account, SignIn signIn) {

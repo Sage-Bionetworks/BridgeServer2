@@ -345,9 +345,6 @@ public class ParticipantService {
             LOG.error("getParticipant() called with no account. Was the account deleted in the middle of the call?");
             throw new EntityNotFoundException(Account.class);
         }
-        if (BridgeUtils.filterForStudy(account) == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
 
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
         StudyAssociations assoc = studyAssociationsVisibleToCaller(account);
@@ -618,8 +615,6 @@ public class ParticipantService {
         // New accounts can simultaneously enroll themselves in a study using an external ID.
         // Legacy apps do this so we must continue to support it.
         if (isNew) {
-            RequestContext.acquireAccountIdentity(account);
-            
             for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
                 String studyId = entry.getKey();
                 String externalId = entry.getValue();
@@ -1021,11 +1016,8 @@ public class ParticipantService {
     }
     
     private Account getAccountThrowingException(AccountId accountId) {
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        return account;
+        return accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
     }
 
 }
