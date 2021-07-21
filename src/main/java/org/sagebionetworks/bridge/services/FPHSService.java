@@ -3,8 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
-import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 
 import java.util.List;
 
@@ -58,7 +56,7 @@ public class FPHSService {
         AccountId accountId = AccountId.forHealthCode(appId, healthCode);
         accountService.editAccount(accountId, account -> {
             Enrollment enrollment = Enrollment.create(appId, "harvard", account.getId(), externalId.getIdentifier());
-            account.setDataGroups(addToSet(account.getDataGroups(), "football_player"));
+            account.getDataGroups().add("football_player");
             account.getEnrollments().add(enrollment);
         });
     }

@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
-import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
-import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.collectStudyIds;
 import static org.sagebionetworks.bridge.BridgeUtils.filterForStudy;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
@@ -267,11 +265,6 @@ public class AccountService {
         // Only allow Admins to update notes
         if (!RequestContext.get().isAdministrator()) {
             account.setNote(persistedAccount.getNote());
-        }
-        // Accounts cannot remove the test tag after it has been added.
-        if (persistedAccount.getDataGroups().contains(TEST_USER_GROUP)
-                && !account.getDataGroups().contains(TEST_USER_GROUP)) {
-            account.setDataGroups(addToSet(account.getDataGroups(), TEST_USER_GROUP));
         }
 
         // Update. We don't verify studies because this is handled by validation

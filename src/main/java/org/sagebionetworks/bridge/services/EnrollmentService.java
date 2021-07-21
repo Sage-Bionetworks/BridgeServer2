@@ -9,8 +9,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
-import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT_FILTER;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
@@ -33,8 +31,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
-import org.sagebionetworks.bridge.models.studies.Study;
-import org.sagebionetworks.bridge.models.studies.StudyPhase;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
@@ -46,18 +42,11 @@ public class EnrollmentService {
     
     private AccountService accountService;
     
-    private StudyService studyService;
-    
     private EnrollmentDao enrollmentDao;
     
     @Autowired
     final void setAccountService(AccountService accountService) {
         this.accountService = accountService;
-    }
-    
-    @Autowired
-    final void setStudyService(StudyService studyService) {
-        this.studyService = studyService;
     }
     
     @Autowired
@@ -157,16 +146,6 @@ public class EnrollmentService {
     }
     
     private void updateEnrollment(Account account, Enrollment newEnrollment, Enrollment existingEnrollment) {
-        
-        // If the account is enrolled in a study that is in the design phase, it is converted
-        // to a test account. Once in this state, it cannot lose this test account tagging.
-        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
-            Study study = studyService.getStudy(account.getAppId(), newEnrollment.getStudyId(), true);
-            if (study.getPhase() == StudyPhase.DESIGN) {
-                account.setDataGroups(addToSet(account.getDataGroups(), TEST_USER_GROUP));
-            }
-        }
-        
         existingEnrollment.setWithdrawnOn(null);
         existingEnrollment.setWithdrawnBy(null);
         existingEnrollment.setWithdrawalNote(null);
