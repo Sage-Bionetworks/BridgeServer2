@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.OrganizationValidator.INSTANCE;
 
+import java.util.List;
 import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
@@ -89,12 +90,16 @@ public class OrganizationService {
         if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
+        
         if (!AuthUtils.CAN_READ_ORGANIZATIONS.check()) {
+            List<Organization> list = ImmutableList.of();
             String orgId = RequestContext.get().getCallerOrgMembership();
-            Organization org = orgDao.getOrganization(appId, orgId)
-                    .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
-
-            return new PagedResourceList<>(ImmutableList.of(org), 1, true)
+            if (orgId != null) {
+                Organization org = orgDao.getOrganization(appId, orgId)
+                        .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
+                list = ImmutableList.of(org); 
+            }
+            return new PagedResourceList<>(list, list.size(), true)
                     .withRequestParam(OFFSET_BY, offsetBy)
                     .withRequestParam(PAGE_SIZE, pageSize);
         }

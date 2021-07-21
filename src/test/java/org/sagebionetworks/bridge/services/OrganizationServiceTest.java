@@ -125,6 +125,19 @@ public class OrganizationServiceTest extends Mockito {
         assertEquals(retList.getItems().size(), 1);
         assertEquals(retList.getItems().get(0), org);
     }
+
+    @Test
+    public void getOrganizationsReturnsNothingForNonOrgMembers() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        PagedResourceList<Organization> retList = service.getOrganizations(TEST_APP_ID, 100, 20);
+        assertEquals(retList.getRequestParams().get("offsetBy"), 100);
+        assertEquals(retList.getRequestParams().get("pageSize"), 20);
+        assertEquals(retList.getTotal(), Integer.valueOf(0));
+        assertEquals(retList.getItems().size(), 0);
+    }
+
     @Test
     public void getOrganizationsNullArguments() {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
