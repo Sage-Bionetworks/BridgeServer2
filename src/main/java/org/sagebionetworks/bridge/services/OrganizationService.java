@@ -3,9 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_DELETE_ORG;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -126,8 +123,6 @@ public class OrganizationService {
      */
     public Organization updateOrganization(Organization organization) {
         checkNotNull(organization);
-
-        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, organization.getIdentifier());
         
         Validate.entityThrowingException(INSTANCE, organization);
         
@@ -171,8 +166,6 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
-        CAN_DELETE_ORG.checkAndThrow();
-        
         Organization existing = orgDao.getOrganization(appId, identifier)
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
         if (assessmentDao.hasAssessmentFromOrg(appId, identifier)) {
@@ -192,8 +185,6 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         checkNotNull(search);
-        
-        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
         
         AccountSummarySearch scopedSearch = search.toBuilder()
                 // only needed for legacy APIs
@@ -222,8 +213,6 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkArgument(isNotBlank(userId));
         
-        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
-        
         AccountId accountId = AccountId.forId(appId, userId);
         accountService.editAccount(accountId, (acct) -> {
             RequestContext context = RequestContext.get();
@@ -239,8 +228,6 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         checkArgument(isNotBlank(userId));
-        
-        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
 
         AccountId accountId = AccountId.forId(appId, userId);
         accountService.editAccount(accountId, (acct) -> {

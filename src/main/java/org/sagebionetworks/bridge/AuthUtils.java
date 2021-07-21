@@ -30,12 +30,6 @@ public class AuthUtils {
             .hasAnyRole(ORG_ADMIN, STUDY_COORDINATOR).hasNoRole(DEVELOPER, RESEARCHER, ADMIN, WORKER);
 
     /**
-     * Can the caller delete an organization?
-     */
-    public static final AuthEvaluator CAN_DELETE_ORG = new AuthEvaluator()
-            .hasAnyRole(ADMIN);
-    
-    /**
      * Can the caller edit assessments? Must be a study designer in the organization that 
      * owns the assessment, or a developer.
      */
@@ -58,6 +52,22 @@ public class AuthUtils {
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
             .hasAnyRole(ADMIN);
 
+    /**
+     * Can the caller and/remove organization members? Must be the organizations's admin. Note 
+     * that this check is currently also used for sponsors...which are not members.
+     */
+    public static final AuthEvaluator CAN_READ_ORG = new AuthEvaluator()
+            .isInOrg().or()
+            .hasAnyRole(ADMIN);
+
+    /**
+     * Can the caller and/remove organization members? Must be the organizations's admin. Note 
+     * that this check is currently also used for sponsors...which are not members.
+     */
+    public static final AuthEvaluator CAN_EDIT_ORG = new AuthEvaluator()
+            .isInOrg().hasAnyRole(ORG_ADMIN).or()
+            .hasAnyRole(ADMIN);
+    
     /**
      * Can the caller edit accounts? For the APIs to work with administrative accounts, 
      * the caller must be operating on self (and in the correct organization), or an 

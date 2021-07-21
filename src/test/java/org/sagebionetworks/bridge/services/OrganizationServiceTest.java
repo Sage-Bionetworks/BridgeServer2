@@ -43,7 +43,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -344,19 +343,6 @@ public class OrganizationServiceTest extends Mockito {
         assertSame(retValue, page);
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void getMembersNotAuthorized() {
-        when(mockOrgDao.getOrganization(TEST_APP_ID, IDENTIFIER)).thenReturn(Optional.of(Organization.create()));
-        
-        PagedResourceList<AccountSummary> page = new PagedResourceList<>(ImmutableList.of(), 0); 
-        when(mockAccountService.getPagedAccountSummaries(eq(TEST_APP_ID), any())).thenReturn(page);
-        
-        AccountSummarySearch search = new AccountSummarySearch.Builder().withLanguage("en").build();        
-        
-        service.getMembers(TEST_APP_ID, IDENTIFIER, search);
-    }
-    
-    @Test
     public void addMember() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(IDENTIFIER)
@@ -387,14 +373,6 @@ public class OrganizationServiceTest extends Mockito {
         
         verify(mockAccountService).editAccount(eq(ACCOUNT_ID), any());
         assertEquals(account.getOrgMembership(), IDENTIFIER);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void addMemberUnauthorized() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerOrgMembership("not-org-id").build());
-        
-        service.addMember(TEST_APP_ID, IDENTIFIER, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -526,15 +504,6 @@ public class OrganizationServiceTest extends Mockito {
         service.removeMember(TEST_APP_ID, IDENTIFIER, TEST_USER_ID);
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void removeMemberNotAuthorized() {
-        Account account = Account.create();
-        account.setOrgMembership(IDENTIFIER);
-        mockEditAccount(mockAccountService, account);
-
-        service.removeMember(TEST_APP_ID, IDENTIFIER, TEST_USER_ID);
-    }
-    
     @Test
     public void deleteAllOrganizations() {
         service.deleteAllOrganizations(TEST_APP_ID);

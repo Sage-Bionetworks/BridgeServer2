@@ -18,6 +18,7 @@ import java.util.function.Consumer;
 import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -31,6 +32,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -138,6 +140,8 @@ public class MembershipControllerTest extends Mockito {
     
     @Test
     public void addMember() {
+        setContext(b -> b.withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(Roles.ORG_ADMIN)));
         doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         controller.addMember(TEST_ORG_ID, TEST_USER_ID);
@@ -147,6 +151,8 @@ public class MembershipControllerTest extends Mockito {
 
     @Test
     public void removeMember() {
+        setContext(b -> b.withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(Roles.ORG_ADMIN)));
         doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         controller.removeMember(TEST_ORG_ID, TEST_USER_ID);
