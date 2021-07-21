@@ -36,7 +36,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class EnrollmentService {
     
-    private class EnrollmentHolder {
+    private static class EnrollmentHolder {
         Enrollment enrollment;
     }
     
