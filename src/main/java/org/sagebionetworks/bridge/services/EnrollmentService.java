@@ -36,6 +36,10 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class EnrollmentService {
     
+    private class EnrollmentHolder {
+        Enrollment enrollment;
+    }
+    
     private AccountService accountService;
     
     private EnrollmentDao enrollmentDao;
@@ -87,7 +91,7 @@ public class EnrollmentService {
         
         // We want all enrollments, even withdrawn enrollments, so don't filter here.
         AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, studyId, USER_ID, account.getId());
@@ -108,13 +112,12 @@ public class EnrollmentService {
         // Because this is an enrollment, we don't want to check the caller's access to the 
         // account based on study, because the account has not been put in a study accessible
         // to the caller. The check would fail for researchers.
+        final EnrollmentHolder holder = new EnrollmentHolder();
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
-        Account account = accountService.getAccountNoFilter(accountId)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        
-        enrollment = addEnrollment(account, enrollment);
-        accountService.updateAccount(account);
-        return enrollment;
+        accountService.editAccount(accountId, (acct) -> {
+            holder.enrollment = addEnrollment(acct, enrollment);
+        });
+        return holder.enrollment;
     }
     
     /**
@@ -168,13 +171,12 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, enrollment);
         
+        final EnrollmentHolder holder = new EnrollmentHolder();
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
-        Account account = accountService.getAccount(accountId)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
-
-        enrollment = unenroll(account, enrollment);
-        accountService.updateAccount(account);
-        return enrollment;
+        accountService.editAccount(accountId, (acct) -> {
+            holder.enrollment = unenroll(acct, enrollment);
+        });
+        return holder.enrollment;
     }
 
     /**

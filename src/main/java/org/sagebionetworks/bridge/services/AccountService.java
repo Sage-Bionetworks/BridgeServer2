@@ -316,24 +316,10 @@ public class AccountService {
         checkNotNull(accountId);
 
         Optional<Account> optional = accountDao.getAccount(accountId);
-        if (optional.isPresent()) {
-            // filtering based on the study associations of the caller.
-            return Optional.ofNullable( filterForStudy(optional.get()) );
+        if (!optional.isPresent() || filterForStudy(optional.get()) == null) {
+            return Optional.empty();
         }
-        return Optional.empty();
-    }
-    
-    /**
-     * getAccount() checks access to the account with the CAN_READ_PARTICIPANTS rule, 
-     * *and* it removes any enrollments from the record that are not visible to the 
-     * caller. The non-filtering method can be used in cases where CAN_READ_PARTICIPANTS 
-     * is going to be called, and we do not need to hide enrollments from the caller 
-     * (because the account is not going to be returned through the API).
-     */
-    public Optional<Account> getAccountNoFilter(AccountId accountId) {
-        checkNotNull(accountId);
-        
-        return accountDao.getAccount(accountId);
+        return optional;
     }
     
     /**

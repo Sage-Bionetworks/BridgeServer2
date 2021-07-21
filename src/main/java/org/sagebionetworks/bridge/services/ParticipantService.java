@@ -345,9 +345,6 @@ public class ParticipantService {
             LOG.error("getParticipant() called with no account. Was the account deleted in the middle of the call?");
             throw new EntityNotFoundException(Account.class);
         }
-        if (BridgeUtils.filterForStudy(account) == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
 
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
         StudyAssociations assoc = studyAssociationsVisibleToCaller(account);

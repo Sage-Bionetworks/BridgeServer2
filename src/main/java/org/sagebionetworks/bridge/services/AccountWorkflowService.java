@@ -250,7 +250,7 @@ public class AccountWorkflowService {
         
         App app = appService.getApp(accountId.getAppId());
         
-        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+        Account account = accountService.getAccount(accountId).orElse(null);
         
         if (account != null) {
             if (type == ChannelType.EMAIL) {
@@ -276,7 +276,7 @@ public class AccountWorkflowService {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
         App app = appService.getApp(data.getAppId());
-        Account account = accountService.getAccountNoFilter(AccountId.forId(app.getIdentifier(), data.getUserId()))
+        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), data.getUserId()))
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         if (type == ChannelType.EMAIL && TRUE.equals(account.getEmailVerified())) {
@@ -300,7 +300,7 @@ public class AccountWorkflowService {
         checkNotNull(app);
         checkNotNull(accountId);
 
-        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+        Account account = accountService.getAccount(accountId).orElse(null);
         if (account == null) {
             return;
         }
@@ -330,7 +330,7 @@ public class AccountWorkflowService {
         checkNotNull(accountId);
         checkArgument(app.getIdentifier().equals(accountId.getAppId()));
         
-        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+        Account account = accountService.getAccount(accountId).orElse(null);
         // We are going to change the status of the account if this succeeds, so we must also
         // ignore disabled accounts.
         if (account != null && account.getStatus() != AccountStatus.DISABLED) {
@@ -450,7 +450,7 @@ public class AccountWorkflowService {
         } else {
             throw new BridgeServiceException("Could not reset password");
         }
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         accountService.changePassword(account, channelType, passwordReset.getPassword());
@@ -536,7 +536,7 @@ public class AccountWorkflowService {
         }
 
         // check that the account exists, return quietly if not to prevent account enumeration attacks
-        Account account = accountService.getAccountNoFilter(signIn.getAccountId()).orElse(null);
+        Account account = accountService.getAccount(signIn.getAccountId()).orElse(null);
         if (account == null) {
             try {
                 // The not found case returns *much* faster than the normal case. To prevent account enumeration 
