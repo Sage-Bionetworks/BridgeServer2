@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SHARED_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_TRANSITION_STUDY;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_EXTERNAL_IDS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
@@ -640,4 +641,31 @@ public class AuthUtilsTest extends Mockito {
                 
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }
- }
+    
+    @Test
+    public void canTransitionStudiesForResearcher() { 
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+                
+        CAN_TRANSITION_STUDY.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void canTransitionStudiesForStudyCoordinator() { 
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+                
+        CAN_TRANSITION_STUDY.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void canEditSchedulesFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("some-other-study"))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+                
+        CAN_TRANSITION_STUDY.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
+    }
+
+}

@@ -115,6 +115,7 @@ public class StudyControllerTest extends Mockito {
 
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR, STUDY_DESIGNER, ORG_ADMIN, ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
         doReturn(session).when(controller).getAdministrativeSession();
         
         doReturn(mockRequest).when(controller).request();
@@ -137,6 +138,12 @@ public class StudyControllerTest extends Mockito {
         assertAccept(StudyController.class, "createStudyLogo");
         assertCreate(StudyController.class, "finishStudyLogo");
         assertGet(StudyController.class, "getStudyForApp");
+        assertPost(StudyController.class, "design");
+        assertPost(StudyController.class, "recruitment");
+        assertPost(StudyController.class, "closeEnrollment");
+        assertPost(StudyController.class, "analysis");
+        assertPost(StudyController.class, "completed");
+        assertPost(StudyController.class, "withdrawn");
     }
 
     @Test
@@ -264,7 +271,7 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void deleteStudyLogical() throws Exception {
-        StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, false);
+        StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, "false");
         assertEquals(result, StudyController.DELETED_MSG);
 
         verify(service).deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
@@ -272,10 +279,21 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void deleteStudyPhysical() throws Exception {
-        StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, true);
+        StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, "true");
         assertEquals(result, StudyController.DELETED_MSG);
 
         verify(service).deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void deleteStudyPhysicalFallsbacktoLogical() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, "true");
+        assertEquals(result, StudyController.DELETED_MSG);
+
+        verify(service).deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -441,5 +459,59 @@ public class StudyControllerTest extends Mockito {
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verify(service, never()).getStudy(any(), any(), anyBoolean());
+    }
+    
+    @Test
+    public void design() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        controller.design(TEST_STUDY_ID);
+        
+        verify(service).transitionToDesign(TEST_APP_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void recruitment() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        controller.recruitment(TEST_STUDY_ID);
+        
+        verify(service).transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
+    }
+
+    @Test
+    public void closeEnrollment() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        controller.closeEnrollment(TEST_STUDY_ID);
+        
+        verify(service).transitionToInFlight(TEST_APP_ID, TEST_STUDY_ID);
+    }
+
+    @Test
+    public void analysis() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        controller.analysis(TEST_STUDY_ID);
+        
+        verify(service).transitionToAnalysis(TEST_APP_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void completed() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        controller.completed(TEST_STUDY_ID);
+        
+        verify(service).transitionToCompleted(TEST_APP_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void withdrawn() {
+        doReturn(session).when(controller).getAdministrativeSession();
+        
+        controller.withdrawn(TEST_STUDY_ID);
+        
+        verify(service).transitionToWithdrawn(TEST_APP_ID, TEST_STUDY_ID);
     }
 }

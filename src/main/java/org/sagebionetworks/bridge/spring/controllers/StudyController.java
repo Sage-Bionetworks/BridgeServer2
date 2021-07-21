@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDIES;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.ONE_DAY_IN_SECONDS;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
@@ -110,10 +111,10 @@ public class StudyController extends BaseController {
 
     @DeleteMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public StatusMessage deleteStudy(@PathVariable String id,
-            @RequestParam(defaultValue = "false") boolean physical) {
-        UserSession session = getAuthenticatedSession(ADMIN);
+            @RequestParam(defaultValue = "false") String physical) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
 
-        if (physical) {
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
             service.deleteStudyPermanently(session.getAppId(), id);
         } else {
             service.deleteStudy(session.getAppId(), id);

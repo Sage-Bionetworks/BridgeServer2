@@ -2,16 +2,13 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toSet;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_ORG_SPONSORED_STUDIES;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_TRANSITION_STUDY;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.DEVELOPER;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
-import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
@@ -31,14 +28,12 @@ import java.util.function.Consumer;
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
@@ -63,19 +58,9 @@ public class StudyService {
             .put(ANALYSIS, ImmutableSet.of(RECRUITMENT, IN_FLIGHT, COMPLETED, WITHDRAWN))
             .put(COMPLETED, ImmutableSet.of())
             .put(WITHDRAWN, ImmutableSet.of()).build();
-    private static final Map<StudyPhase, Set<Roles>> ALLOWED_TO_TRANSITION = new ImmutableMap.Builder<StudyPhase, Set<Roles>>()
-            .put(LEGACY, ImmutableSet.of(DEVELOPER, ADMIN))
-            .put(DESIGN, ImmutableSet.of(STUDY_COORDINATOR, RESEARCHER, ADMIN))
-            // So only study admins can start the study, not developers. This might need to change.
-            .put(RECRUITMENT, ImmutableSet.of(STUDY_COORDINATOR, RESEARCHER, ADMIN))
-            .put(IN_FLIGHT, ImmutableSet.of(STUDY_COORDINATOR, RESEARCHER, ADMIN))
-            .put(ANALYSIS, ImmutableSet.of(STUDY_COORDINATOR, RESEARCHER, ADMIN))
-            .put(COMPLETED, ImmutableSet.of(DEVELOPER, STUDY_DESIGNER, STUDY_COORDINATOR, RESEARCHER, ADMIN))
-            .put(WITHDRAWN, ImmutableSet.of(DEVELOPER, STUDY_DESIGNER, STUDY_COORDINATOR, RESEARCHER, ADMIN)).build();
     
-    // The effect of these permissions is that tests (using legacy studies) should not break. We'll 
-    // need to be careful about that because if the studies are created in a new environment, they'll 
-    // be in phase "design".
+    // Legacy studies, and studies created in the design phase, are fully editable/deletable, which was
+    // their legacy behavior. In later phases, these no longer become possible. 
     private static final Set<StudyPhase> CAN_EDIT_METADATA = ImmutableSet.of(LEGACY, DESIGN, RECRUITMENT, IN_FLIGHT);
     private static final Set<StudyPhase> CAN_EDIT_CORE = ImmutableSet.of(LEGACY, DESIGN);
     private static final Set<StudyPhase> CAN_DELETE = ImmutableSet.of(LEGACY, DESIGN, COMPLETED, WITHDRAWN);
@@ -198,12 +183,13 @@ public class StudyService {
             throw new EntityNotFoundException(Study.class);
         }
         if (!CAN_EDIT_METADATA.contains(existing.getPhase())) {
-            throw new BadRequestException("Study cannot be changed during phase " + existing.getPhase().label());
+            throw new BadRequestException("Study cannot be changed during phase " 
+                    + existing.getPhase().label() + ".");
         }
         if (!CAN_EDIT_CORE.contains(existing.getPhase()) &&
                 !Objects.equals(study.getScheduleGuid(), existing.getScheduleGuid())) {
             throw new BadRequestException("Study schedule cannot be changed or removed during phase " 
-                    + existing.getPhase().label());
+                    + existing.getPhase().label() + ".");
         }
         study.setAppId(appId);
         study.setCreatedOn(existing.getCreatedOn());
@@ -261,7 +247,9 @@ public class StudyService {
     
     /**
      * Move a study from the design phase into recruitment for the study. The study 
-     * is now “live,” and the schedule is published and cannot be changed for the study.
+     * is now “live,” and the schedule (if one is assigned) is published and cannot 
+     * be changed further, nor can the study be associated to another schedule 
+     * (or no schedule).
      */
     public Study transitionToRecruitment(String appId, String studyId) {
         return phaseTransition(appId, studyId, RECRUITMENT, (study) -> {
@@ -316,19 +304,12 @@ public class StudyService {
         if (study == null) {
             throw new EntityNotFoundException(Study.class);
         }
-        
-        // TODO: If the study has no enrolled production users, then it is
-        // possible to transition it back to design for further editing.
+        CAN_TRANSITION_STUDY.checkAndThrow(STUDY_ID, study.getIdentifier());
         
         Set<StudyPhase> allowedTargetPhases = ALLOWED_PHASE_TRANSITIONS.get(study.getPhase());
         if (!allowedTargetPhases.contains(targetPhase)) {
             throw new BadRequestException("Study cannot transition from " + 
-                    study.getPhase().label() + " to " + targetPhase.label());
-        }
-        Set<Roles> allowedRoles = ALLOWED_TO_TRANSITION.get(targetPhase);
-        if (!RequestContext.get().isInRole(allowedRoles)) {
-            throw new UnauthorizedException("Caller cannot transition study to phase " + 
-                    targetPhase.label());
+                    study.getPhase().label() + " to " + targetPhase.label() + ".");
         }
         study.setPhase(targetPhase);
         
