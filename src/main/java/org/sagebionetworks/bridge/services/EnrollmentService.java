@@ -14,7 +14,6 @@ import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.joda.time.DateTime;
@@ -36,6 +35,10 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
 public class EnrollmentService {
+    
+    private class EnrollmentHolder {
+        Enrollment enrollment;
+    }
     
     private AccountService accountService;
     
@@ -109,12 +112,12 @@ public class EnrollmentService {
         // Because this is an enrollment, we don't want to check the caller's access to the 
         // account based on study, because the account has not been put in a study accessible
         // to the caller. The check would fail for researchers.
-        final List<Enrollment> captured = new ArrayList<>();
+        final EnrollmentHolder holder = new EnrollmentHolder();
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
         accountService.editAccount(accountId, (acct) -> {
-            captured.add( addEnrollment(acct, enrollment) );
+            holder.enrollment = addEnrollment(acct, enrollment);
         });
-        return captured.get(0);
+        return holder.enrollment;
     }
     
     /**
@@ -168,12 +171,12 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, enrollment);
         
-        final List<Enrollment> captured = new ArrayList<>();
+        final EnrollmentHolder holder = new EnrollmentHolder();
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
         accountService.editAccount(accountId, (acct) -> {
-            captured.add(unenroll(acct, enrollment));
+            holder.enrollment = unenroll(acct, enrollment);
         });
-        return captured.get(0);
+        return holder.enrollment;
     }
 
     /**
