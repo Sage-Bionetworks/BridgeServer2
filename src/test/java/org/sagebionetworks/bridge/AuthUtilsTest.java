@@ -10,7 +10,6 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SHARED_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_EXTERNAL_IDS;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_ORGANIZATIONS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
@@ -643,18 +642,32 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void canReadOrganizationsSucceedsForAdmin() {
+    public void canReadOrg() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
-                
-        CAN_READ_ORGANIZATIONS.checkAndThrow();
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        AuthUtils.CAN_READ_ORG.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }
-
+    
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void canReadOrganizationsFailsForOrgAdmin() {
+    public void canReadOrgFails() { 
         RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-                
-        CAN_READ_ORGANIZATIONS.checkAndThrow();
+                .withCallerOrgMembership("some-other-org").build());
+        AuthUtils.CAN_READ_ORG.checkAndThrow(ORG_ID, TEST_ORG_ID);
+    }
+    
+    @Test
+    public void canEditOrg() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        AuthUtils.CAN_EDIT_ORG.checkAndThrow(ORG_ID, TEST_ORG_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void canEditOrgFailes() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        AuthUtils.CAN_EDIT_ORG.checkAndThrow(ORG_ID, TEST_ORG_ID);
     }
 }

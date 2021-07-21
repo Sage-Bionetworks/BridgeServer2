@@ -24,8 +24,8 @@ import org.sagebionetworks.bridge.exceptions.ConstraintViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.OrganizationDao;
@@ -91,7 +91,7 @@ public class OrganizationService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         
-        if (!AuthUtils.CAN_READ_ORGANIZATIONS.check()) {
+        if (!RequestContext.get().isInRole(Roles.ADMIN)) {
             List<Organization> list = ImmutableList.of();
             String orgId = RequestContext.get().getCallerOrgMembership();
             if (orgId != null) {

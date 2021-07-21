@@ -22,9 +22,6 @@ import java.util.Set;
  */
 public class AuthUtils {
     
-    public static final AuthEvaluator CAN_READ_ORGANIZATIONS = new AuthEvaluator()
-            .hasAnyRole(ADMIN);
-
     /**
      * Is this scoped to specific studies? It should have one of the study-scoped
      * roles, and no roles that are app scoped that we would allow wider latitude
