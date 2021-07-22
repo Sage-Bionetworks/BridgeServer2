@@ -3,9 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_DELETE_ORG;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -15,8 +12,10 @@ import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.OrganizationValidator.INSTANCE;
 
+import java.util.List;
 import java.util.Optional;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
@@ -26,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.OrganizationDao;
@@ -90,6 +90,19 @@ public class OrganizationService {
         if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
+        
+        if (!RequestContext.get().isInRole(Roles.ADMIN)) {
+            List<Organization> list = ImmutableList.of();
+            String orgId = RequestContext.get().getCallerOrgMembership();
+            if (orgId != null) {
+                Organization org = orgDao.getOrganization(appId, orgId)
+                        .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
+                list = ImmutableList.of(org); 
+            }
+            return new PagedResourceList<>(list, list.size(), true)
+                    .withRequestParam(OFFSET_BY, offsetBy)
+                    .withRequestParam(PAGE_SIZE, pageSize);
+        }
         return orgDao.getOrganizations(appId, offsetBy, pageSize)
                 .withRequestParam(OFFSET_BY, offsetBy)
                 .withRequestParam(PAGE_SIZE, pageSize);
@@ -126,8 +139,6 @@ public class OrganizationService {
      */
     public Organization updateOrganization(Organization organization) {
         checkNotNull(organization);
-
-        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, organization.getIdentifier());
         
         Validate.entityThrowingException(INSTANCE, organization);
         
@@ -171,8 +182,6 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         
-        CAN_DELETE_ORG.checkAndThrow();
-        
         Organization existing = orgDao.getOrganization(appId, identifier)
                 .orElseThrow(() -> new EntityNotFoundException(Organization.class));        
         if (assessmentDao.hasAssessmentFromOrg(appId, identifier)) {
@@ -192,8 +201,6 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         checkNotNull(search);
-        
-        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
         
         AccountSummarySearch scopedSearch = search.toBuilder()
                 // only needed for legacy APIs
@@ -222,8 +229,6 @@ public class OrganizationService {
         checkArgument(isNotBlank(identifier));
         checkArgument(isNotBlank(userId));
         
-        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
-        
         AccountId accountId = AccountId.forId(appId, userId);
         accountService.editAccount(accountId, (acct) -> {
             RequestContext context = RequestContext.get();
@@ -239,8 +244,6 @@ public class OrganizationService {
         checkArgument(isNotBlank(appId));
         checkArgument(isNotBlank(identifier));
         checkArgument(isNotBlank(userId));
-        
-        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, identifier);
 
         AccountId accountId = AccountId.forId(appId, userId);
         accountService.editAccount(accountId, (acct) -> {

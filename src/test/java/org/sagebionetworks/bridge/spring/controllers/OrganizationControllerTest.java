@@ -16,6 +16,7 @@ import static org.testng.Assert.assertSame;
 import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -27,6 +28,7 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -132,6 +134,8 @@ public class OrganizationControllerTest extends Mockito {
     
     @Test
     public void updateOrganization() throws Exception {
+        RequestContext.set(RequestContext.get().toBuilder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
         Organization org = Organization.create();
@@ -154,6 +158,9 @@ public class OrganizationControllerTest extends Mockito {
     
     @Test
     public void getOrganization() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(IDENTIFIER)
+                .build());
         doReturn(session).when(controller).getAdministrativeSession();
         
         Organization org = Organization.create();
