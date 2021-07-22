@@ -22,6 +22,10 @@ import java.util.Set;
  */
 public class AuthUtils {
     
+    public static final AuthEvaluator CAN_TRANSITION_STUDY = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, ADMIN);
+    
     /**
      * Is this scoped to specific studies? It should have one of the study-scoped
      * roles, and no roles that are app scoped that we would allow wider latitude

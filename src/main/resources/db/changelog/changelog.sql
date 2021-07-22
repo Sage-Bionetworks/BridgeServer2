@@ -748,3 +748,8 @@ ADD COLUMN `disposition` enum('INLINE','ATTACHMENT') NOT NULL DEFAULT 'ATTACHMEN
 
 ALTER TABLE `Substudies`
 ADD COLUMN `logoGuid` varchar(255);
+
+-- changeset bridge:41
+
+ALTER TABLE `Substudies`
+MODIFY COLUMN `phase` enum('LEGACY', 'DESIGN', 'RECRUITMENT', 'IN_FLIGHT', 'ANALYSIS', 'COMPLETED', 'WITHDRAWN') DEFAULT 'LEGACY';

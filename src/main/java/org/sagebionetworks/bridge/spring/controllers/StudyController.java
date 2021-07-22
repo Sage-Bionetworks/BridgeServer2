@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDIES;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.ONE_DAY_IN_SECONDS;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
@@ -110,10 +111,10 @@ public class StudyController extends BaseController {
 
     @DeleteMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public StatusMessage deleteStudy(@PathVariable String id,
-            @RequestParam(defaultValue = "false") boolean physical) {
-        UserSession session = getAuthenticatedSession(ADMIN);
+            @RequestParam(defaultValue = "false") String physical) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
 
-        if (physical) {
+        if ("true".equals(physical) && session.isInRole(ADMIN)) {
             service.deleteStudyPermanently(session.getAppId(), id);
         } else {
             service.deleteStudy(session.getAppId(), id);
@@ -172,8 +173,7 @@ public class StudyController extends BaseController {
         return study;
     }
 
-    @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", 
-            produces = { APPLICATION_JSON_UTF8_VALUE })
+    @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", produces = { APPLICATION_JSON_UTF8_VALUE })
     public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId)
             throws JsonProcessingException {
         CacheKey key = CacheKey.publicStudy(appId, studyId);
@@ -185,5 +185,47 @@ public class StudyController extends BaseController {
             cacheProvider.setObject(key, json, ONE_DAY_IN_SECONDS);
         }
         return json;
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/design")
+    public Study design(@PathVariable String studyId) {
+        UserSession session = getAdministrativeSession();
+        
+        return service.transitionToDesign(session.getAppId(), studyId);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/recruit")
+    public Study recruitment(@PathVariable String studyId) {
+        UserSession session = getAdministrativeSession();
+        
+        return service.transitionToRecruitment(session.getAppId(), studyId);
+    }
+
+    @PostMapping("/v5/studies/{studyId}/conduct")
+    public Study closeEnrollment(@PathVariable String studyId) {
+        UserSession session = getAdministrativeSession();
+        
+        return service.transitionToInFlight(session.getAppId(), studyId);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/analyze")
+    public Study analysis(@PathVariable String studyId) { 
+        UserSession session = getAdministrativeSession();
+        
+        return service.transitionToAnalysis(session.getAppId(), studyId);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/complete")
+    public Study completed(@PathVariable String studyId) { 
+        UserSession session = getAdministrativeSession();
+        
+        return service.transitionToCompleted(session.getAppId(), studyId);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/withdraw")
+    public Study withdrawn(@PathVariable String studyId) {
+        UserSession session = getAdministrativeSession();
+       
+        return service.transitionToWithdrawn(session.getAppId(), studyId);
     }
 }

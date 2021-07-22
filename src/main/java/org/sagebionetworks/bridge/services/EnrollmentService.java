@@ -45,12 +45,12 @@ public class EnrollmentService {
     private EnrollmentDao enrollmentDao;
     
     @Autowired
-    public final void setAccountService(AccountService accountService) {
+    final void setAccountService(AccountService accountService) {
         this.accountService = accountService;
     }
     
     @Autowired
-    public final void setEnrollmentDao(EnrollmentDao enrollmentDao) {
+    final void setEnrollmentDao(EnrollmentDao enrollmentDao) {
         this.enrollmentDao = enrollmentDao;
     }
     
@@ -122,7 +122,9 @@ public class EnrollmentService {
     
     /**
      * For methods that are going to save the account, this method adds an enrollment correctly
-     * to an account, but does not persist it or fire an enrollment event.
+     * to an account, but does not persist it or fire an enrollment event. It will also tag
+     * the user as a test user if the enrollment is for a study in the design phase. Once 
+     * tagged as a test account, an account is always a test account.
      */
     public Enrollment addEnrollment(Account account, Enrollment newEnrollment) {
         checkNotNull(account);
