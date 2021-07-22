@@ -91,9 +91,12 @@ public class AccountsController extends BaseController  {
         // is a superset of Account. That includes password, which we want to expose
         // in the SDK version of Account.
         StudyParticipant participant = parseJson(StudyParticipant.class);
-        participant = new StudyParticipant.Builder().copyOf(participant)
-                .withOrgMembership(orgId).build();
-        
+        // Admins can set someone in any organization, but others must create accounts
+        // in their own organization (particularly, org administrators).
+        if (!session.isInRole(ImmutableSet.of(ADMIN))) {
+            participant = new StudyParticipant.Builder().copyOf(participant)
+                    .withOrgMembership(orgId).build();
+        }
         App app = appService.getApp(session.getAppId());
         return participantService.createParticipant(app, participant, true);
     }

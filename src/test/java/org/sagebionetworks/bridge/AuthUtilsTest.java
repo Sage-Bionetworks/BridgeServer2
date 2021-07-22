@@ -668,4 +668,32 @@ public class AuthUtilsTest extends Mockito {
         CAN_TRANSITION_STUDY.checkAndThrow(STUDY_ID, TEST_STUDY_ID);
     }
 
+    public void canReadOrg() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        AuthUtils.CAN_READ_ORG.checkAndThrow(ORG_ID, TEST_ORG_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void canReadOrgFails() { 
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerOrgMembership("some-other-org").build());
+        AuthUtils.CAN_READ_ORG.checkAndThrow(ORG_ID, TEST_ORG_ID);
+    }
+    
+    @Test
+    public void canEditOrg() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        AuthUtils.CAN_EDIT_ORG.checkAndThrow(ORG_ID, TEST_ORG_ID);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void canEditOrgFailes() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+        AuthUtils.CAN_EDIT_ORG.checkAndThrow(ORG_ID, TEST_ORG_ID);
+    }
 }
