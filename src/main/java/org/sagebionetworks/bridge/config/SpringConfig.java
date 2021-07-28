@@ -5,7 +5,6 @@ import static org.hibernate.event.spi.EventType.DELETE;
 import static org.hibernate.event.spi.EventType.MERGE;
 import static org.hibernate.event.spi.EventType.SAVE_UPDATE;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -299,8 +298,15 @@ public class SpringConfig {
     }
 
     @Bean(name = "cmsEncryptorCache")
-    @Autowired
-    public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(CmsEncryptorCacheLoader cacheLoader) {
+    @Resource(name = "s3Helper")
+    public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(S3Helper s3Helper) {
+        BridgeConfig bridgeConfig = bridgeConfig();
+
+        CmsEncryptorCacheLoader cacheLoader = new CmsEncryptorCacheLoader();
+        cacheLoader.setCertBucket(bridgeConfig.getProperty("upload.cms.cert.bucket"));
+        cacheLoader.setPrivateKeyBucket(bridgeConfig.getProperty("upload.cms.priv.bucket"));
+        cacheLoader.setS3Helper(s3Helper);
+
         return CacheBuilder.newBuilder().build(cacheLoader);
     }
 

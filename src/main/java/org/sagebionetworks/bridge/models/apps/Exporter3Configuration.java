@@ -2,8 +2,6 @@ package org.sagebionetworks.bridge.models.apps;
 
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 /** This class holds Exporter 3.0 configuration for a given app. */
 public class Exporter3Configuration {
     private Long dataAccessTeamId;
@@ -12,7 +10,6 @@ public class Exporter3Configuration {
     private Long storageLocationId;
 
     /** Helper method that returns true if all configuration attributes are specified. */
-    @JsonIgnore
     public boolean isConfigured() {
         return dataAccessTeamId != null && projectId != null && rawDataFolderId != null && storageLocationId != null;
     }
@@ -50,7 +47,9 @@ public class Exporter3Configuration {
         this.rawDataFolderId = rawDataFolderId;
     }
 
-    /** The Synapse storage location that represents our External S3 bucket. This storage location is STS-enabled. */
+    /**
+     * The Synapse storage location that represents our External S3 bucket. This storage location should be
+     * STS-enabled. */
     public Long getStorageLocationId() {
         return storageLocationId;
     }

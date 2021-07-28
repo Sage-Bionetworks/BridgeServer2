@@ -210,11 +210,13 @@ public class DynamoUpload2 implements Upload {
     
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-requestedOn-index")
+    @Override
     public String getAppId() {
         return appId;
     }
     
     /** @see #getAppId */
+    @Override
     public void setAppId(String appId) {
         this.appId = appId;
     }

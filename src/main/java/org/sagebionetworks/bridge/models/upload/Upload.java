@@ -108,6 +108,7 @@ public interface Upload {
      * <p>The app ID for this upload.</p>
      */
     String getAppId();
+    void setAppId(String appId);
 
     /** Upload ID. This is the key in the Dynamo DB table that uniquely identifies this upload. */
     String getUploadId();

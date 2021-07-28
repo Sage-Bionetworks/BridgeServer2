@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,9 +26,14 @@ import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.services.HealthDataEx3Service;
 
 /**
- * This controller exposes the Exporter 3 implementation of Health Data Records. It's current usage is only for
- * testing purposes, which is why all the APIs are accessible only to Super Admins and why the URLs all start with
+ * <p>
+ * This controller exposes the Exporter 3 implementation of Health Data Records. Most of these APIs are used only for
+ * testing purposes, which is why most of the APIs are accessible only to Super Admins and why the URLs start with
  * /v1/admin/exporter3
+ * </p>
+ * <p>
+ * Some of these APIs are called by worker accounts via Exporter 3.0.
+ * </p>
  */
 @CrossOrigin
 @RestController
@@ -40,9 +46,9 @@ public class HealthDataEx3Controller extends BaseController {
     }
 
     /** Create or update health data record. Returns the created or updated record. */
-    @PostMapping(path="/v1/admin/exporter3/healthdata")
+    @PostMapping(path={"/v1/admin/exporter3/healthdata", "/v1/exporter3/healthdata"})
     public HealthDataRecordEx3 createOrUpdateRecord() {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        UserSession session = getAuthenticatedSession(WORKER);
         HealthDataRecordEx3 record = parseJson(HealthDataRecordEx3.class);
         record.setAppId(session.getAppId());
         HealthDataRecordEx3 savedRecord = healthDataEx3Service.createOrUpdateRecord(record);
@@ -72,9 +78,9 @@ public class HealthDataEx3Controller extends BaseController {
     }
 
     /** Retrieves the record for the given ID. */
-    @GetMapping(path="/v1/admin/exporter3/healthdata/{recordId}")
+    @GetMapping(path={"/v1/admin/exporter3/healthdata/{recordId}", "/v1/exporter3/healthdata/{recordId}"})
     public HealthDataRecordEx3 getRecord(@PathVariable String recordId) {
-        getAuthenticatedSession(SUPERADMIN);
+        getAuthenticatedSession(WORKER);
         HealthDataRecordEx3 record = healthDataEx3Service.getRecord(recordId).orElseThrow(() ->
                 new EntityNotFoundException(HealthDataRecordEx3.class));
 

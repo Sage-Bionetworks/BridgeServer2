@@ -169,6 +169,7 @@ public class TestConstants {
     public static final Set<String> STRING_TAGS = ImmutableSet.of("tag1", "tag2");
     public static final Set<Tag> TAGS = TagUtils.toTagSet(STRING_TAGS);
     public static final DateTime CREATED_ON = TIMESTAMP.minusHours(1);
+    public static final DateTime EXPORTED_ON = CREATED_ON.plusMinutes(1);
     public static final DateTime MODIFIED_ON = TIMESTAMP.plusHours(1);
 
     public static final PropertyInfo INFO1 = new PropertyInfo.Builder().withPropName("foo").withLabel("foo label")
