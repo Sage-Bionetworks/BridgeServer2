@@ -88,6 +88,7 @@ public class HibernateAccount implements Account {
     private int migrationVersion;
     private Set<Enrollment> enrollments;
     private String note;
+    private DateTimeZone clientTimeZone;
     
     /**
      * Constructor to load information for the AccountRef object. This avoids loading any of the 
@@ -159,7 +160,7 @@ public class HibernateAccount implements Account {
         return orgMembership;
     }
 
-    /** @see #getOrgMembershiop */
+    /** @see #getOrgMembership */
     public void setOrgMembership(String orgId) {
         this.orgMembership = orgId;
     }
@@ -542,5 +543,18 @@ public class HibernateAccount implements Account {
     @Override
     public void setNote(String note) {
         this.note = note;
+    }
+
+    // TODO: add description, seems to duplicate timeZone field.
+    // TODO: does this need JsonIgnore?
+    @Convert(converter = DateTimeZoneAttributeConverter.class)
+    @Override
+    public DateTimeZone getClientTimeZone() {
+        return clientTimeZone;
+    }
+
+    @Override
+    public void setClientTimeZone(DateTimeZone clientTimeZone) {
+        this.clientTimeZone = clientTimeZone;
     }
 }

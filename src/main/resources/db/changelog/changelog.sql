@@ -753,3 +753,8 @@ ADD COLUMN `logoGuid` varchar(255);
 
 ALTER TABLE `Substudies`
 MODIFY COLUMN `phase` enum('LEGACY', 'DESIGN', 'RECRUITMENT', 'IN_FLIGHT', 'ANALYSIS', 'COMPLETED', 'WITHDRAWN') DEFAULT 'LEGACY';
+
+-- changeset bridge:42
+
+ALTER TABLE `Accounts`
+ADD COLUMN `clientTimeZone` varchar(6) DEFAULT NULL;

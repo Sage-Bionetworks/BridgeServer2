@@ -232,6 +232,8 @@ public interface Account extends BridgeEntity {
     Set<Enrollment> getActiveEnrollments();
 
     String getNote();
-
     void setNote(String note);
+
+    DateTimeZone getClientTimeZone();
+    void setClientTimeZone(DateTimeZone clientTimeZone);
 }
