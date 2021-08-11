@@ -757,4 +757,4 @@ MODIFY COLUMN `phase` enum('LEGACY', 'DESIGN', 'RECRUITMENT', 'IN_FLIGHT', 'ANAL
 -- changeset bridge:42
 
 ALTER TABLE `Accounts`
-ADD COLUMN `clientTimeZone` varchar(255) DEFAULT NULL;
+ADD COLUMN `clientTimeZone` varchar(64) DEFAULT NULL;

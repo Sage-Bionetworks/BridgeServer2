@@ -9,11 +9,13 @@ import javax.persistence.Converter;
 public class DateTimeZoneIdConverter implements AttributeConverter<DateTimeZone, String> {
     @Override
     public String convertToDatabaseColumn(DateTimeZone dateTimeZone) {
+        if (dateTimeZone == null) return null;
         return dateTimeZone.getID();
     }
 
     @Override
     public DateTimeZone convertToEntityAttribute(String s) {
+        if (s == null) return null;
         return DateTimeZone.forID(s);
     }
 }
