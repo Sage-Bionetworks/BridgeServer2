@@ -547,7 +547,7 @@ public class HibernateAccount implements Account {
 
     // TODO: add description, seems to duplicate timeZone field.
     // TODO: does this need JsonIgnore?
-    @Convert(converter = DateTimeZoneAttributeConverter.class)
+    @Convert(converter = DateTimeZoneIdConverter.class)
     @Override
     public DateTimeZone getClientTimeZone() {
         return clientTimeZone;
