@@ -16,6 +16,8 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.getClientData;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -61,6 +63,7 @@ import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyPhase;
 
 public class Schedule2ServiceTest extends Mockito {
     
@@ -851,6 +854,19 @@ public class Schedule2ServiceTest extends Mockito {
         verify(mockDao).getAssessmentsForSessionInstance(GUID);
     }
     
+    @Test(expectedExceptions = BadRequestException.class)
+    public void createOrUpdateStudySchedule_studyPhaseWrong() {
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        
+        Schedule2 schedule = new Schedule2();
+        
+        service.createOrUpdateStudySchedule(study, schedule);
+    }
+    
     @Test
     public void createOrUpdateStudySchedule_create() {
         RequestContext.set(new RequestContext.Builder()
@@ -862,6 +878,7 @@ public class Schedule2ServiceTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         Study study = Study.create();
+        study.setPhase(DESIGN);
         
         Schedule2 schedule = new Schedule2();
         schedule.setName("Test Schedule");
@@ -888,6 +905,7 @@ public class Schedule2ServiceTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         Study study = Study.create();
+        study.setPhase(DESIGN);
         study.setScheduleGuid(SCHEDULE_GUID);
         
         Schedule2 schedule = new Schedule2();
