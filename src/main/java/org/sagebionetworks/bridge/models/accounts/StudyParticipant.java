@@ -80,7 +80,7 @@ public final class StudyParticipant implements BridgeEntity {
     private final Map<String,String> externalIds;
     private final String orgMembership;
     private final String note;
-    private final DateTimeZone clientTimeZone;
+    private final String clientTimeZone;
     
     private StudyParticipant(String firstName, String lastName, String email, Phone phone, Boolean emailVerified,
             Boolean phoneVerified, String externalId, String synapseUserId, String password, SharingScope sharingScope,
@@ -88,7 +88,7 @@ public final class StudyParticipant implements BridgeEntity {
             Map<String, List<UserConsentHistory>> consentHistories, Boolean consented, Set<Roles> roles,
             List<String> languages, AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone,
             JsonNode clientData, Set<String> studyIds, Map<String, String> externalIds, String orgId, String note,
-            DateTimeZone clientTimeZone) {
+            String clientTimeZone) {
         
         ImmutableMap.Builder<String, List<UserConsentHistory>> immutableConsentsBuilder = new ImmutableMap.Builder<>();
         if (consentHistories != null) {
@@ -228,7 +228,7 @@ public final class StudyParticipant implements BridgeEntity {
     public String getNote() {
         return note;
     }
-    public DateTimeZone getClientTimeZone() {
+    public String getClientTimeZone() {
         return clientTimeZone;
     }
 
@@ -296,7 +296,7 @@ public final class StudyParticipant implements BridgeEntity {
         private Map<String,String> externalIds;
         private String orgMembership;
         private String note;
-        private DateTimeZone clientTimeZone;
+        private String clientTimeZone;
         
         public Builder copyOf(StudyParticipant participant) {
             this.firstName = participant.getFirstName();
@@ -539,7 +539,7 @@ public final class StudyParticipant implements BridgeEntity {
             this.note = note;
             return this;
         }
-        public Builder withClientTimeZone(DateTimeZone clientTimeZone) {
+        public Builder withClientTimeZone(String clientTimeZone) {
             this.clientTimeZone = clientTimeZone;
             return this;
         }

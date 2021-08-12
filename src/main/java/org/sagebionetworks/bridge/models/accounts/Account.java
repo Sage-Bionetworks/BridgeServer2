@@ -234,6 +234,6 @@ public interface Account extends BridgeEntity {
     String getNote();
     void setNote(String note);
 
-    DateTimeZone getClientTimeZone();
-    void setClientTimeZone(DateTimeZone clientTimeZone);
+    String getClientTimeZone();
+    void setClientTimeZone(String clientTimeZone);
 }

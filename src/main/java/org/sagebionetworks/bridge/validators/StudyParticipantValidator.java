@@ -13,6 +13,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import org.joda.time.DateTimeZone;
+
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -117,7 +120,7 @@ public class StudyParticipantValidator implements Validator {
         if (participant.getSynapseUserId() != null && isBlank(participant.getSynapseUserId())) {
             errors.rejectValue("synapseUserId", CANNOT_BE_BLANK);
         }
-                
+
         for (String dataGroup : participant.getDataGroups()) {
             if (!app.getDataGroups().contains(dataGroup)) {
                 errors.rejectValue("dataGroups", messageForSet(app.getDataGroups(), dataGroup));
@@ -126,6 +129,13 @@ public class StudyParticipantValidator implements Validator {
         for (String attributeName : participant.getAttributes().keySet()) {
             if (!app.getUserProfileAttributes().contains(attributeName)) {
                 errors.rejectValue("attributes", messageForSet(app.getUserProfileAttributes(), attributeName));
+            }
+        }
+        if (participant.getClientTimeZone() != null) {
+            try {
+                DateTimeZone.forID(participant.getClientTimeZone());
+            } catch (IllegalArgumentException e) {
+                errors.rejectValue("clientTimeZone must be in the IANA time zone database format", "(ex. \"America/Los_Angeles\")");
             }
         }
     }

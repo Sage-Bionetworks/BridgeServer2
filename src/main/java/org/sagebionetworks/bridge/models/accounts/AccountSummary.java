@@ -27,12 +27,12 @@ public final class AccountSummary {
     private final Map<String, String> attributes;
     private final String orgMembership;
     private final String note;
-    private final DateTimeZone clientTimeZone;
+    private final String clientTimeZone;
     
     private AccountSummary(String firstName, String lastName, String email, String synapseUserId, Phone phone,
             Map<String, String> externalIds, String id, DateTime createdOn, AccountStatus status, String appId,
             Set<String> studyIds, Map<String, String> attributes, String orgMembership, String note,
-            DateTimeZone clientTimeZone) {
+            String clientTimeZone) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
@@ -117,7 +117,7 @@ public final class AccountSummary {
         return note;
     }
 
-    public DateTimeZone getClientTimeZone() {
+    public String getClientTimeZone() {
         return clientTimeZone;
     }
 
@@ -162,7 +162,7 @@ public final class AccountSummary {
         private Map<String, String> attributes;
         private String orgMembership;
         private String note;
-        private DateTimeZone clientTimeZone;
+        private String clientTimeZone;
         
         public Builder withAppId(String appId) {
             this.appId = appId;
@@ -220,7 +220,7 @@ public final class AccountSummary {
             this.note = note;
             return this;
         }
-        public Builder withClientTimeZone(DateTimeZone clientTimeZone) {
+        public Builder withClientTimeZone(String clientTimeZone) {
             this.clientTimeZone = clientTimeZone;
             return this;
         }
