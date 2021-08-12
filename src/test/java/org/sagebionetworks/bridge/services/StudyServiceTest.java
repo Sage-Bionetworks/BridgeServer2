@@ -692,4 +692,10 @@ public class StudyServiceTest {
         
         verify(mockCacheProvider).removeObject(CACHE_KEY);
     }
+    
+    @Test
+    public void removeScheduleFromStudies() {
+        service.removeScheduleFromStudies(TEST_APP_ID, SCHEDULE_GUID);
+        verify(mockStudyDao).removeScheduleFromStudies(TEST_APP_ID, SCHEDULE_GUID);
+    }
 }

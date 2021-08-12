@@ -37,8 +37,11 @@ import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.FileService;
+import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyService;
 
 @CrossOrigin
@@ -51,6 +54,8 @@ public class StudyController extends BaseController {
     
     private FileService fileService;
 
+    private Schedule2Service scheduleService;
+
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.service = studyService;
@@ -59,6 +64,11 @@ public class StudyController extends BaseController {
     @Autowired
     final void setFileService(FileService fileService) {
         this.fileService = fileService;
+    }
+    
+    @Autowired
+    final void setScheduleService(Schedule2Service scheduleService) {
+        this.scheduleService = scheduleService;
     }
     
     @GetMapping(path = {"/v5/studies", "/v3/substudies"})
@@ -227,5 +237,41 @@ public class StudyController extends BaseController {
         UserSession session = getAdministrativeSession();
        
         return service.transitionToWithdrawn(session.getAppId(), studyId);
+    }
+    
+    @GetMapping("/v5/studies/{studyId}/schedule")
+    public Schedule2 getSchedule(@PathVariable String studyId) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
+        
+        Study study = service.getStudy(session.getAppId(), studyId, true);
+        CAN_READ_STUDIES.checkAndThrow(STUDY_ID, studyId);
+        
+        return scheduleService.getScheduleForStudy(session.getAppId(), study);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/schedule")
+    public Schedule2 createOrUpdateSchedule(@PathVariable String studyId) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
+        
+        Schedule2 schedule = parseJson(Schedule2.class);
+        schedule.setAppId(session.getAppId());
+        
+        Study study = service.getStudy(session.getAppId(), studyId, true);
+        CAN_UPDATE_STUDIES.checkAndThrow(STUDY_ID, studyId);
+
+        return scheduleService.createOrUpdateStudySchedule(study, schedule);
+    }
+
+    @GetMapping("/v5/studies/{studyId}/timeline")
+    public Timeline getTimeline(@PathVariable String studyId) {
+        UserSession session = getAdministrativeSession();
+        
+        Study study = service.getStudy(session.getAppId(), studyId, true);
+        CAN_READ_STUDIES.checkAndThrow(STUDY_ID, studyId);
+        
+        if (study.getScheduleGuid() == null) {
+            throw new EntityNotFoundException(Schedule2.class);
+        }
+        return scheduleService.getTimelineForSchedule(session.getAppId(), study.getScheduleGuid());
     }
 }

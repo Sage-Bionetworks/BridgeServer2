@@ -104,14 +104,11 @@ public class Schedule2Controller extends BaseController {
     }
     
     @DeleteMapping("/v5/schedules/{guid}")
-    public StatusMessage deleteSchedule(@PathVariable String guid, @RequestParam String physical) {
-        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
+    public StatusMessage deleteSchedule(@PathVariable String guid) {
+        UserSession session = getAuthenticatedSession(ADMIN);
         
-        if ("true".equals(physical) && session.isInRole(ADMIN)) {
-            service.deleteSchedulePermanently(session.getAppId(), guid);
-        } else {
-            service.deleteSchedule(session.getAppId(), guid);
-        }
+        service.deleteSchedulePermanently(session.getAppId(), guid);
+        
         return DELETED_MSG;
     }
 }

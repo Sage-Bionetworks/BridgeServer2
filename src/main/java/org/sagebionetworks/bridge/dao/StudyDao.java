@@ -8,6 +8,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 
 public interface StudyDao {
     
+    void removeScheduleFromStudies(String appId, String scheduleGuid);
+    
     PagedResourceList<Study> getStudies(String appId, Set<String> studyIds, 
             Integer offsetBy, Integer pageSize, boolean includeDeleted);
     

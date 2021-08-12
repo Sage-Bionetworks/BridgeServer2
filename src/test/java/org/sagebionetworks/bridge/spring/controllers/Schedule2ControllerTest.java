@@ -74,7 +74,7 @@ public class Schedule2ControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAdministrativeSession();
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -251,27 +251,11 @@ public class Schedule2ControllerTest extends Mockito {
     }
     
     @Test
-    public void deleteScheduleLogically() {
-        StatusMessage retValue = controller.deleteSchedule(GUID, "false");
+    public void deleteSchedule() {
+        StatusMessage retValue = controller.deleteSchedule(GUID);
         assertSame(retValue, Schedule2Controller.DELETED_MSG);
         
-        verify(mockService).deleteSchedule(TEST_APP_ID, GUID);
-    }
-    
-    @Test
-    public void deleteSchedulePhysically() {
-        permitAsAdmin();
-        
-        controller.deleteSchedule(GUID, "true");
-        
         verify(mockService).deleteSchedulePermanently(TEST_APP_ID, GUID);
-    }
-    
-    @Test
-    public void deleteSchedulePhysicallyInsufficientPermissions() {
-        controller.deleteSchedule(GUID, "true");
-        
-        verify(mockService).deleteSchedule(TEST_APP_ID, GUID);
     }
     
     @Test
