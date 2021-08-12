@@ -74,7 +74,7 @@ public class Schedule2ControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAdministrativeSession();
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
@@ -112,14 +112,6 @@ public class Schedule2ControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder()
                 .withOrgMembership(TEST_ORG_ID)
                 .withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
-    }
-    
-    private void permitAsAdmin() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN))
-                .build());
-        session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(ADMIN)).build());
     }
     
     @Test
@@ -225,9 +217,14 @@ public class Schedule2ControllerTest extends Mockito {
     
     @Test
     public void updateSchedule() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+
         Schedule2 existing = new Schedule2();
         existing.setVersion(100L);
-        when(mockService.updateSchedule(any())).thenReturn(existing);
+        when(mockService.updateSchedule(any(), any())).thenReturn(existing);
+        
+        when(mockService.getSchedule(TEST_APP_ID, GUID)).thenReturn(existing);
         
         Schedule2 schedule = new Schedule2();
         mockRequestBody(mockRequest, schedule);
@@ -235,7 +232,7 @@ public class Schedule2ControllerTest extends Mockito {
         Schedule2 retValue = controller.updateSchedule(GUID);
         assertEquals(retValue, existing);
         
-        verify(mockService).updateSchedule(scheduleCaptor.capture());
+        verify(mockService).updateSchedule(eq(existing), scheduleCaptor.capture());
         
         Schedule2 persisted = scheduleCaptor.getValue();
         assertEquals(persisted.getGuid(), GUID);
@@ -251,27 +248,11 @@ public class Schedule2ControllerTest extends Mockito {
     }
     
     @Test
-    public void deleteScheduleLogically() {
-        StatusMessage retValue = controller.deleteSchedule(GUID, "false");
+    public void deleteSchedule() {
+        StatusMessage retValue = controller.deleteSchedule(GUID);
         assertSame(retValue, Schedule2Controller.DELETED_MSG);
         
-        verify(mockService).deleteSchedule(TEST_APP_ID, GUID);
-    }
-    
-    @Test
-    public void deleteSchedulePhysically() {
-        permitAsAdmin();
-        
-        controller.deleteSchedule(GUID, "true");
-        
         verify(mockService).deleteSchedulePermanently(TEST_APP_ID, GUID);
-    }
-    
-    @Test
-    public void deleteSchedulePhysicallyInsufficientPermissions() {
-        controller.deleteSchedule(GUID, "true");
-        
-        verify(mockService).deleteSchedule(TEST_APP_ID, GUID);
     }
     
     @Test

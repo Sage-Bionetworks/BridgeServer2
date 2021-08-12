@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.hibernate.HibernateStudyDao.FROM_PHRASE;
@@ -52,6 +53,19 @@ public class HibernateStudyDaoTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         dao = new HibernateStudyDao();
         dao.setHibernateHelper(hibernateHelper);
+    }
+    
+    @Test
+    public void removeScheduleFromStudies() {
+        dao.removeScheduleFromStudies(TEST_APP_ID, SCHEDULE_GUID);
+        
+        verify(hibernateHelper).nativeQueryUpdate(queryCaptor.capture(), paramsCaptor.capture());
+        
+        assertEquals(queryCaptor.getValue(), "UPDATE Substudies SET scheduleGuid = NULL "
+                + "WHERE studyId = :appId AND scheduleGuid = :scheduleGuid AND phase IN ('LEGACY','DESIGN')");
+
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
+        assertEquals(paramsCaptor.getValue().get("scheduleGuid"), SCHEDULE_GUID);
     }
     
     @Test

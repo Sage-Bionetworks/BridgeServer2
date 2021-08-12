@@ -93,6 +93,13 @@ public class StudyService {
         this.scheduleService = scheduleService;
     }
     
+    public void removeScheduleFromStudies(String appId, String scheduleGuid) {
+        checkNotNull(appId);
+        checkNotNull(scheduleGuid);
+        
+        studyDao.removeScheduleFromStudies(appId, scheduleGuid);
+    }
+    
     public Study getStudy(String appId, String studyId, boolean throwsException) {
         checkNotNull(appId);
         checkNotNull(studyId);

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SCHEDULES;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -91,7 +93,11 @@ public class Schedule2Controller extends BaseController {
         schedule.setGuid(guid);
         schedule.setAppId(session.getAppId());
         
-        return service.updateSchedule(schedule);
+        Schedule2 existing = service.getSchedule(schedule.getAppId(), schedule.getGuid());
+        
+        CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
+        
+        return service.updateSchedule(existing, schedule);
     }
     
     @PostMapping("/v5/schedules/{guid}/publish")
@@ -104,14 +110,11 @@ public class Schedule2Controller extends BaseController {
     }
     
     @DeleteMapping("/v5/schedules/{guid}")
-    public StatusMessage deleteSchedule(@PathVariable String guid, @RequestParam String physical) {
-        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
+    public StatusMessage deleteSchedule(@PathVariable String guid) {
+        UserSession session = getAuthenticatedSession(ADMIN);
         
-        if ("true".equals(physical) && session.isInRole(ADMIN)) {
-            service.deleteSchedulePermanently(session.getAppId(), guid);
-        } else {
-            service.deleteSchedule(session.getAppId(), guid);
-        }
+        service.deleteSchedulePermanently(session.getAppId(), guid);
+        
         return DELETED_MSG;
     }
 }

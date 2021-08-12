@@ -56,6 +56,8 @@ public class Schedule2Service {
     
     private OrganizationService organizationService;
     
+    private StudyService studyService;
+    
     private Schedule2Dao dao;
     
     @Autowired
@@ -66,6 +68,11 @@ public class Schedule2Service {
     @Autowired
     final void setOrganizationService(OrganizationService organizationService) {
         this.organizationService = organizationService;
+    }
+    
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     
     @Autowired
@@ -156,14 +163,37 @@ public class Schedule2Service {
         checkNotNull(appId);
         checkNotNull(study);
         
-        CAN_READ_SCHEDULES.checkAndThrow(STUDY_ID, study.getIdentifier());
-        
         if (study.getScheduleGuid() == null) {
             throw new EntityNotFoundException(Schedule2.class);
         }
         Schedule2 schedule = dao.getSchedule(appId, study.getScheduleGuid())
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
 
+        CAN_READ_SCHEDULES.checkAndThrow(STUDY_ID, study.getIdentifier(), ORG_ID, schedule.getOwnerId());
+        
+        return schedule;
+    }
+    
+    public Schedule2 createOrUpdateStudySchedule(Study study, Schedule2 schedule) {
+        checkNotNull(study);
+        checkNotNull(schedule);
+        
+        Schedule2 existing = null;
+        if (study.getScheduleGuid() != null) {
+            // this shouldn't come back null if it's set in the study, that would be strange.
+            existing = dao.getSchedule(schedule.getAppId(), study.getScheduleGuid()).orElse(null);    
+        }
+        if (existing != null) {
+            // This is an interesting bug that probably exists in the updateSchedule call and 
+            // will need to be fixed. It's possible to submit the schedule for another study,
+            // with keys and all, to the update API, and at some point we have to check that
+            // we're talking about the same object.
+            schedule.setGuid(study.getScheduleGuid());
+            return updateSchedule(existing, schedule);
+        }
+        schedule = createSchedule(schedule);
+        study.setScheduleGuid(schedule.getGuid());
+        studyService.updateStudy(schedule.getAppId(), study);
         return schedule;
     }
     
@@ -214,13 +244,10 @@ public class Schedule2Service {
      * Update a schedule. Will throw an exception once the schedule is published. Ownership
      * cannot be changed once a schedule is created.
      */
-    public Schedule2 updateSchedule(Schedule2 schedule) {
+    public Schedule2 updateSchedule(Schedule2 existing, Schedule2 schedule) {
+        checkNotNull(existing);
         checkNotNull(schedule);
         
-        Schedule2 existing = dao.getSchedule(schedule.getAppId(), schedule.getGuid())
-                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
-        
-        CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
         if (existing.isDeleted() && schedule.isDeleted()) {
             throw new EntityNotFoundException(Schedule2.class);
         } 
@@ -242,7 +269,7 @@ public class Schedule2Service {
 
         Validate.entityThrowingException(INSTANCE, schedule);
         
-        return dao.updateSchedule(schedule);
+        return dao.updateSchedule(schedule);        
     }
     
     /**
@@ -295,6 +322,9 @@ public class Schedule2Service {
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
+        
+        studyService.removeScheduleFromStudies(appId, guid);
+        
         dao.deleteSchedulePermanently(existing);
     }
     
