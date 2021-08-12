@@ -18,6 +18,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -250,7 +251,7 @@ public class StudyController extends BaseController {
     }
     
     @PostMapping("/v5/studies/{studyId}/schedule")
-    public Schedule2 createOrUpdateSchedule(@PathVariable String studyId) {
+    public ResponseEntity<Schedule2> createOrUpdateSchedule(@PathVariable String studyId) {
         UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         
         Schedule2 schedule = parseJson(Schedule2.class);
@@ -258,8 +259,11 @@ public class StudyController extends BaseController {
         
         Study study = service.getStudy(session.getAppId(), studyId, true);
         CAN_UPDATE_STUDIES.checkAndThrow(STUDY_ID, studyId);
-
-        return scheduleService.createOrUpdateStudySchedule(study, schedule);
+        
+        int status = (study.getScheduleGuid() == null) ? 201: 200;
+        Schedule2 retValue = scheduleService.createOrUpdateStudySchedule(study, schedule);
+        
+        return ResponseEntity.status(status).body(retValue);
     }
 
     @GetMapping("/v5/studies/{studyId}/timeline")

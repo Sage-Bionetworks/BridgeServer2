@@ -41,6 +41,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.springframework.http.ResponseEntity;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -544,7 +545,7 @@ public class StudyControllerTest extends Mockito {
     }
     
     @Test
-    public void createOrUpdateSchedule() throws Exception {
+    public void createOrUpdateSchedule_create() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
@@ -560,12 +561,35 @@ public class StudyControllerTest extends Mockito {
         
         when(mockScheduleService.createOrUpdateStudySchedule(any(), any())).thenReturn(schedule);
         
-        Schedule2 retValue = controller.createOrUpdateSchedule(TEST_STUDY_ID);
-        assertEquals(retValue.getName(), "Test");
+        ResponseEntity<Schedule2> retValue = controller.createOrUpdateSchedule(TEST_STUDY_ID);
+        assertEquals(retValue.getBody().getName(), "Test");
+        assertEquals(retValue.getStatusCodeValue(), 201);
         
         verify(mockScheduleService).createOrUpdateStudySchedule(any(), scheduleCaptor.capture());
         // This has been set from the session.
         assertEquals(scheduleCaptor.getValue().getAppId(), TEST_APP_ID);
+    }
+    
+    @Test
+    public void createOrUpdateSchedule_update() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .build());
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);        
+
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setName("Test");
+        TestUtils.mockRequestBody(mockRequest, schedule);
+        
+        when(mockScheduleService.createOrUpdateStudySchedule(any(), any())).thenReturn(schedule);
+        
+        ResponseEntity<Schedule2> retValue = controller.createOrUpdateSchedule(TEST_STUDY_ID);
+        assertEquals(retValue.getStatusCodeValue(), 200);
     }
     
     @Test
