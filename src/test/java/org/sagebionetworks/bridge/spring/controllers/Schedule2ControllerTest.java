@@ -114,14 +114,6 @@ public class Schedule2ControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
     }
     
-    private void permitAsAdmin() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN))
-                .build());
-        session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(ADMIN)).build());
-    }
-    
     @Test
     public void getSchedulesForDeveloper() {
         permitAsDeveloper();
@@ -225,9 +217,14 @@ public class Schedule2ControllerTest extends Mockito {
     
     @Test
     public void updateSchedule() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+
         Schedule2 existing = new Schedule2();
         existing.setVersion(100L);
-        when(mockService.updateSchedule(any())).thenReturn(existing);
+        when(mockService.updateSchedule(any(), any())).thenReturn(existing);
+        
+        when(mockService.getSchedule(TEST_APP_ID, GUID)).thenReturn(existing);
         
         Schedule2 schedule = new Schedule2();
         mockRequestBody(mockRequest, schedule);
@@ -235,7 +232,7 @@ public class Schedule2ControllerTest extends Mockito {
         Schedule2 retValue = controller.updateSchedule(GUID);
         assertEquals(retValue, existing);
         
-        verify(mockService).updateSchedule(scheduleCaptor.capture());
+        verify(mockService).updateSchedule(eq(existing), scheduleCaptor.capture());
         
         Schedule2 persisted = scheduleCaptor.getValue();
         assertEquals(persisted.getGuid(), GUID);

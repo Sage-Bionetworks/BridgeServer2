@@ -207,6 +207,7 @@ public class AuthUtils {
      */
     public static final AuthEvaluator CAN_EDIT_SCHEDULES = new AuthEvaluator()
             .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, ADMIN);
     
     /**

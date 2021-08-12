@@ -188,10 +188,8 @@ public class Schedule2Service {
             // will need to be fixed. It's possible to submit the schedule for another study,
             // with keys and all, to the update API, and at some point we have to check that
             // we're talking about the same object.
-            if (!schedule.getGuid().equals(study.getScheduleGuid())) {
-                schedule.setGuid(study.getScheduleGuid());
-            }
-            return updateScheduleInternal(existing, schedule);
+            schedule.setGuid(study.getScheduleGuid());
+            return updateSchedule(existing, schedule);
         }
         schedule = createSchedule(schedule);
         study.setScheduleGuid(schedule.getGuid());
@@ -246,18 +244,10 @@ public class Schedule2Service {
      * Update a schedule. Will throw an exception once the schedule is published. Ownership
      * cannot be changed once a schedule is created.
      */
-    public Schedule2 updateSchedule(Schedule2 schedule) {
+    public Schedule2 updateSchedule(Schedule2 existing, Schedule2 schedule) {
+        checkNotNull(existing);
         checkNotNull(schedule);
         
-        Schedule2 existing = dao.getSchedule(schedule.getAppId(), schedule.getGuid())
-                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
-        
-        CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
-        
-        return updateScheduleInternal(existing, schedule);
-    }
-    
-    private Schedule2 updateScheduleInternal(Schedule2 existing, Schedule2 schedule) {
         if (existing.isDeleted() && schedule.isDeleted()) {
             throw new EntityNotFoundException(Schedule2.class);
         } 
