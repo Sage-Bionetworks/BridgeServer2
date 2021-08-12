@@ -61,9 +61,9 @@ public class StudyService {
     
     // Legacy studies, and studies created in the design phase, are fully editable/deletable, which was
     // their legacy behavior. In later phases, these no longer become possible. 
-    private static final Set<StudyPhase> CAN_EDIT_METADATA = ImmutableSet.of(LEGACY, DESIGN, RECRUITMENT, IN_FLIGHT);
-    private static final Set<StudyPhase> CAN_EDIT_CORE = ImmutableSet.of(LEGACY, DESIGN);
-    private static final Set<StudyPhase> CAN_DELETE = ImmutableSet.of(LEGACY, DESIGN, COMPLETED, WITHDRAWN);
+    public static final Set<StudyPhase> CAN_EDIT_METADATA = ImmutableSet.of(LEGACY, DESIGN, RECRUITMENT, IN_FLIGHT);
+    public static final Set<StudyPhase> CAN_EDIT_CORE = ImmutableSet.of(LEGACY, DESIGN);
+    public static final Set<StudyPhase> CAN_DELETE = ImmutableSet.of(LEGACY, DESIGN, COMPLETED, WITHDRAWN);
     
     private StudyDao studyDao;
     
