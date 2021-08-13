@@ -10,7 +10,6 @@ import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
-import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertAccept;
@@ -41,7 +40,6 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-import org.springframework.http.ResponseEntity;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -63,7 +61,6 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
-import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.FileService;
@@ -524,104 +521,5 @@ public class StudyControllerTest extends Mockito {
         controller.withdrawn(TEST_STUDY_ID);
         
         verify(mockStudyService).transitionToWithdrawn(TEST_APP_ID, TEST_STUDY_ID);
-    }
-    
-    @Test
-    public void getSchedule() {
-        RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
-                .build());
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
-        
-        Study study = Study.create();
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
-        Schedule2 schedule = new Schedule2();
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
-        
-        Schedule2 retValue = controller.getSchedule(TEST_STUDY_ID);
-        assertEquals(retValue, schedule);
-    }
-    
-    @Test
-    public void createOrUpdateSchedule_create() throws Exception {
-        RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
-                .build());
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);        
-
-        Study study = Study.create();
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
-        Schedule2 schedule = new Schedule2();
-        schedule.setName("Test");
-        TestUtils.mockRequestBody(mockRequest, schedule);
-        
-        when(mockScheduleService.createOrUpdateStudySchedule(any(), any())).thenReturn(schedule);
-        
-        ResponseEntity<Schedule2> retValue = controller.createOrUpdateSchedule(TEST_STUDY_ID);
-        assertEquals(retValue.getBody().getName(), "Test");
-        assertEquals(retValue.getStatusCodeValue(), 201);
-        
-        verify(mockScheduleService).createOrUpdateStudySchedule(any(), scheduleCaptor.capture());
-        // This has been set from the session.
-        assertEquals(scheduleCaptor.getValue().getAppId(), TEST_APP_ID);
-    }
-    
-    @Test
-    public void createOrUpdateSchedule_update() throws Exception {
-        RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
-                .build());
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);        
-
-        Study study = Study.create();
-        study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
-        Schedule2 schedule = new Schedule2();
-        schedule.setName("Test");
-        TestUtils.mockRequestBody(mockRequest, schedule);
-        
-        when(mockScheduleService.createOrUpdateStudySchedule(any(), any())).thenReturn(schedule);
-        
-        ResponseEntity<Schedule2> retValue = controller.createOrUpdateSchedule(TEST_STUDY_ID);
-        assertEquals(retValue.getStatusCodeValue(), 200);
-    }
-    
-    @Test
-    public void getTimeline() {
-        Study study = Study.create();
-        study.setScheduleGuid(SCHEDULE_GUID);
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
-        RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
-                .build());
-        doReturn(session).when(controller).getAdministrativeSession();
-        
-        Timeline timeline = new Timeline.Builder().build();
-        when(mockScheduleService.getTimelineForSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(timeline);
-        
-        Timeline retValue = controller.getTimeline(TEST_STUDY_ID);
-        assertEquals(retValue, timeline);
-    }
-    
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getTimeline_studyHasNoSchedule() {
-        Study study = Study.create();
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
-        
-        RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
-                .build());
-        doReturn(session).when(controller).getAdministrativeSession();
-        
-        controller.getTimeline(TEST_STUDY_ID);
     }
 }

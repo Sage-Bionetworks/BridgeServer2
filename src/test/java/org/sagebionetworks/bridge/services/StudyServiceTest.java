@@ -327,8 +327,9 @@ public class StudyServiceTest {
         Study existing = Study.create();
         existing.setIdentifier(TEST_STUDY_ID);
         existing.setName("oldName");
-        existing.setPhase(IN_FLIGHT);
+        existing.setPhase(DESIGN);
         existing.setCreatedOn(DateTime.now());
+        existing.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
         when(mockStudyDao.updateStudy(any())).thenReturn(VERSION_HOLDER);
 
@@ -347,13 +348,66 @@ public class StudyServiceTest {
         assertEquals(returnedValue.getAppId(), TEST_APP_ID);
         assertEquals(returnedValue.getIdentifier(), TEST_STUDY_ID);
         assertEquals(returnedValue.getName(), "newName");
-        assertEquals(returnedValue.getPhase(), IN_FLIGHT);
+        assertEquals(returnedValue.getPhase(), DESIGN);
+        assertEquals(returnedValue.getScheduleGuid(), SCHEDULE_GUID);
         assertNotNull(returnedValue.getCreatedOn());
         assertNotNull(returnedValue.getModifiedOn());
         
         verify(mockCacheProvider).removeObject(CACHE_KEY);
     }
     
+    @Test
+    public void updateStudy_setScheduleGuidWorks() {
+        Study existing = Study.create();
+        existing.setIdentifier(TEST_STUDY_ID);
+        existing.setName("oldName");
+        existing.setPhase(DESIGN);
+        existing.setCreatedOn(DateTime.now());
+        
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
+        when(mockStudyDao.updateStudy(any())).thenReturn(VERSION_HOLDER);
+
+        Study study = Study.create();
+        study.setAppId("wrongAppId");
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setName("newName");
+        study.setPhase(DESIGN);
+        study.setScheduleGuid(SCHEDULE_GUID);
+        
+        service.updateStudy(TEST_APP_ID, study);
+        
+        verify(mockStudyDao).updateStudy(studyCaptor.capture());
+        
+        Study returnedValue = studyCaptor.getValue();
+        assertEquals(returnedValue.getScheduleGuid(), SCHEDULE_GUID);
+    }
+    
+    @Test
+    public void updateStudy_unsetScheduleGuidDoesNotWork() {
+        Study existing = Study.create();
+        existing.setIdentifier(TEST_STUDY_ID);
+        existing.setName("oldName");
+        existing.setPhase(DESIGN);
+        existing.setCreatedOn(DateTime.now());
+        existing.setScheduleGuid(SCHEDULE_GUID);
+        
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
+        when(mockStudyDao.updateStudy(any())).thenReturn(VERSION_HOLDER);
+
+        Study study = Study.create();
+        study.setAppId("wrongAppId");
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setName("newName");
+        study.setPhase(DESIGN);
+        
+        service.updateStudy(TEST_APP_ID, study);
+        
+        verify(mockStudyDao).updateStudy(studyCaptor.capture());
+        
+        Study returnedValue = studyCaptor.getValue();
+        assertEquals(returnedValue.getScheduleGuid(), SCHEDULE_GUID);
+    }
+
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateStudyInvalidStudy() {
         Study study = Study.create();
@@ -477,10 +531,24 @@ public class StudyServiceTest {
         
         service.deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
         
+        verify(mockScheduleService, never()).deleteSchedulePermanently(any(), any());
         verify(mockStudyDao).deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
         verify(mockCacheProvider).removeObject(CACHE_KEY);
     }    
 
+    @Test
+    public void deleteStudyPermanently_deletesScheduleFirst() {
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
+        
+        service.deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
+        
+        verify(mockScheduleService).deleteSchedulePermanently(TEST_APP_ID, SCHEDULE_GUID);
+        verify(mockStudyDao).deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockCacheProvider).removeObject(CACHE_KEY);
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteStudyPermanentlyNotFound() {
         service.deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
