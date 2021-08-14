@@ -10,9 +10,14 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 
+import java.util.HashSet;
+import java.util.Set;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -28,6 +33,7 @@ public class StudyValidator implements Validator {
     static final String IRB_DECISION_ON_FIELD = "irbDecisionOn";
     static final String IRB_DECISION_TYPE_FIELD = "irbDecisionType";
     static final String IRB_EXPIRES_ON_FIELD = "irbExpiresOn";
+    static final String CUSTOM_EVENTS_FIELD = "customEvents";
     static final String NAME_FIELD = "name";
     static final String PHASE_FIELD = "phase";
     static final String PHONE_FIELD = "phone";
@@ -69,6 +75,30 @@ public class StudyValidator implements Validator {
             if (study.getIrbDecisionOn() == null) { 
                 errors.rejectValue(IRB_DECISION_ON_FIELD, CANNOT_BE_NULL);
             }
+        }
+        Set<String> uniqueIds = new HashSet<>();
+        for (int i=0; i < study.getCustomEvents().size(); i++) {
+            StudyCustomEvent customEvent = study.getCustomEvents().get(i);
+            
+            errors.pushNestedPath(CUSTOM_EVENTS_FIELD + "["+i+"]");
+            if (customEvent == null) {
+                errors.rejectValue("", Validate.CANNOT_BE_NULL);
+                continue;
+            }
+            if (isBlank(customEvent.getEventId())) {
+                errors.rejectValue("eventId", Validate.CANNOT_BE_BLANK);
+            } else if (!customEvent.getEventId().matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
+                errors.rejectValue("eventId", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+            } else {
+                uniqueIds.add(customEvent.getEventId());    
+            }
+            if (customEvent.getUpdateType() == null) {
+                errors.rejectValue("updateType", Validate.CANNOT_BE_NULL);
+            }
+            errors.popNestedPath();
+        }
+        if (uniqueIds.size() > 0 && (uniqueIds.size() != study.getCustomEvents().size())) {
+            errors.rejectValue(CUSTOM_EVENTS_FIELD, "cannot contain duplidate event IDs");
         }
         for (int i=0; i < study.getContacts().size(); i++) {
             Contact contact = study.getContacts().get(i);

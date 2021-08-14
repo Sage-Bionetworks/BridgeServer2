@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.IrbDecisionType;
 import org.sagebionetworks.bridge.models.studies.SignInType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.models.studies.StudyId;
 import org.sagebionetworks.bridge.models.studies.StudyPhase;
 
@@ -109,6 +110,14 @@ public class HibernateStudy implements Study {
 
     @Convert(converter = SignInTypeListConverter.class)
     private List<SignInType> signInTypes;
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(value = FetchMode.SUBSELECT)
+    @OrderColumn(name="pos") // can’t use 'position' in this case
+    @CollectionTable(name="StudyCustomEvents", joinColumns= {
+            @JoinColumn(name="appId"), @JoinColumn(name="studyId")
+    })
+    private List<StudyCustomEvent> customEvents;
     
     /**
      * For full construction of object by Hibernate.
@@ -403,5 +412,18 @@ public class HibernateStudy implements Study {
     @Override
     public void setLogoGuid(String logoGuid) {
         this.logoGuid = logoGuid;
+    }
+    
+    @Override
+    public List<StudyCustomEvent> getCustomEvents() {
+        if (customEvents == null) {
+            customEvents = new ArrayList<>();
+        }
+        return customEvents;
+    }
+    
+    @Override
+    public void setCustomEvents(List<StudyCustomEvent> customEvents) {
+        this.customEvents = customEvents;
     }
 }

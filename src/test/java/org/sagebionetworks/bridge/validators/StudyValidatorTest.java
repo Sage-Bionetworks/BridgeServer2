@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.studies.ContactRole.TECHNICAL_SUPPORT;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.EXEMPT;
@@ -35,6 +36,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 
 public class StudyValidatorTest {
     
@@ -197,6 +199,50 @@ public class StudyValidatorTest {
         study.setContacts(ImmutableList.of(c1));
         
         entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
+    public void customEvents_eventIdBank() {
+        StudyCustomEvent event = new StudyCustomEvent("", MUTABLE);
+        study = createStudy();
+        study.getCustomEvents().add(event);
+        
+        assertValidatorMessage(INSTANCE, study, StudyValidator.CUSTOM_EVENTS_FIELD + "[0].eventId", CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void customEvents_eventIdNull() {
+        StudyCustomEvent event = new StudyCustomEvent(null, MUTABLE);
+        study = createStudy();
+        study.getCustomEvents().add(event);
+        
+        assertValidatorMessage(INSTANCE, study, StudyValidator.CUSTOM_EVENTS_FIELD + "[0].eventId", CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void customEvents_eventIdInvalid() {
+        StudyCustomEvent event = new StudyCustomEvent("a b c", MUTABLE);
+        study = createStudy();
+        study.getCustomEvents().add(event);
+        
+        assertValidatorMessage(INSTANCE, study, StudyValidator.CUSTOM_EVENTS_FIELD + "[0].eventId", BRIDGE_EVENT_ID_ERROR);
+    }
+    
+    @Test
+    public void customEvents_updateTypeNull() {
+        StudyCustomEvent event = new StudyCustomEvent("event", null);
+        study = createStudy();
+        study.getCustomEvents().add(event);
+        
+        assertValidatorMessage(INSTANCE, study, StudyValidator.CUSTOM_EVENTS_FIELD + "[0].updateType", CANNOT_BE_NULL);
+    }
+    
+    @Test
+    public void customEvents_entryNull() {
+        study = createStudy();
+        study.getCustomEvents().add(null);
+        
+        assertValidatorMessage(INSTANCE, study, StudyValidator.CUSTOM_EVENTS_FIELD + "[0]", CANNOT_BE_NULL);
     }
     
     private Study createStudy() {
