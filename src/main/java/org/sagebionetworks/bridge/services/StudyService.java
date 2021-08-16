@@ -193,15 +193,18 @@ public class StudyService {
             throw new BadRequestException("Study cannot be changed during phase " 
                     + existing.getPhase().label() + ".");
         }
-        if (!CAN_EDIT_CORE.contains(existing.getPhase()) &&
-                !Objects.equals(study.getScheduleGuid(), existing.getScheduleGuid())) {
-            throw new BadRequestException("Study schedule cannot be changed or removed during phase " 
-                    + existing.getPhase().label() + ".");
+        if (!CAN_EDIT_CORE.contains(existing.getPhase())) {
+            if(!Objects.equals(study.getScheduleGuid(), existing.getScheduleGuid())) {
+                throw new BadRequestException("Study schedule cannot be changed or removed during phase " 
+                        + existing.getPhase().label() + ".");
+            }
+            study.setCustomEvents(existing.getCustomEvents());
         }
         study.setAppId(appId);
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
+        
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
         VersionHolder keys = studyDao.updateStudy(study);
