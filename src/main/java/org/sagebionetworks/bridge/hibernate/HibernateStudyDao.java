@@ -35,6 +35,25 @@ public class HibernateStudyDao implements StudyDao {
         this.hibernateHelper = hibernateHelper;
     }
 
+    /**
+     * Unlink a schedule for any study that references it, that is also in the legacy or 
+     * design phase. After this, the schedule cannot be removed and an attempt to delete
+     * the schedule will in turn fail.
+     */
+    @Override
+    public void removeScheduleFromStudies(String appId, String scheduleGuid) {
+        checkNotNull(appId);
+        checkNotNull(scheduleGuid);
+        
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("UPDATE Substudies SET scheduleGuid = NULL");
+        builder.append("WHERE studyId = :appId", "appId", appId);
+        builder.append("AND scheduleGuid = :scheduleGuid", "scheduleGuid", scheduleGuid);
+        builder.append("AND phase IN ('LEGACY','DESIGN')");
+        
+        hibernateHelper.nativeQueryUpdate(builder.getQuery(), builder.getParameters());
+    }
+    
     @Override
     public PagedResourceList<Study> getStudies(String appId, Set<String> studyIds, 
             Integer offsetBy, Integer pageSize, boolean includeDeleted) {

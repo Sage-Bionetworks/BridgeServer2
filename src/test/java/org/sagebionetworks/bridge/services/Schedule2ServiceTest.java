@@ -16,6 +16,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.getClientData;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -69,6 +70,9 @@ public class Schedule2ServiceTest extends Mockito {
     
     @Mock
     OrganizationService mockOrganizationService;
+    
+    @Mock
+    StudyService mockStudyService;
     
     @Mock
     Schedule2Dao mockDao;
@@ -436,8 +440,6 @@ public class Schedule2ServiceTest extends Mockito {
     
     @Test
     public void updateSchedule() {
-        permitToAccess();
-        
         Schedule2 schedule = new Schedule2();
         schedule.setAppId(TEST_APP_ID);
         schedule.setOwnerId("wrong-owner-id");
@@ -464,13 +466,12 @@ public class Schedule2ServiceTest extends Mockito {
         existing.setPublished(false);
         existing.setVersion(1L);
         
-        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
         when(mockDao.updateSchedule(any())).thenReturn(existing);
         
         App app = App.create();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
-        Schedule2 retValue = service.updateSchedule(schedule);
+        Schedule2 retValue = service.updateSchedule(existing, schedule);
         assertEquals(retValue, existing);
         
         verify(mockDao).updateSchedule(scheduleCaptor.capture());
@@ -490,8 +491,6 @@ public class Schedule2ServiceTest extends Mockito {
     
     @Test(expectedExceptions = PublishedEntityException.class)
     public void updateScheduledLockedForUpdates() {
-        permitToAccess();
-        
         Schedule2 schedule = new Schedule2();
         schedule.setAppId(TEST_APP_ID);
         schedule.setGuid(GUID);
@@ -499,19 +498,15 @@ public class Schedule2ServiceTest extends Mockito {
         Schedule2 existing = new Schedule2();
         existing.setPublished(true);
         
-        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
         when(mockDao.updateSchedule(any())).thenReturn(existing);
         
-        service.updateSchedule(schedule);
+        service.updateSchedule(existing, schedule);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void updateScheduleIsInvalid() {
-        permitToAccess();
-        
         Schedule2 existing = new Schedule2();
         existing.setAppId(TEST_APP_ID);
-        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
         
         App app = App.create();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
@@ -519,26 +514,12 @@ public class Schedule2ServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         schedule.setAppId(TEST_APP_ID);
         schedule.setGuid(GUID);
-        service.updateSchedule(schedule);
+        service.updateSchedule(existing, schedule);
     }
    
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void updateScheduleNotFound() {
-        permitToAccess();
-        
-        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
-        
-        Schedule2 schedule = new Schedule2();
-        schedule.setAppId(TEST_APP_ID);
-        schedule.setGuid(GUID);
-        service.updateSchedule(schedule);
-    }
-    
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Schedule not found.")
     public void updateScheduleBothDeletedActAsNotFound() {
-        permitToAccess();
-        
         Schedule2 schedule = new Schedule2();
         schedule.setAppId(TEST_APP_ID);
         schedule.setOwnerId("wrong-owner-id");
@@ -563,10 +544,9 @@ public class Schedule2ServiceTest extends Mockito {
         existing.setDeleted(true);
         existing.setVersion(1L);
         
-        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
         when(mockDao.updateSchedule(any())).thenReturn(existing);
         
-        service.updateSchedule(schedule);
+        service.updateSchedule(existing, schedule);
     }
     
     @Test
@@ -672,6 +652,7 @@ public class Schedule2ServiceTest extends Mockito {
         service.deleteSchedulePermanently(TEST_APP_ID, GUID);
         
         verify(mockDao).deleteSchedulePermanently(existing);
+        verify(mockStudyService).removeScheduleFromStudies(TEST_APP_ID, GUID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -732,11 +713,6 @@ public class Schedule2ServiceTest extends Mockito {
     
     @Test
     public void setsBlankGuidsOnUpdate() throws Exception {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerAppId(TEST_APP_ID)
-                .withCallerRoles(ImmutableSet.of(DEVELOPER))
-                .build());
-
         App app = App.create();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
@@ -747,7 +723,6 @@ public class Schedule2ServiceTest extends Mockito {
         existing.setAppId(TEST_APP_ID);
         existing.setOwnerId(TEST_ORG_ID);
         existing.setCreatedOn(CREATED_ON);
-        when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(existing));
 
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         
@@ -771,7 +746,7 @@ public class Schedule2ServiceTest extends Mockito {
 
         doReturn("otherGuid").when(service).generateGuid();
         
-        service.updateSchedule(schedule);
+        service.updateSchedule(existing, schedule);
         
         assertEquals(schedule.getSessions().get(0).getGuid(), SESSION_GUID_1);
         assertEquals(schedule.getSessions().get(0).getTimeWindows().get(0).getGuid(), SESSION_WINDOW_GUID_1);
@@ -802,11 +777,6 @@ public class Schedule2ServiceTest extends Mockito {
     
     @Test
     public void cleanupEventIdsOnUpdate() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN))
-                .withCallerAppId(TEST_APP_ID)
-                .build());
-
         App app = App.create();
         app.setCustomEvents(ImmutableMap.of("event1", MUTABLE));
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
@@ -817,9 +787,9 @@ public class Schedule2ServiceTest extends Mockito {
         // This will fail validation unless the app declares it as a custom event
         schedule.getSessions().get(0).setStartEventId("event1");
         
-        when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(schedule));
-        
-        service.updateSchedule(schedule);
+        Schedule2 existing = Schedule2Test.createValidSchedule();
+        existing.setPublished(false);
+        service.updateSchedule(existing, schedule);
         
         assertEquals(schedule.getSessions().get(0).getStartEventId(), "custom:event1");
     }
@@ -880,5 +850,71 @@ public class Schedule2ServiceTest extends Mockito {
         assertSame(retValue, results);
         
         verify(mockDao).getAssessmentsForSessionInstance(GUID);
+    }
+    
+    @Test
+    public void createOrUpdateStudySchedule_create() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Study study = Study.create();
+        study.setPhase(DESIGN);
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setName("Test Schedule");
+        schedule.setDuration(Period.parse("P1W"));
+        
+        when(mockDao.createSchedule(any())).thenReturn(schedule);
+        
+        Schedule2 retValue = service.createOrUpdateStudySchedule(study, schedule);
+        assertEquals(schedule, retValue);
+        
+        verify(mockDao).createSchedule(schedule);
+        verify(mockStudyService).updateStudy(TEST_APP_ID, study);
+        assertEquals(GUID, study.getScheduleGuid());
+    }
+
+    @Test
+    public void createOrUpdateStudySchedule_update() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerAppId(TEST_APP_ID)
+                .withCallerOrgMembership(TEST_ORG_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        Study study = Study.create();
+        study.setPhase(DESIGN);
+        study.setScheduleGuid(SCHEDULE_GUID);
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setAppId(TEST_APP_ID);
+        schedule.setName("Test Schedule");
+        schedule.setDuration(Period.parse("P1W"));
+        schedule.setGuid("wrong-guid");
+        
+        Schedule2 existing = new Schedule2();
+        existing.setCreatedOn(CREATED_ON);
+        existing.setModifiedOn(MODIFIED_ON);
+        existing.setAppId(TEST_APP_ID);
+        existing.setGuid(SCHEDULE_GUID);
+        existing.setName("Test Schedule");
+        existing.setDuration(Period.parse("P1W"));
+        existing.setOwnerId(TEST_ORG_ID);
+        when(mockDao.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(Optional.of(existing));
+        
+        when(mockDao.updateSchedule(any())).thenReturn(schedule);
+        
+        Schedule2 retValue = service.createOrUpdateStudySchedule(study, schedule);
+        assertEquals(schedule, retValue);
+        assertEquals(schedule.getGuid(), SCHEDULE_GUID);
+        
+        verify(mockDao).updateSchedule(schedule);
     }
 }

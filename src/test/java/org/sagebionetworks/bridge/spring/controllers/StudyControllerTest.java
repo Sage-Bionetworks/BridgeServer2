@@ -60,9 +60,11 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.FileService;
+import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyService;
 
 public class StudyControllerTest extends Mockito {
@@ -72,10 +74,13 @@ public class StudyControllerTest extends Mockito {
     private static final VersionHolder VERSION_HOLDER = new VersionHolder(1L);
 
     @Mock
-    StudyService service;
+    StudyService mockStudyService;
 
     @Mock
     FileService mockFileService;
+    
+    @Mock
+    Schedule2Service mockScheduleService;
     
     @Mock
     AppService mockAppService;
@@ -98,6 +103,9 @@ public class StudyControllerTest extends Mockito {
     @Captor
     ArgumentCaptor<FileRevision> revisionCaptor;
     
+    @Captor
+    ArgumentCaptor<Schedule2> scheduleCaptor;
+    
     @Spy
     @InjectMocks
     StudyController controller;
@@ -111,7 +119,7 @@ public class StudyControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
         session.setAppId(TEST_APP_ID);
 
-        controller.setStudyService(service);
+        controller.setStudyService(mockStudyService);
 
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR, STUDY_DESIGNER, ORG_ADMIN, ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
@@ -148,40 +156,40 @@ public class StudyControllerTest extends Mockito {
 
     @Test
     public void getStudiesWithDefaults() throws Exception {
-        when(service.getStudies(TEST_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false)).thenReturn(STUDIES);
+        when(mockStudyService.getStudies(TEST_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false)).thenReturn(STUDIES);
 
         ResourceList<Study> result = controller.getStudies(null, null, false);
 
         assertEquals(result.getItems().size(), 2);
 
-        verify(service).getStudies(TEST_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false);
+        verify(mockStudyService).getStudies(TEST_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false);
     }
     
     @Test
     public void getStudiesExcludeDeleted() throws Exception {
-        when(service.getStudies(TEST_APP_ID, 0, 50, false)).thenReturn(STUDIES);
+        when(mockStudyService.getStudies(TEST_APP_ID, 0, 50, false)).thenReturn(STUDIES);
 
         ResourceList<Study> result = controller.getStudies("0", "50", false);
 
         assertEquals(result.getItems().size(), 2);
 
-        verify(service).getStudies(TEST_APP_ID, 0, 50, false);
+        verify(mockStudyService).getStudies(TEST_APP_ID, 0, 50, false);
     }
 
     @Test
     public void getStudiesIncludeDeleted() throws Exception {
-        when(service.getStudies(TEST_APP_ID, 0, 50, true)).thenReturn(STUDIES);
+        when(mockStudyService.getStudies(TEST_APP_ID, 0, 50, true)).thenReturn(STUDIES);
 
         ResourceList<Study> result = controller.getStudies("0", "50", true);
 
         assertEquals(result.getItems().size(), 2);
 
-        verify(service).getStudies(TEST_APP_ID, 0, 50, true);
+        verify(mockStudyService).getStudies(TEST_APP_ID, 0, 50, true);
     }
 
     @Test
     public void createStudy() throws Exception {
-        when(service.createStudy(any(), any(), anyBoolean())).thenReturn(VERSION_HOLDER);
+        when(mockStudyService.createStudy(any(), any(), anyBoolean())).thenReturn(VERSION_HOLDER);
 
         Study study = Study.create();
         study.setIdentifier("oneId");
@@ -191,7 +199,7 @@ public class StudyControllerTest extends Mockito {
         VersionHolder result = controller.createStudy();
         assertEquals(result, VERSION_HOLDER);
 
-        verify(service).createStudy(eq(TEST_APP_ID), studyCaptor.capture(), eq(true));
+        verify(mockStudyService).createStudy(eq(TEST_APP_ID), studyCaptor.capture(), eq(true));
 
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getIdentifier(), "oneId");
@@ -208,7 +216,7 @@ public class StudyControllerTest extends Mockito {
         Study study = Study.create();
         study.setIdentifier(TEST_STUDY_ID);
         study.setName("oneName");
-        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
 
         Study result = controller.getStudy(TEST_STUDY_ID);
         assertEquals(result, study);
@@ -216,7 +224,7 @@ public class StudyControllerTest extends Mockito {
         assertEquals(result.getIdentifier(), TEST_STUDY_ID);
         assertEquals(result.getName(), "oneName");
 
-        verify(service).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
     }
 
     @Test
@@ -228,7 +236,7 @@ public class StudyControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession();
         
         Study study = Study.create();
-        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
 
         Study result = controller.getStudy(TEST_STUDY_ID);
         assertEquals(result, study);
@@ -256,13 +264,13 @@ public class StudyControllerTest extends Mockito {
         study.setName("oneName");
         mockRequestBody(mockRequest, study);
 
-        when(service.updateStudy(eq(TEST_APP_ID), any())).thenReturn(VERSION_HOLDER);
+        when(mockStudyService.updateStudy(eq(TEST_APP_ID), any())).thenReturn(VERSION_HOLDER);
 
         VersionHolder result = controller.updateStudy(TEST_STUDY_ID);
 
         assertEquals(result, VERSION_HOLDER);
 
-        verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
+        verify(mockStudyService).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
 
         Study persisted = studyCaptor.getValue();
         assertEquals(persisted.getIdentifier(), TEST_STUDY_ID);
@@ -274,7 +282,7 @@ public class StudyControllerTest extends Mockito {
         StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, "false");
         assertEquals(result, StudyController.DELETED_MSG);
 
-        verify(service).deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockStudyService).deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
 
     @Test
@@ -282,7 +290,7 @@ public class StudyControllerTest extends Mockito {
         StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, "true");
         assertEquals(result, StudyController.DELETED_MSG);
 
-        verify(service).deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockStudyService).deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -293,7 +301,7 @@ public class StudyControllerTest extends Mockito {
         StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, "true");
         assertEquals(result, StudyController.DELETED_MSG);
 
-        verify(service).deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockStudyService).deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -306,7 +314,7 @@ public class StudyControllerTest extends Mockito {
         
         Study study = Study.create();
         study.setName("Study Name");
-        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         FileMetadata created = new FileMetadata();
         created.setGuid(GUID);
@@ -326,7 +334,7 @@ public class StudyControllerTest extends Mockito {
         assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getDisposition(), INLINE);
         
-        verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
+        verify(mockStudyService).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
         assertEquals(studyCaptor.getValue().getLogoGuid(), GUID);
         
         verify(mockFileService).createFileRevision(eq(TEST_APP_ID), revisionCaptor.capture());
@@ -344,7 +352,7 @@ public class StudyControllerTest extends Mockito {
         Study study = Study.create();
         study.setName("Study Name");
         study.setLogoGuid(GUID);
-        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         FileMetadata created = new FileMetadata();
         created.setGuid(GUID);
@@ -359,7 +367,7 @@ public class StudyControllerTest extends Mockito {
         assertSame(retValue, createdRevision);
         
         verify(mockFileService, never()).createFile(any(), any());
-        verify(service, never()).updateStudy(any(), any());
+        verify(mockStudyService, never()).updateStudy(any(), any());
         
         verify(mockFileService).createFileRevision(eq(TEST_APP_ID), revisionCaptor.capture());
         assertEquals(revisionCaptor.getValue().getFileGuid(), GUID);
@@ -374,7 +382,7 @@ public class StudyControllerTest extends Mockito {
         
         Study study = Study.create();
         study.setLogoGuid(GUID);
-        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         FileRevision revision = new FileRevision();
         revision.setDownloadURL("test url");
@@ -385,7 +393,7 @@ public class StudyControllerTest extends Mockito {
         
         verify(mockFileService).finishFileRevision(TEST_APP_ID, GUID, CREATED_ON);
         
-        verify(service).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
+        verify(mockStudyService).updateStudy(eq(TEST_APP_ID), studyCaptor.capture());
         assertEquals(studyCaptor.getValue().getStudyLogoUrl(), "test url");
     }
     
@@ -397,7 +405,7 @@ public class StudyControllerTest extends Mockito {
         doReturn(session).when(controller).getAdministrativeSession();
         
         Study study = Study.create();
-        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         controller.finishStudyLogo(TEST_STUDY_ID, CREATED_ON.toString());
     }
@@ -411,7 +419,7 @@ public class StudyControllerTest extends Mockito {
         
         Study study = Study.create();
         study.setLogoGuid(GUID);
-        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         when(mockFileService.getFileRevision(GUID, CREATED_ON)).thenReturn(Optional.empty());
         
@@ -424,7 +432,7 @@ public class StudyControllerTest extends Mockito {
         study.setName("Name1");
         study.setIdentifier("id1");
         study.setVersion(10L);
-        when(service.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         String retValue = controller.getStudyForApp(TEST_APP_ID, TEST_STUDY_ID);
         
@@ -458,7 +466,7 @@ public class StudyControllerTest extends Mockito {
         assertNull(deser.getVersion());
         
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
-        verify(service, never()).getStudy(any(), any(), anyBoolean());
+        verify(mockStudyService, never()).getStudy(any(), any(), anyBoolean());
     }
     
     @Test
@@ -467,7 +475,7 @@ public class StudyControllerTest extends Mockito {
         
         controller.design(TEST_STUDY_ID);
         
-        verify(service).transitionToDesign(TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockStudyService).transitionToDesign(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -476,7 +484,7 @@ public class StudyControllerTest extends Mockito {
         
         controller.recruitment(TEST_STUDY_ID);
         
-        verify(service).transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockStudyService).transitionToRecruitment(TEST_APP_ID, TEST_STUDY_ID);
     }
 
     @Test
@@ -485,7 +493,7 @@ public class StudyControllerTest extends Mockito {
         
         controller.closeEnrollment(TEST_STUDY_ID);
         
-        verify(service).transitionToInFlight(TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockStudyService).transitionToInFlight(TEST_APP_ID, TEST_STUDY_ID);
     }
 
     @Test
@@ -494,7 +502,7 @@ public class StudyControllerTest extends Mockito {
         
         controller.analysis(TEST_STUDY_ID);
         
-        verify(service).transitionToAnalysis(TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockStudyService).transitionToAnalysis(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -503,7 +511,7 @@ public class StudyControllerTest extends Mockito {
         
         controller.completed(TEST_STUDY_ID);
         
-        verify(service).transitionToCompleted(TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockStudyService).transitionToCompleted(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
@@ -512,6 +520,6 @@ public class StudyControllerTest extends Mockito {
         
         controller.withdrawn(TEST_STUDY_ID);
         
-        verify(service).transitionToWithdrawn(TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockStudyService).transitionToWithdrawn(TEST_APP_ID, TEST_STUDY_ID);
     }
 }
