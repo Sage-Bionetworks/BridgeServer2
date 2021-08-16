@@ -13,7 +13,6 @@ import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR
 import java.util.HashSet;
 import java.util.Set;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -86,14 +85,14 @@ public class StudyValidator implements Validator {
                 continue;
             }
             if (isBlank(customEvent.getEventId())) {
-                errors.rejectValue("eventId", Validate.CANNOT_BE_BLANK);
-            } else if (!customEvent.getEventId().matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
-                errors.rejectValue("eventId", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+                errors.rejectValue("eventId", CANNOT_BE_BLANK);
+            } else if (!customEvent.getEventId().matches(BRIDGE_EVENT_ID_PATTERN)) {
+                errors.rejectValue("eventId", BRIDGE_EVENT_ID_ERROR);
             } else {
                 uniqueIds.add(customEvent.getEventId());    
             }
             if (customEvent.getUpdateType() == null) {
-                errors.rejectValue("updateType", Validate.CANNOT_BE_NULL);
+                errors.rejectValue("updateType", CANNOT_BE_NULL);
             }
             errors.popNestedPath();
         }

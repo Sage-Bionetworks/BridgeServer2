@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.studies.ContactRole.TECHNICAL_SUPPORT;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
@@ -12,11 +13,13 @@ import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.EXEMPT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.validators.StudyValidator.APP_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.CONTACTS_FIELD;
+import static org.sagebionetworks.bridge.validators.StudyValidator.CUSTOM_EVENTS_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.EMAIL_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.IDENTIFIER_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_DECISION_ON_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_DECISION_TYPE_FIELD;
+import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_EXPIRES_ON_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.NAME_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.PHASE_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.PHONE_FIELD;
@@ -161,7 +164,7 @@ public class StudyValidatorTest {
         study.setIrbDecisionOn(DECISION_ON);
         study.setIrbDecisionType(APPROVED);
         
-        assertValidatorMessage(INSTANCE, study, StudyValidator.IRB_EXPIRES_ON_FIELD, CANNOT_BE_NULL);
+        assertValidatorMessage(INSTANCE, study, IRB_EXPIRES_ON_FIELD, CANNOT_BE_NULL);
     }
     
     @Test
@@ -207,7 +210,7 @@ public class StudyValidatorTest {
         study = createStudy();
         study.getCustomEvents().add(event);
         
-        assertValidatorMessage(INSTANCE, study, StudyValidator.CUSTOM_EVENTS_FIELD + "[0].eventId", CANNOT_BE_BLANK);
+        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].eventId", CANNOT_BE_BLANK);
     }
     
     @Test
@@ -216,7 +219,7 @@ public class StudyValidatorTest {
         study = createStudy();
         study.getCustomEvents().add(event);
         
-        assertValidatorMessage(INSTANCE, study, StudyValidator.CUSTOM_EVENTS_FIELD + "[0].eventId", CANNOT_BE_BLANK);
+        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].eventId", CANNOT_BE_BLANK);
     }
     
     @Test
@@ -225,7 +228,7 @@ public class StudyValidatorTest {
         study = createStudy();
         study.getCustomEvents().add(event);
         
-        assertValidatorMessage(INSTANCE, study, StudyValidator.CUSTOM_EVENTS_FIELD + "[0].eventId", BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].eventId", BRIDGE_EVENT_ID_ERROR);
     }
     
     @Test
@@ -234,7 +237,7 @@ public class StudyValidatorTest {
         study = createStudy();
         study.getCustomEvents().add(event);
         
-        assertValidatorMessage(INSTANCE, study, StudyValidator.CUSTOM_EVENTS_FIELD + "[0].updateType", CANNOT_BE_NULL);
+        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].updateType", CANNOT_BE_NULL);
     }
     
     @Test
@@ -242,7 +245,17 @@ public class StudyValidatorTest {
         study = createStudy();
         study.getCustomEvents().add(null);
         
-        assertValidatorMessage(INSTANCE, study, StudyValidator.CUSTOM_EVENTS_FIELD + "[0]", CANNOT_BE_NULL);
+        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0]", CANNOT_BE_NULL);
+    }
+    
+    @Test
+    public void customEvents_duplicated() {
+        StudyCustomEvent event = new StudyCustomEvent("event", FUTURE_ONLY);
+        study = createStudy();
+        study.getCustomEvents().add(event);
+        study.getCustomEvents().add(event);
+        
+        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD, "cannot contain duplidate event IDs");
     }
     
     private Study createStudy() {
