@@ -10,10 +10,12 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.SignInType;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 
 import static org.sagebionetworks.bridge.TestConstants.COLOR_SCHEME;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.models.studies.SignInType.EMAIL_MESSAGE;
 import static org.sagebionetworks.bridge.models.studies.SignInType.EMAIL_PASSWORD;
@@ -64,6 +66,7 @@ public class HibernateStudyTest {
         assertNotNull(study.getSignInTypes());
         assertNotNull(study.getDiseases());
         assertNotNull(study.getStudyDesignTypes());
+        assertNotNull(study.getCustomEvents());
     }
     
     @Test
@@ -71,7 +74,7 @@ public class HibernateStudyTest {
         Study study = createStudy();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        assertEquals(node.size(), 25);
+        assertEquals(node.size(), 26);
         assertEquals(node.get("identifier").textValue(), "oneId");
         assertEquals(node.get("name").textValue(), "name");
         assertTrue(node.get("deleted").booleanValue());
@@ -106,6 +109,8 @@ public class HibernateStudyTest {
         assertNull(node.get("logoGuid"));
         assertNull(node.get("studyId"));
         assertNull(node.get("appId"));
+        assertEquals(node.get("customEvents").get(0).get("eventId").textValue(), "event1");
+        assertEquals(node.get("customEvents").get(0).get("updateType").textValue(), "immutable");
         
         Study deser = BridgeObjectMapper.get().readValue(node.toString(), Study.class);
         deser.setLogoGuid(GUID);
@@ -136,6 +141,8 @@ public class HibernateStudyTest {
         assertEquals(deser.getSignInTypes(), TYPES);
         assertEquals(deser.getLogoGuid(), GUID);
         assertEquals(deser.getVersion(), new Long(3));
+        assertEquals(deser.getCustomEvents().get(0).getEventId(), "event1");
+        assertEquals(deser.getCustomEvents().get(0).getUpdateType(), IMMUTABLE);
         
         JsonNode deserClientData = deser.getClientData();
         assertTrue(deserClientData.get("booleanFlag").booleanValue());
@@ -203,6 +210,10 @@ public class HibernateStudyTest {
         study.setDiseases(ImmutableSet.of("subjective cognitive decline"));
         study.setStudyDesignTypes(ImmutableSet.of("observational case control"));
         study.setSignInTypes(TYPES);
+        
+        StudyCustomEvent event = new StudyCustomEvent("event1", IMMUTABLE);
+        study.getCustomEvents().add(event);
+        
         return study;
     }
 }

@@ -753,3 +753,15 @@ ADD COLUMN `logoGuid` varchar(255);
 
 ALTER TABLE `Substudies`
 MODIFY COLUMN `phase` enum('LEGACY', 'DESIGN', 'RECRUITMENT', 'IN_FLIGHT', 'ANALYSIS', 'COMPLETED', 'WITHDRAWN') DEFAULT 'LEGACY';
+
+-- changeset bridge:42
+
+CREATE TABLE `StudyCustomEvents` (
+  `appId` varchar(60) NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `eventId` varchar(255) NOT NULL,
+  `pos` int(10) signed,
+  `updateType` enum('MUTABLE', 'IMMUTABLE', 'FUTURE_ONLY') DEFAULT 'IMMUTABLE',
+  PRIMARY KEY (`appId`, `studyId`, `eventId`),
+  CONSTRAINT `StudyCustomEvents-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;

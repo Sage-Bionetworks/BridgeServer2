@@ -23,7 +23,6 @@ import static org.sagebionetworks.bridge.models.studies.StudyPhase.IN_FLIGHT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.WITHDRAWN;
 
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -179,18 +178,17 @@ public class StudyService {
             throw new BadRequestException("Study cannot be changed during phase " 
                     + existing.getPhase().label() + ".");
         }
-        if (!CAN_EDIT_STUDY_CORE.contains(existing.getPhase()) &&
-                !Objects.equals(study.getScheduleGuid(), existing.getScheduleGuid())) {
-            throw new BadRequestException("Study schedule cannot be changed or removed during phase " 
-                    + existing.getPhase().label() + ".");
+        if (!CAN_EDIT_STUDY_CORE.contains(existing.getPhase())) {
+            study.setScheduleGuid(existing.getScheduleGuid());
+            study.setCustomEvents(existing.getCustomEvents());
+        } else if (existing.getScheduleGuid() != null) {
+            study.setScheduleGuid(existing.getScheduleGuid());
         }
         study.setAppId(appId);
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
-        if (existing.getScheduleGuid() != null) {
-            study.setScheduleGuid(existing.getScheduleGuid());    
-        }
+
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
         VersionHolder keys = studyDao.updateStudy(study);

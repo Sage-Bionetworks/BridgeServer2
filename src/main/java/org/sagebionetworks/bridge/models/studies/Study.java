@@ -106,6 +106,9 @@ public interface Study extends BridgeEntity {
 
     List<SignInType> getSignInTypes();
     void setSignInTypes(List<SignInType> signInTypes);
+    
+    List<StudyCustomEvent> getCustomEvents();
+    void setCustomEvents(List<StudyCustomEvent> customEvents);
 
     Long getVersion();
     void setVersion(Long version);
