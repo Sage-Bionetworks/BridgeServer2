@@ -286,10 +286,18 @@ public class StudyService {
     /**
      * Moves a study to the withdrawn state. No further enrollments will be allowed,
      * and data collected for this study should not be uploaded as part of the data
-     * set.  
+     * set. If this was previously in design, the schedule will be published in order
+     * to freeze it from further changes.
      */
     public Study transitionToWithdrawn(String appId, String studyId) {
-        return phaseTransition(appId, studyId, WITHDRAWN, null);
+        return phaseTransition(appId, studyId, WITHDRAWN, (study) -> {
+            if (study.getScheduleGuid() != null) {
+                Schedule2 schedule = scheduleService.getSchedule(appId, study.getScheduleGuid());
+                if (!schedule.isPublished()) {
+                    scheduleService.publishSchedule(appId, study.getScheduleGuid());
+                }
+            }
+        });
     }
     
     /**
