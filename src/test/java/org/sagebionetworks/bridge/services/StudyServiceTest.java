@@ -483,27 +483,8 @@ public class StudyServiceTest {
         assertEquals(studyCaptor.getValue().getCustomEvents(), events);
     }
     
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = ".*Study schedule cannot be changed or removed.*")
-    public void updateStudyCannotUpdateCoreButChangedSchedule() { 
-        Study existing = Study.create();
-        existing.setIdentifier(TEST_STUDY_ID);
-        existing.setName("oldName");
-        existing.setPhase(IN_FLIGHT);
-        existing.setCreatedOn(DateTime.now());
-        existing.setScheduleGuid("some-value-that-cannot-be-removed");
-        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
-
-        // It doesn’t even matter what you’re submitting, it’ll fail
-        Study study = Study.create();
-        study.setName("new name");
-        study.setIdentifier(TEST_STUDY_ID);
-        
-        service.updateStudy(TEST_APP_ID, study);
-    }
-    
     @Test
-    public void updateStudyCannotUpdateCoreCustomEventsReverted() {
+    public void updateStudyCannotUpdateCoreFields() { 
         StudyCustomEvent event1 = new StudyCustomEvent("event1", IMMUTABLE);
         StudyCustomEvent event2 = new StudyCustomEvent("event2", IMMUTABLE);
         List<StudyCustomEvent> events = ImmutableList.of(event1, event2);
@@ -517,14 +498,17 @@ public class StudyServiceTest {
         existing.setCustomEvents(events);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
 
+        // It doesn’t even matter what you’re submitting, it’ll fail
         Study study = Study.create();
         study.setName("new name");
-        study.setScheduleGuid(SCHEDULE_GUID);
         study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid("some-other-guid");
+        study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("event2", IMMUTABLE)));
         
         service.updateStudy(TEST_APP_ID, study);
         
         verify(mockStudyDao).updateStudy(studyCaptor.capture());
+        assertEquals(studyCaptor.getValue().getScheduleGuid(), SCHEDULE_GUID);
         assertEquals(studyCaptor.getValue().getCustomEvents(), events);
     }
     
