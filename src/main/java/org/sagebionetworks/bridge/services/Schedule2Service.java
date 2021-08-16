@@ -19,7 +19,6 @@ import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -48,7 +47,10 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
- * Bridge v2 schedules. These replace the older SchedulePlans and their APIs.
+ * Bridge v2 schedules. These replace the older SchedulePlans and their APIs. The 
+ * lifecycle of a schedule is now closely related to the one study it is referenced
+ * by, so the Schedule2Service is always called by the study service and that 
+ * service will prevent changes once a study is in production.
  */
 @Component
 public class Schedule2Service {
@@ -179,10 +181,6 @@ public class Schedule2Service {
         checkNotNull(study);
         checkNotNull(schedule);
         
-        if (!StudyService.CAN_EDIT_CORE.contains(study.getPhase())) {
-            throw new BadRequestException("Study schedule cannot be changed or removed during phase " 
-                    + study.getPhase().label() + ".");
-        }
         Schedule2 existing = null;
         if (study.getScheduleGuid() != null) {
             // this shouldn't come back null if it's set in the study, that would be strange.

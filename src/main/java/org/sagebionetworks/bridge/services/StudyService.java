@@ -12,15 +12,17 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.ALLOWED_PHASE_TRANSITIONS;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.ANALYSIS;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.CAN_DELETE_STUDY;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.CAN_EDIT_STUDY_CORE;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.CAN_EDIT_STUDY_METADATA;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.COMPLETED;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.IN_FLIGHT;
-import static org.sagebionetworks.bridge.models.studies.StudyPhase.LEGACY;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.WITHDRAWN;
 
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -45,25 +47,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 @Component
 public class StudyService {
-    
-    private static final Map<StudyPhase, Set<StudyPhase>> ALLOWED_PHASE_TRANSITIONS = new ImmutableMap.Builder<StudyPhase, Set<StudyPhase>>()
-            .put(LEGACY, ImmutableSet.of(DESIGN))
-            .put(DESIGN, ImmutableSet.of(RECRUITMENT, WITHDRAWN))
-            .put(RECRUITMENT, ImmutableSet.of(IN_FLIGHT, WITHDRAWN))
-            .put(IN_FLIGHT, ImmutableSet.of(RECRUITMENT, ANALYSIS, WITHDRAWN))
-            .put(ANALYSIS, ImmutableSet.of(RECRUITMENT, IN_FLIGHT, COMPLETED, WITHDRAWN))
-            .put(COMPLETED, ImmutableSet.of())
-            .put(WITHDRAWN, ImmutableSet.of()).build();
-    
-    // Legacy studies, and studies created in the design phase, are fully editable/deletable, which was
-    // their legacy behavior. In later phases, these no longer become possible. 
-    public static final Set<StudyPhase> CAN_EDIT_METADATA = ImmutableSet.of(LEGACY, DESIGN, RECRUITMENT, IN_FLIGHT);
-    public static final Set<StudyPhase> CAN_EDIT_CORE = ImmutableSet.of(LEGACY, DESIGN);
-    public static final Set<StudyPhase> CAN_DELETE = ImmutableSet.of(LEGACY, DESIGN, COMPLETED, WITHDRAWN);
     
     private StudyDao studyDao;
     
@@ -189,11 +175,11 @@ public class StudyService {
         if (study.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(Study.class);
         }
-        if (!CAN_EDIT_METADATA.contains(existing.getPhase())) {
+        if (!CAN_EDIT_STUDY_METADATA.contains(existing.getPhase())) {
             throw new BadRequestException("Study cannot be changed during phase " 
                     + existing.getPhase().label() + ".");
         }
-        if (!CAN_EDIT_CORE.contains(existing.getPhase()) &&
+        if (!CAN_EDIT_STUDY_CORE.contains(existing.getPhase()) &&
                 !Objects.equals(study.getScheduleGuid(), existing.getScheduleGuid())) {
             throw new BadRequestException("Study schedule cannot be changed or removed during phase " 
                     + existing.getPhase().label() + ".");
@@ -202,6 +188,9 @@ public class StudyService {
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
+        if (existing.getScheduleGuid() != null) {
+            study.setScheduleGuid(existing.getScheduleGuid());    
+        }
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
         VersionHolder keys = studyDao.updateStudy(study);
@@ -218,7 +207,7 @@ public class StudyService {
         
         Study existing = getStudy(appId, studyId, true);
         
-        if (!CAN_DELETE.contains(existing.getPhase())) {
+        if (!CAN_DELETE_STUDY.contains(existing.getPhase())) {
             throw new BadRequestException("Study cannot be deleted during phase " 
                     + existing.getPhase().label());
         }
@@ -235,9 +224,13 @@ public class StudyService {
         checkNotNull(studyId);
         
         // Throws exception if the element does not exist.
-        getStudy(appId, studyId, true);
-        studyDao.deleteStudyPermanently(appId, studyId);
+        Study study = getStudy(appId, studyId, true);
+        String scheduleGuid = study.getScheduleGuid();
         
+        studyDao.deleteStudyPermanently(appId, studyId);
+        if (scheduleGuid != null) {
+            scheduleService.deleteSchedulePermanently(appId, scheduleGuid);    
+        }
         CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
         cacheProvider.removeObject(cacheKey);
     }
