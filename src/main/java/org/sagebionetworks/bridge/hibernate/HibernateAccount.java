@@ -420,7 +420,8 @@ public class HibernateAccount implements Account {
     }
     
     /** The time zone initially captured from this user's requests, used to correctly calculate 
-     * schedules for the user. Should not be updated once set. */
+     * schedules for the user. Should not be updated once set. Related to v3 scheduling API so
+     * it is not always set or reliable. */
     @Convert(converter = DateTimeZoneAttributeConverter.class)
     @JsonIgnore
     public DateTimeZone getTimeZone() {
@@ -545,13 +546,14 @@ public class HibernateAccount implements Account {
         this.note = note;
     }
 
-    /** The client's time zone explicitly set through requests and used to calculate
-     * schedules for the user. Can be updated or deleted. */
+    /** The client's time zone explicitly set through requests to be used as reference
+     * for client side scheduling. Can be updated or deleted. Must be an IANA time zone name. */
     @Override
     public String getClientTimeZone() {
         return clientTimeZone;
     }
 
+    /** @see #getClientTimeZone */
     @Override
     public void setClientTimeZone(String clientTimeZone) {
         this.clientTimeZone = clientTimeZone;

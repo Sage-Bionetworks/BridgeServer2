@@ -2606,6 +2606,22 @@ public class ParticipantServiceTest extends Mockito {
         verify(activityEventService, never()).publishInstallLinkSent(any(), any(), any());
     }
 
+    @Test
+    public void updateClientTimeZone() {
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+
+        StudyParticipant participant = withParticipant()
+                .withClientTimeZone("America/Los_Angeles")
+                .build();
+
+        participantService.updateParticipant(APP, participant);
+
+        verify(accountService).updateAccount(accountCaptor.capture());
+
+        Account capturedAccount = accountCaptor.getValue();
+        assertEquals(capturedAccount.getClientTimeZone(), "America/Los_Angeles");
+    }
+
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 
     // way to get correct paging.
     

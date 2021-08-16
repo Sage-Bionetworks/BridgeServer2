@@ -91,6 +91,7 @@ public class AccountServiceTest extends Mockito {
     private static final Phone OTHER_PHONE = new Phone("+12065881469", "US");
     private static final String OTHER_EMAIL = "other-email@example.com";
     private static final String OTHER_USER_ID = "other-user-id";
+    private static final String OTHER_CLIENT_TIME_ZONE = "Africa/Sao_Tome";
     
     private static final String STUDY_A = "studyA";
     private static final String STUDY_B = "studyB";
@@ -885,6 +886,7 @@ public class AccountServiceTest extends Mockito {
         persistedAccount.setPasswordAlgorithm(DEFAULT_PASSWORD_ALGORITHM);
         persistedAccount.setPasswordHash(DEFAULT_PASSWORD_ALGORITHM.generateHash(DUMMY_PASSWORD));
         persistedAccount.setPasswordModifiedOn(MOCK_DATETIME);
+        persistedAccount.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         
         // This is costly to recompute, just get a reference to check against later. 
         String hash = persistedAccount.getPasswordHash();
@@ -902,7 +904,8 @@ public class AccountServiceTest extends Mockito {
         account.setPasswordAlgorithm(STORMPATH_HMAC_SHA_256);
         account.setPasswordHash("a-hash");
         account.setPasswordModifiedOn(MOCK_DATETIME.plusDays(4));
-        account.setModifiedOn(MOCK_DATETIME.plusDays(4));        
+        account.setModifiedOn(MOCK_DATETIME.plusDays(4));
+        account.setClientTimeZone(OTHER_CLIENT_TIME_ZONE);
 
         // Execute. Identifiers not allows to change.
         service.updateAccount(account);
@@ -920,6 +923,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(updatedAccount.getPasswordHash(), hash);
         assertEquals(updatedAccount.getPasswordModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
         assertEquals(updatedAccount.getModifiedOn().getMillis(), MOCK_DATETIME.getMillis());
+        assertEquals(updatedAccount.getClientTimeZone(), OTHER_CLIENT_TIME_ZONE);
         
         verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any());
         verify(studyActivityEventService, never()).publishEvent(any());

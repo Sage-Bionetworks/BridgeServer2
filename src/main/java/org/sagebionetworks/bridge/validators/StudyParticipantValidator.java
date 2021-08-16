@@ -10,11 +10,12 @@ import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 
+import java.time.DateTimeException;
+import java.time.ZoneId;
+
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-
-import org.joda.time.DateTimeZone;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -133,8 +134,8 @@ public class StudyParticipantValidator implements Validator {
         }
         if (participant.getClientTimeZone() != null) {
             try {
-                DateTimeZone.forID(participant.getClientTimeZone());
-            } catch (IllegalArgumentException e) {
+                ZoneId.of(participant.getClientTimeZone());
+            } catch (DateTimeException e) {
                 errors.rejectValue("clientTimeZone", TIME_ZONE_ERROR);
             }
         }
