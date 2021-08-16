@@ -17,7 +17,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestUtils.getClientData;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
-import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -851,19 +850,6 @@ public class Schedule2ServiceTest extends Mockito {
         assertSame(retValue, results);
         
         verify(mockDao).getAssessmentsForSessionInstance(GUID);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class)
-    public void createOrUpdateStudySchedule_studyPhaseWrong() {
-        App app = App.create();
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
-        
-        Study study = Study.create();
-        study.setPhase(RECRUITMENT);
-        
-        Schedule2 schedule = new Schedule2();
-        
-        service.createOrUpdateStudySchedule(study, schedule);
     }
     
     @Test
