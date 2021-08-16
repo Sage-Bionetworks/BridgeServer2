@@ -610,7 +610,6 @@ public class ParticipantService {
             account.setNote(participant.getNote());
         }
         account.setMigrationVersion(MIGRATION_VERSION);
-        // TODO: check if this needs to retain previous value if it's getting a null from participant
         account.setClientTimeZone(participant.getClientTimeZone());
        
         RequestContext requestContext = RequestContext.get();

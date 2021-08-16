@@ -545,7 +545,8 @@ public class HibernateAccount implements Account {
         this.note = note;
     }
 
-    // TODO: add description, seems to duplicate timeZone field.
+    /** The client's time zone explicitly set through requests and used to calculate
+     * schedules for the user. Can be updated or deleted. */
     @Override
     public String getClientTimeZone() {
         return clientTimeZone;

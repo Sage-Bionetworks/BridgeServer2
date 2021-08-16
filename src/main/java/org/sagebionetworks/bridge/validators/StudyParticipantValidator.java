@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAI
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 
 import java.util.Map;
 import java.util.Optional;
@@ -15,7 +16,6 @@ import java.util.Set;
 
 import org.joda.time.DateTimeZone;
 
-import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -135,7 +135,7 @@ public class StudyParticipantValidator implements Validator {
             try {
                 DateTimeZone.forID(participant.getClientTimeZone());
             } catch (IllegalArgumentException e) {
-                errors.rejectValue("clientTimeZone must be in the IANA time zone database format", "(ex. \"America/Los_Angeles\")");
+                errors.rejectValue("clientTimeZone", TIME_ZONE_ERROR);
             }
         }
     }

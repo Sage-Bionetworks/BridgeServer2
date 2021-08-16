@@ -20,6 +20,7 @@ import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.models.AccountSummarySearch.EMPTY_SEARCH;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
@@ -185,7 +186,8 @@ public class ParticipantServiceTest extends Mockito {
             .withStatus(DISABLED)
             .withTimeZone(USER_TIME_ZONE)
             .withClientData(TestUtils.getClientData())
-            .withNote(TEST_NOTE).build();
+            .withNote(TEST_NOTE)
+            .withClientTimeZone(TEST_CLIENT_TIME_ZONE).build();
     
     private static final DateTime START_DATE = DateTime.now();
     private static final DateTime END_DATE = START_DATE.plusDays(1);
@@ -385,6 +387,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(enrollmentCaptor.getValue().getExternalId(), EXTERNAL_ID);
         assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
         assertEquals(account.getNote(), TEST_NOTE);
+        assertEquals(account.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         
         // don't update cache
         Mockito.verifyNoMoreInteractions(cacheProvider);
@@ -999,6 +1002,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setEnrollments(ImmutableSet.of(en1, en2, en3));
         account.setOrgMembership(TEST_ORG_ID);
         account.setNote(TEST_NOTE);
+        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         
         List<Subpopulation> subpopulations = Lists.newArrayList();
         // Two subpopulations for mocking.
@@ -1053,6 +1057,7 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(participant.getExternalIds().get("studyB"), "externalIdB");
         assertEquals(participant.getOrgMembership(), TEST_ORG_ID);
         assertEquals(participant.getNote(), TEST_NOTE);
+        assertEquals(participant.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals(participant.getAttributes().get("attr2"), "anAttribute2");

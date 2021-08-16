@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.AccountSummarySearch.EMPTY_SEARCH;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
@@ -250,6 +251,7 @@ public class AccountServiceTest extends Mockito {
         account.setStatus(UNVERIFIED);
         account.setAppId("wrong-app");
         account.setNote(TEST_NOTE);
+        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
 
         service.createAccount(app, account);
         verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
@@ -263,6 +265,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getStatus(), UNVERIFIED);
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
         assertEquals(createdAccount.getNote(), TEST_NOTE);
+        assertEquals(createdAccount.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
     }
 
     @Test

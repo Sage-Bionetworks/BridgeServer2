@@ -17,6 +17,7 @@ import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
@@ -105,6 +106,7 @@ public class HibernateAccountTest {
         account.setNotifyByEmail(true);
         account.setMigrationVersion(3);
         account.setNote(TEST_NOTE);
+        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);
@@ -115,7 +117,7 @@ public class HibernateAccountTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(account);
         assertEquals(node.get("type").textValue(), "Account");
-        assertEquals(node.size(), 20);
+        assertEquals(node.size(), 21);
         assertEquals(node.get("id").textValue(), "id");
         assertEquals(node.get("orgMembership").textValue(), "orgId");
         assertEquals(node.get("email").textValue(), "email");
@@ -137,6 +139,7 @@ public class HibernateAccountTest {
         assertEquals(toSet(node, "dataGroups"), ImmutableSet.of("group1", "group2"));
         assertEquals(toSet(node, "languages"), ImmutableSet.of("en", "fr"));
         assertEquals(node.get("note").textValue(), TEST_NOTE);
+        assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
         
         // these should be null
         assertNull(node.get("appId"));
@@ -457,6 +460,12 @@ public class HibernateAccountTest {
     public void noteDefaultsToNull() {
         HibernateAccount account = new HibernateAccount();
         assertNull(account.getNote());
+    }
+
+    @Test
+    public void clientTimeZoneDefaultsToNull() {
+        HibernateAccount account = new HibernateAccount();
+        assertNull(account.getClientTimeZone());
     }
     
     public void statusForPhoneAccountEnabled() {

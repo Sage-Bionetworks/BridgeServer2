@@ -5,10 +5,12 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.when;
 
@@ -419,6 +421,18 @@ public class StudyParticipantValidatorTest {
         validator = makeValidator(true);
         Validate.entityThrowingException(validator, participant);
     }
+
+    @Test
+    public void validateInvalidClientTimeZoneFails() {
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, withClientTimeZone("Invalid/Time_Zone"), "clientTimeZone", TIME_ZONE_ERROR);
+    }
+
+    @Test
+    public void validateClientTimeZoneSuccess() {
+        validator = makeValidator(true);
+        Validate.entityThrowingException(validator, withClientTimeZone(TEST_CLIENT_TIME_ZONE));
+    }
     
     private StudyParticipantValidator makeValidator(boolean isNew) {
         return new StudyParticipantValidator(studyService, mockOrganizationService, app, isNew);
@@ -457,5 +471,10 @@ public class StudyParticipantValidatorTest {
     private StudyParticipant withDataGroup(String dataGroup) {
         return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
                 .withDataGroups(Sets.newHashSet(dataGroup)).build();
+    }
+
+    private StudyParticipant withClientTimeZone(String clientTimeZone) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
+                .withClientTimeZone(clientTimeZone).build();
     }
 }
