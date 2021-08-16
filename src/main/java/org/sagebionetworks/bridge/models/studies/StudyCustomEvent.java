@@ -4,9 +4,11 @@ import javax.persistence.Embeddable;
 import javax.persistence.EnumType;
 import javax.persistence.Enumerated;
 
+import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 
 @Embeddable
+@BridgeTypeName("CustomEvent")
 public class StudyCustomEvent {
     private String eventId;
     @Enumerated(EnumType.STRING)

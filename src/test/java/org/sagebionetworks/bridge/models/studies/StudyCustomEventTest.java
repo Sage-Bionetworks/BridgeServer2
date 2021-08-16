@@ -19,7 +19,7 @@ public class StudyCustomEventTest {
         assertEquals(node.size(), 3);
         assertEquals(node.get("eventId").textValue(), "anEvent");
         assertEquals(node.get("updateType").textValue(), "immutable");
-        assertEquals(node.get("type").textValue(), "StudyCustomEvent");
+        assertEquals(node.get("type").textValue(), "CustomEvent");
         
         StudyCustomEvent deser = BridgeObjectMapper.get().readValue(node.toString(), StudyCustomEvent.class);
         assertEquals(deser.getEventId(), "anEvent");
