@@ -1043,6 +1043,24 @@ public class BridgeUtilsTest {
     }
     
     @Test
+    public void formatActivityEventIdCustomShadowsSystemEvent() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "custom:timeline_retrieved");
+        assertEquals(retValue, "custom:timeline_retrieved");
+    }
+    
+    @Test
+    public void formatActivityEventIdSystemEventCorrectlyInterpreted() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "timeline_retrieved");
+        assertEquals(retValue, "timeline_retrieved");
+    }
+    
+    @Test
+    public void formatActivityEventIdDeclaredCustomIsNotPresent() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "custom:bar");
+        assertNull(retValue);
+    }
+    
+    @Test
     public void selectByLang_selectPreferredLanguage() {
         List<Label> items = ImmutableList.of(LABEL_ES, LABEL_JA);
         

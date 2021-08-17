@@ -92,11 +92,6 @@ public class StudyValidator implements Validator {
             } else {
                 uniqueIds.add(customEvent.getEventId());    
             }
-            for (ActivityEventObjectType type : ActivityEventObjectType.class.getEnumConstants()) {
-                if (type.name().equalsIgnoreCase(customEvent.getEventId())) {
-                    errors.rejectValue("eventId", "is a reserved system event ID");
-                }
-            }
             if (customEvent.getUpdateType() == null) {
                 errors.rejectValue("updateType", CANNOT_BE_NULL);
             }

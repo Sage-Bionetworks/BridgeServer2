@@ -7,6 +7,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.SignInType;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -15,6 +16,7 @@ import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import static org.sagebionetworks.bridge.TestConstants.COLOR_SCHEME;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.models.studies.SignInType.EMAIL_MESSAGE;
@@ -27,6 +29,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -44,6 +47,18 @@ public class HibernateStudyTest {
     private static final LocalDate EXPIRES_ON = DateTime.now().plusDays(10).toLocalDate();
     private static final List<SignInType> TYPES = ImmutableList.of(EMAIL_MESSAGE, EMAIL_PASSWORD);
     
+    @Test
+    public void getCustomEventsMap() {
+        Study study = Study.create();
+        study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("event1", IMMUTABLE), 
+                new StudyCustomEvent("event2", FUTURE_ONLY)));
+        
+        Map<String, ActivityEventUpdateType> map = study.getCustomEventsMap();
+        assertEquals(map.size(), 2);
+        assertEquals(map.get("event1"), IMMUTABLE);
+        assertEquals(map.get("event2"), FUTURE_ONLY);
+    }
+
     @Test
     public void shortConstructor() {
         HibernateStudy study = new HibernateStudy("name", "identifier", "appId", 
