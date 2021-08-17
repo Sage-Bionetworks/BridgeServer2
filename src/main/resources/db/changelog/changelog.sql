@@ -765,3 +765,8 @@ CREATE TABLE `StudyCustomEvents` (
   PRIMARY KEY (`appId`, `studyId`, `eventId`),
   CONSTRAINT `StudyCustomEvents-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:43
+
+ALTER TABLE `Accounts`
+ADD COLUMN `clientTimeZone` varchar(64) DEFAULT NULL;

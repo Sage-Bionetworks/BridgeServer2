@@ -53,6 +53,7 @@ public class TestConstants {
     public static final String SYNAPSE_USER_ID = "12345";
     public static final DateTimeZone TIMEZONE_MSK = DateTimeZone.forOffsetHours(3);
     public static final String TEST_NOTE = "test note";
+    public static final String TEST_CLIENT_TIME_ZONE = "America/Los_Angeles";
 
     public static final String HEALTH_CODE = "oneHealthCode";
     public static final String ENCRYPTED_HEALTH_CODE = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
@@ -193,7 +194,8 @@ public class TestConstants {
             .withLastName("lastName1").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
             .withExternalIds(ImmutableMap.of("study1", "externalId1")).withId("id")
             .withStudyIds(ImmutableSet.of("study1", "study2")).withCreatedOn(TIMESTAMP).withStatus(DISABLED)
-            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).withNote("note1").build();
+            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).withNote("note1")
+            .withClientTimeZone(TEST_CLIENT_TIME_ZONE).build();
     public static final AccountSummary SUMMARY2 = new AccountSummary.Builder().withFirstName("firstName2")
             .withLastName("lastName2").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
             .withExternalIds(ImmutableMap.of("study2", "externalId2")).withId("id2")

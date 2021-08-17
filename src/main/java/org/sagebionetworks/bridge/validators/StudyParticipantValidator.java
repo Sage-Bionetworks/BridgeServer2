@@ -8,6 +8,10 @@ import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAI
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+
+import java.time.DateTimeException;
+import java.time.ZoneId;
 
 import java.util.Map;
 import java.util.Optional;
@@ -117,7 +121,7 @@ public class StudyParticipantValidator implements Validator {
         if (participant.getSynapseUserId() != null && isBlank(participant.getSynapseUserId())) {
             errors.rejectValue("synapseUserId", CANNOT_BE_BLANK);
         }
-                
+
         for (String dataGroup : participant.getDataGroups()) {
             if (!app.getDataGroups().contains(dataGroup)) {
                 errors.rejectValue("dataGroups", messageForSet(app.getDataGroups(), dataGroup));
@@ -126,6 +130,13 @@ public class StudyParticipantValidator implements Validator {
         for (String attributeName : participant.getAttributes().keySet()) {
             if (!app.getUserProfileAttributes().contains(attributeName)) {
                 errors.rejectValue("attributes", messageForSet(app.getUserProfileAttributes(), attributeName));
+            }
+        }
+        if (participant.getClientTimeZone() != null) {
+            try {
+                ZoneId.of(participant.getClientTimeZone());
+            } catch (DateTimeException e) {
+                errors.rejectValue("clientTimeZone", TIME_ZONE_ERROR);
             }
         }
     }

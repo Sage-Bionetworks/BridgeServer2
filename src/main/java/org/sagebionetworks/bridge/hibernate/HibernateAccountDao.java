@@ -287,6 +287,7 @@ public class HibernateAccountDao implements AccountDao {
         builder.withAttributes(acct.getAttributes());
         builder.withOrgMembership(acct.getOrgMembership());
         builder.withNote(acct.getNote());
+        builder.withClientTimeZone(acct.getClientTimeZone());
         
         StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(null);
         if (acct.getId() != null) {
