@@ -57,6 +57,10 @@ public class HibernateStudyTest {
         assertEquals(map.size(), 2);
         assertEquals(map.get("event1"), IMMUTABLE);
         assertEquals(map.get("event2"), FUTURE_ONLY);
+        
+        study = Study.create();
+        map = study.getCustomEventsMap();
+        assertTrue(map.isEmpty());
     }
 
     @Test
