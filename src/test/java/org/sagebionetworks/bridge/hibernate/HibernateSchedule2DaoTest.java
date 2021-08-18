@@ -229,8 +229,8 @@ public class HibernateSchedule2DaoTest extends Mockito {
         verify(mockSession).save(schedule);
         verify(mockQuery).setParameter(HibernateSchedule2Dao.SCHEDULE_GUID, TestConstants.SCHEDULE_GUID);
         verify(mockQuery).executeUpdate();
-        verify(mockSession, times(2)).flush();
-        verify(mockSession, times(2)).clear();
+        verify(mockSession, times(4)).flush();
+        verify(mockSession, times(4)).clear();
     }
 
     @Test

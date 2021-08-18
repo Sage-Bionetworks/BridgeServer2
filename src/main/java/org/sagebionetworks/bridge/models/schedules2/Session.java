@@ -42,7 +42,6 @@ public class Session implements BridgeEntity, HasGuid {
     @JsonIgnore
     private int position;
     private String name;
-    private String startEventId;
     @Convert(converter = PeriodToStringConverter.class)
     @Column(name = "delayPeriod")
     private Period delay;
@@ -73,6 +72,13 @@ public class Session implements BridgeEntity, HasGuid {
     @Column(columnDefinition = "text", name = "labels", nullable = true)
     @Convert(converter = LabelListConverter.class)
     private List<Label> labels;
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "SessionStartEvents", 
+        joinColumns = @JoinColumn(name = "sessionGuid", nullable = false))
+    @OrderColumn(name = "position")
+    @Column(name = "eventId")
+    private List<String> startEventIds;
 
     public Schedule2 getSchedule() {
         return schedule;
@@ -107,11 +113,14 @@ public class Session implements BridgeEntity, HasGuid {
     public void setLabels(List<Label> labels) {
         this.labels = labels;
     }
-    public String getStartEventId() {
-        return startEventId;
+    public List<String> getStartEventIds() {
+        if (startEventIds == null) {
+            startEventIds = new ArrayList<>();
+        }
+        return startEventIds;
     }
-    public void setStartEventId(String startEventId) {
-        this.startEventId = startEventId;
+    public void setStartEventIds(List<String> startEventIds) {
+        this.startEventIds = startEventIds;
     }
     public Period getDelay() {
         return delay;

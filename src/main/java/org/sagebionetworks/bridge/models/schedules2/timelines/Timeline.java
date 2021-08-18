@@ -109,7 +109,7 @@ public class Timeline {
             sessionMeta.setSchedulePublished(schedule.isPublished());
             sessionMeta.setSessionInstanceGuid(schSession.getInstanceGuid());
             sessionMeta.setSessionGuid(schSession.getSession().getGuid());
-            sessionMeta.setSessionStartEventId(schSession.getSession().getStartEventId());
+            sessionMeta.setSessionStartEventId(schSession.getStartEventId());
             sessionMeta.setSessionInstanceStartDay(schSession.getStartDay());
             sessionMeta.setSessionInstanceEndDay(schSession.getEndDay());
             sessionMeta.setTimeWindowGuid(schSession.getTimeWindow().getGuid());

@@ -2,9 +2,9 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_EMPTY;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
-import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
@@ -44,7 +44,7 @@ public class SessionValidator implements Validator {
     static final String OCCURRENCES_FIELD = "occurrences";
     static final String OFFSET_FIELD = "offset";
     static final String PERFORMANCE_ORDER_FIELD = "performanceOrder";
-    static final String START_EVENT_ID_FIELD = "startEventId";
+    static final String START_EVENT_IDS_FIELD = "startEventIds";
     static final String START_TIME_FIELD = "startTime";
     static final String TIME_WINDOWS_FIELD = "timeWindows";
     
@@ -93,8 +93,19 @@ public class SessionValidator implements Validator {
         if (isBlank(session.getName())) {
             errors.rejectValue(NAME_FIELD, CANNOT_BE_BLANK);
         }
-        if (isBlank(session.getStartEventId())) {
-            errors.rejectValue(START_EVENT_ID_FIELD, INVALID_EVENT_ID);
+        if (session.getStartEventIds().isEmpty()) {
+            errors.rejectValue(START_EVENT_IDS_FIELD, CANNOT_BE_EMPTY);
+        } else {
+            for (int i=0; i < session.getStartEventIds().size(); i++) {
+                String oneEventId = session.getStartEventIds().get(i);
+                errors.pushNestedPath(START_EVENT_IDS_FIELD + '[' + i + ']');
+                if (oneEventId == null) {
+                    errors.rejectValue("", CANNOT_BE_NULL);
+                } else if (isBlank(oneEventId)) {
+                    errors.rejectValue("", CANNOT_BE_BLANK);
+                }                
+                errors.popNestedPath();
+            }
         }
         if (session.getOccurrences() != null && session.getOccurrences() < 1) {
             errors.rejectValue(OCCURRENCES_FIELD, LESS_THAN_ONE_ERROR);

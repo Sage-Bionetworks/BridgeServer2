@@ -16,7 +16,6 @@ public class SessionInfo {
 
     private String guid;
     private String label;
-    private String startEventId;
     private PerformanceOrder performanceOrder;
     private Integer minutesToComplete;
     private List<String> timeWindowGuids;
@@ -36,7 +35,6 @@ public class SessionInfo {
         SessionInfo info = new SessionInfo();
         info.guid = session.getGuid();
         info.label = label.getValue();
-        info.startEventId = session.getStartEventId();
         info.performanceOrder = session.getPerformanceOrder();
         info.timeWindowGuids = session.getTimeWindows().stream()
                 .map(TimeWindow::getGuid)
@@ -55,9 +53,6 @@ public class SessionInfo {
     }
     public String getLabel() {
         return label;
-    }
-    public String getStartEventId() {
-        return startEventId;
     }
     public PerformanceOrder getPerformanceOrder() {
         return performanceOrder;

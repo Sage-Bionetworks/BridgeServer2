@@ -18,15 +18,15 @@ import static org.sagebionetworks.bridge.validators.SessionValidator.NAME_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.NOTIFICATIONS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.OCCURRENCES_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.PERFORMANCE_ORDER_FIELD;
-import static org.sagebionetworks.bridge.validators.SessionValidator.START_EVENT_ID_FIELD;
+import static org.sagebionetworks.bridge.validators.SessionValidator.START_EVENT_IDS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.TIME_WINDOWS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.START_TIME_COMPARATOR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.WINDOW_OVERLAPS_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.WINDOW_SHORTER_THAN_DAY_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_EMPTY;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
-import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_LONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_PERIOD;
@@ -85,17 +85,31 @@ public class SessionValidatorTest extends Mockito {
     }
 
     @Test
-    public void startEventIdBlank() {
+    public void startEventIdsNull() {
         Session session = createValidSession();
-        session.setStartEventId("");
-        assertValidatorMessage(INSTANCE, session, START_EVENT_ID_FIELD, INVALID_EVENT_ID);
+        session.setStartEventIds(null);
+        assertValidatorMessage(INSTANCE, session, START_EVENT_IDS_FIELD, CANNOT_BE_EMPTY);
     }
     
     @Test
-    public void startEventIdNull() {
+    public void startEventIdsEmpty() {
         Session session = createValidSession();
-        session.setStartEventId(null);
-        assertValidatorMessage(INSTANCE, session, START_EVENT_ID_FIELD, INVALID_EVENT_ID);
+        session.setStartEventIds(ImmutableList.of());
+        assertValidatorMessage(INSTANCE, session, START_EVENT_IDS_FIELD, CANNOT_BE_EMPTY);
+    }
+    
+    @Test
+    public void startEventIdsMemberNull() {
+        Session session = createValidSession();
+        session.setStartEventIds(Lists.newArrayList((String)null));
+        assertValidatorMessage(INSTANCE, session, START_EVENT_IDS_FIELD + "[0]", CANNOT_BE_NULL);
+    }
+    
+    @Test
+    public void startEventIdsMemberEmpty() {
+        Session session = createValidSession();
+        session.setStartEventIds(Lists.newArrayList("\t"));
+        assertValidatorMessage(INSTANCE, session, START_EVENT_IDS_FIELD + "[0]", CANNOT_BE_BLANK);
     }
     
     @Test

@@ -6,6 +6,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableList;
 
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
@@ -22,7 +23,7 @@ public class ScheduledSessionTest extends Mockito {
     public void canSerialize() throws Exception {
         Session session = new Session();
         session.setGuid(SESSION_GUID_1);
-        session.setStartEventId("enrollment");
+        session.setStartEventIds(ImmutableList.of("enrollment"));
         
         TimeWindow window = new TimeWindow();
         window.setGuid(SESSION_WINDOW_GUID_1);
@@ -32,6 +33,7 @@ public class ScheduledSessionTest extends Mockito {
         ScheduledSession schSession = new ScheduledSession.Builder()
                 .withSession(session)
                 .withTimeWindow(window)
+                .withStartEventId("timeline_retrieved")
                 .withInstanceGuid("instanceGuid")
                 .withStartDay(10)
                 .withEndDay(13)
@@ -45,6 +47,7 @@ public class ScheduledSessionTest extends Mockito {
         JsonNode node = BridgeObjectMapper.get().valueToTree(schSession);
         assertEquals(node.get("refGuid").textValue(), SESSION_GUID_1);
         assertEquals(node.get("instanceGuid").textValue(), "instanceGuid");
+        assertEquals(node.get("startEventId").textValue(), "timeline_retrieved");
         assertEquals(node.get("startDay").intValue(), 10);
         assertEquals(node.get("endDay").intValue(), 13);
         assertEquals(node.get("startTime").textValue(), "17:00");
