@@ -131,8 +131,9 @@ public class Scheduler {
             // all of them.
             
             for (String oneEventId : session.getStartEventIds()) {
-                // Clear the state that is set in each iteration
-                scheduledSession = scheduledSession.copy();
+                // Clear the assessments that are calculated in each iteration. Other fields calculated 
+                // in this loop will be reset.
+                scheduledSession = scheduledSession.copyWithoutAssessments();
 
                 // The position of an assessment in a session is used to differentiate repeated assessments
                 // in a single session. Assessments can be configured differently, but if they are exactly
@@ -170,7 +171,8 @@ public class Scheduler {
      * from a Schedule. It should look like a GUID and not a compound identifier, as client developers 
      * have (in the past) parsed compound identifiers, and we want to discourage this.
      */
-    String generateSessionInstanceGuid(String scheduleGuid, String sessionGuid, String eventId, int startDay, String windowGuid) {
+    String generateSessionInstanceGuid(String scheduleGuid, String sessionGuid, String eventId, int startDay,
+            String windowGuid) {
         Hasher hc = HASHER.newHasher();
         hc.putString(scheduleGuid, Charsets.UTF_8);
         hc.putString(":", Charsets.UTF_8);

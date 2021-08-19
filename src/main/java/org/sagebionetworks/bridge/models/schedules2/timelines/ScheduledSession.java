@@ -104,7 +104,7 @@ public class ScheduledSession {
         private Session session;
         private TimeWindow window;
         
-        public Builder copy() { 
+        public Builder copyWithoutAssessments() { 
             ScheduledSession.Builder builder = new ScheduledSession.Builder();
             builder.instanceGuid = instanceGuid;
             builder.startEventId = startEventId;

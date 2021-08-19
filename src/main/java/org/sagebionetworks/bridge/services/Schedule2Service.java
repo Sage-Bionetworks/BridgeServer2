@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_CREATE_SCHEDULES;
@@ -22,7 +23,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -367,7 +367,7 @@ public class Schedule2Service {
             }
             List<String> events = session.getStartEventIds().stream()
                 .map(s -> formatActivityEventId(keys, s))
-                .collect(Collectors.toList());
+                .collect(toList());
             session.setStartEventIds(events);
         }
     }

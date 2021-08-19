@@ -77,4 +77,44 @@ public class ScheduledSessionTest extends Mockito {
         assertEquals(node.get("assessments").size(), 0);
         assertEquals(node.get("type").textValue(), "ScheduledSession");
     }
+    
+    @Test
+    public void copyWithoutAssessments() {
+        Session session = new Session();
+        session.setGuid(SESSION_GUID_1);
+        session.setStartEventIds(ImmutableList.of("enrollment"));
+        
+        TimeWindow window = new TimeWindow();
+        window.setGuid(SESSION_WINDOW_GUID_1);
+        
+        ScheduledAssessment asmt = new ScheduledAssessment("ref", "instanceGuid", null);
+        
+        ScheduledSession.Builder builder = new ScheduledSession.Builder()
+                .withSession(session)
+                .withTimeWindow(window)
+                .withStartEventId("timeline_retrieved")
+                .withInstanceGuid("instanceGuid")
+                .withStartDay(10)
+                .withEndDay(13)
+                .withDelayTime(Period.parse("PT3H"))
+                .withStartTime(LocalTime.parse("17:00"))
+                .withExpiration(Period.parse("PT30M"))
+                .withPersistent(true)
+                .withScheduledAssessment(asmt);
+        
+        ScheduledSession.Builder copy = builder.copyWithoutAssessments();
+        ScheduledSession schSession = copy.build();
+        
+        assertEquals(schSession.getRefGuid(), SESSION_GUID_1);
+        assertEquals(schSession.getInstanceGuid(), "instanceGuid");
+        assertEquals(schSession.getStartEventId(), "timeline_retrieved");
+        assertEquals(schSession.getStartDay(), 10);
+        assertEquals(schSession.getEndDay(), 13);
+        assertEquals(schSession.getStartTime(), LocalTime.parse("17:00"));
+        assertEquals(schSession.getDelayTime(), Period.parse("PT3H"));
+        assertEquals(schSession.getExpiration(), Period.parse("PT30M"));
+        assertEquals(schSession.getTimeWindow(), window);
+        assertTrue(schSession.isPersistent());
+        assertTrue(schSession.getAssessments().isEmpty());
+    }
 }
