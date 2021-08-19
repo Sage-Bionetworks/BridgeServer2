@@ -226,9 +226,10 @@ public class Exporter3Service {
             isAppModified = true;
         }
 
-        // Update app if necessary. (Don't need to update any admin fields.)
+        // Update app if necessary. We mark this as an admin update, because the only field that changed is
+        // exporter3config and exporter3enabled.
         if (isAppModified) {
-            appService.updateApp(app, false);
+            appService.updateApp(app, true);
         }
 
         return ex3Config;
@@ -257,6 +258,7 @@ public class Exporter3Service {
 
         WorkerRequest workerRequest = new WorkerRequest();
         workerRequest.setService(WORKER_NAME_EXPORTER_3);
+        workerRequest.setBody(exporter3Request);
 
         // Convert request to JSON.
         ObjectMapper objectMapper = BridgeObjectMapper.get();
@@ -264,6 +266,7 @@ public class Exporter3Service {
         try {
             requestJson = objectMapper.writeValueAsString(workerRequest);
         } catch (JsonProcessingException ex) {
+            // This should never happen, but catch and re-throw for code hygiene.
             throw new BridgeServiceException("Error creating export request for app " + appId + " record " + recordId,
                     ex);
         }

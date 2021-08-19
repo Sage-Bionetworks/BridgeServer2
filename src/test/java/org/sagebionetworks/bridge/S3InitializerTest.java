@@ -80,10 +80,9 @@ public class S3InitializerTest extends Mockito {
         
         verify(mockS3Client).createBucket(requestCaptor.capture());
         verify(mockS3Client).setBucketPolicy(BUCKET_NAME, resolvedPolicy);
-        verify(mockS3Client).setBucketCrossOriginConfiguration(eq(BUCKET_NAME), corsConfigCaptor.capture());
+        verify(mockS3Client, never()).setBucketCrossOriginConfiguration(any(), any());
 
         assertEquals(requestCaptor.getValue().getBucketName(), BUCKET_NAME);
-        assertCorsConfig(corsConfigCaptor.getValue());
     }
     
     @Test

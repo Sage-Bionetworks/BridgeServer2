@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -16,15 +17,21 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.model.AmazonS3Exception;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 
@@ -33,28 +40,39 @@ public class UploadServiceUploadCompleteTest {
     private static final String TEST_BUCKET = "test-bucket";
     private static final String TEST_UPLOAD_ID = "test-upload";
 
+    private App app;
+
+    @Mock
+    private AppService mockAppService;
+
+    @Mock
+    private Exporter3Service mockExporter3Service;
+
+    @Mock
     private AmazonS3 mockS3Client;
+
+    @Mock
     private UploadDao mockUploadDao;
+
+    @Mock
     private UploadValidationService mockUploadValidationService;
+
+    @InjectMocks
     private UploadService svc;
 
     @BeforeMethod
     public void setup() {
-        // mock config
+        MockitoAnnotations.initMocks(this);
+
+        // Mock config. This is done separately because we need to set mock config params.
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.getProperty(UploadService.CONFIG_KEY_UPLOAD_BUCKET)).thenReturn(TEST_BUCKET);
-
-        // set up mocks - The actual behavior will vary with each test.
-        mockS3Client = mock(AmazonS3.class);
-        mockUploadDao = mock(UploadDao.class);
-        mockUploadValidationService = mock(UploadValidationService.class);
-
-        // Set up service
-        svc = new UploadService();
         svc.setConfig(mockConfig);
-        svc.setS3Client(mockS3Client);
-        svc.setUploadDao(mockUploadDao);
-        svc.setUploadValidationService(mockUploadValidationService);
+
+        // Mock app service. Exporter 3 is disabled for most of the tests.
+        app = TestUtils.getValidApp(Exporter3ServiceTest.class);
+        app.setExporter3Enabled(false);
+        when(mockAppService.getApp(TestConstants.TEST_APP_ID)).thenReturn(app);
     }
 
     @Test
@@ -190,6 +208,32 @@ public class UploadServiceUploadCompleteTest {
         svc.uploadComplete(TEST_APP_ID, APP, upload, false);
 
         // Verify upload DAO and validation.
+        verify(mockUploadDao).uploadComplete(APP, upload);
+        verify(mockUploadValidationService).validateUpload(TEST_APP_ID, upload);
+    }
+
+    @Test
+    public void exporter3Enabled() {
+        // Enable Exporter 3.
+        app.setExporter3Enabled(true);
+
+        // Set up input.
+        Upload upload = Upload.create();
+        upload.setUploadId(TEST_UPLOAD_ID);
+        upload.setStatus(UploadStatus.REQUESTED);
+
+        // Mock S3.
+        ObjectMetadata mockObjMetadata = mock(ObjectMetadata.class);
+        when(mockObjMetadata.getSSEAlgorithm()).thenReturn(ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        when(mockS3Client.getObjectMetadata(TEST_BUCKET, TEST_UPLOAD_ID)).thenReturn(mockObjMetadata);
+
+        // Execute.
+        svc.uploadComplete(TEST_APP_ID, APP, upload, false);
+
+        // Verify that we call Exporter 3.0
+        verify(mockExporter3Service).completeUpload(same(app), same(upload));
+
+        // Verify that we still call Exporter 2.0.
         verify(mockUploadDao).uploadComplete(APP, upload);
         verify(mockUploadValidationService).validateUpload(TEST_APP_ID, upload);
     }

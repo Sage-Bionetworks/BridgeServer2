@@ -78,7 +78,7 @@ public class S3Initializer {
     public static enum BucketType {
         INTERNAL(null, null),
         INTERNAL_UPLOAD_ACCESSIBLE(null, ALLOW_PUT),
-        SYNAPSE_ACCESSIBLE(SYNAPSE_ACCESS_POLICY, ALLOW_PUT),
+        SYNAPSE_ACCESSIBLE(SYNAPSE_ACCESS_POLICY, null),
         PUBLIC_ACCESSIBLE(PUBLIC_ACCESS_POLICY, null);
         
         String policy;

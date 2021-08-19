@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.models.apps;
 import java.util.Objects;
 
 /** This class holds Exporter 3.0 configuration for a given app. */
-public class Exporter3Configuration {
+public final class Exporter3Configuration {
     private Long dataAccessTeamId;
     private String projectId;
     private String rawDataFolderId;

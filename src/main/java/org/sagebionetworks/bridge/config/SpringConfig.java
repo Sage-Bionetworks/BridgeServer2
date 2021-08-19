@@ -298,7 +298,7 @@ public class SpringConfig {
     }
 
     @Bean(name = "cmsEncryptorCache")
-    @Resource(name = "s3Helper")
+    @Autowired
     public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(S3Helper s3Helper) {
         BridgeConfig bridgeConfig = bridgeConfig();
 
