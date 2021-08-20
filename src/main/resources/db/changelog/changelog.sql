@@ -677,3 +677,96 @@ CREATE TABLE `SessionNotifications` (
 
 ALTER TABLE `Accounts`
 ADD COLUMN `note` text;
+
+-- changeset bridge:37
+
+ALTER TABLE `Substudies`
+DROP COLUMN `irbApprovedOn`,
+DROP COLUMN `irbApprovedUntil`,
+ADD COLUMN `irbName` varchar(60) DEFAULT NULL,
+ADD COLUMN `irbProtocolName` varchar(512) DEFAULT NULL,
+ADD COLUMN `irbDecisionOn` varchar(12) DEFAULT NULL,
+ADD COLUMN `irbExpiresOn` varchar(12) DEFAULT NULL,
+ADD COLUMN `irbDecisionType` enum('EXEMPT','APPROVED') DEFAULT NULL;
+
+ALTER TABLE `TimelineMetadata`
+ADD COLUMN `timeWindowPersistent` tinyint(1) DEFAULT 0;
+
+DROP TABLE `AdherenceRecords`;
+
+CREATE TABLE `AdherenceRecords` (
+  `appId` varchar(255) NOT NULL,
+  `userId` varchar(255) NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `instanceGuid` varchar(128) NOT NULL,
+  `startedOn` bigint(20) unsigned,
+  `eventTimestamp` bigint(20) unsigned,
+  `finishedOn` bigint(20) unsigned,
+  `uploadedOn` bigint(20) unsigned,
+  `instanceTimestamp` bigint(20) unsigned,
+  `clientData` text COLLATE utf8_unicode_ci,
+  `clientTimeZone` varchar(255),
+  `declined` tinyint(1) DEFAULT 0,
+  PRIMARY KEY (`userId`, `studyId`, `instanceGuid`, `eventTimestamp`, `instanceTimestamp`),
+  CONSTRAINT `AdherenceRecord-Account-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `AdherenceRecord-Study-Constraint` FOREIGN KEY (`studyId`) REFERENCES `Substudies` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:38
+
+ALTER TABLE `RequestInfos`
+ADD COLUMN `timelineAccessedOn` varchar(255);
+
+-- changeset bridge:39
+
+ALTER TABLE `Substudies`
+DROP COLUMN `disease`,
+DROP COLUMN `studyDesignType`,
+ADD COLUMN `signInTypes` text,
+ADD COLUMN `keywords` varchar(255);
+
+CREATE TABLE IF NOT EXISTS `StudyDiseases` (
+  `appId` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `disease` varchar(255) NOT NULL,
+  PRIMARY KEY (`appId`, `studyId`, `disease`),
+  CONSTRAINT `StudyDiseases-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `StudyDesignTypes` (
+  `appId` varchar(255) NOT NULL,
+  `studyId` varchar(255) NOT NULL,
+  `designType` varchar(255) NOT NULL,
+  PRIMARY KEY (`appId`, `studyId`, `designType`),
+  CONSTRAINT `StudyDesignTypes-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:40
+
+ALTER TABLE `FileMetadata`
+ADD COLUMN `disposition` enum('INLINE','ATTACHMENT') NOT NULL DEFAULT 'ATTACHMENT';
+
+ALTER TABLE `Substudies`
+ADD COLUMN `logoGuid` varchar(255);
+
+-- changeset bridge:41
+
+ALTER TABLE `Substudies`
+MODIFY COLUMN `phase` enum('LEGACY', 'DESIGN', 'RECRUITMENT', 'IN_FLIGHT', 'ANALYSIS', 'COMPLETED', 'WITHDRAWN') DEFAULT 'LEGACY';
+
+-- changeset bridge:42
+
+CREATE TABLE `StudyCustomEvents` (
+  `appId` varchar(60) NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `eventId` varchar(255) NOT NULL,
+  `pos` int(10) signed,
+  `updateType` enum('MUTABLE', 'IMMUTABLE', 'FUTURE_ONLY') DEFAULT 'IMMUTABLE',
+  PRIMARY KEY (`appId`, `studyId`, `eventId`),
+  CONSTRAINT `StudyCustomEvents-Study-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:43
+
+ALTER TABLE `Accounts`
+ADD COLUMN `clientTimeZone` varchar(64) DEFAULT NULL;

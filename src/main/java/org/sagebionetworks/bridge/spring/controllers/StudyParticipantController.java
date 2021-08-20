@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static java.lang.Boolean.TRUE;
 import static org.apache.http.HttpHeaders.IF_MODIFIED_SINCE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
@@ -12,6 +13,7 @@ import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler.INSTANCE;
+import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
 import static org.springframework.http.HttpStatus.NOT_MODIFIED;
 import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
@@ -48,6 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
@@ -87,6 +90,7 @@ public class StudyParticipantController extends BaseController {
     static final StatusMessage NOTIFY_SUCCESS_MSG = new StatusMessage("Message has been sent to external notification service.");
     static final StatusMessage EVENT_RECORDED_MSG = new StatusMessage("Event recorded.");
     static final StatusMessage EVENT_DELETED_MSG = new StatusMessage("Event deleted.");
+    public static final StatusMessage INSTALL_LINK_SEND_MSG = new StatusMessage("Install instructions sent to participant.");
 
     private ParticipantService participantService;
     
@@ -141,6 +145,12 @@ public class StudyParticipantController extends BaseController {
         if (!session.getParticipant().getStudyIds().contains(studyId)) {
             throw new UnauthorizedException("Caller is not enrolled in study '" + studyId + "'");
         }
+
+        DateTime timelineRequestedOn = getDateTime();        
+        
+        RequestInfo requestInfo = getRequestInfoBuilder(session)
+                .withTimelineAccessedOn(timelineRequestedOn).build();
+        requestInfoService.updateRequestInfo(requestInfo);
         
         Study study = studyService.getStudy(session.getAppId(), studyId, true);
         DateTime modifiedSince = modifiedSinceHeader();
@@ -157,7 +167,7 @@ public class StudyParticipantController extends BaseController {
                 .studyId(studyId)
                 .userId(session.getId())
                 .objectType(TIMELINE_RETRIEVED)
-                .timestamp(getDateTime()));
+                .timestamp(timelineRequestedOn));
         
         return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
     }
@@ -211,8 +221,7 @@ public class StudyParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         
-        search = new AccountSummarySearch.Builder().copyOf(search)
-                .withEnrolledInStudyId(studyId).build();
+        search = search.toBuilder().withEnrolledInStudyId(studyId).build();
         
         return participantService.getPagedAccountSummaries(app, search);
     }
@@ -412,6 +421,24 @@ public class StudyParticipantController extends BaseController {
         return new StatusMessage(NOTIFY_SUCCESS_MSG.getMessage() + " Some registrations returned errors: "
                 + BridgeUtils.COMMA_SPACE_JOINER.join(erroredNotifications) + ".");
     }
+    
+    @PostMapping("/v5/studies/{studyId}/participants/{userId}/sendInstallLink")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public StatusMessage sendInstallLink(@PathVariable String studyId, @PathVariable String userId, 
+            @RequestParam(required = false) String osName) {
+        UserSession session = getAdministrativeSession();
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
+
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+        
+        App app = appService.getApp(session.getAppId());
+        String email = TRUE.equals(account.getEmailVerified()) ? account.getEmail() : null;
+        Phone phone = TRUE.equals(account.getPhoneVerified()) ? account.getPhone() : null;
+        
+        participantService.sendInstallLinkMessage(app, PROMOTIONAL, account.getHealthCode(), email, phone, osName);
+        
+        return INSTALL_LINK_SEND_MSG;
+    }
 
     @DeleteMapping("/v5/studies/{studyId}/participants/{userId}")
     public StatusMessage deleteTestParticipant(@PathVariable String studyId, @PathVariable String userId) {
@@ -436,9 +463,9 @@ public class StudyParticipantController extends BaseController {
             @PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         
-        getValidAccountInStudy(session.getAppId(), studyId, userId);
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), userId, studyId);
+        return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), account.getId(), studyId);
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/activityevents/{eventId}")
@@ -449,19 +476,15 @@ public class StudyParticipantController extends BaseController {
             @RequestParam(required = false) String pageSize) {
         UserSession session = getAdministrativeSession();
         
-        getValidAccountInStudy(session.getAppId(), studyId, userId);
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
         Integer offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         Integer pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         
-        StudyActivityEventRequest request = new StudyActivityEventRequest()
-                .appId(session.getAppId())
-                .studyId(studyId)
-                .userId(userId)
-                .objectId(eventId)
-                .objectType(CUSTOM);
+        AccountId accountId = AccountId.forId(account.getAppId(),  account.getId());
         
-        return studyActivityEventService.getStudyActivityEventHistory(request, offsetByInt, pageSizeInt);
+        return studyActivityEventService.getStudyActivityEventHistory(accountId, 
+                studyId, eventId, offsetByInt, pageSizeInt);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/activityevents")
@@ -469,12 +492,12 @@ public class StudyParticipantController extends BaseController {
     public StatusMessage publishActivityEvent(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         
-        getValidAccountInStudy(session.getAppId(), studyId, userId);
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
         StudyActivityEventRequest request = parseJson(StudyActivityEventRequest.class)
                 .appId(session.getAppId())
                 .studyId(studyId)
-                .userId(userId)
+                .userId(account.getId())
                 .objectType(CUSTOM);
         
         studyActivityEventService.publishEvent(request);
@@ -488,12 +511,12 @@ public class StudyParticipantController extends BaseController {
             @PathVariable String eventId) {
         UserSession session = getAdministrativeSession();
         
-        getValidAccountInStudy(session.getAppId(), studyId, userId);
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         studyActivityEventService.deleteCustomEvent(new StudyActivityEventRequest()
                 .appId(session.getAppId())
                 .studyId(studyId)
-                .userId(userId)
+                .userId(account.getId())
                 .objectId(eventId)
                 .objectType(CUSTOM));
         
@@ -507,10 +530,9 @@ public class StudyParticipantController extends BaseController {
      */
     private Account getValidAccountInStudy(String appId, String studyId, String idToken) {
         AccountId accountId = BridgeUtils.parseAccountId(appId, idToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));        
+
         boolean matches = account.getEnrollments().stream().anyMatch(en -> studyId.equals(en.getStudyId()));
         if (!matches) {
             throw new EntityNotFoundException(Account.class);

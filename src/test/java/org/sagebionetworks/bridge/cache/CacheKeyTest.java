@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.cache;
 
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -164,5 +165,11 @@ public class CacheKeyTest {
         
         CacheKey publicKey = CacheKey.app(TEST_APP_ID);
         assertTrue(CacheKey.isPublic(publicKey.toString()));
+    }
+    
+    @Test
+    public void publicStudy() {
+        String key = TEST_APP_ID + ":" + TEST_STUDY_ID + ":PublicStudy";
+        assertEquals(CacheKey.publicStudy(TEST_APP_ID, TEST_STUDY_ID).toString(), key);
     }
 }

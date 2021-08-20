@@ -236,4 +236,15 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         TimelineMetadata tm = hibernateHelper.getById(TimelineMetadata.class, instanceGuid);
         return Optional.ofNullable(tm);
     }
+    
+    @Override
+    public List<TimelineMetadata> getAssessmentsForSessionInstance(String instanceGuid) {
+        checkNotNull(instanceGuid);
+        
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("SELECT * FROM TimelineMetadata WHERE sessionInstanceGuid = :instanceGuid", "instanceGuid", instanceGuid);
+        builder.append("AND assessmentInstanceGuid IS NOT NULL");
+        
+        return hibernateHelper.nativeQueryGet(builder.getQuery(), builder.getParameters(), null, null, TimelineMetadata.class);
+    }
 }

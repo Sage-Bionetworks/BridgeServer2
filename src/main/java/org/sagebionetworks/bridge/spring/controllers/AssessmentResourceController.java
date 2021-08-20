@@ -13,6 +13,8 @@ import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import java.util.List;
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -39,23 +41,29 @@ import org.sagebionetworks.bridge.services.AssessmentResourceService;
 public class AssessmentResourceController extends BaseController {
 
     private AssessmentResourceService service;
-    
+
     @Autowired
     final void setAssessmentResourceService(AssessmentResourceService service) {
         this.service = service;
     }
     
+    private String getOwnerId(UserSession session) {
+        if (session.isInRole(ImmutableSet.of(DEVELOPER, ADMIN))) {
+            return null;
+        }
+        return session.getParticipant().getOrgMembership();
+    }
+
     @GetMapping("/v1/assessments/identifier:{assessmentId}/resources")
-    public PagedResourceList<AssessmentResource> getAssessmentResources(@PathVariable String assessmentId, 
-            @RequestParam(required = false) String offsetBy,
-            @RequestParam(required = false) String pageSize,
+    public PagedResourceList<AssessmentResource> getAssessmentResources(@PathVariable String assessmentId,
+            @RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize,
             @RequestParam(name = "category", required = false) Set<String> cats,
-            @RequestParam(required = false) String minRevision,
-            @RequestParam(required = false) String maxRevision,
+            @RequestParam(required = false) String minRevision, @RequestParam(required = false) String maxRevision,
             @RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
-        
+        String ownerId = getOwnerId(session);
+
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -65,48 +73,49 @@ public class AssessmentResourceController extends BaseController {
         Integer minRevisionInt = BridgeUtils.getIntegerOrDefault(minRevision, null);
         Integer maxRevisionInt = BridgeUtils.getIntegerOrDefault(maxRevision, null);
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
-        
+
         Set<ResourceCategory> categories = null;
         if (cats != null) {
-            categories = cats.stream()
-                .map(s -> getEnumOrDefault(s, ResourceCategory.class, null))
-                .collect(toSet());
+            categories = cats.stream().map(s -> getEnumOrDefault(s, ResourceCategory.class, null)).collect(toSet());
         }
-        
-        return service.getResources(appId, assessmentId, offsetByInt, pageSizeInt, categories, minRevisionInt,
+
+        return service.getResources(appId, ownerId, assessmentId, offsetByInt, pageSizeInt, categories, minRevisionInt,
                 maxRevisionInt, incDeletedBool);
     }
-    
+
     @PostMapping("/v1/assessments/identifier:{assessmentId}/resources")
     @ResponseStatus(HttpStatus.CREATED)
     public AssessmentResource createAssessmentResource(@PathVariable String assessmentId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
 
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
         AssessmentResource resource = parseJson(AssessmentResource.class);
-        return service.createResource(appId, assessmentId, resource);
+        return service.createResource(appId, ownerId, assessmentId, resource);
     }
 
     @GetMapping("/v1/assessments/identifier:{assessmentId}/resources/{guid}")
     public AssessmentResource getAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid) {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
         
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
-        return service.getResource(appId, assessmentId, guid);
+        return service.getResource(appId, ownerId, assessmentId, guid);
     }
 
     @PostMapping("/v1/assessments/identifier:{assessmentId}/resources/{guid}")
     public AssessmentResource updateAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
         
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
@@ -114,15 +123,16 @@ public class AssessmentResourceController extends BaseController {
 
         AssessmentResource resource = parseJson(AssessmentResource.class);
         resource.setGuid(guid);
-        
-        return service.updateResource(appId, assessmentId, resource);
+
+        return service.updateResource(appId, ownerId, assessmentId, resource);
     }
 
     @DeleteMapping("/v1/assessments/identifier:{assessmentId}/resources/{guid}")
     public StatusMessage deleteAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid,
             @RequestParam(required = false) String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
         String appId = session.getAppId();
+        String ownerId = session.getParticipant().getOrgMembership();
         
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
@@ -130,22 +140,24 @@ public class AssessmentResourceController extends BaseController {
 
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             service.deleteResourcePermanently(appId, assessmentId, guid);
+        } else if (session.isInRole(ADMIN)) {
+            service.deleteResource(appId, null, assessmentId, guid);
         } else {
-            service.deleteResource(appId, assessmentId, guid);
+            service.deleteResource(appId, ownerId, assessmentId, guid);
         }
-        return new StatusMessage("Assessment resource deleted.");        
+        return new StatusMessage("Assessment resource deleted.");
     }
-    
+
     @PostMapping("/v1/assessments/identifier:{assessmentId}/resources/publish")
     public ResourceList<AssessmentResource> publishAssessmentResource(@PathVariable String assessmentId) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
 
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
         Set<String> resourceGuids = parseJson(STRING_SET_TYPEREF);
-        
+
         List<AssessmentResource> resources = service.publishAssessmentResources(appId, assessmentId, resourceGuids);
         return new ResourceList<AssessmentResource>(resources, true);
     }

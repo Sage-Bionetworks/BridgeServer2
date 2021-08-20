@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
@@ -41,7 +42,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.RandomStringUtils;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import com.google.common.collect.Maps;
 
@@ -68,6 +68,8 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
@@ -272,10 +274,10 @@ public class TestUtils {
         Mockito.mockingDetails(mockAccountService).isMock();
         Mockito.mockingDetails(mockAccount).isMock();
         doAnswer(invocation -> {
-            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgument(2);
+            Consumer<Account> accountEdits = (Consumer<Account>)invocation.getArgument(1);
             accountEdits.accept(mockAccount);
             return null;
-        }).when(mockAccountService).editAccount(ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.any());
+        }).when(mockAccountService).editAccount(any(), any());
     }
 
     public static void assertDatesWithTimeZoneEqual(DateTime date1, DateTime date2) {
@@ -663,6 +665,19 @@ public class TestUtils {
         }
     }
     
+    public static AdherenceRecord mockAdherenceRecord(String instanceGuid) {
+        AdherenceRecord record = new AdherenceRecord();
+        record.setStudyId(TEST_STUDY_ID);
+        record.setUserId(TEST_USER_ID);
+        record.setEventTimestamp(CREATED_ON);
+        record.setClientTimeZone("America/Los_Angeles");
+        record.setStartedOn(MODIFIED_ON);
+        record.setInstanceGuid(instanceGuid);
+        record.setClientTimeZone("America/Los_Angeles");
+        return record;
+    }
+
+    
     public static AdherenceRecord getAdherenceRecord(String instanceGuid) { 
         AdherenceRecord record = new AdherenceRecord();
         record.setStudyId(TEST_STUDY_ID);
@@ -739,5 +754,13 @@ public class TestUtils {
         return new ConfigResolver(mockConfig);
     }
     
-
+    public static StudyActivityEvent findByEventId(List<StudyActivityEvent> events, ActivityEventObjectType type) {
+        String eventId = type.name().toLowerCase();
+        for (StudyActivityEvent oneEvent : events) {
+            if (oneEvent.getEventId().equals(eventId)) {
+                return oneEvent;
+            }
+        }
+        return null;
+    }
 }

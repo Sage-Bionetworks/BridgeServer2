@@ -18,8 +18,9 @@ import com.google.common.collect.Lists;
  */
 public final class CacheKey {
     
-    private static final String[] PUBLIC_KEYS = new String[] { "emailVerificationStatus", "AppConfigList",
-            "channel-throttling", "lock", "App", "Subpopulation", "SubpopulationList", "view" };
+    private static final String[] PUBLIC_KEYS = new String[] { "emailVerificationStatus", 
+            "AppConfigList", "channel-throttling", "lock", "App", "Subpopulation", 
+            "SubpopulationList", "view" };
     
     public final static boolean isPublic(String key) {
         for (String suffix : PUBLIC_KEYS) {
@@ -28,6 +29,9 @@ public final class CacheKey {
             }
         }
         return false;
+    }
+    public static final CacheKey publicStudy(String appId, String studyId) {
+        return new CacheKey(appId, studyId, "PublicStudy");
     }
     public static final CacheKey scheduleModificationTimestamp(String studyId) {
         return new CacheKey(studyId, "ScheduleModifiedOnByStudy");

@@ -30,7 +30,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.Metrics;
-import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.SponsorService;
@@ -301,25 +300,5 @@ public class RequestContextTest extends Mockito {
         
         RequestContext threadValue = RequestContext.get();
         assertSame(retValue, threadValue);
-    }
-    
-    @Test
-    public void acquireAccountIdentity() {
-        RequestContext initialContext = new RequestContext.Builder()
-                .withCallerUserId("old-id")
-                .withCallerAppId("old-app-id").build();
-        RequestContext.set(initialContext);
-        
-        Account account = Account.create();
-        account.setId("id");
-        account.setAppId(TEST_APP_ID);
-        account.setOrgMembership("orgId");
-        account.setEmail("email");
-        
-        RequestContext.acquireAccountIdentity(account);
-        
-        RequestContext updatedContext = RequestContext.get();
-        assertEquals(updatedContext.getCallerUserId(), "id");
-        assertEquals(updatedContext.getCallerAppId(), "old-app-id");
     }
 }

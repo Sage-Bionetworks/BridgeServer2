@@ -1,13 +1,18 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_REPORTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeUtils.isEmpty;
+import static org.sagebionetworks.bridge.models.ResourceList.REPORT_TYPE;
 
-import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
-
-import com.google.common.collect.Sets;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -101,7 +106,7 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccess(index)) {
+        if (!canAccessStudyReport(index)) {
             throw new UnauthorizedException();
         }
         return reportDataDao.getReportData(key, startDate, endDate);
@@ -111,8 +116,8 @@ public class ReportService {
      * Return set of participant report records based on the provided local date range. Study memberships are
      * enforced.
      */
-    public DateRangeResourceList<? extends ReportData> getParticipantReport(String appId, String identifier,
-            String healthCode, LocalDate startDate, LocalDate endDate) {
+    public DateRangeResourceList<? extends ReportData> getParticipantReport(String appId, String userId,
+            String identifier, String healthCode, LocalDate startDate, LocalDate endDate) {
         
         RangeTuple<LocalDate> finalDates = validateLocalDateRange(startDate, endDate);
         startDate = finalDates.getStart();
@@ -126,7 +131,7 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccess(index)) {
+        if (!canAccessParticipantReport(userId, index)) {
             throw new UnauthorizedException();
         }
         return reportDataDao.getReportData(key, startDate, endDate);
@@ -135,10 +140,10 @@ public class ReportService {
     /**
      * Return set of participant report records based on the provided datetime range. Study memberships are enforced.
      */
-    public ForwardCursorPagedResourceList<ReportData> getParticipantReportV4(final String appId,
+    public ForwardCursorPagedResourceList<ReportData> getParticipantReportV4(final String appId, final String userId,
             final String identifier, final String healthCode, final DateTime startTime, final DateTime endTime,
             final String offsetKey, final int pageSize) {
-        
+
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
         }
@@ -152,7 +157,7 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccess(index)) {
+        if (!canAccessParticipantReport(userId, index)) {
             throw new UnauthorizedException();
         }
         return reportDataDao.getReportDataV4(key, finalTimes.getStart(), finalTimes.getEnd(), offsetKey, pageSize);
@@ -161,9 +166,8 @@ public class ReportService {
     /**
      * Return set of study report records based on the provided datetime range. Study memberships are enforced.
      */
-    public ForwardCursorPagedResourceList<ReportData> getStudyReportV4(final String appId,
-            final String identifier, final DateTime startTime, final DateTime endTime, final String offsetKey,
-            final int pageSize) {
+    public ForwardCursorPagedResourceList<ReportData> getStudyReportV4(final String appId, final String identifier,
+            final DateTime startTime, final DateTime endTime, final String offsetKey, final int pageSize) {
         
         if (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE) {
             throw new BadRequestException(BridgeConstants.PAGE_SIZE_ERROR);
@@ -177,7 +181,7 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccess(index)) {
+        if (!canAccessStudyReport(index)) {
             throw new UnauthorizedException();
         }
         return reportDataDao.getReportDataV4(key, finalTimes.getStart(), finalTimes.getEnd(), offsetKey, pageSize);
@@ -203,7 +207,7 @@ public class ReportService {
         reportData.setReportDataKey(key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccess(index)) {
+        if (!canAccessStudyReport(index)) {
             throw new UnauthorizedException();
         }
         
@@ -222,7 +226,7 @@ public class ReportService {
      * no study memberships, or it must be a subset of the studies assigned to the caller. If it is a 
      * subsequent record, then study memberships will be enforced based on the existing report index.
      */
-    public void saveParticipantReport(String appId, String identifier, String healthCode,
+    public void saveParticipantReport(String appId, String userId, String identifier, String healthCode,
             ReportData reportData) {
         checkNotNull(reportData);
         
@@ -234,7 +238,7 @@ public class ReportService {
         reportData.setReportDataKey(key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccess(index)) {
+        if (!canAccessParticipantReport(userId, index)) {
             throw new UnauthorizedException();
         }
         
@@ -258,7 +262,7 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccess(index)) {
+        if (!canAccessStudyReport(index)) {
             throw new UnauthorizedException();
         }        
         reportDataDao.deleteReportData(key);
@@ -280,7 +284,7 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccess(index)) {
+        if (!canAccessStudyReport(index)) {
             throw new UnauthorizedException();
         }        
         reportDataDao.deleteReportDataRecord(key, date);
@@ -301,13 +305,19 @@ public class ReportService {
         checkNotNull(appId);
         checkNotNull(reportType);
         
-        return reportIndexDao.getIndices(appId, reportType);
+        ReportTypeResourceList<? extends ReportIndex> indices = reportIndexDao.getIndices(appId, reportType);
+        
+        List<? extends ReportIndex> filteredIndices = indices.getItems().stream()
+                .filter(i -> canAccessStudyReport(i))
+                .collect(Collectors.toList());
+        
+        return new ReportTypeResourceList<>(filteredIndices, true).withRequestParam(REPORT_TYPE, reportType);
     }
     
     /**
      * Delete all records of a participant report. Study memberships are enforced. 
      */
-    public void deleteParticipantReport(String appId, String identifier, String healthCode) {
+    public void deleteParticipantReport(String appId, String userId, String identifier, String healthCode) {
         ReportDataKey key = new ReportDataKey.Builder()
                 .withHealthCode(healthCode)
                 .withReportType(ReportType.PARTICIPANT)
@@ -316,7 +326,7 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccess(index)) {
+        if (!canAccessParticipantReport(userId, index)) {
             throw new UnauthorizedException();
         }        
         reportDataDao.deleteReportData(key);
@@ -325,7 +335,8 @@ public class ReportService {
     /**
      * Delete one record of a participant report. Study memberships are enforced. 
      */
-    public void deleteParticipantReportRecord(String appId, String identifier, String date, String healthCode) {
+    public void deleteParticipantReportRecord(String appId, String userId, String identifier, String date,
+            String healthCode) {
         if (StringUtils.isBlank(date)) {
             throw new BadRequestException(RECORD_DATE_MISSING_MSG);
         }
@@ -338,7 +349,7 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccess(index)) {
+        if (!canAccessParticipantReport(userId, index)) {
             throw new UnauthorizedException();
         }        
         reportDataDao.deleteReportDataRecord(key, date);
@@ -349,7 +360,7 @@ public class ReportService {
      * delete these because we cannot determine all individual records have been deleted without a table scan, 
      * but this method is provided for tests. 
      */
-    public void deleteParticipantReportIndex(String appId, String identifier) {
+    public void deleteParticipantReportIndex(String appId, String userId, String identifier) {
         ReportDataKey key = new ReportDataKey.Builder()
              // force INDEX key to be generated event for participant index (healthCode not relevant for this)
                 .withHealthCode("dummy-value") 
@@ -358,7 +369,7 @@ public class ReportService {
                 .withAppId(appId).build();
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccess(index)) {
+        if (!canAccessParticipantReport(userId, index)) {
             throw new UnauthorizedException();
         }        
         reportIndexDao.removeIndex(key);
@@ -382,7 +393,7 @@ public class ReportService {
         if (existingIndex == null) {
             throw new EntityNotFoundException(ReportIndex.class);
         }
-        if (!canAccess(existingIndex)) {
+        if (!canAccessStudyReport(existingIndex)) {
             throw new UnauthorizedException();
         }
         // Caller cannot change study relationships unless they are not associated to any study. 
@@ -396,21 +407,30 @@ public class ReportService {
         reportIndexDao.updateIndex(index);
     }
     
-    protected boolean canAccess(ReportIndex index) {
-        if (index == null || index.getStudyIds() == null || index.getStudyIds().isEmpty() || index.isPublic()) {
+    protected boolean canAccessParticipantReport(String userId, ReportIndex index) {
+        if (index == null || isEmpty(index.getStudyIds()) || index.isPublic()) {
             return true;
         }
-        // Either a consented user or an administrative user might want to access a report index, so both
-        // collections are compared to the index.
-        Set<String> allStudyIds = new HashSet<>();
-        allStudyIds.addAll(RequestContext.get().getCallerEnrolledStudies());
-        allStudyIds.addAll(RequestContext.get().getOrgSponsoredStudies());
-        if (allStudyIds.isEmpty()) {
-            return true;
+        for (String studyId : index.getStudyIds()) {
+            if (CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, userId, STUDY_ID, studyId)) {
+                return true;
+            }
         }
-        return !Sets.intersection(allStudyIds, index.getStudyIds()).isEmpty();
+        return false;
     }
 
+    protected boolean canAccessStudyReport(ReportIndex index) {
+        if (index == null || isEmpty(index.getStudyIds()) || index.isPublic()) {
+            return true;
+        }
+        for (String studyId : index.getStudyIds()) {
+            if (CAN_READ_STUDY_REPORTS.check(STUDY_ID, studyId)) {
+                return true;
+            }
+        }
+        return false;
+    }
+    
     private void addToIndex(ReportDataKey key, Set<String> studies) {
         reportIndexDao.addIndex(key, studies);
     }

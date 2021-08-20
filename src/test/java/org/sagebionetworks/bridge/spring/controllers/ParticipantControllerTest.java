@@ -39,6 +39,8 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.SPONSORS_AND_PARTNERS;
+import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
+import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -49,6 +51,7 @@ import static org.testng.Assert.assertTrue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -100,6 +103,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -130,6 +134,7 @@ import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.SponsorService;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -181,6 +186,9 @@ public class ParticipantControllerTest extends Mockito {
 
     @Mock
     AppService mockAppService;
+    
+    @Mock
+    AccountService mockAccountService;
 
     @Mock
     AuthenticationService mockAuthService;
@@ -1661,6 +1669,46 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(participantRosterRequest.getPassword(), "password");
     }
 
+    @Test
+    public void sendInstallLink() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setHealthCode(HEALTH_CODE);
+        account.setEmail(EMAIL);
+        account.setEmailVerified(true);
+        account.setPhone(PHONE);
+        account.setPhoneVerified(true);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+        
+        StatusMessage retValue = controller.sendInstallLink(TEST_USER_ID, "Android");
+        assertSame(retValue, INSTALL_LINK_SEND_MSG);
+        
+        verify(mockParticipantService).sendInstallLinkMessage(
+                app, PROMOTIONAL, HEALTH_CODE, EMAIL, PHONE, "Android");
+    }
+    
+    @Test
+    public void sendInstallLinkNoVerifiedChannels() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setHealthCode(HEALTH_CODE);
+        account.setEmail(EMAIL);
+        account.setPhone(PHONE);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+        
+        StatusMessage retValue = controller.sendInstallLink(TEST_USER_ID, null);
+        assertSame(retValue, INSTALL_LINK_SEND_MSG);
+        
+        verify(mockParticipantService).sendInstallLinkMessage(
+                app, PROMOTIONAL, HEALTH_CODE, null, null, null);
+    }
+    
     private AccountSummarySearch setAccountSummarySearch() throws Exception {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withOffsetBy(10).withPageSize(100)
                 .withEmailFilter("email").withPhoneFilter("phone").withAllOfGroups(ImmutableSet.of("group1"))

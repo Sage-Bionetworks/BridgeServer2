@@ -139,7 +139,7 @@ public class AuthEvaluatorTest {
         RequestContext.set(NULL_INSTANCE);
         
         AuthEvaluator evaluator = new AuthEvaluator().isSelf();
-        assertFalse(evaluator.check(USER_ID, TEST_USER_ID));
+        assertTrue(evaluator.check(USER_ID, TEST_USER_ID));
         assertTrue(evaluator.check(USER_ID, null));
         assertTrue(evaluator.check());
     }

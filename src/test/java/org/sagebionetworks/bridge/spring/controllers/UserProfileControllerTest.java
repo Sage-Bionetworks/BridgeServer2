@@ -19,6 +19,7 @@ import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -331,7 +332,7 @@ public class UserProfileControllerTest extends Mockito {
     @SuppressWarnings("deprecation")
     public void canGetDataGroups() throws Exception {
         when(mockAccount.getDataGroups()).thenReturn(ImmutableSet.of("group1","group2"));
-        when(mockAccountService.getAccount(any())).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(mockAccount));
         
         JsonNode result = controller.getDataGroups();
         

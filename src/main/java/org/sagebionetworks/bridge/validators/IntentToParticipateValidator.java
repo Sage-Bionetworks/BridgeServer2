@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 
 import org.apache.commons.validator.routines.EmailValidator;
 
@@ -41,10 +43,10 @@ public class IntentToParticipateValidator implements Validator {
             errors.reject("either phone or email is required");
         } else {
             if (intent.getPhone() != null && !Phone.isValid(intent.getPhone())) {
-                errors.rejectValue("phone", "does not appear to be a phone number");
+                errors.rejectValue("phone", INVALID_PHONE_ERROR);
             }
             if (intent.getEmail() != null && !EMAIL_VALIDATOR.isValid(intent.getEmail())) {
-                errors.rejectValue("email", "does not appear to be an email address");
+                errors.rejectValue("email", INVALID_EMAIL_ERROR);
             }
         }
         if (intent.getConsentSignature() == null) {

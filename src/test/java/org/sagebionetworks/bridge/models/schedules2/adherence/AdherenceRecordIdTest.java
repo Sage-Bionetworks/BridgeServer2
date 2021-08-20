@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.schedules2.adherence;
 
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
@@ -23,12 +24,13 @@ public class AdherenceRecordIdTest {
     @Test
     public void test() {
         AdherenceRecordId id = new AdherenceRecordId(
-                TEST_USER_ID, TEST_STUDY_ID, GUID, CREATED_ON);
+                TEST_USER_ID, TEST_STUDY_ID, GUID, CREATED_ON, MODIFIED_ON);
      
         assertEquals(id.getUserId(), TEST_USER_ID);
         assertEquals(id.getStudyId(), TEST_STUDY_ID);
         assertEquals(id.getInstanceGuid(), GUID);
-        assertEquals(id.getStartedOn(), CREATED_ON);
+        assertEquals(id.getEventTimestamp(), CREATED_ON);
+        assertEquals(id.getInstanceTimestamp(), MODIFIED_ON);
     }
 
 }

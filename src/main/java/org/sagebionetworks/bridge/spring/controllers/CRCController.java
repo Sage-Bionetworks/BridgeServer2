@@ -210,9 +210,7 @@ public class CRCController extends BaseController {
         App app = appService.getApp(session.getAppId());
     
         AccountId accountId = parseAccountId(app.getIdentifier(), session.getId());
-        Account account = accountService.getAccount(accountId);
-    
-        return internalLabShipmentRequest(app, account);
+        return internalLabShipmentRequest(app, accountId);
     }
 
     @PostMapping("v1/cuimc/participants/{userId}/labshipments/request")
@@ -226,16 +224,13 @@ public class CRCController extends BaseController {
         RequestContext.set(requestContextWithoutOrgSponsoredStudies);
     
         AccountId accountId = parseAccountId(app.getIdentifier(), userId);
-        Account account = accountService.getAccount(accountId);
-    
-        return internalLabShipmentRequest(app, account);
+        return internalLabShipmentRequest(app, accountId);
     }
 
-    ResponseEntity<StatusMessage> internalLabShipmentRequest(App app, Account account) {
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-
+    ResponseEntity<StatusMessage> internalLabShipmentRequest(App app, AccountId accountId) {
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
         if (account.getDataGroups().contains(SHIP_TESTS_REQUESTED.name().toLowerCase())) {
             throw new LimitExceededException("Limited to one active shipment request.");
         }
@@ -323,7 +318,9 @@ public class CRCController extends BaseController {
         App app = httpBasicAuthentication();
 
         AccountId accountId = parseAccountId(app.getIdentifier(), userId);
-        Account account = accountService.getAccount(accountId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         if (account == null) {
             throw new EntityNotFoundException(Account.class);
         }
@@ -358,10 +355,9 @@ public class CRCController extends BaseController {
         String locationString = findLocation(appointment);
         if (locationString != null) {
             AccountId accountId = parseAccountId(app.getIdentifier(), userId);
-            Account account = accountService.getAccount(accountId);
-            if (account == null) {
-                throw new EntityNotFoundException(Account.class);
-            }
+            Account account = accountService.getAccount(accountId)
+                    .orElseThrow(() -> new EntityNotFoundException(Account.class));
+                    
             addLocation(data, account, locationString);
         }
         
@@ -650,10 +646,8 @@ public class CRCController extends BaseController {
             AccountStates state, boolean useCallerStudyIds) {
         String appId = RequestContext.get().getCallerAppId();
         AccountId accountId = AccountId.forId(appId, userId);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         updateState(account, state);
         accountService.updateAccount(account);
@@ -681,24 +675,22 @@ public class CRCController extends BaseController {
         report.setData(data);
         report.setStudyIds(callerStudyIds);
 
-        DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(appId, reportName,
-                account.getHealthCode(), JAN1, JAN2);
+        DateRangeResourceList<? extends ReportData> results = reportService.getParticipantReport(appId, userId,
+                reportName, account.getHealthCode(), JAN1, JAN2);
         int status = (results.getItems().isEmpty()) ? 201 : 200;
 
-        reportService.saveParticipantReport(appId, reportName, account.getHealthCode(), report);
+        reportService.saveParticipantReport(appId, userId, reportName, account.getHealthCode(), report);
         return status;
     }
     
     private int deleteReportAndUpdateState(App app, String userId) {
         String appId = RequestContext.get().getCallerAppId();
         AccountId accountId = AccountId.forId(appId, userId);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        reportService.deleteParticipantReportRecord(app.getIdentifier(), APPOINTMENT_REPORT,
-                JAN1.toString(), account.getHealthCode());
+        reportService.deleteParticipantReportRecord(app.getIdentifier(), userId, APPOINTMENT_REPORT, JAN1.toString(),
+                account.getHealthCode());
 
         updateState(account, SELECTED);
         accountService.updateAccount(account);

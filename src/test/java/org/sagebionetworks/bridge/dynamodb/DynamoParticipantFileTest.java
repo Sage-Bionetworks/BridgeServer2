@@ -19,6 +19,7 @@ public class DynamoParticipantFileTest {
         pFile.setMimeType("image/jpeg");
         pFile.setDownloadUrl("dummy.download");
         pFile.setUploadUrl("dummy.upload");
+        pFile.setExpiresOn(TestConstants.TIMESTAMP);
 
         String json = MAPPER.writeValueAsString(pFile);
         JsonNode node = MAPPER.readTree(json);
@@ -31,7 +32,8 @@ public class DynamoParticipantFileTest {
         assertEquals(node.get("appId").textValue(), "api_test");
         assertEquals(node.get("downloadUrl").textValue(), "dummy.download");
         assertEquals(node.get("uploadUrl").textValue(), "dummy.upload");
-        assertEquals(node.size(), 8);
+        assertEquals(node.get("expiresOn").textValue(), TestConstants.TIMESTAMP.toString());
+        assertEquals(node.size(), 9);
 
         ParticipantFile deser = MAPPER.readValue(json, ParticipantFile.class);
         assertEquals(deser.getUserId(), "userId");
@@ -41,6 +43,7 @@ public class DynamoParticipantFileTest {
         assertEquals(deser.getAppId(), "api_test");
         assertEquals(deser.getDownloadUrl(), "dummy.download");
         assertEquals(deser.getUploadUrl(), "dummy.upload");
+        assertEquals(deser.getExpiresOn(), TestConstants.TIMESTAMP);
     }
 
     @Test
@@ -48,7 +51,8 @@ public class DynamoParticipantFileTest {
 
         String json ="{\"fileId\":\"fileId\",\"userId\":\"userId\",\"createdOn\":\"2015-01-27T00:38:32.486Z\"," +
                 "\"mimeType\":\"image/jpeg\",\"appId\":\"api_test\",\"uploadUrl\":\"dummy.upload\"," +
-                "\"downloadUrl\":\"dummy.download\",\"type\":\"ParticipantFile\"}";
+                "\"downloadUrl\":\"dummy.download\",\"type\":\"ParticipantFile\"," +
+                "\"expiresOn\":\"2015-01-27T00:38:32.486Z\"}";
         ParticipantFile file = MAPPER.readValue(json, ParticipantFile.class);
 
         assertEquals(file.getFileId(), "fileId");
@@ -58,5 +62,6 @@ public class DynamoParticipantFileTest {
         assertEquals(file.getMimeType(), "image/jpeg");
         assertEquals(file.getDownloadUrl(), "dummy.download");
         assertEquals(file.getUploadUrl(), "dummy.upload");
+        assertEquals(file.getExpiresOn(), TestConstants.TIMESTAMP);
     }
 }

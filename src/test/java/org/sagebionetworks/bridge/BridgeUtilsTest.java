@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
@@ -52,7 +51,6 @@ import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
@@ -203,6 +201,7 @@ public class BridgeUtilsTest {
     public void externalIdsVisibleToCaller() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(callerStudies).build());
 
@@ -305,6 +304,7 @@ public class BridgeUtilsTest {
     public void filterForStudyAccountRemovesUnsharedStudyIds() {
         Set<String> studies = ImmutableSet.of("studyA");
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withOrgSponsoredStudies(studies).build());
         
         Account account = BridgeUtils.filterForStudy(getAccountWithStudy("studyB", "studyA"));
@@ -328,18 +328,22 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void filterForStudyAccountNoContextNoStudyDoesNotReturnAccount() {
-        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
+    public void filterForStudyAccountNoContextReturnsAccount() {
+        RequestContext.set(RequestContext.NULL_INSTANCE);
+        assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
     }
     
     @Test
     public void filterForStudyAccountNoContextWithStudyDoesNotReturnAccount() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
     
     @Test
     public void filterForStudyAccountWithStudiesHidesNormalAccount() {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
         RequestContext.set(null);
     }
@@ -353,7 +357,9 @@ public class BridgeUtilsTest {
     
     @Test
     public void filterForStudyAccountWithMismatchedStudiesHidesStudyAccount() {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(ImmutableSet.of("notStudyA")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of("notStudyA")).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
     
@@ -484,6 +490,10 @@ public class BridgeUtilsTest {
         accountId = BridgeUtils.parseAccountId("test", "syn:IdentifierA12");
         assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getSynapseUserId(), "IdentifierA12");
+
+        accountId = BridgeUtils.parseAccountId("test", "email:bridge-testing@sagebase.org");
+        assertEquals(accountId.getAppId(), "test");
+        assertEquals(accountId.getEmail(), "bridge-testing@sagebase.org");
     }
     
     @Test
@@ -1008,6 +1018,12 @@ public class BridgeUtilsTest {
     }
 
     @Test
+    public void formatActivityEventIdIsValidCompoundSystemId() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
+        assertEquals(retValue, "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
+    }
+    
+    @Test
     public void formatActivityEventIdBlank() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "");
         assertNull(retValue);
@@ -1024,12 +1040,6 @@ public class BridgeUtilsTest {
     public void formatActivityEventIdWithCasing() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("Event1"), "custom:Event1");
         assertEquals(retValue, "custom:Event1");
-    }
-    
-    @Test
-    public void formatActivityEventIdSystemEventWrongCase() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of(), "ENROLLMENT");
-        assertEquals(retValue, "enrollment");
     }
     
     @Test
@@ -1096,25 +1106,6 @@ public class BridgeUtilsTest {
         
         Label sel = BridgeUtils.selectByLang(items, null, LABEL_HI);
         assertEquals(sel, LABEL_HI);
-    }
-    
-    @Test
-    public void findByEventType_emptyEvents() {
-        List<StudyActivityEvent> events = ImmutableList.of();
-        assertNull( BridgeUtils.findByEventId(events, TIMELINE_RETRIEVED) );
-    }
-
-    @Test
-    public void findByEventType_eventMatches() {
-        StudyActivityEvent event1 = new StudyActivityEvent();
-        event1.setEventId("enrollment");
-        
-        StudyActivityEvent event2 = new StudyActivityEvent();
-        event2.setEventId("timeline_retrieved");
-        
-        List<StudyActivityEvent> events = ImmutableList.of(event1, event2);
-        
-        assertEquals( BridgeUtils.findByEventId(events, TIMELINE_RETRIEVED), event2 );
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

@@ -182,7 +182,7 @@ public class AppConfigService {
     protected Assessment getAssessment(String appId, String guid) {
         if (guid != null) {
             try {
-                return assessmentService.getAssessmentByGuid(appId, guid);
+                return assessmentService.getAssessmentByGuid(appId, null, guid);
             } catch(EntityNotFoundException e) {
                 return null;
             }
@@ -194,7 +194,7 @@ public class AppConfigService {
         if (assessment != null && assessment.getOriginGuid() != null) {
             try {
                 Assessment shared = assessmentService.getAssessmentByGuid(
-                        SHARED_APP_ID, assessment.getOriginGuid());
+                        SHARED_APP_ID, null, assessment.getOriginGuid());
                 return shared.getIdentifier();
             } catch(EntityNotFoundException e) {
                 return null;

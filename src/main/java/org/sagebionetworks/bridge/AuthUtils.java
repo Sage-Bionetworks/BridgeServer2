@@ -21,27 +21,34 @@ import java.util.Set;
  * All methods throw UnauthorizedException if they fail.
  */
 public class AuthUtils {
+    
+    public static final AuthEvaluator CAN_TRANSITION_STUDY = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, ADMIN);
+    
     /**
      * Is this scoped to specific studies? It should have one of the study-scoped
      * roles, and no roles that are app scoped that we would allow wider latitude
      * when using the APIs.
      */
     public static final AuthEvaluator CAN_READ_ORG_SPONSORED_STUDIES = new AuthEvaluator()
-            .hasAnyRole(ORG_ADMIN, STUDY_COORDINATOR).hasNoRole(DEVELOPER, RESEARCHER, ADMIN, WORKER);
+            .hasAnyRole(ORG_ADMIN, STUDY_DESIGNER, STUDY_COORDINATOR).hasNoRole(DEVELOPER, RESEARCHER, ADMIN, WORKER);
 
     /**
-     * Can the caller delete an organization?
+     * Can the caller edit assessments? Must be a study designer in the organization that 
+     * owns the assessment, or a developer.
      */
-    public static final AuthEvaluator CAN_DELETE_ORG = new AuthEvaluator()
-            .hasAnyRole(ADMIN);
-    
+    public static final AuthEvaluator CAN_EDIT_ASSESSMENTS = new AuthEvaluator()
+            .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
+            .hasAnyRole(DEVELOPER, ADMIN);
+
     /**
-     * Can the caller edit assessments? Must be a member of the organization. Probably should be
-     * some kind of developer role as well!
+     * Can the caller and/remove organization members? Must be the organizations's admin. Note 
+     * that this check is currently also used for sponsors...which are not members.
      */
-    public static final AuthEvaluator CAN_EDIT_ASSESSMENTS = new AuthEvaluator().isInOrg().or()
-            .hasAnyRole(ADMIN);
-    
+    public static final AuthEvaluator CAN_READ_MEMBERS = new AuthEvaluator()
+            .isInOrg().or().hasAnyRole(ADMIN);
+
     /**
      * Can the caller and/remove organization members? Must be the organizations's admin. Note 
      * that this check is currently also used for sponsors...which are not members.
@@ -50,6 +57,22 @@ public class AuthUtils {
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
             .hasAnyRole(ADMIN);
 
+    /**
+     * Can the caller and/remove organization members? Must be the organizations's admin. Note 
+     * that this check is currently also used for sponsors...which are not members.
+     */
+    public static final AuthEvaluator CAN_READ_ORG = new AuthEvaluator()
+            .isInOrg().or()
+            .hasAnyRole(ADMIN);
+
+    /**
+     * Can the caller and/remove organization members? Must be the organizations's admin. Note 
+     * that this check is currently also used for sponsors...which are not members.
+     */
+    public static final AuthEvaluator CAN_EDIT_ORG = new AuthEvaluator()
+            .isInOrg().hasAnyRole(ORG_ADMIN).or()
+            .hasAnyRole(ADMIN);
+    
     /**
      * Can the caller edit accounts? For the APIs to work with administrative accounts, 
      * the caller must be operating on self (and in the correct organization), or an 
@@ -86,6 +109,20 @@ public class AuthUtils {
             .hasAnyRole(RESEARCHER, WORKER, ADMIN);
     
     /**
+     * Can the caller read participant reports? 
+     */
+    public static final AuthEvaluator CAN_READ_PARTICIPANT_REPORTS = new AuthEvaluator().isSelf().or()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
+    
+    /**
+     * Can the caller read study reports?
+     */
+    public static final AuthEvaluator CAN_READ_STUDY_REPORTS = new AuthEvaluator()
+            .canAccessStudy().or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
+    
+    /**
      * Can the caller enroll or withdraw participants from a study? Must be enrolling self, or 
      * be a study coordinator with access to the study involved, or be a researcher. 
      */
@@ -106,6 +143,7 @@ public class AuthUtils {
      * study.
      */
     public static final AuthEvaluator CAN_READ_STUDIES = new AuthEvaluator()
+            .isEnrolledInStudy().or()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER, ORG_ADMIN).or()
             .hasAnyRole(DEVELOPER, ADMIN);
     
@@ -113,7 +151,7 @@ public class AuthUtils {
      * Can the caller edit studies? Caller must be a study coordinator, or a developer.
      */
     public static final AuthEvaluator CAN_UPDATE_STUDIES = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER).or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
@@ -126,13 +164,24 @@ public class AuthUtils {
             .hasAnyRole(RESEARCHER, ADMIN);
     
     /**
+     * Can the caller import a shared assessment under the supplied organization? Yes if
+     * the caller is a developer or admin, or if the caller is a study designer assigning
+     * the assessment to their own organization. Note that this expects an orgId to be 
+     * supplied, not a compound ownerId (appId + orgId), because it is verifying the final
+     * assignment of the supplied orgId.
+     */
+    public static final AuthEvaluator CAN_IMPORT_SHARED_ASSESSMENTS = new AuthEvaluator()
+            .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
+            .hasAnyRole(DEVELOPER, ADMIN);
+
+    /**
      * Can the caller edit shared assessments? The caller must be a member of an organization 
      * expressed in the shared organization ID format, or "appId:orgId" (which is used in 
      * shared assessments so that organization IDs do not collide between applications). 
      */
     public static final AuthEvaluator CAN_EDIT_SHARED_ASSESSMENTS = new AuthEvaluator()
-            .isSharedOwner().or()
-            .hasAnyRole(ADMIN);
+            .isSharedOwner().hasAnyRole(STUDY_DESIGNER).or()
+            .hasAnyRole(DEVELOPER, ADMIN);
 
     /**
      * Can the caller read the schedules? They must be enrolled in the study, a study-scoped
@@ -141,7 +190,7 @@ public class AuthUtils {
      * yet. 
      */
     public static final AuthEvaluator CAN_READ_SCHEDULES = new AuthEvaluator()
-            .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
+            .isInOrg().or()
             .isEnrolledInStudy().or()
             .hasAnyRole(DEVELOPER, ADMIN);
 
@@ -158,6 +207,7 @@ public class AuthUtils {
      */
     public static final AuthEvaluator CAN_EDIT_SCHEDULES = new AuthEvaluator()
             .isInOrg().hasAnyRole(STUDY_DESIGNER).or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER).or()
             .hasAnyRole(DEVELOPER, ADMIN);
     
     /**

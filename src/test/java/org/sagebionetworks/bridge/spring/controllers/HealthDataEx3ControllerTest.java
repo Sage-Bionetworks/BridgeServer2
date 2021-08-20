@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -18,7 +20,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -33,7 +34,6 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
@@ -132,26 +132,20 @@ public class HealthDataEx3ControllerTest {
     @Test
     public void deleteRecordsForUser() {
         // Set up mocks.
-        when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(TestConstants.HEALTH_CODE);
+        when(mockAccountService.getAccountHealthCode(any(), any()))
+            .thenReturn(Optional.of(HEALTH_CODE));
 
         // Execute.
         StatusMessage statusMessage = controller.deleteRecordsForUser(TestConstants.TEST_APP_ID,
                 TestConstants.TEST_USER_ID);
         assertEquals(statusMessage.getMessage(), "Health data has been deleted for participant");
 
-        // Verify.
-        ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
-        verify(mockAccountService).getHealthCodeForAccount(accountIdCaptor.capture());
-        AccountId accountId = accountIdCaptor.getValue();
-        assertEquals(accountId.getAppId(), TestConstants.TEST_APP_ID);
-        assertEquals(accountId.getId(), TestConstants.TEST_USER_ID);
-
-        verify(mockHealthDataEx3Service).deleteRecordsForHealthCode(TestConstants.HEALTH_CODE);
+        verify(mockHealthDataEx3Service).deleteRecordsForHealthCode(HEALTH_CODE);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteRecordsForUser_UserNotFound() {
-        when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(null);
+        when(mockAccountService.getAccountHealthCode(any(), any())).thenReturn(Optional.empty());
         controller.deleteRecordsForUser(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID);
     }
 
@@ -213,15 +207,16 @@ public class HealthDataEx3ControllerTest {
     @Test
     public void getRecordsForUser() {
         // Set up mocks.
-        when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(TestConstants.HEALTH_CODE);
+        when(mockAccountService.getAccountHealthCode(any(), any()))
+            .thenReturn(Optional.of(HEALTH_CODE));
 
         ForwardCursorPagedResourceList<HealthDataRecordEx3> recordList = new ForwardCursorPagedResourceList<>(
                 ImmutableList.of(HealthDataRecordEx3.create()), null);
-        when(mockHealthDataEx3Service.getRecordsForHealthCode(TestConstants.HEALTH_CODE, CREATED_ON_START,
+        when(mockHealthDataEx3Service.getRecordsForHealthCode(HEALTH_CODE, CREATED_ON_START,
                 CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY)).thenReturn(recordList);
 
         // Execute and verify.
-        ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForUser(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID,
+        ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForUser(TestConstants.TEST_APP_ID, TEST_USER_ID,
                 CREATED_ON_START_STRING, CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
         assertSame(outputList, recordList);
         assertEquals(outputList.getRequestParams().size(), 7);
@@ -233,19 +228,13 @@ public class HealthDataEx3ControllerTest {
         assertEquals(outputList.getRequestParams().get(ResourceList.OFFSET_KEY), OFFSET_KEY);
         assertEquals(outputList.getRequestParams().get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
 
-        ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
-        verify(mockAccountService).getHealthCodeForAccount(accountIdCaptor.capture());
-        AccountId accountId = accountIdCaptor.getValue();
-        assertEquals(accountId.getAppId(), TestConstants.TEST_APP_ID);
-        assertEquals(accountId.getId(), TestConstants.TEST_USER_ID);
-
-        verify(mockHealthDataEx3Service).getRecordsForHealthCode(TestConstants.HEALTH_CODE, CREATED_ON_START,
+        verify(mockHealthDataEx3Service).getRecordsForHealthCode(HEALTH_CODE, CREATED_ON_START,
                 CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getRecordsForUser_UserNotFound() {
-        when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(null);
+        when(mockAccountService.getAccountHealthCode(any(), any())).thenReturn(Optional.empty());
         controller.getRecordsForUser(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID, CREATED_ON_START_STRING, CREATED_ON_END_STRING,
                 PAGE_SIZE_STRING, OFFSET_KEY);
     }

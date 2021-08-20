@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
@@ -36,6 +37,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.TestUtils.CustomServletInputStream;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
 import org.sagebionetworks.bridge.services.AssessmentConfigService;
@@ -66,6 +68,7 @@ public class AssessmentConfigControllerTest extends Mockito {
         
         session = new UserSession();
         session.setAppId(TEST_APP_ID);
+        session.setParticipant(new StudyParticipant.Builder().withOrgMembership(TEST_ORG_ID).build());
         doReturn(mockRequest).when(controller).request();
     }
     
@@ -91,18 +94,18 @@ public class AssessmentConfigControllerTest extends Mockito {
     
     @Test
     public void updateAssessmentConfig() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         AssessmentConfig config = new AssessmentConfig();
         config.setConfig(TestUtils.getClientData());
-        when(mockService.updateAssessmentConfig(eq(TEST_APP_ID), eq(GUID), any())).thenReturn(config);
+        when(mockService.updateAssessmentConfig(eq(TEST_APP_ID), eq(TEST_ORG_ID), eq(GUID), any())).thenReturn(config);
         
         mockRequestBody(mockRequest, config);
         
         AssessmentConfig retValue = controller.updateAssessmentConfig(GUID);
         assertSame(retValue, config);
         
-        verify(mockService).updateAssessmentConfig(eq(TEST_APP_ID), eq(GUID), configCaptor.capture());
+        verify(mockService).updateAssessmentConfig(eq(TEST_APP_ID), eq(TEST_ORG_ID), eq(GUID), configCaptor.capture());
         
         AssessmentConfig captured = configCaptor.getValue();
         assertEquals(captured.getConfig().toString(), TestUtils.getClientData().toString());
@@ -111,7 +114,7 @@ public class AssessmentConfigControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void updateAssessmentConfigRejectsSharedApp() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         session.setAppId(SHARED_APP_ID);
         
         AssessmentConfig config = new AssessmentConfig();
@@ -127,7 +130,7 @@ public class AssessmentConfigControllerTest extends Mockito {
         
         AssessmentConfig config = new AssessmentConfig();
         config.setConfig(TestUtils.getClientData());
-        when(mockService.customizeAssessmentConfig(eq(TEST_APP_ID), eq(GUID), any())).thenReturn(config);
+        when(mockService.customizeAssessmentConfig(eq(TEST_APP_ID), eq(TEST_ORG_ID), eq(GUID), any())).thenReturn(config);
         
         Map<String, Map<String, JsonNode>> updates = new HashMap<>();
         updates.put("guid", ImmutableMap.of("objGuid", TestUtils.getClientData()));
@@ -136,7 +139,7 @@ public class AssessmentConfigControllerTest extends Mockito {
         AssessmentConfig retValue = controller.customizeAssessmentConfig(GUID);
         assertSame(retValue, config);
         
-        verify(mockService).customizeAssessmentConfig(eq(TEST_APP_ID), eq(GUID), updatesCaptor.capture());
+        verify(mockService).customizeAssessmentConfig(eq(TEST_APP_ID),eq(TEST_ORG_ID), eq(GUID), updatesCaptor.capture());
         
         Map<String, Map<String, JsonNode>> captured = updatesCaptor.getValue();
         assertEquals(captured.get("guid").get("objGuid"), TestUtils.getClientData());
@@ -173,7 +176,7 @@ public class AssessmentConfigControllerTest extends Mockito {
         controller.customizeAssessmentConfig(GUID);
         
         verify(mockService).customizeAssessmentConfig(eq(TEST_APP_ID), 
-                eq(GUID), updatesCaptor.capture());
+                eq(TEST_ORG_ID), eq(GUID), updatesCaptor.capture());
         
         Map<String, Map<String, JsonNode>> captured = updatesCaptor.getValue();
         assertTrue(captured.get("guid").containsKey("objGuid"));

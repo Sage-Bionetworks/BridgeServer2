@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -12,7 +13,6 @@ import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.spring.controllers.ActivityEventController.EVENT_DELETED_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.ActivityEventController.EVENT_RECORDED_MSG;
@@ -41,6 +41,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -51,6 +52,7 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.AppService;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 
 public class ActivityEventControllerTest extends Mockito {
@@ -65,6 +67,9 @@ public class ActivityEventControllerTest extends Mockito {
     private StudyActivityEventService mockStudyActivityEventService;
     
     @Mock
+    private RequestInfoService mockRequestInfoService;
+    
+    @Mock
     private HttpServletRequest mockRequest;
     
     @Mock
@@ -76,6 +81,9 @@ public class ActivityEventControllerTest extends Mockito {
     
     @Captor
     ArgumentCaptor<StudyActivityEventRequest> requestCaptor;
+    
+    @Captor
+    ArgumentCaptor<RequestInfo> requestInfoCaptor;
 
     private App app;
     
@@ -120,7 +128,7 @@ public class ActivityEventControllerTest extends Mockito {
         StatusMessage message = controller.createCustomActivityEvent();
         assertEquals(message, EVENT_RECORDED_MSG);
         
-        verify(mockActivityEventService).publishCustomEvent(app, null, HEALTH_CODE, "foo", TIMESTAMP);
+        verify(mockActivityEventService).publishCustomEvent(app, HEALTH_CODE, "foo", TIMESTAMP);
     }
     
     @Test
@@ -130,7 +138,7 @@ public class ActivityEventControllerTest extends Mockito {
         StatusMessage retValue = controller.deleteCustomActivityEvent("eventKey");
         assertSame(retValue, EVENT_DELETED_MSG);
         
-        verify(mockActivityEventService).deleteCustomEvent(app, null, HEALTH_CODE, "eventKey");
+        verify(mockActivityEventService).deleteCustomEvent(app, HEALTH_CODE, "eventKey");
     }
     
     @Test
@@ -175,6 +183,9 @@ public class ActivityEventControllerTest extends Mockito {
         assertEquals(request.getUserId(), TEST_USER_ID);
         assertEquals(request.getObjectType(), TIMELINE_RETRIEVED);
         assertEquals(request.getTimestamp(), CREATED_ON);
+        
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
+        assertEquals(requestInfoCaptor.getValue().getTimelineAccessedOn(), CREATED_ON);
     }
 
     @Test
@@ -228,21 +239,15 @@ public class ActivityEventControllerTest extends Mockito {
         
         List<StudyActivityEvent> list = ImmutableList.of(new StudyActivityEvent(), new StudyActivityEvent());
         PagedResourceList<StudyActivityEvent> page = new PagedResourceList<StudyActivityEvent>(list, 100, true);
-        when(mockStudyActivityEventService.getStudyActivityEventHistory(any(), any(), any()))
+        when(mockStudyActivityEventService.getStudyActivityEventHistory(any(), any(), any(), any(), any()))
             .thenReturn(page);
 
         ResourceList<StudyActivityEvent> retValue = controller.getActivityEventHistoryForSelf(
                 TEST_STUDY_ID, "eventKey", "100", "200");
         assertSame(retValue, page);
         
-        verify(mockStudyActivityEventService).getStudyActivityEventHistory(requestCaptor.capture(), 
-                eq(Integer.valueOf(100)), eq(Integer.valueOf(200)));
-        StudyActivityEventRequest request = requestCaptor.getValue();
-        assertEquals(request.getAppId(), TEST_APP_ID);
-        assertEquals(request.getStudyId(), TEST_STUDY_ID);
-        assertEquals(request.getUserId(), TEST_USER_ID);
-        assertEquals(request.getObjectId(), "eventKey");
-        assertEquals(request.getObjectType(), CUSTOM);
+        verify(mockStudyActivityEventService).getStudyActivityEventHistory(
+                ACCOUNT_ID, TEST_STUDY_ID, "eventKey", Integer.valueOf(100), Integer.valueOf(200));
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -270,15 +275,15 @@ public class ActivityEventControllerTest extends Mockito {
         
         List<StudyActivityEvent> list = ImmutableList.of(new StudyActivityEvent(), new StudyActivityEvent());
         PagedResourceList<StudyActivityEvent> page = new PagedResourceList<StudyActivityEvent>(list, 100, true);
-        when(mockStudyActivityEventService.getStudyActivityEventHistory(any(), any(), any()))
+        when(mockStudyActivityEventService.getStudyActivityEventHistory(any(), any(), any(), any(), any()))
             .thenReturn(page);
 
         ResourceList<StudyActivityEvent> retValue = controller.getActivityEventHistoryForSelf(
                 TEST_STUDY_ID, "eventKey", null, null);
         assertSame(retValue, page);
         
-        verify(mockStudyActivityEventService).getStudyActivityEventHistory(any(), 
-                eq(Integer.valueOf(0)), eq(Integer.valueOf(50)));
+        verify(mockStudyActivityEventService).getStudyActivityEventHistory( 
+                ACCOUNT_ID, TEST_STUDY_ID, "eventKey", Integer.valueOf(0), Integer.valueOf(50));
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,

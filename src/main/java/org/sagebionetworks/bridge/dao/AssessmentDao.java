@@ -12,19 +12,19 @@ public interface AssessmentDao {
      * The paged resource list returned from the DAO contains only the current page of results
      * and the total number of records. Request parameters should be added by the service.
      */
-    PagedResourceList<Assessment> getAssessments(String appId, int offsetBy, 
+    PagedResourceList<Assessment> getAssessments(String appId, String ownerId, int offsetBy, 
             int pageSize, Set<String> tags, boolean includeDeleted);
 
     /**
      * The paged resource list returned from the DAO contains only the current page of results
      * and the total number of records. Request parameters should be added by the service.
      */
-    PagedResourceList<Assessment> getAssessmentRevisions(
-            String appId, String identifier, int offsetBy, int pageSize, boolean includeDeleted);
+    PagedResourceList<Assessment> getAssessmentRevisions(String appId, String ownerId, 
+            String identifier, int offsetBy, int pageSize, boolean includeDeleted);
     
-    Optional<Assessment> getAssessment(String appId, String guid);
+    Optional<Assessment> getAssessment(String appId, String ownerId, String guid);
     
-    Optional<Assessment> getAssessment(String appId, String identifier, int revision);
+    Optional<Assessment> getAssessment(String appId, String ownerId, String identifier, int revision);
 
     Assessment createAssessment(String appId, Assessment assessment, AssessmentConfig config);
     

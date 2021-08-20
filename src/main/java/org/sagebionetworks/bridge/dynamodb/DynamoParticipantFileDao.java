@@ -53,7 +53,7 @@ public class DynamoParticipantFileDao implements ParticipantFileDao {
             nextPageOffsetKey = fileResults.get(fileResults.size() - 1).getFileId();
         }
 
-        return new ForwardCursorPagedResourceList<>(fileResults, nextPageOffsetKey)
+        return new ForwardCursorPagedResourceList<>(fileResults, nextPageOffsetKey, true)
                 .withRequestParam(ResourceList.OFFSET_KEY, offsetKey)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
     }

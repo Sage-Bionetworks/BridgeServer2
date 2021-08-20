@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -340,18 +341,25 @@ public class AuthenticationController extends BaseController {
         if (participant.getSynapseUserId() == null) {
             throw new BadRequestException("Account has not been assigned a Synapse user ID");
         }
-        AccountId accountId = AccountId.forSynapseUserId(targetAppId, participant.getSynapseUserId());
-        Account account = accountService.getAccountNoFilter(accountId)
+        
+        String userId = accountService.getAccountId(targetAppId, "synapseuserid:"+participant.getSynapseUserId())
                 .orElseThrow(() -> new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG));
         
         // Make the switch
         authenticationService.signOut(session);
         
-        // RequestContext reqContext = BridgeUtils.getRequestContext();
         CriteriaContext context = new CriteriaContext.Builder()
-            .withUserId(account.getId())
+            .withUserId(userId)
             .withAppId(targetApp.getIdentifier())
             .build();
+        
+        // In this one case, the caller’s ID changes during an authenticated request.
+        RequestContext.set(RequestContext.get().toBuilder().withCallerUserId(userId).build());
+
+        // It should be impossible to get an exception here as we just checked the account...
+        AccountId accountId = AccountId.forId(targetAppId, userId);
+        Account account = accountService.getAccount(accountId)
+              .orElseThrow(() -> new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG));
         
         UserSession newSession = authenticationService.getSessionFromAccount(targetApp, context, account);
         cacheProvider.setUserSession(newSession);

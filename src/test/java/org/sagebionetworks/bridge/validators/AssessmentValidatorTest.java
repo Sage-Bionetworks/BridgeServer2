@@ -51,7 +51,7 @@ public class AssessmentValidatorTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         assessment = AssessmentTest.createAssessment();
         
-        when(mockAssessmentDao.getAssessmentRevisions(TEST_APP_ID, IDENTIFIER, 0, 1, true))
+        when(mockAssessmentDao.getAssessmentRevisions(TEST_APP_ID, null, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<Assessment>(ImmutableList.of(), 0));
         
         validator = new AssessmentValidator(TEST_APP_ID, mockOrganizationService);

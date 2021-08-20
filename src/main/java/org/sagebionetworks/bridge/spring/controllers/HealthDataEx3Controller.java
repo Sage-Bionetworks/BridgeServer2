@@ -19,7 +19,6 @@ import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
@@ -70,14 +69,12 @@ public class HealthDataEx3Controller extends BaseController {
     }
 
     /** Deletes all health data records for the given user. */
-    @DeleteMapping(path="/v1/apps/{appId}/participants/{userId}/exporter3/healthdata")
-    public StatusMessage deleteRecordsForUser(@PathVariable String appId, @PathVariable String userId) {
+    @DeleteMapping(path="/v1/apps/{appId}/participants/{userIdToken}/exporter3/healthdata")
+    public StatusMessage deleteRecordsForUser(@PathVariable String appId, @PathVariable String userIdToken) {
         getAuthenticatedSession(SUPERADMIN);
 
-        String healthCode = accountService.getHealthCodeForAccount(AccountId.forId(appId, userId));
-        if (healthCode == null) {
-            throw new EntityNotFoundException(StudyParticipant.class);
-        }
+        String healthCode = accountService.getAccountHealthCode(appId, userIdToken)
+                .orElseThrow(() -> new EntityNotFoundException(StudyParticipant.class));
 
         healthDataEx3Service.deleteRecordsForHealthCode(healthCode);
 
@@ -111,25 +108,23 @@ public class HealthDataEx3Controller extends BaseController {
     }
 
     /** Retrieves all records for the given user and time range. */
-    @GetMapping(path="/v1/apps/{appId}/participants/{userId}/exporter3/healthdata")
+    @GetMapping(path="/v1/apps/{appId}/participants/{userIdToken}/exporter3/healthdata")
     public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForUser(
-            @PathVariable String appId, @PathVariable String userId,
+            @PathVariable String appId, @PathVariable String userIdToken,
             @RequestParam(required = false) String createdOnStart, @RequestParam(required = false) String createdOnEnd,
             @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
         getAuthenticatedSession(WORKER);
 
-        String healthCode = accountService.getHealthCodeForAccount(AccountId.forId(appId, userId));
-        if (healthCode == null) {
-            throw new EntityNotFoundException(StudyParticipant.class);
-        }
-
+        String healthCode = accountService.getAccountHealthCode(appId, userIdToken)
+                .orElseThrow(() -> new EntityNotFoundException(StudyParticipant.class));
+        
         DateTime createdOnStartDateTime = BridgeUtils.getDateTimeOrDefault(createdOnStart, null);
         DateTime createdOnEndDateTime = BridgeUtils.getDateTimeOrDefault(createdOnEnd, null);
         Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
         return healthDataEx3Service.getRecordsForHealthCode(healthCode, createdOnStartDateTime, createdOnEndDateTime,
                 pageSizeInt, offsetKey)
                 .withRequestParam("appId", appId)
-                .withRequestParam("userId", userId)
+                .withRequestParam("userId", userIdToken)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
                 .withRequestParam(ResourceList.END_TIME, createdOnEnd)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSizeInt)

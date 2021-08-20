@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Supplier;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -250,10 +249,10 @@ public class AccountWorkflowService {
         checkNotNull(accountId);
         
         App app = appService.getApp(accountId.getAppId());
-        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+        
+        Account account = accountService.getAccount(accountId).orElse(null);
+        
         if (account != null) {
-            RequestContext.acquireAccountIdentity(account);
-            
             if (type == ChannelType.EMAIL) {
                 sendEmailVerificationToken(app, account.getId(), account.getEmail());
             } else if (type == ChannelType.PHONE) {
@@ -277,7 +276,7 @@ public class AccountWorkflowService {
             throw new BadRequestException(VERIFY_TOKEN_EXPIRED);
         }
         App app = appService.getApp(data.getAppId());
-        Account account = accountService.getAccountNoFilter(AccountId.forId(app.getIdentifier(), data.getUserId()))
+        Account account = accountService.getAccount(AccountId.forId(app.getIdentifier(), data.getUserId()))
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         if (type == ChannelType.EMAIL && TRUE.equals(account.getEmailVerified())) {
@@ -301,7 +300,7 @@ public class AccountWorkflowService {
         checkNotNull(app);
         checkNotNull(accountId);
 
-        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+        Account account = accountService.getAccount(accountId).orElse(null);
         if (account == null) {
             return;
         }
@@ -309,8 +308,6 @@ public class AccountWorkflowService {
         boolean verifiedPhone = account.getPhone() != null && Boolean.TRUE.equals(account.getPhoneVerified());
         boolean sendEmail = app.isEmailVerificationEnabled() && !app.isAutoVerificationEmailSuppressed();
         boolean sendPhone = !app.isAutoVerificationPhoneSuppressed();
-        
-        RequestContext.acquireAccountIdentity(account);
 
         if (verifiedEmail && sendEmail) {
             TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_ACCOUNT_EXISTS);
@@ -333,7 +330,7 @@ public class AccountWorkflowService {
         checkNotNull(accountId);
         checkArgument(app.getIdentifier().equals(accountId.getAppId()));
         
-        Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+        Account account = accountService.getAccount(accountId).orElse(null);
         // We are going to change the status of the account if this succeeds, so we must also
         // ignore disabled accounts.
         if (account != null && account.getStatus() != AccountStatus.DISABLED) {
@@ -453,7 +450,7 @@ public class AccountWorkflowService {
         } else {
             throw new BridgeServiceException("Could not reset password");
         }
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         accountService.changePassword(account, channelType, passwordReset.getPassword());
@@ -539,7 +536,7 @@ public class AccountWorkflowService {
         }
 
         // check that the account exists, return quietly if not to prevent account enumeration attacks
-        Account account = accountService.getAccountNoFilter(signIn.getAccountId()).orElse(null);
+        Account account = accountService.getAccount(signIn.getAccountId()).orElse(null);
         if (account == null) {
             try {
                 // The not found case returns *much* faster than the normal case. To prevent account enumeration 
@@ -573,8 +570,6 @@ public class AccountWorkflowService {
             cacheProvider.setObject(cacheKey, token, SIGNIN_EXPIRE_IN_SECONDS);
         }
         
-        RequestContext.acquireAccountIdentity(account);
-
         messageSender.accept(app, account, token);
         atomicLong.set(System.currentTimeMillis()-startTime);
 

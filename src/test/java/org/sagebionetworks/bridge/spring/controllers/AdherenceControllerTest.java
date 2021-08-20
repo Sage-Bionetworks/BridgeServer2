@@ -2,17 +2,18 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
-import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
+import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -26,6 +27,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -63,6 +65,9 @@ public class AdherenceControllerTest extends Mockito {
     
     @Captor
     ArgumentCaptor<AdherenceRecordsSearch> searchCaptor;
+
+    @Captor
+    ArgumentCaptor<AdherenceRecord> recordCaptor;
     
     UserSession session;
     
@@ -85,10 +90,35 @@ public class AdherenceControllerTest extends Mockito {
         assertPost(AdherenceController.class, "updateAdherenceRecords");
         assertPost(AdherenceController.class, "searchForAdherenceRecordsForSelf");
         assertPost(AdherenceController.class, "searchForAdherenceRecords");
+        assertDelete(AdherenceController.class, "deleteAdherenceRecord");
     }
     
     @Test
     public void updateAdherenceRecords() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        
+        when(mockAccountService.getAccountId(TEST_APP_ID, TEST_USER_ID))
+            .thenReturn(Optional.of(TEST_USER_ID));
+        
+        AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
+        AdherenceRecord rec2 = TestUtils.getAdherenceRecord("BBB");
+        AdherenceRecordList list = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
+        
+        mockRequestBody(mockRequest, list);
+        
+        StatusMessage retValue = controller.updateAdherenceRecords(TEST_STUDY_ID, TEST_USER_ID);
+        assertEquals(retValue, AdherenceController.SAVED_MSG);
+        
+        verify(mockService).updateAdherenceRecords(eq(TEST_APP_ID), listCaptor.capture());
+        AdherenceRecordList recordsList = listCaptor.getValue();
+        for (AdherenceRecord record : recordsList.getRecords()) {
+            assertEquals(record.getStudyId(), TEST_STUDY_ID);
+            assertEquals(record.getUserId(), TEST_USER_ID);
+        }
+    }    
+    
+    @Test
+    public void updateAdherenceRecordsForSelf() throws Exception {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         
         AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
@@ -97,7 +127,7 @@ public class AdherenceControllerTest extends Mockito {
         
         mockRequestBody(mockRequest, list);
         
-        StatusMessage retValue = controller.updateAdherenceRecords(TEST_STUDY_ID);
+        StatusMessage retValue = controller.updateAdherenceRecordsForSelf(TEST_STUDY_ID);
         assertEquals(retValue, AdherenceController.SAVED_MSG);
         
         verify(mockService).updateAdherenceRecords(eq(TEST_APP_ID), listCaptor.capture());
@@ -139,7 +169,7 @@ public class AdherenceControllerTest extends Mockito {
     public void searchForAdherenceRecords() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
         
-        when(mockAccountService.getHealthCodeForAccount(any())).thenReturn(HEALTH_CODE);
+        when(mockAccountService.getAccountId(any(), any())).thenReturn(Optional.of("some-other-id"));
 
         AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
         AdherenceRecord rec2 = TestUtils.getAdherenceRecord("BBB");
@@ -162,5 +192,46 @@ public class AdherenceControllerTest extends Mockito {
         assertEquals(captured.getUserId(), "some-other-id");
         assertEquals(captured.getOffsetBy(), Integer.valueOf(10));
         assertEquals(captured.getPageSize(), Integer.valueOf(50));        
+    }
+
+    @Test
+    public void deleteAdherenceRecord() {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+
+        when(mockAccountService.getAccountId(TEST_APP_ID, TEST_USER_ID))
+                .thenReturn(Optional.of(TEST_USER_ID));
+
+        AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
+
+        StatusMessage retValue = controller.deleteAdherenceRecord(
+                TEST_STUDY_ID, TEST_USER_ID,
+                rec1.getInstanceGuid(),
+                rec1.getEventTimestamp().toString(),
+                rec1.getStartedOn().toString()
+        );
+
+        assertEquals(retValue, AdherenceController.DELETED_MSG);
+
+        verify(mockService).deleteAdherenceRecord(recordCaptor.capture());
+
+        AdherenceRecord captured = recordCaptor.getValue();
+        assertEquals(captured.getInstanceGuid(), rec1.getInstanceGuid());
+        assertEquals(captured.getStudyId(), rec1.getStudyId());
+        assertEquals(captured.getUserId(), rec1.getUserId());
+        assertEquals(captured.getStartedOn(), rec1.getStartedOn());
+        assertEquals(captured.getEventTimestamp(), rec1.getEventTimestamp());
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Account not found.")
+    public void deleteWithInvalidUserIdThrowsException() {
+        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+
+        controller.deleteAdherenceRecord(
+                "fake-study-id", "fake-user-id",
+                "fake-instance-guid",
+                "2021-07-06T18:03:23.009Z",
+                "2021-07-06T18:03:23.009Z"
+        );
     }
 }

@@ -38,8 +38,10 @@ public class Scheduler {
         calculateLanguageKey(builder);
         
         for (Session session : schedule.getSessions()) {
-            for (TimeWindow window : session.getTimeWindows()) {
-                scheduleTimeWindowSequence(builder, schedule, session, window);
+            if (!session.getAssessments().isEmpty()) {
+                for (TimeWindow window : session.getTimeWindows()) {
+                    scheduleTimeWindowSequence(builder, schedule, session, window);
+                }
             }
         }
         return builder.build();

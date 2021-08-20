@@ -2,11 +2,13 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentDao.DELETE_CONFIG_SQL;
 import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentDao.DELETE_RESOURCES_SQL;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
@@ -48,6 +50,12 @@ public class HibernateAssessmentDaoTest extends Mockito {
             +"a.identifier = latest_assessments.id AND a.revision = latest_assessments.rev "
             +"WHERE appId = :appId AND deleted = 0 ORDER BY createdOn DESC";
 
+    private static final String QUERY_SQL_WITH_OWNERID_EXC_DELETED = "FROM ( SELECT DISTINCT "
+            +"identifier as id, MAX(revision) AS rev FROM Assessments WHERE appId = :appId "
+            +"AND ownerId = :ownerId GROUP BY identifier) AS latest_assessments INNER JOIN Assessments AS a ON "
+            +"a.identifier = latest_assessments.id AND a.revision = latest_assessments.rev "
+            +"WHERE appId = :appId AND ownerId = :ownerId AND deleted = 0 ORDER BY createdOn DESC";
+    
     private static final String QUERY_SQL_INC_DELETED = "FROM ( SELECT DISTINCT "
             +"identifier as id, MAX(revision) AS rev FROM Assessments WHERE appId = :appId "
             +"GROUP BY identifier) AS latest_assessments INNER JOIN Assessments AS a ON "+
@@ -65,9 +73,16 @@ public class HibernateAssessmentDaoTest extends Mockito {
             +"appId = :appId AND identifier = :identifier AND deleted = 0 ORDER BY "
             +"revision DESC";
 
+    private static final String QUERY_GET_REVISIONS_WITH_OWNERID_EXC_DELETED = "FROM HibernateAssessment WHERE "
+            +"appId = :appId AND identifier = :identifier AND ownerId = :ownerId AND deleted = 0 ORDER BY "
+            +"revision DESC";
+    
     private static final String QUERY_GET_REVISIONS_INC_DELETED = "FROM HibernateAssessment WHERE "
             +"appId = :appId AND identifier = :identifier ORDER BY revision DESC";
 
+    private static final String QUERY_GET_REVISIONS_WITH_OWNERID_INC_DELETED = "FROM HibernateAssessment WHERE "
+            +"appId = :appId AND identifier = :identifier AND ownerId = :ownerId ORDER BY revision DESC";
+    
     private static final String QUERY_COUNT_FROM_ORG = "SELECT COUNT(*) FROM HibernateAssessment WHERE " +
             "(appId = :appId AND ownerId = :ownerId)";
     
@@ -117,15 +132,15 @@ public class HibernateAssessmentDaoTest extends Mockito {
     }
 
     @Test
-    public void getAssessmentsExcludeDeleted() {
+    public void getAssessmentsExcludeDeleted_withoutOwnerId() {
         List<HibernateAssessment> list = ImmutableList.of(HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT,
                 HIBERNATE_ASSESSMENT);
         when(mockHelper.nativeQueryCount(queryCaptor.capture(), any())).thenReturn(5);
         when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
                 .thenReturn(list);
         
-        PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, 0, 20, null, false);
-        assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) " + QUERY_SQL_EXC_DELETED);
+        PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, null, 0, 20, null, false);
+        assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_EXC_DELETED);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_EXC_DELETED);
         
         Map<String,Object> params = paramsCaptor.getValue();
@@ -135,13 +150,32 @@ public class HibernateAssessmentDaoTest extends Mockito {
     }
     
     @Test
-    public void getAssessmentsIncludeDeleted() {
+    public void getAssessmentsExcludeDeleted_withOwnerId() {
+        List<HibernateAssessment> list = ImmutableList.of(HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT,
+                HIBERNATE_ASSESSMENT);
+        when(mockHelper.nativeQueryCount(queryCaptor.capture(), any())).thenReturn(5);
+        when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
+                .thenReturn(list);
+        
+        PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, TEST_ORG_ID, 0, 20, null, false);
+        assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_WITH_OWNERID_EXC_DELETED);
+        assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_WITH_OWNERID_EXC_DELETED);
+        
+        Map<String,Object> params = paramsCaptor.getValue();
+        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("ownerId"), TEST_ORG_ID);
+        assertEquals(page.getItems().size(), 5);
+        assertEquals(page.getTotal(), Integer.valueOf(5));
+    }
+    
+    @Test
+    public void getAssessmentsIncludeDeleted_withoutOwnerId() {
         when(mockHelper.nativeQueryCount(queryCaptor.capture(), any())).thenReturn(0);
         when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
                 .thenReturn(ImmutableList.of());
         
-        dao.getAssessments(APP_ID_VALUE, 0, 20, null, true);
-        assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) " + QUERY_SQL_INC_DELETED);
+        dao.getAssessments(APP_ID_VALUE, null, 0, 20, null, true);
+        assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_INC_DELETED);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_INC_DELETED);
     }
     
@@ -151,19 +185,19 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
                 .thenReturn(ImmutableList.of());
         
-        dao.getAssessments(APP_ID_VALUE, 0, 20, ImmutableSet.of("tagA", "tagB"), false);
-        assertEquals(queryCaptor.getAllValues().get(0), "SELECT count(*) " + QUERY_SQL_WITH_TAGS);
+        dao.getAssessments(APP_ID_VALUE, null, 0, 20, ImmutableSet.of("tagA", "tagB"), false);
+        assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_WITH_TAGS);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_WITH_TAGS);
     }
     
     @Test
-    public void getAssessmentRevisionsIncludeDeleted() {
+    public void getAssessmentRevisionsIncludeDeleted_withoutOwnerId() {
         when(mockHelper.queryCount(queryCaptor.capture(), paramsCaptor.capture()))
             .thenReturn(100);
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT));
         
-        PagedResourceList<Assessment> page = dao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 20, true);
+        PagedResourceList<Assessment> page = dao.getAssessmentRevisions(APP_ID_VALUE, null, ID_VALUE, 0, 20, true);
         assertEquals(page.getItems().size(), 3);
         assertEquals(page.getTotal(), Integer.valueOf(100));
         
@@ -172,23 +206,70 @@ public class HibernateAssessmentDaoTest extends Mockito {
         Map<String,Object> params = paramsCaptor.getValue();
         assertEquals(params.get("appId"), APP_ID_VALUE);
         assertEquals(params.get("identifier"), ID_VALUE);
+        assertNull(params.get("ownerId"));
     }
 
     @Test
-    public void getAssessmentRevisionsExcludeDeleted() {
+    public void getAssessmentRevisionsIncludeDeleted_withOwnerId() {
+        when(mockHelper.queryCount(queryCaptor.capture(), paramsCaptor.capture()))
+            .thenReturn(100);
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
-            .thenReturn(ImmutableList.of());
+            .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT));
         
-        dao.getAssessmentRevisions(APP_ID_VALUE, ID_VALUE, 0, 20, false);
-        assertEquals(queryCaptor.getValue(), QUERY_GET_REVISIONS_EXC_DELETED);
+        PagedResourceList<Assessment> page = dao.getAssessmentRevisions(APP_ID_VALUE, TEST_ORG_ID, ID_VALUE, 0, 20, true);
+        assertEquals(page.getItems().size(), 3);
+        assertEquals(page.getTotal(), Integer.valueOf(100));
+        
+        assertEquals(queryCaptor.getValue(), QUERY_GET_REVISIONS_WITH_OWNERID_INC_DELETED);
+        
+        Map<String,Object> params = paramsCaptor.getValue();
+        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("identifier"), ID_VALUE);
+        assertEquals(params.get("ownerId"), TEST_ORG_ID);
     }
     
     @Test
-    public void getAssessmentByGuid() {
+    public void getAssessmentRevisionsExcludeDeleted_withoutOwnerId() {
+        when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
+            .thenReturn(ImmutableList.of());
+        
+        dao.getAssessmentRevisions(APP_ID_VALUE, null, ID_VALUE, 0, 20, false);
+        assertEquals(queryCaptor.getValue(), QUERY_GET_REVISIONS_EXC_DELETED);
+        assertNull(paramsCaptor.getValue().get("ownerId"));
+    }
+
+    @Test
+    public void getAssessmentRevisionsIdExcludeDeleted_withOwner() {
+        when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
+            .thenReturn(ImmutableList.of());
+        
+        dao.getAssessmentRevisions(APP_ID_VALUE, TEST_ORG_ID, ID_VALUE, 0, 20, false);
+        assertEquals(queryCaptor.getValue(), QUERY_GET_REVISIONS_WITH_OWNERID_EXC_DELETED);
+        assertEquals(paramsCaptor.getValue().get("ownerId"), TEST_ORG_ID);
+    }
+    
+    @Test
+    public void getAssessmentByGuid_withOwnerId() {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT));
         
-        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, GUID_VALUE);
+        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, TEST_ORG_ID, GUID_VALUE);
+        assertTrue(retValue.isPresent());
+        
+        assertEquals(queryCaptor.getValue(), HibernateAssessmentDao.GET_BY_GUID + " AND ownerId = :ownerId");
+        
+        Map<String,Object> params = paramsCaptor.getValue();
+        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("guid"), GUID_VALUE);
+        assertEquals(params.get("ownerId"), TEST_ORG_ID);
+    }
+
+    @Test
+    public void getAssessmentByGuid_withoutOwnerId() {
+        when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
+            .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT));
+        
+        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, null, GUID_VALUE);
         assertTrue(retValue.isPresent());
         
         assertEquals(queryCaptor.getValue(), HibernateAssessmentDao.GET_BY_GUID);
@@ -203,17 +284,16 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of());
     
-        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, GUID_VALUE);
+        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, null, GUID_VALUE);
         assertFalse(retValue.isPresent());
     }
 
-
     @Test
-    public void getAssessmentByIdAndRevision() {
+    public void getAssessmentByIdAndRevision_withoutOwnerId() {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT));
         
-        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, ID_VALUE, REV_VALUE);
+        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, null, ID_VALUE, REV_VALUE);
         assertTrue(retValue.isPresent());
         
         assertEquals(queryCaptor.getValue(), HibernateAssessmentDao.GET_BY_IDENTIFIER);
@@ -225,11 +305,28 @@ public class HibernateAssessmentDaoTest extends Mockito {
     }
     
     @Test
+    public void getAssessmentByIdAndRevision_withOwnerId() {
+        when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
+            .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT));
+        
+        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, TEST_ORG_ID, ID_VALUE, REV_VALUE);
+        assertTrue(retValue.isPresent());
+        
+        assertEquals(queryCaptor.getValue(), HibernateAssessmentDao.GET_BY_IDENTIFIER + " AND ownerId = :ownerId");
+        
+        Map<String,Object> params = paramsCaptor.getValue();
+        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("identifier"), ID_VALUE);
+        assertEquals(params.get("revision"), REV_VALUE);
+        assertEquals(params.get("ownerId"), TEST_ORG_ID);
+    }
+    
+    @Test
     public void getAssessmentByIdAndRevisionNoEntity() {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of());
         
-        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, ID_VALUE, REV_VALUE);
+        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, null, ID_VALUE, REV_VALUE);
         assertFalse(retValue.isPresent());
     }
     
@@ -294,7 +391,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
     @Test
     public void deleteAssessmentLeaveResources() throws Exception {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 2);
-        doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true);
+        doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, null, IDENTIFIER, 0, 1, true);
         
         when(mockSession.createNativeQuery(DELETE_CONFIG_SQL)).thenReturn(mockDelConfigQuery);
         
@@ -311,7 +408,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
     @Test
     public void deleteAssessmentWithResources() throws Exception {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 1);
-        doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, IDENTIFIER, 0, 1, true);
+        doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, null, IDENTIFIER, 0, 1, true);
         
         when(mockSession.createNativeQuery(DELETE_RESOURCES_SQL)).thenReturn(mockDelResourcesQuery);
         when(mockSession.createNativeQuery(DELETE_CONFIG_SQL)).thenReturn(mockDelConfigQuery);

@@ -22,10 +22,8 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
@@ -98,13 +96,9 @@ public class EnrollmentController extends BaseController {
         List<EnrollmentMigration> migrations = parseJson(new TypeReference<List<EnrollmentMigration>>() {});
         
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
-        Account acct = accountService.getAccount(accountId);
-        if (acct == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        accountService.editAccount(session.getAppId(), acct.getHealthCode(), (account) -> {
-            account.getEnrollments().clear();
-            account.getEnrollments().addAll(migrations.stream().map(m -> m.asEnrollment()).collect(toSet()));
+        accountService.editAccount(accountId, (acct) -> {
+            acct.getEnrollments().clear();
+            acct.getEnrollments().addAll(migrations.stream().map(m -> m.asEnrollment()).collect(toSet()));
         });
         return new StatusMessage("Enrollments updated.");
     }    

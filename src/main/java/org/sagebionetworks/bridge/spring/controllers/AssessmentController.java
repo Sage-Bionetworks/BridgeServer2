@@ -10,6 +10,8 @@ import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 
 import java.util.Set;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -41,6 +43,13 @@ public class AssessmentController extends BaseController {
         this.service = service;
     }
     
+    private String getOwnerId(UserSession session) {
+        if (session.isInRole(ImmutableSet.of(DEVELOPER, ADMIN))) {
+            return null;
+        }
+        return session.getParticipant().getOrgMembership();
+    }
+    
     @GetMapping("/v1/assessments")
     public PagedResourceList<Assessment> getAssessments(@RequestParam(required = false) String offsetBy,
             @RequestParam(required = false) String pageSize,
@@ -49,6 +58,7 @@ public class AssessmentController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -57,13 +67,13 @@ public class AssessmentController extends BaseController {
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
-        return service.getAssessments(appId, offsetByInt, pageSizeInt, tags, incDeletedBool);
+        return service.getAssessments(appId, ownerId, offsetByInt, pageSizeInt, tags, incDeletedBool);
     }
     
     @PostMapping("/v1/assessments")
     @ResponseStatus(HttpStatus.CREATED)
     public Assessment createAssessment() {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         String appId = session.getAppId();
         if (SHARED_APP_ID.equals(appId)) {
@@ -79,24 +89,26 @@ public class AssessmentController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
-        return service.getAssessmentByGuid(appId, guid);
+        return service.getAssessmentByGuid(appId, ownerId, guid);
     }
     
     @PostMapping("/v1/assessments/{guid}")
     public Assessment updateAssessmentByGuid(@PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
         Assessment assessment = parseJson(Assessment.class);
         assessment.setGuid(guid);
         
-        return service.updateAssessment(appId, assessment);
+        return service.updateAssessment(appId, ownerId, assessment);
     }
     
     @GetMapping("/v1/assessments/{guid}/revisions")
@@ -106,6 +118,7 @@ public class AssessmentController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -115,15 +128,16 @@ public class AssessmentController extends BaseController {
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
 
         return service.getAssessmentRevisionsByGuid(
-                appId, guid, offsetByInt, pageSizeInt, incDeletedBool);
+                appId, ownerId, guid, offsetByInt, pageSizeInt, incDeletedBool);
     }
     
     @PostMapping("/v1/assessments/{guid}/revisions")
     @ResponseStatus(HttpStatus.CREATED)
     public Assessment createAssessmentRevision(@PathVariable String guid) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -135,36 +149,39 @@ public class AssessmentController extends BaseController {
         // in the URL, which always takes precedence over what is in 
         // the JSON in the body of a request.
         
-        return service.createAssessmentRevision(appId, guid, assessment);
+        return service.createAssessmentRevision(appId, ownerId, guid, assessment);
     }
     
     @PostMapping("/v1/assessments/{guid}/publish")
     @ResponseStatus(HttpStatus.CREATED)
     public Assessment publishAssessment(@PathVariable String guid,
             @RequestParam(required = false) String newIdentifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
-        return service.publishAssessment(appId, newIdentifier, guid);
+        return service.publishAssessment(appId, ownerId, newIdentifier, guid);
     }
         
     @DeleteMapping("/v1/assessments/{guid}")
     public StatusMessage deleteAssessment(@PathVariable String guid, @RequestParam(required = false) String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
 
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
+        
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
-            service.deleteAssessmentPermanently(appId, guid);
+            service.deleteAssessmentPermanently(appId, null, guid);
         } else {
-            service.deleteAssessment(appId, guid);
+            service.deleteAssessment(appId, ownerId, guid);
         }
         return new StatusMessage("Assessment deleted.");        
     }
@@ -176,11 +193,12 @@ public class AssessmentController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
 
-        return service.getLatestAssessment(appId, identifier);
+        return service.getLatestAssessment(appId, ownerId, identifier);
     }
     
     @GetMapping("/v1/assessments/identifier:{identifier}/revisions")
@@ -190,6 +208,7 @@ public class AssessmentController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -199,7 +218,7 @@ public class AssessmentController extends BaseController {
         boolean incDeletedBool = Boolean.valueOf(includeDeleted);
         
         return service.getAssessmentRevisionsById(
-                appId, identifier, offsetByInt, pageSizeInt, incDeletedBool);
+                appId, ownerId, identifier, offsetByInt, pageSizeInt, incDeletedBool);
     }
     
     @GetMapping("/v1/assessments/identifier:{identifier}/revisions/{revision}")
@@ -207,6 +226,7 @@ public class AssessmentController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
 
         String appId = session.getAppId();
+        String ownerId = getOwnerId(session);
         if (SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException(SHARED_ASSESSMENTS_ERROR);
         }
@@ -215,6 +235,6 @@ public class AssessmentController extends BaseController {
         if (revisionInt < 1) {
             throw new BadRequestException(NONPOSITIVE_REVISION_ERROR);
         }
-        return service.getAssessmentById(appId, identifier, revisionInt);
+        return service.getAssessmentById(appId, ownerId, identifier, revisionInt);
     }
 }

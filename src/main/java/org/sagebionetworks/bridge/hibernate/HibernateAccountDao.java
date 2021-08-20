@@ -1,9 +1,30 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.models.ResourceList.ADMIN_ONLY;
+import static org.sagebionetworks.bridge.models.ResourceList.ALL_OF_GROUPS;
+import static org.sagebionetworks.bridge.models.ResourceList.ATTRIBUTE_KEY;
+import static org.sagebionetworks.bridge.models.ResourceList.ATTRIBUTE_VALUE_FILTER;
+import static org.sagebionetworks.bridge.models.ResourceList.EMAIL_FILTER;
+import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
+import static org.sagebionetworks.bridge.models.ResourceList.ENROLLED_IN_STUDY_ID;
+import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT;
+import static org.sagebionetworks.bridge.models.ResourceList.EXTERNAL_ID_FILTER;
+import static org.sagebionetworks.bridge.models.ResourceList.LANGUAGE;
+import static org.sagebionetworks.bridge.models.ResourceList.NONE_OF_GROUPS;
+import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
+import static org.sagebionetworks.bridge.models.ResourceList.ORG_MEMBERSHIP;
+import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.ResourceList.PHONE_FILTER;
+import static org.sagebionetworks.bridge.models.ResourceList.PREDICATE;
+import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
+import static org.sagebionetworks.bridge.models.ResourceList.STATUS;
+import static org.sagebionetworks.bridge.models.ResourceList.STRING_SEARCH_POSITION;
+import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 
 import java.util.List;
 import java.util.Optional;
@@ -19,19 +40,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
+import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.ResourceList;
+import org.sagebionetworks.bridge.models.SearchTermPredicate;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
+import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.apps.App;
 
 /** Hibernate implementation of Account Dao. */
@@ -41,10 +63,14 @@ public class HibernateAccountDao implements AccountDao {
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
     static final String ID_QUERY = "SELECT acct.id FROM HibernateAccount AS acct";
-    
     static final String FULL_QUERY = "SELECT acct FROM HibernateAccount AS acct";
-    
     static final String COUNT_QUERY = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct";
+    
+    static final String EXTID_BASE_QUERY = "from HibernateEnrollment as en "
+            + "WHERE en.appId = :appId AND en.studyId = :studyId "
+            + "AND en.externalId IS NOT NULL";
+    static final String EXTID_FILTER_QUERY = "AND en.externalId LIKE :idFilter";
+    static final String EXTID_ORDER_QUERY = "ORDER BY en.externalId";
     
     private HibernateHelper hibernateHelper;
 
@@ -87,7 +113,7 @@ public class HibernateAccountDao implements AccountDao {
     @Override
     public Optional<Account> getAccount(AccountId accountId) {
         HibernateAccount account = null;
-        
+
         // The fastest retrieval can be done with the ID if it has been provided.
         AccountId unguarded = accountId.getUnguardedAccountId();
         if (unguarded.getId() != null) {
@@ -123,55 +149,53 @@ public class HibernateAccountDao implements AccountDao {
         builder.append(prefix);
         builder.append("LEFT JOIN acct.enrollments AS enrollment");
         builder.append("WITH acct.id = enrollment.accountId");
-        builder.append("WHERE acct.appId = :appId", "appId", appId);
+        
+        SearchTermPredicate predicate = (search != null) ? search.getPredicate() : AND;
+        WhereClauseBuilder where = builder.startWhere(predicate);
+        where.appendRequired("acct.appId = :appId", "appId", appId);
         
         if (accountId != null) {
             AccountId unguarded = accountId.getUnguardedAccountId();
             if (unguarded.getEmail() != null) {
-                builder.append("AND acct.email=:email", "email", unguarded.getEmail());
+                where.appendRequired("acct.email=:email", "email", unguarded.getEmail());
             } else if (unguarded.getHealthCode() != null) {
-                builder.append("AND acct.healthCode=:healthCode","healthCode", unguarded.getHealthCode());
+                where.appendRequired("acct.healthCode=:healthCode","healthCode", unguarded.getHealthCode());
             } else if (unguarded.getPhone() != null) {
-                builder.append("AND acct.phone.number=:number AND acct.phone.regionCode=:regionCode",
-                        "number", unguarded.getPhone().getNumber(),
-                        "regionCode", unguarded.getPhone().getRegionCode());
+                where.appendRequired("acct.phone.number=:number", "number", unguarded.getPhone().getNumber());
+                where.appendRequired("acct.phone.regionCode=:regionCode", "regionCode", unguarded.getPhone().getRegionCode());
             } else if (unguarded.getSynapseUserId() != null) {
-                builder.append("AND acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
+                where.appendRequired("acct.synapseUserId=:synapseUserId", "synapseUserId", unguarded.getSynapseUserId());
             } else {
-                builder.append("AND enrollment.externalId=:externalId", "externalId", unguarded.getExternalId());
+                where.appendRequired("enrollment.externalId=:externalId", "externalId", unguarded.getExternalId());
             }
         }
         if (search != null) {
-            // Note: emailFilter can be any substring, not just prefix/suffix. Same with phone.
-            if (StringUtils.isNotBlank(search.getEmailFilter())) {
-                builder.append("AND acct.email LIKE :email", "email", "%"+search.getEmailFilter()+"%");
-            }
-            if (StringUtils.isNotBlank(search.getPhoneFilter())) {
-                String phoneString = search.getPhoneFilter().replaceAll("\\D*", "");
-                builder.append("AND acct.phone.number LIKE :number", "number", "%"+phoneString+"%");
-            }
-            // Note: start- and endTime are inclusive.            
-            if (search.getStartTime() != null) {
-                builder.append("AND acct.createdOn >= :startTime", "startTime", search.getStartTime());
-            }
-            if (search.getEndTime() != null) {
-                builder.append("AND acct.createdOn <= :endTime", "endTime", search.getEndTime());
-            }
-            if (search.getLanguage() != null) {
-                builder.append("AND :language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
-            }
-            builder.adminOnly(search.isAdminOnly());
-            builder.dataGroups(search.getAllOfGroups(), "IN");
-            builder.dataGroups(search.getNoneOfGroups(), "NOT IN");
+            where.like(search.getStringSearchPosition(), "acct.email LIKE :email", "email", search.getEmailFilter());
+            where.phone(search.getStringSearchPosition(), search.getPhoneFilter());
+            where.append("acct.createdOn >= :startTime", "startTime", search.getStartTime());
+            where.append("acct.createdOn <= :endTime", "endTime", search.getEndTime());
+            where.append(":language IN ELEMENTS(acct.languages)", "language", search.getLanguage());
+            where.like(search.getStringSearchPosition(), "enrollment.externalId LIKE :extId", "extId", search.getExternalIdFilter());
+            where.append("acct.status = :status", "status", search.getStatus());
+            where.adminOnlyRequired(search.isAdminOnly());
+            where.dataGroups(search.getAllOfGroups(), "IN");
+            where.dataGroups(search.getNoneOfGroups(), "NOT IN");
+            where.like(search.getStringSearchPosition(), "acct.attributes['"+search.getAttributeKey()+"'] LIKE :attValue", "attValue", search.getAttributeValueFilter());
             
-            String enrolledInStudy = search.getEnrolledInStudyId();
+            // Perhaps confusing with the below enrollment code, this is a filter based on enrolled/withdrawn state.
+            where.enrollment(search.getEnrollment(), true);
+            
+            // Search for an organization member, or search based on enrollment, either a specified study, 
+            // or the studies accessible to the caller. For some app-scoped roles, the study filter is ignored.
             if (search.getOrgMembership() != null) {
-                builder.orgMembership(search.getOrgMembership());
-            } else if (enrolledInStudy != null) { // this always takes precedence
-                Set<String> studies = ImmutableSet.of(search.getEnrolledInStudyId());
-                builder.append("AND enrollment.studyId IN (:studies)", "studies", studies);
-            } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, RESEARCHER, WORKER)) {
-                builder.append("AND enrollment.studyId IN (:studies)", "studies", callerStudies);
+                where.orgMembershipRequired(search.getOrgMembership());
+            } else {
+                String enrolledInStudy = search.getEnrolledInStudyId();
+                if (enrolledInStudy != null) {
+                    where.appendRequired("enrollment.studyId = :studyId", "studyId", enrolledInStudy);
+                } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, RESEARCHER, WORKER)) {
+                    where.appendRequired("enrollment.studyId IN (:studies)", "studies", callerStudies);
+                }
             }
         }
         if (!isCount) {
@@ -210,17 +234,25 @@ public class HibernateAccountDao implements AccountDao {
         
         // Package results and return.
         return new PagedResourceList<>(accountSummaryList, count)
-                .withRequestParam(ResourceList.ADMIN_ONLY, search.isAdminOnly())
-                .withRequestParam(ResourceList.ALL_OF_GROUPS, search.getAllOfGroups())
-                .withRequestParam(ResourceList.EMAIL_FILTER, search.getEmailFilter())
-                .withRequestParam(ResourceList.END_TIME, search.getEndTime())
-                .withRequestParam(ResourceList.LANGUAGE, search.getLanguage())
-                .withRequestParam(ResourceList.NONE_OF_GROUPS, search.getNoneOfGroups())
-                .withRequestParam(ResourceList.OFFSET_BY, search.getOffsetBy())
-                .withRequestParam(ResourceList.ORG_MEMBERSHIP, search.getOrgMembership())
-                .withRequestParam(ResourceList.PAGE_SIZE, search.getPageSize())
-                .withRequestParam(ResourceList.PHONE_FILTER, search.getPhoneFilter())
-                .withRequestParam(ResourceList.START_TIME, search.getStartTime());
+                .withRequestParam(ADMIN_ONLY, search.isAdminOnly())
+                .withRequestParam(ALL_OF_GROUPS, search.getAllOfGroups())
+                .withRequestParam(EMAIL_FILTER, search.getEmailFilter())
+                .withRequestParam(END_TIME, search.getEndTime())
+                .withRequestParam(LANGUAGE, search.getLanguage())
+                .withRequestParam(NONE_OF_GROUPS, search.getNoneOfGroups())
+                .withRequestParam(OFFSET_BY, search.getOffsetBy())
+                .withRequestParam(ORG_MEMBERSHIP, search.getOrgMembership())
+                .withRequestParam(PAGE_SIZE, search.getPageSize())
+                .withRequestParam(PHONE_FILTER, search.getPhoneFilter())
+                .withRequestParam(PREDICATE, search.getPredicate())
+                .withRequestParam(START_TIME, search.getStartTime())
+                .withRequestParam(STRING_SEARCH_POSITION, search.getStringSearchPosition())
+                .withRequestParam(EXTERNAL_ID_FILTER, search.getExternalIdFilter())
+                .withRequestParam(STATUS, search.getStatus())
+                .withRequestParam(ENROLLMENT, search.getEnrollment())
+                .withRequestParam(ATTRIBUTE_KEY, search.getAttributeKey())
+                .withRequestParam(ATTRIBUTE_VALUE_FILTER, search.getAttributeValueFilter())
+                .withRequestParam(ENROLLED_IN_STUDY_ID, search.getEnrolledInStudyId());
     }
     
     // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created
@@ -255,6 +287,7 @@ public class HibernateAccountDao implements AccountDao {
         builder.withAttributes(acct.getAttributes());
         builder.withOrgMembership(acct.getOrgMembership());
         builder.withNote(acct.getNote());
+        builder.withClientTimeZone(acct.getClientTimeZone());
         
         StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(null);
         if (acct.getId() != null) {
@@ -263,5 +296,32 @@ public class HibernateAccountDao implements AccountDao {
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
         builder.withStudyIds(assoc.getStudyIdsVisibleToCaller());
         return builder.build();
+    }
+    
+    @Override
+    public PagedResourceList<ExternalIdentifierInfo> getPagedExternalIds(String appId, String studyId, String idFilter,
+            Integer offsetBy, Integer pageSize) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(offsetBy);
+        checkNotNull(pageSize);
+        
+        QueryBuilder query = new QueryBuilder();
+        query.append(EXTID_BASE_QUERY, "appId", appId, "studyId", studyId);
+        if (StringUtils.isNotBlank(idFilter)) {
+            query.append(EXTID_FILTER_QUERY, "idFilter", idFilter + "%");
+        }
+        query.append(EXTID_ORDER_QUERY);
+
+        List<HibernateEnrollment> enrollments = hibernateHelper.queryGet("SELECT en " + query.getQuery(), 
+                query.getParameters(), offsetBy, pageSize, HibernateEnrollment.class);
+
+        List<ExternalIdentifierInfo> infos = enrollments.stream()
+                .map(en -> new ExternalIdentifierInfo(en.getExternalId(), en.getStudyId(), true))
+                .collect(Collectors.toList());
+
+        int count = hibernateHelper.queryCount("SELECT count(en) " + query.getQuery(), query.getParameters());
+
+        return new PagedResourceList<>(infos, count, true);
     }
 }

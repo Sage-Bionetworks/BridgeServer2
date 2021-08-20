@@ -3,8 +3,15 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ASSESSMENTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
 import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAIL;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+
+import java.time.DateTimeException;
+import java.time.ZoneId;
 
 import java.util.Map;
 import java.util.Optional;
@@ -54,7 +61,7 @@ public class StudyParticipantValidator implements Validator {
             // If provided, phone must be valid
             Phone phone = participant.getPhone();
             if (phone != null && !Phone.isValid(phone)) {
-                errors.rejectValue("phone", "does not appear to be a phone number");
+                errors.rejectValue("phone", INVALID_PHONE_ERROR);
             }
             // If provided, email must be valid. Commons email validator v1.7 causes our test to 
             // fail because the word "test" appears in the user name, for reasons I could not 
@@ -62,7 +69,7 @@ public class StudyParticipantValidator implements Validator {
             // match valid email addresses.
             String email = participant.getEmail();
             if (email != null && !email.matches(OWASP_REGEXP_VALID_EMAIL)) {
-                errors.rejectValue("email", "does not appear to be an email address");
+                errors.rejectValue("email", INVALID_EMAIL_ERROR);
             }
             // External ID is required for non-administrative accounts when it is required on sign-up.
             if (participant.getRoles().isEmpty() && app.isExternalIdRequiredOnSignup() && participant.getExternalIds().isEmpty()) {
@@ -83,7 +90,7 @@ public class StudyParticipantValidator implements Validator {
                 Optional<Organization> opt = organizationService.getOrganizationOpt(app.getIdentifier(), orgId);
                 if (!opt.isPresent()) {
                     errors.rejectValue("orgMembership", "is not a valid organization");
-                } else if (!CAN_EDIT_ASSESSMENTS.check(ORG_ID, orgId)) {
+                } else if (!CAN_EDIT_MEMBERS.check(ORG_ID, orgId)) {
                     errors.rejectValue("orgMembership", "cannot be set by caller");
                 }
             }
@@ -101,7 +108,7 @@ public class StudyParticipantValidator implements Validator {
                         errors.rejectValue("externalIds["+studyId+"]", "is not a study");
                     }
                     if (isBlank(externalId)) {
-                        errors.rejectValue("externalIds["+studyId+"].externalId", "cannot be blank");
+                        errors.rejectValue("externalIds["+studyId+"].externalId", CANNOT_BE_BLANK);
                     }
                 }
             }
@@ -112,9 +119,9 @@ public class StudyParticipantValidator implements Validator {
         }
 
         if (participant.getSynapseUserId() != null && isBlank(participant.getSynapseUserId())) {
-            errors.rejectValue("synapseUserId", "cannot be blank");
+            errors.rejectValue("synapseUserId", CANNOT_BE_BLANK);
         }
-                
+
         for (String dataGroup : participant.getDataGroups()) {
             if (!app.getDataGroups().contains(dataGroup)) {
                 errors.rejectValue("dataGroups", messageForSet(app.getDataGroups(), dataGroup));
@@ -123,6 +130,13 @@ public class StudyParticipantValidator implements Validator {
         for (String attributeName : participant.getAttributes().keySet()) {
             if (!app.getUserProfileAttributes().contains(attributeName)) {
                 errors.rejectValue("attributes", messageForSet(app.getUserProfileAttributes(), attributeName));
+            }
+        }
+        if (participant.getClientTimeZone() != null) {
+            try {
+                ZoneId.of(participant.getClientTimeZone());
+            } catch (DateTimeException e) {
+                errors.rejectValue("clientTimeZone", TIME_ZONE_ERROR);
             }
         }
     }

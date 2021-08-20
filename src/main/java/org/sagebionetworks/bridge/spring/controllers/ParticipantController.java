@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
@@ -16,6 +17,8 @@ import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.START_DATE;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
+import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
+import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
@@ -55,9 +58,11 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -285,6 +290,7 @@ public class ParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
+
         return participantService.getPagedAccountSummaries(app, search);
     }
     
@@ -515,6 +521,25 @@ public class ParticipantController extends BaseController {
         participantService.resendConsentAgreement(app, subpopGuid, userId);
         
         return new StatusMessage("Consent agreement resent to user.");
+    }
+    
+    @PostMapping("/v3/participants/{userId}/sendInstallLink")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public StatusMessage sendInstallLink(@PathVariable String userId, @RequestParam(required = false) String osName) {
+        UserSession session = getAdministrativeSession();
+        CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
+
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        App app = appService.getApp(session.getAppId());
+        String email = TRUE.equals(account.getEmailVerified()) ? account.getEmail() : null;
+        Phone phone = TRUE.equals(account.getPhoneVerified()) ? account.getPhone() : null;
+        
+        participantService.sendInstallLinkMessage(app, PROMOTIONAL, account.getHealthCode(), email, phone, osName);
+        
+        return INSTALL_LINK_SEND_MSG;
     }
 
     @PostMapping("/v3/participants/{userId}/consents/withdraw")

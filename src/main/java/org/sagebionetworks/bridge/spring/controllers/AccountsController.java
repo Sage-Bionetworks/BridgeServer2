@@ -65,7 +65,7 @@ public class AccountsController extends BaseController  {
     private static final StatusMessage SIGN_OUT_MSG = new StatusMessage("User signed out.");
     private static final Set<String> ACCOUNT_FIELDS = ImmutableSet.of("firstName", "lastName", "synapseUserId", 
             "email", "phone", "attributes", "status", "roles", "dataGroups", "clientData", "languages", 
-            "orgMembership", "password", "note");
+            "orgMembership", "password", "note", "clientTimeZone");
     
     private ParticipantService participantService;
     
@@ -91,9 +91,12 @@ public class AccountsController extends BaseController  {
         // is a superset of Account. That includes password, which we want to expose
         // in the SDK version of Account.
         StudyParticipant participant = parseJson(StudyParticipant.class);
-        participant = new StudyParticipant.Builder().copyOf(participant)
-                .withOrgMembership(orgId).build();
-        
+        // Admins can set someone in any organization, but others must create accounts
+        // in their own organization (particularly, org administrators).
+        if (!session.isInRole(ImmutableSet.of(ADMIN))) {
+            participant = new StudyParticipant.Builder().copyOf(participant)
+                    .withOrgMembership(orgId).build();
+        }
         App app = appService.getApp(session.getAppId());
         return participantService.createParticipant(app, participant, true);
     }
@@ -230,10 +233,9 @@ public class AccountsController extends BaseController  {
      */
     public Account verifyOrgAdminIsActingOnOrgMember(UserSession session, String userIdToken) {
         AccountId accountId = parseAccountId(session.getAppId(), userIdToken);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+                
         if (session.isInRole(ADMIN_ROLES)) {
             return account;
         }

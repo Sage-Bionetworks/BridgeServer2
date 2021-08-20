@@ -4,16 +4,29 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import org.sagebionetworks.bridge.hibernate.HibernateStudy;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 
 import java.util.List;
+import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 
 @JsonDeserialize(as=HibernateStudy.class)
+@JsonFilter("filter")
 public interface Study extends BridgeEntity {
+    
+    // For the summary view, we suppress many of the internal management fields
+    public static ObjectWriter STUDY_SUMMARY_WRITER = new BridgeObjectMapper().writer(
+            new SimpleFilterProvider().addFilter("filter",
+                    SimpleBeanPropertyFilter.filterOutAllExcept("name", "identifier",
+                            "details", "phase", "studyLogoUrl", "colorScheme", "signInTypes")));
     
     public static Study create() {
         return new HibernateStudy();
@@ -46,11 +59,20 @@ public interface Study extends BridgeEntity {
     JsonNode getClientData();
     void setClientData(JsonNode clientData);
     
-    LocalDate getIrbApprovedOn();
-    void setIrbApprovedOn(LocalDate irbApprovedOn);
+    void setIrbName(String irbName);
+    String getIrbName();
     
-    LocalDate getIrbApprovedUntil();
-    void setIrbApprovedUntil(LocalDate irbApprovedUntil);
+    void setIrbDecisionOn(LocalDate irbDecisionOn);
+    LocalDate getIrbDecisionOn();
+    
+    void setIrbExpiresOn(LocalDate irbExpiresOn);
+    LocalDate getIrbExpiresOn();
+    
+    void setIrbDecisionType(IrbDecisionType irbDecisionType);
+    IrbDecisionType  getIrbDecisionType();
+    
+    String getIrbProtocolName();
+    void setIrbProtocolName(String irbProtocolName); 
     
     String getStudyLogoUrl();
     void setStudyLogoUrl(String studyLogoUrl);
@@ -67,16 +89,27 @@ public interface Study extends BridgeEntity {
     String getScheduleGuid();
     void setScheduleGuid(String scheduleGuid);
     
-    String getDisease();
-    void setDisease(String disease);
+    String getKeywords();
+    void setKeywords(String keywords);
     
-    String getStudyDesignType();
-    void setStudyDesignType(String studyDesignType);
+    Set<String> getDiseases();
+    void setDiseases(Set<String> diseases);
+    
+    Set<String> getStudyDesignTypes();
+    void setStudyDesignTypes(Set<String> studyDesignTypes);
     
     List<Contact> getContacts();
     void setContacts(List<Contact> contacts);
+    
+    String getLogoGuid();
+    void setLogoGuid(String logoGuid);
+
+    List<SignInType> getSignInTypes();
+    void setSignInTypes(List<SignInType> signInTypes);
+    
+    List<StudyCustomEvent> getCustomEvents();
+    void setCustomEvents(List<StudyCustomEvent> customEvents);
 
     Long getVersion();
     void setVersion(Long version);
-    
 }

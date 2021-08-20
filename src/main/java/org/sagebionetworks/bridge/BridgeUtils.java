@@ -58,7 +58,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -100,6 +99,7 @@ public class BridgeUtils {
     }
 
     public static final Joiner AND_JOINER = Joiner.on(" AND ");
+    public static final Joiner OR_JOINER = Joiner.on(" OR ");
     public static final Joiner COMMA_SPACE_JOINER = Joiner.on(", ");
     public static final Joiner COMMA_JOINER = Joiner.on(",");
     public static final Joiner SEMICOLON_SPACE_JOINER = Joiner.on("; ");
@@ -169,9 +169,7 @@ public class BridgeUtils {
             
             // If this is a call for one’s own record, or the caller is an admin or 
             // worker, or the account is in the same organization as the caller who 
-            // is an org admin, return the account. Callers that are not associated to an 
-            // organization also gain access, but only while we migrate away from 
-            // this kind of global account.
+            // is an org admin, return the account.
             if (CAN_READ_PARTICIPANTS.check(ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
                 return account;
             }
@@ -246,6 +244,8 @@ public class BridgeUtils {
             return AccountId.forSynapseUserId(appId, userIdToken.substring(14));
         } else if (id.startsWith("syn:")) {
             return AccountId.forSynapseUserId(appId, userIdToken.substring(4));
+        } else if (id.startsWith("email:")) {
+            return AccountId.forEmail(appId, userIdToken.substring(6));
         }
         return AccountId.forId(appId, userIdToken);
     }
@@ -735,12 +735,13 @@ public class BridgeUtils {
                 return "custom:" + id;
             }
             try {
-                ActivityEventObjectType.valueOf(id.toUpperCase());
+                String[] parts = id.split(":");
+                ActivityEventObjectType.valueOf(parts[0].toUpperCase());
             } catch(IllegalArgumentException e) {
                 return null;
             }
         }
-        return (id == null) ? null : id.toLowerCase();
+        return (id == null) ? null : id;
     }
     
     /**
@@ -766,15 +767,5 @@ public class BridgeUtils {
             }
         }
         return defaultValue;
-    }
-    
-    public static StudyActivityEvent findByEventId(List<StudyActivityEvent> events, ActivityEventObjectType type) {
-        String eventId = type.name().toLowerCase();
-        for (StudyActivityEvent oneEvent : events) {
-            if (oneEvent.getEventId().equals(eventId)) {
-                return oneEvent;
-            }
-        }
-        return null;
     }
 }

@@ -7,6 +7,9 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.IdentifierUpdateValidator.INSTANCE;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -113,7 +116,7 @@ public class IdentifierUpdateValidatorTest {
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, new Phone("12334578990", "US"), null);
-        assertValidatorMessage(INSTANCE, update, "phoneUpdate", "does not appear to be a phone number");
+        assertValidatorMessage(INSTANCE, update, "phoneUpdate", INVALID_PHONE_ERROR);
     }
     
     @Test
@@ -122,7 +125,7 @@ public class IdentifierUpdateValidatorTest {
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, "junk", null, null);
-        assertValidatorMessage(INSTANCE, update, "emailUpdate", "does not appear to be an email address");
+        assertValidatorMessage(INSTANCE, update, "emailUpdate", INVALID_EMAIL_ERROR);
     }
     
     @Test
@@ -131,7 +134,7 @@ public class IdentifierUpdateValidatorTest {
                 .build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, null, null, "  ");
-        assertValidatorMessage(INSTANCE, update, "synapseUserIdUpdate", "cannot be blank");
+        assertValidatorMessage(INSTANCE, update, "synapseUserIdUpdate", CANNOT_BE_BLANK);
     }
     
     @Test
@@ -149,6 +152,6 @@ public class IdentifierUpdateValidatorTest {
                 .withEmail(EMAIL).withReauthToken("asdf").build();
         
         IdentifierUpdate update = new IdentifierUpdate(signIn, "", null, null);
-        assertValidatorMessage(INSTANCE, update, "emailUpdate", "does not appear to be an email address");
+        assertValidatorMessage(INSTANCE, update, "emailUpdate", INVALID_EMAIL_ERROR);
     }
 }

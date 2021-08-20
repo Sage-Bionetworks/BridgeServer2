@@ -157,10 +157,12 @@ public class TimelineTest extends Mockito {
         Timeline timeline = new Timeline.Builder().build();
         JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
         
-        assertEquals(node.size(), 4);
+        assertEquals(node.size(), 6);
         assertEquals(node.get("assessments").size(), 0);
         assertEquals(node.get("sessions").size(), 0);
         assertEquals(node.get("schedule").size(), 0);
+        assertEquals(node.get("totalMinutes").size(), 0);
+        assertEquals(node.get("totalNotifications").size(), 0);
         assertEquals(node.get("type").textValue(), "Timeline");
     }
     
@@ -188,5 +190,27 @@ public class TimelineTest extends Mockito {
         assertEquals(timeline.getSessions().get(1).getGuid(), SESSION_GUID_2);
         assertEquals(timeline.getSessions().get(2).getGuid(), SESSION_GUID_3);
         assertEquals(timeline.getSessions().get(3).getGuid(), SESSION_GUID_4);
+    }
+    
+    @Test
+    public void calculatesRunningTotalsOfMinutesAndNotifications() {
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        
+        // seven session each taking 8 minutes = 56 minutes;
+        assertEquals(timeline.getTotalMinutes(), 56);
+        
+        // each session has one notification, 7 notifications
+        assertEquals(timeline.getTotalNotifications(), 7);
+        
+        // Alter the schedule so the notification repeats every 2 days within the 
+        // time window of 7 days, so that is 1 notification + 3 from the 
+        // interval = 4 per window, or 28 total notifications.
+        schedule.getSessions().get(0).getNotifications().get(0).setInterval(Period.parse("P2D"));
+        schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(Period.parse("P6D"));
+        timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        
+        assertEquals(timeline.getTotalNotifications(), 28);
     }
 }
