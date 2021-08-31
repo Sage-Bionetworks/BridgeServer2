@@ -93,21 +93,25 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** The base64-encoded, 128-bit MD5 digest of the object body. */
+    @Override
     public String getContentMd5() {
         return contentMd5;
     }
 
     /** @see #getContentMd5 */
+    @Override
     public void setContentMd5(String contentMd5) {
         this.contentMd5 = contentMd5;
     }
 
     /** MIME content type. */
+    @Override
     public String getContentType() {
         return contentType;
     }
 
     /** @see #getContentType */
+    @Override
     public void setContentType(String contentType) {
         this.contentType = contentType;
     }
@@ -206,11 +210,13 @@ public class DynamoUpload2 implements Upload {
     
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-requestedOn-index")
+    @Override
     public String getAppId() {
         return appId;
     }
     
     /** @see #getAppId */
+    @Override
     public void setAppId(String appId) {
         this.appId = appId;
     }
