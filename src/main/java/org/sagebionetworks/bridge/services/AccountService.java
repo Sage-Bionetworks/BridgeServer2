@@ -64,6 +64,7 @@ public class AccountService {
     private AccountSecretDao accountSecretDao;
     private AppService appService;
     private ActivityEventService activityEventService;
+    private ParticipantVersionService participantVersionService;
     private StudyActivityEventService studyActivityEventService;
 
     @Autowired
@@ -85,7 +86,12 @@ public class AccountService {
     public final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
     }
-    
+
+    @Autowired
+    public final void setParticipantVersionService(ParticipantVersionService participantVersionService) {
+        this.participantVersionService = participantVersionService;
+    }
+
     @Autowired
     public final void setStudyActivityEventService(StudyActivityEventService studyActivityEventService) {
         this.studyActivityEventService = studyActivityEventService;
@@ -238,6 +244,9 @@ public class AccountService {
                     .objectType(ENROLLMENT)
                     .timestamp(account.getCreatedOn()));
         }
+
+        // Create the corresponding Participant Version.
+        participantVersionService.createParticipantVersionFromAccount(account);
     }
     
     /**
@@ -289,6 +298,9 @@ public class AccountService {
                         .timestamp(account.getModifiedOn()));
             }
         }
+
+        // Create the corresponding Participant Version.
+        participantVersionService.createParticipantVersionFromAccount(account);
     }
     
     /**
@@ -304,6 +316,9 @@ public class AccountService {
 
         accountEdits.accept(account);
         accountDao.updateAccount(account);
+
+        // Create the corresponding Participant Version.
+        participantVersionService.createParticipantVersionFromAccount(account);
     }
     
     /**

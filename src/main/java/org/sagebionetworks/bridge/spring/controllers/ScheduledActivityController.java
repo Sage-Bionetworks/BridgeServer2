@@ -43,6 +43,7 @@ import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduleContext;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.services.ParticipantVersionService;
 import org.sagebionetworks.bridge.services.ScheduledActivityService;
 import org.sagebionetworks.bridge.time.DateUtils;
 
@@ -55,13 +56,19 @@ public class ScheduledActivityController extends BaseController {
     static final String MISSING_TIMESTAMP_ERROR = "startsOn and endsOn are both required and must be ISO 8601 timestamps.";
     static final String AMBIGUOUS_TIMEZONE_ERROR = "startsOn and endsOn must be in the same time zone.";
 
+    private ParticipantVersionService participantVersionService;
     private ScheduledActivityService scheduledActivityService;
 
     @Autowired
     final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
     }
-    
+
+    @Autowired
+    public final void setParticipantVersionService(ParticipantVersionService participantVersionService) {
+        this.participantVersionService = participantVersionService;
+    }
+
     @Deprecated
     @GetMapping("/v3/tasks")
     public JsonNode getTasks(@RequestParam(required = false) String until,
@@ -219,7 +226,13 @@ public class ScheduledActivityController extends BaseController {
         }
         DateTime now = DateTime.now(requestTimeZone);
         ScheduleContext context = getScheduledActivitiesInternal(session, requestTimeZone, now, endsOn, minimumPerSchedule);
-        return scheduledActivityService.getScheduledActivities(app, context);
+        List<ScheduledActivity> scheduledActivityList = scheduledActivityService.getScheduledActivities(app, context);
+
+        // If time zone was updated, we need to update the participant version.
+        participantVersionService.createParticipantVersionFromParticipant(app.getIdentifier(),
+                session.getParticipant(), requestTimeZone);
+
+        return scheduledActivityList;
     }
     
     private ScheduleContext getScheduledActivitiesInternal(UserSession session, DateTimeZone requestTimeZone,
