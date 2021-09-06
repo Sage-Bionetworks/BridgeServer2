@@ -147,8 +147,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
 
             // Although orphanRemoval = true is set for the session collection, they do not
             // delete when removed. So we are manually finding the removed sessions and
-            // deleting
-            // them before persisting the new set.
+            // deleting them before persisting the new set.
             QueryBuilder builder = new QueryBuilder();
             builder.append(DELETE_SESSIONS, GUID, schedule.getGuid());
             if (!sessionGuids.isEmpty()) {
@@ -187,13 +186,10 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
                         + " ms");
             }
 
-            // Hibernate’s session.save() does an insert and then an update operation on
-            // each record, so switching
-            // to JDBC to do an insert only, halves the time it takes to do this operation
-            // even without further batch
-            // optimizations. I was not able to determine why Hibernate is doing this (it’s
-            // not the most frequently
-            // cited culprit, an @Id generator, because we don’t use one).
+            // Hibernate’s session.save() does an insert and then an update operation on each record, so 
+            // switching to JDBC to do an insert only, halves the time it takes to do this operation
+            // even without further batch optimizations. I was not able to determine why Hibernate is doing 
+            // this (it’s not the most frequently cited culprit, an @Id generator, because we don’t use one).
             Stopwatch createMetadataStopwatch = Stopwatch.createStarted();
             session.doWork(persistRecordsInBatches(metadata));
             createMetadataStopwatch.stop();
@@ -206,11 +202,10 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     }
 
     /**
-     * For batch operations to work efficiently using the MySQL driver,
-     * rewriteBatchedStatements=true must be included in the connector string, auto
-     * commit must be off, and you must use the batch commit method. A batch size of
-     * 100 seems about optimal (values below lose performance but I cannot measure
-     * any benefit to having larger values).
+     * For batch operations to work efficiently using the MySQL driver, rewriteBatchedStatements=true 
+     * must be included in the connector string, auto commit must be off, and you must use the batch 
+     * commit method. A batch size of 100 seems about optimal (values below lose performance but I 
+     * cannot measure any benefit to having larger values).
      */
     protected Work persistRecordsInBatches(List<TimelineMetadata> metadata) {
         return (connection) -> {

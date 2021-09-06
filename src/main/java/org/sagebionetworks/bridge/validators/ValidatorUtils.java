@@ -75,8 +75,7 @@ public class ValidatorUtils {
                 errors.rejectValue("password", "must contain at least one number (0-9)");
             }
             if (passwordPolicy.isSymbolRequired() && !password.matches(".*\\p{Punct}+.*")) {
-                errors.rejectValue("password",
-                        "must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )");
+                errors.rejectValue("password", "must contain at least one symbol ( !\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ )");
             }
             if (passwordPolicy.isLowerCaseRequired() && !password.matches(".*[a-z]+.*")) {
                 errors.rejectValue("password", "must contain at least one lowercase letter (a-z)");
@@ -235,7 +234,7 @@ public class ValidatorUtils {
         try {
             Duration d = period.toStandardDuration();
             return func.apply(d);
-        } catch (UnsupportedOperationException e) {
+        } catch(UnsupportedOperationException e) {
             return 0L;
         }
     }
