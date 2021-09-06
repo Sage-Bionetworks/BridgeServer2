@@ -219,6 +219,14 @@ public class ValidatorUtils {
         return convertPeriod(period, (d) -> d.getStandardMinutes());
     }
     
+    /**
+     * This converts the period to days, but only those fields that have a 
+     * conventional measurement in days (so months and years are ignored).
+     */
+    public static final long periodInDays(Period period) {
+    	return convertPeriod(period, (d) -> d.getStandardDays());
+    }
+    
     private static final long convertPeriod(Period period, Function<Duration,Long> func) {
         if (period == null) {
             return 0L;

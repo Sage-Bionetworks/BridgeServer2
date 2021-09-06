@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.schedules2.Schedule2Test.createValidSchedule;
+import static org.sagebionetworks.bridge.validators.Schedule2Validator.CANNOT_BE_LONGER_THAN_FIVE_YEARS;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
@@ -95,6 +96,13 @@ public class Schedule2ValidatorTest extends Mockito {
         Schedule2 schedule = createValidSchedule();
         schedule.setDuration(Period.parse("P3Y"));
         assertValidatorMessage(INSTANCE, schedule, "duration", WRONG_LONG_PERIOD);
+    }
+    
+    @Test
+    public void durationTooLong() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.setDuration(Period.parse("P260W1D"));
+        assertValidatorMessage(INSTANCE, schedule, "duration", CANNOT_BE_LONGER_THAN_FIVE_YEARS);
     }
     
     @Test

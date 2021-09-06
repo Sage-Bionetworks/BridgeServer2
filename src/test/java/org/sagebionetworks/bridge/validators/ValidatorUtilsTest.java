@@ -411,6 +411,15 @@ public class ValidatorUtilsTest extends Mockito {
     }
     
     @Test
+    public void periodInDays() {
+        Period period = Period.parse("P3W2D"); // 23 days
+        assertEquals(ValidatorUtils.periodInDays(period), 23);
+        
+        period = Period.parse("P0W0DT24H"); // 1 days
+        assertEquals(ValidatorUtils.periodInDays(period), 1);
+    }
+    
+    @Test
     public void validatePassword_isBlank() {
         Errors errors = mock(Errors.class);
         validatePassword(errors, DEFAULT_PASSWORD_POLICY, "");

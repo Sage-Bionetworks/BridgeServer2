@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInDays;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
 
@@ -14,7 +15,10 @@ import org.sagebionetworks.bridge.models.schedules2.Session;
 
 public class Schedule2Validator implements Validator {
     
-    public static final Schedule2Validator INSTANCE = new Schedule2Validator();
+	public static final Schedule2Validator INSTANCE = new Schedule2Validator();
+    
+    public static final long FIVE_YEARS_IN_DAYS = 5 * 52 * 7;
+    static final String CANNOT_BE_LONGER_THAN_FIVE_YEARS = "cannot be longer than five years";
     
     @Override
     public boolean supports(Class<?> clazz) {
@@ -38,6 +42,9 @@ public class Schedule2Validator implements Validator {
             errors.rejectValue("guid", CANNOT_BE_BLANK);
         }
         validateFixedLengthLongPeriod(errors, schedule.getDuration(), "duration", true);
+        if (periodInDays(schedule.getDuration()) > FIVE_YEARS_IN_DAYS) {
+        	errors.rejectValue("duration", CANNOT_BE_LONGER_THAN_FIVE_YEARS);
+        }
         if (schedule.getCreatedOn() == null) {
             errors.rejectValue("createdOn", CANNOT_BE_NULL);
         }
