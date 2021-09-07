@@ -100,7 +100,7 @@ public class Schedule2ValidatorTest extends Mockito {
     @Test
     public void durationTooLong() {
         Schedule2 schedule = createValidSchedule();
-        schedule.setDuration(Period.parse("P260W1D"));
+        schedule.setDuration(Period.parse("P260W6D"));
         assertValidatorMessage(INSTANCE, schedule, "duration", CANNOT_BE_LONGER_THAN_FIVE_YEARS);
     }
 

@@ -17,7 +17,7 @@ public class Schedule2Validator implements Validator {
 
     public static final Schedule2Validator INSTANCE = new Schedule2Validator();
 
-    public static final long FIVE_YEARS_IN_DAYS = 5 * 52 * 7;
+    public static final long FIVE_YEARS_IN_DAYS = 5 * 365;
     static final String CANNOT_BE_LONGER_THAN_FIVE_YEARS = "cannot be longer than five years";
 
     @Override
