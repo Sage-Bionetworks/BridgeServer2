@@ -7,12 +7,10 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
-import static org.sagebionetworks.bridge.BridgeUtils.parseAutoEventValue;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.DELETE_INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.CREATE_INSTANCE;
@@ -22,10 +20,8 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import org.joda.time.DateTime;
-import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -34,13 +30,12 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
-import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
-import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 
 /**
@@ -67,7 +62,7 @@ public class StudyActivityEventService {
             CREATED_ON_FIELD, INSTALL_LINK_SENT_FIELD);
 
     private StudyActivityEventDao dao;
-    private AppService appService;
+    private StudyService studyService;
     private AccountService accountService;
     private ActivityEventService activityEventService;
     
@@ -76,8 +71,8 @@ public class StudyActivityEventService {
         this.dao = dao;
     }
     @Autowired
-    final void setAppService(AppService appService) {
-        this.appService = appService;
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     @Autowired
     final void setAccountService(AccountService accountService) {
@@ -100,8 +95,8 @@ public class StudyActivityEventService {
         checkNotNull(request);
         checkArgument(request.getObjectType() == CUSTOM);
 
-        App app = appService.getApp(request.getAppId());
-        request.customEvents(app.getCustomEvents());
+        Study study = studyService.getStudy(request.getAppId(), request.getStudyId(), true);
+        request.customEvents(study.getCustomEventsMap());
         
         StudyActivityEvent event = request.toStudyActivityEvent();
         
@@ -118,8 +113,8 @@ public class StudyActivityEventService {
     public void publishEvent(StudyActivityEventRequest request) {
         checkNotNull(request);
 
-        App app = appService.getApp(request.getAppId());
-        request.customEvents(app.getCustomEvents());
+        Study study = studyService.getStudy(request.getAppId(), request.getStudyId(), true);
+        request.customEvents(study.getCustomEventsMap());
         request.createdOn(getCreatedOn());
         
         StudyActivityEvent event = request.toStudyActivityEvent();
@@ -131,7 +126,7 @@ public class StudyActivityEventService {
         
         if (request.getUpdateType().canUpdate(mostRecent, event)) {
             dao.publishEvent(event);
-            createAutomaticCustomEvents(app, request);
+            createAutomaticCustomEvents(study, request);
         }
     }
     
@@ -170,8 +165,8 @@ public class StudyActivityEventService {
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        App app = appService.getApp(accountId.getAppId());
-        eventId = formatActivityEventId(app.getCustomEvents().keySet(), eventId);
+        Study study = studyService.getStudy(accountId.getAppId(), studyId, true);
+        eventId = formatActivityEventId(study.getCustomEventsMap().keySet(), eventId);
         if (eventId == null) {
             throw new BadRequestException(INVALID_EVENT_ID);
         }
@@ -213,7 +208,8 @@ public class StudyActivityEventService {
     /**
      * If the triggering event is mutable, these events can be created as well.
      */
-    private void createAutomaticCustomEvents(App app, StudyActivityEventRequest request) {
+    private void createAutomaticCustomEvents(Study study, StudyActivityEventRequest request) {
+        /* This will be redone with a more explicit model of study bursts.
         String eventId = request.toStudyActivityEvent().getEventId();
         for (Map.Entry<String, String> oneAutomaticEvent : app.getAutomaticCustomEvents().entrySet()) {
             String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
@@ -233,7 +229,8 @@ public class StudyActivityEventService {
                     .toStudyActivityEvent();
                 dao.publishEvent(automaticEvent);
             }
-        }        
+        }
+        */        
     }
     
     /**

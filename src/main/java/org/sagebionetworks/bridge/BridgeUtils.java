@@ -6,6 +6,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
@@ -726,22 +727,24 @@ public class BridgeUtils {
      * confusing and discouraged).
      */
     public static String formatActivityEventId(Set<String> activityEventIds, String id) {
-        if (id != null) {
-            String lowerCased = id.toLowerCase();
-            if (lowerCased.startsWith("custom:")) {
+        if (isNotBlank(id)) {
+            boolean declaredCustom = id.toLowerCase().startsWith("custom:");
+            if (declaredCustom) {
                 id = id.substring(7);
+            }
+            if (!declaredCustom) {
+                try {
+                    String[] parts = id.split(":");
+                    ActivityEventObjectType.valueOf(parts[0].toUpperCase());
+                    return id;
+                } catch(IllegalArgumentException e) {
+                }
             }
             if (activityEventIds.contains(id)) {
                 return "custom:" + id;
             }
-            try {
-                String[] parts = id.split(":");
-                ActivityEventObjectType.valueOf(parts[0].toUpperCase());
-            } catch(IllegalArgumentException e) {
-                return null;
-            }
         }
-        return (id == null) ? null : id;
+        return null;
     }
     
     /**

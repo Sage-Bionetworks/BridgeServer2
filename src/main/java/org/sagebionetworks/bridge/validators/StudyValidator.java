@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.Phone;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigEnum;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -70,7 +69,7 @@ public class StudyValidator implements Validator {
         if (study.getPhase() == null) {
             errors.rejectValue(PHASE_FIELD, CANNOT_BE_NULL);
         }
-        if (diseases.shouldValidate()) {
+        if (diseases.getValidate()) {
             List<String> diseaseValues = diseases.getEntryValues();
             for (String oneDisease : study.getDiseases()) {
                 if (!diseaseValues.contains(oneDisease)) {
@@ -78,7 +77,7 @@ public class StudyValidator implements Validator {
                 }
             }
         }
-        if (designTypes.shouldValidate()) {
+        if (designTypes.getValidate()) {
             List<String> designTypeValues = designTypes.getEntryValues();
             for (String oneType : study.getStudyDesignTypes()) {
                 if (!designTypeValues.contains(oneType)) {
@@ -116,11 +115,6 @@ public class StudyValidator implements Validator {
                 errors.rejectValue("eventId", BRIDGE_EVENT_ID_ERROR);
             } else {
                 uniqueIds.add(customEvent.getEventId());    
-            }
-            for (ActivityEventObjectType type : ActivityEventObjectType.class.getEnumConstants()) {
-                if (type.name().equalsIgnoreCase(customEvent.getEventId())) {
-                    errors.rejectValue("eventId", "is a reserved system event ID");
-                }
             }
             if (customEvent.getUpdateType() == null) {
                 errors.rejectValue("updateType", CANNOT_BE_NULL);

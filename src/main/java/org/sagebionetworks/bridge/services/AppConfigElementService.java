@@ -19,12 +19,19 @@ import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 
 @Component
 public class AppConfigElementService {
     
+    private static final ObjectMapper MAPPER = new ObjectMapper()
+            .setSerializationInclusion(JsonInclude.Include.NON_NULL)
+            .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
     private AppConfigElementDao appConfigElementDao;
     
     @Autowired
@@ -79,7 +86,7 @@ public class AppConfigElementService {
         if (element == null) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
-        return element;
+        return localizeAppConfigEnums(element);
     }
     
     /**
@@ -112,7 +119,7 @@ public class AppConfigElementService {
         if (element == null) {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
-        return element;
+        return localizeAppConfigEnums(element);
     }
 
     public VersionHolder updateElementRevision(String appId, AppConfigElement element) {
@@ -174,4 +181,24 @@ public class AppConfigElementService {
             appConfigElementDao.deleteElementRevisionPermanently(appId, oneElement.getId(), oneElement.getRevision());
         }
     }
+    
+    /**
+     * When retrieved by editors, the AppConfigEnum entries have all the labels so they may be
+     * edited. When retrieved for UI display, each entry will select one label based on the 
+     * caller’s language, consonant with the localization behavior of our other APIs. For UI 
+     * displays, these callers should just ignore the list of labels that are still in th e
+     * AppConfigEnum entries.
+     */
+    private AppConfigElement localizeAppConfigEnums(AppConfigElement element) {
+        if (element.getId().startsWith("bridge:")) {
+            try {
+                AppConfigEnum enumElement = MAPPER.treeToValue(element.getData(), AppConfigEnum.class);
+                element.setData(MAPPER.valueToTree(enumElement));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        }
+        return element;
+    }
+
 }

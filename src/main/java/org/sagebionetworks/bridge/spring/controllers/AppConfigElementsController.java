@@ -76,15 +76,16 @@ public class AppConfigElementsController extends BaseController {
     }
     
     @GetMapping("/v3/appconfigs/elements/{id}/recent")
-    public AppConfigElement getMostRecentElement(@PathVariable String id) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+    public AppConfigElement getMostRecentElement(@PathVariable String id) throws Exception {
+        UserSession session = getAuthenticatedAndConsentedSession();
         
         return service.getMostRecentElement(session.getAppId(), id);
     }
 
     @GetMapping("/v3/appconfigs/elements/{id}/revisions/{revision}")
     public AppConfigElement getElementRevision(@PathVariable String id, @PathVariable String revision) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
         Long revisionLong = BridgeUtils.getLongOrDefault(revision, null);
         if (revisionLong == null) {
             throw new BadRequestException("Revision is not a valid revision number");
