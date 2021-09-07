@@ -12,6 +12,8 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.appconfig.AppConfigEnumId.DESIGN_TYPES;
+import static org.sagebionetworks.bridge.models.appconfig.AppConfigEnumId.DISEASES;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.ALLOWED_PHASE_TRANSITIONS;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.ANALYSIS;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.CAN_DELETE_STUDY;
@@ -27,7 +29,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 
 import org.joda.time.DateTime;
-
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
@@ -37,6 +38,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigEnum;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyPhase;
@@ -58,6 +60,8 @@ public class StudyService {
     
     private Schedule2Service scheduleService;
     
+    private AppConfigElementService configElementService;
+    
     @Autowired
     final void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
@@ -76,6 +80,11 @@ public class StudyService {
     @Autowired
     final void setSchedule2Service(Schedule2Service scheduleService) {
         this.scheduleService = scheduleService;
+    }
+    
+    @Autowired
+    final void setAppConfigElementService(AppConfigElementService configElementService) {
+        this.configElementService = configElementService;
     }
     
     public void removeScheduleFromStudies(String appId, String scheduleGuid) {
@@ -142,7 +151,12 @@ public class StudyService {
         
         study.setAppId(appId);
         study.setPhase(DESIGN);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        
+        AppConfigEnum diseases = configElementService.getAppConfigEnum(appId, DISEASES);
+        AppConfigEnum designTypes = configElementService.getAppConfigEnum(appId, DESIGN_TYPES);
+        
+        StudyValidator validator = new StudyValidator(diseases, designTypes);
+        Validate.entityThrowingException(validator, study);
         
         study.setVersion(null);
         study.setDeleted(false);
@@ -188,8 +202,12 @@ public class StudyService {
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
+        
+        AppConfigEnum diseases = configElementService.getAppConfigEnum(appId, DISEASES);
+        AppConfigEnum designTypes = configElementService.getAppConfigEnum(appId, DESIGN_TYPES);
 
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        StudyValidator validator = new StudyValidator(diseases, designTypes);
+        Validate.entityThrowingException(validator, study);
         
         VersionHolder keys = studyDao.updateStudy(study);
         

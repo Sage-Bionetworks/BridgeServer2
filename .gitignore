@@ -4,6 +4,7 @@
 target
 .classpath
 .project
+.settings
 test-output/
 dump.rdb
 /bin/

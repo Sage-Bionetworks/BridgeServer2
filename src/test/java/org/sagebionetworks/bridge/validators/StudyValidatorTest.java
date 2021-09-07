@@ -16,7 +16,6 @@ import static org.sagebionetworks.bridge.validators.StudyValidator.CONTACTS_FIEL
 import static org.sagebionetworks.bridge.validators.StudyValidator.CUSTOM_EVENTS_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.EMAIL_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.IDENTIFIER_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_DECISION_ON_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_DECISION_TYPE_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_EXPIRES_ON_FIELD;
@@ -34,9 +33,11 @@ import com.google.common.collect.ImmutableList;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigEnum;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
@@ -46,19 +47,27 @@ public class StudyValidatorTest {
     private static final LocalDate DECISION_ON = DateTime.now().toLocalDate();
     private static final LocalDate EXPIRES_ON = DateTime.now().plusDays(10).toLocalDate();
     
+    private StudyValidator validator;
     private Study study;
+    
+    @BeforeMethod
+    public void beforeMethod() {
+        AppConfigEnum diseases = new AppConfigEnum();
+        AppConfigEnum resTypes = new AppConfigEnum();
+        validator = new StudyValidator(diseases, resTypes);
+    }
     
     @Test
     public void valid() {
         study = createStudy();
-        entityThrowingException(INSTANCE, study);
+        entityThrowingException(validator, study);
     }
     
     @Test
     public void idIsRequired() {
         study = createStudy();
         study.setIdentifier(null);
-        assertValidatorMessage(INSTANCE, study, IDENTIFIER_FIELD, CANNOT_BE_BLANK);
+        assertValidatorMessage(validator, study, IDENTIFIER_FIELD, CANNOT_BE_BLANK);
     }
     
     @Test
@@ -66,28 +75,28 @@ public class StudyValidatorTest {
         study = createStudy();
         study.setIdentifier("id not valid");
         
-        assertValidatorMessage(INSTANCE, study, IDENTIFIER_FIELD, BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(validator, study, IDENTIFIER_FIELD, BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
     public void nameIsRequired() {
         study = createStudy();
         study.setName(null);
-        assertValidatorMessage(INSTANCE, study, NAME_FIELD, CANNOT_BE_BLANK);
+        assertValidatorMessage(validator, study, NAME_FIELD, CANNOT_BE_BLANK);
     }
     
     @Test
     public void phaseRequired() {
         study = createStudy();
         study.setPhase(null);
-        assertValidatorMessage(INSTANCE, study, PHASE_FIELD, CANNOT_BE_NULL);
+        assertValidatorMessage(validator, study, PHASE_FIELD, CANNOT_BE_NULL);
     }
 
     @Test
     public void appIdIsRequired() {
         study = createStudy();
         study.setAppId(null);
-        assertValidatorMessage(INSTANCE, study, APP_ID_FIELD, CANNOT_BE_BLANK);
+        assertValidatorMessage(validator, study, APP_ID_FIELD, CANNOT_BE_BLANK);
     }
     
     @Test
@@ -97,7 +106,7 @@ public class StudyValidatorTest {
         c1.setName(null);
         study.setContacts(ImmutableList.of(c1));
         
-        assertValidatorMessage(INSTANCE, study, CONTACTS_FIELD + "[0]." + NAME_FIELD, CANNOT_BE_BLANK);
+        assertValidatorMessage(validator, study, CONTACTS_FIELD + "[0]." + NAME_FIELD, CANNOT_BE_BLANK);
     }
     
     @Test
@@ -107,7 +116,7 @@ public class StudyValidatorTest {
         c1.setName("");
         study.setContacts(ImmutableList.of(c1));
         
-        assertValidatorMessage(INSTANCE, study, CONTACTS_FIELD + "[0]." + NAME_FIELD, CANNOT_BE_BLANK);
+        assertValidatorMessage(validator, study, CONTACTS_FIELD + "[0]." + NAME_FIELD, CANNOT_BE_BLANK);
     }
     
     @Test
@@ -117,7 +126,7 @@ public class StudyValidatorTest {
         c1.setRole(null);
         study.setContacts(ImmutableList.of(c1));
         
-        assertValidatorMessage(INSTANCE, study, CONTACTS_FIELD + "[0]." + ROLE_FIELD, CANNOT_BE_NULL);
+        assertValidatorMessage(validator, study, CONTACTS_FIELD + "[0]." + ROLE_FIELD, CANNOT_BE_NULL);
     }
     
     @Test
@@ -127,7 +136,7 @@ public class StudyValidatorTest {
         c1.setEmail("junk");
         study.setContacts(ImmutableList.of(c1));
         
-        assertValidatorMessage(INSTANCE, study, CONTACTS_FIELD + "[0]." + EMAIL_FIELD, INVALID_EMAIL_ERROR);
+        assertValidatorMessage(validator, study, CONTACTS_FIELD + "[0]." + EMAIL_FIELD, INVALID_EMAIL_ERROR);
     }
     
     @Test
@@ -137,7 +146,7 @@ public class StudyValidatorTest {
         c1.setPhone(new Phone("333333", "Portual"));
         study.setContacts(ImmutableList.of(c1));
         
-        assertValidatorMessage(INSTANCE, study, CONTACTS_FIELD + "[0]." + PHONE_FIELD, INVALID_PHONE_ERROR);
+        assertValidatorMessage(validator, study, CONTACTS_FIELD + "[0]." + PHONE_FIELD, INVALID_PHONE_ERROR);
     }
     
     @Test
@@ -146,7 +155,7 @@ public class StudyValidatorTest {
         study.setIrbDecisionType(APPROVED);
         study.setIrbExpiresOn(EXPIRES_ON);
         
-        assertValidatorMessage(INSTANCE, study, IRB_DECISION_ON_FIELD, CANNOT_BE_NULL);
+        assertValidatorMessage(validator, study, IRB_DECISION_ON_FIELD, CANNOT_BE_NULL);
     }
     
     @Test
@@ -155,7 +164,7 @@ public class StudyValidatorTest {
         study.setIrbDecisionOn(DECISION_ON);
         study.setIrbExpiresOn(EXPIRES_ON);
         
-        assertValidatorMessage(INSTANCE, study, IRB_DECISION_TYPE_FIELD, CANNOT_BE_NULL);
+        assertValidatorMessage(validator, study, IRB_DECISION_TYPE_FIELD, CANNOT_BE_NULL);
     }
     
     @Test
@@ -164,7 +173,7 @@ public class StudyValidatorTest {
         study.setIrbDecisionOn(DECISION_ON);
         study.setIrbDecisionType(APPROVED);
         
-        assertValidatorMessage(INSTANCE, study, IRB_EXPIRES_ON_FIELD, CANNOT_BE_NULL);
+        assertValidatorMessage(validator, study, IRB_EXPIRES_ON_FIELD, CANNOT_BE_NULL);
     }
     
     @Test
@@ -173,7 +182,7 @@ public class StudyValidatorTest {
         study.setIrbDecisionType(EXEMPT);
         study.setIrbDecisionOn(DECISION_ON);
         study.setIrbExpiresOn(null);
-        entityThrowingException(INSTANCE, study);
+        entityThrowingException(validator, study);
     }
     
     @Test
@@ -181,7 +190,7 @@ public class StudyValidatorTest {
         study = createStudy();
         study.setContacts(null);
         
-        entityThrowingException(INSTANCE, study);
+        entityThrowingException(validator, study);
     }
     
     @Test
@@ -191,7 +200,7 @@ public class StudyValidatorTest {
         c1.setEmail(null);
         study.setContacts(ImmutableList.of(c1));
         
-        entityThrowingException(INSTANCE, study);
+        entityThrowingException(validator, study);
     }
 
     @Test
@@ -201,7 +210,7 @@ public class StudyValidatorTest {
         c1.setPhone(null);
         study.setContacts(ImmutableList.of(c1));
         
-        entityThrowingException(INSTANCE, study);
+        entityThrowingException(validator, study);
     }
     
     @Test
@@ -210,7 +219,7 @@ public class StudyValidatorTest {
         study = createStudy();
         study.getCustomEvents().add(event);
         
-        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].eventId", CANNOT_BE_BLANK);
+        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD + "[0].eventId", CANNOT_BE_BLANK);
     }
     
     @Test
@@ -219,7 +228,7 @@ public class StudyValidatorTest {
         study = createStudy();
         study.getCustomEvents().add(event);
         
-        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].eventId", CANNOT_BE_BLANK);
+        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD + "[0].eventId", CANNOT_BE_BLANK);
     }
     
     @Test
@@ -228,7 +237,7 @@ public class StudyValidatorTest {
         study = createStudy();
         study.getCustomEvents().add(event);
         
-        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].eventId", BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD + "[0].eventId", BRIDGE_EVENT_ID_ERROR);
     }
     
     @Test
@@ -237,7 +246,7 @@ public class StudyValidatorTest {
         study = createStudy();
         study.getCustomEvents().add(event);
         
-        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].eventId", "is a reserved system event ID");
+        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD + "[0].eventId", "is a reserved system event ID");
     }
     
     @Test
@@ -246,7 +255,7 @@ public class StudyValidatorTest {
         study = createStudy();
         study.getCustomEvents().add(event);
         
-        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].updateType", CANNOT_BE_NULL);
+        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD + "[0].updateType", CANNOT_BE_NULL);
     }
     
     @Test
@@ -254,7 +263,7 @@ public class StudyValidatorTest {
         study = createStudy();
         study.getCustomEvents().add(null);
         
-        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0]", CANNOT_BE_NULL);
+        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD + "[0]", CANNOT_BE_NULL);
     }
     
     @Test
@@ -264,7 +273,7 @@ public class StudyValidatorTest {
         study.getCustomEvents().add(event);
         study.getCustomEvents().add(event);
         
-        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD, "cannot contain duplidate event IDs");
+        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD, "cannot contain duplidate event IDs");
     }
     
     private Study createStudy() {

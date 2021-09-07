@@ -6,15 +6,20 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dao.AppConfigElementDao;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigEnum;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigEnumId;
 import org.sagebionetworks.bridge.validators.AppConfigElementValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableMap;
 
 @Component
@@ -75,6 +80,28 @@ public class AppConfigElementService {
             throw new EntityNotFoundException(AppConfigElement.class);
         }
         return element;
+    }
+    
+    /**
+     * Some app config elements contain enumerations that Bridge is aware of and will use to 
+     * validate some models, allowing for the configuration of this validation by end users.
+     * We know the JSON schema of these configuration elements, so we deserialize them into
+     * a specific Java model (AppConfigEnum). If the config does not exist, a model is still
+     * returned with validation set to false.
+     */
+    public AppConfigEnum getAppConfigEnum(String appId, AppConfigEnumId id) {
+        checkNotNull(appId);
+        checkNotNull(id);
+        
+        AppConfigElement element = appConfigElementDao.getMostRecentElement(appId, id.getAppConfigKey());
+        if (element != null) {
+            try {
+                return BridgeObjectMapper.get().treeToValue(element.getData(), AppConfigEnum.class);
+            } catch (JsonProcessingException e) {
+                throw new BridgeServiceException(e);
+            }
+        }
+        return new AppConfigEnum();
     }
 
     public AppConfigElement getElementRevision(String appId, String id, long revision) {

@@ -11,10 +11,12 @@ import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigEnum;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
@@ -23,8 +25,6 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class StudyValidator implements Validator {
-    
-    public static final StudyValidator INSTANCE = new StudyValidator();
     
     static final String APP_ID_FIELD = "appId";
     static final String CONTACTS_FIELD = "contacts";
@@ -38,6 +38,14 @@ public class StudyValidator implements Validator {
     static final String PHASE_FIELD = "phase";
     static final String PHONE_FIELD = "phone";
     static final String ROLE_FIELD = "role";
+    
+    private AppConfigEnum diseases;
+    private AppConfigEnum designTypes;
+    
+    public StudyValidator(AppConfigEnum diseases, AppConfigEnum designTypes) {
+        this.diseases = diseases;
+        this.designTypes = designTypes;
+    }
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -62,6 +70,23 @@ public class StudyValidator implements Validator {
         if (study.getPhase() == null) {
             errors.rejectValue(PHASE_FIELD, CANNOT_BE_NULL);
         }
+        if (diseases.shouldValidate()) {
+            List<String> diseaseValues = diseases.getEntryValues();
+            for (String oneDisease : study.getDiseases()) {
+                if (!diseaseValues.contains(oneDisease)) {
+                    errors.rejectValue("diseases", "“" + oneDisease + "” is not a recognized disease");
+                }
+            }
+        }
+        if (designTypes.shouldValidate()) {
+            List<String> designTypeValues = designTypes.getEntryValues();
+            for (String oneType : study.getStudyDesignTypes()) {
+                if (!designTypeValues.contains(oneType)) {
+                    errors.rejectValue("studyDesignTypes", "“" + oneType + "” is not a recognized study design type");
+                }
+            }
+        }
+        
         // If one of these is supplied, all three need to be supplied
         boolean validateIrb = study.getIrbDecisionType() != null ||
                 study.getIrbDecisionOn() != null ||

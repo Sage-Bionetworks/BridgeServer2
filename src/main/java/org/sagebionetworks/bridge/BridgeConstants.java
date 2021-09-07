@@ -57,6 +57,12 @@ public class BridgeConstants {
     /** The pattern used to validate activity event keys and automatic custom event keys. */
     public static final String BRIDGE_EVENT_ID_PATTERN = "^[a-zA-Z0-9_-]+$";
     
+    /** The pattern used to validate app config element IDs, which are similar to event IDs 
+     * but can be “namespaced” with the prefix “bridge:” to mark and protect system-specific,
+     * configurable enumerated value sets.
+     */
+    public static final String APP_CONFIG_ELEMENT_ID_PATTERN = "^(bridge:)?[a-zA-Z0-9_-]+$";
+    
     /** The pattern of a valid JavaScript variable/object property name. */
     public  static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";
     
