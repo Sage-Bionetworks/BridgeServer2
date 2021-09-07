@@ -14,7 +14,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.Phone;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
@@ -91,11 +90,6 @@ public class StudyValidator implements Validator {
                 errors.rejectValue("eventId", BRIDGE_EVENT_ID_ERROR);
             } else {
                 uniqueIds.add(customEvent.getEventId());    
-            }
-            for (ActivityEventObjectType type : ActivityEventObjectType.class.getEnumConstants()) {
-                if (type.name().equalsIgnoreCase(customEvent.getEventId())) {
-                    errors.rejectValue("eventId", "is a reserved system event ID");
-                }
             }
             if (customEvent.getUpdateType() == null) {
                 errors.rejectValue("updateType", CANNOT_BE_NULL);

@@ -232,15 +232,6 @@ public class StudyValidatorTest {
     }
     
     @Test
-    public void customEvents_eventIdReservedKeyword() {
-        StudyCustomEvent event = new StudyCustomEvent("Timeline_Retrieved", MUTABLE);
-        study = createStudy();
-        study.getCustomEvents().add(event);
-        
-        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].eventId", "is a reserved system event ID");
-    }
-    
-    @Test
     public void customEvents_updateTypeNull() {
         StudyCustomEvent event = new StudyCustomEvent("event", null);
         study = createStudy();
