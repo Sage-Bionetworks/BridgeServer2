@@ -7,6 +7,10 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.Label;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+// This is a nicety so the “value” and “label” properties aren’t separated by the “labels” prop.
+@JsonPropertyOrder({"value", "label", "labels", "type"})
 public final class AppConfigEnumEntry {
 
     private String value;

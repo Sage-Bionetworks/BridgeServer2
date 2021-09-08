@@ -1,11 +1,12 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.models.appconfig.AppConfigEnumId.STUDY_DISEASES;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 
@@ -36,7 +37,19 @@ public class AppConfigElementValidatorTest {
     @Test
     public void idInvalid() {
         element.setId("@bad");
-        assertValidatorMessage(VALIDATOR, element, "id", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(VALIDATOR, element, "id", BRIDGE_EVENT_ID_ERROR);
+    }
+    
+    @Test
+    public void idInvalidSystemId() {
+        element.setId("bridge:foo");
+        assertValidatorMessage(VALIDATOR, element, "id", "not a valid system configuration key");
+    }
+    
+    @Test
+    public void idValidSystemId() {
+        element.setId(STUDY_DISEASES.getAppConfigKey());
+        Validate.entityThrowingException(VALIDATOR, element);
     }
     
     @Test

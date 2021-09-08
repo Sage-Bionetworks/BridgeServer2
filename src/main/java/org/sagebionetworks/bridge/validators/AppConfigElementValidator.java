@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.APP_CONFIG_ELEMENT_ID_P
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigEnumId;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -25,6 +26,8 @@ public class AppConfigElementValidator implements Validator {
             errors.rejectValue("id", "is required");
         } else if (!appConfigElement.getId().matches(APP_CONFIG_ELEMENT_ID_PATTERN)) {
             errors.rejectValue("id", BRIDGE_EVENT_ID_ERROR);
+        } else if (appConfigElement.getId().startsWith("bridge:") && !isIdValid(appConfigElement)) {
+            errors.rejectValue("id", "not a valid system configuration key");
         }
         if (appConfigElement.getRevision() == null) {
             errors.rejectValue("revision", "is required");
@@ -34,5 +37,14 @@ public class AppConfigElementValidator implements Validator {
         if (appConfigElement.getData() == null) {
             errors.rejectValue("data", "is required");
         }
+    }
+
+    private boolean isIdValid(AppConfigElement appConfigElement) {
+        for (AppConfigEnumId oneId : AppConfigEnumId.values()) {
+            if (appConfigElement.getId().equals(oneId.getAppConfigKey())) {
+                return true;
+            }
+        }
+        return false;
     }
 }
