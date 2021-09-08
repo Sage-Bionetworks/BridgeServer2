@@ -4,6 +4,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.stream.Collectors.toSet;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.sql.Types;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -15,6 +18,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import org.hibernate.jdbc.Work;
 import org.hibernate.query.NativeQuery;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,11 +46,17 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     static final String DELETE_ORPHANED_SESSIONS = "DELETE FROM Sessions where scheduleGuid = :guid AND guid NOT IN (:guids)";
     static final String AND_DELETED = "AND deleted = 0";
     static final String AND_NOT_IN_GUIDS = "AND guid NOT IN (:guids)";
+    static final String INSERT = "INSERT INTO TimelineMetadata (appId, assessmentGuid, assessmentId, assessmentInstanceGuid, "
+            + "assessmentRevision, scheduleGuid, scheduleModifiedOn, schedulePublished, sessionGuid, sessionInstanceEndDay, "
+            + "sessionInstanceGuid, sessionInstanceStartDay, sessionStartEventId, timeWindowGuid, timeWindowPersistent, guid) "
+            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     static final String DELETE_TIMELINE_RECORDS = "DELETE FROM TimelineMetadata WHERE scheduleGuid = :scheduleGuid";
+    static final String SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE = "SELECT * FROM TimelineMetadata WHERE sessionInstanceGuid = :instanceGuid AND assessmentInstanceGuid IS NOT NULL";
 
     static final String BATCH_SIZE_PROPERTY = "schedule.batch.size";
 
     static final String APP_ID = "appId";
+    static final String INSTANCE_GUID = "instanceGuid";
     static final String OWNER_ID = "ownerId";
     static final String GUID = "guid";
     static final String GUIDS = "guids";
@@ -119,35 +129,11 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     public Schedule2 createSchedule(Schedule2 schedule) {
         checkNotNull(schedule);
 
-        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
-        List<TimelineMetadata> metadata = timeline.getMetadata();
-
         hibernateHelper.executeWithExceptionHandling(schedule, (session) -> {
-            // batch these operations. Improves network performance
-            session.setJdbcBatchSize(batchSize);
-
             session.save(schedule);
-
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            // Batch deleting/recreating rather than updating is 2-3 orders of magnitude faster.
-            NativeQuery<?> query = session.createNativeQuery(DELETE_TIMELINE_RECORDS);
-            query.setParameter(SCHEDULE_GUID, schedule.getGuid());
-            query.executeUpdate();
-
-            for (int i = 0, len = metadata.size(); i < len; i++) {
-                TimelineMetadata meta = metadata.get(i);
-                session.save(meta);
-                if (i > 0 && (i % batchSize) == 0) {
-                    session.flush();
-                    session.clear();
-                }
-            }
-            stopwatch.stop();
-            LOG.info("Persisting " + metadata.size() + " timeline metadata records in "
-                    + stopwatch.elapsed(MILLISECONDS) + " ms (batchSize = " + batchSize + ")");
-
-            return null;
+            return schedule;
         });
+        deleteAndRecreateTimelineMetadataRecords(schedule, false);
         return schedule;
     }
 
@@ -155,18 +141,13 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     public Schedule2 updateSchedule(Schedule2 schedule) {
         checkNotNull(schedule);
 
-        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
-        List<TimelineMetadata> metadata = timeline.getMetadata();
-
-        Set<String> sessionGuids = schedule.getSessions().stream().map(Session::getGuid).collect(toSet());
-
-        // Although orphanRemoval = true is set for the session collection, they do not
-        // delete when removed. So we are manually finding the removed sessions and deleting
-        // them before persisting.
+        // Update the schedule
         hibernateHelper.executeWithExceptionHandling(schedule, (session) -> {
-            // batch these operations. Improves network performance
-            session.setJdbcBatchSize(batchSize);
+            Set<String> sessionGuids = schedule.getSessions().stream().map(Session::getGuid).collect(toSet());
 
+            // Although orphanRemoval = true is set for the session collection, they do not
+            // delete when removed. So we are manually finding the removed sessions and
+            // deleting them before persisting the new set.
             QueryBuilder builder = new QueryBuilder();
             builder.append(DELETE_SESSIONS, GUID, schedule.getGuid());
             if (!sessionGuids.isEmpty()) {
@@ -180,28 +161,92 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
 
             session.update(schedule);
 
-            Stopwatch stopwatch = Stopwatch.createStarted();
-            
-            // Batch deleting/recreating rather than updating is 2-3 orders of magnitude faster.
-            query = session.createNativeQuery(DELETE_TIMELINE_RECORDS);
-            query.setParameter(SCHEDULE_GUID, schedule.getGuid());
-            query.executeUpdate();
-            // Create a new set of records
-            for (int i = 0, len = metadata.size(); i < len; i++) {
-                TimelineMetadata meta = metadata.get(i);
-                session.save(meta);
-                if (i > 0 && (i % batchSize) == 0) {
-                    session.flush();
-                    session.clear();
-                }
+            return schedule;
+        });
+        deleteAndRecreateTimelineMetadataRecords(schedule, true);
+        return schedule;
+    }
+
+    private void deleteAndRecreateTimelineMetadataRecords(Schedule2 schedule, boolean deleteFirst) {
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        List<TimelineMetadata> metadata = timeline.getMetadata();
+
+        hibernateHelper.executeWithExceptionHandling(schedule, (session) -> {
+            // batch these operations. Improves network performance
+            session.setJdbcBatchSize(batchSize);
+
+            if (deleteFirst) {
+                Stopwatch deleteMetadataStopwatch = Stopwatch.createStarted();
+                NativeQuery<?> query = session.createNativeQuery(DELETE_TIMELINE_RECORDS);
+                query.setParameter(SCHEDULE_GUID, schedule.getGuid());
+                query.executeUpdate();
+                deleteMetadataStopwatch.stop();
+
+                LOG.info("Batch deleting timeline metadata records in " + deleteMetadataStopwatch.elapsed(MILLISECONDS)
+                        + " ms");
             }
-            stopwatch.stop();
+
+            // Hibernate’s session.save() does an insert and then an update operation on each record, so 
+            // switching to JDBC to do an insert only, halves the time it takes to do this operation
+            // even without further batch optimizations. I was not able to determine why Hibernate is doing 
+            // this (it’s not the most frequently cited culprit, an @Id generator, because we don’t use one).
+            Stopwatch createMetadataStopwatch = Stopwatch.createStarted();
+            session.doWork(persistRecordsInBatches(metadata));
+            createMetadataStopwatch.stop();
+
             LOG.info("Persisting " + metadata.size() + " timeline metadata records in "
-                    + stopwatch.elapsed(MILLISECONDS) + " ms (batchSize = " + batchSize + ")");
+                    + createMetadataStopwatch.elapsed(MILLISECONDS) + " ms (batchSize = " + batchSize + ")");
 
             return null;
         });
-        return schedule;
+    }
+
+    /**
+     * For batch operations to work efficiently using the MySQL driver, rewriteBatchedStatements=true 
+     * must be included in the connector string, auto commit must be off, and you must use the batch 
+     * commit method. A batch size of 100 seems about optimal (values below lose performance but I 
+     * cannot measure any benefit to having larger values).
+     */
+    protected Work persistRecordsInBatches(List<TimelineMetadata> metadata) {
+        return (connection) -> {
+            connection.setAutoCommit(false);
+            PreparedStatement ps = connection.prepareStatement(INSERT);
+
+            for (int i = 0, len = metadata.size(); i < len; i++) {
+                TimelineMetadata meta = metadata.get(i);
+                updatePreparedStatement(ps, meta);
+                if (i > 0 && (i % batchSize) == 0) {
+                    ps.executeBatch();
+                }
+            }
+            ps.executeBatch();
+        };
+    }
+
+    // For testability, removing this to a separate method
+    protected void updatePreparedStatement(PreparedStatement ps, TimelineMetadata meta) throws SQLException {
+        ps.setString(1, meta.getAppId());
+        ps.setString(2, meta.getAssessmentGuid());
+        ps.setString(3, meta.getAssessmentId());
+        ps.setString(4, meta.getAssessmentInstanceGuid());
+        // why does setInt alone not like a null value? Not sure
+        if (meta.getAssessmentRevision() == null) {
+            ps.setNull(5, Types.NULL);
+        } else {
+            ps.setInt(5, meta.getAssessmentRevision());
+        }
+        ps.setString(6, meta.getScheduleGuid());
+        ps.setLong(7, meta.getScheduleModifiedOn().getMillis());
+        ps.setBoolean(8, meta.isSchedulePublished());
+        ps.setString(9, meta.getSessionGuid());
+        ps.setInt(10, meta.getSessionInstanceEndDay());
+        ps.setString(11, meta.getSessionInstanceGuid());
+        ps.setInt(12, meta.getSessionInstanceStartDay());
+        ps.setString(13, meta.getSessionStartEventId());
+        ps.setString(14, meta.getTimeWindowGuid());
+        ps.setBoolean(15, meta.isTimeWindowPersistent());
+        ps.setString(16, meta.getGuid());
+        ps.addBatch();
     }
 
     @Override
@@ -236,15 +281,15 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         TimelineMetadata tm = hibernateHelper.getById(TimelineMetadata.class, instanceGuid);
         return Optional.ofNullable(tm);
     }
-    
+
     @Override
     public List<TimelineMetadata> getAssessmentsForSessionInstance(String instanceGuid) {
         checkNotNull(instanceGuid);
-        
+
         QueryBuilder builder = new QueryBuilder();
-        builder.append("SELECT * FROM TimelineMetadata WHERE sessionInstanceGuid = :instanceGuid", "instanceGuid", instanceGuid);
-        builder.append("AND assessmentInstanceGuid IS NOT NULL");
-        
-        return hibernateHelper.nativeQueryGet(builder.getQuery(), builder.getParameters(), null, null, TimelineMetadata.class);
+        builder.append(SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE, INSTANCE_GUID, instanceGuid);
+
+        return hibernateHelper.nativeQueryGet(builder.getQuery(), builder.getParameters(), null, null,
+                TimelineMetadata.class);
     }
 }
