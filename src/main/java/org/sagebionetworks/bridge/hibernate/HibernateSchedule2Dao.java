@@ -18,6 +18,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import org.apache.commons.io.IOUtils;
 import org.hibernate.jdbc.Work;
 import org.hibernate.query.NativeQuery;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
@@ -209,17 +211,18 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
      */
     protected Work persistRecordsInBatches(List<TimelineMetadata> metadata) {
         return (connection) -> {
-            connection.setAutoCommit(false);
-            PreparedStatement ps = connection.prepareStatement(INSERT);
+            try (PreparedStatement ps = connection.prepareStatement(INSERT)) {
+                connection.setAutoCommit(false);
 
-            for (int i = 0, len = metadata.size(); i < len; i++) {
-                TimelineMetadata meta = metadata.get(i);
-                updatePreparedStatement(ps, meta);
-                if (i > 0 && (i % batchSize) == 0) {
-                    ps.executeBatch();
+                for (int i = 0, len = metadata.size(); i < len; i++) {
+                    TimelineMetadata meta = metadata.get(i);
+                    updatePreparedStatement(ps, meta);
+                    if (i > 0 && (i % batchSize) == 0) {
+                        ps.executeBatch();
+                    }
                 }
+                ps.executeBatch();
             }
-            ps.executeBatch();
         };
     }
 
