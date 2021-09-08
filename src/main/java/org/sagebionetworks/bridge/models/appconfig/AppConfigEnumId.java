@@ -1,8 +1,9 @@
 package org.sagebionetworks.bridge.models.appconfig;
 
 public enum AppConfigEnumId {
-    DISEASES("bridge:diseases"),
-    DESIGN_TYPES("bridge:study-design-types");
+
+    STUDY_DISEASES("bridge:study-diseases"),
+    STUDY_DESIGN_TYPES("bridge:study-design-types");
     
     private String appConfigKey;
     

@@ -12,8 +12,8 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
-import static org.sagebionetworks.bridge.models.appconfig.AppConfigEnumId.DESIGN_TYPES;
-import static org.sagebionetworks.bridge.models.appconfig.AppConfigEnumId.DISEASES;
+import static org.sagebionetworks.bridge.models.appconfig.AppConfigEnumId.STUDY_DESIGN_TYPES;
+import static org.sagebionetworks.bridge.models.appconfig.AppConfigEnumId.STUDY_DISEASES;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.ALLOWED_PHASE_TRANSITIONS;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.ANALYSIS;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.CAN_DELETE_STUDY;
@@ -152,8 +152,8 @@ public class StudyService {
         study.setAppId(appId);
         study.setPhase(DESIGN);
         
-        AppConfigEnum diseases = configElementService.getAppConfigEnum(appId, DISEASES);
-        AppConfigEnum designTypes = configElementService.getAppConfigEnum(appId, DESIGN_TYPES);
+        AppConfigEnum diseases = configElementService.getAppConfigEnum(appId, STUDY_DISEASES);
+        AppConfigEnum designTypes = configElementService.getAppConfigEnum(appId, STUDY_DESIGN_TYPES);
         
         StudyValidator validator = new StudyValidator(diseases, designTypes);
         Validate.entityThrowingException(validator, study);
@@ -203,8 +203,8 @@ public class StudyService {
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
         
-        AppConfigEnum diseases = configElementService.getAppConfigEnum(appId, DISEASES);
-        AppConfigEnum designTypes = configElementService.getAppConfigEnum(appId, DESIGN_TYPES);
+        AppConfigEnum diseases = configElementService.getAppConfigEnum(appId, STUDY_DISEASES);
+        AppConfigEnum designTypes = configElementService.getAppConfigEnum(appId, STUDY_DESIGN_TYPES);
 
         StudyValidator validator = new StudyValidator(diseases, designTypes);
         Validate.entityThrowingException(validator, study);

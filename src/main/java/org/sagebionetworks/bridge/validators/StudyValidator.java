@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigEnum;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -33,6 +34,8 @@ public class StudyValidator implements Validator {
     static final String IRB_DECISION_TYPE_FIELD = "irbDecisionType";
     static final String IRB_EXPIRES_ON_FIELD = "irbExpiresOn";
     static final String CUSTOM_EVENTS_FIELD = "customEvents";
+    static final String DISEASES_FIELD = "diseases";
+    static final String STUDY_DESIGN_TYPES_FIELD = "studyDesignTypes";
     static final String NAME_FIELD = "name";
     static final String PHASE_FIELD = "phase";
     static final String PHONE_FIELD = "phone";
@@ -73,7 +76,7 @@ public class StudyValidator implements Validator {
             List<String> diseaseValues = diseases.getEntryValues();
             for (String oneDisease : study.getDiseases()) {
                 if (!diseaseValues.contains(oneDisease)) {
-                    errors.rejectValue("diseases", "“" + oneDisease + "” is not a recognized disease");
+                    errors.rejectValue(DISEASES_FIELD, "“" + oneDisease + "” is not a recognized disease");
                 }
             }
         }
@@ -81,7 +84,7 @@ public class StudyValidator implements Validator {
             List<String> designTypeValues = designTypes.getEntryValues();
             for (String oneType : study.getStudyDesignTypes()) {
                 if (!designTypeValues.contains(oneType)) {
-                    errors.rejectValue("studyDesignTypes", "“" + oneType + "” is not a recognized study design type");
+                    errors.rejectValue(STUDY_DESIGN_TYPES_FIELD, "“" + oneType + "” is not a recognized study design type");
                 }
             }
         }
@@ -115,6 +118,11 @@ public class StudyValidator implements Validator {
                 errors.rejectValue("eventId", BRIDGE_EVENT_ID_ERROR);
             } else {
                 uniqueIds.add(customEvent.getEventId());    
+            }
+            for (ActivityEventObjectType type : ActivityEventObjectType.class.getEnumConstants()) {
+                if (type.name().equalsIgnoreCase(customEvent.getEventId())) {
+                    errors.rejectValue("eventId", "is a reserved system event ID");
+                }
             }
             if (customEvent.getUpdateType() == null) {
                 errors.rejectValue("updateType", CANNOT_BE_NULL);

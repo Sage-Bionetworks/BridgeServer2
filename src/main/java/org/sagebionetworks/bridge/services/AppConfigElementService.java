@@ -184,10 +184,10 @@ public class AppConfigElementService {
     
     /**
      * When retrieved by editors, the AppConfigEnum entries have all the labels so they may be
-     * edited. When retrieved for UI display, each entry will select one label based on the 
-     * caller’s language, consonant with the localization behavior of our other APIs. For UI 
-     * displays, these callers should just ignore the list of labels that are still in th e
-     * AppConfigEnum entries.
+     * edited as JSON. When retrieved for UI display, each entry will select one label based on 
+     * the caller’s language, consonant with the localization behavior of our other APIs. For UI 
+     * displays, these callers should just ignore the list of labels that are still in the
+     * AppConfigEnum entries, and use the “label” field.
      */
     private AppConfigElement localizeAppConfigEnums(AppConfigElement element) {
         if (element.getId().startsWith("bridge:")) {

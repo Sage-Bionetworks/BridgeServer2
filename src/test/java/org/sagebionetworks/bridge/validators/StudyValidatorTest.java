@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.validators.StudyValidator.APP_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.CONTACTS_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.CUSTOM_EVENTS_FIELD;
+import static org.sagebionetworks.bridge.validators.StudyValidator.DISEASES_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.EMAIL_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.IDENTIFIER_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_DECISION_ON_FIELD;
@@ -23,6 +24,7 @@ import static org.sagebionetworks.bridge.validators.StudyValidator.NAME_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.PHASE_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.PHONE_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.ROLE_FIELD;
+import static org.sagebionetworks.bridge.validators.StudyValidator.STUDY_DESIGN_TYPES_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
@@ -30,6 +32,7 @@ import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR
 import static org.sagebionetworks.bridge.validators.Validate.entityThrowingException;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -38,6 +41,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigEnum;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigEnumEntry;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
@@ -275,6 +279,50 @@ public class StudyValidatorTest {
         
         assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD, "cannot contain duplidate event IDs");
     }
+
+    @Test
+    public void diseases_invalidValue() {
+        validator = new StudyValidator(createDiseasesEnum(), new AppConfigEnum());
+        
+        study = createStudy();
+        study.setDiseases(ImmutableSet.of("Wrist pain"));
+
+        assertValidatorMessage(validator, study, DISEASES_FIELD, "“Wrist pain” is not a recognized disease");
+    }
+    
+    @Test
+    public void diseases_skipValidation() {
+        AppConfigEnum configEnum = createDiseasesEnum();
+        configEnum.setValidate(false);
+        validator = new StudyValidator(configEnum, new AppConfigEnum());
+        
+        study = createStudy();
+        study.setDiseases(ImmutableSet.of("Wrist pain"));
+
+        entityThrowingException(validator, study);
+    }
+    
+    @Test
+    public void studyDesignTypes_invalidValue() {
+        validator = new StudyValidator(new AppConfigEnum(), createStudyDesignsEnum());
+        
+        study = createStudy();
+        study.setStudyDesignTypes(ImmutableSet.of("Cool"));
+
+        assertValidatorMessage(validator, study, STUDY_DESIGN_TYPES_FIELD, "“Cool” is not a recognized study design type");
+    }
+    
+    @Test
+    public void studyDesignTypes_skipValidation() {
+        AppConfigEnum configEnum = createStudyDesignsEnum();
+        configEnum.setValidate(false);
+        validator = new StudyValidator(new AppConfigEnum(), configEnum);
+        
+        study = createStudy();
+        study.setStudyDesignTypes(ImmutableSet.of("Cool"));
+
+        entityThrowingException(validator, study);
+    }
     
     private Study createStudy() {
         Study study = Study.create();
@@ -294,4 +342,29 @@ public class StudyValidatorTest {
         return contact;
     }
     
+    private AppConfigEnum createDiseasesEnum() {
+        AppConfigEnumEntry e1 = new AppConfigEnumEntry();
+        e1.setValue("Growing pains");
+        
+        AppConfigEnumEntry e2 = new AppConfigEnumEntry();
+        e2.setValue("Yips");
+        
+        AppConfigEnum configEnum = new AppConfigEnum();
+        configEnum.setValidate(true);
+        configEnum.setEntries(ImmutableList.of(e1, e2));
+        return configEnum;
+    }
+
+    private AppConfigEnum createStudyDesignsEnum() {
+        AppConfigEnumEntry e1 = new AppConfigEnumEntry();
+        e1.setValue("Observational");
+        
+        AppConfigEnumEntry e2 = new AppConfigEnumEntry();
+        e2.setValue("Experimental");
+        
+        AppConfigEnum configEnum = new AppConfigEnum();
+        configEnum.setValidate(true);
+        configEnum.setEntries(ImmutableList.of(e1, e2));
+        return configEnum;
+    }
 }

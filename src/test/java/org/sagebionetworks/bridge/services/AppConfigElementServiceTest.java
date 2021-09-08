@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.TestConstants.LABELS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.models.appconfig.AppConfigEnumId.STUDY_DISEASES;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -23,7 +26,7 @@ import org.mockito.Spy;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.AppConfigElementDao;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
@@ -31,7 +34,12 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigEnum;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigEnumEntry;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigEnumId;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 
 public class AppConfigElementServiceTest {
@@ -61,6 +69,7 @@ public class AppConfigElementServiceTest {
     @AfterMethod
     public void after() {
         DateTimeUtils.setCurrentMillisSystem();
+        RequestContext.set(NULL_INSTANCE);
     }
 
     @Test
@@ -158,6 +167,7 @@ public class AppConfigElementServiceTest {
     @Test
     public void getMostRecentElement() {
         AppConfigElement element = AppConfigElement.create();
+        element.setId("id");
         when(dao.getMostRecentElement(TEST_APP_ID, "id")).thenReturn(element);
         
         AppConfigElement returned = service.getMostRecentElement(TEST_APP_ID, "id");
@@ -172,11 +182,29 @@ public class AppConfigElementServiceTest {
         
         verify(dao).getMostRecentElement(TEST_APP_ID, "id");
     }
+    
+    @Test
+    public void getMostRecentElementLocalizesAppConfigEnum() {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId("bridge:id");
+        element.setData(new ObjectMapper().valueToTree(createAppConfigEnum()));
+        
+        when(dao.getMostRecentElement(TEST_APP_ID, "id")).thenReturn(element);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerLanguages(ImmutableList.of("fr")).build());
+        
+        AppConfigElement returned = service.getMostRecentElement(TEST_APP_ID, "id");
+        
+        JsonNode data = returned.getData();
+        assertEquals(data.get("entries").get(0).get("label").textValue(), "French");
+    }
 
     @Test
     public void getElementRevision() {
         AppConfigElement element = AppConfigElement.create();
-        when(dao.getElementRevision(TEST_APP_ID, "id", 3L)).thenReturn(AppConfigElement.create());
+        element.setId("id");
+        when(dao.getElementRevision(TEST_APP_ID, "id", 3L)).thenReturn(element);
         
         AppConfigElement returned = service.getElementRevision(TEST_APP_ID, "id", 3L);
         assertEquals(returned, element);
@@ -190,6 +218,24 @@ public class AppConfigElementServiceTest {
         
         verify(dao).getElementRevision(TEST_APP_ID, "id", 3L);
     }
+    
+    @Test
+    public void getElementRevisionLocalizesAppConfigEnum() {
+        AppConfigElement element = AppConfigElement.create();
+        element.setId("bridge:id");
+        element.setData(new ObjectMapper().valueToTree(createAppConfigEnum()));
+        
+        when(dao.getElementRevision(TEST_APP_ID, "id", 1)).thenReturn(element);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerLanguages(ImmutableList.of("fr")).build());
+        
+        AppConfigElement returned = service.getElementRevision(TEST_APP_ID, "id", 1);
+        
+        JsonNode data = returned.getData();
+        assertEquals(data.get("entries").get(0).get("label").textValue(), "French");
+    }
+
 
     @Test
     public void updateElementRevision() {
@@ -327,5 +373,43 @@ public class AppConfigElementServiceTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteElementRevisionPermanentlyThatDoesNotExist() {
         service.deleteElementRevisionPermanently(TEST_APP_ID, "id", 3L);
-    }    
+    }
+    
+    @Test
+    public void getAppConfigEnum() {
+        AppConfigEnum configEnum = createAppConfigEnum();
+
+        JsonNode node = new ObjectMapper().valueToTree(configEnum);
+        
+        AppConfigElement element = AppConfigElement.create();
+        element.setData(node);
+        when(dao.getMostRecentElement(TEST_APP_ID, STUDY_DISEASES.getAppConfigKey())).thenReturn(element);
+        
+        AppConfigEnum retValue = service.getAppConfigEnum(TEST_APP_ID, STUDY_DISEASES);
+        assertEquals(retValue, configEnum);
+    }
+    
+    @Test
+    public void getAppConfigEnum_notFound() {
+        when(dao.getMostRecentElement(TEST_APP_ID, STUDY_DISEASES.getAppConfigKey())).thenReturn(null);
+        
+        AppConfigEnum retValue = service.getAppConfigEnum(TEST_APP_ID, STUDY_DISEASES);
+        assertEquals(retValue, new AppConfigEnum());
+        
+        assertFalse(retValue.getValidate());
+    }
+
+    private AppConfigEnum createAppConfigEnum() {
+        AppConfigEnumEntry entry1 = new AppConfigEnumEntry();
+        entry1.setValue("Disease");
+        entry1.setLabels(LABELS);
+        AppConfigEnumEntry entry2 = new AppConfigEnumEntry();
+        entry2.setValue("B");
+        AppConfigEnumEntry entry3 = new AppConfigEnumEntry();
+        entry3.setValue("C");
+        AppConfigEnum configEnum = new AppConfigEnum();
+        configEnum.setValidate(true);
+        configEnum.setEntries(ImmutableList.of(entry1, entry2, entry3));
+        return configEnum;
+    }
 }

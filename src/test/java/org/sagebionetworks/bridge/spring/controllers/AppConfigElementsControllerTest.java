@@ -79,10 +79,10 @@ public class AppConfigElementsControllerTest {
         session.setAppId(TEST_APP_ID);
         
         doReturn(mockRequest).when(controller).request();
+        doReturn(session).when(controller).getAuthenticatedSession();
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(Roles.DEVELOPER);
     }
-    
     
     @Test
     public void verifyAnnotations() throws Exception {

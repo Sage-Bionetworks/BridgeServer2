@@ -1,10 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
@@ -39,6 +34,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -56,6 +52,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.appconfig.AppConfigEnum;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
@@ -63,7 +60,7 @@ import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
-public class StudyServiceTest {
+public class StudyServiceTest extends Mockito {
     private static final PagedResourceList<Study> STUDIES = new PagedResourceList<>(
             ImmutableList.of(Study.create(), Study.create()), 5);
     private static final VersionHolder VERSION_HOLDER = new VersionHolder(1L);
@@ -84,6 +81,9 @@ public class StudyServiceTest {
     @Mock
     private Schedule2Service mockScheduleService;
     
+    @Mock
+    private AppConfigElementService mockConfigElementService;
+    
     @Captor
     private ArgumentCaptor<Study> studyCaptor;
     
@@ -93,6 +93,9 @@ public class StudyServiceTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
+        
+        AppConfigEnum configEnum = new AppConfigEnum();
+        when(mockConfigElementService.getAppConfigEnum(eq(TEST_APP_ID), any())).thenReturn(configEnum);
     }
     
     @AfterMethod

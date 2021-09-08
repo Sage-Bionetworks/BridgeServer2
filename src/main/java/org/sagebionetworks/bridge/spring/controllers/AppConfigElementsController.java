@@ -32,67 +32,63 @@ public class AppConfigElementsController extends BaseController {
 
     private static final String INCLUDE_DELETED_PARAM = "includeDeleted";
     private AppConfigElementService service;
-    
+
     @Autowired
     final void setAppConfigElementService(AppConfigElementService service) {
         this.service = service;
     }
-    
+
     @GetMapping("/v3/appconfigs/elements")
     public ResourceList<AppConfigElement> getMostRecentElements(@RequestParam String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
-        
-        List<AppConfigElement> elements = service.getMostRecentElements(session.getAppId(),
-                includeDeletedFlag);
-        
-        return new ResourceList<AppConfigElement>(elements)
-                .withRequestParam(INCLUDE_DELETED_PARAM, includeDeletedFlag);
+
+        List<AppConfigElement> elements = service.getMostRecentElements(session.getAppId(), includeDeletedFlag);
+
+        return new ResourceList<AppConfigElement>(elements).withRequestParam(INCLUDE_DELETED_PARAM, includeDeletedFlag);
     }
-    
+
     @PostMapping("/v3/appconfigs/elements")
     @ResponseStatus(HttpStatus.CREATED)
     public VersionHolder createElement() {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         AppConfigElement element = parseJson(AppConfigElement.class);
-        
+
         VersionHolder version = service.createElement(session.getAppId(), element);
 
         // App config elements are included in the app configs, so allow cache to update
         cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getAppId()));
         return version;
     }
-    
+
     @GetMapping("/v3/appconfigs/elements/{id}")
     public ResourceList<AppConfigElement> getElementRevisions(@PathVariable String id,
             @RequestParam String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
-        List<AppConfigElement> elements = service.getElementRevisions(session.getAppId(), id,
-                includeDeletedFlag);
-        
-        return new ResourceList<AppConfigElement>(elements)
-                .withRequestParam(INCLUDE_DELETED_PARAM, includeDeletedFlag);
+        List<AppConfigElement> elements = service.getElementRevisions(session.getAppId(), id, includeDeletedFlag);
+
+        return new ResourceList<AppConfigElement>(elements).withRequestParam(INCLUDE_DELETED_PARAM, includeDeletedFlag);
     }
-    
+
     @GetMapping("/v3/appconfigs/elements/{id}/recent")
     public AppConfigElement getMostRecentElement(@PathVariable String id) throws Exception {
-        UserSession session = getAuthenticatedAndConsentedSession();
-        
+        UserSession session = getAuthenticatedSession();
+
         return service.getMostRecentElement(session.getAppId(), id);
     }
 
     @GetMapping("/v3/appconfigs/elements/{id}/revisions/{revision}")
     public AppConfigElement getElementRevision(@PathVariable String id, @PathVariable String revision) {
-        UserSession session = getAuthenticatedAndConsentedSession();
-        
+        UserSession session = getAuthenticatedSession();
+
         Long revisionLong = BridgeUtils.getLongOrDefault(revision, null);
         if (revisionLong == null) {
             throw new BadRequestException("Revision is not a valid revision number");
         }
         return service.getElementRevision(session.getAppId(), id, revisionLong);
     }
-    
+
     @PostMapping("/v3/appconfigs/elements/{id}/revisions/{revision}")
     public VersionHolder updateElementRevision(@PathVariable String id, @PathVariable String revision) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
@@ -100,11 +96,11 @@ public class AppConfigElementsController extends BaseController {
         if (revisionLong == null) {
             throw new BadRequestException("Revision is not a valid revision number");
         }
-        
+
         AppConfigElement element = parseJson(AppConfigElement.class);
         element.setId(id);
         element.setRevision(revisionLong);
-        
+
         VersionHolder holder = service.updateElementRevision(session.getAppId(), element);
 
         // App config elements are included in the app configs, so allow cache to update
@@ -115,7 +111,7 @@ public class AppConfigElementsController extends BaseController {
     @DeleteMapping("/v3/appconfigs/elements/{id}")
     public StatusMessage deleteElementAllRevisions(@PathVariable String id, @RequestParam String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
-        
+
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             service.deleteElementAllRevisionsPermanently(session.getAppId(), id);
         } else {
@@ -130,12 +126,12 @@ public class AppConfigElementsController extends BaseController {
     public StatusMessage deleteElementRevision(@PathVariable String id, @PathVariable String revision,
             @RequestParam String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
-        
+
         Long revisionLong = BridgeUtils.getLongOrDefault(revision, null);
         if (revisionLong == null) {
             throw new BadRequestException("Revision is not a valid revision number");
         }
-        
+
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             service.deleteElementRevisionPermanently(session.getAppId(), id, revisionLong);
         } else {
@@ -145,5 +141,5 @@ public class AppConfigElementsController extends BaseController {
         cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getAppId()));
         return new StatusMessage("App config element revision deleted.");
     }
-    
+
 }
