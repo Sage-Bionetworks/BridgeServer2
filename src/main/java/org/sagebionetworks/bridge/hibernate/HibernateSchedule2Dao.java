@@ -211,10 +211,8 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
      */
     protected Work persistRecordsInBatches(List<TimelineMetadata> metadata) {
         return (connection) -> {
-            PreparedStatement ps = null;
-            try {
+            try (PreparedStatement ps = connection.prepareStatement(INSERT)) {
                 connection.setAutoCommit(false);
-                ps = connection.prepareStatement(INSERT);
 
                 for (int i = 0, len = metadata.size(); i < len; i++) {
                     TimelineMetadata meta = metadata.get(i);
@@ -224,12 +222,6 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
                     }
                 }
                 ps.executeBatch();
-            } finally {
-                try {
-                    ps.close();    
-                } catch(SQLException e) {
-                    throw new BridgeServiceException("Could not clean up prepared statement", e);
-                }
             }
         };
     }
