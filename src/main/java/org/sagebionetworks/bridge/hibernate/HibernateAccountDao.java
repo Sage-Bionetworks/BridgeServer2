@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.hibernate;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.ResourceList.ADMIN_ONLY;
@@ -193,7 +194,7 @@ public class HibernateAccountDao implements AccountDao {
                 String enrolledInStudy = search.getEnrolledInStudyId();
                 if (enrolledInStudy != null) {
                     where.appendRequired("enrollment.studyId = :studyId", "studyId", enrolledInStudy);
-                } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, RESEARCHER, WORKER)) {
+                } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, DEVELOPER, RESEARCHER, WORKER)) {
                     where.appendRequired("enrollment.studyId IN (:studies)", "studies", callerStudies);
                 }
             }

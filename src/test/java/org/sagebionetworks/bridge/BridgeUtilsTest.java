@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge;
 
-import static java.util.stream.Collectors.toSet;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -20,7 +18,6 @@ import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,7 +31,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
@@ -298,102 +294,6 @@ public class BridgeUtilsTest {
     public void collectStudyIdsNullsAreIgnored() {
         Set<String> externalIds = BridgeUtils.collectStudyIds(Account.create());
         assertEquals(externalIds, ImmutableSet.of());
-    }
-    
-    @Test
-    public void filterForStudyAccountRemovesUnsharedStudyIds() {
-        Set<String> studies = ImmutableSet.of("studyA");
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(TEST_USER_ID)
-                .withOrgSponsoredStudies(studies).build());
-        
-        Account account = BridgeUtils.filterForStudy(getAccountWithStudy("studyB", "studyA"));
-        assertEquals(account.getEnrollments().size(), 1);
-        assertEquals(Iterables.getFirst(account.getEnrollments(), null).getStudyId(), "studyA");
-        
-        RequestContext.set(null);
-    }
-    
-    @Test
-    public void filterForStudyAccountReturnsAllUnsharedStudyIdsForNonStudyResearcher() {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        
-        Account account = BridgeUtils.filterForStudy(getAccountWithStudy("studyB", "studyA"));
-        assertEquals(account.getEnrollments().size(), 2);
-    }
-    
-    @Test
-    public void filterForStudyAccountNullReturnsNull() {
-        assertNull(BridgeUtils.filterForStudy((Account)null));
-    }
-    
-    @Test
-    public void filterForStudyAccountNoContextReturnsAccount() {
-        RequestContext.set(RequestContext.NULL_INSTANCE);
-        assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
-    }
-    
-    @Test
-    public void filterForStudyAccountNoContextWithStudyDoesNotReturnAccount() {
-        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
-        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
-    }
-    
-    @Test
-    public void filterForStudyAccountWithStudiesHidesNormalAccount() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(TEST_USER_ID)
-                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
-        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
-        RequestContext.set(null);
-    }
-
-    @Test
-    public void filterForStudyAccountWhichIsSelfReturnsStudyAccount() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("id").build());
-        assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
-    }
-    
-    @Test
-    public void filterForStudyAccountWithMismatchedStudiesHidesStudyAccount() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(TEST_USER_ID)
-                .withOrgSponsoredStudies(ImmutableSet.of("notStudyA")).build());
-        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
-    }
-    
-    @Test
-    public void filterForStudyAccountReturnsSelfAccount() {
-        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID)
-                .withOrgSponsoredStudies(ImmutableSet.of("A")).build());
-        
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        
-        assertNotNull(BridgeUtils.filterForStudy(account));
-    }
-
-    @Test
-    public void filterForStudyAccountNotSelfReturnsNull() {
-        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID)
-                .withOrgSponsoredStudies(ImmutableSet.of("A")).build());
-        
-        Account account = Account.create();
-        account.setId("notTheSameUser");
-        
-        assertNull(BridgeUtils.filterForStudy(account));
-    }
-    
-    private Account getAccountWithStudy(String... studyIds) {
-        Account account = Account.create();
-        account.setId("id");
-        Set<Enrollment> enrollments = Arrays.asList(studyIds)
-                .stream()
-                .map(id -> Enrollment.create(TEST_APP_ID, id, "accountId"))
-                .collect(toSet());
-        account.setEnrollments(enrollments);
-        return account;
     }
     
     @Test

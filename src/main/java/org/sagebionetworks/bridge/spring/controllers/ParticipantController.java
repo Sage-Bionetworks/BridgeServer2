@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.WORKER;
@@ -128,7 +129,7 @@ public class ParticipantController extends BaseController {
             "/v3/participants/{userId}/activityevents"})
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage createCustomActivityEvent(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         App app = appService.getApp(session.getAppId());
         
         CustomActivityEventRequest activityEvent = parseJson(CustomActivityEventRequest.class);
@@ -277,7 +278,7 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String phoneFilter, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate, @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         App app = appService.getApp(session.getAppId());
         
         return getParticipantsInternal(app, offsetBy, pageSize, emailFilter, phoneFilter, startDate,
@@ -286,7 +287,7 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/search")
     public PagedResourceList<AccountSummary> searchForAccountSummaries() {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         App app = appService.getApp(session.getAppId());
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
@@ -320,7 +321,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants")
     @ResponseStatus(HttpStatus.CREATED)
     public IdentifierHolder createParticipant() {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         App app = appService.getApp(session.getAppId());
         
         StudyParticipant participant = parseJson(StudyParticipant.class);

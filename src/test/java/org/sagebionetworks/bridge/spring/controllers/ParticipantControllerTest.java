@@ -428,10 +428,13 @@ public class ParticipantControllerTest extends Mockito {
         verify(mockParticipantService).getParticipant(app, "aUser", true);
     }
     
+    // This test and some others here are now somewhat silly since devs can call these 
+    // methods and they fail much deeper in the system, when verifying the account being
+    // operated on is a test account. Still this security restrict exists.
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void getParticipantDeveloperIsNotSelf() throws Exception {
+    public void getParticipantWorkerIsNotSelf() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(ImmutableSet.of(DEVELOPER)).build());
+                .withRoles(ImmutableSet.of(WORKER)).build());
 
         controller.getParticipant("aUser", true);
     }
@@ -955,7 +958,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void cannotResetPasswordIfNotResearcher() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withId("notUserId").withRoles(ImmutableSet.of(DEVELOPER)).build();
+                .withId("notUserId").withRoles(ImmutableSet.of(WORKER)).build();
         session.setParticipant(participant);
 
         controller.requestResetPassword(TEST_USER_ID);
@@ -1501,7 +1504,8 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteTestUserNotAResearcher() {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(Roles.DEVELOPER))
+        participant = new StudyParticipant.Builder().copyOf(participant)
+                .withRoles(ImmutableSet.of(WORKER))
                 .withId("notUserId").build();
         session.setParticipant(participant);
 

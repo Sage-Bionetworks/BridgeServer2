@@ -29,6 +29,24 @@ public class AuthEvaluator {
     public AuthEvaluator() {
         predicates = new HashSet<>();
     }
+    
+    public AuthEvaluator hasOnlyRoles(Roles... roles) {
+        predicates.add((factMap) -> {
+            RequestContext context = RequestContext.get();
+            if (context.getCallerRoles().isEmpty() && roles.length > 0) {
+                return false;
+            }
+            Set<Roles> requiredRoles = ImmutableSet.copyOf(roles);
+            for (Roles role : context.getCallerRoles()) {
+                if (!requiredRoles.contains(role)) {
+                    return false;
+                }
+            }
+            return true;
+        });
+        return this;
+    }
+
     /**
      * Caller must have one of the supplied roles. If no roles are included, the caller must 
      * have any role (they must be an administrative account).
@@ -115,6 +133,15 @@ public class AuthEvaluator {
         return this;
     }
 
+    public AuthEvaluator isNotSelf() {
+        predicates.add((factMap) -> {
+            String userId = factMap.get(USER_ID);
+            String callerUserId = RequestContext.get().getCallerUserId();
+            return callerUserId != null && !callerUserId.equals(userId);
+        });
+        return this;
+    }
+    
     public AuthEvaluator isSharedOwner() {
         predicates.add((factMap) -> {
             String ownerId = factMap.get(OWNER_ID);

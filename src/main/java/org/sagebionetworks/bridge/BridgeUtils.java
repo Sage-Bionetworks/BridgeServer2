@@ -4,14 +4,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
-import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
@@ -152,40 +149,6 @@ public class BridgeUtils {
         return account.getActiveEnrollments().stream()
                 .map(Enrollment::getStudyId)
                 .collect(toImmutableSet());
-    }
-    
-    /**
-     * Return the account if the caller has access to it; false otherwise. Currently, 
-     * the account must be 1) the caller's account; 2) enrolled in a study that the 
-     * caller has access to; or 3) the caller is associated to no studies at all 
-     * (this last part is transitional as we migrate to a multi-study security model). 
-     * Do not call this method before updating the account; this method may remove
-     * enrollments from the account that are not visible to the caller so it can be
-     * displayed to the caller without leaking enrollment information.
-     */
-    public static Account filterForStudy(Account account) {
-        if (account != null) {
-            RequestContext context = RequestContext.get();
-            Set<String> callerStudies = context.getOrgSponsoredStudies();
-            
-            // If this is a call for one’s own record, or the caller is an admin or 
-            // worker, or the account is in the same organization as the caller who 
-            // is an org admin, return the account.
-            if (CAN_READ_PARTICIPANTS.check(ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
-                return account;
-            }
-            // If after removing all enrollments that are not visible to the caller, 
-            // there are no remaining enrollments, then we do not return the 
-            // account to the caller.
-            Set<Enrollment> removals = account.getEnrollments().stream()
-                    .filter(en -> !callerStudies.contains(en.getStudyId()))
-                    .collect(toSet());
-            account.getEnrollments().removeAll(removals);
-            if (!account.getEnrollments().isEmpty()) {
-                return account;
-            }
-        }
-        return null;
     }
     
     /**
@@ -416,12 +379,12 @@ public class BridgeUtils {
      */
     public @Nonnull static <T> ImmutableSet<T> nullSafeImmutableSet(Set<T> set) {
         return (set == null) ? ImmutableSet.of() : ImmutableSet.copyOf(set.stream()
-                .filter(element -> element != null).collect(Collectors.toSet()));
+                .filter(Objects::nonNull).collect(Collectors.toSet()));
     }
     
     public @Nonnull static <T> ImmutableList<T> nullSafeImmutableList(List<T> list) {
         return (list == null) ? ImmutableList.of() : ImmutableList.copyOf(list.stream()
-                .filter(element -> element != null).collect(Collectors.toList()));
+                .filter(Objects::nonNull).collect(Collectors.toList()));
     }
     
     public @Nonnull static <S,T> ImmutableMap<S,T> nullSafeImmutableMap(Map<S,T> map) {
@@ -770,5 +733,12 @@ public class BridgeUtils {
             }
         }
         return defaultValue;
+    }
+    
+    /**
+     * Add an item to a set (even if immutable) and return a new immutable copy of that new set.
+     */
+    public static <T> Set<T> addToSet(Set<T> set, T item) {
+        return new ImmutableSet.Builder<T>().addAll(set).add(item).build();
     }
 }

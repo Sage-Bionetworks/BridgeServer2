@@ -4,8 +4,10 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -314,7 +316,27 @@ public class AccountServiceTest extends Mockito {
         }
         verify(mockConsumer, never()).accept(any());
     }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void editAccountFailsForDevelopersOperatingOnProdAccounts() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("adminId")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        mockGetAccountById(ACCOUNT_ID, false);
 
+        service.editAccount(ACCOUNT_ID, mockConsumer);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void editAccountFailsForStudyDesignerOperatingOnProdAccounts() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("adminId")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        mockGetAccountById(ACCOUNT_ID, false);
+
+        service.editAccount(ACCOUNT_ID, mockConsumer);
+    }
+    
     @Test
     public void getAccount() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);

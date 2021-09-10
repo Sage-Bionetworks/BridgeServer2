@@ -345,8 +345,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        when(mockAccountService.getAccount(ACCOUNT_ID))
-            .thenReturn(Optional.of(account));
+        doThrow(new UnauthorizedException()).when(mockAccountService).editAccount(any(), any());
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
 
@@ -543,7 +542,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        TestUtils.mockEditAccount(mockAccountService, account);
+        doThrow(new UnauthorizedException()).when(mockAccountService).editAccount(any(), any());
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.unenroll(enrollment);
@@ -559,7 +558,7 @@ public class EnrollmentServiceTest extends Mockito {
 
         Account account = Account.create();
         account.setId(TEST_USER_ID);
-        TestUtils.mockEditAccount(mockAccountService, account);
+        doThrow(new UnauthorizedException()).when(mockAccountService).editAccount(any(), any());
 
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         service.unenroll(enrollment);
