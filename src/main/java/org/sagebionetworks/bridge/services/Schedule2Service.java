@@ -36,7 +36,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules2.HasGuid;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
@@ -56,18 +55,11 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class Schedule2Service {
     
-    private AppService appService;
-    
     private OrganizationService organizationService;
     
     private StudyService studyService;
     
     private Schedule2Dao dao;
-    
-    @Autowired
-    final void setAppService(AppService appService) {
-        this.appService = appService;
-    }
     
     @Autowired
     final void setOrganizationService(OrganizationService organizationService) {
@@ -193,9 +185,9 @@ public class Schedule2Service {
             // with keys and all, to the update API, and at some point we have to check that
             // we're talking about the same object.
             schedule.setGuid(study.getScheduleGuid());
-            return updateSchedule(existing, schedule);
+            return updateSchedule(study, existing, schedule);
         }
-        schedule = createSchedule(schedule);
+        schedule = createSchedule(study, schedule);
         study.setScheduleGuid(schedule.getGuid());
         studyService.updateStudy(schedule.getAppId(), study);
         return schedule;
@@ -205,7 +197,7 @@ public class Schedule2Service {
      * Create a schedule. The schedule will be owned by the caller’s organization (unless
      * an admin or superadmin is making the call and they have specified an organization).
      */
-    public Schedule2 createSchedule(Schedule2 schedule) {
+    public Schedule2 createSchedule(Study study, Schedule2 schedule) {
         checkNotNull(schedule);
         
         CAN_CREATE_SCHEDULES.checkAndThrow();
@@ -213,7 +205,6 @@ public class Schedule2Service {
         String callerAppId = RequestContext.get().getCallerAppId();
         String callerOrgMembership = RequestContext.get().getCallerOrgMembership();
         boolean isAdmin = RequestContext.get().isInRole(ADMIN, SUPERADMIN);
-        App app = appService.getApp(callerAppId);
         
         DateTime createdOn = getCreatedOn();
         schedule.setAppId(callerAppId);
@@ -237,7 +228,7 @@ public class Schedule2Service {
         if (schedule.getOwnerId() != null) {
             organizationService.getOrganization(schedule.getAppId(), schedule.getOwnerId());    
         }
-        preValidationCleanup(app, schedule, (hasGuid) -> hasGuid.setGuid(generateGuid()));
+        preValidationCleanup(study, schedule, (hasGuid) -> hasGuid.setGuid(generateGuid()));
         
         Validate.entityThrowingException(INSTANCE, schedule);
         
@@ -248,7 +239,7 @@ public class Schedule2Service {
      * Update a schedule. Will throw an exception once the schedule is published. Ownership
      * cannot be changed once a schedule is created.
      */
-    public Schedule2 updateSchedule(Schedule2 existing, Schedule2 schedule) {
+    public Schedule2 updateSchedule(Study study, Schedule2 existing, Schedule2 schedule) {
         checkNotNull(existing);
         checkNotNull(schedule);
         
@@ -259,13 +250,11 @@ public class Schedule2Service {
             throw new PublishedEntityException(existing);
         }
         
-        App app = appService.getApp(existing.getAppId());
-        
         schedule.setCreatedOn(existing.getCreatedOn());
         schedule.setModifiedOn(getModifiedOn());
         schedule.setOwnerId(existing.getOwnerId());
         schedule.setPublished(false);
-        preValidationCleanup(app, schedule, (hasGuid) -> {
+        preValidationCleanup(study, schedule, (hasGuid) -> {
           if (hasGuid.getGuid() == null) {
               hasGuid.setGuid(generateGuid());
           }
@@ -354,11 +343,11 @@ public class Schedule2Service {
      * Set GUIDs on objects that don't have them; clean up event keys or set
      * them to null if they're not valid, so they will fail validation.
      */
-    void preValidationCleanup(App app, Schedule2 schedule, Consumer<HasGuid> consumer) {
-        checkNotNull(app);
+    void preValidationCleanup(Study study, Schedule2 schedule, Consumer<HasGuid> consumer) {
+        checkNotNull(study);
         checkNotNull(schedule);
         
-        Set<String> keys = app.getCustomEvents().keySet();
+        Set<String> keys = study.getCustomEventsMap().keySet();
         for (Session session : schedule.getSessions()) {
             consumer.accept(session);
             session.setSchedule(schedule);

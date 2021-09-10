@@ -12,10 +12,13 @@ import org.sagebionetworks.bridge.models.schedules2.PerformanceOrder;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
+import com.google.common.collect.Iterables;
+
 public class SessionInfo {
 
     private String guid;
     private String label;
+    private String startEventId;
     private PerformanceOrder performanceOrder;
     private Integer minutesToComplete;
     private List<String> timeWindowGuids;
@@ -35,6 +38,7 @@ public class SessionInfo {
         SessionInfo info = new SessionInfo();
         info.guid = session.getGuid();
         info.label = label.getValue();
+        info.startEventId = Iterables.getFirst(session.getStartEventIds(), null);
         info.performanceOrder = session.getPerformanceOrder();
         info.timeWindowGuids = session.getTimeWindows().stream()
                 .map(TimeWindow::getGuid)
@@ -53,6 +57,9 @@ public class SessionInfo {
     }
     public String getLabel() {
         return label;
+    }
+    public String getStartEventId() {
+        return startEventId;
     }
     public PerformanceOrder getPerformanceOrder() {
         return performanceOrder;

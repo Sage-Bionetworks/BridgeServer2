@@ -33,7 +33,7 @@ public class SessionTest {
         session.setLabels(LABELS);
         session.setName("Do weekly survey");
         session.setGuid(SESSION_GUID_1);
-        session.setStartEventIds(Lists.newArrayList("custom:activities_retrieved", "custom:timeline_retrieved"));
+        session.setStartEventIds(Lists.newArrayList("activities_retrieved", "timeline_retrieved"));
         session.setDelay(Period.parse("P1W"));
         session.setOccurrences(19);
         session.setInterval(Period.parse("P7D"));
@@ -87,8 +87,8 @@ public class SessionTest {
         assertEquals(node.size(), 12);
         assertEquals(node.get("guid").textValue(), SESSION_GUID_1);
         assertEquals(node.get("name").textValue(), "Do weekly survey");
-        assertEquals(node.get("startEventIds").get(0).textValue(), "custom:activities_retrieved");
-        assertEquals(node.get("startEventIds").get(1).textValue(), "custom:timeline_retrieved");
+        assertEquals(node.get("startEventIds").get(0).textValue(), "activities_retrieved");
+        assertEquals(node.get("startEventIds").get(1).textValue(), "timeline_retrieved");
         assertEquals(node.get("delay").textValue(), "P1W");
         assertEquals(node.get("occurrences").intValue(), 19);
         assertEquals(node.get("interval").textValue(), "P7D");
@@ -145,8 +145,8 @@ public class SessionTest {
         
         assertEquals(deser.getGuid(), SESSION_GUID_1);
         assertEquals(deser.getName(), "Do weekly survey");
-        assertEquals(deser.getStartEventIds().get(0), "custom:activities_retrieved");
-        assertEquals(deser.getStartEventIds().get(1), "custom:timeline_retrieved");
+        assertEquals(deser.getStartEventIds().get(0), "activities_retrieved");
+        assertEquals(deser.getStartEventIds().get(1), "timeline_retrieved");
         assertEquals(deser.getDelay(), Period.parse("P1W"));
         assertEquals(deser.getOccurrences(), Integer.valueOf(19));
         assertEquals(deser.getInterval(), Period.parse("P7D"));

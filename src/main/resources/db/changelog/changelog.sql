@@ -784,3 +784,8 @@ CREATE TABLE `SessionStartEvents` (
   PRIMARY KEY (`sessionGuid`, `position`),
   CONSTRAINT `SessionEvents-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+-- changeset bridge:46
+
+ALTER TABLE `TimelineMetadata` 
+ADD INDEX `TimelineMetadata-ScheduleGuid` (scheduleGuid);
