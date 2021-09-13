@@ -15,7 +15,6 @@ import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.newrelic.agent.deps.com.google.common.collect.Sets;
 
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 
