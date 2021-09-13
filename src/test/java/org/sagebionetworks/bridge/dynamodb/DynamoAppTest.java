@@ -36,6 +36,7 @@ import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.AppleAppLink;
+import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.apps.OAuthProvider;
 import org.sagebionetworks.bridge.models.apps.OAuthProviderTest;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
@@ -140,6 +141,8 @@ public class DynamoAppTest {
 
         assertTrue(node.get("autoVerificationEmailSuppressed").booleanValue());
         assertEqualsAndNotNull(app.getConsentNotificationEmail(), node.get("consentNotificationEmail").asText());
+        assertEqualsAndNotNull(app.getExporter3Configuration(), JsonUtils.asEntity(node,
+                "exporter3Configuration", Exporter3Configuration.class));
         assertFalse(node.get("participantIpLockingEnabled").booleanValue());
         assertTrue(node.get("appIdExcludedInExport").booleanValue());
         assertEqualsAndNotNull(app.getSupportEmail(), node.get("supportEmail").asText());

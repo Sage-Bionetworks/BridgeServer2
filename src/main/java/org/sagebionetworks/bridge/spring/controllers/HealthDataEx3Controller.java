@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,31 +20,43 @@ import org.sagebionetworks.bridge.models.Metrics;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.services.HealthDataEx3Service;
+import org.sagebionetworks.bridge.services.StudyService;
 
 /**
- * This controller exposes the Exporter 3 implementation of Health Data Records. It's current usage is only for
- * testing purposes, which is why all the APIs are accessible only to Super Admins and why the URLs all start with
- * /v1/admin/exporter3
+ * This controller exposes the Exporter 3 implementation of Health Data Records. This is primarily used by the worker.
  */
 @CrossOrigin
 @RestController
 public class HealthDataEx3Controller extends BaseController {
     private HealthDataEx3Service healthDataEx3Service;
+    private StudyService studyService;
 
     @Autowired
     public final void setHealthDataEx3Service(HealthDataEx3Service healthDataEx3Service) {
         this.healthDataEx3Service = healthDataEx3Service;
     }
 
+    @Autowired
+    public final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
+
     /** Create or update health data record. Returns the created or updated record. */
-    @PostMapping(path="/v1/admin/exporter3/healthdata")
-    public HealthDataRecordEx3 createOrUpdateRecord() {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+    @PostMapping(path="/v1/apps/{appId}/exporter3/healthdata")
+    public HealthDataRecordEx3 createOrUpdateRecord(@PathVariable String appId) {
+        getAuthenticatedSession(WORKER);
+
+        // Verify app exists.
+        App app = appService.getApp(appId);
+        if (app == null) {
+            throw new EntityNotFoundException(App.class);
+        }
+
         HealthDataRecordEx3 record = parseJson(HealthDataRecordEx3.class);
-        record.setAppId(session.getAppId());
+        record.setAppId(appId);
         HealthDataRecordEx3 savedRecord = healthDataEx3Service.createOrUpdateRecord(record);
 
         // Write record ID into the metrics, for logging and diagnostics.
@@ -56,11 +69,11 @@ public class HealthDataEx3Controller extends BaseController {
     }
 
     /** Deletes all health data records for the given user. */
-    @DeleteMapping(path="/v1/admin/exporter3/participants/{userIdToken}/healthdata")
-    public StatusMessage deleteRecordsForUser(@PathVariable String userIdToken) {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+    @DeleteMapping(path="/v1/apps/{appId}/participants/{userIdToken}/exporter3/healthdata")
+    public StatusMessage deleteRecordsForUser(@PathVariable String appId, @PathVariable String userIdToken) {
+        getAuthenticatedSession(SUPERADMIN);
 
-        String healthCode = accountService.getAccountHealthCode(session.getAppId(), userIdToken)
+        String healthCode = accountService.getAccountHealthCode(appId, userIdToken)
                 .orElseThrow(() -> new EntityNotFoundException(StudyParticipant.class));
 
         healthDataEx3Service.deleteRecordsForHealthCode(healthCode);
@@ -69,11 +82,21 @@ public class HealthDataEx3Controller extends BaseController {
     }
 
     /** Retrieves the record for the given ID. */
-    @GetMapping(path="/v1/admin/exporter3/healthdata/{recordId}")
-    public HealthDataRecordEx3 getRecord(@PathVariable String recordId) {
-        getAuthenticatedSession(SUPERADMIN);
+    @GetMapping(path="/v1/apps/{appId}/exporter3/healthdata/{recordId}")
+    public HealthDataRecordEx3 getRecord(@PathVariable String appId, @PathVariable String recordId) {
+        getAuthenticatedSession(WORKER);
+
+        // Verify app exists.
+        App app = appService.getApp(appId);
+        if (app == null) {
+            throw new EntityNotFoundException(App.class);
+        }
+
         HealthDataRecordEx3 record = healthDataEx3Service.getRecord(recordId).orElseThrow(() ->
                 new EntityNotFoundException(HealthDataRecordEx3.class));
+        if (!appId.equals(record.getAppId())) {
+            throw new EntityNotFoundException(HealthDataRecordEx3.class);
+        }
 
         // Write record ID into the metrics, for logging and diagnostics.
         Metrics metrics = getMetrics();
@@ -85,13 +108,14 @@ public class HealthDataEx3Controller extends BaseController {
     }
 
     /** Retrieves all records for the given user and time range. */
-    @GetMapping(path="/v1/admin/exporter3/participants/{userIdToken}/healthdata")
-    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForUser(@PathVariable String userIdToken,
+    @GetMapping(path="/v1/apps/{appId}/participants/{userIdToken}/exporter3/healthdata")
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForUser(
+            @PathVariable String appId, @PathVariable String userIdToken,
             @RequestParam(required = false) String createdOnStart, @RequestParam(required = false) String createdOnEnd,
             @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        getAuthenticatedSession(WORKER);
 
-        String healthCode = accountService.getAccountHealthCode(session.getAppId(), userIdToken)
+        String healthCode = accountService.getAccountHealthCode(appId, userIdToken)
                 .orElseThrow(() -> new EntityNotFoundException(StudyParticipant.class));
         
         DateTime createdOnStartDateTime = BridgeUtils.getDateTimeOrDefault(createdOnStart, null);
@@ -106,16 +130,22 @@ public class HealthDataEx3Controller extends BaseController {
     }
 
     /** Retrieves all records in the current app for the given time range. */
-    @GetMapping(path="/v1/admin/exporter3/apps/self/healthdata")
-    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForCurrentApp(
+    @GetMapping(path="/v1/apps/{appId}/exporter3/healthdata")
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForApp(@PathVariable String appId,
             @RequestParam(required = false) String createdOnStart, @RequestParam(required = false) String createdOnEnd,
             @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        getAuthenticatedSession(WORKER);
+
+        // Verify app exists.
+        App app = appService.getApp(appId);
+        if (app == null) {
+            throw new EntityNotFoundException(App.class);
+        }
 
         DateTime createdOnStartDateTime = BridgeUtils.getDateTimeOrDefault(createdOnStart, null);
         DateTime createdOnEndDateTime = BridgeUtils.getDateTimeOrDefault(createdOnEnd, null);
         Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
-        return healthDataEx3Service.getRecordsForApp(session.getAppId(), createdOnStartDateTime, createdOnEndDateTime,
+        return healthDataEx3Service.getRecordsForApp(appId, createdOnStartDateTime, createdOnEndDateTime,
                 pageSizeInt, offsetKey)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
                 .withRequestParam(ResourceList.END_TIME, createdOnEnd)
@@ -124,16 +154,20 @@ public class HealthDataEx3Controller extends BaseController {
     }
 
     /** Retrieves all records in the current app for the given study and time range. */
-    @GetMapping(path="/v1/admin/exporter3/apps/self/studies/{studyId}/healthdata")
-    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForStudy(@PathVariable String studyId,
+    @GetMapping(path="/v1/apps/{appId}/studies/{studyId}/exporter3/healthdata")
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForStudy(
+            @PathVariable String appId, @PathVariable String studyId,
             @RequestParam(required = false) String createdOnStart, @RequestParam(required = false) String createdOnEnd,
             @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
+        getAuthenticatedSession(WORKER);
+
+        // Verify study exists (and therefore that app exists through the study.
+        studyService.getStudy(appId, studyId, true);
 
         DateTime createdOnStartDateTime = BridgeUtils.getDateTimeOrDefault(createdOnStart, null);
         DateTime createdOnEndDateTime = BridgeUtils.getDateTimeOrDefault(createdOnEnd, null);
         Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
-        return healthDataEx3Service.getRecordsForAppAndStudy(session.getAppId(), studyId, createdOnStartDateTime,
+        return healthDataEx3Service.getRecordsForAppAndStudy(appId, studyId, createdOnStartDateTime,
                 createdOnEndDateTime, pageSizeInt, offsetKey)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
                 .withRequestParam(ResourceList.END_TIME, createdOnEnd)

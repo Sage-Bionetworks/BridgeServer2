@@ -46,7 +46,6 @@ import org.sagebionetworks.repo.model.util.ModelConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
@@ -100,7 +99,6 @@ public class AppService {
     private static final String VERIFY_APP_EMAIL_URL = "%s/vse?appId=%s&token=%s&type=%s";
     static final int VERIFY_APP_EMAIL_EXPIRE_IN_SECONDS = 60*60*24;
     static final String EXPORTER_SYNAPSE_USER_ID = BridgeConfigFactory.getConfig().getExporterSynapseId(); // copy-paste from website
-    static final String SYNAPSE_REGISTER_END_POINT = "https://www.synapse.org/#!NewAccount:";
     private static final String APP_PROPERTY = "App";
     private static final String TYPE_PROPERTY = "type";
     private static final String STUDY_EMAIL_VERIFICATION_URL = "studyEmailVerificationUrl";
@@ -212,8 +210,7 @@ public class AppService {
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
     }
-    @Autowired
-    @Qualifier("bridgePFSynapseClient")
+    @Resource(name = "bridgePFSynapseClient")
     final void setSynapseClient(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
     }
@@ -512,6 +509,7 @@ public class AppService {
             if (!originalApp.isActive()) {
                 throw new EntityNotFoundException(App.class, "App '"+ app.getIdentifier() +"' not found.");
             }
+            app.setExporter3Configuration(originalApp.getExporter3Configuration());
             app.setHealthCodeExportEnabled(originalApp.isHealthCodeExportEnabled());
             app.setEmailVerificationEnabled(originalApp.isEmailVerificationEnabled());
             app.setExternalIdRequiredOnSignup(originalApp.isExternalIdRequiredOnSignup());

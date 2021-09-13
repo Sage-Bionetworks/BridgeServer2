@@ -28,6 +28,10 @@ public interface Upload {
     String getContentMd5();
     void setContentMd5(String contentMd5);
 
+    /** MIME content type. */
+    String getContentType();
+    void setContentType(String contentType);
+
     /** The original ID that this upload is a duplicate of, or null if this upload is not a duplicate. */
     String getDuplicateUploadId();
 
@@ -104,6 +108,7 @@ public interface Upload {
      * <p>The app ID for this upload.</p>
      */
     String getAppId();
+    void setAppId(String appId);
 
     /** Upload ID. This is the key in the Dynamo DB table that uniquely identifies this upload. */
     String getUploadId();
