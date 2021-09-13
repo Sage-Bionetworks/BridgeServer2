@@ -770,3 +770,8 @@ CREATE TABLE `StudyCustomEvents` (
 
 ALTER TABLE `Accounts`
 ADD COLUMN `clientTimeZone` varchar(64) DEFAULT NULL;
+
+-- changeset bridge:46
+
+ALTER TABLE `TimelineMetadata` 
+ADD INDEX `TimelineMetadata-ScheduleGuid` (scheduleGuid);
