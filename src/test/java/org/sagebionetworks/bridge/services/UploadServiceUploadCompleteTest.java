@@ -240,6 +240,9 @@ public class UploadServiceUploadCompleteTest {
 
     @Test
     public void redrive() {
+        // Enable Exporter 3. It still won't be run anyway because Exporter is disabled for redrive.
+        app.setExporter3Enabled(true);
+
         // Create upload that's already marked as succeeded.
         DynamoUpload2 upload = new DynamoUpload2();
         upload.setUploadId(TEST_UPLOAD_ID);
@@ -252,6 +255,9 @@ public class UploadServiceUploadCompleteTest {
 
         // execute
         svc.uploadComplete(TEST_APP_ID, APP, upload, true);
+
+        // Verify that we DO NOT call Exporter 3.0
+        verify(mockExporter3Service, never()).completeUpload(any(), any());
 
         // Verify upload DAO and validation.
         verify(mockUploadDao).uploadComplete(APP, upload);
