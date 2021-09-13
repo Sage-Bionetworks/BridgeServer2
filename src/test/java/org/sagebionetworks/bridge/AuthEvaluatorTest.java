@@ -34,14 +34,13 @@ public class AuthEvaluatorTest {
     
     @Test
     public void hasOnlyRoles() {
-        // This never matches
+        // This doesn't match against the null request context
         AuthEvaluator evaluator = new AuthEvaluator().hasOnlyRoles(DEVELOPER);
         assertFalse(evaluator.check());
 
         // User is developer and must only be a developer
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
-        
         assertTrue(evaluator.check());
         
         // User is required to be only these roles, and developer still passes 

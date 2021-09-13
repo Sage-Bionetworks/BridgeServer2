@@ -29,8 +29,6 @@ import org.sagebionetworks.bridge.models.studies.Enrollment;
  */
 public class AuthUtils {
     
-    public static final AuthEvaluator IS_SELF = new AuthEvaluator().isSelf();
-            
     /**
      * Calling account is only a developer, and thus should only have access to test
      * accounts, not production accounts.
@@ -278,15 +276,13 @@ public class AuthUtils {
         if (IS_ONLY_DEVELOPER.check(USER_ID, account.getId()) && !userDataGroups.contains(TEST_USER_GROUP)) {
             return false;
         }
-        // If this is a call for one’s own record, or the caller is an admin or 
-        // worker, or the account is in the same organization as the caller who 
-        // is an org admin, return the account.
+        // If this is a call for one’s own record, or the caller is an admin or worker, or the account 
+        // is in the same organization as the caller who is an org admin, return the account.
         if (CAN_READ_PARTICIPANTS.check(USER_ID, account.getId(), ORG_ID, account.getOrgMembership())) {
             return true;
         }
-        // If after removing all enrollments that are not visible to the caller, 
-        // there are no remaining enrollments, then we do not return the 
-        // account to the caller.
+        // If after removing all enrollments that are not visible to the caller, there are no remaining 
+        // enrollments, the caller cannot access the account.
         RequestContext context = RequestContext.get();
         Set<String> callerStudies = context.getOrgSponsoredStudies();
         Set<Enrollment> removals = account.getEnrollments().stream()

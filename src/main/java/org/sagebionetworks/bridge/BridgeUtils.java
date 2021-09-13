@@ -736,7 +736,7 @@ public class BridgeUtils {
     }
     
     /**
-     * Add an item to a set (even if immutable) and return a new immutable copy of that new set.
+     * Return a new immutable set that includes the additional item..
      */
     public static <T> Set<T> addToSet(Set<T> set, T item) {
         return new ImmutableSet.Builder<T>().addAll(set).add(item).build();
