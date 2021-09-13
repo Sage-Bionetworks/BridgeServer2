@@ -15,6 +15,7 @@ import java.util.function.Predicate;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.newrelic.agent.deps.com.google.common.collect.Sets;
 
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 
@@ -30,19 +31,19 @@ public class AuthEvaluator {
         predicates = new HashSet<>();
     }
     
+    /**
+     * Caller must have at least one of the roles specified. If the caller has no
+     * roles, or any role other than the roles specified, this method will return
+     * false.
+     */
     public AuthEvaluator hasOnlyRoles(Roles... roles) {
         predicates.add((factMap) -> {
-            RequestContext context = RequestContext.get();
-            if (context.getCallerRoles().isEmpty() && roles.length > 0) {
+            Set<Roles> callerRoles = RequestContext.get().getCallerRoles();
+            if (callerRoles.isEmpty() && roles.length > 0) {
                 return false;
             }
             Set<Roles> requiredRoles = ImmutableSet.copyOf(roles);
-            for (Roles role : context.getCallerRoles()) {
-                if (!requiredRoles.contains(role)) {
-                    return false;
-                }
-            }
-            return true;
+            return requiredRoles.containsAll(callerRoles);
         });
         return this;
     }
