@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.services.AppService.EXPORTER_SYNAPSE_US
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -1747,6 +1748,7 @@ public class AppServiceTest extends Mockito {
         existing.setEmailSignInEnabled(false);
         existing.setPhoneSignInEnabled(false);
         existing.setReauthenticationEnabled(false);
+        assertNotNull(existing.getExporter3Configuration());
         assertAppDefaults(existing);
         when(mockAppDao.getApp(app.getIdentifier())).thenReturn(existing);
         
@@ -1756,15 +1758,19 @@ public class AppServiceTest extends Mockito {
         
         // Researchers cannot change these through update
         changeAppDefaults(app);
+        app.setExporter3Configuration(null);
         app = service.updateApp(app, false);
+        assertNotNull(app.getExporter3Configuration());
         assertAppDefaults(app); // nope
         
         // But administrators can change these
         changeAppDefaults(app);
+        app.setExporter3Configuration(null);
         app = service.updateApp(app, true);
         // These values have all successfully been changed from the defaults
         assertFalse(app.isAppIdExcludedInExport());
         assertFalse(app.isEmailVerificationEnabled());
+        assertNull(app.getExporter3Configuration());
         assertFalse(app.isVerifyChannelOnSignInEnabled());
         assertTrue(app.isAutoVerificationPhoneSuppressed());
         assertTrue(app.isExternalIdRequiredOnSignup());

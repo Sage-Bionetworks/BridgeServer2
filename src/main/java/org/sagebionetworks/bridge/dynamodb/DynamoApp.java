@@ -26,6 +26,7 @@ import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.apps.AndroidAppLink;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.AppleAppLink;
+import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.apps.OAuthProvider;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
@@ -69,6 +70,8 @@ public final class DynamoApp implements App {
     private String identifier;
     private Map<String, String> automaticCustomEvents;
     private boolean autoVerificationEmailSuppressed;
+    private Exporter3Configuration exporter3Configuration;
+    private boolean exporter3Enabled;
     private boolean participantIpLockingEnabled;
     private boolean appIdExcludedInExport;
     private String supportEmail;
@@ -204,6 +207,27 @@ public final class DynamoApp implements App {
     @Override
     public void setAutoVerificationEmailSuppressed(boolean autoVerificationEmailSuppressed) {
         this.autoVerificationEmailSuppressed = autoVerificationEmailSuppressed;
+    }
+
+    @DynamoDBTypeConvertedJson
+    @Override
+    public Exporter3Configuration getExporter3Configuration() {
+        return exporter3Configuration;
+    }
+
+    @Override
+    public void setExporter3Configuration(Exporter3Configuration exporter3Configuration) {
+        this.exporter3Configuration = exporter3Configuration;
+    }
+
+    @Override
+    public boolean isExporter3Enabled() {
+        return exporter3Enabled;
+    }
+
+    @Override
+    public void setExporter3Enabled(boolean exporter3Enabled) {
+        this.exporter3Enabled = exporter3Enabled;
     }
 
     /** {@inheritDoc} */
@@ -648,7 +672,7 @@ public final class DynamoApp implements App {
     @Override
     public int hashCode() {
         return Objects.hash(name, shortName, sponsorName, identifier, automaticCustomEvents,
-                autoVerificationEmailSuppressed, participantIpLockingEnabled, appIdExcludedInExport,
+                autoVerificationEmailSuppressed, exporter3Configuration, exporter3Enabled, participantIpLockingEnabled, appIdExcludedInExport,
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, usesCustomExportSchedule,
                 uploadMetadataFieldDefinitions, uploadValidationStrictness, consentNotificationEmail,
                 consentNotificationEmailVerified, minAgeOfConsent, accountLimit, version, active, profileAttributes,
@@ -670,6 +694,8 @@ public final class DynamoApp implements App {
         return (Objects.equals(identifier, other.identifier)
                 && Objects.equals(automaticCustomEvents, other.automaticCustomEvents)
                 && Objects.equals(autoVerificationEmailSuppressed, other.autoVerificationEmailSuppressed)
+                && Objects.equals(exporter3Configuration, other.exporter3Configuration)
+                && Objects.equals(exporter3Enabled, other.exporter3Enabled)
                 && Objects.equals(participantIpLockingEnabled, other.participantIpLockingEnabled)
                 && Objects.equals(appIdExcludedInExport, other.appIdExcludedInExport)
                 && Objects.equals(supportEmail, other.supportEmail)
@@ -718,7 +744,7 @@ public final class DynamoApp implements App {
     public String toString() {
         return String.format(
                 "DynamoApp [name=%s, shortName=%s, active=%s, sponsorName=%s, identifier=%s, automaticCustomEvents=%s"
-                        + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, participantIpLockingEnabled=%b, "
+                        + "autoVerificationEmailSuppressed=%b, minAgeOfConsent=%s, exporter3Configuration=%s, exporter3Enabled=%b, participantIpLockingEnabled=%b, "
                         + "appIdExcludedInExport=%b, supportEmail=%s, synapseDataAccessTeamId=%s, synapseProjectId=%s, "
                         + "technicalEmail=%s, uploadValidationStrictness=%s, consentNotificationEmail=%s, "
                         + "consentNotificationEmailVerified=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
@@ -730,7 +756,7 @@ public final class DynamoApp implements App {
                         + "reauthenticationEnabled=%s, autoVerificationPhoneSuppressed=%s, verifyChannelOnSignInEnabled=%s, "
                         + "defaultTemplates=%s]",
                 name, shortName, active, sponsorName, identifier, automaticCustomEvents,
-                autoVerificationEmailSuppressed, minAgeOfConsent, participantIpLockingEnabled, appIdExcludedInExport,
+                autoVerificationEmailSuppressed, minAgeOfConsent, exporter3Configuration, exporter3Enabled, participantIpLockingEnabled, appIdExcludedInExport,
                 supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
                 consentNotificationEmail, consentNotificationEmailVerified, version, profileAttributes, taskIdentifiers,
                 activityEventKeys, customEvents, dataGroups, passwordPolicy, strictUploadValidationEnabled, 

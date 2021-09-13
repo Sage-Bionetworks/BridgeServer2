@@ -8,10 +8,11 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 import java.util.Collections;
 import java.util.List;
 
+import javax.annotation.Resource;
+
 import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.lang3.StringUtils;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -29,7 +30,7 @@ public class AppAndUsersValidator implements Validator {
 
     private SynapseClient synapseClient;
 
-    @Autowired
+    @Resource(name = "bridgePFSynapseClient")
     public final void setSynapseClient(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
     }

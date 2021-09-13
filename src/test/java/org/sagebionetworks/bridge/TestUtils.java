@@ -72,6 +72,7 @@ import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
+import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.itp.IntentToParticipate;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -559,12 +560,21 @@ public class TestUtils {
         app.setAccountLimit(0);
         app.setPushNotificationARNs(pushNotificationARNs);
         app.setAutoVerificationPhoneSuppressed(true);
+
         Map<String,String> defaultTemplates = new HashMap<>();
         for (TemplateType type : TemplateType.values()) {
             String typeName = type.name().toLowerCase();
             defaultTemplates.put(typeName, "ABC-DEF");
         }
         app.setDefaultTemplates(defaultTemplates);
+
+        Exporter3Configuration exporter3Config = new Exporter3Configuration();
+        exporter3Config.setDataAccessTeamId(1234L);
+        exporter3Config.setProjectId("synapse-project-id");
+        exporter3Config.setRawDataFolderId("synapse-folder-id");
+        exporter3Config.setStorageLocationId(5678L);
+        app.setExporter3Configuration(exporter3Config);
+
         return app;
     }
 
