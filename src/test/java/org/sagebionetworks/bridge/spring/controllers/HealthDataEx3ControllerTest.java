@@ -219,9 +219,7 @@ public class HealthDataEx3ControllerTest {
         ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForUser(TestConstants.TEST_APP_ID, TEST_USER_ID,
                 CREATED_ON_START_STRING, CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
         assertSame(outputList, recordList);
-        assertEquals(outputList.getRequestParams().size(), 7);
-        assertEquals(outputList.getRequestParams().get("appId"), TestConstants.TEST_APP_ID);
-        assertEquals(outputList.getRequestParams().get("userId"), TestConstants.TEST_USER_ID);
+        assertEquals(outputList.getRequestParams().size(), 5);
         assertEquals(outputList.getRequestParams().get(ResourceList.START_TIME), CREATED_ON_START_STRING);
         assertEquals(outputList.getRequestParams().get(ResourceList.END_TIME), CREATED_ON_END_STRING);
         assertEquals(outputList.getRequestParams().get(ResourceList.PAGE_SIZE), BridgeConstants.API_DEFAULT_PAGE_SIZE);
@@ -255,8 +253,7 @@ public class HealthDataEx3ControllerTest {
         ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForApp(TestConstants.TEST_APP_ID, CREATED_ON_START_STRING,
                 CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
         assertSame(outputList, recordList);
-        assertEquals(outputList.getRequestParams().size(), 6);
-        assertEquals(outputList.getRequestParams().get("appId"), TestConstants.TEST_APP_ID);
+        assertEquals(outputList.getRequestParams().size(), 5);
         assertEquals(outputList.getRequestParams().get(ResourceList.START_TIME), CREATED_ON_START_STRING);
         assertEquals(outputList.getRequestParams().get(ResourceList.END_TIME), CREATED_ON_END_STRING);
         assertEquals(outputList.getRequestParams().get(ResourceList.PAGE_SIZE), BridgeConstants.API_DEFAULT_PAGE_SIZE);
@@ -291,9 +288,7 @@ public class HealthDataEx3ControllerTest {
         ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForStudy(TestConstants.TEST_APP_ID, STUDY_ID,
                 CREATED_ON_START_STRING, CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
         assertSame(outputList, recordList);
-        assertEquals(outputList.getRequestParams().size(), 7);
-        assertEquals(outputList.getRequestParams().get("appId"), TestConstants.TEST_APP_ID);
-        assertEquals(outputList.getRequestParams().get("studyId"), STUDY_ID);
+        assertEquals(outputList.getRequestParams().size(), 5);
         assertEquals(outputList.getRequestParams().get(ResourceList.START_TIME), CREATED_ON_START_STRING);
         assertEquals(outputList.getRequestParams().get(ResourceList.END_TIME), CREATED_ON_END_STRING);
         assertEquals(outputList.getRequestParams().get(ResourceList.PAGE_SIZE), BridgeConstants.API_DEFAULT_PAGE_SIZE);
