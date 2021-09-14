@@ -44,6 +44,8 @@ public class EnrollmentService {
     
     private EnrollmentDao enrollmentDao;
     
+    private StudyService studyService;
+    
     @Autowired
     final void setAccountService(AccountService accountService) {
         this.accountService = accountService;
@@ -52,6 +54,11 @@ public class EnrollmentService {
     @Autowired
     final void setEnrollmentDao(EnrollmentDao enrollmentDao) {
         this.enrollmentDao = enrollmentDao;
+    }
+    
+    @Autowired
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     
     protected DateTime getEnrollmentDateTime() {
@@ -71,6 +78,8 @@ public class EnrollmentService {
         checkNotNull(appId);
         checkNotNull(studyId);
         
+        studyService.getStudy(appId, studyId, true);
+        
         CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
 
         if (offsetBy != null && offsetBy < 0) {
@@ -89,6 +98,8 @@ public class EnrollmentService {
         checkNotNull(appId);
         checkNotNull(userIdToken);
         
+        studyService.getStudy(appId, studyId, true);
+        
         // We want all enrollments, even withdrawn enrollments, so don't filter here.
         AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
         Account account = accountService.getAccount(accountId)
@@ -104,7 +115,9 @@ public class EnrollmentService {
 
         // verify this has appId and accountId
         Validate.entityThrowingException(INSTANCE, enrollment);
-        
+
+        studyService.getStudy(enrollment.getAppId(), enrollment.getStudyId(), true);
+
         // Verify that the caller has access to this study
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID,
                 enrollment.getAccountId());
@@ -131,6 +144,8 @@ public class EnrollmentService {
         checkNotNull(newEnrollment);
         
         Validate.entityThrowingException(INSTANCE, newEnrollment);
+        
+        studyService.getStudy(newEnrollment.getAppId(), newEnrollment.getStudyId(), true);
         
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, newEnrollment.getStudyId(), USER_ID, account.getId());
 
@@ -173,6 +188,8 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, enrollment);
         
+        studyService.getStudy(enrollment.getAppId(), enrollment.getStudyId(), true);
+        
         final EnrollmentHolder holder = new EnrollmentHolder();
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
         accountService.editAccount(accountId, (acct) -> {
@@ -189,6 +206,8 @@ public class EnrollmentService {
         checkNotNull(enrollment);
         
         Validate.entityThrowingException(INSTANCE, enrollment);
+        
+        studyService.getStudy(enrollment.getAppId(), enrollment.getStudyId(), true);
         
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID, account.getId());
         
