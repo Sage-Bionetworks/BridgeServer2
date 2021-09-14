@@ -282,12 +282,13 @@ public class HibernateSchedule2DaoTest extends Mockito {
 
         work.execute(mockConnection);
 
-        // 21 records at a batch size of 10 generates 3 executeBatch statements. The
-        // content of the statements is tested in updatePreparedStatement().
-        assertEquals(metadata.size(), 21);
+        // 42 records (2 for each record due to two event IDs) at a batch size of 10 
+        // generates 5 executeBatch statements. The content of the statements is 
+        // tested in updatePreparedStatement().
+        assertEquals(metadata.size(), 42);
         verify(mockConnection).setAutoCommit(false);
         verify(mockConnection).prepareStatement(INSERT);
-        verify(mockStatement, times(3)).executeBatch();
+        verify(mockStatement, times(5)).executeBatch();
     }
 
     @Test

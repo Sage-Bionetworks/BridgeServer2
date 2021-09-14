@@ -652,6 +652,7 @@ CREATE TABLE `StudyActivityEvents` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- changeset bridge:34
+
 ALTER TABLE `Sessions`
 DROP COLUMN `reminderPeriod`,
 DROP COLUMN `messages`,
@@ -770,6 +771,19 @@ CREATE TABLE `StudyCustomEvents` (
 
 ALTER TABLE `Accounts`
 ADD COLUMN `clientTimeZone` varchar(64) DEFAULT NULL;
+
+-- changeset bridge:44
+
+ALTER TABLE `Sessions`
+DROP COLUMN `startEventId`;
+
+CREATE TABLE `SessionStartEvents` (
+  `sessionGuid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `eventId` varchar(255),
+  PRIMARY KEY (`sessionGuid`, `position`),
+  CONSTRAINT `SessionEvents-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- changeset bridge:46
 
