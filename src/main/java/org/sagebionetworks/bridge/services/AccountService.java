@@ -258,6 +258,11 @@ public class AccountService {
         // Can't change app, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        // If a developer is trying to update a production account, that is not allowed.
+        if (IS_ONLY_DEVELOPER.check() && !account.getDataGroups().contains(TEST_USER_GROUP)) {
+            throw new UnauthorizedException();
+        }
         // None of these values should be changeable by the user.
         account.setAppId(persistedAccount.getAppId());
         account.setCreatedOn(persistedAccount.getCreatedOn());
@@ -272,10 +277,6 @@ public class AccountService {
         // Only allow Admins to update notes
         if (!RequestContext.get().isAdministrator()) {
             account.setNote(persistedAccount.getNote());
-        }
-        if (IS_ONLY_DEVELOPER.check()) {
-            Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
-            account.setDataGroups(newDataGroups);
         }
         // Update. We don't verify studies because this is handled by validation
         accountDao.updateAccount(account);
