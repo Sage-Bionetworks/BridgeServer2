@@ -206,4 +206,18 @@ public class JsonUtils {
         }
         return results;
     }
+
+    /**
+     * Merge the given JSON nodes into a single Object Nodes. If an input node is null or not an Object Node, the node
+     * is ignored.
+     */
+    public static ObjectNode mergeObjectNodes(JsonNode... nodes) {
+        ObjectNode result = BridgeObjectMapper.get().createObjectNode();
+        for (JsonNode node : nodes) {
+            if (node != null && node.isObject()) {
+                result.setAll((ObjectNode) node);
+            }
+        }
+        return result;
+    }
 }

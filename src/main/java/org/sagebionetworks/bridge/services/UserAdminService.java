@@ -195,7 +195,7 @@ public class UserAdminService {
         checkArgument(StringUtils.isNotBlank(id));
         
         AccountId accountId = AccountId.forId(app.getIdentifier(), id);
-        Account account = accountService.getAccount(accountId);
+        Account account = accountService.getAccount(accountId).orElse(null);
         if (account != null) {
             // remove this first so if account is partially deleted, re-authenticating will pick
             // up accurate information about the state of the account (as we can recover it)
@@ -208,9 +208,7 @@ public class UserAdminService {
             notificationsService.deleteAllRegistrations(app.getIdentifier(), healthCode);
             uploadService.deleteUploadsForHealthCode(healthCode);
             scheduledActivityService.deleteActivitiesForUser(healthCode);
-            account.getEnrollments().forEach(
-                    en -> activityEventService.deleteActivityEvents(en.getStudyId(), healthCode));
-            activityEventService.deleteActivityEvents(null, healthCode);
+            activityEventService.deleteActivityEvents(healthCode);
             // AccountSecret records and Enrollment records are are deleted on a 
             // cascading delete from Account
             accountService.deleteAccount(accountId);

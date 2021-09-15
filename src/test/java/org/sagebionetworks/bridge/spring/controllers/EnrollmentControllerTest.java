@@ -18,6 +18,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+import java.util.Optional;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -40,7 +41,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.hibernate.HibernateEnrollment;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -189,7 +189,7 @@ public class EnrollmentControllerTest extends Mockito {
         Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, "externalId");
         Set<Enrollment> enrollments = Sets.newHashSet(en1);
         when(mockAccount.getEnrollments()).thenReturn(enrollments);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(mockAccount));
         
         mockEditAccount(mockAccountService, mockAccount);
         
@@ -200,22 +200,7 @@ public class EnrollmentControllerTest extends Mockito {
         assertEquals(enrollments.size(), 1);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void updateUserEnrollmentsAccountNotFound() throws Exception {
-        UserSession session = new UserSession();
-        session.setAppId(TEST_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
-
-        Enrollment newEnrollment = Enrollment.create(TEST_APP_ID, "anotherStudy", TEST_USER_ID);
-        mockRequestBody(mockRequest, ImmutableSet.of(EnrollmentMigration.create(newEnrollment)));
-        
-        AccountService mockAccountService = mock(AccountService.class);
-        controller.setAccountService(mockAccountService);
-        
-        when(mockAccountService.getAccount(any())).thenReturn(null);
-        
-        controller.updateUserEnrollments(TEST_USER_ID);
-    }
+    // updateUserEnrollmentsAccountNotFound now happens in the accountService.editAccount
     
     @Test
     public void updateUserEnrollmentsRemovingAll() throws Exception {
@@ -234,7 +219,7 @@ public class EnrollmentControllerTest extends Mockito {
         Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, "externalId");
         Set<Enrollment> enrollments = Sets.newHashSet(en1);
         when(mockAccount.getEnrollments()).thenReturn(enrollments);
-        when(mockAccountService.getAccount(accountId)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(mockAccount));
         
         mockEditAccount(mockAccountService, mockAccount);
         

@@ -6,6 +6,7 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
@@ -99,6 +100,7 @@ public class BridgeUtils {
     }
 
     public static final Joiner AND_JOINER = Joiner.on(" AND ");
+    public static final Joiner OR_JOINER = Joiner.on(" OR ");
     public static final Joiner COMMA_SPACE_JOINER = Joiner.on(", ");
     public static final Joiner COMMA_JOINER = Joiner.on(",");
     public static final Joiner SEMICOLON_SPACE_JOINER = Joiner.on("; ");
@@ -168,9 +170,7 @@ public class BridgeUtils {
             
             // If this is a call for one’s own record, or the caller is an admin or 
             // worker, or the account is in the same organization as the caller who 
-            // is an org admin, return the account. Callers that are not associated to an 
-            // organization also gain access, but only while we migrate away from 
-            // this kind of global account.
+            // is an org admin, return the account.
             if (CAN_READ_PARTICIPANTS.check(ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
                 return account;
             }
@@ -245,6 +245,8 @@ public class BridgeUtils {
             return AccountId.forSynapseUserId(appId, userIdToken.substring(14));
         } else if (id.startsWith("syn:")) {
             return AccountId.forSynapseUserId(appId, userIdToken.substring(4));
+        } else if (id.startsWith("email:")) {
+            return AccountId.forEmail(appId, userIdToken.substring(6));
         }
         return AccountId.forId(appId, userIdToken);
     }
@@ -719,21 +721,30 @@ public class BridgeUtils {
     /**
      * Verifies that the activity eventId is valid, and prepends "custom:" to a custom ID if 
      * necessary. Returns the value property cased if valid, or null otherwise. This is 
-     * then handled by validation.   
+     * then handled by validation. If the event submitted is an overridden system event, 
+     * it will be treated as the system event so in that case, you *must* prepend "custom:" 
+     * to indicate that the custom event is being used (overridding system events is 
+     * confusing and discouraged).
      */
     public static String formatActivityEventId(Set<String> activityEventIds, String id) {
-        if (id != null) {
-            id = StringUtils.removeStart(id.toLowerCase(), "custom:");
+        if (isNotBlank(id)) {
+            boolean declaredCustom = id.toLowerCase().startsWith("custom:");
+            if (declaredCustom) {
+                id = id.substring(7);
+            }
+            if (!declaredCustom) {
+                try {
+                    String[] parts = id.split(":");
+                    ActivityEventObjectType.valueOf(parts[0].toUpperCase());
+                    return id;
+                } catch(IllegalArgumentException e) {
+                }
+            }
             if (activityEventIds.contains(id)) {
                 return "custom:" + id;
             }
-            try {
-                ActivityEventObjectType.valueOf(id.toUpperCase());
-            } catch(IllegalArgumentException e) {
-                return null;
-            }
         }
-        return id;
+        return null;
     }
     
     /**

@@ -19,6 +19,8 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIE
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ACTIVITIES_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.validators.IdentifierUpdateValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.accountHasValidIdentifier;
 
@@ -29,11 +31,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.SendMessageResult;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
+import org.sagebionetworks.bridge.validators.ParticipantRosterRequestValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +67,7 @@ import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
+import org.sagebionetworks.bridge.models.OperatingSystem;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -78,12 +91,15 @@ import org.sagebionetworks.bridge.models.notifications.NotificationProtocol;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
+import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 import org.sagebionetworks.bridge.util.BridgeCollectors;
 import org.sagebionetworks.bridge.validators.AccountSummarySearchValidator;
@@ -93,6 +109,18 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class ParticipantService {
     private static final Logger LOG = LoggerFactory.getLogger(ParticipantService.class);
+
+    static final String NO_INSTALL_LINKS_ERROR = "No install links configured for app.";
+    static final String ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR = "Account unable to be contacted via phone or email";
+    static final String CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL = "workerPlatform.request.sqs.queue.url";
+    static final String REQUEST_KEY_BODY = "body";
+    static final String REQUEST_KEY_SERVICE = "service";
+    static final String REQUEST_KEY_APP_ID = "appId";
+    static final String REQUEST_KEY_USER_ID = "userId";
+    static final String REQUEST_KEY_PASSWORD = "password";
+    static final String REQUEST_KEY_STUDY_ID = "studyId";
+    static final String DOWNLOAD_ROSTER_SERVICE_TITLE = "DownloadParticipantRosterWorker";
+    static final String APP_INSTALL_URL_KEY = "appInstallUrl";
 
     private AccountService accountService;
 
@@ -123,6 +151,14 @@ public class ParticipantService {
     private OrganizationService organizationService;
     
     private EnrollmentService enrollmentService;
+
+    private BridgeConfig bridgeConfig;
+
+    private AmazonSQSClient sqsClient;
+    
+    private TemplateService templateService;
+    
+    private SendMailService sendMailService;
 
     @Autowired
     public final void setAccountWorkflowService(AccountWorkflowService accountWorkflowService) {
@@ -198,6 +234,31 @@ public class ParticipantService {
     @Autowired
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
+    }
+
+    @Autowired
+    final void setBridgeConfig(BridgeConfig bridgeConfig) {
+        this.bridgeConfig = bridgeConfig;
+    }
+
+    @Autowired
+    final void setSqsClient(AmazonSQSClient sqsClient) {
+        this.sqsClient = sqsClient;
+    }
+    
+    @Autowired
+    final void setTemplateService(TemplateService templateService) {
+        this.templateService = templateService;
+    }
+
+    @Autowired
+    final void setSendMailService(SendMailService sendMailService) {
+        this.sendMailService = sendMailService;
+    }
+    
+    // Accessor so we can mock the value
+    protected DateTime getInstallDateTime() {
+        return new DateTime();
     }
     
     /**
@@ -284,9 +345,6 @@ public class ParticipantService {
             LOG.error("getParticipant() called with no account. Was the account deleted in the middle of the call?");
             throw new EntityNotFoundException(Account.class);
         }
-        if (BridgeUtils.filterForStudy(account) == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
 
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
         StudyAssociations assoc = studyAssociationsVisibleToCaller(account);
@@ -335,6 +393,10 @@ public class ParticipantService {
         builder.withExternalIds(assoc.getExternalIdsVisibleToCaller());
         builder.withSynapseUserId(account.getSynapseUserId());
         builder.withOrgMembership(account.getOrgMembership());
+        if (RequestContext.get().isAdministrator()) {
+            builder.withNote(account.getNote());
+        }
+        builder.withClientTimeZone(account.getClientTimeZone());
         return builder;
     }
     
@@ -372,7 +434,7 @@ public class ParticipantService {
      * back to account creation time (for studies that use neither scheduling nor consent).
      */
     public DateTime getStudyStartTime(Account account) {
-        Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getAppId(), null, account.getHealthCode());
+        Map<String, DateTime> activityMap = activityEventService.getActivityEventMap(account.getAppId(), account.getHealthCode());
         DateTime activitiesRetrievedDateTime = activityMap.get(ACTIVITIES_RETRIEVED.name().toLowerCase());
         if (activitiesRetrievedDateTime != null) {
             return activitiesRetrievedDateTime;
@@ -544,15 +606,17 @@ public class ParticipantService {
         account.setNotifyByEmail(participant.isNotifyByEmail());
         account.setDataGroups(participant.getDataGroups());
         account.setLanguages(participant.getLanguages());
+        if (RequestContext.get().isAdministrator()) {
+            account.setNote(participant.getNote());
+        }
         account.setMigrationVersion(MIGRATION_VERSION);
+        account.setClientTimeZone(participant.getClientTimeZone());
        
         RequestContext requestContext = RequestContext.get();
         
         // New accounts can simultaneously enroll themselves in a study using an external ID.
         // Legacy apps do this so we must continue to support it.
         if (isNew) {
-            RequestContext.acquireAccountIdentity(account);
-            
             for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
                 String studyId = entry.getKey();
                 String externalId = entry.getValue();
@@ -579,8 +643,8 @@ public class ParticipantService {
         
         Account account = getAccountThrowingException(app.getIdentifier(), userId);
 
-        activityEventService.publishCustomEvent(app, null,
-                account.getHealthCode(), request.getEventKey(), request.getTimestamp());
+        activityEventService.publishCustomEvent(app, account.getHealthCode(), 
+                request.getEventKey(), request.getTimestamp());
     }
     
     public void requestResetPassword(App app, String userId) {
@@ -762,6 +826,68 @@ public class ParticipantService {
         smsService.sendSmsMessage(userId, builder.build());
     }
     
+    /**
+     * Send a message by either email or SMS, depending on the configuration of the account. 
+     * IMPORTANT: the email and phone are considered to be verified; pass null for these arguments 
+     * if the values are not verified. We do it this way so the IntentService can provide values 
+     * even before an account exists. 
+     */
+    public void sendInstallLinkMessage(App app, SmsType type, String healthCode, String email, Phone phone, String osName) {
+        if (email == null && phone == null) {
+            throw new BadRequestException(ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR);
+        }
+        if (app.getInstallLinks().isEmpty()) {
+            throw new BadRequestException(NO_INSTALL_LINKS_ERROR);
+        }
+        String url = getInstallLink(osName, app.getInstallLinks());
+        
+        if (phone != null) {
+            TemplateRevision revision = templateService.getRevisionForUser(app, SMS_APP_INSTALL_LINK);
+            SmsMessageProvider.Builder builder = new SmsMessageProvider.Builder()
+                    .withApp(app)
+                    .withTemplateRevision(revision)
+                    .withPromotionType()
+                    .withPhone(phone)
+                    .withToken(APP_INSTALL_URL_KEY, url);
+            if (type == SmsType.PROMOTIONAL) {
+                builder.withPromotionType();
+            } else {
+                builder.withTransactionType();
+            }
+            // Account hasn't been created yet, so there is no ID yet. Pass in null user ID to
+            // SMS Service.
+            smsService.sendSmsMessage(null, builder.build());
+        } else {
+            TemplateRevision revision = templateService.getRevisionForUser(app, EMAIL_APP_INSTALL_LINK);
+            BasicEmailProvider provider = new BasicEmailProvider.Builder()
+                    .withApp(app)
+                    .withTemplateRevision(revision)
+                    .withRecipientEmail(email)
+                    .withType(EmailType.APP_INSTALL)
+                    .withToken(APP_INSTALL_URL_KEY, url)
+                    .build();
+            sendMailService.sendEmail(provider);
+        }
+        // We don't publish the "sent install link" for the intent sevice, because no account 
+        // exists yet. We only publish it when this template is triggered for an existing account.
+        if (healthCode != null) {
+            activityEventService.publishInstallLinkSent(app, healthCode, getInstallDateTime());
+        }
+    }
+    
+    protected String getInstallLink(String osName, Map<String,String> installLinks) {
+        String installLink = installLinks.get(osName);
+        // OS name wasn't submitted or it's wrong, use the universal link
+        if (installLink == null) {
+            installLink = installLinks.get(OperatingSystem.UNIVERSAL);
+        }
+        // Don't have a link named "Universal" so just find ANYTHING
+        if (installLink == null && !installLinks.isEmpty()) {
+            installLink = Iterables.getFirst(installLinks.values(), null);
+        }
+        return installLink;
+    }
+    
     public List<ActivityEvent> getActivityEvents(App app, String studyId, String userId) {
         Account account = getAccountThrowingException(app.getIdentifier(), userId);
         
@@ -820,6 +946,31 @@ public class ParticipantService {
         // return updated StudyParticipant to update and return session
         return getParticipant(app, account.getId(), false);
     }
+
+    public void getParticipantRoster(String appId, String userId, ParticipantRosterRequest request) throws JsonProcessingException {
+        Validate.entityThrowingException(ParticipantRosterRequestValidator.INSTANCE, request);
+
+        ObjectMapper jsonObjectMapper = BridgeObjectMapper.get();
+
+        // wrap message as nested json node
+        ObjectNode requestNode = jsonObjectMapper.createObjectNode();
+        requestNode.put(REQUEST_KEY_APP_ID, appId);
+        requestNode.put(REQUEST_KEY_USER_ID, userId);
+        requestNode.put(REQUEST_KEY_PASSWORD, request.getPassword());
+        requestNode.put(REQUEST_KEY_STUDY_ID, request.getStudyId());
+
+        ObjectNode requestMsg = jsonObjectMapper.createObjectNode();
+        requestMsg.put(REQUEST_KEY_SERVICE, DOWNLOAD_ROSTER_SERVICE_TITLE);
+        requestMsg.set(REQUEST_KEY_BODY, requestNode);
+
+        String requestJson = jsonObjectMapper.writeValueAsString(requestMsg);
+
+        // sent to SQS
+        String queueUrl = bridgeConfig.getProperty(CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL);
+        SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJson);
+        LOG.info("Sent request to SQS for userId=" + userId + ", app=" + appId + "; received message ID=" +
+                sqsResult.getMessageId());
+    }
     
     private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {
         RequestInfo info = requestInfoService.getRequestInfo(participant.getId());
@@ -867,11 +1018,8 @@ public class ParticipantService {
     }
     
     private Account getAccountThrowingException(AccountId accountId) {
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        return account;
+        return accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
     }
 
 }

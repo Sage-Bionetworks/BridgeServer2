@@ -57,6 +57,7 @@ import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecord;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
@@ -64,7 +65,6 @@ import org.sagebionetworks.bridge.models.upload.UploadSession;
 import org.sagebionetworks.bridge.models.upload.UploadStatus;
 import org.sagebionetworks.bridge.models.upload.UploadValidationStatus;
 import org.sagebionetworks.bridge.models.upload.UploadView;
-import org.sagebionetworks.bridge.validators.UploadValidator;
 
 @SuppressWarnings("ConstantConditions")
 public class UploadServiceTest {
@@ -80,14 +80,14 @@ public class UploadServiceTest {
     final static StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE).build();
 
     @Mock
+    private AppService mockAppService;
+
+    @Mock
     HealthDataService mockHealthDataService;
     
     @Mock
     Upload mockUpload;
-    
-    @Mock
-    UploadValidationStatus mockStatus;
-    
+
     @Mock
     HealthDataRecord mockRecord;
     
@@ -125,7 +125,6 @@ public class UploadServiceTest {
     public void before() {
         DateTimeUtils.setCurrentMillisFixed(TIMESTAMP.getMillis());
         MockitoAnnotations.initMocks(this);
-        svc.setValidator(new UploadValidator());
         svc.setS3Client(mockS3Client);
         svc.setS3UploadClient(mockS3UploadClient);
         
@@ -563,6 +562,10 @@ public class UploadServiceTest {
     
     @Test
     public void uploadComplete() throws Exception {
+        App app = App.create();
+        app.setExporter3Enabled(false);
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+
         UploadRequest uploadRequest = constructUploadRequest();
         DynamoUpload2 upload = new DynamoUpload2(uploadRequest, HEALTH_CODE);
         upload.setUploadId(ORIGINAL_UPLOAD_ID);

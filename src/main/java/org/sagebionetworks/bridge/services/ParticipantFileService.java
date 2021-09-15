@@ -9,7 +9,6 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantFileDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.files.ParticipantFile;
@@ -20,9 +19,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 import java.net.URL;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.amazonaws.HttpMethod.GET;
 import static com.amazonaws.HttpMethod.PUT;
@@ -111,8 +107,6 @@ public class ParticipantFileService {
      * @param userId the userId of this file
      * @param file the file metadata to be upload. The file's appId and userId will be set by given parameters.
      * @return the ParticipantFile with pre-signed S3 URL for file upload.
-     * @throws org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException
-     *         if the file already exists.
      */
     public ParticipantFile createParticipantFile(String appId, String userId, ParticipantFile file) {
         checkArgument(isNotBlank(appId));
@@ -122,14 +116,11 @@ public class ParticipantFileService {
         file.setCreatedOn(DateTime.now());
         Validate.entityThrowingException(INSTANCE, file);
 
-        participantFileDao.getParticipantFile(file.getUserId(), file.getFileId()).ifPresent(
-                oldFile -> {
-                    Map<String, Object> entityKey = new HashMap<>();
-                    entityKey.put("oldFile", oldFile);
-                    throw new EntityAlreadyExistsException(ParticipantFile.class, entityKey);
-                }
-        );
         participantFileDao.uploadParticipantFile(file);
+
+        // Deleting any previous object prevents a user from updating the ParticipantFile
+        // but leaving the previous object on S3.
+        s3Client.deleteObject(bucketName, getFilePath(file));
 
         file.setUploadUrl(generatePresignedRequest(file, PUT).toExternalForm());
         return file;
@@ -163,9 +154,11 @@ public class ParticipantFileService {
     }
 
     private URL generatePresignedRequest(ParticipantFile file, HttpMethod method) {
-        Date expiration = new DateTime().plusMinutes(EXPIRATION_IN_MINUTES).toDate();
+        DateTime expiration = DateTime.now().plusMinutes(EXPIRATION_IN_MINUTES);
+        file.setExpiresOn(expiration);
+
         GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(bucketName, getFilePath(file), method);
-        request.setExpiration(expiration);
+        request.setExpiration(expiration.toDate());
         if (PUT.equals(method)) {
             request.setContentType(file.getMimeType());
             request.addRequestParameter(Headers.SERVER_SIDE_ENCRYPTION, ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);

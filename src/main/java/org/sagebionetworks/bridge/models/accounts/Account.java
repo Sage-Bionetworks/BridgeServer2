@@ -230,4 +230,10 @@ public interface Account extends BridgeEntity {
     
     /** Get all enrollments that have not been withdrawn. */
     Set<Enrollment> getActiveEnrollments();
+
+    String getNote();
+    void setNote(String note);
+
+    String getClientTimeZone();
+    void setClientTimeZone(String clientTimeZone);
 }

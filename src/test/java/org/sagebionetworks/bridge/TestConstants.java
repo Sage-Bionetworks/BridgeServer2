@@ -52,6 +52,8 @@ public class TestConstants {
     public static final String TEST_USER_ID = "userId";
     public static final String SYNAPSE_USER_ID = "12345";
     public static final DateTimeZone TIMEZONE_MSK = DateTimeZone.forOffsetHours(3);
+    public static final String TEST_NOTE = "test note";
+    public static final String TEST_CLIENT_TIME_ZONE = "America/Los_Angeles";
 
     public static final String HEALTH_CODE = "oneHealthCode";
     public static final String ENCRYPTED_HEALTH_CODE = "TFMkaVFKPD48WissX0bgcD3esBMEshxb3MVgKxHnkXLSEPN4FQMKc01tDbBAVcXx94kMX6ckXVYUZ8wx4iICl08uE+oQr9gorE1hlgAyLAM=";
@@ -63,6 +65,7 @@ public class TestConstants {
     public static final String MOCK_MD5_HEX_ENCODED = "980ae2db198f5cf7458ad2a90bf226c3";
 
     public static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+    public static final AccountId ACCOUNT_ID_WITH_HEALTHCODE = AccountId.forHealthCode(TEST_APP_ID, HEALTH_CODE);
     public static final CriteriaContext TEST_CONTEXT = new CriteriaContext.Builder()
             .withUserId("user-id").withAppId(TEST_APP_ID).build();
 
@@ -78,7 +81,7 @@ public class TestConstants {
     public static final String EMAIL = "email@email.com";
     public static final String PASSWORD = "password";
     public static final String SESSION_TOKEN = "sessionToken";
-    
+
     public static final String ATTACHMENT_BUCKET = BridgeConfigFactory.getConfig().getProperty("attachment.bucket");
     public static final String UPLOAD_BUCKET = BridgeConfigFactory.getConfig().getProperty("upload.bucket");
     
@@ -168,6 +171,7 @@ public class TestConstants {
     public static final Set<String> STRING_TAGS = ImmutableSet.of("tag1", "tag2");
     public static final Set<Tag> TAGS = TagUtils.toTagSet(STRING_TAGS);
     public static final DateTime CREATED_ON = TIMESTAMP.minusHours(1);
+    public static final DateTime EXPORTED_ON = CREATED_ON.plusMinutes(1);
     public static final DateTime MODIFIED_ON = TIMESTAMP.plusHours(1);
 
     public static final PropertyInfo INFO1 = new PropertyInfo.Builder().withPropName("foo").withLabel("foo label")
@@ -191,12 +195,13 @@ public class TestConstants {
             .withLastName("lastName1").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
             .withExternalIds(ImmutableMap.of("study1", "externalId1")).withId("id")
             .withStudyIds(ImmutableSet.of("study1", "study2")).withCreatedOn(TIMESTAMP).withStatus(DISABLED)
-            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
+            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).withNote("note1")
+            .withClientTimeZone(TEST_CLIENT_TIME_ZONE).build();
     public static final AccountSummary SUMMARY2 = new AccountSummary.Builder().withFirstName("firstName2")
             .withLastName("lastName2").withEmail(EMAIL).withSynapseUserId(SYNAPSE_USER_ID).withPhone(PHONE)
             .withExternalIds(ImmutableMap.of("study2", "externalId2")).withId("id2")
             .withStudyIds(ImmutableSet.of("study1", "study2")).withCreatedOn(TIMESTAMP).withStatus(ENABLED)
-            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).build();
+            .withAppId(TEST_APP_ID).withOrgMembership(TEST_ORG_ID).withNote("note2").build();
 
     public static final ColorScheme COLOR_SCHEME = new ColorScheme("#000000", "#FFFFFF", "#CCEECC", "#CCCCCC");
     public static final List<Label> LABELS = ImmutableList.of(new Label("en", "English"), new Label("fr", "French"));

@@ -12,18 +12,23 @@ import com.google.common.collect.Lists;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
+import org.apache.http.impl.client.HttpClients;
 import org.joda.time.LocalDate;
+
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.crc.gbf.external.*;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
@@ -32,20 +37,34 @@ import static org.apache.http.entity.ContentType.APPLICATION_JSON;
 @Component
 public class GBFOrderService {
     private static Logger LOG = LoggerFactory.getLogger(GBFOrderService.class);
-
+    
     public static final String GBF_API_KEY = "gbf.api.key";
     public static final String GBF_PLACE_ORDER_URL = "gbf.order.place.url";
     public static final String GBF_ORDER_STATUS_URL = "gbf.order.status.url";
     public static final String GBF_CONFIRMATION_URL = "gbf.ship.confirmation.url";
-
+    
     public static final String GBF_SHIPPING_ERROR_KEY = "Error";
     public static final String GBF_SERVICE_ERROR_MESSAGE = "Error calling order service";
-
+    
+    public static final int GBF_HTTP_POST_RETRY_COUNT = 3;
+    // default retry strategy excludes POST requests
+    private static final Executor GBF_HTTP_POST_RETRY_EXECUTOR = Executor.newInstance(HttpClients.custom()
+            .setRetryHandler((e, executionCount, httpContext) -> {
+                if ((e instanceof SocketException) && (executionCount < GBF_HTTP_POST_RETRY_COUNT)) {
+                    LOG.warn("Encountered SocketException, retrying count " + executionCount, e);
+                    return true;
+                } else {
+                    LOG.warn("Encountered SocketException, no more retries", e);
+                    return false;
+                }
+            })
+            .build());
+    
     private String gbfOrderUrl;
     private String getGbfOrderStatusUrl;
     private String gbfConfirmationUrl;
     private String gbfApiKey;
-
+    
     private ObjectMapper jsonMapper = new ObjectMapper()
             .registerModule(new JodaModule())
             .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
@@ -185,7 +204,7 @@ public class GBFOrderService {
         request.addHeader("Authorization", "Bearer " + bearerToken);
 
         try {
-            return request.execute().returnResponse();
+            return GBF_HTTP_POST_RETRY_EXECUTOR.execute(request).returnResponse();
         } catch (IOException e) {
             LOG.error("Error posting Json to url: {}", url, e);
             throw new BridgeServiceException(GBF_SERVICE_ERROR_MESSAGE);

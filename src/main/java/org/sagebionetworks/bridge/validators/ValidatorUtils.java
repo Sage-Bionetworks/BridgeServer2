@@ -11,11 +11,13 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.Duration;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Period;
 import org.springframework.validation.Errors;
@@ -31,7 +33,7 @@ import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 
 public class ValidatorUtils {
-    
+
     static final String WRONG_PERIOD = "%s can only specify minute, hour, day, or week duration units";
     static final String WRONG_LONG_PERIOD = "%s can only specify day or week duration units";
     static final String DUPLICATE_LANG = "%s is a duplicate message under the same language code";
@@ -41,19 +43,19 @@ public class ValidatorUtils {
 
     private static final Set<DurationFieldType> FIXED_LENGTH_DURATIONS = ImmutableSet.of(DurationFieldType.minutes(),
             DurationFieldType.hours(), DurationFieldType.days(), DurationFieldType.weeks());
-    
+
     private static final Set<DurationFieldType> FIXED_LENGTH_LONG_DURATIONS = ImmutableSet.of(DurationFieldType.days(),
             DurationFieldType.weeks());
-    
+
     public static boolean participantHasValidIdentifier(StudyParticipant participant) {
         Phone phone = participant.getPhone();
         String email = participant.getEmail();
-        String anyExternalId = participant.getExternalIds().isEmpty() ? null : 
-            Iterables.getFirst(participant.getExternalIds().entrySet(), null).getValue();
+        String anyExternalId = participant.getExternalIds().isEmpty() ? null
+                : Iterables.getFirst(participant.getExternalIds().entrySet(), null).getValue();
         String synapseUserId = participant.getSynapseUserId();
         return (email != null || isNotBlank(anyExternalId) || phone != null || isNotBlank(synapseUserId));
     }
-    
+
     public static boolean accountHasValidIdentifier(Account account) {
         Phone phone = account.getPhone();
         String email = account.getEmail();
@@ -67,7 +69,7 @@ public class ValidatorUtils {
             errors.rejectValue("password", "is required");
         } else {
             if (passwordPolicy.getMinLength() > 0 && password.length() < passwordPolicy.getMinLength()) {
-                errors.rejectValue("password", "must be at least "+passwordPolicy.getMinLength()+" characters");
+                errors.rejectValue("password", "must be at least " + passwordPolicy.getMinLength() + " characters");
             }
             if (passwordPolicy.isNumericRequired() && !password.matches(".*\\d+.*")) {
                 errors.rejectValue("password", "must contain at least one number (0-9)");
@@ -83,16 +85,13 @@ public class ValidatorUtils {
             }
         }
     }
-    
+
     private static void validateLanguageSet(Errors errors, List<? extends HasLang> items, String fieldName) {
-        if (items.isEmpty()) {
-            return;
-        }
         Set<String> visited = new HashSet<>();
-        for (int i=0; i < items.size(); i++) {
+        for (int i = 0; i < items.size(); i++) {
             HasLang item = items.get(i);
             errors.pushNestedPath(fieldName + "[" + i + "]");
-            
+
             if (isBlank(item.getLang())) {
                 errors.rejectValue("lang", CANNOT_BE_BLANK);
             } else {
@@ -100,7 +99,7 @@ public class ValidatorUtils {
                     errors.rejectValue("lang", DUPLICATE_LANG);
                 }
                 visited.add(item.getLang());
-                
+
                 Locale locale = new Locale.Builder().setLanguageTag(item.getLang()).build();
                 if (!LocaleUtils.isAvailableLocale(locale)) {
                     errors.rejectValue("lang", INVALID_LANG);
@@ -109,13 +108,13 @@ public class ValidatorUtils {
             errors.popNestedPath();
         }
     }
-    
+
     public static void validateLabels(Errors errors, List<Label> labels) {
         if (labels == null || labels.isEmpty()) {
             return;
         }
-        validateLanguageSet(errors, labels, "labels");    
-        for (int j=0; j < labels.size(); j++) {
+        validateLanguageSet(errors, labels, "labels");
+        for (int j = 0; j < labels.size(); j++) {
             Label label = labels.get(j);
 
             if (isBlank(label.getValue())) {
@@ -125,16 +124,16 @@ public class ValidatorUtils {
             }
         }
     }
-    
+
     public static void validateMessages(Errors errors, List<NotificationMessage> messages) {
         if (messages == null || messages.isEmpty()) {
             return;
         }
         validateLanguageSet(errors, messages, "messages");
         boolean englishDefault = false;
-        for (int j=0; j < messages.size(); j++) {
+        for (int j = 0; j < messages.size(); j++) {
             NotificationMessage message = messages.get(j);
-            
+
             if ("en".equalsIgnoreCase(message.getLang())) {
                 englishDefault = true;
             }
@@ -155,7 +154,7 @@ public class ValidatorUtils {
             }
         }
     }
-    
+
     public static final void validateColorScheme(Errors errors, ColorScheme cs, String fieldName) {
         if (cs != null) {
             errors.pushNestedPath(fieldName);
@@ -175,33 +174,6 @@ public class ValidatorUtils {
         }
     }
 
-    /**
-     * This converts the period to minutes, but only those fields that have a 
-     * conventional measurement in minutes (so months and years are ignored).  
-     */
-    public static final int periodInMinutes(Period period) {
-        int minutes = period.getMinutes();
-        minutes += (period.getHours() * 60);
-        minutes += (period.getDays() * 24 * 60);
-        minutes += (period.getWeeks() * 7 * 24 * 60);
-        return minutes;
-    }
-    
-    /**
-     * This converts the period to milliseconds, but only those fields that have 
-     * a conventional measurement in milliseconds (so months and years are 
-     * ignored).
-     */
-    public static final long periodInMilliseconds(Period period) {
-        int millis = period.getMillis();
-        millis += (period.getSeconds() * 1000);
-        millis += (period.getMinutes() * 1000 * 60);
-        millis += (period.getHours() * 60 * 1000 * 60);
-        millis += (period.getDays() * 24 * 60 * 1000 * 60);
-        millis += (period.getWeeks() * 7 * 24 * 60 * 1000 * 60);
-        return millis;
-    }
-    
     public static void validateFixedLengthPeriod(Errors errors, Period period, String fieldName, boolean required) {
         validateDuration(FIXED_LENGTH_DURATIONS, errors, period, fieldName, WRONG_PERIOD, required);
     }
@@ -225,18 +197,46 @@ public class ValidatorUtils {
                 break;
             }
         }
-        // Note that this does not allow any portion to be negative, even 
+        // Note that this does not allow any portion to be negative, even
         // if the sum total is positive.
         int[] values = period.getValues();
-        for (int i=0; i < values.length; i++) {
+        for (int i = 0; i < values.length; i++) {
             if (values[i] < 0) {
                 errors.rejectValue(fieldName, CANNOT_BE_NEGATIVE);
                 break;
             }
         }
-        if (periodInMilliseconds(period) == 0L) {
+        if (periodInMinutes(period) == 0L) {
             errors.rejectValue(fieldName, "cannot be of no duration");
         }
     }
-    
+
+    /**
+     * This converts the period to minutes, but only those fields that have a
+     * conventional measurement in minutes (so months and years are ignored).
+     */
+    public static final long periodInMinutes(Period period) {
+        return convertPeriod(period, (d) -> d.getStandardMinutes());
+    }
+
+    /**
+     * This converts the period to days, but only those fields that have a
+     * conventional measurement in days (so months and years are ignored).
+     */
+    public static final long periodInDays(Period period) {
+        return convertPeriod(period, (d) -> d.getStandardDays());
+    }
+
+    private static final long convertPeriod(Period period, Function<Duration, Long> func) {
+        if (period == null) {
+            return 0L;
+        }
+        try {
+            Duration d = period.toStandardDuration();
+            return func.apply(d);
+        } catch(UnsupportedOperationException e) {
+            return 0L;
+        }
+    }
+
 }

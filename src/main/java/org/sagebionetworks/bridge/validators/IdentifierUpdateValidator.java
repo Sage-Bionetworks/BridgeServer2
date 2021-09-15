@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 
 import org.apache.commons.validator.routines.EmailValidator;
 
@@ -41,19 +44,19 @@ public class IdentifierUpdateValidator implements Validator {
         if (update.getPhoneUpdate() != null) {
             updateFields++;
             if (!Phone.isValid(update.getPhoneUpdate())) {
-                errors.rejectValue("phoneUpdate", "does not appear to be a phone number");
+                errors.rejectValue("phoneUpdate", INVALID_PHONE_ERROR);
             }            
         }
         if (update.getEmailUpdate() != null) {
             updateFields++;
             if (!EMAIL_VALIDATOR.isValid(update.getEmailUpdate())) {
-                errors.rejectValue("emailUpdate", "does not appear to be an email address");
+                errors.rejectValue("emailUpdate", INVALID_EMAIL_ERROR);
             }
         }
         if (update.getSynapseUserIdUpdate() != null) {
             updateFields++;
             if (isBlank(update.getSynapseUserIdUpdate())) {
-                errors.rejectValue("synapseUserIdUpdate", "cannot be blank");
+                errors.rejectValue("synapseUserIdUpdate", CANNOT_BE_BLANK);
             } else if (!update.getSynapseUserIdUpdate().matches("^[0-9]+$")) {
                 errors.rejectValue("synapseUserIdUpdate", "should be a string containing a positive integer");
             }

@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -102,7 +103,7 @@ public class ParticipantDataControllerTest extends Mockito {
         StudyParticipant participant = new StudyParticipant.Builder().withId(TEST_USER_ID)
                 .withRoles(Sets.newHashSet(DEVELOPER)).build();
 
-        doReturn(mockOtherAccount).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
+        doReturn(Optional.of(mockOtherAccount)).when(mockAccountService).getAccount(OTHER_ACCOUNT_ID);
 
         ConsentStatus status = new ConsentStatus.Builder().withName("Name").withGuid(SubpopulationGuid.create("GUID"))
                 .withConsented(true).withRequired(true).withSignedMostRecentConsent(true).build();
@@ -198,7 +199,7 @@ public class ParticipantDataControllerTest extends Mockito {
 
     @Test
     public void testGetAllDataForAdminWorker() {
-        when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(mockAccount);
+        when(mockAccountService.getAccount(OTHER_ACCOUNT_ID)).thenReturn(Optional.of(mockAccount));
 
         ForwardCursorPagedResourceList<ParticipantData> expected = makeResults(OFFSET_KEY, PAGE_SIZE_INT);
         doReturn(expected).when(mockParticipantDataService).getAllParticipantData(session.getId(), OFFSET_KEY, PAGE_SIZE_INT);

@@ -7,6 +7,7 @@ import java.util.List;
 import javax.annotation.Nonnull;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
@@ -39,6 +40,7 @@ public class DynamoUpload2 implements Upload {
     private Boolean encrypted;
     private String filename;
     private String healthCode;
+    private ObjectNode metadata;
     private String recordId;
     private UploadStatus status;
     private String appId;
@@ -62,6 +64,8 @@ public class DynamoUpload2 implements Upload {
         encrypted = uploadRequest.isEncrypted();
         filename = uploadRequest.getName();
         this.healthCode = healthCode;
+        // Already validated by UploadValidator.
+        metadata = (ObjectNode) uploadRequest.getMetadata();
         status = UploadStatus.REQUESTED;
         uploadId = BridgeUtils.generateGuid();
         zipped = uploadRequest.isZipped();
@@ -89,21 +93,25 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** The base64-encoded, 128-bit MD5 digest of the object body. */
+    @Override
     public String getContentMd5() {
         return contentMd5;
     }
 
     /** @see #getContentMd5 */
+    @Override
     public void setContentMd5(String contentMd5) {
         this.contentMd5 = contentMd5;
     }
 
     /** MIME content type. */
+    @Override
     public String getContentType() {
         return contentType;
     }
 
     /** @see #getContentType */
+    @Override
     public void setContentType(String contentType) {
         this.contentType = contentType;
     }
@@ -156,6 +164,19 @@ public class DynamoUpload2 implements Upload {
     }
 
     /** {@inheritDoc} */
+    @DynamoDBTypeConverted(converter = JsonNodeMarshaller.class)
+    @Override
+    public ObjectNode getMetadata() {
+        return metadata;
+    }
+
+    /** {@inheritDoc} */
+    @Override
+    public void setMetadata(ObjectNode metadata) {
+        this.metadata = metadata;
+    }
+
+    /** {@inheritDoc} */
     @DynamoDBIgnore
     @Override
     public String getObjectId() {
@@ -189,11 +210,13 @@ public class DynamoUpload2 implements Upload {
     
     /** {@inheritDoc} */
     @DynamoDBIndexHashKey(attributeName = "studyId", globalSecondaryIndexName = "studyId-requestedOn-index")
+    @Override
     public String getAppId() {
         return appId;
     }
     
     /** @see #getAppId */
+    @Override
     public void setAppId(String appId) {
         this.appId = appId;
     }

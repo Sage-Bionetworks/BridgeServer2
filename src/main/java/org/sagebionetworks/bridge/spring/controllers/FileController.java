@@ -44,7 +44,7 @@ public class FileController extends BaseController {
     @GetMapping("/v3/files")
     public ResourceList<FileMetadata> getFiles(@RequestParam(required = false) String offsetBy, @RequestParam(required = false) String pageSize, 
             @RequestParam(required = false) String includeDeleted) {
-        UserSession session = getAuthenticatedSession(DEVELOPER);
+        UserSession session = getAdministrativeSession();
         
         int offsetInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);

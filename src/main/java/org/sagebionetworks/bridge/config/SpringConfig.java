@@ -5,7 +5,6 @@ import static org.hibernate.event.spi.EventType.DELETE;
 import static org.hibernate.event.spi.EventType.MERGE;
 import static org.hibernate.event.spi.EventType.SAVE_UPDATE;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -120,20 +119,24 @@ import org.sagebionetworks.bridge.hibernate.BasicPersistenceExceptionConverter;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.Tag;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessment;
 import org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentConfig;
 import org.sagebionetworks.bridge.models.files.FileMetadata;
 import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.organizations.HibernateOrganization;
+import org.sagebionetworks.bridge.models.schedules2.Notification;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.redis.JedisOps;
 import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.spring.filters.MetricsFilter;
 import org.sagebionetworks.bridge.spring.filters.RequestFilter;
 import org.sagebionetworks.bridge.spring.filters.StaticHeadersFilter;
+import org.sagebionetworks.bridge.synapse.SynapseHelper;
 import org.sagebionetworks.bridge.upload.DecryptHandler;
 import org.sagebionetworks.bridge.upload.InitRecordHandler;
 import org.sagebionetworks.bridge.upload.S3DownloadHandler;
@@ -297,7 +300,14 @@ public class SpringConfig {
 
     @Bean(name = "cmsEncryptorCache")
     @Autowired
-    public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(CmsEncryptorCacheLoader cacheLoader) {
+    public LoadingCache<String, CmsEncryptor> cmsEncryptorCache(S3Helper s3Helper) {
+        BridgeConfig bridgeConfig = bridgeConfig();
+
+        CmsEncryptorCacheLoader cacheLoader = new CmsEncryptorCacheLoader();
+        cacheLoader.setCertBucket(bridgeConfig.getProperty("upload.cms.cert.bucket"));
+        cacheLoader.setPrivateKeyBucket(bridgeConfig.getProperty("upload.cms.priv.bucket"));
+        cacheLoader.setS3Helper(s3Helper);
+
         return CacheBuilder.newBuilder().build(cacheLoader);
     }
 
@@ -575,7 +585,7 @@ public class SpringConfig {
         String url = config.get("hibernate.connection.url");
         // Append SSL props to URL
         boolean useSsl = Boolean.valueOf(config.get("hibernate.connection.useSSL"));
-        url += "?serverTimezone=UTC&requireSSL="+useSsl+"&useSSL="+useSsl+"&verifyServerCertificate="+useSsl;
+        url += "?rewriteBatchedStatements=true&serverTimezone=UTC&requireSSL="+useSsl+"&useSSL="+useSsl+"&verifyServerCertificate="+useSsl;
         
         return url;
     }
@@ -642,6 +652,9 @@ public class SpringConfig {
         metadataSources.addAnnotatedClass(Session.class);
         metadataSources.addAnnotatedClass(Tag.class);
         metadataSources.addAnnotatedClass(TimelineMetadata.class);
+        metadataSources.addAnnotatedClass(AdherenceRecord.class);
+        metadataSources.addAnnotatedClass(StudyActivityEvent.class);
+        metadataSources.addAnnotatedClass(Notification.class);
         
         SessionFactory factory = metadataSources.buildMetadata().buildSessionFactory();
         
@@ -723,11 +736,26 @@ public class SpringConfig {
     }
 
     @Bean(name="bridgePFSynapseClient")
-    public SynapseClient synapseClient() throws IOException {
+    public SynapseClient synapseClient() {
         SynapseClient synapseClient = new SynapseAdminClientImpl();
         synapseClient.setUsername(bridgeConfig().get("synapse.user"));
         synapseClient.setApiKey(bridgeConfig().get("synapse.api.key"));
         return synapseClient;
+    }
+
+    @Bean(name="exporterSynapseClient")
+    public SynapseClient exporterSynapseClient() {
+        SynapseClient synapseClient = new SynapseAdminClientImpl();
+        synapseClient.setUsername(bridgeConfig().get("exporter.synapse.user"));
+        synapseClient.setApiKey(bridgeConfig().get("exporter.synapse.api.key"));
+        return synapseClient;
+    }
+
+    @Bean(name="exporterSynapseHelper")
+    public SynapseHelper exporterSynapseHelper() {
+        SynapseHelper synapseHelper = new SynapseHelper();
+        synapseHelper.setSynapseClient(exporterSynapseClient());
+        return synapseHelper;
     }
 
     @Bean(name = "genericViewCache")

@@ -86,6 +86,14 @@ public interface App extends BridgeEntity {
     /** @see #isAutoVerificationEmailSuppressed */
     void setAutoVerificationEmailSuppressed(boolean autoVerificationEmailSuppressed);
 
+    /** Configuration required for Exporter 3.0. */
+    Exporter3Configuration getExporter3Configuration();
+    void setExporter3Configuration(Exporter3Configuration exporter3Configuration);
+
+    /** True if Exporter 3.0 is enabled for this app. Note that enabling Exporter 3.0 does not disable Exporter 2.0. */
+    boolean isExporter3Enabled();
+    void setExporter3Enabled(boolean exporter3Enabled);
+
     /**
      * True if sessions for unprivileged participant accounts should be locked to an IP address. (Privileged account
      * sessions are _always_ locked to an IP address.)

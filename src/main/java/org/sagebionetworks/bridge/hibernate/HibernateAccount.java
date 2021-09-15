@@ -86,7 +86,9 @@ public class HibernateAccount implements Account {
     private Set<String> dataGroups;
     private List<String> languages;
     private int migrationVersion;
-    private Set<Enrollment> enrollments; 
+    private Set<Enrollment> enrollments;
+    private String note;
+    private String clientTimeZone;
     
     /**
      * Constructor to load information for the AccountRef object. This avoids loading any of the 
@@ -158,7 +160,7 @@ public class HibernateAccount implements Account {
         return orgMembership;
     }
 
-    /** @see #getOrgMembershiop */
+    /** @see #getOrgMembership */
     public void setOrgMembership(String orgId) {
         this.orgMembership = orgId;
     }
@@ -418,7 +420,8 @@ public class HibernateAccount implements Account {
     }
     
     /** The time zone initially captured from this user's requests, used to correctly calculate 
-     * schedules for the user. Should not be updated once set. */
+     * schedules for the user. Should not be updated once set. Related to v3 scheduling API so
+     * it is not always set or reliable. */
     @Convert(converter = DateTimeZoneAttributeConverter.class)
     @JsonIgnore
     public DateTimeZone getTimeZone() {
@@ -531,5 +534,28 @@ public class HibernateAccount implements Account {
         return getEnrollments().stream()
                 .filter(en -> en.getWithdrawnOn() == null)
                 .collect(toImmutableSet());
+    }
+
+    @Override
+    public String getNote() {
+        return note;
+    }
+
+    @Override
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+    /** The client's time zone explicitly set through requests to be used as reference
+     * for client side scheduling. Can be updated or deleted. Must be an IANA time zone name. */
+    @Override
+    public String getClientTimeZone() {
+        return clientTimeZone;
+    }
+
+    /** @see #getClientTimeZone */
+    @Override
+    public void setClientTimeZone(String clientTimeZone) {
+        this.clientTimeZone = clientTimeZone;
     }
 }

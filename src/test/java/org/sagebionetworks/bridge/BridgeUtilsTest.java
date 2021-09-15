@@ -201,6 +201,7 @@ public class BridgeUtilsTest {
     public void externalIdsVisibleToCaller() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB", "studyD");
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(callerStudies).build());
 
@@ -303,6 +304,7 @@ public class BridgeUtilsTest {
     public void filterForStudyAccountRemovesUnsharedStudyIds() {
         Set<String> studies = ImmutableSet.of("studyA");
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withOrgSponsoredStudies(studies).build());
         
         Account account = BridgeUtils.filterForStudy(getAccountWithStudy("studyB", "studyA"));
@@ -326,18 +328,22 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void filterForStudyAccountNoContextNoStudyDoesNotReturnAccount() {
-        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
+    public void filterForStudyAccountNoContextReturnsAccount() {
+        RequestContext.set(RequestContext.NULL_INSTANCE);
+        assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
     }
     
     @Test
     public void filterForStudyAccountNoContextWithStudyDoesNotReturnAccount() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
     
     @Test
     public void filterForStudyAccountWithStudiesHidesNormalAccount() {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
         RequestContext.set(null);
     }
@@ -351,7 +357,9 @@ public class BridgeUtilsTest {
     
     @Test
     public void filterForStudyAccountWithMismatchedStudiesHidesStudyAccount() {
-        RequestContext.set(new RequestContext.Builder().withOrgSponsoredStudies(ImmutableSet.of("notStudyA")).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withOrgSponsoredStudies(ImmutableSet.of("notStudyA")).build());
         assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
     }
     
@@ -482,6 +490,10 @@ public class BridgeUtilsTest {
         accountId = BridgeUtils.parseAccountId("test", "syn:IdentifierA12");
         assertEquals(accountId.getAppId(), "test");
         assertEquals(accountId.getSynapseUserId(), "IdentifierA12");
+
+        accountId = BridgeUtils.parseAccountId("test", "email:bridge-testing@sagebase.org");
+        assertEquals(accountId.getAppId(), "test");
+        assertEquals(accountId.getEmail(), "bridge-testing@sagebase.org");
     }
     
     @Test
@@ -988,14 +1000,14 @@ public class BridgeUtilsTest {
     
     @Test
     public void formatActivityEventIdIsValidCustomId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "FOO");
-        assertEquals(retValue, "custom:foo");
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("FOO"), "FOO");
+        assertEquals(retValue, "custom:FOO");
         
     }
     
     @Test
     public void formatActivityEventIdIsValidCustomIdWithCustomPrefix() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "CUSTOM:FOO");
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "CUSTOM:foo");
         assertEquals(retValue, "custom:foo");
     }
 
@@ -1006,6 +1018,12 @@ public class BridgeUtilsTest {
     }
 
     @Test
+    public void formatActivityEventIdIsValidCompoundSystemId() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
+        assertEquals(retValue, "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
+    }
+    
+    @Test
     public void formatActivityEventIdBlank() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "");
         assertNull(retValue);
@@ -1015,6 +1033,30 @@ public class BridgeUtilsTest {
     @Test
     public void formatActivityEventIdNull() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), null);
+        assertNull(retValue);
+    }
+    
+    @Test
+    public void formatActivityEventIdWithCasing() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("Event1"), "custom:Event1");
+        assertEquals(retValue, "custom:Event1");
+    }
+    
+    @Test
+    public void formatActivityEventIdCustomShadowsSystemEvent() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "custom:timeline_retrieved");
+        assertEquals(retValue, "custom:timeline_retrieved");
+    }
+    
+    @Test
+    public void formatActivityEventIdSystemEventCorrectlyInterpreted() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "timeline_retrieved");
+        assertEquals(retValue, "timeline_retrieved");
+    }
+    
+    @Test
+    public void formatActivityEventIdDeclaredCustomIsNotPresent() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "custom:bar");
         assertNull(retValue);
     }
     
@@ -1083,7 +1125,7 @@ public class BridgeUtilsTest {
         Label sel = BridgeUtils.selectByLang(items, null, LABEL_HI);
         assertEquals(sel, LABEL_HI);
     }
-
+    
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.
     private <T> void orderedSetsEqual(Set<T> first, Set<T> second) {
         assertEquals(second.size(), first.size());

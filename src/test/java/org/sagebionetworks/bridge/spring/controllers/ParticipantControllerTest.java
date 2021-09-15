@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_1;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
@@ -38,6 +39,8 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.SPONSORS_AND_PARTNERS;
+import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
+import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -48,11 +51,13 @@ import static org.testng.Assert.assertTrue;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
@@ -71,6 +76,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -97,6 +103,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountStatus;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
@@ -127,6 +134,7 @@ import org.sagebionetworks.bridge.services.ParticipantService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.sagebionetworks.bridge.services.SessionUpdateService;
 import org.sagebionetworks.bridge.services.SponsorService;
+import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -178,6 +186,9 @@ public class ParticipantControllerTest extends Mockito {
 
     @Mock
     AppService mockAppService;
+    
+    @Mock
+    AccountService mockAccountService;
 
     @Mock
     AuthenticationService mockAuthService;
@@ -192,7 +203,7 @@ public class ParticipantControllerTest extends Mockito {
     RequestInfoService mockRequestInfoService;
     
     @Mock
-    SponsorService mockSponsorSerice;
+    SponsorService mockSponsorService;
     
     @Mock
     EnrollmentService mockEnrollmentService;
@@ -238,6 +249,9 @@ public class ParticipantControllerTest extends Mockito {
     
     @Captor
     ArgumentCaptor<CustomActivityEventRequest> eventRequestCaptor;
+
+    @Captor
+    ArgumentCaptor<ParticipantRosterRequest> participantRosterCaptor;
     
     UserSession session;
 
@@ -261,7 +275,7 @@ public class ParticipantControllerTest extends Mockito {
         session.setAppId(TEST_APP_ID);
 
         doAnswer((ans) -> {
-            RequestContext.updateFromSession(session, null);
+            RequestContext.updateFromSession(session, mockSponsorService);
             return session;
         }).when(controller).getSessionIfItExists();
         
@@ -326,6 +340,7 @@ public class ParticipantControllerTest extends Mockito {
         assertGet(ParticipantController.class, "getActivityEvents");
         assertAccept(ParticipantController.class, "sendSmsMessageForWorker");
         assertPost(ParticipantController.class, "createCustomActivityEvent");
+        assertPost(ParticipantController.class, "getParticipantRoster");
     }
 
     @Test
@@ -1596,6 +1611,104 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(captured.getTimestamp(), TIMESTAMP);
     }
 
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = ".*Cannot request user data.*")
+    public void getParticipantRosterNoEmail() throws JsonProcessingException {
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER)).build();
+        session.setParticipant(participant);
+
+        controller.getParticipantRoster();
+    }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = ".*Cannot request user data.*")
+    public void getParticipantRosterEmailNotVerified() throws JsonProcessingException {
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER))
+                .withEmail("example@example.org").withEmailVerified(false).build();
+        session.setParticipant(participant);
+
+        controller.getParticipantRoster();
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = ".*Caller is a study coordinator without an org membership.*")
+    public void getParticipantRosterStudyCoordinatorWithoutOrg() throws JsonProcessingException {
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withEmail("example@example.org").withEmailVerified(true).build();
+        session.setParticipant(participant);
+
+        controller.getParticipantRoster();
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class,
+            expectedExceptionsMessageRegExp = ".*Requested studyId is not sponsored by the caller's org.*")
+    public void getParticipantRosterStudyIdNotSponsored() throws Exception {
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER, STUDY_COORDINATOR))
+                .withEmail("example@example.org").withEmailVerified(true).withOrgMembership("testOrg123").build();
+        session.setParticipant(participant);
+
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withStudyId("testStudy").build();
+        mockRequestBody(mockRequest, request);
+
+        controller.getParticipantRoster();
+    }
+
+    @Test
+    public void getParticipantRoster() throws Exception {
+        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER, STUDY_COORDINATOR))
+                .withEmail("example@example.org").withEmailVerified(true).build();
+        session.setParticipant(participant);
+
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("password").build();
+        mockRequestBody(mockRequest, request);
+
+        controller.getParticipantRoster();
+
+        verify(mockParticipantService).getParticipantRoster(eq(TEST_APP_ID), eq(TEST_USER_ID), participantRosterCaptor.capture());
+        ParticipantRosterRequest participantRosterRequest = participantRosterCaptor.getValue();
+        assertEquals(participantRosterRequest.getPassword(), "password");
+    }
+
+    @Test
+    public void sendInstallLink() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setHealthCode(HEALTH_CODE);
+        account.setEmail(EMAIL);
+        account.setEmailVerified(true);
+        account.setPhone(PHONE);
+        account.setPhoneVerified(true);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+        
+        StatusMessage retValue = controller.sendInstallLink(TEST_USER_ID, "Android");
+        assertSame(retValue, INSTALL_LINK_SEND_MSG);
+        
+        verify(mockParticipantService).sendInstallLinkMessage(
+                app, PROMOTIONAL, HEALTH_CODE, EMAIL, PHONE, "Android");
+    }
+    
+    @Test
+    public void sendInstallLinkNoVerifiedChannels() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setHealthCode(HEALTH_CODE);
+        account.setEmail(EMAIL);
+        account.setPhone(PHONE);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+        
+        StatusMessage retValue = controller.sendInstallLink(TEST_USER_ID, null);
+        assertSame(retValue, INSTALL_LINK_SEND_MSG);
+        
+        verify(mockParticipantService).sendInstallLinkMessage(
+                app, PROMOTIONAL, HEALTH_CODE, null, null, null);
+    }
+    
     private AccountSummarySearch setAccountSummarySearch() throws Exception {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withOffsetBy(10).withPageSize(100)
                 .withEmailFilter("email").withPhoneFilter("phone").withAllOfGroups(ImmutableSet.of("group1"))

@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
@@ -18,10 +19,20 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
+import static org.sagebionetworks.bridge.models.AccountSummarySearch.EMPTY_SEARCH;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.sagebionetworks.bridge.models.schedules.ActivityType.SURVEY;
+import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
+import static org.sagebionetworks.bridge.models.sms.SmsType.TRANSACTIONAL;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
+import static org.sagebionetworks.bridge.services.ParticipantService.ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR;
+import static org.sagebionetworks.bridge.services.ParticipantService.APP_INSTALL_URL_KEY;
+import static org.sagebionetworks.bridge.services.ParticipantService.NO_INSTALL_LINKS_ERROR;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
@@ -37,6 +48,9 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.SendMessageResult;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.DateTime;
@@ -45,6 +59,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -99,14 +115,17 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
+import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
+import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
+import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import com.google.common.collect.Maps;
 
 public class ParticipantServiceTest extends Mockito {
     private static final DateTime ACTIVITIES_RETRIEVED_DATETIME = DateTime.parse("2019-08-01T18:32:36.487-0700");
@@ -128,6 +147,7 @@ public class ParticipantServiceTest extends Mockito {
         APP.setDataGroups(APP_DATA_GROUPS);
         APP.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
         APP.getUserProfileAttributes().add("can_be_recontacted");
+        APP.setInstallLinks(ImmutableMap.of("Android", "some.link"));
     }
     private static final String EXTERNAL_ID = "externalId";
     private static final String HEALTH_CODE = "healthCode";
@@ -165,7 +185,9 @@ public class ParticipantServiceTest extends Mockito {
             .withLanguages(USER_LANGUAGES)
             .withStatus(DISABLED)
             .withTimeZone(USER_TIME_ZONE)
-            .withClientData(TestUtils.getClientData()).build();
+            .withClientData(TestUtils.getClientData())
+            .withNote(TEST_NOTE)
+            .withClientTimeZone(TEST_CLIENT_TIME_ZONE).build();
     
     private static final DateTime START_DATE = DateTime.now();
     private static final DateTime END_DATE = START_DATE.plusDays(1);
@@ -233,6 +255,18 @@ public class ParticipantServiceTest extends Mockito {
     @Mock
     private OrganizationService organizationService;
     
+    @Mock
+    private TemplateService templateService;
+
+    @Mock
+    private AmazonSQSClient sqsClient;
+
+    @Mock
+    private BridgeConfig bridgeConfig;
+    
+    @Mock
+    private SendMailService sendMailService;
+    
     @Captor
     ArgumentCaptor<StudyParticipant> participantCaptor;
     
@@ -249,7 +283,10 @@ public class ParticipantServiceTest extends Mockito {
     ArgumentCaptor<AccountId> accountIdCaptor;
 
     @Captor
-    ArgumentCaptor<SmsMessageProvider> providerCaptor;
+    ArgumentCaptor<SmsMessageProvider> smsProviderCaptor;
+    
+    @Captor
+    ArgumentCaptor<BasicEmailProvider> emailProviderCaptor;
     
     @Captor
     ArgumentCaptor<Enrollment> enrollmentCaptor;
@@ -296,14 +333,14 @@ public class ParticipantServiceTest extends Mockito {
         account.setAppId(TEST_APP_ID);
         when(participantService.getAccount()).thenReturn(account);
         when(participantService.generateGUID()).thenReturn(ID);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
     }
     
     private void mockAccountNoEmail() {
         account.setId(ID);
         account.setHealthCode(HEALTH_CODE);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
     }
     
     @Test
@@ -349,6 +386,8 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(account.getLanguages(), ImmutableList.of("de","fr"));
         assertEquals(enrollmentCaptor.getValue().getExternalId(), EXTERNAL_ID);
         assertEquals(account.getSynapseUserId(), SYNAPSE_USER_ID);
+        assertEquals(account.getNote(), TEST_NOTE);
+        assertEquals(account.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         
         // don't update cache
         Mockito.verifyNoMoreInteractions(cacheProvider);
@@ -840,7 +879,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantEmailDoesNotExist() {
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(null);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.empty());
         
         participantService.getParticipant(APP, ID, false);
     }
@@ -850,25 +889,8 @@ public class ParticipantServiceTest extends Mockito {
         participantService.getParticipant(APP, "externalId:some-junk", false);
     }
     
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getParticiantAccountFilteredOutByStudyAssocation() {
-        when(participantService.getAccount()).thenReturn(account);
-        when(participantService.generateGUID()).thenReturn(ID);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
-
-        // Account is in studyA
-        account.setAppId(APP.getIdentifier());
-        account.setId(ID);
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ID, "externalIdA");
-        account.setEnrollments(Sets.newHashSet(en1));
-        
-        // The caller is not in studyA
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("callerUserId")
-                .withOrgSponsoredStudies(ImmutableSet.of("studyB")).build());
-        
-        participantService.getParticipant(APP, ID, true);
-    }
+    // getParticiantAccountFilteredOutByStudyAssocation removed because all accounts are
+    // now filtered in AccountService, and only in AccountService.
     
     @Test
     public void getSelfParticipantWithHistory() throws Exception {
@@ -888,7 +910,7 @@ public class ParticipantServiceTest extends Mockito {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create("foo1");
         account.setConsentSignatureHistory(subpopGuid, ImmutableList.of(new ConsentSignature.Builder()
                 .withConsentCreatedOn(START_DATE.getMillis()).build()));
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         when(consentService.getConsentStatuses(CONTEXT, account)).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
         Subpopulation subpop = Subpopulation.create();
         subpop.setGuid(SubpopulationGuid.create("foo1"));
@@ -928,7 +950,7 @@ public class ParticipantServiceTest extends Mockito {
         SubpopulationGuid subpopGuid = SubpopulationGuid.create("foo1");
         account.setConsentSignatureHistory(subpopGuid, ImmutableList.of(new ConsentSignature.Builder()
                 .withConsentCreatedOn(START_DATE.getMillis()).build()));
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         when(consentService.getConsentStatuses(CONTEXT, account)).thenReturn(TestConstants.CONSENTED_STATUS_MAP);
         
         StudyParticipant retrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
@@ -947,7 +969,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getParticipant() {
         when(participantService.getAccount()).thenReturn(account);
         when(participantService.generateGUID()).thenReturn(ID);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         // A lot of mocks have to be set up first, this call aggregates almost everything we know about the user
         DateTime createdOn = DateTime.now();
@@ -979,6 +1001,8 @@ public class ParticipantServiceTest extends Mockito {
         // no third external ID, this one is just not in the external IDs map
         account.setEnrollments(ImmutableSet.of(en1, en2, en3));
         account.setOrgMembership(TEST_ORG_ID);
+        account.setNote(TEST_NOTE);
+        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         
         List<Subpopulation> subpopulations = Lists.newArrayList();
         // Two subpopulations for mocking.
@@ -1032,6 +1056,8 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(participant.getExternalIds().get("studyA"), "externalIdA");
         assertEquals(participant.getExternalIds().get("studyB"), "externalIdB");
         assertEquals(participant.getOrgMembership(), TEST_ORG_ID);
+        assertEquals(participant.getNote(), TEST_NOTE);
+        assertEquals(participant.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals(participant.getAttributes().get("attr2"), "anAttribute2");
@@ -1081,7 +1107,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getStudyStartTime_FromActivitiesRetrieved() {
         // Set up mocks.
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ACTIVITIES_RETRIEVED.name().toLowerCase(), ACTIVITIES_RETRIEVED_DATETIME));
 
         // Execute and validate.
@@ -1092,7 +1118,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getStudyStartTime_FromEnrollment() {
         // Set up mocks.
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of(
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of(
                 ActivityEventObjectType.ENROLLMENT.name().toLowerCase(), ENROLLMENT_DATETIME));
 
         // Execute and validate.
@@ -1104,7 +1130,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getStudyStartTime_FromAccountCreatedOn() {
         // Set up mocks.
         account.setCreatedOn(CREATED_ON_DATETIME);
-        when(activityEventService.getActivityEventMap(APP.getIdentifier(), null, HEALTH_CODE)).thenReturn(ImmutableMap.of());
+        when(activityEventService.getActivityEventMap(APP.getIdentifier(), HEALTH_CODE)).thenReturn(ImmutableMap.of());
 
         // Execute and validate.
         DateTime result = participantService.getStudyStartTime(account);
@@ -1122,7 +1148,7 @@ public class ParticipantServiceTest extends Mockito {
         AccountId accountId = AccountId.forId(APP.getIdentifier(), ID);
         
         // Setup
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         account.setId(ID);
 
         // Execute
@@ -1140,7 +1166,7 @@ public class ParticipantServiceTest extends Mockito {
         AccountId accountId = AccountId.forId(APP.getIdentifier(), ID);
         
         // Setup
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         account.setId(ID);
 
         // Execute
@@ -1218,7 +1244,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateParticipantDoesNotUpdateImmutableFields() {
         mockHealthCodeAndAccountRetrieval(null, null, null);
         account.setEmailVerified(null);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         RequestContext.set(new RequestContext.Builder().build());
  
         // There's a long list of fields you cannot update, set them all: 
@@ -1486,7 +1512,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getParticipantWithHealthCode() {
         String id = "healthCode:" + ID;
         AccountId accountId = AccountId.forHealthCode(APP.getIdentifier(), ID);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         StudyParticipant participant = participantService.getParticipant(APP, id, true);
         assertNotNull(participant);
@@ -1500,7 +1526,7 @@ public class ParticipantServiceTest extends Mockito {
     public void getParticipantWithExternalId() {
         String id = "externalId:" + ID;
         AccountId accountId = AccountId.forExternalId(APP.getIdentifier(), ID);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         StudyParticipant participant = participantService.getParticipant(APP, id, true);
         assertNotNull(participant);
@@ -1513,7 +1539,7 @@ public class ParticipantServiceTest extends Mockito {
     @Test
     public void getParticipantWithStringId() {
         AccountId accountId = AccountId.forId(APP.getIdentifier(), ID);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         StudyParticipant participant = participantService.getParticipant(APP, ID, true);
         assertNotNull(participant);
@@ -1777,7 +1803,7 @@ public class ParticipantServiceTest extends Mockito {
         mockHealthCodeAndAccountRetrieval();
         APP.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(9);
-        when(accountService.getPagedAccountSummaries(TEST_APP_ID, AccountSummarySearch.EMPTY_SEARCH))
+        when(accountService.getPagedAccountSummaries(TEST_APP_ID, EMPTY_SEARCH))
                 .thenReturn(accountSummaries);
         
         participantService.createParticipant(APP, PARTICIPANT, false);
@@ -1787,7 +1813,7 @@ public class ParticipantServiceTest extends Mockito {
     public void throwLimitExceededExactlyException() {
         APP.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(10);
-        when(accountService.getPagedAccountSummaries(TEST_APP_ID, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
+        when(accountService.getPagedAccountSummaries(TEST_APP_ID, EMPTY_SEARCH)).thenReturn(accountSummaries);
         
         try {
             participantService.createParticipant(APP, PARTICIPANT, false);
@@ -1801,7 +1827,7 @@ public class ParticipantServiceTest extends Mockito {
     public void throwLimitExceededException() {
         APP.setAccountLimit(10);
         when(accountSummaries.getTotal()).thenReturn(13);
-        when(accountService.getPagedAccountSummaries(TEST_APP_ID, AccountSummarySearch.EMPTY_SEARCH)).thenReturn(accountSummaries);
+        when(accountService.getPagedAccountSummaries(TEST_APP_ID, EMPTY_SEARCH)).thenReturn(accountSummaries);
         
         participantService.createParticipant(APP, PARTICIPANT, false);
     }
@@ -1812,7 +1838,7 @@ public class ParticipantServiceTest extends Mockito {
         // participant is returned... the common happy path.
         mockHealthCodeAndAccountRetrieval();
         when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, PHONE, null);
         
@@ -1832,7 +1858,7 @@ public class ParticipantServiceTest extends Mockito {
         // Also tests the common path of creating unverified email address with verification email sent
         mockAccountNoEmail();
         when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         APP.setEmailVerificationEnabled(true);
         APP.setAutoVerificationEmailSuppressed(false);
@@ -1871,7 +1897,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateIdentifiersUsingReauthentication() {
         mockHealthCodeAndAccountRetrieval();
         when(accountService.reauthenticate(APP, REAUTH_REQUEST)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         IdentifierUpdate update = new IdentifierUpdate(REAUTH_REQUEST, null, TestConstants.PHONE, null);
         
@@ -1901,7 +1927,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateIdentifiersCreatesUnverifiedEmailWithoutVerification() {
         mockAccountNoEmail();
         when(accountService.authenticate(APP, PHONE_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         APP.setEmailVerificationEnabled(true);
         APP.setAutoVerificationEmailSuppressed(true);
@@ -1919,7 +1945,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateIdentifiersAddsSynapseUserId() {
         mockAccountNoEmail();
         when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, EMAIL, null, SYNAPSE_USER_ID);
         participantService.updateIdentifiers(APP, CONTEXT, update);
@@ -1973,7 +1999,7 @@ public class ParticipantServiceTest extends Mockito {
     public void updateIdentifiersDoesNotReassignExternalIdOnOtherUpdate() throws Exception {
         mockHealthCodeAndAccountRetrieval(null, null, EXTERNAL_ID);
         when(accountService.authenticate(APP, EMAIL_PASSWORD_SIGN_IN)).thenReturn(account);
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         // Add phone
         IdentifierUpdate update = new IdentifierUpdate(EMAIL_PASSWORD_SIGN_IN, null, new Phone("4082588569", "US"),
@@ -2098,7 +2124,7 @@ public class ParticipantServiceTest extends Mockito {
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals(e.getErrors().get("externalIds[studyId].externalId").get(0),
-                    "externalIds[studyId].externalId cannot be blank");
+                    "externalIds[studyId].externalId cannot be null or blank");
         }
     }
     
@@ -2157,7 +2183,7 @@ public class ParticipantServiceTest extends Mockito {
 
     @Test
     public void sendSmsMessage() {
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         account.setHealthCode(HEALTH_CODE);
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(true);
@@ -2166,9 +2192,9 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.sendSmsMessage(APP, ID, template);
 
-        verify(smsService).sendSmsMessage(eq(ID), providerCaptor.capture());
+        verify(smsService).sendSmsMessage(eq(ID), smsProviderCaptor.capture());
         
-        SmsMessageProvider provider = providerCaptor.getValue();
+        SmsMessageProvider provider = smsProviderCaptor.getValue();
         assertEquals(provider.getPhone(), TestConstants.PHONE);
         assertEquals(provider.getSmsRequest().getMessage(), "This is a test Bridge");
         assertEquals(provider.getSmsType(), "Promotional");
@@ -2176,7 +2202,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void sendSmsMessageThrowsIfNoPhone() { 
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         
         SmsTemplate template = new SmsTemplate("This is a test ${appShortName}"); 
         
@@ -2185,7 +2211,7 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test(expectedExceptions = BadRequestException.class)
     public void sendSmsMessageThrowsIfPhoneUnverified() { 
-        when(accountService.getAccount(any())).thenReturn(account);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
         account.setPhone(TestConstants.PHONE);
         account.setPhoneVerified(false);
         
@@ -2216,7 +2242,7 @@ public class ParticipantServiceTest extends Mockito {
         account.setHealthCode(HEALTH_CODE);
         account.setAppId(TEST_APP_ID);
         AccountId accountId = AccountId.forHealthCode(TEST_APP_ID, HEALTH_CODE);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
 
         // This directly calls getAccountThrowingException(); it should recognize and
@@ -2314,7 +2340,7 @@ public class ParticipantServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());
         account.setId(ID);
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(PARTICIPANT)
                 .withStudyIds(ImmutableSet.of(STUDY_ID)).build();
@@ -2354,7 +2380,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withCallerEnrolledStudies(ImmutableSet.of(STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, STUDY_ID, ID));
-        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(account);
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         // participant does not have the study. This should throw an error
         participantService.updateParticipant(APP, PARTICIPANT);
@@ -2373,11 +2399,11 @@ public class ParticipantServiceTest extends Mockito {
                 .withTimestamp(TIMESTAMP).build();
         
         AccountId accountId = AccountId.forId(APP.getIdentifier(), TEST_USER_ID);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
         
-        verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
+        verify(activityEventService).publishCustomEvent(APP, HEALTH_CODE, "anEvent", TIMESTAMP);
     }
     
     @Test
@@ -2387,11 +2413,11 @@ public class ParticipantServiceTest extends Mockito {
                 .withTimestamp(TIMESTAMP).build();
         
         AccountId accountId = AccountId.forId(APP.getIdentifier(), TEST_USER_ID);
-        when(accountService.getAccount(accountId)).thenReturn(account);
+        when(accountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
         
-        verify(activityEventService).publishCustomEvent(APP, null, HEALTH_CODE, "anEvent", TIMESTAMP);
+        verify(activityEventService).publishCustomEvent(APP, HEALTH_CODE, "anEvent", TIMESTAMP);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -2403,7 +2429,199 @@ public class ParticipantServiceTest extends Mockito {
         
         participantService.createCustomActivityEvent(APP, TEST_USER_ID, request);
     }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void getParticipantRosterNullPassword() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(null).build();
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void getParticipantRosterBlankPassword() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("").build();
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void getParticipantRosterInvalidPassword() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("badPassword").build();
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+    }
+
+    @Test
+    public void getParticipantRoster() throws JsonProcessingException {
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
+
+        String queueUrl = "https://sqs.us-east-1.amazonaws.com/420786776710/Bridge-WorkerPlatform-Request-local";
+        when(bridgeConfig.getProperty("workerPlatform.request.sqs.queue.url")).thenReturn(queueUrl);
+
+        when(sqsClient.sendMessage(eq(queueUrl), anyString())).thenReturn(mock(SendMessageResult.class));
+
+        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+
+        String requestJson = "{\"service\":\"DownloadParticipantRosterWorker\",\"body\":{\"appId\":\"test-app\"," +
+                "\"userId\":\"userId\",\"password\":\"P@ssword1\",\"studyId\":\"studyId\"}}";
+        verify(sqsClient).sendMessage(queueUrl, requestJson);
+    }
+
+    @Test
+    public void updateParticipantNoteSuccessfulAsAdmin() {
+        // RESEARCHER role set in Before method
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+
+        account.setNote("original note");
+
+        StudyParticipant participant = withParticipant()
+                .withNote("updated note")
+                .build();
+        participantService.updateParticipant(APP, participant);
+
+        assertEquals(account.getNote(), "updated note");
+    }
+
+    @Test
+    public void updateParticipantNoteUnsuccessfulAsNonAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .build());
+
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+
+        account.setNote("original note");
+
+        StudyParticipant participant = withParticipant()
+                .withNote("updated note")
+                .build();
+        participantService.updateParticipant(APP, participant);
+
+        assertEquals(account.getNote(), "original note");
+    }
+
+    @Test
+    public void getParticipantHasNoteAsAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(account.getId())
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .build());
+
+        account.setNote(TEST_NOTE);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        StudyParticipant adminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
+        assertEquals(adminRetrieved.getNote(), TEST_NOTE);
+    }
+
+    @Test
+    public void getParticipantDoesNotHaveNoteAsNonAdmin() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(account.getId())
+                .withCallerRoles(ImmutableSet.of())
+                .build());
+
+        account.setNote(TEST_NOTE);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        StudyParticipant nonAdminRetrieved = participantService.getSelfParticipant(APP, CONTEXT, false);
+        assertNull(nonAdminRetrieved.getNote());
+    }
     
+    @Test
+    public void installLinkCorrectlySelected() {
+        Map<String,String> installLinks = Maps.newHashMap();
+        installLinks.put("iPhone OS", "iphone-os-link");
+        
+        // Lacking android or universal, find the only link that's there.
+        assertEquals(participantService.getInstallLink("Android", installLinks), "iphone-os-link");
+        
+        installLinks.put("Universal", "universal-link");
+        assertEquals(participantService.getInstallLink("iPhone OS", installLinks), "iphone-os-link");
+        assertEquals(participantService.getInstallLink("Android", installLinks), "universal-link");
+        
+        Map<String,String> emptyInstallLinks = Maps.newHashMap();
+        assertNull(participantService.getInstallLink("iPhone OS", emptyInstallLinks));
+    }
+    
+    @Test
+    public void sendInstallLinkMessage_sendsPhone() {
+        when(participantService.getInstallDateTime()).thenReturn(CREATED_ON);
+        
+        TemplateRevision revision = TemplateRevision.create();
+        when(templateService.getRevisionForUser(APP, SMS_APP_INSTALL_LINK)).thenReturn(revision);
+        
+        participantService.sendInstallLinkMessage(APP, PROMOTIONAL, HEALTH_CODE, EMAIL, PHONE, "Android");
+        
+        verify(smsService).sendSmsMessage(eq(null), smsProviderCaptor.capture());
+        SmsMessageProvider provider = smsProviderCaptor.getValue();
+        assertEquals(provider.getApp(), APP);
+        assertEquals(provider.getTemplateRevision(), revision);
+        assertEquals(provider.getSmsTypeEnum(), PROMOTIONAL);
+        assertEquals(provider.getPhone(), PHONE);
+        assertEquals(provider.getTokenMap().get(APP_INSTALL_URL_KEY), "some.link");
+        
+        verify(activityEventService).publishInstallLinkSent(APP, HEALTH_CODE, CREATED_ON);
+    }
+    
+    @Test
+    public void sendInstallLinkMessage_sendsEmail() {
+        TemplateRevision revision = TemplateRevision.create();
+        when(templateService.getRevisionForUser(APP, EMAIL_APP_INSTALL_LINK)).thenReturn(revision);
+        
+        participantService.sendInstallLinkMessage(APP, TRANSACTIONAL, HEALTH_CODE, EMAIL, null, "Android");
+        
+        verify(sendMailService).sendEmail(emailProviderCaptor.capture());
+        BasicEmailProvider provider = emailProviderCaptor.getValue();
+        assertEquals(provider.getApp(), APP);
+        assertEquals(provider.getTemplateRevision(), revision);
+        assertEquals(provider.getRecipientEmails(), ImmutableSet.of(EMAIL));
+        assertEquals(provider.getType(), EmailType.APP_INSTALL);
+        assertEquals(provider.getTokenMap().get(APP_INSTALL_URL_KEY), "some.link");
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = ACCOUNT_UNABLE_TO_BE_CONTACTED_ERROR)
+    public void sendInstallLinkMessage_noPhoneOrEmail() {
+        participantService.sendInstallLinkMessage(APP, TRANSACTIONAL, HEALTH_CODE, null, null, null);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = NO_INSTALL_LINKS_ERROR)
+    public void sendInstallLinkMessage_noInstallLinks() {
+        App app = App.create();
+        app.setInstallLinks(ImmutableMap.of());
+        
+        participantService.sendInstallLinkMessage(app, TRANSACTIONAL, HEALTH_CODE, EMAIL, null, "Android");
+    }
+
+    @Test
+    public void sendInstallLinkMessage_skipsEventWithNoHealthCode() {
+        when(participantService.getInstallDateTime()).thenReturn(CREATED_ON);
+        
+        TemplateRevision revision = TemplateRevision.create();
+        when(templateService.getRevisionForUser(APP, SMS_APP_INSTALL_LINK)).thenReturn(revision);
+        
+        participantService.sendInstallLinkMessage(APP, TRANSACTIONAL, null, EMAIL, PHONE, "Android");
+        
+        verify(activityEventService, never()).publishInstallLinkSent(any(), any(), any());
+    }
+
+    @Test
+    public void updateClientTimeZone() {
+        when(accountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+
+        StudyParticipant participant = withParticipant()
+                .withClientTimeZone("America/Los_Angeles")
+                .build();
+
+        participantService.updateParticipant(APP, participant);
+
+        verify(accountService).updateAccount(accountCaptor.capture());
+
+        Account capturedAccount = accountCaptor.getValue();
+        assertEquals(capturedAccount.getClientTimeZone(), "America/Los_Angeles");
+    }
+
     // getPagedAccountSummaries() filters studies in the query itself, as this is the only 
     // way to get correct paging.
     

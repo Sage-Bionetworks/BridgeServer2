@@ -61,6 +61,9 @@ public class InitRecordHandler implements UploadValidationHandler {
         ObjectNode metadataMap = BridgeObjectMapper.get().createObjectNode();
         record.setMetadata(metadataMap);
 
+        JsonNode metadataJsonFromRequest = upload.getMetadata();
+        record.setUserMetadata(metadataJsonFromRequest);
+
         if (!upload.isZipped()) {
             // Shortcut: If the upload is not zipped, it doesn't have an info.json or a metadata.json. We can skip all
             // of the below.
@@ -83,8 +86,9 @@ public class InitRecordHandler implements UploadValidationHandler {
 
         // Copy metadata.json to record.userMetadata. (The names are due to an old feature conflicting with the name of
         // a new feature.) Lightly validate that metadata.json is a JSON object. BridgeEX will handle the rest.
-        JsonNode metadataJson = parseFileAsJson(unzippedDataFileMap, UploadUtil.FILENAME_METADATA_JSON);
-        record.setUserMetadata(metadataJson);
+        JsonNode metadataJsonFromFile = parseFileAsJson(unzippedDataFileMap, UploadUtil.FILENAME_METADATA_JSON);
+        JsonNode mergedMetadataJson = JsonUtils.mergeObjectNodes(metadataJsonFromFile, metadataJsonFromRequest);
+        record.setUserMetadata(mergedMetadataJson);
     }
 
     // Helper method to parse a JSON file from the upload. Generally used for info.json and metadata.json. This method

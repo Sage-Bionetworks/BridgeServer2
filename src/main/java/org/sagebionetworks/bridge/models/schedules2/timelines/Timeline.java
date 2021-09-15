@@ -1,8 +1,11 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -11,6 +14,7 @@ import com.google.common.collect.ImmutableList;
 
 import org.joda.time.Period;
 
+import org.sagebionetworks.bridge.models.schedules2.Notification;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 
 /**
@@ -26,20 +30,31 @@ public class Timeline {
     private final List<AssessmentInfo> assessments;
     private final List<SessionInfo> sessions;
     private final List<TimelineMetadata> metadata;
+    private final int totalMinutes;
+    private final int totalNotifications;
     
     private Timeline(Period duration, String lang, List<ScheduledSession> scheduledSessions,
-            List<AssessmentInfo> assessments, List<SessionInfo> sessions, List<TimelineMetadata> metadata) {
+            List<AssessmentInfo> assessments, List<SessionInfo> sessions, List<TimelineMetadata> metadata,
+            int totalMinutes, int totalNotifications) {
         this.duration = duration;
         this.lang = lang;
         this.scheduledSessions = scheduledSessions;
         this.assessments = assessments;
         this.sessions = sessions;
         this.metadata = metadata;
+        this.totalMinutes = totalMinutes;
+        this.totalNotifications = totalNotifications;
     }
     
     @JsonIgnore
     public String getLang() {
         return lang;
+    }
+    public int getTotalMinutes() {
+        return totalMinutes;
+    }
+    public int getTotalNotifications() {
+        return totalNotifications;
     }
     public Period getDuration() {
         return duration;
@@ -64,8 +79,12 @@ public class Timeline {
         private String lang;
         private List<ScheduledSession> scheduledSessions = new ArrayList<>();
         private Map<String, AssessmentInfo> assessments = new HashMap<>();
-        private Map<String, SessionInfo> sessions = new HashMap<>();
+        // maintain the order the sessions are inserted, which is the order they exist in 
+        // the session.
+        private Map<String, SessionInfo> sessions = new LinkedHashMap<>();
         private List<TimelineMetadata> metadata = new ArrayList<>();
+        private int totalMinutes;
+        private int totalNotifications;
         
         public Builder withSchedule(Schedule2 schedule) {
             this.schedule = schedule;
@@ -90,13 +109,14 @@ public class Timeline {
             sessionMeta.setSchedulePublished(schedule.isPublished());
             sessionMeta.setSessionInstanceGuid(schSession.getInstanceGuid());
             sessionMeta.setSessionGuid(schSession.getSession().getGuid());
-            sessionMeta.setSessionStartEventId(schSession.getSession().getStartEventId());
+            sessionMeta.setSessionStartEventId(schSession.getStartEventId());
             sessionMeta.setSessionInstanceStartDay(schSession.getStartDay());
             sessionMeta.setSessionInstanceEndDay(schSession.getEndDay());
             sessionMeta.setTimeWindowGuid(schSession.getTimeWindow().getGuid());
+            sessionMeta.setTimeWindowPersistent(schSession.getTimeWindow().isPersistent());
             metadata.add(sessionMeta);
             
-            for (ScheduledAssessment schAsmt : schSession.getAssessments()) { 
+            for (ScheduledAssessment schAsmt : schSession.getAssessments()) {
                 TimelineMetadata schMeta = TimelineMetadata.copy(sessionMeta);
                 schMeta.setGuid(schAsmt.getInstanceGuid());
                 schMeta.setAssessmentInstanceGuid(schAsmt.getInstanceGuid());
@@ -105,6 +125,24 @@ public class Timeline {
                 schMeta.setAssessmentRevision(schAsmt.getReference().getRevision());
                 metadata.add(schMeta);    
             }
+            
+            for (Notification notification : schSession.getSession().getNotifications()) {
+                this.totalNotifications += 1;
+                // Repeating notifications will produce more notifications. TimeWindow is never
+                // null but try telling that to FindBugs.
+                if (notification.getInterval() != null && schSession.getTimeWindow() != null) {
+                    long windowMinutes = periodInMinutes(schSession.getTimeWindow().getExpiration());
+                    long intervalMinutes = periodInMinutes(notification.getInterval());
+                    this.totalNotifications += Math.floorDiv(windowMinutes, intervalMinutes);
+                }
+            }
+            // Get the sum of all minutes for all sessions. Each time a scheduled session 
+            // is added, we're adding to this running total.
+            Integer min = this.sessions.get(schSession.getRefGuid()).getMinutesToComplete();
+            if (min != null) {
+                this.totalMinutes += min.intValue();
+            }
+            
             return this;
         }
         public Builder withAssessmentInfo(AssessmentInfo asmtInfo) {
@@ -124,7 +162,7 @@ public class Timeline {
                 return res;
             });
             return new Timeline(duration, lang, scheduledSessions, ImmutableList.copyOf(assessments.values()),
-                    ImmutableList.copyOf(sessions.values()), metadata);
+                    ImmutableList.copyOf(sessions.values()), metadata, totalMinutes, totalNotifications);
         }
     }
 }

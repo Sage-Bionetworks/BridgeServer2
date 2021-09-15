@@ -51,7 +51,7 @@ public class AssessmentValidatorTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         assessment = AssessmentTest.createAssessment();
         
-        when(mockAssessmentDao.getAssessmentRevisions(TEST_APP_ID, IDENTIFIER, 0, 1, true))
+        when(mockAssessmentDao.getAssessmentRevisions(TEST_APP_ID, null, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<Assessment>(ImmutableList.of(), 0));
         
         validator = new AssessmentValidator(TEST_APP_ID, mockOrganizationService);
@@ -188,28 +188,12 @@ public class AssessmentValidatorTest extends Mockito {
                 CANNOT_BE_BLANK);
     }
     @Test
-    public void backgroundColorInValid() {
+    public void colorSchemeInvalid() {
+        // one test is enough to confirm this is being validated, full tests are in 
+        // ValidatorUtilsTest
         ColorScheme scheme = new ColorScheme("#FFFF1G", null, null, null);
         assessment.setColorScheme(scheme);
         assertValidatorMessage(validator, assessment, "colorScheme.background", INVALID_HEX_TRIPLET);
-    }
-    @Test
-    public void foregroundColorInValid() {
-        ColorScheme scheme = new ColorScheme(null, "#FFF", null, null);
-        assessment.setColorScheme(scheme);
-        assertValidatorMessage(validator, assessment, "colorScheme.foreground", INVALID_HEX_TRIPLET);
-    }
-    @Test
-    public void activatedColorInValid() {
-        ColorScheme scheme = new ColorScheme(null, null, "000", null);
-        assessment.setColorScheme(scheme);
-        assertValidatorMessage(validator, assessment, "colorScheme.activated", INVALID_HEX_TRIPLET);
-    }
-    @Test
-    public void inactivatedColorInValid() {
-        ColorScheme scheme = new ColorScheme(null, null, null, "cccccc");
-        assessment.setColorScheme(scheme);
-        assertValidatorMessage(validator, assessment, "colorScheme.inactivated", INVALID_HEX_TRIPLET);
     }
     
     @Test

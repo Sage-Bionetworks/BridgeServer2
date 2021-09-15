@@ -25,7 +25,7 @@ public class PublishedEntityExceptionTest {
         
         assertEquals(node.size(), 3);
         assertEquals(node.get("statusCode").intValue(), 400);
-        assertEquals(node.get("message").textValue(), "A Schedule cannot be updated after publication.");
+        assertEquals(node.get("message").textValue(), "A schedule cannot be updated after publication.");
         assertEquals(node.get("type").textValue(), "PublishedEntityException");
     }
 }

@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ORG;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_ORG;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
@@ -61,11 +64,13 @@ public class OrganizationController extends BaseController {
         // A study admin caller will also be able to edit some fields of their own organization.
         // The association of accounts to organizations has to be completed first.
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
-        
+
+        CAN_EDIT_ORG.checkAndThrow(ORG_ID, orgId);
+
         Organization organization = parseJson(Organization.class);
         organization.setAppId(session.getAppId());
         organization.setIdentifier(orgId);
-        
+
         return service.updateOrganization(organization);
     }
     
@@ -75,12 +80,15 @@ public class OrganizationController extends BaseController {
         // The association of accounts to organizations has to be completed first.
         UserSession session = getAdministrativeSession();
         
+        CAN_READ_ORG.checkAndThrow(ORG_ID, orgId);
+        
         return service.getOrganization(session.getAppId(), orgId);
     }
     
     @DeleteMapping("/v1/organizations/{orgId}")
     public StatusMessage deleteOrganization(@PathVariable String orgId) {
         UserSession session = getAuthenticatedSession(ADMIN);
+        
         service.deleteOrganization(session.getAppId(), orgId);
         return new StatusMessage("Organization deleted.");
     }

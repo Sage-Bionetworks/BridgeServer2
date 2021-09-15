@@ -5,12 +5,11 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 
 import org.apache.commons.codec.binary.Base64;
 import org.sagebionetworks.bridge.models.upload.UploadRequest;
-import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-@Component
 public class UploadValidator implements Validator {
+    public static final UploadValidator INSTANCE = new UploadValidator();
 
     private static final long MAX_UPLOAD_SIZE = 50L * 1000L * 1000L; // 50 MB
 
@@ -49,5 +48,4 @@ public class UploadValidator implements Validator {
             }
         }
     }
-
 }

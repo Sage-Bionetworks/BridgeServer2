@@ -23,7 +23,8 @@ public final class Phone {
         checkNotNull(phone);
         try {
             PhoneNumber phoneNumber = PHONE_UTIL.parse(phone.getNumber(), phone.getRegionCode());
-            return PHONE_UTIL.isValidNumber(phoneNumber);
+            return PHONE_UTIL.isValidNumber(phoneNumber) &&
+                    PHONE_UTIL.isValidNumberForRegion(phoneNumber, phone.getRegionCode());
         } catch (NumberParseException e) {
         }
         return false;

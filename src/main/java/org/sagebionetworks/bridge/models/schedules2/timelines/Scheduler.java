@@ -38,8 +38,10 @@ public class Scheduler {
         calculateLanguageKey(builder);
         
         for (Session session : schedule.getSessions()) {
-            for (TimeWindow window : session.getTimeWindows()) {
-                scheduleTimeWindowSequence(builder, schedule, session, window);
+            if (!session.getAssessments().isEmpty()) {
+                for (TimeWindow window : session.getTimeWindows()) {
+                    scheduleTimeWindowSequence(builder, schedule, session, window);
+                }
             }
         }
         return builder.build();
@@ -55,8 +57,9 @@ public class Scheduler {
     }
     
     int calculateEndDay(int studyLengthInDays, LocalTime startTime, int startDay, Period expiration) {
+        // endDay is zero indexed, so we subtract one from studyLengthInDays.
         if (expiration == null) {
-            return studyLengthInDays;
+            return studyLengthInDays - 1;
         }
         int expInMinutes = expiration.toStandardMinutes().getMinutes();
         int minutesInDay = (startTime.getHourOfDay() * 60) + startTime.getMinuteOfHour();
@@ -95,9 +98,14 @@ public class Scheduler {
             Period expiration = window.getExpiration();
             
             endDay = calculateEndDay(studyLengthInDays, startTime, startDay, expiration);
-            // If it extends beyond the end of the study, it is not included in timeline
-            if (endDay > studyLengthInDays) {
+            // If it extends beyond the end of the study, it is not included in timeline.
+            // days are zero indexed so we subtract 1 from studyLengthInDays.
+            if (endDay > (studyLengthInDays-1)) {
                 break;
+            }
+            if (expiration == null) {
+                // but this value is *not* zero indexed. 
+                expiration = Period.parse("P" + (endDay - startDay + 1) + "D");
             }
             
             // This session will be used, so we can add it
@@ -109,7 +117,7 @@ public class Scheduler {
             scheduledSession.withStartDay(startDay);
             scheduledSession.withEndDay(endDay);
             scheduledSession.withStartTime(window.getStartTime());
-            scheduledSession.withExpiration(window.getExpiration());
+            scheduledSession.withExpiration(expiration);
             scheduledSession.withPersistent(window.isPersistent());
             // If it is the first day, and there is a delay set that is less than a day,
             // it’s not entirely defined what should happen in this situation. We include
@@ -119,29 +127,39 @@ public class Scheduler {
             if (startDay == 0 && delay != null && delay.toStandardDays().getDays() == 0) {
                 scheduledSession.withDelayTime(delay);
             }
+            // Add a scheduled session with a different GUID for each event, and one SessionInfo object for
+            // all of them.
             
-            String sessionInstanceGuid = generateSessionInstanceGuid(
-                    schedule.getGuid(), session.getGuid(), window.getGuid(), occurrenceCount);
-            scheduledSession.withInstanceGuid(sessionInstanceGuid);
+            for (String oneEventId : session.getStartEventIds()) {
+                // Clear the assessments that are calculated in each iteration. Other fields calculated 
+                // in this loop will be reset.
+                scheduledSession = scheduledSession.copyWithoutAssessments();
 
-            // The position of an assessment in a session is used to differentiate repeated assessments
-            // in a single session. Assessments can be configured differently, but if they are exactly
-            // the same, we still generate a unique ID.
-            ids.clear();
-            for (AssessmentReference ref : session.getAssessments()) {
-                ids.add(ref.getGuid());
+                // The position of an assessment in a session is used to differentiate repeated assessments
+                // in a single session. Assessments can be configured differently, but if they are exactly
+                // the same, we still generate a unique ID.
+                ids.clear();
+                for (AssessmentReference ref : session.getAssessments()) {
+                    ids.add(ref.getGuid());
+                    
+                    // scheduleGuid:sessionGuid:startDay:windowGuid:assessmentGuid:asmtOccurrentCount
+                    String asmtInstanceGuid = generateAssessmentInstanceGuid(schedule.getGuid(), session.getGuid(),
+                            oneEventId, startDay, window.getGuid(), ref.getGuid(), ids.count(ref.getGuid()));
+                 
+                    AssessmentInfo asmtInfo = AssessmentInfo.create(ref);
+                    builder.withAssessmentInfo(asmtInfo);
+                    
+                    ScheduledAssessment schAsmt = new ScheduledAssessment(asmtInfo.getKey(), asmtInstanceGuid, ref);
+                    scheduledSession.withScheduledAssessment(schAsmt);
+                }
                 
-                String asmtInstanceGuid = generateAssessmentInstanceGuid(schedule.getGuid(), session.getGuid(),
-                        window.getGuid(), occurrenceCount, ref.getGuid(), ids.count(ref.getGuid()));
-             
-                AssessmentInfo asmtInfo = AssessmentInfo.create(ref);
-                builder.withAssessmentInfo(asmtInfo);
-                
-                ScheduledAssessment schAsmt = new ScheduledAssessment(asmtInfo.getKey(), asmtInstanceGuid, ref);
-                scheduledSession.withScheduledAssessment(schAsmt);
+                // scheduleGuid:sessionGuid:eventId:startDay:windowGuid
+                String sessionInstanceGuid = generateSessionInstanceGuid(
+                        schedule.getGuid(), session.getGuid(), oneEventId, startDay, window.getGuid());
+                scheduledSession.withInstanceGuid(sessionInstanceGuid);
+                scheduledSession.withStartEventId(oneEventId);
+                builder.withScheduledSession(scheduledSession.build());
             }
-            builder.withScheduledSession(scheduledSession.build());
-      
             startDay += intervalInDays;
             occurrenceCount++;
             
@@ -153,30 +171,42 @@ public class Scheduler {
      * from a Schedule. It should look like a GUID and not a compound identifier, as client developers 
      * have (in the past) parsed compound identifiers, and we want to discourage this.
      */
-    String generateSessionInstanceGuid(String scheduleGuid, String sessionGuid, String windowGuid,
-            int windowOccurrence) {
+    String generateSessionInstanceGuid(String scheduleGuid, String sessionGuid, String eventId, int startDay,
+            String windowGuid) {
         Hasher hc = HASHER.newHasher();
-        hc.putString(windowGuid, Charsets.UTF_8);
-        hc.putInt(windowOccurrence);
-        hc.putString(sessionGuid, Charsets.UTF_8);
         hc.putString(scheduleGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(sessionGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(eventId, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putInt(startDay);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(windowGuid, Charsets.UTF_8);
         return ENCODER.encodeToString(hc.hash().asBytes());
     }
-
+    
     /**
      * Create a unique GUID for an assessment instance that is the same each time you calculate a Timeline
      * from a Schedule. It should look like a GUID and not a compound identifier, as client developers 
      * have (in the past) parsed compound identifiers, and we want to discourage this.
      */
-    String generateAssessmentInstanceGuid(String scheduleGuid, String sessionGuid, String windowGuid,
-            int windowOccurrence, String assessmentGuid, int assessmentOccurrence) {
+    String generateAssessmentInstanceGuid(String scheduleGuid, String sessionGuid, String eventId, 
+            int startDay, String windowGuid, String assessmentGuid, int assessmentOccurrence) {
         Hasher hc = HASHER.newHasher();
-        hc.putString(assessmentGuid, Charsets.UTF_8);
-        hc.putInt(assessmentOccurrence);
-        hc.putString(windowGuid, Charsets.UTF_8);
-        hc.putInt(windowOccurrence);
-        hc.putString(sessionGuid, Charsets.UTF_8);
         hc.putString(scheduleGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(sessionGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(eventId, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putInt(startDay);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(windowGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(assessmentGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putInt(assessmentOccurrence);
         return ENCODER.encodeToString(hc.hash().asBytes());
     }
 }

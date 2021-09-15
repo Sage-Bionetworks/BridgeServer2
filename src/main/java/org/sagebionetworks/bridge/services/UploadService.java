@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
@@ -41,6 +40,8 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
+import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -65,6 +66,8 @@ public class UploadService {
     // package-scoped to be available in unit tests
     static final String CONFIG_KEY_UPLOAD_BUCKET = "upload.bucket";
 
+    private AppService appService;
+    private Exporter3Service exporter3Service;
     private HealthDataService healthDataService;
     private AmazonS3 s3UploadClient;
     private AmazonS3 s3Client;
@@ -73,13 +76,22 @@ public class UploadService {
     private UploadSessionCredentialsService uploadCredentailsService;
     private UploadDedupeDao uploadDedupeDao;
     private UploadValidationService uploadValidationService;
-    private Validator validator;
 
     // These parameters can be overriden to facilitate testing.
     // By default, we sleep 5 seconds, including right at the start and end. This means on our 7th iteration,
     // 30 seconds will have passed.
     private int pollValidationStatusMaxIterations = 7;
     private long pollValidationStatusSleepMillis = 5000;
+
+    @Autowired
+    public final void setAppService(AppService appService) {
+        this.appService = appService;
+    }
+
+    @Autowired
+    public final void setExporter3Service(Exporter3Service exporter3Service) {
+        this.exporter3Service = exporter3Service;
+    }
 
     /** Sets parameters from the specified Bridge config. */
     @Autowired
@@ -126,11 +138,6 @@ public class UploadService {
         this.uploadValidationService = uploadValidationService;
     }
 
-    @Autowired
-    public void setValidator(UploadValidator validator) {
-        this.validator = validator;
-    }
-
     /**
      * Number of iterations while polling for validation status before we time out. This is used primarily by tests to
      * reduce the amount of wait time during tests.
@@ -148,7 +155,7 @@ public class UploadService {
     }
 
     public UploadSession createUpload(String appId, StudyParticipant participant, UploadRequest uploadRequest) {
-        Validate.entityThrowingException(validator, uploadRequest);
+        Validate.entityThrowingException(UploadValidator.INSTANCE, uploadRequest);
 
         // Check to see if upload is a dupe, and if it is, get the upload status.
         String uploadMd5 = uploadRequest.getContentMd5();
@@ -441,6 +448,15 @@ public class UploadService {
         }
 
         // kick off upload validation
+        // Note: Exporter 3.0 is disabled for redrive. See https://sagebionetworks.jira.com/browse/BRIDGE-3080
+        App app = appService.getApp(appId);
+        Exporter3Configuration exporter3Config = app.getExporter3Configuration();
+        if (!redrive && app.isExporter3Enabled() && exporter3Config != null && exporter3Config.isConfigured()) {
+            exporter3Service.completeUpload(app, upload);
+        }
+
+        // For backwards compatibility, always call Legacy Exporter 2.0. In the future, we may introduce a setting to
+        // disable this for new apps.
         uploadValidationService.validateUpload(appId, upload);
     }
     

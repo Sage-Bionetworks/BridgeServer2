@@ -7,6 +7,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.SPONSORS_AND_PARTNERS;
 import static org.testng.Assert.assertEquals;
@@ -88,6 +90,8 @@ public class StudyParticipantTest {
         assertEquals(node.get("externalIds").get("studyA").textValue(), "externalIdA");
         assertEquals(node.get("orgMembership").textValue(), TEST_ORG_ID);
         assertEquals(node.get("type").textValue(), "StudyParticipant");
+        assertEquals(node.get("note").textValue(), TEST_NOTE);
+        assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
         
         JsonNode clientData = node.get("clientData");
         assertTrue(clientData.get("booleanFlag").booleanValue());
@@ -111,7 +115,7 @@ public class StudyParticipantTest {
 
         assertEquals(node.get("attributes").get("A").textValue(), "B");
         assertEquals(node.get("attributes").get("C").textValue(), "D");
-        assertEquals(node.size(), 27);
+        assertEquals(node.size(), 29);
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals(deserParticipant.getFirstName(), "firstName");
@@ -135,6 +139,8 @@ public class StudyParticipantTest {
         assertEquals(deserParticipant.getId(), ACCOUNT_ID);
         assertEquals(deserParticipant.getExternalIds().get("studyA"), "externalIdA");
         assertEquals(deserParticipant.getOrgMembership(), TEST_ORG_ID);
+        assertEquals(deserParticipant.getNote(), TEST_NOTE);
+        assertEquals(deserParticipant.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         
         UserConsentHistory deserHistory = deserParticipant.getConsentHistories().get("AAA").get(0);
         assertEquals(deserHistory.getBirthdate(), "2002-02-02");
@@ -193,6 +199,8 @@ public class StudyParticipantTest {
         assertEquals(copy.getStudyIds(), STUDIES);
         assertEquals(copy.getId(), ACCOUNT_ID);
         assertEquals(copy.getClientData(), TestUtils.getClientData());
+        assertEquals(copy.getNote(), TEST_NOTE);
+        assertEquals(copy.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         
         // And they are equal in the Java sense
         assertEquals(copy, participant);
@@ -290,6 +298,14 @@ public class StudyParticipantTest {
     @Test
     public void canCopyOrgMembership() {
         assertCopyField("orgMembership", (builder) -> verify(builder).withOrgMembership(any()));
+    }
+    @Test
+    public void canCopyNote() {
+        assertCopyField("note", (builder) -> verify(builder).withNote(any()));
+    }
+    @Test
+    public void canCopyClientTimeZone() {
+        assertCopyField("clientTimeZone", (builder) -> verify(builder).withClientTimeZone(any()));
     }
     
     @Test
@@ -404,7 +420,9 @@ public class StudyParticipantTest {
                 .withStatus(AccountStatus.ENABLED)
                 .withClientData(clientData)
                 .withTimeZone(TIME_ZONE)
-                .withOrgMembership(TEST_ORG_ID);
+                .withOrgMembership(TEST_ORG_ID)
+                .withNote(TEST_NOTE)
+                .withClientTimeZone(TEST_CLIENT_TIME_ZONE);
         
         Map<String,List<UserConsentHistory>> historiesMap = Maps.newHashMap();
         

@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toSet;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_ORG_SPONSORED_STUDIES;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_TRANSITION_STUDY;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -10,20 +12,34 @@ import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.ALLOWED_PHASE_TRANSITIONS;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.ANALYSIS;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.CAN_DELETE_STUDY;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.CAN_EDIT_STUDY_CORE;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.CAN_EDIT_STUDY_METADATA;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.COMPLETED;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.IN_FLIGHT;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.WITHDRAWN;
 
 import java.util.Set;
+import java.util.function.Consumer;
 
 import org.joda.time.DateTime;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyPhase;
 import org.sagebionetworks.bridge.validators.StudyValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +54,10 @@ public class StudyService {
     
     private SponsorService sponsorService;
     
+    private CacheProvider cacheProvider;
+    
+    private Schedule2Service scheduleService;
+    
     @Autowired
     final void setStudyDao(StudyDao studyDao) {
         this.studyDao = studyDao;
@@ -46,6 +66,23 @@ public class StudyService {
     @Autowired
     final void setSponsorService(SponsorService sponsorService) {
         this.sponsorService = sponsorService;
+    }
+    
+    @Autowired
+    final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
+    }
+    
+    @Autowired
+    final void setSchedule2Service(Schedule2Service scheduleService) {
+        this.scheduleService = scheduleService;
+    }
+    
+    public void removeScheduleFromStudies(String appId, String scheduleGuid) {
+        checkNotNull(appId);
+        checkNotNull(scheduleGuid);
+        
+        studyDao.removeScheduleFromStudies(appId, scheduleGuid);
     }
     
     public Study getStudy(String appId, String studyId, boolean throwsException) {
@@ -133,17 +170,33 @@ public class StudyService {
         checkNotNull(appId);
         checkNotNull(study);
 
-        study.setAppId(appId);
         Study existing = getStudy(appId, study.getIdentifier(), true);
         if (study.isDeleted() && existing.isDeleted()) {
             throw new EntityNotFoundException(Study.class);
         }
+        if (!CAN_EDIT_STUDY_METADATA.contains(existing.getPhase())) {
+            throw new BadRequestException("Study cannot be changed during phase " 
+                    + existing.getPhase().label() + ".");
+        }
+        if (!CAN_EDIT_STUDY_CORE.contains(existing.getPhase())) {
+            study.setScheduleGuid(existing.getScheduleGuid());
+            study.setCustomEvents(existing.getCustomEvents());
+        } else if (existing.getScheduleGuid() != null) {
+            study.setScheduleGuid(existing.getScheduleGuid());
+        }
+        study.setAppId(appId);
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
+
         Validate.entityThrowingException(StudyValidator.INSTANCE, study);
         
-        return studyDao.updateStudy(study);
+        VersionHolder keys = studyDao.updateStudy(study);
+        
+        CacheKey cacheKey = CacheKey.publicStudy(appId, study.getIdentifier());
+        cacheProvider.removeObject(cacheKey);
+        
+        return keys;
     }
     
     public void deleteStudy(String appId, String studyId) {
@@ -151,9 +204,17 @@ public class StudyService {
         checkNotNull(studyId);
         
         Study existing = getStudy(appId, studyId, true);
+        
+        if (!CAN_DELETE_STUDY.contains(existing.getPhase())) {
+            throw new BadRequestException("Study cannot be deleted during phase " 
+                    + existing.getPhase().label());
+        }
         existing.setDeleted(true);
         existing.setModifiedOn(DateTime.now());
         studyDao.updateStudy(existing);
+        
+        CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
+        cacheProvider.removeObject(cacheKey);
     }
     
     public void deleteStudyPermanently(String appId, String studyId) {
@@ -161,13 +222,111 @@ public class StudyService {
         checkNotNull(studyId);
         
         // Throws exception if the element does not exist.
-        getStudy(appId, studyId, true);
+        Study study = getStudy(appId, studyId, true);
+        String scheduleGuid = study.getScheduleGuid();
+        
         studyDao.deleteStudyPermanently(appId, studyId);
+        if (scheduleGuid != null) {
+            scheduleService.deleteSchedulePermanently(appId, scheduleGuid);    
+        }
+        CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
+        cacheProvider.removeObject(cacheKey);
     }
     
     public void deleteAllStudies(String appId) {
         checkNotNull(appId);
 
         studyDao.deleteAllStudies(appId);
+    }
+    
+    public Study transitionToDesign(String appId, String studyId) {
+        return phaseTransition(appId, studyId, DESIGN, null);
+    }
+    
+    /**
+     * Move a study from the design phase into recruitment for the study. The study 
+     * is now “live,” and the schedule (if one is assigned) is published and cannot 
+     * be changed further, nor can the study be associated to another schedule 
+     * (or no schedule).
+     */
+    public Study transitionToRecruitment(String appId, String studyId) {
+        return phaseTransition(appId, studyId, RECRUITMENT, (study) -> {
+            if (study.getScheduleGuid() != null) {
+                Schedule2 schedule = scheduleService.getSchedule(appId, study.getScheduleGuid());
+                if (!schedule.isPublished()) {
+                    scheduleService.publishSchedule(appId, study.getScheduleGuid());
+                }
+            }
+        });
+    }
+    
+    public Study transitionToInFlight(String appId, String studyId) {
+        return phaseTransition(appId, studyId, IN_FLIGHT, null);
+    }
+    
+    /**
+     * Prevent any additional enrollments into this study, in preparation to move 
+     * toward the analysis of study data collected. There may still be participants
+     * completing their schedules at this time.
+     */
+    public Study transitionToAnalysis(String appId, String studyId) {
+        return phaseTransition(appId, studyId, ANALYSIS, null);
+    }
+    
+    /**
+     * This effects a logical deletion of the study, but the meaning is open to 
+     * other data changes to represent a study being closed.   
+     */
+    public Study transitionToCompleted(String appId, String studyId) {
+        return phaseTransition(appId, studyId, COMPLETED, null);
+    }
+    
+    /**
+     * Moves a study to the withdrawn state. No further enrollments will be allowed,
+     * and data collected for this study should not be uploaded as part of the data
+     * set. If this was previously in design, the schedule will be published in order
+     * to freeze it from further changes.
+     */
+    public Study transitionToWithdrawn(String appId, String studyId) {
+        return phaseTransition(appId, studyId, WITHDRAWN, (study) -> {
+            if (study.getScheduleGuid() != null) {
+                Schedule2 schedule = scheduleService.getSchedule(appId, study.getScheduleGuid());
+                if (!schedule.isPublished()) {
+                    scheduleService.publishSchedule(appId, study.getScheduleGuid());
+                }
+            }
+        });
+    }
+    
+    /**
+     * Simple phase transition with no other business logic.
+     */
+    private Study phaseTransition(String appId, String studyId, StudyPhase targetPhase, Consumer<Study> consumer) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(targetPhase);
+
+        Study study = studyDao.getStudy(appId, studyId);
+        if (study == null) {
+            throw new EntityNotFoundException(Study.class);
+        }
+        CAN_TRANSITION_STUDY.checkAndThrow(STUDY_ID, study.getIdentifier());
+        
+        Set<StudyPhase> allowedTargetPhases = ALLOWED_PHASE_TRANSITIONS.get(study.getPhase());
+        if (!allowedTargetPhases.contains(targetPhase)) {
+            throw new BadRequestException("Study cannot transition from " + 
+                    study.getPhase().label() + " to " + targetPhase.label() + ".");
+        }
+        study.setPhase(targetPhase);
+        
+        if (consumer != null) {
+            consumer.accept(study);
+        }
+        studyDao.updateStudy(study);
+        
+        CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
+        cacheProvider.removeObject(cacheKey);
+        
+        return study;
     }
 }

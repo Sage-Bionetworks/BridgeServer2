@@ -43,7 +43,6 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
         hashKey.setHealthCode(event.getHealthCode());
-        hashKey.setStudyId(event.getStudyId());
         hashKey.setEventId(event.getEventId());
         
         ActivityEvent savedEvent = mapper.load(hashKey);
@@ -60,7 +59,6 @@ public class DynamoActivityEventDao implements ActivityEventDao {
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
         hashKey.setHealthCode(event.getHealthCode());
-        hashKey.setStudyId(event.getStudyId());
         hashKey.setEventId(event.getEventId());
         
         ActivityEvent savedEvent = mapper.load(hashKey);
@@ -72,12 +70,11 @@ public class DynamoActivityEventDao implements ActivityEventDao {
     }
 
     @Override
-    public Map<String, DateTime> getActivityEventMap(String healthCode, String studyId) {
+    public Map<String, DateTime> getActivityEventMap(String healthCode) {
         checkNotNull(healthCode);
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
         hashKey.setHealthCode(healthCode);
-        hashKey.setStudyId(studyId);
         DynamoDBQueryExpression<DynamoActivityEvent> query = new DynamoDBQueryExpression<DynamoActivityEvent>()
             .withHashKeyValues(hashKey);
 
@@ -91,12 +88,11 @@ public class DynamoActivityEventDao implements ActivityEventDao {
     }
     
     @Override
-    public void deleteActivityEvents(String healthCode, String studyId) {
+    public void deleteActivityEvents(String healthCode) {
         checkNotNull(healthCode);
         
         DynamoActivityEvent hashKey = new DynamoActivityEvent();
         hashKey.setHealthCode(healthCode);
-        hashKey.setStudyId(studyId);
         DynamoDBQueryExpression<DynamoActivityEvent> query = new DynamoDBQueryExpression<DynamoActivityEvent>()
             .withHashKeyValues(hashKey);
 

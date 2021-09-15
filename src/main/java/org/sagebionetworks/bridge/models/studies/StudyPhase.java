@@ -1,5 +1,11 @@
 package org.sagebionetworks.bridge.models.studies;
 
+import java.util.Map;
+import java.util.Set;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
 public enum StudyPhase {
     /**
      * If not set, the study is in the LEGACY phase, and no domain logic will be
@@ -46,4 +52,24 @@ public enum StudyPhase {
      * would appear to be no longer available to participants.
      */
     WITHDRAWN;
+    
+    public String label() {
+        return "“" + this.name().toLowerCase() + "”";
+    }
+    
+    public static final Map<StudyPhase, Set<StudyPhase>> ALLOWED_PHASE_TRANSITIONS = new ImmutableMap.Builder<StudyPhase, Set<StudyPhase>>()
+            .put(LEGACY, ImmutableSet.of(DESIGN))
+            .put(DESIGN, ImmutableSet.of(RECRUITMENT, WITHDRAWN))
+            .put(RECRUITMENT, ImmutableSet.of(IN_FLIGHT, WITHDRAWN))
+            .put(IN_FLIGHT, ImmutableSet.of(RECRUITMENT, ANALYSIS, WITHDRAWN))
+            .put(ANALYSIS, ImmutableSet.of(RECRUITMENT, IN_FLIGHT, COMPLETED, WITHDRAWN))
+            .put(COMPLETED, ImmutableSet.of())
+            .put(WITHDRAWN, ImmutableSet.of()).build();
+    
+    // Legacy studies, and studies created in the design phase, are fully editable/deletable, which was
+    // their legacy behavior. In later phases, these no longer become possible. 
+    public static final Set<StudyPhase> CAN_EDIT_STUDY_METADATA = ImmutableSet.of(LEGACY, DESIGN, RECRUITMENT, IN_FLIGHT);
+    public static final Set<StudyPhase> CAN_EDIT_STUDY_CORE = ImmutableSet.of(LEGACY, DESIGN);
+    public static final Set<StudyPhase> CAN_DELETE_STUDY = ImmutableSet.of(LEGACY, DESIGN, COMPLETED, WITHDRAWN);
+
 }

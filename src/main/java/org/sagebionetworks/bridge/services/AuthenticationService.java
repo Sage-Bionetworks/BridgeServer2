@@ -186,10 +186,9 @@ public class AuthenticationService {
         checkNotNull(app);
         checkNotNull(context);
 
-        Account account = accountService.getAccount(context.getAccountId());
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        Account account = accountService.getAccount(context.getAccountId())
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         return getSessionFromAccount(app, context, account);
     }
 
@@ -208,7 +207,7 @@ public class AuthenticationService {
         // Do not call sessionUpdateService as we assume system is in sync with the session on sign in
         if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
             AccountId accountId = AccountId.forId(app.getIdentifier(), account.getId());
-            account = accountService.getAccountNoFilter(accountId)
+            account = accountService.getAccount(accountId)
                     .orElseThrow(() -> new EntityNotFoundException(Account.class));
             session = getSessionFromAccount(app, context, account);
         }
@@ -261,7 +260,7 @@ public class AuthenticationService {
     public void signOut(final UserSession session) {
         if (session != null) {
             AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
-            Account account = accountService.getAccountNoFilter(accountId).orElse(null);
+            Account account = accountService.getAccount(accountId).orElse(null);
             if (account != null) {
                 accountService.deleteReauthToken(account);
                 // session does not have the reauth token so the reauthToken-->sessionToken Redis entry cannot be 
@@ -283,7 +282,7 @@ public class AuthenticationService {
             // For apps that create accounts prior to calling sign up from the app (which happens), check and if 
             // the account with this external ID already exists, return quietly.
             AccountId accountId = AccountId.forExternalId(app.getIdentifier(), participant.getExternalId());
-            Account account = accountService.getAccountNoFilter(accountId).orElse(null); 
+            Account account = accountService.getAccount(accountId).orElse(null); 
             if (account != null) {
                 return new IdentifierHolder(account.getId());
             }
@@ -408,11 +407,9 @@ public class AuthenticationService {
         }
 
         AccountId accountId = AccountId.forExternalId(app.getIdentifier(), externalId);
-        Account account = accountService.getAccount(accountId);
-        if (account == null) {
-            throw new EntityNotFoundException(Account.class);
-        }
-        
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+                
         Enrollment en = account.getEnrollments().stream()
                 .filter(enrollment -> externalId.equals(enrollment.getExternalId()))
                 .findAny()
@@ -444,7 +441,7 @@ public class AuthenticationService {
         }
 
         AccountId accountId = signIn.getAccountId();
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         if (account.getStatus() == AccountStatus.DISABLED) {
@@ -474,7 +471,7 @@ public class AuthenticationService {
 
             // Check intent to participate.
             if (!session.doesConsent() && intentService.registerIntentToParticipate(app, account)) {
-                account = accountService.getAccountNoFilter(accountId)
+                account = accountService.getAccount(accountId)
                         .orElseThrow(() -> new EntityNotFoundException(Account.class));
                 session = getSessionFromAccount(app, context, account);
             }
@@ -511,12 +508,6 @@ public class AuthenticationService {
      * APIs, which creates the session. Package-scoped for unit tests.
      */
     public UserSession getSessionFromAccount(App app, CriteriaContext context, Account account) {
-        
-        // We are about to retrieve a participant and the security check must pass. In this case,
-        // an authenticating user is retrieving their own account, and we want the IDs to match
-        // during the authentication check.
-        RequestContext.acquireAccountIdentity(account);
-        
         StudyParticipant participant = participantService.getParticipant(app, account, false);
 
         // If the user does not have a language persisted yet, now that we have a session, we can retrieve it 
@@ -526,7 +517,8 @@ public class AuthenticationService {
                     .withLanguages(context.getLanguages()).build();
             
             // Note that the context does not have the healthCode, you must use the participant
-            accountService.editAccount(app.getIdentifier(), participant.getHealthCode(),
+            AccountId accountId = AccountId.forHealthCode(app.getIdentifier(), participant.getHealthCode());
+            accountService.editAccount(accountId,
                     accountToEdit -> accountToEdit.setLanguages(context.getLanguages()));
         }
 
@@ -572,7 +564,7 @@ public class AuthenticationService {
         if (accountId == null) {
             throw new EntityNotFoundException(Account.class);
         }
-        Account account = accountService.getAccountNoFilter(accountId)
+        Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         if (account.getRoles().isEmpty()) {
             throw new UnauthorizedException("Only administrative accounts can sign in via OAuth.");

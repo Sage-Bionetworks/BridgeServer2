@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
@@ -8,6 +9,7 @@ import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
@@ -15,6 +17,8 @@ import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.START_DATE;
 import static org.sagebionetworks.bridge.models.ResourceList.START_TIME;
+import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
+import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
@@ -28,6 +32,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -52,9 +58,11 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.IdentifierUpdate;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -116,7 +124,8 @@ public class ParticipantController extends BaseController {
         return new StatusMessage("SMS notification registration created");
     }
     
-    @PostMapping("/v3/participants/{userId}/activityEvents")
+    @PostMapping(path = {"/v3/participants/{userId}/activityEvents",
+            "/v3/participants/{userId}/activityevents"})
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage createCustomActivityEvent(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(RESEARCHER);
@@ -206,7 +215,9 @@ public class ParticipantController extends BaseController {
     }
 
     @GetMapping(path = { "/v1/apps/{appId}/participants/{userId}/activityEvents",
-            "/v3/studies/{appId}/participants/{userId}/activityEvents" })
+            "/v3/studies/{appId}/participants/{userId}/activityEvents",
+            "/v1/apps/{appId}/participants/{userId}/activityevents",
+            "/v3/studies/{appId}/participants/{userId}/activityevents"})
     public ResourceList<ActivityEvent> getActivityEventsForWorker(@PathVariable String appId,
             @PathVariable String userId) {
         getAuthenticatedSession(WORKER);
@@ -279,6 +290,7 @@ public class ParticipantController extends BaseController {
         App app = appService.getApp(session.getAppId());
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
+
         return participantService.getPagedAccountSummaries(app, search);
     }
     
@@ -510,6 +522,25 @@ public class ParticipantController extends BaseController {
         
         return new StatusMessage("Consent agreement resent to user.");
     }
+    
+    @PostMapping("/v3/participants/{userId}/sendInstallLink")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public StatusMessage sendInstallLink(@PathVariable String userId, @RequestParam(required = false) String osName) {
+        UserSession session = getAdministrativeSession();
+        CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
+
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        App app = appService.getApp(session.getAppId());
+        String email = TRUE.equals(account.getEmailVerified()) ? account.getEmail() : null;
+        Phone phone = TRUE.equals(account.getPhoneVerified()) ? account.getPhone() : null;
+        
+        participantService.sendInstallLinkMessage(app, PROMOTIONAL, account.getHealthCode(), email, phone, osName);
+        
+        return INSTALL_LINK_SEND_MSG;
+    }
 
     @PostMapping("/v3/participants/{userId}/consents/withdraw")
     public StatusMessage withdrawFromApp(@PathVariable String userId) {
@@ -583,7 +614,8 @@ public class ParticipantController extends BaseController {
                 + BridgeUtils.COMMA_SPACE_JOINER.join(erroredNotifications) + ".");
     }
 
-    @GetMapping(path = {"/v3/participants/{userId}/activityEvents"}, produces = {
+    @GetMapping(path = {"/v3/participants/{userId}/activityEvents",
+            "/v3/participants/{userId}/activityevents"}, produces = {
             APPLICATION_JSON_UTF8_VALUE })
     public ResourceList<ActivityEvent> getActivityEvents(@PathVariable String userId) throws JsonProcessingException {
         UserSession researcherSession = getAdministrativeSession();
@@ -604,6 +636,33 @@ public class ParticipantController extends BaseController {
         
         participantService.sendSmsMessage(app, userId, template);
         return new StatusMessage("Message sent.");
+    }
+
+    @PostMapping("/v3/participants/emailRoster")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public StatusMessage getParticipantRoster() throws JsonProcessingException {
+        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        String appId = session.getAppId();
+
+        StudyParticipant participant = session.getParticipant();
+        if (participant.getEmail() == null || !participant.getEmailVerified()) {
+            throw new BadRequestException("Cannot request user data.");
+        }
+        if (RequestContext.get().isInRole(STUDY_COORDINATOR) && !RequestContext.get().isInRole(RESEARCHER)
+            && RequestContext.get().getCallerOrgMembership() == null) {
+            throw new UnauthorizedException("Caller is a study coordinator without an org membership.");
+        }
+
+        ParticipantRosterRequest request = parseJson(ParticipantRosterRequest.class);
+        String studyId = request.getStudyId();
+
+        if (studyId != null && !RequestContext.get().getOrgSponsoredStudies().contains(studyId)) {
+            throw new UnauthorizedException("Requested studyId is not sponsored by the caller's org.");
+        }
+
+        participantService.getParticipantRoster(appId, session.getId(), request);
+
+        return new StatusMessage("Download initiated.");
     }
     
     private JsonNode getParticipantsInternal(App app, String offsetByString, String pageSizeString,

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.HttpStatus;
@@ -11,25 +12,12 @@ import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
 
-import com.fasterxml.jackson.databind.JsonNode;
-
 public class UploadValidatorTest {
     private static final String UPLOAD_CONTENT = "testValidateRequest";
 
-    // The other tests in this class don't go through the controller; we want to do that
-    // because we want to verify that we get the right type back. This could easily
-    // be broken since there's no external test and we could switch the object internally.
-    @Test
-    public void uploadRequestHasCorrectType() {
-        BridgeObjectMapper mapper = new BridgeObjectMapper();
-        
-        JsonNode node = mapper.valueToTree(new UploadRequest.Builder().build());
-        assertEquals("UploadRequest", node.get("type").asText(), "Type is UploadRequest");
-    }
-
     @Test
     public void testValidateRequest() {
-        Validator validator = new UploadValidator();
+        Validator validator = UploadValidator.INSTANCE;
         
         // A valid case
         {
@@ -71,6 +59,13 @@ public class UploadValidatorTest {
         } catch (BridgeServiceException e) {
             assertEquals(e.getStatusCode(), HttpStatus.SC_BAD_REQUEST, "MD5 not base64 encoded");
         }
+    }
+
+    @Test
+    public void withOptionalParams() throws Exception {
+        ObjectNode metadata = (ObjectNode) BridgeObjectMapper.get().readTree("{\"key\":\"value\"}");
+        UploadRequest uploadRequest = makeValidUploadRequestBuilder().withMetadata(metadata).build();
+        Validate.entityThrowingException(UploadValidator.INSTANCE, uploadRequest);
     }
 
     private static UploadRequest.Builder makeValidUploadRequestBuilder() {

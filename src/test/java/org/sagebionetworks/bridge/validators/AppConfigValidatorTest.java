@@ -102,8 +102,8 @@ public class AppConfigValidatorTest extends Mockito {
         Assessment sharedAssessment = new Assessment();
         sharedAssessment.setIdentifier("aSharedIdentifier");
         
-        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID)).thenReturn(assessment);
-        when(mockAssessmentService.getAssessmentByGuid(SHARED_APP_ID, "originGuid")).thenReturn(sharedAssessment);
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID)).thenReturn(assessment);
+        when(mockAssessmentService.getAssessmentByGuid(SHARED_APP_ID, null, "originGuid")).thenReturn(sharedAssessment);
         
         assertValidatorMessage(newValidator, appConfig, "assessmentReferences[1].guid", "is required");
     }
@@ -112,7 +112,7 @@ public class AppConfigValidatorTest extends Mockito {
     public void assessmentReferenceInvalidGuidValidated() {
         appConfig.setAssessmentReferences(ImmutableList.of(VALID_ASSESSMENT_REF));
         
-        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, GUID))
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID))
             .thenThrow(new EntityNotFoundException(Assessment.class));
         
         assertValidatorMessage(newValidator, appConfig, "assessmentReferences[0].guid", "does not refer to an assessment");

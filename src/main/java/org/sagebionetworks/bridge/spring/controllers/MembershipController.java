@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_MEMBERS;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.springframework.http.HttpStatus.CREATED;
@@ -14,11 +15,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.OrganizationService;
@@ -36,10 +35,9 @@ public class MembershipController extends BaseController {
     
     @PostMapping("/v1/organizations/{orgId}/members")
     public PagedResourceList<AccountSummary> getMembers(@PathVariable String orgId) {
-        // should this just be scoped to any administrative user?
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAdministrativeSession();
         
-        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, orgId);
+        CAN_READ_MEMBERS.checkAndThrow(ORG_ID, orgId);
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
         return organizationService.getMembers(session.getAppId(), orgId, search);
@@ -50,10 +48,9 @@ public class MembershipController extends BaseController {
     public StatusMessage addMember(@PathVariable String orgId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
         
-        // organization membership checked in service
+        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, orgId);
         
-        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
-        organizationService.addMember(session.getAppId(), orgId, accountId);
+        organizationService.addMember(session.getAppId(), orgId, userId);
         
         return new StatusMessage("User added as a member.");
     }
@@ -62,10 +59,9 @@ public class MembershipController extends BaseController {
     public StatusMessage removeMember(@PathVariable String orgId, @PathVariable String userId) {
         UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
 
-        // organization membership checked in service
+        CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, orgId);
         
-        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
-        organizationService.removeMember(session.getAppId(), orgId, accountId);
+        organizationService.removeMember(session.getAppId(), orgId, userId);
         
         return new StatusMessage("User removed as a member.");
     }
