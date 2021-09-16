@@ -164,6 +164,8 @@ public class AppServiceTest extends Mockito {
     AssessmentService mockAssessmentService;
     @Mock
     AssessmentResourceService mockAssessmentResourceService;
+    @Mock
+    Schedule2Service mockScheduleService;
 
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -741,7 +743,7 @@ public class AppServiceTest extends Mockito {
         verify(mockSubpopService).deleteAllSubpopulations(app.getIdentifier());
         verify(mockTopicService).deleteAllTopics(app.getIdentifier());
         verify(mockCacheProvider).removeApp(TEST_APP_ID);
-        verify(mockTemplateService).deleteTemplatesForApp(TEST_APP_ID);
+        verify(mockTemplateService).deleteAllTemplates(TEST_APP_ID);
         verify(mockFileService).deleteAllAppFiles(TEST_APP_ID);
     }
 
@@ -1678,13 +1680,18 @@ public class AppServiceTest extends Mockito {
         verify(mockCacheProvider).removeApp(app.getIdentifier());
 
         verify(mockAccountService).deleteAllAccounts(app.getIdentifier());
+        verify(mockStudyService).deleteAllStudies(app.getIdentifier());
+        verify(mockScheduleService).deleteAllSchedules(app.getIdentifier());
         verify(mockAssessmentResourceService).deleteAllAssessmentResources(app.getIdentifier());
         verify(mockAssessmentService).deleteAllAssessments(app.getIdentifier());
-        verify(mockAppDao).deleteApp(updatedApp);
+        verify(mockOrgService).deleteAllOrganizations(app.getIdentifier());
+        verify(mockTemplateService).deleteAllTemplates(app.getIdentifier());
         verify(mockCompoundActivityDefinitionService)
                 .deleteAllCompoundActivityDefinitionsInApp(updatedApp.getIdentifier());
         verify(mockSubpopService).deleteAllSubpopulations(updatedApp.getIdentifier());
         verify(mockTopicService).deleteAllTopics(updatedApp.getIdentifier());
+        verify(mockFileService).deleteAllAppFiles(app.getIdentifier());
+        verify(mockAppDao).deleteApp(app);
     }
 
     @Test
