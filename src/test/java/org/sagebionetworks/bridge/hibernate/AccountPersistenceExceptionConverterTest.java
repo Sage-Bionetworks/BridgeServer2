@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.hibernate.AccountPersistenceExceptionConverter.ENROLLED_BY_CONSTRAINT_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -41,6 +42,10 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
             +"(`bridgedb`.`accounts`, CONSTRAINT `accounts_ibfk_1` FOREIGN KEY (`studyId`, `orgMembership`) "
             +"REFERENCES `Organizations` (`appId`, `identifier`))";
 
+    private static final String ENROLLED_BY_CONSTRAINT = "Cannot delete or update a parent row: a foreign key constraint "
+            +"fails (`bridgedb`.`accountssubstudies`, CONSTRAINT `fk_enrolledBy` FOREIGN KEY (`enrolledBy`) REFERENCES "
+            +"`Accounts` (`id`))";
+    
     private AccountPersistenceExceptionConverter converter;
     
     @Mock
@@ -342,5 +347,21 @@ public class AccountPersistenceExceptionConverterTest extends Mockito {
         
         RuntimeException e = converter.convert(pe, account);
         assertEquals(e.getClass(), EntityNotFoundException.class);
+    }
+
+    @Test
+    public void enrolledByForeignKeyConstraint() { 
+        HibernateAccount account = new HibernateAccount();
+        
+        SQLIntegrityConstraintViolationException ex = mock(SQLIntegrityConstraintViolationException.class);
+        when(ex.getMessage()).thenReturn(ENROLLED_BY_CONSTRAINT);
+        
+        org.hibernate.exception.ConstraintViolationException cve = 
+                new org.hibernate.exception.ConstraintViolationException(ex.getMessage(), ex, "");
+        
+        PersistenceException pe = new PersistenceException(cve);
+        
+        RuntimeException e = converter.convert(pe, account);
+        assertEquals(e.getMessage(), ENROLLED_BY_CONSTRAINT_MSG);
     }
 }
