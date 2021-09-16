@@ -25,8 +25,6 @@ import org.sagebionetworks.bridge.models.assessments.config.HibernateAssessmentC
 
 @Component
 class HibernateAssessmentDao implements AssessmentDao {
-    static final String DELETE_RESOURCES_SQL = "DELETE FROM ExternalResources where appId = :appId AND assessmentId = :assessmentId";
-    static final String DELETE_CONFIG_SQL = "DELETE FROM AssessmentConfigs where guid = :guid";
     static final String APP_ID = "appId";
     static final String ASSESSMENT_ID = "assessmentId";
     static final String IDENTIFIER = "identifier";
@@ -46,6 +44,9 @@ class HibernateAssessmentDao implements AssessmentDao {
     static final String GET_REVISIONS2 = "ORDER BY revision DESC";
     static final String EXCLUDE_DELETED = "AND deleted = 0";
     static final String LIMIT_TO_OWNER = "AND ownerId = :ownerId";
+    static final String DELETE_ALL_ASSESSMENTS_SQL = "DELETE FROM Assessments WHERE appId = :appId";
+    static final String DELETE_RESOURCES_SQL = "DELETE FROM ExternalResources where appId = :appId AND assessmentId = :assessmentId";
+    static final String DELETE_CONFIG_SQL = "DELETE FROM AssessmentConfigs where guid = :guid";
 
     private HibernateHelper hibernateHelper;
     
@@ -242,5 +243,13 @@ class HibernateAssessmentDao implements AssessmentDao {
         params.put(OWNER_ID, appId + ":" + orgId);
         resultCount = hibernateHelper.queryCount(builder.getQuery(), builder.getParameters());
         return resultCount != 0;
+    }
+    
+    @Override
+    public void deleteAllAssessments(String appId) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(DELETE_ALL_ASSESSMENTS_SQL, APP_ID, appId);
+        
+        hibernateHelper.nativeQueryUpdate(builder.getQuery(), builder.getParameters());
     }
 }

@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.hibernate;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentDao.DELETE_ALL_ASSESSMENTS_SQL;
 import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentDao.DELETE_CONFIG_SQL;
 import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentDao.DELETE_RESOURCES_SQL;
 import static org.testng.Assert.assertEquals;
@@ -33,7 +35,6 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
@@ -86,10 +87,8 @@ public class HibernateAssessmentDaoTest extends Mockito {
     private static final String QUERY_COUNT_FROM_ORG = "SELECT COUNT(*) FROM HibernateAssessment WHERE " +
             "(appId = :appId AND ownerId = :ownerId)";
     
-    private static final String APP_ID_VALUE = "appId";
     private static final String ID_VALUE = "identifier";
     private static final String GUID_VALUE = "guid";
-    private static final String ORG_ID = "test-org";
     private static final int REV_VALUE = 3;
     private static final HibernateAssessment HIBERNATE_ASSESSMENT = new HibernateAssessment();
     
@@ -139,12 +138,12 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
                 .thenReturn(list);
         
-        PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, null, 0, 20, null, false);
+        PagedResourceList<Assessment> page = dao.getAssessments(TEST_APP_ID, null, 0, 20, null, false);
         assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_EXC_DELETED);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_EXC_DELETED);
         
         Map<String,Object> params = paramsCaptor.getValue();
-        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("appId"), TEST_APP_ID);
         assertEquals(page.getItems().size(), 5);
         assertEquals(page.getTotal(), Integer.valueOf(5));
     }
@@ -157,12 +156,12 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
                 .thenReturn(list);
         
-        PagedResourceList<Assessment> page = dao.getAssessments(APP_ID_VALUE, TEST_ORG_ID, 0, 20, null, false);
+        PagedResourceList<Assessment> page = dao.getAssessments(TEST_APP_ID, TEST_ORG_ID, 0, 20, null, false);
         assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_WITH_OWNERID_EXC_DELETED);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_WITH_OWNERID_EXC_DELETED);
         
         Map<String,Object> params = paramsCaptor.getValue();
-        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("appId"), TEST_APP_ID);
         assertEquals(params.get("ownerId"), TEST_ORG_ID);
         assertEquals(page.getItems().size(), 5);
         assertEquals(page.getTotal(), Integer.valueOf(5));
@@ -174,7 +173,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
                 .thenReturn(ImmutableList.of());
         
-        dao.getAssessments(APP_ID_VALUE, null, 0, 20, null, true);
+        dao.getAssessments(TEST_APP_ID, null, 0, 20, null, true);
         assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_INC_DELETED);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_INC_DELETED);
     }
@@ -185,7 +184,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.nativeQueryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
                 .thenReturn(ImmutableList.of());
         
-        dao.getAssessments(APP_ID_VALUE, null, 0, 20, ImmutableSet.of("tagA", "tagB"), false);
+        dao.getAssessments(TEST_APP_ID, null, 0, 20, ImmutableSet.of("tagA", "tagB"), false);
         assertEquals(queryCaptor.getAllValues().get(0), "SELECT COUNT(*) " + QUERY_SQL_WITH_TAGS);
         assertEquals(queryCaptor.getAllValues().get(1), "SELECT * " + QUERY_SQL_WITH_TAGS);
     }
@@ -197,14 +196,14 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT));
         
-        PagedResourceList<Assessment> page = dao.getAssessmentRevisions(APP_ID_VALUE, null, ID_VALUE, 0, 20, true);
+        PagedResourceList<Assessment> page = dao.getAssessmentRevisions(TEST_APP_ID, null, ID_VALUE, 0, 20, true);
         assertEquals(page.getItems().size(), 3);
         assertEquals(page.getTotal(), Integer.valueOf(100));
         
         assertEquals(queryCaptor.getValue(), QUERY_GET_REVISIONS_INC_DELETED);
         
         Map<String,Object> params = paramsCaptor.getValue();
-        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("appId"), TEST_APP_ID);
         assertEquals(params.get("identifier"), ID_VALUE);
         assertNull(params.get("ownerId"));
     }
@@ -216,14 +215,14 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT, HIBERNATE_ASSESSMENT));
         
-        PagedResourceList<Assessment> page = dao.getAssessmentRevisions(APP_ID_VALUE, TEST_ORG_ID, ID_VALUE, 0, 20, true);
+        PagedResourceList<Assessment> page = dao.getAssessmentRevisions(TEST_APP_ID, TEST_ORG_ID, ID_VALUE, 0, 20, true);
         assertEquals(page.getItems().size(), 3);
         assertEquals(page.getTotal(), Integer.valueOf(100));
         
         assertEquals(queryCaptor.getValue(), QUERY_GET_REVISIONS_WITH_OWNERID_INC_DELETED);
         
         Map<String,Object> params = paramsCaptor.getValue();
-        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("appId"), TEST_APP_ID);
         assertEquals(params.get("identifier"), ID_VALUE);
         assertEquals(params.get("ownerId"), TEST_ORG_ID);
     }
@@ -233,7 +232,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of());
         
-        dao.getAssessmentRevisions(APP_ID_VALUE, null, ID_VALUE, 0, 20, false);
+        dao.getAssessmentRevisions(TEST_APP_ID, null, ID_VALUE, 0, 20, false);
         assertEquals(queryCaptor.getValue(), QUERY_GET_REVISIONS_EXC_DELETED);
         assertNull(paramsCaptor.getValue().get("ownerId"));
     }
@@ -243,7 +242,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(0), eq(20), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of());
         
-        dao.getAssessmentRevisions(APP_ID_VALUE, TEST_ORG_ID, ID_VALUE, 0, 20, false);
+        dao.getAssessmentRevisions(TEST_APP_ID, TEST_ORG_ID, ID_VALUE, 0, 20, false);
         assertEquals(queryCaptor.getValue(), QUERY_GET_REVISIONS_WITH_OWNERID_EXC_DELETED);
         assertEquals(paramsCaptor.getValue().get("ownerId"), TEST_ORG_ID);
     }
@@ -253,13 +252,13 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT));
         
-        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, TEST_ORG_ID, GUID_VALUE);
+        Optional<Assessment> retValue = dao.getAssessment(TEST_APP_ID, TEST_ORG_ID, GUID_VALUE);
         assertTrue(retValue.isPresent());
         
         assertEquals(queryCaptor.getValue(), HibernateAssessmentDao.GET_BY_GUID + " AND ownerId = :ownerId");
         
         Map<String,Object> params = paramsCaptor.getValue();
-        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("appId"), TEST_APP_ID);
         assertEquals(params.get("guid"), GUID_VALUE);
         assertEquals(params.get("ownerId"), TEST_ORG_ID);
     }
@@ -269,13 +268,13 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT));
         
-        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, null, GUID_VALUE);
+        Optional<Assessment> retValue = dao.getAssessment(TEST_APP_ID, null, GUID_VALUE);
         assertTrue(retValue.isPresent());
         
         assertEquals(queryCaptor.getValue(), HibernateAssessmentDao.GET_BY_GUID);
         
         Map<String,Object> params = paramsCaptor.getValue();
-        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("appId"), TEST_APP_ID);
         assertEquals(params.get("guid"), GUID_VALUE);
     }
     
@@ -284,7 +283,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of());
     
-        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, null, GUID_VALUE);
+        Optional<Assessment> retValue = dao.getAssessment(TEST_APP_ID, null, GUID_VALUE);
         assertFalse(retValue.isPresent());
     }
 
@@ -293,13 +292,13 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT));
         
-        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, null, ID_VALUE, REV_VALUE);
+        Optional<Assessment> retValue = dao.getAssessment(TEST_APP_ID, null, ID_VALUE, REV_VALUE);
         assertTrue(retValue.isPresent());
         
         assertEquals(queryCaptor.getValue(), HibernateAssessmentDao.GET_BY_IDENTIFIER);
         
         Map<String,Object> params = paramsCaptor.getValue();
-        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("appId"), TEST_APP_ID);
         assertEquals(params.get("identifier"), ID_VALUE);
         assertEquals(params.get("revision"), REV_VALUE);
     }
@@ -309,13 +308,13 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of(HIBERNATE_ASSESSMENT));
         
-        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, TEST_ORG_ID, ID_VALUE, REV_VALUE);
+        Optional<Assessment> retValue = dao.getAssessment(TEST_APP_ID, TEST_ORG_ID, ID_VALUE, REV_VALUE);
         assertTrue(retValue.isPresent());
         
         assertEquals(queryCaptor.getValue(), HibernateAssessmentDao.GET_BY_IDENTIFIER + " AND ownerId = :ownerId");
         
         Map<String,Object> params = paramsCaptor.getValue();
-        assertEquals(params.get("appId"), APP_ID_VALUE);
+        assertEquals(params.get("appId"), TEST_APP_ID);
         assertEquals(params.get("identifier"), ID_VALUE);
         assertEquals(params.get("revision"), REV_VALUE);
         assertEquals(params.get("ownerId"), TEST_ORG_ID);
@@ -326,7 +325,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
         when(mockHelper.queryGet(queryCaptor.capture(), paramsCaptor.capture(), eq(null), eq(null), eq(HibernateAssessment.class)))
             .thenReturn(ImmutableList.of());
         
-        Optional<Assessment> retValue = dao.getAssessment(APP_ID_VALUE, null, ID_VALUE, REV_VALUE);
+        Optional<Assessment> retValue = dao.getAssessment(TEST_APP_ID, null, ID_VALUE, REV_VALUE);
         assertFalse(retValue.isPresent());
     }
     
@@ -336,9 +335,9 @@ public class HibernateAssessmentDaoTest extends Mockito {
         AssessmentConfig config = new AssessmentConfig();
         
         when(mockSession.merge(any())).thenReturn(
-                HibernateAssessment.create(APP_ID_VALUE, assessment));
+                HibernateAssessment.create(TEST_APP_ID, assessment));
         
-        Assessment retValue = dao.createAssessment(APP_ID_VALUE, assessment, config);
+        Assessment retValue = dao.createAssessment(TEST_APP_ID, assessment, config);
         assertEquals(retValue.getGuid(), GUID);
         
         verify(mockSession).persist(configCaptor.capture());
@@ -352,7 +351,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
     public void updateAssessment() throws Exception {
         when(mockSession.merge(any())).thenReturn(HIBERNATE_ASSESSMENT);
         
-        Assessment returnValue = dao.updateAssessment(APP_ID_VALUE, new Assessment());
+        Assessment returnValue = dao.updateAssessment(TEST_APP_ID, new Assessment());
         assertNotNull(returnValue);
         
         verify(mockSession).merge(any(HibernateAssessment.class));
@@ -371,7 +370,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
         
         when(mockSession.merge(any())).thenThrow(new OptimisticLockException());
         
-        dao.createAssessment(APP_ID_VALUE, new Assessment(), new AssessmentConfig());
+        dao.createAssessment(TEST_APP_ID, new Assessment(), new AssessmentConfig());
     }
 
     @Test(expectedExceptions = ConcurrentModificationException.class)
@@ -385,19 +384,19 @@ public class HibernateAssessmentDaoTest extends Mockito {
         
         when(mockSession.merge(any())).thenThrow(new OptimisticLockException());
         
-        dao.updateAssessment(APP_ID_VALUE, new Assessment());
+        dao.updateAssessment(TEST_APP_ID, new Assessment());
     }
     
     @Test
     public void deleteAssessmentLeaveResources() throws Exception {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 2);
-        doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, null, IDENTIFIER, 0, 1, true);
+        doReturn(page).when(dao).getAssessmentRevisions(TEST_APP_ID, null, IDENTIFIER, 0, 1, true);
         
         when(mockSession.createNativeQuery(DELETE_CONFIG_SQL)).thenReturn(mockDelConfigQuery);
         
         Assessment assessment = AssessmentTest.createAssessment();
         
-        dao.deleteAssessment(APP_ID_VALUE, assessment);
+        dao.deleteAssessment(TEST_APP_ID, assessment);
         
         verify(mockDelResourcesQuery, never()).executeUpdate();
         verify(mockDelConfigQuery).setParameter("guid", GUID);
@@ -408,15 +407,15 @@ public class HibernateAssessmentDaoTest extends Mockito {
     @Test
     public void deleteAssessmentWithResources() throws Exception {
         PagedResourceList<Assessment> page = new PagedResourceList<>(ImmutableList.of(), 1);
-        doReturn(page).when(dao).getAssessmentRevisions(APP_ID_VALUE, null, IDENTIFIER, 0, 1, true);
+        doReturn(page).when(dao).getAssessmentRevisions(TEST_APP_ID, null, IDENTIFIER, 0, 1, true);
         
         when(mockSession.createNativeQuery(DELETE_RESOURCES_SQL)).thenReturn(mockDelResourcesQuery);
         when(mockSession.createNativeQuery(DELETE_CONFIG_SQL)).thenReturn(mockDelConfigQuery);
         Assessment assessment = AssessmentTest.createAssessment();
         
-        dao.deleteAssessment(APP_ID_VALUE, assessment);
+        dao.deleteAssessment(TEST_APP_ID, assessment);
         
-        verify(mockDelResourcesQuery).setParameter("appId", APP_ID_VALUE);
+        verify(mockDelResourcesQuery).setParameter("appId", TEST_APP_ID);
         verify(mockDelResourcesQuery).setParameter("assessmentId", IDENTIFIER);
         verify(mockDelResourcesQuery).executeUpdate();
         
@@ -433,7 +432,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
         AssessmentConfig originConfig = new AssessmentConfig();
         when(mockSession.merge(any())).thenReturn(new HibernateAssessment());
         
-        Assessment retValue = dao.publishAssessment(APP_ID_VALUE, original, assessmentToPublish, originConfig);
+        Assessment retValue = dao.publishAssessment(TEST_APP_ID, original, assessmentToPublish, originConfig);
         assertNotNull(retValue);
         
         verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
@@ -446,7 +445,7 @@ public class HibernateAssessmentDaoTest extends Mockito {
         Assessment assessmentToImport = AssessmentTest.createAssessment();
         AssessmentConfig configToImport = new AssessmentConfig();
         
-        Assessment retValue = dao.importAssessment(APP_ID_VALUE, assessmentToImport, configToImport);
+        Assessment retValue = dao.importAssessment(TEST_APP_ID, assessmentToImport, configToImport);
         assertNotNull(retValue);
         
         verify(mockHelper).executeWithExceptionHandling(any(HibernateAssessment.class), any());
@@ -457,16 +456,16 @@ public class HibernateAssessmentDaoTest extends Mockito {
     @Test
     public void hasAssessmentFromOrg() {
         when(mockHelper.queryCount(any(), any())).thenReturn(1);
-        assertTrue(dao.hasAssessmentFromOrg(APP_ID_VALUE, ORG_ID));
+        assertTrue(dao.hasAssessmentFromOrg(TEST_APP_ID, TEST_ORG_ID));
         verify(mockHelper).queryCount(any(), any());
 
         when(mockHelper.queryCount(any(), any())).thenReturn(0, 0);
-        assertFalse(dao.hasAssessmentFromOrg(APP_ID_VALUE, ORG_ID));
+        assertFalse(dao.hasAssessmentFromOrg(TEST_APP_ID, TEST_ORG_ID));
         // Mockito remembers the total count of times method called, so here's 1 + 2 = 3.
         verify(mockHelper, times(3)).queryCount(any(), any());
 
         when(mockHelper.queryCount(any(), any())).thenReturn(0, 3);
-        assertTrue(dao.hasAssessmentFromOrg(APP_ID_VALUE, ORG_ID));
+        assertTrue(dao.hasAssessmentFromOrg(TEST_APP_ID, TEST_ORG_ID));
         // Mockito remembers the total count of times method called, so here's 1 + 2 = 3.
         verify(mockHelper, times(5)).queryCount(queryCaptor.capture(), paramsCaptor.capture());
 
@@ -477,9 +476,17 @@ public class HibernateAssessmentDaoTest extends Mockito {
         }
         Map<String, Object> privateMap = paramsList.get(0);
         Map<String, Object> publishedMap = paramsList.get(1);
-        assertEquals(APP_ID_VALUE, privateMap.get("appId"));
-        assertEquals(ORG_ID, privateMap.get("ownerId"));
+        assertEquals(TEST_APP_ID, privateMap.get("appId"));
+        assertEquals(TEST_ORG_ID, privateMap.get("ownerId"));
         assertEquals("shared", publishedMap.get("appId"));
-        assertEquals(APP_ID_VALUE + ":" + ORG_ID, publishedMap.get("ownerId"));
+        assertEquals(TEST_APP_ID + ":" + TEST_ORG_ID, publishedMap.get("ownerId"));
+    }
+    
+    @Test
+    public void deleteAllAssessments() {
+        dao.deleteAllAssessments(TEST_APP_ID);
+        
+        verify(mockHelper).nativeQueryUpdate(eq(DELETE_ALL_ASSESSMENTS_SQL), paramsCaptor.capture());
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
     }
 }

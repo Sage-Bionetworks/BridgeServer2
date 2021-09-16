@@ -15,7 +15,6 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import com.google.common.collect.ImmutableList;
@@ -136,28 +135,37 @@ public class AppController extends BaseController {
         return appService.getApp(appId, true);
     }
 
-    // You can get a truncated view of apps with either format=summary or summary=true;
-    // the latter allows us to make this a boolean flag in the Java client libraries.
-    
+    /**
+     * You can get a truncated view of apps with either format=summary or summary=true,
+     * without being authenticated. Otherwise, only superadmins can view the entire app
+     * records. This call filters out "deleted" (inactive) apps by default, but these
+     * can be included for administrative views.
+     */
     @GetMapping(path = {"/v1/apps", "/v3/studies"}, produces={APPLICATION_JSON_UTF8_VALUE})
     public String getAllApps(@RequestParam(required = false) String format,
-            @RequestParam(required = false) String summary) throws Exception {        
+            @RequestParam(required = false) String summary,
+            @RequestParam(required = false) String includeDeleted) throws Exception {        
+        
+        boolean includeDeletedFlag = "true".equals(includeDeleted);
+        boolean summarize = "summary".equals(format) || "true".equals(summary);
         
         List<App> apps = appService.getApps();
-        if ("summary".equals(format) || "true".equals(summary)) {
-            // then only return active app as summary
-            List<App> activeAppsSummary = apps.stream()
-                    .filter(s -> s.isActive()).collect(Collectors.toList());
-            Collections.sort(activeAppsSummary, APP_COMPARATOR);
-            ResourceList<App> summaries = new ResourceList<App>(activeAppsSummary)
-                    .withRequestParam("summary", true);
-            return APP_LIST_WRITER.writeValueAsString(summaries);  
+        if (!includeDeletedFlag) {
+            apps = apps.stream().filter(App::isActive).collect(toList());
         }
-        getAuthenticatedSession(SUPERADMIN);
+        
+        Collections.sort(apps, APP_COMPARATOR);
+        ResourceList<App> list = new ResourceList<App>(apps)
+                .withRequestParam("summary", summarize)
+                .withRequestParam("includeDeleted", includeDeletedFlag);
 
-        // otherwise, return all apps including deactivated ones
-        return BridgeObjectMapper.get().writeValueAsString(
-                new ResourceList<>(apps).withRequestParam("summary", false));
+        // Do not need to be authenticated to return a summary list of apps
+        if (summarize) {
+            return APP_LIST_WRITER.writeValueAsString(list);  
+        }
+        // Otherwise, only superadmins can work with the full app objects
+        getAuthenticatedSession(SUPERADMIN);
+        return BridgeObjectMapper.get().writeValueAsString(list);
     }
     
     @GetMapping(path = { "/v1/apps/memberships", "/v3/studies/memberships" }, produces = {

@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.APP_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -24,7 +26,7 @@ import static org.sagebionetworks.bridge.services.AppEmailType.CONSENT_NOTIFICAT
 import static org.sagebionetworks.bridge.spring.controllers.AppController.CONSENT_EMAIL_VERIFIED_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.AppController.RESEND_EMAIL_MSG;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -39,6 +41,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
@@ -62,7 +65,6 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.json.DefaultObjectMapper;
 import org.sagebionetworks.bridge.models.CmsPublicKey;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -84,6 +86,7 @@ import org.sagebionetworks.bridge.services.UploadCertificateService;
 import org.sagebionetworks.bridge.services.UploadService;
 
 public class AppControllerTest extends Mockito {
+    private static final TypeReference<ResourceList<App>> APP_RESOURCE_LIST_TYPE = new TypeReference<ResourceList<App>>() {};
     private static final String DUMMY_VERIFICATION_TOKEN = "dummy-token";
     private static final String EMAIL_ADDRESS = "foo@foo.com";
 
@@ -531,67 +534,6 @@ public class AppControllerTest extends Mockito {
     }
     
     @Test
-    public void getSummaryAppsWithFormatWorks() throws Exception {
-        List<App> apps = ImmutableList.of(new DynamoApp());
-        doReturn(apps).when(mockAppService).getApps();
-        
-        String result = controller.getAllApps("summary", null);
-        ResourceList<App> list = BridgeObjectMapper.get().readValue(result, new TypeReference<ResourceList<App>>() {});
-        assertTrue((Boolean)list.getRequestParams().get("summary"));
-
-        assertFalse(result.contains("healthCodeExportEnabled"));
-    }
-
-    @Test
-    public void getSummaryAppsWithSummaryWorks() throws Exception {
-        List<App> apps = ImmutableList.of(new DynamoApp());
-        doReturn(apps).when(mockAppService).getApps();
-        
-        String result = controller.getAllApps(null, "true");
-
-        assertFalse(result.contains("healthCodeExportEnabled"));
-    }
-
-    @Test
-    public void getSummaryAppsWithInactiveOnes() throws Exception {
-        DynamoApp testApp1 = new DynamoApp();
-        testApp1.setName("test_app_1");
-        testApp1.setActive(true);
-
-        DynamoApp testApp2 = new DynamoApp();
-        testApp2.setName("test_app_2");
-
-        List<App> apps = ImmutableList.of(testApp1, testApp2);
-        doReturn(apps).when(mockAppService).getApps();
-
-        String result = controller.getAllApps("summary", null);
-
-        // only active apps will be returned
-        JsonNode recordJsonNode = DefaultObjectMapper.INSTANCE.readTree(result);
-        JsonNode items = recordJsonNode.get("items");
-        assertTrue(items.size() == 1);
-        JsonNode app = items.get(0);
-        assertEquals("test_app_1", app.get("name").asText());
-        assertFalse(result.contains("healthCodeExportEnabled"));
-
-        verify(controller, never()).getAuthenticatedSession(ADMIN);
-    }
-    
-    @Test
-    public void getFullAppsWorks() throws Exception {
-        List<App> apps = ImmutableList.of(new DynamoApp());
-        doReturn(apps).when(mockAppService).getApps();
-        
-        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
-        
-        String result = controller.getAllApps(null, "false");
-        ResourceList<App> list = BridgeObjectMapper.get().readValue(result, new TypeReference<ResourceList<App>>() {});
-        assertFalse((Boolean)list.getRequestParams().get("summary"));
-
-        assertTrue(result.contains("healthCodeExportEnabled"));
-    }
-
-    @Test
     public void updateApp() throws Exception {
         when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
@@ -641,69 +583,123 @@ public class AppControllerTest extends Mockito {
         controller.getApp("some-app");
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void getAllAppsFullAppRejectsAppAdmin() throws Exception {
-        doReturn(mockSession).when(controller).getSessionIfItExists();
-        when(mockSession.isAuthenticated()).thenReturn(true);
-        when(mockSession.isInRole(SUPERADMIN)).thenReturn(false);
-        when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder().build());
-        
-        controller.getAllApps(null, null);
+    private List<App> mockApps(Boolean... activeStates) {
+        List<App> apps = Lists.newArrayListWithCapacity(activeStates.length);
+        for (int i=0; i < activeStates.length; i++) {
+            App app = App.create();
+            app.setName("app"+(i+1));
+            app.setIdentifier("app"+i);
+            app.setSponsorName("sponsor name"); // this shouldn't be in summary
+            app.setActive(activeStates[i]);
+            apps.add(app);
+        }
+        return apps;
     }
     
     @Test
-    public void getAllStudiesSummary() throws Exception {
-        // Two active and one deleted app
-        App app1 = App.create();
-        app1.setName("app1");
-        app1.setSponsorName("sponsor name"); // this typeof field shouldn't be in summary
-        app1.setActive(true);
-        App app2 = App.create();
-        app2.setName("app2");
-        app2.setActive(true);
-        App app3 = App.create();
-        app3.setName("app3");
-        app3.setActive(false);
-        List<App> apps = ImmutableList.of(app1, app2, app3);
-        when(mockAppService.getApps()).thenReturn(apps);
-        
-        String json = controller.getAllApps("summary", null);
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
-        assertEquals(node.get("items").size(), 2);
-        assertEquals(node.get("items").get(0).get("name").textValue(), "app1");
-        assertEquals(node.get("items").get(1).get("name").textValue(), "app2");
-        assertNull(node.get("items").get(0).get("sponsorName"));
-        assertTrue(node.get("requestParams").get("summary").booleanValue());
-    }
-    
-    @Test
-    public void getAllApps() throws Exception {
+    public void getAllApps_defaultsToFullWithoutDeleted() throws Exception {
         doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
-        // Two active and one deleted app
-        App app1 = App.create();
-        app1.setName("app1");
-        app1.setSponsorName("sponsor name"); // this typeof field shouldn't be in summary
-        app1.setActive(true);
-        App app2 = App.create();
-        app2.setName("app2");
-        app2.setActive(true);
-        App app3 = App.create();
-        app3.setName("app3");
-        app3.setActive(false);
-        List<App> apps = ImmutableList.of(app1, app2, app3);
+        
+        List<App> apps = mockApps(TRUE, TRUE, FALSE);
         when(mockAppService.getApps()).thenReturn(apps);
         
-        String json = controller.getAllApps(null, null);
-        JsonNode node = BridgeObjectMapper.get().readTree(json);
+        String json = controller.getAllApps(null, null, null);
         
-        assertEquals(node.get("items").size(), 3);
-        assertEquals(node.get("items").get(0).get("name").textValue(), "app1");
-        assertEquals(node.get("items").get(0).get("sponsorName").textValue(), "sponsor name");
-        assertEquals(node.get("items").get(1).get("name").textValue(), "app2");
-        assertEquals(node.get("items").get(2).get("name").textValue(), "app3");
-        assertFalse(node.get("requestParams").get("summary").booleanValue());
+        ResourceList<App> deser = BridgeObjectMapper.get().readValue(json, APP_RESOURCE_LIST_TYPE);
+        assertEquals(deser.getItems().size(), 2);
+        assertNotNull(deser.getItems().get(0).getSponsorName());
+        assertNotNull(deser.getItems().get(1).getSponsorName());
     }
     
+    @Test
+    public void getAllApps_summaryIncludeDeleted() throws Exception {
+        List<App> apps = mockApps(TRUE, TRUE, FALSE);
+        when(mockAppService.getApps()).thenReturn(apps);
+        
+        String json = controller.getAllApps(null, "true", "true");
+        
+        ResourceList<App> deser = BridgeObjectMapper.get().readValue(json, APP_RESOURCE_LIST_TYPE);
+        assertEquals(deser.getItems().size(), 3);
+        assertNull(deser.getItems().get(0).getSponsorName());
+        assertNull(deser.getItems().get(1).getSponsorName());
+        assertNull(deser.getItems().get(2).getSponsorName());
+    }
+    
+    @Test
+    public void getAllApps_summaryExcludeDeleted() throws Exception {
+        List<App> apps = mockApps(TRUE, TRUE, FALSE);
+        when(mockAppService.getApps()).thenReturn(apps);
+        
+        String json = controller.getAllApps(null, "true", "false");
+        
+        ResourceList<App> deser = BridgeObjectMapper.get().readValue(json, APP_RESOURCE_LIST_TYPE);
+        assertEquals(deser.getItems().size(), 2);
+        assertNull(deser.getItems().get(0).getSponsorName());
+        assertNull(deser.getItems().get(1).getSponsorName());
+    }
+
+    @Test
+    public void getAllApps_formatSummaryIncludeDeleted() throws Exception {
+        List<App> apps = mockApps(TRUE, TRUE, FALSE);
+        when(mockAppService.getApps()).thenReturn(apps);
+        
+        String json = controller.getAllApps("summary", null, "true");
+        
+        ResourceList<App> deser = BridgeObjectMapper.get().readValue(json, APP_RESOURCE_LIST_TYPE);
+        assertEquals(deser.getItems().size(), 3);
+        assertNull(deser.getItems().get(0).getSponsorName());
+        assertNull(deser.getItems().get(1).getSponsorName());
+        assertNull(deser.getItems().get(2).getSponsorName());
+    }
+    
+    @Test
+    public void getAllApps_formatSummaryExcludeDeleted() throws Exception {
+        List<App> apps = mockApps(TRUE, TRUE, FALSE);
+        when(mockAppService.getApps()).thenReturn(apps);
+        
+        String json = controller.getAllApps("summary", null, "false");
+        
+        ResourceList<App> deser = BridgeObjectMapper.get().readValue(json, APP_RESOURCE_LIST_TYPE);
+        assertEquals(deser.getItems().size(), 2);
+        assertNull(deser.getItems().get(0).getSponsorName());
+        assertNull(deser.getItems().get(1).getSponsorName());
+    }
+    @Test(expectedExceptions = NotAuthenticatedException.class)
+    public void getAllApps_detailNotAuthorized() throws Exception {
+        controller.getAllApps(null, null, null);
+    }
+    
+    @Test
+    public void getAllApps_detailIncludeDeleted() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
+        
+        List<App> apps = mockApps(TRUE, TRUE, FALSE);
+        when(mockAppService.getApps()).thenReturn(apps);
+        
+        String json = controller.getAllApps(null, null, "true");
+ 
+        ResourceList<App> deser = BridgeObjectMapper.get().readValue(json, APP_RESOURCE_LIST_TYPE);
+        assertEquals(deser.getItems().size(), 3);
+        assertNotNull(deser.getItems().get(0).getSponsorName());
+        assertNotNull(deser.getItems().get(1).getSponsorName());
+        assertNotNull(deser.getItems().get(2).getSponsorName());
+    }
+    
+    @Test
+    public void getAllApps_detailExcludeDeleted() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(SUPERADMIN);
+        
+        List<App> apps = mockApps(TRUE, TRUE, FALSE);
+        when(mockAppService.getApps()).thenReturn(apps);
+        
+        String json = controller.getAllApps(null, null, "false");
+ 
+        ResourceList<App> deser = BridgeObjectMapper.get().readValue(json, APP_RESOURCE_LIST_TYPE);
+        assertEquals(deser.getItems().size(), 2);
+        assertNotNull(deser.getItems().get(0).getSponsorName());
+        assertNotNull(deser.getItems().get(1).getSponsorName());
+    }
+
     @Test(expectedExceptions = UnauthorizedException.class)
     public void createAppRejectsNonSuperAdmin() throws Exception {
         doReturn(mockSession).when(controller).getSessionIfItExists();
@@ -898,13 +894,31 @@ public class AppControllerTest extends Mockito {
         when(mockAppService.getApps()).thenReturn(ImmutableList.of(app1, app2));
         
         String returnValue = controller.getAppMemberships();
-        ResourceList<App> list = BridgeObjectMapper.get().readValue(returnValue, new TypeReference<ResourceList<App>>() {});
+        ResourceList<App> list = BridgeObjectMapper.get().readValue(returnValue, APP_RESOURCE_LIST_TYPE);
         
         assertEquals(list.getItems().size(), 2);
         assertEquals(list.getItems().get(0).getName(), "Name1");
         assertEquals(list.getItems().get(1).getName(), "Name2");
         
         verify(mockAppService, never()).getApp(any());
+    }
+    
+    @Test
+    public void updateAppForDeveloperOrAdmin() throws Exception {
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        
+        App app = App.create();
+        app.setName("My new app");
+        app.setVersion(10L);
+        
+        TestUtils.mockRequestBody(mockRequest, app);
+        when(mockAppService.updateApp(any(), anyBoolean())).thenReturn(app);
+        
+        VersionHolder retValue = controller.updateAppForDeveloperOrAdmin();
+        assertEquals(retValue.getVersion(), Long.valueOf(10L));
+        
+        verify(mockAppService).updateApp(appCaptor.capture(), eq(false));
+        assertEquals(appCaptor.getValue().getName(), "My new app");
     }
     
     private App mockApp(String name, String appId, boolean active) {

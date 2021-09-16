@@ -158,6 +158,12 @@ public class AppServiceTest extends Mockito {
     OrganizationService mockOrgService;
     @Mock
     StudyService mockStudyService;
+    @Mock
+    AccountService mockAccountService;
+    @Mock
+    AssessmentService mockAssessmentService;
+    @Mock
+    AssessmentResourceService mockAssessmentResourceService;
 
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -724,6 +730,10 @@ public class AppServiceTest extends Mockito {
 
         // verify we called the correct dependent services
         verify(mockAppDao).deleteApp(app);
+        
+        verify(mockAccountService).deleteAllAccounts(app.getIdentifier());
+        verify(mockAssessmentResourceService).deleteAllAssessmentResources(app.getIdentifier());
+        verify(mockAssessmentService).deleteAllAssessments(app.getIdentifier());
         verify(mockStudyService).deleteAllStudies(app.getIdentifier());
         verify(mockOrgService).deleteAllOrganizations(app.getIdentifier());
         verify(mockCompoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInApp(
@@ -1667,6 +1677,9 @@ public class AppServiceTest extends Mockito {
         verify(mockCacheProvider).setApp(updatedApp);
         verify(mockCacheProvider).removeApp(app.getIdentifier());
 
+        verify(mockAccountService).deleteAllAccounts(app.getIdentifier());
+        verify(mockAssessmentResourceService).deleteAllAssessmentResources(app.getIdentifier());
+        verify(mockAssessmentService).deleteAllAssessments(app.getIdentifier());
         verify(mockAppDao).deleteApp(updatedApp);
         verify(mockCompoundActivityDefinitionService)
                 .deleteAllCompoundActivityDefinitionsInApp(updatedApp.getIdentifier());
