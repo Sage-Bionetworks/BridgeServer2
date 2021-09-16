@@ -47,7 +47,6 @@ public class BridgeExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleException(HttpServletRequest request, Exception ex) throws JsonProcessingException {
-        ex.printStackTrace();
         logException(request, ex);
 
         return getResult(ex);
