@@ -16,6 +16,8 @@ import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE
 
 import java.util.List;
 
+import javax.annotation.Nullable;
+
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -94,12 +96,13 @@ public class EnrollmentService {
                 .withRequestParam(ENROLLMENT_FILTER, filter);
     }
     
-    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String studyId, String userIdToken) {
+    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, @Nullable String studyId, String userIdToken) {
         checkNotNull(appId);
         checkNotNull(userIdToken);
         
-        studyService.getStudy(appId, studyId, true);
-        
+        if (studyId != null) {
+            studyService.getStudy(appId, studyId, true);    
+        }
         // We want all enrollments, even withdrawn enrollments, so don't filter here.
         AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
         Account account = accountService.getAccount(accountId)
