@@ -595,6 +595,18 @@ public class EnrollmentServiceTest extends Mockito {
         service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
 
+    @Test
+    public void getEnrollmentsForUserStudyNullable() {
+        when(mockStudyService.getStudy(TEST_APP_ID, null, true))
+            .thenThrow(new EntityNotFoundException(Study.class));
+        
+        Account account = Account.create();
+        when(mockAccountService.getAccount(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
+    
+        service.getEnrollmentsForUser(TEST_APP_ID, null, TEST_USER_ID);
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Study not found.")
     public void enrollStudyNotFound() {

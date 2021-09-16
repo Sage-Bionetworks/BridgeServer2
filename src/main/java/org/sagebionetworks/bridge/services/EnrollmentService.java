@@ -98,8 +98,9 @@ public class EnrollmentService {
         checkNotNull(appId);
         checkNotNull(userIdToken);
         
-        studyService.getStudy(appId, studyId, true);
-        
+        if (studyId != null) {
+            studyService.getStudy(appId, studyId, true);    
+        }
         // We want all enrollments, even withdrawn enrollments, so don't filter here.
         AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
         Account account = accountService.getAccount(accountId)
