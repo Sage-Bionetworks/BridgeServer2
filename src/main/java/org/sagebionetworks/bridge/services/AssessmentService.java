@@ -381,6 +381,12 @@ public class AssessmentService {
             dao.deleteAssessment(appId, assessment);
         }
     }
+    
+    public void deleteAllAssessments(String appId) {
+        checkArgument(isNotBlank(appId));
+        
+        dao.deleteAllAssessments(appId);
+    }
 
     private Assessment createAssessmentInternal(String appId, Assessment assessment) {
         checkArgument(isNotBlank(appId));

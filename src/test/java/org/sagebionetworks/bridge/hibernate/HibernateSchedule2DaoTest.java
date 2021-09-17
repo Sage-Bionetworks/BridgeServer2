@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.AND_DELETED;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.BATCH_SIZE_PROPERTY;
+import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.DELETE_ALL_SCHEDULES;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.DELETE_ORPHANED_SESSIONS;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.DELETE_SESSIONS;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.DELETE_TIMELINE_RECORDS;
@@ -400,5 +401,13 @@ public class HibernateSchedule2DaoTest extends Mockito {
 
         assertEquals(queryCaptor.getValue(), SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE);
         assertEquals(paramsCaptor.getValue().get(INSTANCE_GUID), GUID);
+    }
+    
+    @Test
+    public void deleteAllSchedules() {
+        dao.deleteAllSchedules(TEST_APP_ID);
+        
+        verify(mockHibernateHelper).nativeQueryUpdate(eq(DELETE_ALL_SCHEDULES), paramsCaptor.capture());
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
     }
 }

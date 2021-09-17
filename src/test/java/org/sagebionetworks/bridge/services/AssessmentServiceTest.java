@@ -153,8 +153,8 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void createAssessment() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
-                .thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.of(mockOrganization));
         when(mockDao.getAssessmentRevisions(any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
             .thenReturn(EMPTY_LIST);
         
@@ -181,8 +181,8 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void createAssessmentAdjustsOsNameAlias() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
-            .thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
         when(mockDao.getAssessmentRevisions(any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
             .thenReturn(EMPTY_LIST);
         
@@ -202,8 +202,8 @@ public class AssessmentServiceTest extends Mockito {
         when(mockDao.getAssessmentRevisions(TEST_APP_ID, null, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, "orgD"))
-            .thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, "orgD"))
+            .thenReturn(Optional.of(mockOrganization));
         
         Assessment assessment = AssessmentTest.createAssessment();
         service.createAssessment(TEST_APP_ID, assessment);
@@ -239,8 +239,8 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void createAssessmentScrubsMarkup() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
-            .thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
         when(mockDao.getAssessmentRevisions(any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
             .thenReturn(EMPTY_LIST);
         
@@ -254,8 +254,8 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void createAssessmentSetsOwnerIdToCallerOrg() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, "orgD"))
-            .thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, "orgD"))
+            .thenReturn(Optional.of(mockOrganization));
         when(mockDao.getAssessmentRevisions(any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
             .thenReturn(EMPTY_LIST);
         
@@ -272,8 +272,8 @@ public class AssessmentServiceTest extends Mockito {
 
     @Test
     public void createAssessmentAllowsAdminsToSetOwnerId() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
-            .thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
         when(mockDao.getAssessmentRevisions(any(), any(), any(), anyInt(), anyInt(), anyBoolean()))
             .thenReturn(EMPTY_LIST);
     
@@ -290,8 +290,8 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void createAssessmentRevision() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
-                .thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+                .thenReturn(Optional.of(mockOrganization));
         when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, GUID))
             .thenReturn(Optional.of(AssessmentTest.createAssessment()));
         
@@ -323,8 +323,8 @@ public class AssessmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("studyD").build());
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, "studyD"))
-            .thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, "studyD"))
+            .thenReturn(Optional.of(mockOrganization));
         
         Assessment existing = AssessmentTest.createAssessment();
         existing.setOwnerId(TEST_OWNER_ID);
@@ -365,8 +365,8 @@ public class AssessmentServiceTest extends Mockito {
 
     @Test
     public void createAssessmentRevisionScrubsMarkup() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
-            .thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
         Assessment existing = AssessmentTest.createAssessment();
         when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, GUID))
             .thenReturn(Optional.of(existing));
@@ -381,7 +381,8 @@ public class AssessmentServiceTest extends Mockito {
 
     @Test
     public void updateAssessment() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID)).thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
         
         // Fill out only the fields needed to pass validation, leaving the rest to be
         // filled in by the existing assessment
@@ -409,7 +410,8 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void updateAssessmentAdjustsOsNameAlias() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID)).thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setOsName("Both");
@@ -426,7 +428,8 @@ public class AssessmentServiceTest extends Mockito {
 
     @Test
     public void updateAssessmentSomeFieldsImmutable() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID)).thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
         
         Assessment existing = AssessmentTest.createAssessment();
         when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, GUID))
@@ -470,7 +473,8 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void updateAssessmentCanDelete() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID)).thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setDeleted(true);
@@ -487,7 +491,8 @@ public class AssessmentServiceTest extends Mockito {
 
     @Test
     public void updateAssessmentCanUndelete() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID)).thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setDeleted(false);
@@ -518,7 +523,8 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void updateAssessmentScrubsMarkup() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID)).thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
 
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setDeleted(false);
@@ -539,8 +545,8 @@ public class AssessmentServiceTest extends Mockito {
                 .withCallerOrgMembership(TEST_OWNER_ID)
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
-            .thenReturn(Organization.create());
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(Organization.create()));
         
         Assessment existing = AssessmentTest.createAssessment();
         existing.setOriginGuid("unusualGuid");
@@ -568,8 +574,8 @@ public class AssessmentServiceTest extends Mockito {
                 .withCallerOrgMembership(TEST_OWNER_ID)
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
-            .thenReturn(Organization.create());
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(Organization.create()));
         
         Assessment existing = AssessmentTest.createAssessment();
         existing.setDeleted(false);
@@ -593,8 +599,8 @@ public class AssessmentServiceTest extends Mockito {
                 .withCallerOrgMembership(TEST_OWNER_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID))
-            .thenReturn(Organization.create());
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(Organization.create()));
         
         Assessment existing = AssessmentTest.createAssessment();
         existing.setOwnerId(ownerIdInShared);
@@ -665,8 +671,8 @@ public class AssessmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(SUPERADMIN))
                 .withCallerAppId(TEST_APP_ID).build());
-        when(mockOrganizationService.getOrganization(
-                TEST_APP_ID, TEST_OWNER_ID)).thenReturn(Organization.create());
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(Organization.create()));
         
         Assessment existing = AssessmentTest.createAssessment();
         existing.setDeleted(false);
@@ -701,8 +707,9 @@ public class AssessmentServiceTest extends Mockito {
 
     @Test
     public void updateSharedAssessmentCanDelete() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID)).thenReturn(mockOrganization);
-        
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
+                
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setDeleted(true);
         
@@ -720,7 +727,8 @@ public class AssessmentServiceTest extends Mockito {
     
     @Test
     public void updateSharedAssessmentCanUndelete() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID)).thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(mockOrganization));
         
         Assessment assessment = AssessmentTest.createAssessment();
         assessment.setDeleted(false);
@@ -1265,8 +1273,8 @@ public class AssessmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, "orgD"))
-            .thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, "orgD"))
+            .thenReturn(Optional.of(mockOrganization));
         
         when(mockDao.getAssessmentRevisions(TEST_APP_ID, null, IDENTIFIER, 0, 1, true))
             .thenReturn(new PagedResourceList<>(ImmutableList.of(), 0));
@@ -1281,8 +1289,8 @@ public class AssessmentServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership("orgD").build());
         
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, "orgD"))
-            .thenReturn(mockOrganization);
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, "orgD"))
+            .thenReturn(Optional.of(mockOrganization));
         
         Assessment existing = AssessmentTest.createAssessment();
         when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, GUID)).thenReturn(Optional.of(existing));
@@ -1344,6 +1352,12 @@ public class AssessmentServiceTest extends Mockito {
         service.updateSharedAssessment(sharedAssessment);
     }
 
+    @Test
+    public void deleteAllAssessments() {
+        service.deleteAllAssessments(TEST_APP_ID);
+        verify(mockDao).deleteAllAssessments(TEST_APP_ID);
+    }
+    
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateSharedAssessmentChecksOwnershipWhenFormattedIncorrectly() {
         Assessment sharedAssessment = AssessmentTest.createAssessment();

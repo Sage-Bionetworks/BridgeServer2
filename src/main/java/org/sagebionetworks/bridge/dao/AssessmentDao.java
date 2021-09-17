@@ -57,4 +57,6 @@ public interface AssessmentDao {
      * name of the organization; otherwise returns false.
      */
     boolean hasAssessmentFromOrg(String appId, String orgId);
+    
+    void deleteAllAssessments(String appId);
 }
