@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.models.ResourceList.INCLUDE_DELETED;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
@@ -205,7 +206,8 @@ public class StudyService {
         
         Study existing = getStudy(appId, studyId, true);
         
-        if (!CAN_DELETE_STUDY.contains(existing.getPhase())) {
+        RequestContext context = RequestContext.get();
+        if (!CAN_DELETE_STUDY.contains(existing.getPhase()) && !context.isInRole(ADMIN)) {
             throw new BadRequestException("Study cannot be deleted during phase " 
                     + existing.getPhase().label());
         }
@@ -221,9 +223,16 @@ public class StudyService {
         checkNotNull(appId);
         checkNotNull(studyId);
         
+        Study existing = getStudy(appId, studyId, true);
+        
+        RequestContext context = RequestContext.get();
+        if (!CAN_DELETE_STUDY.contains(existing.getPhase()) && !context.isInRole(ADMIN)) {
+            throw new BadRequestException("Study cannot be deleted during phase " 
+                    + existing.getPhase().label());
+        }
+        
         // Throws exception if the element does not exist.
-        Study study = getStudy(appId, studyId, true);
-        String scheduleGuid = study.getScheduleGuid();
+        String scheduleGuid = existing.getScheduleGuid();
         
         studyDao.deleteStudyPermanently(appId, studyId);
         if (scheduleGuid != null) {
