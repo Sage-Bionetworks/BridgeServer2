@@ -212,7 +212,7 @@ public class StudyParticipantControllerTest extends Mockito {
         assertGet(StudyParticipantController.class, "getUploads");
         assertGet(StudyParticipantController.class, "getNotificationRegistrations");
         assertPost(StudyParticipantController.class, "sendNotification");
-        assertDelete(StudyParticipantController.class, "deleteTestParticipant");
+        assertDelete(StudyParticipantController.class, "deleteTestOrUnusedParticipant");
         assertGet(StudyParticipantController.class, "getRecentActivityEvents");
         assertGet(StudyParticipantController.class, "getActivityEventHistory");
         assertPost(StudyParticipantController.class, "publishActivityEvent");
