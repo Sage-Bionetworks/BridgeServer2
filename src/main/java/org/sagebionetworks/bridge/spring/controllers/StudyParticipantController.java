@@ -441,7 +441,7 @@ public class StudyParticipantController extends BaseController {
     }
 
     @DeleteMapping("/v5/studies/{studyId}/participants/{userId}")
-    public StatusMessage deleteTestParticipant(@PathVariable String studyId, @PathVariable String userId) {
+    public StatusMessage deleteTestOrUnusedParticipant(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         

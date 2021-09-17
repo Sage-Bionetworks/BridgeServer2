@@ -990,7 +990,7 @@ public class StudyParticipantControllerTest extends Mockito {
         account.setEnrollments(ImmutableSet.of(en));
         account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
         
-        StatusMessage retValue = controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
+        StatusMessage retValue = controller.deleteTestOrUnusedParticipant(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getMessage(), "User deleted.");
         
         verify(mockUserAdminService).deleteUser(app, TEST_USER_ID);
@@ -1010,7 +1010,7 @@ public class StudyParticipantControllerTest extends Mockito {
         AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
-        controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
+        controller.deleteTestOrUnusedParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1022,7 +1022,7 @@ public class StudyParticipantControllerTest extends Mockito {
         AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.empty());
         
-        controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
+        controller.deleteTestOrUnusedParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }    
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -1042,7 +1042,7 @@ public class StudyParticipantControllerTest extends Mockito {
         AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
-        controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
+        controller.deleteTestOrUnusedParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
