@@ -230,8 +230,6 @@ public class StudyService {
             throw new BadRequestException("Study cannot be deleted during phase " 
                     + existing.getPhase().label());
         }
-        
-        // Throws exception if the element does not exist.
         String scheduleGuid = existing.getScheduleGuid();
         
         studyDao.deleteStudyPermanently(appId, studyId);
