@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.RESOURCE_CATEGORIES;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentResourceDao.DELETE_ALL_QUERY;
 import static org.sagebionetworks.bridge.hibernate.HibernateAssessmentResourceDao.DELETE_QUERY;
 import static org.sagebionetworks.bridge.models.assessments.HibernateAssessmentResourceTest.createHibernateAssessmentResource;
 import static org.testng.Assert.assertEquals;
@@ -211,5 +212,13 @@ public class HibernateAssessmentResourceDaoTest extends Mockito {
         assertEquals(retValue.get(0).getGuid(), GUID+"1");
         assertEquals(retValue.get(1).getGuid(), GUID+"2");
         assertEquals(retValue.get(2).getGuid(), GUID+"3");
+    }
+    
+    @Test
+    public void deleteAllAssessmentResources() {
+        dao.deleteAllAssessmentResources(TEST_APP_ID);
+        
+        verify(mockHelper).nativeQueryUpdate(eq(DELETE_ALL_QUERY), paramsCaptor.capture());
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
     }
 }

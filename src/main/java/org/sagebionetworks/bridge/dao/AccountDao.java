@@ -66,4 +66,6 @@ public interface AccountDao {
      */
     PagedResourceList<ExternalIdentifierInfo> getPagedExternalIds(String appId, String studyId, String idFilter,
             Integer offsetBy, Integer pageSize);
+    
+    void deleteAllAccounts(String appId);
 }    

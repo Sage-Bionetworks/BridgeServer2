@@ -687,6 +687,12 @@ public class AssessmentResourceServiceTest extends Mockito {
         service.publishAssessmentResources("otherAppContext", ASSESSMENT_ID, guids);
     }
     
+    @Test
+    public void deleteAllAssessmentResources() {
+        service.deleteAllAssessmentResources(TEST_APP_ID);
+        verify(mockDao).deleteAllAssessmentResources(TEST_APP_ID);
+    }
+    
     private AssessmentResource makeResource(String appId, String guid) {
         AssessmentResource ar = AssessmentResourceTest.createAssessmentResource();
         ar.setGuid(guid);

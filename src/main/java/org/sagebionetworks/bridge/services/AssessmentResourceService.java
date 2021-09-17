@@ -225,6 +225,12 @@ public class AssessmentResourceService {
         return copyResources(appId, SHARED_APP_ID, assessment, guids);
     }
     
+    public void deleteAllAssessmentResources(String appId) {
+        checkArgument(isNotBlank(appId));
+        
+        dao.deleteAllAssessmentResources(appId);
+    }
+    
     List<AssessmentResource> copyResources(String originId, String targetId, Assessment assessment, Set<String> guids) {
         checkArgument(isNotBlank(originId));
         checkArgument(isNotBlank(targetId));
