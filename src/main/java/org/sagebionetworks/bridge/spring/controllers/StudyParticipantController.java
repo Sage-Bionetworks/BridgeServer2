@@ -5,8 +5,8 @@ import static org.apache.http.HttpHeaders.IF_MODIFIED_SINCE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
+import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
@@ -441,18 +441,15 @@ public class StudyParticipantController extends BaseController {
     }
 
     @DeleteMapping("/v5/studies/{studyId}/participants/{userId}")
-    public StatusMessage deleteTestParticipant(@PathVariable String studyId, @PathVariable String userId) {
+    public StatusMessage deleteTestOrUnusedParticipant(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
-        
-        if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
-            throw new UnauthorizedException("Account is not a test account.");
+        if (!participantEligibleForDeletion(requestInfoService, account)) {
+            throw new UnauthorizedException("Account is not a test account or it is already in use.");
         }
         App app = appService.getApp(session.getAppId());
         userAdminService.deleteUser(app, account.getId());
-        
         return DELETE_MSG;
     }    
     
