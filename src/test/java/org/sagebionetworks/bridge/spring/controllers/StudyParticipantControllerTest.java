@@ -1032,8 +1032,12 @@ public class StudyParticipantControllerTest extends Mockito {
                 .build());
         
         Account account = Account.create();
+        account.setId(TEST_USER_ID);
         Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(en));
+        
+        RequestInfo requestInfo = new RequestInfo.Builder().withSignedInOn(CREATED_ON).build();
+        when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
         
         AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));

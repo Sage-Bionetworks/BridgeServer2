@@ -11,8 +11,10 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_DELETE_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
@@ -54,6 +56,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.HasLang;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -65,7 +68,7 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
-
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -770,5 +773,34 @@ public class BridgeUtils {
             }
         }
         return defaultValue;
+    }
+    
+    public static boolean participantEligibleForDeletion(RequestInfoService requestInfoService, Account account) {
+        // Test accounts can always be deleted
+        boolean testAccount = account.getDataGroups().contains(TEST_USER_GROUP);
+        if (testAccount) {
+            return true;
+        }
+        // Accounts enrolled in multiple studies cannot be deleted, too risky.
+        if (account.getEnrollments().size() > 1) {
+            return false;
+        }
+        // Get a studyId if there is one. If it's null, that part of the security rule will just fail to match.
+        String studyId = Iterables.getFirst(collectStudyIds(account), null);
+        boolean unused = participantHasNeverSignedIn(requestInfoService, account.getId());
+        
+        // If the account is unused, *and* the caller has access to the participant, allow the delete 
+        return (unused && CAN_DELETE_PARTICIPANTS.check(STUDY_ID, studyId));
+    }
+    
+    private static boolean participantHasNeverSignedIn(RequestInfoService requestInfoService, String userId) {
+        RequestInfo info = requestInfoService.getRequestInfo(userId);
+        if (info == null) {
+            return true;
+        }
+        if (info.getSignedInOn() == null) {
+            return true;
+        }
+        return false;
     }
 }
