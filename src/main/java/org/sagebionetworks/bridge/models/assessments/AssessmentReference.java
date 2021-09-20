@@ -15,18 +15,26 @@ public final class AssessmentReference {
     private final String guid;
     private final String id;
     private final String sharedId;
+    private final String appId;
     
     @JsonCreator
     public AssessmentReference(@JsonProperty("guid") String guid,
-            @JsonProperty("id") String id, @JsonProperty("sharedId") String sharedId) {
-        this(INSTANCE, guid, id, sharedId);
+            @JsonProperty("id") String id, @JsonProperty("sharedId") String sharedId, @JsonProperty("appId") String appId) {
+        this(INSTANCE, guid, id, sharedId, appId);
+        System.out.println("--------In jsoncreator constructor-----------");
+        System.out.println("assessment guid: " + guid);
+        System.out.println("assessment id: " + id);
+        System.out.println("assessment sharedid: " + sharedId);
+        System.out.println("assessment appId: " + appId);
+        System.out.println("--------");
     }
 
-    public AssessmentReference(ConfigResolver resolver, String guid, String id, String sharedId) {
+    public AssessmentReference(ConfigResolver resolver, String guid, String id, String sharedId, String appId) {
         this.resolver = resolver;
         this.guid = guid;
         this.id = id;
         this.sharedId = sharedId;
+        this.appId = appId;
     }
     
     public String getGuid() {
@@ -50,6 +58,9 @@ public final class AssessmentReference {
     public String getSharedId() {
         return sharedId;
     }
+    public String getAppId() {
+        return appId;
+    }
 
     @Override
     public int hashCode() {
@@ -68,7 +79,7 @@ public final class AssessmentReference {
 
     @Override
     public String toString() {
-        return "AssessmentReference [id=" + id + ", sharedId=" + sharedId + ", guid=" + guid + ", configHref="
+        return "AssessmentReference [id=" + id + ", sharedId=" + sharedId + ", guid=" + guid + ", appId=" + appId + ", configHref="
                 + getConfigHref() + "]";
     }
 }

@@ -212,7 +212,18 @@ public class AppConfigValidator implements Validator {
                         errors.rejectValue("guid", "refers to the same assessment as another reference");
                     } else {
                         try {
-                            assessmentService.getAssessmentByGuid(appConfig.getAppId(), null, ref.getGuid());
+                            /* TODO: This seems to validate only for local assessments because it is grabbing
+                            *   the appId from the appConfig. This will need to grab the appId from the
+                            *   assessmentReference to get "shared". Probably have it default to the local
+                            *   appId if not found. */
+                            String assessmentAppId = appConfig.getAppId();
+                            if (ref.getAppId().equals("shared")) {
+                                System.out.println("-----------VALIDATOR-----------");
+                                System.out.println("in shared block");
+                                System.out.println("-----------END VALIDATOR-------");
+                                assessmentAppId = "shared";
+                            }
+                            assessmentService.getAssessmentByGuid(assessmentAppId, null, ref.getGuid());
                         } catch(EntityNotFoundException e) {
                             errors.rejectValue("guid", "does not refer to an assessment");
                         }

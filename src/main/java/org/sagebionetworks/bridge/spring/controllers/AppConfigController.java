@@ -111,8 +111,19 @@ public class AppConfigController extends BaseController {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         AppConfig appConfig = parseJson(AppConfig.class);
+
+        System.out.println("GUID: " + guid);
+
+        System.out.println("------------------------------------");
+        System.out.println(appConfig);
+
         appConfig.setGuid(guid);
-        
+
+        System.out.println("------------------------------------");
+        System.out.println(appConfig);
+        System.out.println("------------------------------------");
+
+
         AppConfig updated = appConfigService.updateAppConfig(session.getAppId(), appConfig);
         cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getAppId()));
 
