@@ -931,4 +931,10 @@ public class Schedule2ServiceTest extends Mockito {
         
         verify(mockDao).updateSchedule(schedule);
     }
+    
+    @Test
+    public void deleteAllSchedules() { 
+        service.deleteAllSchedules(TEST_APP_ID);
+        verify(mockDao).deleteAllSchedules(TEST_APP_ID);
+    }
 }

@@ -398,7 +398,7 @@ public class TemplateService {
         criteriaDao.deleteCriteria(getKey(template));
     }
     
-    public void deleteTemplatesForApp(String appId) {
+    public void deleteAllTemplates(String appId) {
         templateDao.deleteTemplatesForApp(appId);
     }
 
