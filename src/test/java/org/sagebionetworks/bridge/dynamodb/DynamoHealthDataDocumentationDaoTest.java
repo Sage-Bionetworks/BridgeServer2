@@ -24,6 +24,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.dynamodb.DynamoReportDataDaoTest.OFFSET_KEY;
 import static org.testng.Assert.assertEquals;
@@ -53,7 +54,6 @@ public class DynamoHealthDataDocumentationDaoTest {
         HealthDataDocumentation returnedDoc = dao.createOrUpdateDocumentation(doc);
         assertSame(returnedDoc, doc);
         assertNotNull(returnedDoc.getIdentifier());
-        assertNotNull(returnedDoc.getCreatedOn());
 
         verify(mockMapper).save(doc);
     }
@@ -66,7 +66,6 @@ public class DynamoHealthDataDocumentationDaoTest {
         HealthDataDocumentation returnedDoc = dao.createOrUpdateDocumentation(doc);
         assertSame(returnedDoc, doc);
         assertEquals(doc.getIdentifier(), DOC_ID);
-        assertNotNull(returnedDoc.getModifiedOn());
 
         verify(mockMapper).save(doc);
     }
@@ -84,6 +83,7 @@ public class DynamoHealthDataDocumentationDaoTest {
         ArgumentCaptor<DynamoDBQueryExpression<DynamoHealthDataDocumentation>> queryCaptor = ArgumentCaptor.forClass(
                 DynamoDBQueryExpression.class);
         verify(dao).queryHelper(queryCaptor.capture());
+        verify(mockMapper).batchDelete(docList);
 
         DynamoDBQueryExpression<DynamoHealthDataDocumentation> query = queryCaptor.getValue();
         assertEquals(query.getHashKeyValues().getParentId(), TEST_APP_ID);
@@ -103,11 +103,39 @@ public class DynamoHealthDataDocumentationDaoTest {
     }
 
     @Test
+    public void deleteDocumentationForIdentifier() {
+        // mock dependencies
+        DynamoHealthDataDocumentation doc = new DynamoHealthDataDocumentation();
+        doc.setParentId(TEST_APP_ID);
+        doc.setIdentifier(IDENTIFIER);
+        when(mockMapper.load(any(DynamoHealthDataDocumentation.class))).thenReturn(doc);
+
+        // execute
+        dao.deleteDocumentationForIdentifier(TEST_APP_ID, IDENTIFIER);
+
+        // validate
+        ArgumentCaptor<HealthDataDocumentation> docCaptor = ArgumentCaptor.forClass(DynamoHealthDataDocumentation.class);
+        verify(mockMapper).load(docCaptor.capture());
+        HealthDataDocumentation capturedDoc = docCaptor.getValue();
+        assertEquals(capturedDoc.getParentId(), TEST_APP_ID);
+        assertEquals(capturedDoc.getIdentifier(), IDENTIFIER);
+
+        verify(mockMapper).delete(doc);
+    }
+
+    @Test
+    public void deleteDocumentationForIdentifier_NoDoc() {
+        dao.deleteDocumentationForIdentifier(TEST_APP_ID, IDENTIFIER);
+
+        verify(mockMapper, never()).delete(any(DynamoHealthDataDocumentation.class));
+    }
+
+    @Test
     public void getDocumentationForIdentifier() {
         DynamoHealthDataDocumentation doc = new DynamoHealthDataDocumentation();
         when(mockMapper.load(any(DynamoHealthDataDocumentation.class))).thenReturn(doc);
 
-        HealthDataDocumentation returned = dao.getDocumentationByIdentifier(DOC_ID, TEST_APP_ID);
+        HealthDataDocumentation returned = dao.getDocumentationByIdentifier(TEST_APP_ID, DOC_ID);
 
         assertEquals(returned, doc);
     }
@@ -116,7 +144,7 @@ public class DynamoHealthDataDocumentationDaoTest {
     public void getDocumentationForIdentifier_NoDoc() {
         when(mockMapper.load(any(DynamoHealthDataDocumentation.class))).thenReturn(null);
 
-        HealthDataDocumentation returned = dao.getDocumentationByIdentifier(DOC_ID, TEST_APP_ID);
+        HealthDataDocumentation returned = dao.getDocumentationByIdentifier(TEST_APP_ID, DOC_ID);
         assertNull(returned);
     }
 

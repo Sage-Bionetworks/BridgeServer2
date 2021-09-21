@@ -1,9 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.Roles;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.HealthDataDocumentation;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -18,14 +16,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.nio.charset.Charset;
-
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 
 @CrossOrigin
 @RestController
 public class HealthDataDocumentationController extends BaseController {
-    private static final Long MAX_DOCUMENTATION_BYTES = 1024L * 100;
 
     private HealthDataDocumentationService healthDataDocumentationService;
 
@@ -40,24 +35,7 @@ public class HealthDataDocumentationController extends BaseController {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.DEVELOPER);
 
         HealthDataDocumentation documentation = parseJson(HealthDataDocumentation.class);
-
-        if (documentation.getDocumentation() == null) {
-            throw new BadRequestException("Documentation is required to store health data documentation.");
-        }
-
-        // check documentation size (max allowed is 100 KB)
-        if (documentation.getDocumentation().getBytes(Charset.defaultCharset()).length > MAX_DOCUMENTATION_BYTES) {
-            throw new BadRequestException("Documentation must be less than 100 KB");
-        }
-
-        // update health data documentation attributes
-        if (documentation.getCreatedOn() == null) {
-            documentation.setCreatedOn(DateTime.now());
-            documentation.setCreatedBy(session.getId());
-        } else {
-            documentation.setModifiedOn(DateTime.now());
-            documentation.setModifiedBy(session.getId());
-        }
+        documentation.setParentId(session.getAppId());
 
         return healthDataDocumentationService.createOrUpdateHealthDataDocumentation(documentation);
     }
@@ -70,37 +48,37 @@ public class HealthDataDocumentationController extends BaseController {
         // AppId is a placeholder for parentId. In the future, for study-scoped documentation, it would be “{appId}:study:{studyId}”
         // and for Assessments it would be “{appId}:assessment:{assessmentId}”.
         String parentId = session.getAppId();
-        return healthDataDocumentationService.getHealthDataDocumentationForId(identifier, parentId);
+        return healthDataDocumentationService.getHealthDataDocumentationForId(parentId, identifier);
     }
 
     /** Get all health data documentation with the given parentId. */
     @GetMapping(path="/v3/healthdataDocumentation")
-    public ForwardCursorPagedResourceList<HealthDataDocumentation> getAllHealthDataDocumentationForParentId(@RequestParam String parentId,
-        @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
-        getAuthenticatedSession(Roles.RESEARCHER, Roles.DEVELOPER);
+    public ForwardCursorPagedResourceList<HealthDataDocumentation> getAllHealthDataDocumentationForParentId(
+            @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
+        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.DEVELOPER);
 
         int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
 
-        return healthDataDocumentationService.getAllHealthDataDocumentation(parentId, pageSizeInt, offsetKey);
+        return healthDataDocumentationService.getAllHealthDataDocumentation(session.getAppId(), pageSizeInt, offsetKey);
     }
 
     /** Delete a health data documentation with the given identifier. */
     @DeleteMapping(path="v3/healthdataDocumentation/{identifier}")
     public StatusMessage deleteHealthDataDocumentationForIdentifier(@PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.DEVELOPER);
+        UserSession session = getAuthenticatedSession(Roles.ADMIN);
 
         String parentId = session.getAppId(); // placeholder
-        healthDataDocumentationService.deleteHealthDataDocumentation(identifier, parentId);
+        healthDataDocumentationService.deleteHealthDataDocumentation(parentId, identifier);
 
         return new StatusMessage("Health data documentation has been deleted for the given identifier.");
     }
 
     /** Delete all health data documentation with the given parentId. */
     @DeleteMapping(path="/v3/healthdataDocumentation")
-    public StatusMessage deleteAllHealthDataDocumentationForParentId(@RequestParam String parentId) {
-        getAuthenticatedSession(Roles.RESEARCHER, Roles.DEVELOPER);
+    public StatusMessage deleteAllHealthDataDocumentationForParentId() {
+        UserSession session = getAuthenticatedSession(Roles.ADMIN);
 
-        healthDataDocumentationService.deleteAllHealthDataDocumentation(parentId);
+        healthDataDocumentationService.deleteAllHealthDataDocumentation(session.getAppId());
         return new StatusMessage("Health data documentation has been deleted.");
     }
 }

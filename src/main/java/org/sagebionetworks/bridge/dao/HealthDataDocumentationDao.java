@@ -14,10 +14,10 @@ public interface HealthDataDocumentationDao {
     void deleteDocumentationForParentId(@Nonnull String parentId);
 
     /** Delete health data documentation for the given identifier */
-    void deleteDocumentationForIdentifier(@Nonnull String identifier, @Nonnull String parentId);
+    void deleteDocumentationForIdentifier(@Nonnull String parentId, @Nonnull String identifier);
 
     /** Retrieves the documentation for the given identifier. */
-    HealthDataDocumentation getDocumentationByIdentifier(@Nonnull String identifier, @Nonnull String parentId);
+    HealthDataDocumentation getDocumentationByIdentifier( @Nonnull String parentId, @Nonnull String identifier);
 
     /** Retrieves all documentation for the given parentId */
     ForwardCursorPagedResourceList<HealthDataDocumentation> getDocumentationForParentId(@Nonnull String parentId,

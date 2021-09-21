@@ -51,39 +51,50 @@ public class HealthDataDocumentationServiceTest {
 
     @Test
     public void deleteHealthDataDocumentation() {
-        service.deleteHealthDataDocumentation(IDENTIFIER, TEST_APP_ID);
-        verify(mockDao).deleteDocumentationForIdentifier(IDENTIFIER, TEST_APP_ID);
+        service.deleteHealthDataDocumentation(TEST_APP_ID, IDENTIFIER);
+        verify(mockDao).deleteDocumentationForIdentifier(TEST_APP_ID, IDENTIFIER);
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Identifier must be specified.")
     public void deleteHealthDataDocumentation_NullIdentifier() {
-        service.deleteHealthDataDocumentation(null, TEST_APP_ID);
+        service.deleteHealthDataDocumentation(TEST_APP_ID, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Parent ID must be specified.")
     public void deleteHealthDataDocumentation_NullParentId() {
-        service.deleteHealthDataDocumentation(IDENTIFIER, null);
+        service.deleteHealthDataDocumentation(null, IDENTIFIER);
+    }
+
+    @Test
+    public void deleteAllHealthDataDocumentation() {
+        service.deleteAllHealthDataDocumentation(TEST_APP_ID);
+        verify(mockDao).deleteDocumentationForParentId(TEST_APP_ID);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Parent ID must be specified.")
+    public void deleteAllHealthDataDocumentation_NullParentId() {
+        service.deleteAllHealthDataDocumentation(null);
     }
 
     @Test
     public void getHealthDataDocumentationForId() {
         HealthDataDocumentation doc = makeValidDoc();
-        when(mockDao.getDocumentationByIdentifier(IDENTIFIER, TEST_APP_ID)).thenReturn(doc);
+        when(mockDao.getDocumentationByIdentifier(TEST_APP_ID, IDENTIFIER)).thenReturn(doc);
 
-        HealthDataDocumentation result = service.getHealthDataDocumentationForId(IDENTIFIER, TEST_APP_ID);
+        HealthDataDocumentation result = service.getHealthDataDocumentationForId(TEST_APP_ID, IDENTIFIER);
         assertSame(result, doc);
 
-        verify(mockDao).getDocumentationByIdentifier(IDENTIFIER, TEST_APP_ID);
+        verify(mockDao).getDocumentationByIdentifier(TEST_APP_ID, IDENTIFIER);
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Identifier must be specified.")
     public void getHealthDataDocumentationForId_NullIdentifier() {
-        service.getHealthDataDocumentationForId(null, TEST_APP_ID);
+        service.getHealthDataDocumentationForId(TEST_APP_ID, null);
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = "Parent ID must be specified.")
     public void getHealthDataDocumentation_NullParentId() {
-        service.getHealthDataDocumentationForId(IDENTIFIER, null);
+        service.getHealthDataDocumentationForId(null, IDENTIFIER);
     }
 
     @Test
@@ -114,8 +125,10 @@ public class HealthDataDocumentationServiceTest {
 
     private static HealthDataDocumentation makeValidDoc() {
         HealthDataDocumentation doc = HealthDataDocumentation.create();
+        doc.setTitle("title");
         doc.setParentId(TEST_APP_ID);
         doc.setIdentifier(IDENTIFIER);
+        doc.setDocumentation("sample-documentation.");
         return doc;
     }
 }

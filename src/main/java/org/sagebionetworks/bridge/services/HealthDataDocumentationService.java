@@ -1,12 +1,16 @@
 package org.sagebionetworks.bridge.services;
 
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.HealthDataDocumentationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.HealthDataDocumentation;
+import org.sagebionetworks.bridge.validators.HealthDataDocumentationValidator;
+import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -28,12 +32,17 @@ public class HealthDataDocumentationService {
         if (documentation == null) {
             throw new InvalidEntityException("Health data documentation must not be null.");
         }
+        Validate.entityThrowingException(HealthDataDocumentationValidator.INSTANCE, documentation);
+
+        // update health data documentation attributes
+        documentation.setModifiedOn(DateTime.now().getMillis());
+        documentation.setModifiedBy(RequestContext.get().getCallerUserId());
 
         return healthDataDocumentationDao.createOrUpdateDocumentation(documentation);
     }
 
     /** Delete health data documentation for the given identifier. */
-    public void deleteHealthDataDocumentation(String identifier, String parentId) {
+    public void deleteHealthDataDocumentation(String parentId, String identifier) {
         if (StringUtils.isBlank(identifier)) {
             throw new BadRequestException("Identifier must be specified.");
         }
@@ -42,18 +51,20 @@ public class HealthDataDocumentationService {
             throw new BadRequestException("Parent ID must be specified.");
         }
 
-        healthDataDocumentationDao.deleteDocumentationForIdentifier(identifier, parentId);
+        healthDataDocumentationDao.deleteDocumentationForIdentifier(parentId, identifier);
     }
 
     /** Delete all health data documentation for the given parentId */
     public void deleteAllHealthDataDocumentation(String parentId) {
-        checkNotNull(parentId);
+        if (StringUtils.isBlank(parentId)) {
+            throw new BadRequestException("Parent ID must be specified.");
+        }
 
         healthDataDocumentationDao.deleteDocumentationForParentId(parentId);
     }
 
     /** Get health data documentation for the given identifier. */
-    public HealthDataDocumentation getHealthDataDocumentationForId(String identifier, String parentId) {
+    public HealthDataDocumentation getHealthDataDocumentationForId(String parentId, String identifier) {
         if (StringUtils.isBlank(identifier)) {
             throw new BadRequestException("Identifier must be specified.");
         }
@@ -62,7 +73,7 @@ public class HealthDataDocumentationService {
             throw new BadRequestException("Parent ID must be specified.");
         }
 
-        return healthDataDocumentationDao.getDocumentationByIdentifier(identifier, parentId);
+        return healthDataDocumentationDao.getDocumentationByIdentifier(parentId, identifier);
     }
 
     /** List all health data documentation for the given parentId. */

@@ -14,31 +14,28 @@ import static org.testng.Assert.assertEquals;
 public class DynamoHealthDataDocumentationTest {
 
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
-    private static final DateTime NOW = new DateTime("2021-05-23T14:20:34.662-07:00");
-    private static final String S3_KEY = TEST_APP_ID + "-" + IDENTIFIER;
+    private static final Long TIMESTAMP = 1632263674L;
     private static final Long VERSION = 100L;
 
     @Test
     public void canSerialize() throws JsonProcessingException {
         DynamoHealthDataDocumentation documentation = new DynamoHealthDataDocumentation();
 
-        documentation.setParentId(TEST_APP_ID); // testing String attributes of HealthDataDocumentation
+        documentation.setParentId(TEST_APP_ID);
         documentation.setIdentifier(IDENTIFIER);
-        documentation.setCreatedOn(NOW); // testing the DateTime attributes of HealthDataDocumentation
+        documentation.setModifiedOn(TIMESTAMP);
         documentation.setVersion(VERSION);
 
         String json = MAPPER.writeValueAsString(documentation);
 
         JsonNode node = MAPPER.readTree(json);
-        assertEquals(node.get("parentId").textValue(), TEST_APP_ID);
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
-        assertEquals(new DateTime(node.get("createdOn").textValue()), NOW);
+        assertEquals(Long.valueOf(node.get("modifiedOn").longValue()), TIMESTAMP);
         assertEquals((Long)node.get("version").longValue(), VERSION);
 
         HealthDataDocumentation deserialize = MAPPER.readValue(json, HealthDataDocumentation.class);
-        assertEquals(deserialize.getParentId(), TEST_APP_ID);
         assertEquals(deserialize.getIdentifier(), IDENTIFIER);
-        assertEquals(deserialize.getCreatedOn().getMillis(), NOW.getMillis());
+        assertEquals(deserialize.getModifiedOn(), TIMESTAMP);
         assertEquals(deserialize.getVersion(), VERSION);
     }
 }

@@ -35,7 +35,6 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
         if (dynamoDocumentation.getIdentifier() == null) {
             // Documentation doesn't have ID assigned yet (new documentation). Create ID and assign it.
             dynamoDocumentation.setIdentifier(BridgeUtils.generateGuid());
-        } else {
         }
 
         // Save to DynamoDB.
@@ -63,7 +62,7 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
 
     /** {@inheritDoc} */
     @Override
-    public void deleteDocumentationForIdentifier(@Nonnull String identifier, @Nonnull String parentId) {
+    public void deleteDocumentationForIdentifier(@Nonnull String parentId, @Nonnull String identifier) {
         DynamoHealthDataDocumentation hashKey = new DynamoHealthDataDocumentation();
         hashKey.setParentId(parentId);
         hashKey.setIdentifier(identifier);
@@ -76,7 +75,7 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
 
     /** {@inheritDoc} */
     @Override
-    public HealthDataDocumentation getDocumentationByIdentifier(@Nonnull String identifier, @Nonnull String parentId) {
+    public HealthDataDocumentation getDocumentationByIdentifier(@Nonnull String parentId, @Nonnull String identifier) {
         DynamoHealthDataDocumentation hashKey = new DynamoHealthDataDocumentation();
         hashKey.setIdentifier(identifier);
         hashKey.setParentId(parentId);

@@ -89,27 +89,27 @@ public class HealthDataDocumentationControllerTest {
     public void getHealthDataDocumentationForId() {
         HealthDataDocumentation doc = HealthDataDocumentation.create();
         doc.setIdentifier(IDENTIFIER);
-        when(mockService.getHealthDataDocumentationForId(IDENTIFIER, TEST_APP_ID)).thenReturn(doc);
+        when(mockService.getHealthDataDocumentationForId(TEST_APP_ID, IDENTIFIER)).thenReturn(doc);
 
         HealthDataDocumentation result = controller.getHealthDataDocumentationForId(IDENTIFIER);
         assertSame(result, doc);
 
-        verify(mockService).getHealthDataDocumentationForId(IDENTIFIER, TEST_APP_ID);
+        verify(mockService).getHealthDataDocumentationForId(TEST_APP_ID, IDENTIFIER);
     }
 
     @Test
     public void getAllHealthDocumentationForParentId() {
         ForwardCursorPagedResourceList<HealthDataDocumentation> docList = new ForwardCursorPagedResourceList<>(
                 ImmutableList.of(HealthDataDocumentation.create()), null);
-        when(mockService.getAllHealthDataDocumentation(TEST_APP_ID, API_DEFAULT_PAGE_SIZE, OFFSET_KEY)).thenReturn(docList);
+        when(mockService.getAllHealthDataDocumentation(TEST_APP_ID, 10, OFFSET_KEY)).thenReturn(docList);
 
         ForwardCursorPagedResourceList<HealthDataDocumentation> resultList =
-                controller.getAllHealthDataDocumentationForParentId(TEST_APP_ID, "50", OFFSET_KEY);
+                controller.getAllHealthDataDocumentationForParentId("10", OFFSET_KEY);
         assertSame(resultList, docList);
         assertEquals(resultList.getRequestParams().size(), 1);
         assertEquals(resultList.getRequestParams().get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
 
-        verify(mockService).getAllHealthDataDocumentation(TEST_APP_ID, API_DEFAULT_PAGE_SIZE, OFFSET_KEY);
+        verify(mockService).getAllHealthDataDocumentation(TEST_APP_ID, 10, OFFSET_KEY);
     }
 
     @Test
@@ -117,12 +117,12 @@ public class HealthDataDocumentationControllerTest {
         StatusMessage statusMessage = controller.deleteHealthDataDocumentationForIdentifier(IDENTIFIER);
         assertEquals(statusMessage.getMessage(), "Health data documentation has been deleted for the given identifier.");
 
-        verify(mockService).deleteHealthDataDocumentation(IDENTIFIER, TEST_APP_ID);
+        verify(mockService).deleteHealthDataDocumentation(TEST_APP_ID, IDENTIFIER);
     }
 
     @Test
     public void deleteAllHealthDataDocumentationForParentId() {
-        StatusMessage statusMessage = controller.deleteAllHealthDataDocumentationForParentId(TEST_APP_ID);
+        StatusMessage statusMessage = controller.deleteAllHealthDataDocumentationForParentId();
         assertEquals(statusMessage.getMessage(), "Health data documentation has been deleted.");
 
         verify(mockService).deleteAllHealthDataDocumentation(TEST_APP_ID);

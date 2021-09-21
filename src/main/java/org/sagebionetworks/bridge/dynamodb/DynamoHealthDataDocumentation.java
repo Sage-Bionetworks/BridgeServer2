@@ -20,8 +20,6 @@ public class DynamoHealthDataDocumentation implements HealthDataDocumentation {
     private String identifier;
     private Long version;
     private String documentation;
-    private String createdBy;
-    private Long createdOn;
     private String modifiedBy;
     private Long modifiedOn;
 
@@ -80,29 +78,6 @@ public class DynamoHealthDataDocumentation implements HealthDataDocumentation {
     }
 
     @Override
-    public String getCreatedBy() {
-        return this.createdBy;
-    }
-
-    @Override
-    public void setCreatedBy(String createdBy) {
-        this.createdBy = createdBy;
-    }
-
-    @Override
-    @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    @JsonSerialize(using = DateTimeToLongSerializer.class)
-    public Long getCreatedOn() {
-        return this.createdOn;
-    }
-
-    @Override
-    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
-    public void setCreatedOn(Long createdOn) {
-        this.createdOn = createdOn;
-    }
-
-    @Override
     public String getModifiedBy() {
         return this.modifiedBy;
     }
@@ -114,13 +89,11 @@ public class DynamoHealthDataDocumentation implements HealthDataDocumentation {
 
     @Override
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
-    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public Long getModifiedOn() {
         return this.modifiedOn;
     }
 
     @Override
-    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     public void setModifiedOn(Long modifiedOn) {
         this.modifiedOn = modifiedOn;
     }
