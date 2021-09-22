@@ -136,7 +136,11 @@ public class DynamoHealthDataDocumentationDaoTest {
         when(mockMapper.load(any(DynamoHealthDataDocumentation.class))).thenReturn(doc);
 
         HealthDataDocumentation returned = dao.getDocumentationByIdentifier(TEST_APP_ID, DOC_ID);
+        ArgumentCaptor<HealthDataDocumentation> docCaptor = ArgumentCaptor.forClass(DynamoHealthDataDocumentation.class);
+        verify(mockMapper).load(docCaptor.capture());
 
+        assertEquals(docCaptor.getValue().getParentId(), TEST_APP_ID);
+        assertEquals(docCaptor.getValue().getIdentifier(), DOC_ID);
         assertEquals(returned, doc);
     }
 
