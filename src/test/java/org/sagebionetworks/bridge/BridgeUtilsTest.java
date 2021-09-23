@@ -1007,64 +1007,81 @@ public class BridgeUtilsTest extends Mockito {
     }
     
     @Test
-    public void formatActivityEventIdIsValidCustomId() {
+    public void formatActivityEventId_validCustomNoPrefix() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("FOO"), "FOO");
         assertEquals(retValue, "custom:FOO");
         
     }
     
     @Test
-    public void formatActivityEventIdIsValidCustomIdWithCustomPrefix() {
+    public void formatActivityEventId_validCustomWithPrefixUppercase() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "CUSTOM:foo");
         assertEquals(retValue, "custom:foo");
     }
 
     @Test
-    public void formatActivityEventIdIsValidSystemId() {
+    public void formatActivityEventId_validCustomWithPrefix() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "custom:foo");
+        assertEquals(retValue, "custom:foo");
+    }
+    
+    @Test
+    public void formatActivityEventId_invalidWithoutPrefix() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of(), "foo");
+        assertNull(retValue);
+    }
+    
+    @Test
+    public void formatActivityEventId_invalidCustomWithPrefix() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of(), "custom:foo");
+        assertNull(retValue);
+    }
+    
+    @Test
+    public void formatActivityEventId_validUnarySystemId() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "activities_retrieved");
         assertEquals(retValue, "activities_retrieved");
     }
 
     @Test
-    public void formatActivityEventIdIsValidCompoundSystemId() {
+    public void formatActivityEventId_validCompoundSystemId() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
         assertEquals(retValue, "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
     }
     
     @Test
-    public void formatActivityEventIdBlank() {
+    public void formatActivityEventId_invalidBlank() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "");
         assertNull(retValue);
-        
     }
 
     @Test
-    public void formatActivityEventIdNull() {
+    public void formatActivityEventId_invalidNull() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), null);
         assertNull(retValue);
     }
     
     @Test
-    public void formatActivityEventIdWithCasing() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("Event1"), "custom:Event1");
-        assertEquals(retValue, "custom:Event1");
-    }
-    
-    @Test
-    public void formatActivityEventIdCustomShadowsSystemEvent() {
+    public void formatActivityEventId_customShadowsSystemEvent() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "custom:timeline_retrieved");
         assertEquals(retValue, "custom:timeline_retrieved");
     }
     
     @Test
-    public void formatActivityEventIdSystemEventCorrectlyInterpreted() {
+    public void formatActivityEventId_customDoesNotShadowSystemEvent() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "timeline_retrieved");
         assertEquals(retValue, "timeline_retrieved");
     }
     
     @Test
-    public void formatActivityEventIdDeclaredCustomIsNotPresent() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "custom:bar");
+    public void formatActivityEventId_validStudyBurst() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "study_burst:foo:01");
+        assertEquals(retValue, "study_burst:foo:01");
+    }
+    
+    @Test
+    public void formatActivityEventId_invalidStudyBurst() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of(), "study_burst:foo:01");
         assertNull(retValue);
     }
     
@@ -1260,6 +1277,17 @@ public class BridgeUtilsTest extends Mockito {
         account.setId(TEST_USER_ID);
         
         assertFalse( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void addAllToList() {
+        List<String> retValue = BridgeUtils.addAllToList(ImmutableList.of("A", "B"), ImmutableList.of("C", "D"));
+        assertEquals(retValue, ImmutableList.of("A", "B", "C", "D"));
+        assertTrue(retValue instanceof ImmutableList);
+        
+        retValue = BridgeUtils.addAllToList(ImmutableList.of("A", "B"), ImmutableSet.of("C"));
+        assertEquals(retValue, ImmutableList.of("A", "B", "C"));
+        assertTrue(retValue instanceof ImmutableList);
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

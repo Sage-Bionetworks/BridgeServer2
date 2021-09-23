@@ -107,6 +107,7 @@ public class BridgeUtils {
     public static final Joiner COMMA_JOINER = Joiner.on(",");
     public static final Joiner SEMICOLON_SPACE_JOINER = Joiner.on("; ");
     public static final Joiner SPACE_JOINER = Joiner.on(" ");
+    public static final Joiner COLON_JOINER = Joiner.on(":");
     private static final int ONE_HOUR = 60*60;
     private static final int ONE_DAY = 60*60*24;
     private static final int ONE_MINUTE = 60;
@@ -721,27 +722,31 @@ public class BridgeUtils {
     }
     
     /**
-     * Verifies that the activity eventId is valid, and prepends "custom:" to a custom ID if 
-     * necessary. Returns the value property cased if valid, or null otherwise. This is 
-     * then handled by validation. If the event submitted is an overridden system event, 
-     * it will be treated as the system event so in that case, you *must* prepend "custom:" 
-     * to indicate that the custom event is being used (overridding system events is 
-     * confusing and discouraged).
+     * Verifies that the activity eventId is valid, and formats the casing correctly. (It doesn't 
+     * handle absolutely everything, but system events are known to be formatted correctly thanks 
+     * to the StudyActivityEventRequestBuilder). Returns the value if valid, or null otherwise. 
+     * This is then handled by validation. If the event submitted is an overridden system event, 
+     * it will be treated as the system event so in that case, you *must* prepend "custom:" to 
+     * indicate that the custom event is being used (overridding system events is confusing and 
+     * discouraged).
      */
     public static String formatActivityEventId(Set<String> activityEventIds, String id) {
         if (isNotBlank(id)) {
-            boolean declaredCustom = id.toLowerCase().startsWith("custom:");
-            if (declaredCustom) {
-                id = id.substring(7);
-            }
-            if (!declaredCustom) {
-                try {
-                    String[] parts = id.split(":");
-                    ActivityEventObjectType.valueOf(parts[0].toUpperCase());
-                    return id;
-                } catch(IllegalArgumentException e) {
+            if (id.toLowerCase().startsWith("custom:") || id.toLowerCase().startsWith("study_burst:")) {
+                String[] elements = id.split(":");
+                if (activityEventIds.contains(elements[1])) {
+                    elements[0] = elements[0].toLowerCase();
+                    return COLON_JOINER.join(elements);
                 }
+                return null;
             }
+            try {
+                String[] parts = id.split(":");
+                ActivityEventObjectType.valueOf(parts[0].toUpperCase());
+                return id;
+            } catch(IllegalArgumentException e) {
+            }
+            // backwards compatibility
             if (activityEventIds.contains(id)) {
                 return "custom:" + id;
             }
