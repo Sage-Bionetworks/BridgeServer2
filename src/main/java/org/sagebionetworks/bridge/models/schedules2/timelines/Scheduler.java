@@ -22,9 +22,7 @@ import com.google.common.hash.Hashing;
 
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;

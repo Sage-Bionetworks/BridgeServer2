@@ -30,7 +30,6 @@ import static org.testng.Assert.fail;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -42,9 +41,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Label;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
