@@ -13,6 +13,8 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
+import static org.sagebionetworks.bridge.hibernate.HibernateAccountDao.APP_IDS_FOR_USER_QUERY;
+import static org.sagebionetworks.bridge.hibernate.HibernateAccountDao.DELETE_ALL_ACCOUNTS_QUERY;
 import static org.sagebionetworks.bridge.hibernate.HibernateAccountDao.FULL_QUERY;
 import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 import static org.sagebionetworks.bridge.models.StringSearchPosition.INFIX;
@@ -1220,8 +1222,7 @@ public class HibernateAccountDaoTest extends Mockito {
         List<String> results = dao.getAppIdForUser(SYNAPSE_USER_ID);
         assertEquals(results, queryResult);
         
-        verify(mockHibernateHelper).queryGet(eq("SELECT DISTINCT acct.appId FROM HibernateAccount AS acct WHERE "+
-                "synapseUserId = :synapseUserId"), paramCaptor.capture(), eq(null), eq(null), eq(String.class));
+        verify(mockHibernateHelper).queryGet(eq(APP_IDS_FOR_USER_QUERY), paramCaptor.capture(), eq(null), eq(null), eq(String.class));
         Map<String,Object> params = paramCaptor.getValue();
         assertEquals(params.get("synapseUserId"), SYNAPSE_USER_ID);
     }
@@ -1299,6 +1300,14 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(params2.get("appId"), TEST_APP_ID);
         assertEquals(params2.get("studyId"), TEST_STUDY_ID);
         assertNull(params1.get("idFilter"));        
+    }
+    
+    @Test
+    public void deleteAllAccounts() {
+        dao.deleteAllAccounts(TEST_APP_ID);
+        
+        verify(mockHibernateHelper).nativeQueryUpdate(eq(DELETE_ALL_ACCOUNTS_QUERY), paramCaptor.capture());
+        assertEquals(paramCaptor.getValue().get("appId"), TEST_APP_ID);
     }
 
     private void verifyCreatedHealthCode() {

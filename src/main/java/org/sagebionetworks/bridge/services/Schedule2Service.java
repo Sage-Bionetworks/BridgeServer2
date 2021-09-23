@@ -339,6 +339,12 @@ public class Schedule2Service {
         return dao.getAssessmentsForSessionInstance(instanceGuid);
     }
     
+    public void deleteAllSchedules(String appId) {
+        checkNotNull(appId);
+        
+        dao.deleteAllSchedules(appId);
+    }
+    
     /**
      * Set GUIDs on objects that don't have them; clean up event keys or set
      * them to null if they're not valid, so they will fail validation.

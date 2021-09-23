@@ -789,3 +789,12 @@ CREATE TABLE `SessionStartEvents` (
 
 ALTER TABLE `TimelineMetadata` 
 ADD INDEX `TimelineMetadata-ScheduleGuid` (scheduleGuid);
+
+-- changeset bridge:47
+
+ALTER TABLE `AccountsSubstudies` 
+DROP FOREIGN KEY `fk_substudy`;
+
+ALTER TABLE `AccountsSubstudies`
+ADD CONSTRAINT `fk_substudy` FOREIGN KEY (`substudyId`, `studyId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE;
+

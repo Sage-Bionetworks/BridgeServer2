@@ -383,6 +383,12 @@ public class AccountService {
         return accountDao.getPagedExternalIds(appId, studyId, idFilter, offsetBy, pageSize);
     }
     
+    public void deleteAllAccounts(String appId) {
+        checkNotNull(appId);
+        
+        accountDao.deleteAllAccounts(appId);
+    }
+    
     protected Account authenticateInternal(App app, Account account, SignIn signIn) {
         // Auth successful, you can now leak further information about the account through other exceptions.
         // For email/phone sign ins, the specific credential must have been verified (unless we've disabled

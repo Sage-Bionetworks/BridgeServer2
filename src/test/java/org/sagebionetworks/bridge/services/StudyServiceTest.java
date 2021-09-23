@@ -8,6 +8,7 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -513,7 +514,7 @@ public class StudyServiceTest {
     }
     
     @Test
-    public void deleteStudyAllowedByPhase() {
+    public void deleteStudy() {
         Study study = Study.create();
         study.setPhase(DESIGN);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
@@ -530,7 +531,7 @@ public class StudyServiceTest {
     
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp = ".*Study cannot be deleted during phase.*")
-    public void deleteStudyNotAllowedByPhase() {
+    public void deleteStudy_studyWrongPhase() {
         Study study = Study.create();
         study.setPhase(IN_FLIGHT);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
@@ -538,14 +539,32 @@ public class StudyServiceTest {
         service.deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
+    @Test
+    public void deleteStudy_adminCanForceStudyInWrongPhase() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
+        
+        service.deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
+        
+        verify(mockStudyDao).updateStudy(study);
+        verify(mockCacheProvider).removeObject(CACHE_KEY);
+    }
+
+    
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void deleteStudyNotFound() {
+    public void deleteStudy_studyNotFound() {
         service.deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test
     public void deleteStudyPermanently() {
-        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(Study.create());
+        Study study = Study.create();
+        study.setPhase(DESIGN);
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
         
         service.deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
         
@@ -557,6 +576,7 @@ public class StudyServiceTest {
     @Test
     public void deleteStudyPermanently_deletesScheduleFirst() {
         Study study = Study.create();
+        study.setPhase(DESIGN);
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
         
@@ -567,8 +587,32 @@ public class StudyServiceTest {
         verify(mockCacheProvider).removeObject(CACHE_KEY);
     }
     
+    @Test(expectedExceptions = BadRequestException.class)
+    public void deleteStudyPermanently_studyWrongPhase() {
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
+        
+        service.deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void deleteStudyPermanently_adminCanForceStudyInWrongPhase() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(study);
+        
+        service.deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
+        
+        verify(mockStudyDao).deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
+        verify(mockCacheProvider).removeObject(CACHE_KEY);
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void deleteStudyPermanentlyNotFound() {
+    public void deleteStudyPermanently_studyNotFound() {
         service.deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
     }
     
