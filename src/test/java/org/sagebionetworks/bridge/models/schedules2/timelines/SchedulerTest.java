@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_2;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_3;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_4;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.schedules2.PerformanceOrder.SEQUENTIAL;
 import static org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler.INSTANCE;
 import static org.testng.Assert.assertEquals;
@@ -29,8 +30,10 @@ import static org.testng.Assert.fail;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
@@ -39,11 +42,14 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Label;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
 public class SchedulerTest extends Mockito {
@@ -1080,6 +1086,40 @@ public class SchedulerTest extends Mockito {
         assertEquals(schSession.getStartEventId(), "timeline_retrieved");
         assertEquals(schSession.getRefGuid(), SESSION_GUID_1);
         assertEquals(schSession.getStartDay(), 1);
+    }
+    
+    @Test
+    public void studyBurstsAreResolvedInTimeline() throws Exception {
+        Schedule2 schedule = createSchedule("P3D");
+        
+        StudyBurst burst1 = new StudyBurst();
+        burst1.setIdentifier("burst1");
+        burst1.setOriginEventId("timeline_retrieved");
+        burst1.setInterval(Period.parse("P1D"));
+        burst1.setOccurrences(3);
+        burst1.setUpdateType(MUTABLE);
+        
+        StudyBurst burst2 = new StudyBurst();
+        burst2.setIdentifier("burst2");
+        burst2.setOriginEventId("timeline_retrieved");
+        burst2.setInterval(Period.parse("P1D"));
+        burst2.setOccurrences(1);
+        burst2.setUpdateType(MUTABLE);
+        
+        schedule.setStudyBursts(ImmutableList.of(burst1, burst2));
+        
+        Session session = createOneTimeSession("P1D");
+        session.setStudyBurstIds(ImmutableList.of("burst1", "burst2"));
+        schedule.setSessions(ImmutableList.of(session));
+        
+        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+        assertEquals(timeline.getSchedule().size(), 5);
+        
+        Set<String> triggerEventIds = timeline.getSchedule().stream()
+                .map(ScheduledSession::getStartEventId)
+                .collect(toSet());
+        assertEquals(triggerEventIds, ImmutableSet.of("enrollment", "study_burst:burst1:01", "study_burst:burst1:02",
+                "study_burst:burst1:03", "study_burst:burst2:01"));
     }
     
     /* ============================================================ */

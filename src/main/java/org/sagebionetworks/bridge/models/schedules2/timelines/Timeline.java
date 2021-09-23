@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.Period;
@@ -22,6 +23,7 @@ import org.sagebionetworks.bridge.models.schedules2.Schedule2;
  * are needed to track the performance of specific sessions and assessments, and 
  * the related information to display tasks in the UI.
  */
+@JsonPropertyOrder({"duration", "totalMinutes", "totalNotifications", "schedule", "sessions", "assessments", "type"})
 public class Timeline {
 
     private final String lang;

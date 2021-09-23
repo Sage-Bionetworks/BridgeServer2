@@ -33,7 +33,7 @@ public enum ActivityEventObjectType {
      */
     QUESTION(FUTURE_ONLY) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
-            if(objectId == null || eventType == null || isBlank(answerValue)) {
+            if(isBlank(objectId) || eventType == null || isBlank(answerValue)) {
                 return null;
             }
             return String.format("%s:%s:%s=%s", this.name().toLowerCase(),
@@ -50,7 +50,7 @@ public enum ActivityEventObjectType {
      */
     SURVEY(FUTURE_ONLY) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
-            if(objectId == null || eventType == null) {
+            if(isBlank(objectId) || eventType == null) {
                 return null;
             }
             return String.format("%s:%s:%s", this.name().toLowerCase(),
@@ -66,7 +66,7 @@ public enum ActivityEventObjectType {
      */
     ACTIVITY(FUTURE_ONLY) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
-            if (objectId == null || eventType == null) {
+            if (isBlank(objectId) || eventType == null) {
                 return null;
             }
             return String.format("%s:%s:%s", this.name().toLowerCase(),
@@ -90,7 +90,7 @@ public enum ActivityEventObjectType {
      */
     SESSION(FUTURE_ONLY) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
-            if (objectId == null || eventType == null) {
+            if (isBlank(objectId) || eventType == null) {
                 return null;
             }
             return String.format("%s:%s:%s", this.name().toLowerCase(),
@@ -104,7 +104,7 @@ public enum ActivityEventObjectType {
      */
     ASSESSMENT(FUTURE_ONLY) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
-            if (objectId == null || eventType == null) {
+            if (isBlank(objectId) || eventType == null) {
                 return null;
             }
             return String.format("%s:%s:%s", this.name().toLowerCase(),
@@ -117,7 +117,7 @@ public enum ActivityEventObjectType {
      */
     CUSTOM(IMMUTABLE) {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
-            if (objectId == null) {
+            if (isBlank(objectId)) {
                 return null;
             }
             // "custom:" must be lower-case, adjust it if provided by the client
@@ -159,7 +159,20 @@ public enum ActivityEventObjectType {
         public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
             return this.name().toLowerCase();
         }
-        
+    },
+    
+    /**
+     * A study burst custom event, generated automatically from study burst configuration. The objectId
+     * should be the study burst ID, and the answerValue should be the iteration number, e.g. "03", to
+     * generate an event ID like "study_burst:foo:03"
+     */
+    STUDY_BURST(IMMUTABLE) {
+        public String getEventId(String objectId, ActivityEventType eventType, String answerValue) {
+            if (isBlank(objectId)) {
+                return null;
+            }
+            return "study_burst:" + objectId + ":" + answerValue;
+        }
     };
     
     ActivityEventObjectType(ActivityEventUpdateType updateType) {

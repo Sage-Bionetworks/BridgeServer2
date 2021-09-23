@@ -1,11 +1,17 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.schedules2.Schedule2Test.createValidSchedule;
+import static org.sagebionetworks.bridge.validators.Schedule2Validator.CANNOT_BE_GREATER_THAN_20;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.CANNOT_BE_LONGER_THAN_FIVE_YEARS;
+import static org.sagebionetworks.bridge.validators.Schedule2Validator.CANNOT_BE_LONGER_THAN_SCHEDULE;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_ZERO_OR_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_LONG_PERIOD;
 
 import com.google.common.collect.ImmutableList;
@@ -13,11 +19,11 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.SessionTest;
+import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 
 public class Schedule2ValidatorTest extends Mockito {
 
@@ -145,15 +151,99 @@ public class Schedule2ValidatorTest extends Mockito {
     public void sessionDelayCannotBeLongerThanScheduleDuration() {
         Schedule2 schedule = createValidSchedule();
         schedule.getSessions().get(0).setDelay(Period.parse("P8WT2M"));
-        assertValidatorMessage(INSTANCE, schedule, "sessions[0].delay",
-                "cannot be longer than the schedule’s duration");
+        assertValidatorMessage(INSTANCE, schedule, "sessions[0].delay", CANNOT_BE_LONGER_THAN_SCHEDULE);
     }
 
     @Test
     public void sessionIntervalCannotBeLongerThanScheduleDuration() {
         Schedule2 schedule = createValidSchedule();
         schedule.getSessions().get(0).setInterval(Period.parse("P9W"));
-        assertValidatorMessage(INSTANCE, schedule, "sessions[0].interval",
-                "cannot be longer than the schedule’s duration");
+        assertValidatorMessage(INSTANCE, schedule, "sessions[0].interval", CANNOT_BE_LONGER_THAN_SCHEDULE);
+    }
+    
+    @Test
+    public void studyBurstIdentifierCannotBeNull() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getStudyBursts().get(0).setIdentifier(null);
+        assertValidatorMessage(INSTANCE, schedule, "studyBursts[0].identifier", CANNOT_BE_BLANK);
+    }
+
+    @Test
+    public void studyBurstIdentifierCannotBeBlank() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getStudyBursts().get(0).setIdentifier("");
+        assertValidatorMessage(INSTANCE, schedule, "studyBursts[0].identifier", CANNOT_BE_BLANK);
+    }
+
+    @Test
+    public void studyBurstOriginEventIdCannotBeNull() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getStudyBursts().get(0).setOriginEventId(null);
+        assertValidatorMessage(INSTANCE, schedule, "studyBursts[0].originEventId", CANNOT_BE_BLANK);
+    }
+
+    @Test
+    public void studyBurstOriginEventIdCannotBeBlank() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getStudyBursts().get(0).setOriginEventId("");
+        assertValidatorMessage(INSTANCE, schedule, "studyBursts[0].originEventId", CANNOT_BE_BLANK);
+    }
+
+    @Test
+    public void studyBurstIntervalCannotBeNull() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getStudyBursts().get(0).setInterval(null);
+        assertValidatorMessage(INSTANCE, schedule, "studyBursts[0].interval", CANNOT_BE_NULL);
+    }
+
+    @Test
+    public void studyBurstOccurrencesCannotBeNull() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getStudyBursts().get(0).setOccurrences(null);
+        assertValidatorMessage(INSTANCE, schedule, "studyBursts[0].occurrences", CANNOT_BE_NULL);
+    }
+
+    @Test
+    public void studyBurstOccurrencesCannotBeZero() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getStudyBursts().get(0).setOccurrences(0);
+        assertValidatorMessage(INSTANCE, schedule, "studyBursts[0].occurrences", CANNOT_BE_ZERO_OR_NEGATIVE);
+    }
+
+    @Test
+    public void studyBurstOccurrencesCannotBeNegative() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getStudyBursts().get(0).setOccurrences(-2);
+        assertValidatorMessage(INSTANCE, schedule, "studyBursts[0].occurrences", CANNOT_BE_ZERO_OR_NEGATIVE);
+    }
+
+    @Test
+    public void studyBurstOccurrencesCannotBeTooBig() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getStudyBursts().get(0).setOccurrences(30);
+        assertValidatorMessage(INSTANCE, schedule, "studyBursts[0].occurrences", CANNOT_BE_GREATER_THAN_20);
+    }
+
+    @Test
+    public void studyBurstUpdateTypeCannotBeNull() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getStudyBursts().get(0).setUpdateType(null);
+        assertValidatorMessage(INSTANCE, schedule, "studyBursts[0].updateType", CANNOT_BE_NULL);
+    }
+
+    @Test
+    public void studyBurstsCannotDuplicateIds() {
+        Schedule2 schedule = createValidSchedule();
+        
+        StudyBurst burst = new StudyBurst();
+        burst.setIdentifier("burst1");
+        burst.setOriginEventId(ENROLLMENT.name().toLowerCase());
+        burst.setInterval(Period.parse("P1W"));
+        burst.setOccurrences(2);
+        burst.setUpdateType(FUTURE_ONLY);
+        schedule.setStudyBursts(ImmutableList.of( schedule.getStudyBursts().get(0), burst ));
+        
+        schedule.getStudyBursts().get(0).setUpdateType(null);
+        assertValidatorMessage(INSTANCE, schedule, "studyBursts[1].identifier", CANNOT_BE_DUPLICATE);
     }
 }

@@ -10,23 +10,26 @@ import static org.sagebionetworks.bridge.validators.SessionValidator.DELAY_FIELD
 import static org.sagebionetworks.bridge.validators.SessionValidator.EXPIRATION_LONGER_THAN_INTERVAL_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.EXPIRATION_REQUIRED_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.GUID_FIELD;
-import static org.sagebionetworks.bridge.validators.SessionValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.SessionValidator.INTERVAL_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.LESS_THAN_ONE_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.LONGER_THAN_WINDOW_EXPIRATION_ERROR;
+import static org.sagebionetworks.bridge.validators.SessionValidator.MUST_DEFINE_TRIGGER_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.NAME_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.NOTIFICATIONS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.OCCURRENCES_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.PERFORMANCE_ORDER_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.START_EVENT_IDS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.TIME_WINDOWS_FIELD;
+import static org.sagebionetworks.bridge.validators.SessionValidator.UNDEFINED_STUDY_BURST;
 import static org.sagebionetworks.bridge.validators.SessionValidator.START_TIME_COMPARATOR;
+import static org.sagebionetworks.bridge.validators.SessionValidator.STUDY_BURST_IDS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.WINDOW_OVERLAPS_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.WINDOW_SHORTER_THAN_DAY_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
-import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_EMPTY;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_LONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_PERIOD;
@@ -36,6 +39,7 @@ import static org.testng.Assert.assertNull;
 import java.util.List;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 import org.joda.time.LocalTime;
@@ -49,6 +53,8 @@ import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
 public class SessionValidatorTest extends Mockito {
+    
+    private static final SessionValidator INSTANCE = new SessionValidator(ImmutableSet.of("burst1"));
     
     @Test
     public void valid() {
@@ -85,24 +91,26 @@ public class SessionValidatorTest extends Mockito {
     }
 
     @Test
-    public void startEventIdsNull() {
+    public void startEventIdsAndStudyBurstIdsNull() {
         Session session = createValidSession();
         session.setStartEventIds(null);
-        assertValidatorMessage(INSTANCE, session, START_EVENT_IDS_FIELD, CANNOT_BE_EMPTY);
+        session.setStudyBurstIds(null);
+        assertValidatorMessage(INSTANCE, session, "Session", "must define one or more startEventIds or studyBurstIds");
     }
     
     @Test
-    public void startEventIdsEmpty() {
+    public void startEventIdsAndStudyBurstIdsEmpty() {
         Session session = createValidSession();
         session.setStartEventIds(ImmutableList.of());
-        assertValidatorMessage(INSTANCE, session, START_EVENT_IDS_FIELD, CANNOT_BE_EMPTY);
+        session.setStudyBurstIds(ImmutableList.of());
+        assertValidatorMessage(INSTANCE, session, "Session", MUST_DEFINE_TRIGGER_ERROR);
     }
     
     @Test
     public void startEventIdsMemberNull() {
         Session session = createValidSession();
         session.setStartEventIds(Lists.newArrayList((String)null));
-        assertValidatorMessage(INSTANCE, session, START_EVENT_IDS_FIELD + "[0]", CANNOT_BE_NULL);
+        assertValidatorMessage(INSTANCE, session, START_EVENT_IDS_FIELD + "[0]", INVALID_EVENT_ID);
     }
     
     @Test
@@ -110,6 +118,41 @@ public class SessionValidatorTest extends Mockito {
         Session session = createValidSession();
         session.setStartEventIds(Lists.newArrayList("\t"));
         assertValidatorMessage(INSTANCE, session, START_EVENT_IDS_FIELD + "[0]", CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void startEventIdsCannotBeDuplicates() {
+        Session session = createValidSession();
+        session.setStartEventIds(ImmutableList.of("timeline_retrieved", "timeline_retrieved"));
+        assertValidatorMessage(INSTANCE, session, START_EVENT_IDS_FIELD + "[1]", CANNOT_BE_DUPLICATE);
+    }
+
+    @Test
+    public void studyBurstIdsCannotBeNull() {
+        Session session = createValidSession();
+        session.setStudyBurstIds(Lists.newArrayList("burst1", null));
+        assertValidatorMessage(INSTANCE, session, STUDY_BURST_IDS_FIELD + "[1]", CANNOT_BE_NULL);
+    }
+
+    @Test
+    public void studyBurstIdsCannotBeBlank() {
+        Session session = createValidSession();
+        session.setStudyBurstIds(Lists.newArrayList("burst1", "\t"));
+        assertValidatorMessage(INSTANCE, session, STUDY_BURST_IDS_FIELD + "[1]", CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void studyBurstIdsCannotBeDuplicates() {
+        Session session = createValidSession();
+        session.setStudyBurstIds(ImmutableList.of("burst1", "burst1"));
+        assertValidatorMessage(INSTANCE, session, STUDY_BURST_IDS_FIELD + "[1]", CANNOT_BE_DUPLICATE);
+    }
+    
+    @Test
+    public void studyBurstIdsCannotBeUndefined() {
+        Session session = createValidSession();
+        session.setStudyBurstIds(ImmutableList.of("burst2"));
+        assertValidatorMessage(INSTANCE, session, STUDY_BURST_IDS_FIELD + "[0]", UNDEFINED_STUDY_BURST);
     }
     
     @Test

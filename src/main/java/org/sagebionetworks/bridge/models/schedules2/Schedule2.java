@@ -1,13 +1,19 @@
 package org.sagebionetworks.bridge.models.schedules2;
 
+import static java.util.stream.Collectors.toMap;
+
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.persistence.CascadeType;
+import javax.persistence.CollectionTable;
 import javax.persistence.Convert;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderColumn;
 import javax.persistence.Table;
@@ -16,6 +22,8 @@ import javax.persistence.Version;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 
@@ -24,6 +32,7 @@ import org.sagebionetworks.bridge.hibernate.JsonNodeAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.PeriodToStringConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 
 @Entity
 @Table(name = "Schedules")
@@ -54,6 +63,15 @@ public class Schedule2 implements BridgeEntity {
             orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderColumn(name = "position")
     private List<Session> sessions;
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(value = FetchMode.SUBSELECT)
+    @OrderColumn(name="position")
+    @CollectionTable(name="ScheduleStudyBursts", joinColumns= {
+            @JoinColumn(name="scheduleGuid")
+    })
+    private List<StudyBurst> studyBursts;
+    
     @Version
     private long version;
     
@@ -117,6 +135,15 @@ public class Schedule2 implements BridgeEntity {
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }
+    public List<StudyBurst> getStudyBursts() {
+        if (studyBursts == null) {
+            studyBursts = new ArrayList<>();
+        }
+        return studyBursts;
+    }
+    public void setStudyBursts(List<StudyBurst> studyBursts) {
+        this.studyBursts = studyBursts;
+    }    
     public List<Session> getSessions() {
         if (sessions == null) {
             sessions = new ArrayList<>();
@@ -131,5 +158,11 @@ public class Schedule2 implements BridgeEntity {
     }
     public void setVersion(long version) {
         this.version = version;
+    }
+    @JsonIgnore
+    public Map<String, ActivityEventUpdateType> getStudyBurstsUpdateMap() {
+        return getStudyBursts().stream()
+                .filter(b -> b != null && b.getIdentifier() != null && b.getUpdateType() != null)
+                .collect(toMap(StudyBurst::getIdentifier, StudyBurst::getUpdateType));
     }
 }

@@ -39,6 +39,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.HasGuid;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;

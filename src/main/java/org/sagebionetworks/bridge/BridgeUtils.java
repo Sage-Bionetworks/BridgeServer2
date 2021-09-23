@@ -802,4 +802,9 @@ public class BridgeUtils {
         }
         return false;
     }
+    
+    public static <T> List<T> addAllToList(List<T> list, Collection<T> elements) {
+        return ImmutableList.<T>builder().addAll(list).addAll(elements).build();
+    }
+  
 }
