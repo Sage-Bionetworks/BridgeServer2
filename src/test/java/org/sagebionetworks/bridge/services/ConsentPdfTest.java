@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.NO_SHARING;
@@ -38,7 +39,7 @@ public class ConsentPdfTest {
     public void before() throws Exception {
         DateTimeUtils.setCurrentMillisFixed(TIMESTAMP);
         consentBodyTemplate = IOUtils.toString(new FileInputStream(new ClassPathResource(
-                "conf/app-defaults/consent-page.xhtml").getFile()));
+                "conf/app-defaults/consent-page.xhtml").getFile()), UTF_8);
         
         app = new DynamoApp();
         app.setName("App Name");

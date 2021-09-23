@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services.email;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static javax.mail.Part.ATTACHMENT;
 import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.apps.MimeType.PDF;
@@ -123,7 +124,7 @@ public class BasicEmailProviderTest {
         
         MimeBodyPart attachment = email.getMessageParts().get(1);
         
-        String bodyContent = IOUtils.toString((InputStream)attachment.getContent()); 
+        String bodyContent = IOUtils.toString((InputStream)attachment.getContent(), UTF_8); 
         assertEquals(attachment.getFileName(), "content.pdf");
         assertEquals(bodyContent, "some data");
         assertEquals(attachment.getDisposition(), ATTACHMENT);

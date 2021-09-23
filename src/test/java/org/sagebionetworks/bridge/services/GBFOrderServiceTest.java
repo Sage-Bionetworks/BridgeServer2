@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.eq;
@@ -111,7 +112,7 @@ public class GBFOrderServiceTest {
     
     private HttpResponse createMockResponse(PlaceOrderResponse placeOrderResponse) throws IOException {
         HttpEntity mockEntity = mock(HttpEntity.class);
-        doReturn(IOUtils.toInputStream(jsonMapper.writeValueAsString(placeOrderResponse)))
+        doReturn(IOUtils.toInputStream(jsonMapper.writeValueAsString(placeOrderResponse), UTF_8))
                 .when(mockEntity).getContent();
     
         StatusLine mockStatusLine = mock(StatusLine.class);
@@ -132,7 +133,7 @@ public class GBFOrderServiceTest {
         CheckOrderStatusResponse response = new CheckOrderStatusResponse(true, null, Lists.newArrayList());
 
         HttpEntity mockEntity = mock(HttpEntity.class);
-        doReturn(IOUtils.toInputStream(jsonMapper.writeValueAsString(response)))
+        doReturn(IOUtils.toInputStream(jsonMapper.writeValueAsString(response), "UTF-8"))
                 .when(mockEntity).getContent();
 
         StatusLine mockStatusLine = mock(StatusLine.class);
@@ -158,7 +159,7 @@ public class GBFOrderServiceTest {
         when(statusLine.getStatusCode()).thenReturn(400);
         
         HttpEntity entity = mock(HttpEntity.class);
-        when(entity.getContent()).thenReturn(IOUtils.toInputStream("Message"));
+        when(entity.getContent()).thenReturn(IOUtils.toInputStream("Message", UTF_8));
         
         HttpResponse httpResponse = mock(HttpResponse.class);
         when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -173,7 +174,7 @@ public class GBFOrderServiceTest {
         when(statusLine.getStatusCode()).thenReturn(500);
         
         HttpEntity entity = mock(HttpEntity.class);
-        when(entity.getContent()).thenReturn(IOUtils.toInputStream("Message"));
+        when(entity.getContent()).thenReturn(IOUtils.toInputStream("Message", UTF_8));
         
         HttpResponse httpResponse = mock(HttpResponse.class);
         when(httpResponse.getStatusLine()).thenReturn(statusLine);
@@ -204,7 +205,7 @@ public class GBFOrderServiceTest {
                 xmlMapper.writeValueAsString(shippingConfirmations));
 
         HttpEntity mockEntity = mock(HttpEntity.class);
-        doReturn(IOUtils.toInputStream(jsonMapper.writeValueAsString(confirmShippingResponse)))
+        doReturn(IOUtils.toInputStream(jsonMapper.writeValueAsString(confirmShippingResponse), UTF_8))
                 .when(mockEntity).getContent();
 
         StatusLine mockStatusLine = mock(StatusLine.class);
@@ -245,7 +246,7 @@ public class GBFOrderServiceTest {
                 errorXml);
 
         HttpEntity mockEntity = mock(HttpEntity.class);
-        doReturn(IOUtils.toInputStream(jsonMapper.writeValueAsString(confirmShippingResponse)))
+        doReturn(IOUtils.toInputStream(jsonMapper.writeValueAsString(confirmShippingResponse), UTF_8))
                 .when(mockEntity).getContent();
 
         StatusLine mockStatusLine = mock(StatusLine.class);

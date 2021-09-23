@@ -47,8 +47,7 @@ import org.jsoup.nodes.Document.OutputSettings.Syntax;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities.EscapeMode;
 import org.jsoup.safety.Cleaner;
-import org.jsoup.safety.Whitelist;
-
+import org.jsoup.safety.Safelist;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -633,8 +632,8 @@ public class BridgeUtils {
         return sanitizeHTML(CKEDITOR_WHITELIST, documentContent);
     }
     
-    public static String sanitizeHTML(Whitelist whitelist, String documentContent) {
-        checkNotNull(whitelist);
+    public static String sanitizeHTML(Safelist safelist, String documentContent) {
+        checkNotNull(safelist);
         
         if (isBlank(documentContent)) {
             return documentContent;
@@ -642,7 +641,7 @@ public class BridgeUtils {
         // the prior version of this still pretty printed the output... this uglier use of JSoup's
         // APIs does not pretty print the output.
         Document dirty = Jsoup.parseBodyFragment(documentContent);
-        Cleaner cleaner = new Cleaner(whitelist);
+        Cleaner cleaner = new Cleaner(safelist);
         Document clean = cleaner.clean(dirty);
         // All variants of the sanitizer remove this, so put it back. It's used in the consent document.
         // "brimg" is not a valid attribute, it marks our one template image.
