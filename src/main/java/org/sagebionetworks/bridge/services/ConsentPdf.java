@@ -12,7 +12,7 @@ import org.joda.time.DateTime;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.jsoup.Jsoup;
-import org.jsoup.safety.Whitelist;
+import org.jsoup.safety.Safelist;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -105,7 +105,7 @@ public final class ConsentPdf {
         String sharingLabel = (sharingScope == null) ? "" : sharingScope.getLabel();
 
         // User's name may contain HTML. Clean it up
-        String username = Jsoup.clean(consentSignature.getName(), Whitelist.none());
+        String username = Jsoup.clean(consentSignature.getName(), Safelist.none());
         
         // A prior format using '@@' as a delimiter is no longer used by any app in production.
         
