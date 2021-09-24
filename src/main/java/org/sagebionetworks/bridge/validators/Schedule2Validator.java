@@ -1,10 +1,11 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
-import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_ZERO_OR_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInDays;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
@@ -39,10 +40,12 @@ public class Schedule2Validator implements Validator {
     static final String UPDATE_TYPE_FIELD = "updateType";
 
     public static final long FIVE_YEARS_IN_DAYS = 5 * 365;
+    public static final int OCCURRENCE_LIMIT = 12;
     
     static final String CANNOT_BE_LONGER_THAN_FIVE_YEARS = "cannot be longer than five years";
-    static final String CANNOT_BE_GREATER_THAN_20 = "cannot be greater than 20";
     static final String CANNOT_BE_LONGER_THAN_SCHEDULE = "cannot be longer than the schedule’s duration";
+    
+    static final String OUT_OF_RANGE_ERROR = "must be from 1-" + OCCURRENCE_LIMIT;
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -75,17 +78,21 @@ public class Schedule2Validator implements Validator {
         if (schedule.getModifiedOn() == null) {
             errors.rejectValue(MODIFIED_ON_FIELD, CANNOT_BE_NULL);
         }
-        Set<String> burstIds = new HashSet<>();
+        Set<String> studyBurstIds = new HashSet<>();
+
         for (int i = 0; i < schedule.getStudyBursts().size(); i++) {
             errors.pushNestedPath(STUDY_BURSTS_FIELD+"[" + i + "]");
-            StudyBurst burst = schedule.getStudyBursts().get(i);
             
+            StudyBurst burst = schedule.getStudyBursts().get(i);
             if (isBlank(burst.getIdentifier())) {
-                errors.rejectValue(IDENTIFIER_FIELD, CANNOT_BE_BLANK);   
-            } else if (burstIds.contains(burst.getIdentifier())) {
+                errors.rejectValue(IDENTIFIER_FIELD, CANNOT_BE_BLANK);
+            } else if (studyBurstIds.contains(burst.getIdentifier())) {
                 errors.rejectValue(IDENTIFIER_FIELD, CANNOT_BE_DUPLICATE);
+            } else if (!burst.getIdentifier().matches(BRIDGE_EVENT_ID_PATTERN)) {
+                errors.rejectValue(IDENTIFIER_FIELD, BRIDGE_EVENT_ID_ERROR);
             }
-            burstIds.add(burst.getIdentifier());
+            studyBurstIds.add(burst.getIdentifier());
+            
             if (isBlank(burst.getOriginEventId())) {
                 errors.rejectValue(ORIGIN_EVENT_ID_FIELD, CANNOT_BE_BLANK);
             }
@@ -96,10 +103,8 @@ public class Schedule2Validator implements Validator {
                 errors.rejectValue(OCCURRENCES_FIELD, CANNOT_BE_NULL);
             } else {
                 int occurrences = burst.getOccurrences();
-                if (occurrences < 1) {
-                    errors.rejectValue(OCCURRENCES_FIELD, CANNOT_BE_ZERO_OR_NEGATIVE);
-                } else if (occurrences > 20) {
-                    errors.rejectValue(OCCURRENCES_FIELD, CANNOT_BE_GREATER_THAN_20);
+                if (occurrences < 1 || occurrences > OCCURRENCE_LIMIT) {
+                    errors.rejectValue(OCCURRENCES_FIELD, OUT_OF_RANGE_ERROR);
                 }
             }
             if (burst.getUpdateType() == null) {
@@ -108,7 +113,6 @@ public class Schedule2Validator implements Validator {
             errors.popNestedPath();
         }
         
-        Set<String> studyBurstIds = schedule.getStudyBurstsUpdateMap().keySet();
         SessionValidator sessionValidator = new SessionValidator(studyBurstIds);
         
         for (int i = 0; i < schedule.getSessions().size(); i++) {
