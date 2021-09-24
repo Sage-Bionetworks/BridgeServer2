@@ -783,11 +783,11 @@ public class Schedule2ServiceTest extends Mockito {
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         // This will fail validation unless the app declares it as a custom event
-        schedule.getSessions().get(0).setStartEventId("event1");
+        schedule.getSessions().get(0).getStartEventIds().add(0, "event1");
         
         service.createSchedule(study, schedule);
         
-        assertEquals(schedule.getSessions().get(0).getStartEventId(), "custom:event1");
+        assertEquals(schedule.getSessions().get(0).getStartEventIds().get(0), "custom:event1");
     }
     
     @Test
@@ -799,13 +799,13 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setDeleted(false);
         schedule.setPublished(false);
         // This will fail validation unless the app declares it as a custom event
-        schedule.getSessions().get(0).setStartEventId("event1");
+        schedule.getSessions().get(0).getStartEventIds().set(0, "event1");
         
         Schedule2 existing = Schedule2Test.createValidSchedule();
         existing.setPublished(false);
         service.updateSchedule(study, existing, schedule);
         
-        assertEquals(schedule.getSessions().get(0).getStartEventId(), "custom:event1");
+        assertEquals(schedule.getSessions().get(0).getStartEventIds().get(0), "custom:event1");
     }
     
     @Test
@@ -930,5 +930,11 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(schedule.getGuid(), SCHEDULE_GUID);
         
         verify(mockDao).updateSchedule(schedule);
+    }
+    
+    @Test
+    public void deleteAllSchedules() { 
+        service.deleteAllSchedules(TEST_APP_ID);
+        verify(mockDao).deleteAllSchedules(TEST_APP_ID);
     }
 }

@@ -55,6 +55,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
+import org.sagebionetworks.bridge.models.studies.Study;
 
 public class EnrollmentServiceTest extends Mockito {
 
@@ -63,6 +64,9 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Mock
     SponsorService mockSponsorService;
+    
+    @Mock
+    StudyService mockStudyService;
     
     @Mock
     EnrollmentDao mockEnrollmentDao;
@@ -570,5 +574,62 @@ public class EnrollmentServiceTest extends Mockito {
         enrollment.setAccountId(null);
 
         service.unenroll(enrollment);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Study not found.")
+    public void getEnrollmentsForStudyStudyNotFound() {
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
+            .thenThrow(new EntityNotFoundException(Study.class));
+        
+        service.getEnrollmentsForStudy(TEST_APP_ID, TEST_STUDY_ID, null, false, null, null);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Study not found.")
+    public void getEnrollmentsForUserStudyNotFound() {
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
+            .thenThrow(new EntityNotFoundException(Study.class));
+    
+        service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+    }
+
+    @Test
+    public void getEnrollmentsForUserStudyNullable() {
+        when(mockStudyService.getStudy(TEST_APP_ID, null, true))
+            .thenThrow(new EntityNotFoundException(Study.class));
+        
+        Account account = Account.create();
+        when(mockAccountService.getAccount(ACCOUNT_ID))
+            .thenReturn(Optional.of(account));
+    
+        service.getEnrollmentsForUser(TEST_APP_ID, null, TEST_USER_ID);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Study not found.")
+    public void enrollStudyNotFound() {
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
+            .thenThrow(new EntityNotFoundException(Study.class));
+
+        service.enroll(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID));
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Study not found.")
+    public void addEnrollmentStudyNotFound() {
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
+            .thenThrow(new EntityNotFoundException(Study.class));
+        
+        service.addEnrollment(Account.create(), Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID));
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class,
+            expectedExceptionsMessageRegExp = "Study not found.")
+    public void unenrollAccountStudyNotFound() {
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
+            .thenThrow(new EntityNotFoundException(Study.class));
+        
+        service.unenroll(Account.create(), Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID));
     }
 }

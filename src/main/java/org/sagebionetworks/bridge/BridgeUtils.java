@@ -9,7 +9,9 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_DELETE_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
@@ -42,8 +44,7 @@ import org.jsoup.nodes.Document.OutputSettings.Syntax;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities.EscapeMode;
 import org.jsoup.safety.Cleaner;
-import org.jsoup.safety.Whitelist;
-
+import org.jsoup.safety.Safelist;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -51,6 +52,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.HasLang;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -62,7 +64,7 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
-
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -593,8 +595,8 @@ public class BridgeUtils {
         return sanitizeHTML(CKEDITOR_WHITELIST, documentContent);
     }
     
-    public static String sanitizeHTML(Whitelist whitelist, String documentContent) {
-        checkNotNull(whitelist);
+    public static String sanitizeHTML(Safelist safelist, String documentContent) {
+        checkNotNull(safelist);
         
         if (isBlank(documentContent)) {
             return documentContent;
@@ -602,7 +604,7 @@ public class BridgeUtils {
         // the prior version of this still pretty printed the output... this uglier use of JSoup's
         // APIs does not pretty print the output.
         Document dirty = Jsoup.parseBodyFragment(documentContent);
-        Cleaner cleaner = new Cleaner(whitelist);
+        Cleaner cleaner = new Cleaner(safelist);
         Document clean = cleaner.clean(dirty);
         // All variants of the sanitizer remove this, so put it back. It's used in the consent document.
         // "brimg" is not a valid attribute, it marks our one template image.
@@ -740,5 +742,34 @@ public class BridgeUtils {
      */
     public static <T> Set<T> addToSet(Set<T> set, T item) {
         return new ImmutableSet.Builder<T>().addAll(set).add(item).build();
+    }
+    
+    public static boolean participantEligibleForDeletion(RequestInfoService requestInfoService, Account account) {
+        // Test accounts can always be deleted
+        boolean testAccount = account.getDataGroups().contains(TEST_USER_GROUP);
+        if (testAccount) {
+            return true;
+        }
+        // Accounts enrolled in multiple studies cannot be deleted, too risky.
+        if (account.getEnrollments().size() > 1) {
+            return false;
+        }
+        // Get a studyId if there is one. If it's null, that part of the security rule will just fail to match.
+        String studyId = Iterables.getFirst(collectStudyIds(account), null);
+        boolean unused = participantHasNeverSignedIn(requestInfoService, account.getId());
+        
+        // If the account is unused, *and* the caller has access to the participant, allow the delete 
+        return (unused && CAN_DELETE_PARTICIPANTS.check(STUDY_ID, studyId));
+    }
+    
+    private static boolean participantHasNeverSignedIn(RequestInfoService requestInfoService, String userId) {
+        RequestInfo info = requestInfoService.getRequestInfo(userId);
+        if (info == null) {
+            return true;
+        }
+        if (info.getSignedInOn() == null) {
+            return true;
+        }
+        return false;
     }
 }

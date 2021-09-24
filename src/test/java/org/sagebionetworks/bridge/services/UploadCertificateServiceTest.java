@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -128,7 +129,7 @@ public class UploadCertificateServiceTest {
         svc.s3Put("bucket", "name", "pem-file.pem");
         
         verify(mockS3client).putObject(eq("bucket"), eq("name"), isCaptor.capture(), metadataCaptor.capture());
-        assertEquals(IOUtils.toString(isCaptor.getValue()), "pem-file.pem");
+        assertEquals(IOUtils.toString(isCaptor.getValue(), UTF_8), "pem-file.pem");
         ObjectMetadata metadata = metadataCaptor.getValue();
         assertEquals(metadata.getSSEAlgorithm(), ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
     }

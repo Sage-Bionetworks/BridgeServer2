@@ -18,6 +18,7 @@ import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 public class ScheduledSession {
 
     private String instanceGuid;
+    private String startEventId;
     private int startDay;
     private int endDay;
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm")
@@ -32,21 +33,20 @@ public class ScheduledSession {
     private final Session session;
     private final TimeWindow window;
     
-    private ScheduledSession(String instanceGuid, int startDay, int endDay, LocalTime startTime, Period delayTime,
-            Period expiration, Boolean persistent, List<ScheduledAssessment> assessments, Session session,
-            TimeWindow window) {
-        this.instanceGuid = instanceGuid;
-        this.startDay = startDay;
-        this.endDay = endDay;
-        this.delayTime = delayTime;
-        this.startTime = startTime;
-        this.expiration = expiration;
-        this.session = session;
-        this.window = window;
-        if (TRUE.equals(persistent)) {
+    private ScheduledSession(ScheduledSession.Builder builder) {
+        this.instanceGuid = builder.instanceGuid;
+        this.startEventId = builder.startEventId;
+        this.startDay = builder.startDay;
+        this.endDay = builder.endDay;
+        this.delayTime = builder.delayTime;
+        this.startTime = builder.startTime;
+        this.expiration = builder.expiration;
+        this.session = builder.session;
+        this.window = builder.window;
+        if (TRUE.equals(builder.persistent)) {
             this.persistent = TRUE;    
         }
-        this.assessments = assessments;
+        this.assessments = builder.assessments;
     }
     
     public String getRefGuid() {
@@ -54,6 +54,9 @@ public class ScheduledSession {
     }
     public String getInstanceGuid() {
         return instanceGuid;
+    }
+    public String getStartEventId() {
+        return startEventId;
     }
     public int getStartDay() {
         return startDay;
@@ -90,6 +93,7 @@ public class ScheduledSession {
     
     public static class Builder {
         private String instanceGuid;
+        private String startEventId;
         private int startDay;
         private int endDay;
         private Period delayTime;
@@ -99,9 +103,28 @@ public class ScheduledSession {
         private List<ScheduledAssessment> assessments = new ArrayList<>();
         private Session session;
         private TimeWindow window;
-
+        
+        public Builder copyWithoutAssessments() { 
+            ScheduledSession.Builder builder = new ScheduledSession.Builder();
+            builder.instanceGuid = instanceGuid;
+            builder.startEventId = startEventId;
+            builder.startDay = startDay;
+            builder.endDay= endDay;
+            builder.delayTime = delayTime;
+            builder.startTime = startTime;
+            builder.expiration = expiration;
+            builder.persistent = persistent;
+            builder.assessments = new ArrayList<>();
+            builder.session = session;
+            builder.window = window;
+            return builder;
+        }
         public Builder withInstanceGuid(String instanceGuid) {
             this.instanceGuid = instanceGuid;
+            return this;
+        }
+        public Builder withStartEventId(String startEventId) {
+            this.startEventId = startEventId;
             return this;
         }
         public Builder withStartDay(int startDay) {
@@ -144,8 +167,7 @@ public class ScheduledSession {
             checkNotNull(session);
             checkNotNull(window);
             
-            return new ScheduledSession(instanceGuid, startDay, endDay, startTime, 
-                    delayTime, expiration, persistent, assessments, session, window);
+            return new ScheduledSession(this);
         }
     }
 }

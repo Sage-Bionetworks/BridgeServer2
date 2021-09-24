@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_HEX_T
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
@@ -59,15 +60,15 @@ public class AssessmentValidatorTest extends Mockito {
     
     @Test
     public void validAssessment() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, assessment.getOwnerId()))
-            .thenReturn(Organization.create());
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Optional.of(Organization.create()));
         
         Validate.entityThrowingException(validator, assessment);
     }
     @Test
     public void validAssessmentWithNoOptionalFields() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, assessment.getOwnerId()))
-            .thenReturn(Organization.create());
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Optional.of(Organization.create()));
         assessment.setColorScheme(null);
         assessment.setLabels(null);
         assessment.setMinutesToComplete(null);
@@ -77,23 +78,27 @@ public class AssessmentValidatorTest extends Mockito {
     }
     @Test
     public void validAssessmentWithEmptyColorScheme() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, assessment.getOwnerId()))
-            .thenReturn(Organization.create());
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Optional.of(Organization.create()));
         assessment.setColorScheme(new ColorScheme(null, null, null, null));
         
         Validate.entityThrowingException(validator, assessment);
     }
     @Test
     public void validSharedAssessment() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.of(Organization.create()));
+
         validator = new AssessmentValidator(SHARED_APP_ID, mockOrganizationService);
         assessment.setOwnerId(TEST_APP_ID + ":" + TEST_OWNER_ID);
-        
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, TEST_OWNER_ID)).thenReturn(Organization.create());
     
         Validate.entityThrowingException(validator, assessment);
     }
     @Test
     public void ownerIdInvalid() {
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, TEST_OWNER_ID))
+            .thenReturn(Optional.empty());
+        
         assertValidatorMessage(validator, assessment, "ownerId", "is not a valid organization ID");
     }
     @Test
@@ -138,8 +143,8 @@ public class AssessmentValidatorTest extends Mockito {
     }
     @Test
     public void osNameUniversalIsValid() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, assessment.getOwnerId()))
-            .thenReturn(Organization.create());
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Optional.of(Organization.create()));
         
         assessment.setOsName("Universal");
         Validate.entityThrowingException(validator, assessment);
@@ -198,8 +203,8 @@ public class AssessmentValidatorTest extends Mockito {
     
     @Test
     public void labelsEmptyIsValid() {
-        when(mockOrganizationService.getOrganization(TEST_APP_ID, assessment.getOwnerId()))
-            .thenReturn(Organization.create());
+        when(mockOrganizationService.getOrganizationOpt(TEST_APP_ID, assessment.getOwnerId()))
+            .thenReturn(Optional.of(Organization.create()));
         
         assessment.setLabels(ImmutableList.of());
         Validate.entityThrowingException(validator, assessment);

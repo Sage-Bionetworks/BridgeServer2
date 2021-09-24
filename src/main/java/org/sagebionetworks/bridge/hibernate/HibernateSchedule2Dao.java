@@ -52,7 +52,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
             + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     static final String DELETE_TIMELINE_RECORDS = "DELETE FROM TimelineMetadata WHERE scheduleGuid = :scheduleGuid";
     static final String SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE = "SELECT * FROM TimelineMetadata WHERE sessionInstanceGuid = :instanceGuid AND assessmentInstanceGuid IS NOT NULL";
-
+    static final String DELETE_ALL_SCHEDULES = "DELETE FROM Schedules WHERE appId = :appId";
     static final String BATCH_SIZE_PROPERTY = "schedule.batch.size";
 
     static final String APP_ID = "appId";
@@ -292,5 +292,15 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
 
         return hibernateHelper.nativeQueryGet(builder.getQuery(), builder.getParameters(), null, null,
                 TimelineMetadata.class);
+    }
+    
+    @Override
+    public void deleteAllSchedules(String appId) {
+        checkNotNull(appId);
+
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(DELETE_ALL_SCHEDULES, APP_ID, appId);
+
+        hibernateHelper.nativeQueryUpdate(builder.getQuery(), builder.getParameters());
     }
 }

@@ -1312,6 +1312,12 @@ public class AccountServiceTest extends Mockito {
         assertSame(retValue, page);
     }
 
+    @Test
+    public void deleteAllAccounts() { 
+        service.deleteAllAccounts(TEST_APP_ID);
+        verify(mockAccountDao).deleteAllAccounts(TEST_APP_ID);
+    }
+    
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);

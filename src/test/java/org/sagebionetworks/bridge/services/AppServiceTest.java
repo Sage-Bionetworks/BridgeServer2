@@ -158,6 +158,14 @@ public class AppServiceTest extends Mockito {
     OrganizationService mockOrgService;
     @Mock
     StudyService mockStudyService;
+    @Mock
+    AccountService mockAccountService;
+    @Mock
+    AssessmentService mockAssessmentService;
+    @Mock
+    AssessmentResourceService mockAssessmentResourceService;
+    @Mock
+    Schedule2Service mockScheduleService;
 
     @Captor
     ArgumentCaptor<Project> projectCaptor;
@@ -724,6 +732,10 @@ public class AppServiceTest extends Mockito {
 
         // verify we called the correct dependent services
         verify(mockAppDao).deleteApp(app);
+        
+        verify(mockAccountService).deleteAllAccounts(app.getIdentifier());
+        verify(mockAssessmentResourceService).deleteAllAssessmentResources(app.getIdentifier());
+        verify(mockAssessmentService).deleteAllAssessments(app.getIdentifier());
         verify(mockStudyService).deleteAllStudies(app.getIdentifier());
         verify(mockOrgService).deleteAllOrganizations(app.getIdentifier());
         verify(mockCompoundActivityDefinitionService).deleteAllCompoundActivityDefinitionsInApp(
@@ -731,7 +743,7 @@ public class AppServiceTest extends Mockito {
         verify(mockSubpopService).deleteAllSubpopulations(app.getIdentifier());
         verify(mockTopicService).deleteAllTopics(app.getIdentifier());
         verify(mockCacheProvider).removeApp(TEST_APP_ID);
-        verify(mockTemplateService).deleteTemplatesForApp(TEST_APP_ID);
+        verify(mockTemplateService).deleteAllTemplates(TEST_APP_ID);
         verify(mockFileService).deleteAllAppFiles(TEST_APP_ID);
     }
 
@@ -1667,11 +1679,19 @@ public class AppServiceTest extends Mockito {
         verify(mockCacheProvider).setApp(updatedApp);
         verify(mockCacheProvider).removeApp(app.getIdentifier());
 
-        verify(mockAppDao).deleteApp(updatedApp);
+        verify(mockAccountService).deleteAllAccounts(app.getIdentifier());
+        verify(mockStudyService).deleteAllStudies(app.getIdentifier());
+        verify(mockScheduleService).deleteAllSchedules(app.getIdentifier());
+        verify(mockAssessmentResourceService).deleteAllAssessmentResources(app.getIdentifier());
+        verify(mockAssessmentService).deleteAllAssessments(app.getIdentifier());
+        verify(mockOrgService).deleteAllOrganizations(app.getIdentifier());
+        verify(mockTemplateService).deleteAllTemplates(app.getIdentifier());
         verify(mockCompoundActivityDefinitionService)
                 .deleteAllCompoundActivityDefinitionsInApp(updatedApp.getIdentifier());
         verify(mockSubpopService).deleteAllSubpopulations(updatedApp.getIdentifier());
         verify(mockTopicService).deleteAllTopics(updatedApp.getIdentifier());
+        verify(mockFileService).deleteAllAppFiles(app.getIdentifier());
+        verify(mockAppDao).deleteApp(app);
     }
 
     @Test

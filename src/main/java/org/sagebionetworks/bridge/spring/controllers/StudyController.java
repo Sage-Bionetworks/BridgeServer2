@@ -113,8 +113,8 @@ public class StudyController extends BaseController {
     public StatusMessage deleteStudy(@PathVariable String id,
             @RequestParam(defaultValue = "false") String physical) {
         UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
-
-        if ("true".equals(physical) && session.isInRole(ADMIN)) {
+        
+        if ("true".equals(physical)) {
             service.deleteStudyPermanently(session.getAppId(), id);
         } else {
             service.deleteStudy(session.getAppId(), id);

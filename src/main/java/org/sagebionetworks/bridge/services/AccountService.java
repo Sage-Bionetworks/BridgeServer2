@@ -3,7 +3,9 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toSet;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.IS_ONLY_DEVELOPER;
 import static org.sagebionetworks.bridge.AuthUtils.canAccessAccount;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
@@ -261,7 +263,7 @@ public class AccountService {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         // If a developer is trying to update a production account, that is not allowed.
-        if (IS_ONLY_DEVELOPER.check()) {
+        if (IS_ONLY_DEVELOPER.check(USER_ID, persistedAccount.getId())) {
             if (!persistedAccount.getDataGroups().contains(TEST_USER_GROUP)) {
                 throw new UnauthorizedException();
             }
@@ -347,12 +349,17 @@ public class AccountService {
         if (!canAccessAccount( optional.get() )) {
             return Optional.empty();
         }
-        // remove the enrollments the caller cannot see.
+        Account account = optional.get();
+        if (CAN_READ_PARTICIPANTS.check(USER_ID, account.getId(), ORG_ID, account.getOrgMembership())) {
+            return optional;
+        }
+        // This was accessed through study rights, so remove the other studies from what the caller
+        // can see.
         RequestContext context = RequestContext.get();
         Set<String> callerStudies = context.getOrgSponsoredStudies();
-        Set<Enrollment> removals = optional.get().getEnrollments().stream()
+        Set<Enrollment> removals = account.getEnrollments().stream()
                 .filter(en -> !callerStudies.contains(en.getStudyId())).collect(toSet());
-        optional.get().getEnrollments().removeAll(removals);
+        account.getEnrollments().removeAll(removals);
         return optional;
     }
     
@@ -415,6 +422,12 @@ public class AccountService {
         checkNotNull(studyId);
 
         return accountDao.getPagedExternalIds(appId, studyId, idFilter, offsetBy, pageSize);
+    }
+    
+    public void deleteAllAccounts(String appId) {
+        checkNotNull(appId);
+        
+        accountDao.deleteAllAccounts(appId);
     }
     
     protected Account authenticateInternal(App app, Account account, SignIn signIn) {

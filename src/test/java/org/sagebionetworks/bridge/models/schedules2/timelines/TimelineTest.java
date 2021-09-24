@@ -42,10 +42,10 @@ public class TimelineTest extends Mockito {
         assertNull(node.get("lang"));
         assertEquals(node.get("type").textValue(), "Timeline");
         
-        assertEquals(node.get("schedule").size(), 2);
+        assertEquals(node.get("schedule").size(), 4);
         JsonNode schNode = node.get("schedule").get(0);
         assertEquals(schNode.get("refGuid").textValue(), SESSION_GUID_1);
-        assertEquals(schNode.get("instanceGuid").textValue(), "XPnIpiOvQMtil857X_ihUw");
+        assertEquals(schNode.get("instanceGuid").textValue(), "faQS0dRjAt9xNFTfOd5XqA");
         assertEquals(schNode.get("startDay").intValue(), 7);
         assertEquals(schNode.get("endDay").intValue(), 7);
         assertEquals(schNode.get("startTime").textValue(), "08:00");
@@ -53,7 +53,7 @@ public class TimelineTest extends Mockito {
         assertTrue(schNode.get("persistent").booleanValue());
         assertEquals(schNode.get("type").textValue(), "ScheduledSession");
         assertEquals(schNode.get("assessments")
-                .get(0).get("instanceGuid").textValue(), "Lfi4aAVfepdR5DFKYv_H1Q");
+                .get(0).get("instanceGuid").textValue(), "5NzDH5Q4V2VkSBFQF2HntA");
         assertEquals(schNode.get("assessments")
                 .get(0).get("refKey").textValue(), "646f8c04646f8c04");
         assertEquals(schNode.get("assessments")
@@ -73,7 +73,6 @@ public class TimelineTest extends Mockito {
         JsonNode sessNode = node.get("sessions").get(0);
         assertEquals(sessNode.get("guid").textValue(), SESSION_GUID_1);
         assertEquals(sessNode.get("label").textValue(), "English");
-        assertEquals(sessNode.get("startEventId").textValue(), "activities_retrieved");
         assertEquals(sessNode.get("performanceOrder").textValue(), "randomized");
         assertEquals(sessNode.get("minutesToComplete").intValue(), 8);
         
@@ -96,7 +95,7 @@ public class TimelineTest extends Mockito {
         
         // This is the session record
         TimelineMetadata meta1 = metadata.get(0);
-        String sessionInstanceGuid = "XPnIpiOvQMtil857X_ihUw";
+        String sessionInstanceGuid = "faQS0dRjAt9xNFTfOd5XqA";
         assertEquals(meta1.getGuid(), sessionInstanceGuid);
         assertNull(meta1.getAssessmentInstanceGuid());
         assertNull(meta1.getAssessmentGuid());
@@ -115,7 +114,7 @@ public class TimelineTest extends Mockito {
 
         // This is the assessment #1 record
         TimelineMetadata meta2 = metadata.get(1);
-        String asmtInstanceGuid = "Lfi4aAVfepdR5DFKYv_H1Q";
+        String asmtInstanceGuid = "5NzDH5Q4V2VkSBFQF2HntA";
         assertEquals(meta2.getGuid(), asmtInstanceGuid);
         assertEquals(meta2.getAssessmentInstanceGuid(), asmtInstanceGuid);
         assertEquals(meta2.getAssessmentGuid(), ASSESSMENT_1_GUID);
@@ -134,7 +133,7 @@ public class TimelineTest extends Mockito {
         
         // This is the assessment #2 record
         TimelineMetadata meta3 = metadata.get(2);
-        asmtInstanceGuid = "5R2D-mJ434Lj0xyym66x-g";
+        asmtInstanceGuid = "Sq-rdk91XHT6C8TnSUme1A";
         assertEquals(meta3.getGuid(), asmtInstanceGuid);
         assertEquals(meta3.getAssessmentInstanceGuid(), asmtInstanceGuid);
         assertEquals(meta3.getAssessmentGuid(), ASSESSMENT_2_GUID);
@@ -198,19 +197,19 @@ public class TimelineTest extends Mockito {
         
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         
-        // seven session each taking 8 minutes = 56 minutes;
-        assertEquals(timeline.getTotalMinutes(), 56);
+        // seven session with two events, each taking 8 minutes = 112 minutes;
+        assertEquals(timeline.getTotalMinutes(), 112);
         
         // each session has one notification, 7 notifications
-        assertEquals(timeline.getTotalNotifications(), 7);
+        assertEquals(timeline.getTotalNotifications(), 14);
         
         // Alter the schedule so the notification repeats every 2 days within the 
-        // time window of 7 days, so that is 1 notification + 3 from the 
-        // interval = 4 per window, or 28 total notifications.
+        // time window of 7 days, with 2 events triggering it, so that is 1 
+        // notification + 3 from the interval = 4 per window, or 56 total notifications.
         schedule.getSessions().get(0).getNotifications().get(0).setInterval(Period.parse("P2D"));
         schedule.getSessions().get(0).getTimeWindows().get(0).setExpiration(Period.parse("P6D"));
         timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         
-        assertEquals(timeline.getTotalNotifications(), 28);
+        assertEquals(timeline.getTotalNotifications(), 56);
     }
 }

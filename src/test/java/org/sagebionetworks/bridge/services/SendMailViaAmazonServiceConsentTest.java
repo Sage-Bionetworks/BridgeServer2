@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.notNull;
@@ -64,7 +65,7 @@ public class SendMailViaAmazonServiceConsentTest {
     @BeforeMethod
     public void setUp() throws Exception {
         consentBodyTemplate = IOUtils.toString(new FileInputStream(new ClassPathResource(
-                "conf/app-defaults/consent-page.xhtml").getFile()));
+                "conf/app-defaults/consent-page.xhtml").getFile()), UTF_8);
         
         app = new DynamoApp();
         app.setName("Test App (Sage)");

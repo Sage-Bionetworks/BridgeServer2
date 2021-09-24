@@ -294,17 +294,6 @@ public class StudyControllerTest extends Mockito {
     }
     
     @Test
-    public void deleteStudyPhysicalFallsbacktoLogical() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(DEVELOPER)).build());
-        
-        StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, "true");
-        assertEquals(result, StudyController.DELETED_MSG);
-
-        verify(mockStudyService).deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
-    }
-    
-    @Test
     public void createStudyLogoNoExistingFile() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());

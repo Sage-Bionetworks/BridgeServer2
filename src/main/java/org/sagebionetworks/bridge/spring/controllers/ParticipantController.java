@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
+import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -201,17 +202,18 @@ public class ParticipantController extends BaseController {
     }
     
     @DeleteMapping("/v3/participants/{userId}")
-    public StatusMessage deleteTestParticipant(@PathVariable String userId) {
+    public StatusMessage deleteTestOrUnusedParticipant(@PathVariable String userId) {
         UserSession session = getAdministrativeSession();
-        CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
-        App app = appService.getApp(session.getAppId());
         
-        StudyParticipant participant = participantService.getParticipant(app, userId, false);
-        if (!participant.getDataGroups().contains(BridgeConstants.TEST_USER_GROUP)) {
-            throw new UnauthorizedException("Account is not a test account.");
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        if (!participantEligibleForDeletion(requestInfoService, account)) {
+            throw new UnauthorizedException("Account is not a test account or it is already in use.");
         }
-        userAdminService.deleteUser(app, userId);
-        
+        App app = appService.getApp(session.getAppId());
+        userAdminService.deleteUser(app, account.getId());
         return new StatusMessage("User deleted.");
     }
 

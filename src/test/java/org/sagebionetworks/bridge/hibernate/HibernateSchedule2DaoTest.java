@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.AND_DELETED;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.BATCH_SIZE_PROPERTY;
+import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.DELETE_ALL_SCHEDULES;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.DELETE_ORPHANED_SESSIONS;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.DELETE_SESSIONS;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.DELETE_TIMELINE_RECORDS;
@@ -282,12 +283,13 @@ public class HibernateSchedule2DaoTest extends Mockito {
 
         work.execute(mockConnection);
 
-        // 21 records at a batch size of 10 generates 3 executeBatch statements. The
-        // content of the statements is tested in updatePreparedStatement().
-        assertEquals(metadata.size(), 21);
+        // 42 records (2 for each record due to two event IDs) at a batch size of 10 
+        // generates 5 executeBatch statements. The content of the statements is 
+        // tested in updatePreparedStatement().
+        assertEquals(metadata.size(), 42);
         verify(mockConnection).setAutoCommit(false);
         verify(mockConnection).prepareStatement(INSERT);
-        verify(mockStatement, times(3)).executeBatch();
+        verify(mockStatement, times(5)).executeBatch();
     }
 
     @Test
@@ -399,5 +401,13 @@ public class HibernateSchedule2DaoTest extends Mockito {
 
         assertEquals(queryCaptor.getValue(), SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE);
         assertEquals(paramsCaptor.getValue().get(INSTANCE_GUID), GUID);
+    }
+    
+    @Test
+    public void deleteAllSchedules() {
+        dao.deleteAllSchedules(TEST_APP_ID);
+        
+        verify(mockHibernateHelper).nativeQueryUpdate(eq(DELETE_ALL_SCHEDULES), paramsCaptor.capture());
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
     }
 }
