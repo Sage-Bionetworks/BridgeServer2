@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 
 import java.util.HashSet;
 import java.util.Optional;
@@ -14,6 +15,7 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
+import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentReference;
 import org.sagebionetworks.bridge.models.files.FileReference;
 import org.sagebionetworks.bridge.models.files.FileRevision;
@@ -211,14 +213,35 @@ public class AppConfigValidator implements Validator {
                     if (uniqueRefs.contains(ref)) {
                         errors.rejectValue("guid", "refers to the same assessment as another reference");
                     } else {
-                        try {
-                            // Default's to the appId from the AppConfig if the AssessmentReference
-                            // does not have one specified.
-                            String assessmentAppId = (ref.getAppId() != null) ? ref.getAppId() : appConfig.getAppId();
-                            assessmentService.getAssessmentByGuid(assessmentAppId, null, ref.getGuid());
-                        } catch(EntityNotFoundException e) {
-                            errors.rejectValue("guid", "does not refer to an assessment");
-                        }
+try {
+    // Default's to the appId from the AppConfig if the AssessmentReference
+    // does not have one specified.
+    String assessmentAppId = (ref.getAppId() != null) ? ref.getAppId() : appConfig.getAppId();
+    Assessment retrievedAssessment = assessmentService.getAssessmentByGuid(assessmentAppId, null, ref.getGuid());
+
+    if (ref.getId() != null && !ref.getId().equals(retrievedAssessment.getIdentifier())) {
+        errors.rejectValue("id", "does not match assessment");
+    }
+    if (ref.getOriginSharedId() != null) {
+        if (retrievedAssessment.getOriginGuid() == null) {
+            // ref has origin, assessment does not
+            errors.rejectValue("originSharedId", "does not match assessment");
+        } else {
+            try {
+                Assessment originAssessment = assessmentService.getAssessmentByGuid(SHARED_APP_ID, null, retrievedAssessment.getOriginGuid());
+                if (!originAssessment.getIdentifier().equals(ref.getOriginSharedId())) {
+                    // ref origin does not match actual origin id
+                    errors.rejectValue("originSharedId", "does not match assessment");
+                }
+            } catch (EntityNotFoundException e) {
+                // assessment origin guid leads nowhere, can this even happen?
+                errors.rejectValue("originSharedId", "does not exist");
+            }
+        }
+    }
+} catch(EntityNotFoundException e) {
+    errors.rejectValue("guid", "does not refer to an assessment");
+}
                     }
                     uniqueRefs.add(ref);
                 }
