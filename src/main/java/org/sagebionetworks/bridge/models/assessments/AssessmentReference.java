@@ -15,20 +15,20 @@ public final class AssessmentReference {
     private final ConfigResolver resolver;
     private final String guid;
     private final String id;
-    private final String sharedId;
+    private final String originSharedId;
     private final String appId;
     
     @JsonCreator
     public AssessmentReference(@JsonProperty("guid") String guid, @JsonProperty("id") String id,
-                               @JsonProperty("sharedId") String sharedId, @JsonProperty("appId") String appId) {
-        this(INSTANCE, guid, id, sharedId, appId);
+                               @JsonProperty("originSharedId") String originSharedId, @JsonProperty("appId") String appId) {
+        this(INSTANCE, guid, id, originSharedId, appId);
     }
 
-    public AssessmentReference(ConfigResolver resolver, String guid, String id, String sharedId, String appId) {
+    public AssessmentReference(ConfigResolver resolver, String guid, String id, String originSharedId, String appId) {
         this.resolver = resolver;
         this.guid = guid;
         this.id = id;
-        this.sharedId = sharedId;
+        this.originSharedId = originSharedId;
         this.appId = appId;
     }
     
@@ -51,8 +51,8 @@ public final class AssessmentReference {
      * because we don't anticipate clients will want to retrieve the original shared
      * assessment.
      */
-    public String getSharedId() {
-        return sharedId;
+    public String getOriginSharedId() {
+        return originSharedId;
     }
     public String getAppId() {
         return appId;
@@ -75,7 +75,7 @@ public final class AssessmentReference {
 
     @Override
     public String toString() {
-        return "AssessmentReference [id=" + id + ", sharedId=" + sharedId + ", guid=" + guid + ", appId=" + appId
+        return "AssessmentReference [id=" + id + ", originSharedId=" + originSharedId + ", guid=" + guid + ", appId=" + appId
                 + ", configHref=" + getConfigHref() + "]";
     }
 }

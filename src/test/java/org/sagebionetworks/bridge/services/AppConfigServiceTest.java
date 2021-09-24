@@ -69,7 +69,6 @@ public class AppConfigServiceTest {
     private static final List<SchemaReference> SCHEMA_REF_LIST = ImmutableList.of(new SchemaReference("id", 3));
     private static final List<ConfigReference> CONFIG_REF_LIST = ImmutableList.of(new ConfigReference("id", 1L));
     private static final List<FileReference> FILE_REF_LIST = ImmutableList.of(new FileReference(GUID, TIMESTAMP));
-    // TODO: check here
     private static final List<AssessmentReference> ASSESSMENT_REF_LIST = ImmutableList.of(new AssessmentReference(GUID, null, null, null));
     private static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(SURVEY_REF_LIST.get(0));
     
@@ -254,7 +253,7 @@ public class AppConfigServiceTest {
         // Verify that we called the resolver on this as well
         assertEquals(retValue.getSurveyReferences().get(0).getIdentifier(), "theIdentifier");
         assertEquals(retValue.getAssessmentReferences().get(0).getId(), "assessmentId");
-        assertEquals(retValue.getAssessmentReferences().get(0).getSharedId(), "sharedAssessmentId");
+        assertEquals(retValue.getAssessmentReferences().get(0).getOriginSharedId(), "sharedAssessmentId");
         assertEquals(retValue.getConfigElements().get("clientData"), TestUtils.getClientData());  
         
         return retValue;
@@ -278,7 +277,7 @@ public class AppConfigServiceTest {
         
         // Verify that we called the resolver on this as well
         assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
-        assertNull(match.getAssessmentReferences().get(0).getSharedId());
+        assertNull(match.getAssessmentReferences().get(0).getOriginSharedId());
     }
     
     @Test
@@ -302,7 +301,7 @@ public class AppConfigServiceTest {
         
         // Verify that we called the resolver on this as well
         assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
-        assertNull(match.getAssessmentReferences().get(0).getSharedId());
+        assertNull(match.getAssessmentReferences().get(0).getOriginSharedId());
     }
     
     @Test

@@ -37,17 +37,17 @@ public class AssessmentReferenceTest extends Mockito {
         // should be globally unique for assessement references and is sufficient for 
         // equality. This makes detecting duplicates easier during validation.
         EqualsVerifier.forClass(AssessmentReference.class)
-            .allFieldsShouldBeUsedExcept("resolver", "id", "sharedId", "appId").verify();
+            .allFieldsShouldBeUsedExcept("resolver", "id", "originSharedId", "appId").verify();
     }
 
     @Test
     public void succeeds() throws Exception {
         ConfigResolver resolver = mockConfigResolver(UAT, "ws");
-        AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", "id", "sharedId", "appId");
+        AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", "id", "originSharedId", "appId");
         
         assertEquals(ref.getGuid(), "oneGuid");
         assertEquals(ref.getId(), "id");
-        assertEquals(ref.getSharedId(), "sharedId");
+        assertEquals(ref.getOriginSharedId(), "originSharedId");
         assertEquals(ref.getConfigHref(), 
                 "https://ws-uat.bridge.org/v1/assessments/oneGuid/config");
         assertEquals(ref.getAppId(), "appId");
@@ -60,7 +60,7 @@ public class AssessmentReferenceTest extends Mockito {
         
         assertEquals(ref.getGuid(), "oneGuid");
         assertNull(ref.getId());
-        assertNull(ref.getSharedId());
+        assertNull(ref.getOriginSharedId());
         assertEquals(ref.getConfigHref(), 
                 "http://ws-local.bridge.org/v1/assessments/oneGuid/config");
         assertNull(ref.getAppId());
@@ -75,12 +75,12 @@ public class AssessmentReferenceTest extends Mockito {
     @Test
     public void canSerialise() throws Exception {
         ConfigResolver resolver = mockConfigResolver(LOCAL, "ws");
-        AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", "id", "sharedId", "appId");
+        AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", "id", "originSharedId", "appId");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(ref);
         assertEquals(node.get("guid").textValue(), "oneGuid");
         assertEquals(node.get("id").textValue(), "id");
-        assertEquals(node.get("sharedId").textValue(), "sharedId");
+        assertEquals(node.get("originSharedId").textValue(), "originSharedId");
         assertEquals(node.get("configHref").textValue(), 
             "http://ws-local.bridge.org/v1/assessments/oneGuid/config");
         assertEquals(node.get("appId").textValue(), "appId");
