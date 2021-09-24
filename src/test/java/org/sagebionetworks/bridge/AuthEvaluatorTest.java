@@ -33,6 +33,16 @@ public class AuthEvaluatorTest {
     }
     
     @Test
+    public void isNotSelf() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
+        
+        AuthEvaluator evaluator = new AuthEvaluator().isNotSelf();
+        assertTrue(evaluator.check(USER_ID, "other-user"));
+        assertTrue(evaluator.check(USER_ID, null));
+        assertFalse(evaluator.check(USER_ID, TEST_USER_ID));
+    }
+    
+    @Test
     public void hasOnlyRoles() {
         // This doesn't match against the null request context
         AuthEvaluator evaluator = new AuthEvaluator().hasOnlyRoles(DEVELOPER);

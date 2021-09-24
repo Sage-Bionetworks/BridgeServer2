@@ -5,5 +5,6 @@ public enum AuthEvaluatorField {
     ORG_ID,
     OWNER_ID,
     STUDY_ID,
+    STUDY_IDS,
     USER_ID
 }

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
+import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.IS_ONLY_DEVELOPER;
 import static org.sagebionetworks.bridge.AuthUtils.canAccessAccount;
@@ -260,9 +261,16 @@ public class AccountService {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         // If a developer is trying to update a production account, that is not allowed.
-        if (IS_ONLY_DEVELOPER.check() && !account.getDataGroups().contains(TEST_USER_GROUP)) {
-            throw new UnauthorizedException();
+        if (IS_ONLY_DEVELOPER.check()) {
+            if (!persistedAccount.getDataGroups().contains(TEST_USER_GROUP)) {
+                throw new UnauthorizedException();
+            }
+            // The account update cannot remove this flag because the caller is a developer...
+            // add it in case it has been removed.
+            Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
+            account.setDataGroups(newDataGroups);
         }
+
         // None of these values should be changeable by the user.
         account.setAppId(persistedAccount.getAppId());
         account.setCreatedOn(persistedAccount.getCreatedOn());
@@ -339,6 +347,12 @@ public class AccountService {
         if (!canAccessAccount( optional.get() )) {
             return Optional.empty();
         }
+        // remove the enrollments the caller cannot see.
+        RequestContext context = RequestContext.get();
+        Set<String> callerStudies = context.getOrgSponsoredStudies();
+        Set<Enrollment> removals = optional.get().getEnrollments().stream()
+                .filter(en -> !callerStudies.contains(en.getStudyId())).collect(toSet());
+        optional.get().getEnrollments().removeAll(removals);
         return optional;
     }
     

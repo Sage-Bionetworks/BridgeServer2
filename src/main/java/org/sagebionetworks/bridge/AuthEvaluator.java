@@ -227,6 +227,16 @@ public class AuthEvaluator {
         factMap.put(arg2, val2);
         return checkInternal(factMap);
     }
+    public boolean check(AuthEvaluatorField arg1, String val1, AuthEvaluatorField arg2, String val2, AuthEvaluatorField arg3, String val3) {
+        checkNotNull(arg1);
+        checkNotNull(arg2);
+        checkNotNull(arg3);
+        Map<AuthEvaluatorField,String> factMap = new HashMap<>(); // can contain nulls
+        factMap.put(arg1, val1);
+        factMap.put(arg2, val2);
+        factMap.put(arg3, val3);
+        return checkInternal(factMap);
+    }
     protected boolean checkInternal(Map<AuthEvaluatorField,String> factMap) {
         // this happens on the stack and should be thread-safe. 
         for (Predicate<Map<AuthEvaluatorField,String>> predicate : predicates) {

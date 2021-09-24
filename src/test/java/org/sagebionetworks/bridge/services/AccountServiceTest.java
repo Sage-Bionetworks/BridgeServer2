@@ -330,6 +330,29 @@ public class AccountServiceTest extends Mockito {
     }
     
     @Test
+    public void updateAccountDevCannotRemoveTestFlag() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        
+        // mockGetAccountById() returns the account that is returned from persistence,
+        // so to remove the flag you need to create a different account without it
+        Account updatedAccount = Account.create();
+        updatedAccount.setAppId(TEST_APP_ID);
+        updatedAccount.setId(TEST_USER_ID);
+        // no test flag
+
+        service.updateAccount(updatedAccount);
+        
+        // nevertheless it remains
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
+        assertEquals(accountCaptor.getValue().getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
+    }
+    
+    @Test
     public void updateAccountSucceedsForDevUpdatingTestAccount() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("id")

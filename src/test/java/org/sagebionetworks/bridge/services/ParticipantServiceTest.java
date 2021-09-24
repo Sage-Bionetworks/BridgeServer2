@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.TRUE;
 import static org.joda.time.DateTimeZone.UTC;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.collectExternalIds;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -67,7 +68,7 @@ import org.testng.annotations.Test;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
-
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.Roles;
@@ -273,6 +274,9 @@ public class ParticipantServiceTest extends Mockito {
     @Captor
     ArgumentCaptor<Account> accountCaptor;
 
+    @Captor
+    ArgumentCaptor<AccountSummarySearch> searchCaptor;
+    
     @Captor
     ArgumentCaptor<App> appCaptor;
     
@@ -875,6 +879,21 @@ public class ParticipantServiceTest extends Mockito {
         AccountSummarySearch search = new AccountSummarySearch.Builder().withNoneOfGroups(ImmutableSet.of("group1"))
                 .withAllOfGroups(ImmutableSet.of("group1")).build();
         participantService.getPagedAccountSummaries(APP, search);
+    }
+    
+    @Test
+    public void getPagedAccountSummariesAddsTestFlagForDevelopers() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("some-id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder().build();
+        
+        participantService.getPagedAccountSummaries(APP, search);
+        
+        verify(accountService).getPagedAccountSummaries(
+                eq(TEST_APP_ID), searchCaptor.capture());
+        assertEquals(searchCaptor.getValue().getAllOfGroups(), ImmutableSet.of(TEST_USER_GROUP));
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)

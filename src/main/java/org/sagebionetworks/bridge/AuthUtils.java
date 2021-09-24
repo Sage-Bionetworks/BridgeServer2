@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge;
 
-import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -262,33 +262,27 @@ public class AuthUtils {
      * 4) the account is a test account and the caller is a developer;
      * 5) the account is a test account enrolled in a study and the caller is a 
      *    study coordinator with access to that study.
-     *    
-     * THIS METHOD HAS AN IMPORTANT SIDE EFFECT: it may remove enrollments from the 
-     * supplied account that are not visible to the caller, so it can be returned to 
-     * the caller without leaking enrollment information. Do not call this method 
-     * before updating an account record.
      */
     public static final boolean canAccessAccount(Account account) {
-        if (account == null) {
-            return false;
+        if (account != null) {
+            Set<String> userDataGroups = account.getDataGroups();
+            if (IS_ONLY_DEVELOPER.check(USER_ID, account.getId()) && !userDataGroups.contains(TEST_USER_GROUP)) {
+                return false;
+            }
+            // If the account is in a study that the caller can access with the correct role, 
+            // return the account. We must iterate over this check because the account can be 
+            // in multiple studies.
+            for (Enrollment en : account.getEnrollments()) {
+                if (CAN_READ_PARTICIPANTS.check(USER_ID, account.getId(), ORG_ID, 
+                        account.getOrgMembership(), STUDY_ID, en.getStudyId())) {
+                    return true;
+                }
+            }
+            // Otherwise call this auth rule without a study and see if the caller matches any of
+            // the other authorization criteria (the above check won't have happend for accounts 
+            // without any enrollments).
+            return CAN_READ_PARTICIPANTS.check(USER_ID, account.getId(), ORG_ID, account.getOrgMembership());
         }
-        Set<String> userDataGroups = account.getDataGroups();
-        if (IS_ONLY_DEVELOPER.check(USER_ID, account.getId()) && !userDataGroups.contains(TEST_USER_GROUP)) {
-            return false;
-        }
-        // If this is a call for one’s own record, or the caller is an admin or worker, or the account 
-        // is in the same organization as the caller who is an org admin, return the account.
-        if (CAN_READ_PARTICIPANTS.check(USER_ID, account.getId(), ORG_ID, account.getOrgMembership())) {
-            return true;
-        }
-        // If after removing all enrollments that are not visible to the caller, there are no remaining 
-        // enrollments, the caller cannot access the account.
-        RequestContext context = RequestContext.get();
-        Set<String> callerStudies = context.getOrgSponsoredStudies();
-        Set<Enrollment> removals = account.getEnrollments().stream()
-                .filter(en -> !callerStudies.contains(en.getStudyId()))
-                .collect(toSet());
-        account.getEnrollments().removeAll(removals);
-        return !account.getEnrollments().isEmpty();
+        return false;
     }
 }
