@@ -45,7 +45,7 @@ public class Scheduler {
         calculateLanguageKey(builder);
         
         Map<String,Set<String>> studyBurstEventsMap = getStudyBurstEventMap(schedule);
-        
+
         for (Session session : schedule.getSessions()) {
             if (!session.getAssessments().isEmpty()) {
                 for (String studyBurstId : session.getStudyBurstIds()) {

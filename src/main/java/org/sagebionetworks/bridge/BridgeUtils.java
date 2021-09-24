@@ -803,8 +803,16 @@ public class BridgeUtils {
         return false;
     }
     
+    /**
+     * Maintaining the order of items in the list and the collection, return a new
+     * immutable list of both while preventing the duplication of elements from
+     * either list.
+     */
     public static <T> List<T> addAllToList(List<T> list, Collection<T> elements) {
-        return ImmutableList.<T>builder().addAll(list).addAll(elements).build();
+        Set<T> orderedSet = new LinkedHashSet<>();
+        orderedSet.addAll(list);
+        orderedSet.addAll(elements);
+        return ImmutableList.copyOf(orderedSet);
     }
   
 }
