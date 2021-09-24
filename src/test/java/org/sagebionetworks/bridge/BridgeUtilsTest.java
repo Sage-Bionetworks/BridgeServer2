@@ -1281,11 +1281,11 @@ public class BridgeUtilsTest extends Mockito {
     
     @Test
     public void addAllToList() {
-        List<String> retValue = BridgeUtils.addAllToList(ImmutableList.of("A", "B"), ImmutableList.of("C", "D"));
+        List<String> retValue = BridgeUtils.addUniqueItemsToList(ImmutableList.of("A", "B"), ImmutableList.of("C", "D"));
         assertEquals(retValue, ImmutableList.of("A", "B", "C", "D"));
         assertTrue(retValue instanceof ImmutableList);
         
-        retValue = BridgeUtils.addAllToList(ImmutableList.of("A", "B"), ImmutableSet.of("C"));
+        retValue = BridgeUtils.addUniqueItemsToList(ImmutableList.of("A", "B"), ImmutableSet.of("C"));
         assertEquals(retValue, ImmutableList.of("A", "B", "C"));
         assertTrue(retValue instanceof ImmutableList);
     }

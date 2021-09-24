@@ -810,10 +810,9 @@ public class BridgeUtils {
     
     /**
      * Maintaining the order of items in the list and the collection, return a new
-     * immutable list of both while preventing the duplication of elements from
-     * either list.
+     * immutable list of both that contains no duplicate elements.
      */
-    public static <T> List<T> addAllToList(List<T> list, Collection<T> elements) {
+    public static <T> List<T> addUniqueItemsToList(List<T> list, Collection<T> elements) {
         Set<T> orderedSet = new LinkedHashSet<>();
         orderedSet.addAll(list);
         orderedSet.addAll(elements);
