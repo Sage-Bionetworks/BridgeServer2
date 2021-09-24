@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.assessments;
 
 import static org.sagebionetworks.bridge.models.appconfig.ConfigResolver.INSTANCE;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 
 import java.util.Objects;
 
@@ -18,15 +19,9 @@ public final class AssessmentReference {
     private final String appId;
     
     @JsonCreator
-    public AssessmentReference(@JsonProperty("guid") String guid,
-            @JsonProperty("id") String id, @JsonProperty("sharedId") String sharedId, @JsonProperty("appId") String appId) {
+    public AssessmentReference(@JsonProperty("guid") String guid, @JsonProperty("id") String id,
+                               @JsonProperty("sharedId") String sharedId, @JsonProperty("appId") String appId) {
         this(INSTANCE, guid, id, sharedId, appId);
-        System.out.println("--------In jsoncreator constructor-----------");
-        System.out.println("assessment guid: " + guid);
-        System.out.println("assessment id: " + id);
-        System.out.println("assessment sharedid: " + sharedId);
-        System.out.println("assessment appId: " + appId);
-        System.out.println("--------");
     }
 
     public AssessmentReference(ConfigResolver resolver, String guid, String id, String sharedId, String appId) {
@@ -47,7 +42,8 @@ public final class AssessmentReference {
         if (guid == null) {
             return null;
         }
-        return resolver.url("ws", "/v1/assessments/" + guid + "/config");
+        String path = (appId != null && appId.equals(SHARED_APP_ID)) ? "/v1/sharedassessments/" : "/v1/assessments/";
+        return resolver.url("ws", path + guid + "/config");
     }
     /**
      * If this assessment was derived from a shared assessment, the shared assessment's
@@ -79,7 +75,7 @@ public final class AssessmentReference {
 
     @Override
     public String toString() {
-        return "AssessmentReference [id=" + id + ", sharedId=" + sharedId + ", guid=" + guid + ", appId=" + appId + ", configHref="
-                + getConfigHref() + "]";
+        return "AssessmentReference [id=" + id + ", sharedId=" + sharedId + ", guid=" + guid + ", appId=" + appId
+                + ", configHref=" + getConfigHref() + "]";
     }
 }

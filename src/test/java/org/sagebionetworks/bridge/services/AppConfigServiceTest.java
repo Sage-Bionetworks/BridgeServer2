@@ -69,7 +69,8 @@ public class AppConfigServiceTest {
     private static final List<SchemaReference> SCHEMA_REF_LIST = ImmutableList.of(new SchemaReference("id", 3));
     private static final List<ConfigReference> CONFIG_REF_LIST = ImmutableList.of(new ConfigReference("id", 1L));
     private static final List<FileReference> FILE_REF_LIST = ImmutableList.of(new FileReference(GUID, TIMESTAMP));
-    private static final List<AssessmentReference> ASSESSMENT_REF_LIST = ImmutableList.of(new AssessmentReference(GUID, null, null));
+    // TODO: check here
+    private static final List<AssessmentReference> ASSESSMENT_REF_LIST = ImmutableList.of(new AssessmentReference(GUID, null, null, null));
     private static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(SURVEY_REF_LIST.get(0));
     
     @Mock
@@ -520,6 +521,7 @@ public class AppConfigServiceTest {
         assertEquals(captured.getSchemaReferences(), SCHEMA_REF_LIST);
         assertEquals(captured.getConfigReferences(), CONFIG_REF_LIST);
         assertEquals(captured.getFileReferences(), FILE_REF_LIST);
+        assertEquals(captured.getAssessmentReferences(), ASSESSMENT_REF_LIST);
         
         verify(mockStudyService).getStudyIds(TEST_APP_ID);
     }

@@ -16,6 +16,7 @@ import org.joda.time.DateTime;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -54,9 +55,10 @@ public class AppConfigValidatorTest extends Mockito {
     private static final SchemaReference INVALID_SCHEMA_REF = new SchemaReference("guid", null);
     private static final SchemaReference VALID_SCHEMA_REF = new SchemaReference("guid", 3);
     private static final ConfigReference VALID_CONFIG_REF = new ConfigReference("id", 3L);
-    private static final AssessmentReference INVALID_ASSESSMENT_REF = new AssessmentReference(null, null, null);
-    private static final AssessmentReference VALID_ASSESSMENT_REF = new AssessmentReference(GUID, null, null);
-    
+    // TODO: check here
+    private static final AssessmentReference INVALID_ASSESSMENT_REF = new AssessmentReference(null, null, null, null);
+    private static final AssessmentReference VALID_ASSESSMENT_REF = new AssessmentReference(GUID, null, null, null);
+
     @Mock
     private SurveyService mockSurveyService;
     
@@ -77,7 +79,7 @@ public class AppConfigValidatorTest extends Mockito {
     private AppConfigValidator updateValidator;
     
     private AppConfig appConfig;
-    
+
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
@@ -123,6 +125,33 @@ public class AppConfigValidatorTest extends Mockito {
         appConfig.setAssessmentReferences(ImmutableList.of(VALID_ASSESSMENT_REF, VALID_ASSESSMENT_REF));
         
         assertValidatorMessage(newValidator, appConfig, "assessmentReferences[1].guid", "refers to the same assessment as another reference");
+    }
+
+    @Test
+    public void assessmentReferenceWithDifferentAppIdFromConfigValidates() {
+        AssessmentReference sharedAssessmentRef = new AssessmentReference(GUID, null, null, SHARED_APP_ID);
+        appConfig.setAssessmentReferences(ImmutableList.of(sharedAssessmentRef));
+
+        try {
+            Validate.entityThrowingException(newValidator, appConfig);
+        } catch (InvalidEntityException e) {
+            // Expecting errors
+        }
+
+        verify(mockAssessmentService).getAssessmentByGuid(SHARED_APP_ID, null, GUID);
+    }
+
+    @Test void assessmentReferenceWithoutAppIdDefaultsToAppConfig() {
+        // The AppConfig's appId should be used when an AssessmentRef does not have it specified
+        appConfig.setAssessmentReferences(ImmutableList.of(VALID_ASSESSMENT_REF));
+
+        try {
+            Validate.entityThrowingException(newValidator, appConfig);
+        } catch (InvalidEntityException e) {
+            // Expecting errors
+        }
+
+        verify(mockAssessmentService).getAssessmentByGuid(TEST_APP_ID, null, GUID);
     }
     
     @Test

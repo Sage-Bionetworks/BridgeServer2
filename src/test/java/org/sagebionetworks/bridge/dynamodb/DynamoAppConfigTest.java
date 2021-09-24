@@ -53,8 +53,8 @@ public class DynamoAppConfigTest {
             new FileReference(GUID, TIMESTAMP),
             new FileReference("twoGuid", TIMESTAMP));
     private static final List<AssessmentReference> ASSESSMENT_REFS = ImmutableList.of(
-            new AssessmentReference("guid1", "id1", "sharedId1"),
-            new AssessmentReference("guid2", "id2", "sharedId2"));
+            new AssessmentReference("guid1", "id1", "sharedId1", "appId1"),
+            new AssessmentReference("guid2", "id2", "sharedId2", "appId2"));
     
     private static final String APP_ID = TestUtils.randomName(DynamoAppConfigTest.class);
     
@@ -173,12 +173,14 @@ public class DynamoAppConfigTest {
         assertEquals(node.get("assessmentReferences").get(0).get("guid").textValue(), "guid1");
         assertTrue(node.get("assessmentReferences").get(0).get("configHref").textValue()
                 .contains("/v1/assessments/guid1/config"));
+        assertEquals(node.get("assessmentReferences").get(0).get("appId").textValue(), "appId1");
 
         assertEquals(node.get("assessmentReferences").get(1).get("id").textValue(), "id2");
         assertEquals(node.get("assessmentReferences").get(1).get("sharedId").textValue(), "sharedId2");
         assertEquals(node.get("assessmentReferences").get(1).get("guid").textValue(), "guid2");
         assertTrue(node.get("assessmentReferences").get(1).get("configHref").textValue()
                 .contains("/v1/assessments/guid2/config"));
+        assertEquals(node.get("assessmentReferences").get(1).get("appId").textValue(), "appId2");
 
         AppConfig deser = BridgeObjectMapper.get().treeToValue(node, AppConfig.class);
         assertNull(deser.getAppId());

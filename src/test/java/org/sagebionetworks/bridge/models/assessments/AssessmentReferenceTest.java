@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.assessments;
 
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.mockConfigResolver;
 import static org.sagebionetworks.bridge.config.Environment.LOCAL;
 import static org.sagebionetworks.bridge.config.Environment.UAT;
@@ -36,43 +37,45 @@ public class AssessmentReferenceTest extends Mockito {
         // should be globally unique for assessement references and is sufficient for 
         // equality. This makes detecting duplicates easier during validation.
         EqualsVerifier.forClass(AssessmentReference.class)
-            .allFieldsShouldBeUsedExcept("resolver", "id", "sharedId").verify();
+            .allFieldsShouldBeUsedExcept("resolver", "id", "sharedId", "appId").verify();
     }
 
     @Test
     public void succeeds() throws Exception {
         ConfigResolver resolver = mockConfigResolver(UAT, "ws");
-        AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", "id", "sharedId");
+        AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", "id", "sharedId", "appId");
         
         assertEquals(ref.getGuid(), "oneGuid");
         assertEquals(ref.getId(), "id");
         assertEquals(ref.getSharedId(), "sharedId");
         assertEquals(ref.getConfigHref(), 
                 "https://ws-uat.bridge.org/v1/assessments/oneGuid/config");
+        assertEquals(ref.getAppId(), "appId");
     }
     
     @Test
     public void noIdentifiers() {
         ConfigResolver resolver = mockConfigResolver(LOCAL, "ws");
-        AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", null, null);
+        AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", null, null, null);
         
         assertEquals(ref.getGuid(), "oneGuid");
         assertNull(ref.getId());
         assertNull(ref.getSharedId());
         assertEquals(ref.getConfigHref(), 
                 "http://ws-local.bridge.org/v1/assessments/oneGuid/config");
+        assertNull(ref.getAppId());
     }
     
     @Test
     public void noGuid() {
-        AssessmentReference ref = new AssessmentReference(null, null, null);
+        AssessmentReference ref = new AssessmentReference(null, null, null, null);
         assertNull(ref.getConfigHref());
     }
     
     @Test
     public void canSerialise() throws Exception {
         ConfigResolver resolver = mockConfigResolver(LOCAL, "ws");
-        AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", "id", "sharedId");
+        AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", "id", "sharedId", "appId");
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(ref);
         assertEquals(node.get("guid").textValue(), "oneGuid");
@@ -80,11 +83,20 @@ public class AssessmentReferenceTest extends Mockito {
         assertEquals(node.get("sharedId").textValue(), "sharedId");
         assertEquals(node.get("configHref").textValue(), 
             "http://ws-local.bridge.org/v1/assessments/oneGuid/config");
+        assertEquals(node.get("appId").textValue(), "appId");
         assertEquals(node.get("type").textValue(), "AssessmentReference");
         
         AssessmentReference deser = BridgeObjectMapper.get().readValue(
                 node.toString(), AssessmentReference.class);
         assertEquals(deser, ref);
     }
-    
+
+    @Test
+    public void configHrefChangesWithSharedAppId() {
+        ConfigResolver resolver = mockConfigResolver(LOCAL, "ws");
+        AssessmentReference ref = new AssessmentReference(resolver, "oneGuid", null, null, SHARED_APP_ID);
+
+        assertEquals(ref.getConfigHref(),
+                "http://ws-local.bridge.org/v1/sharedassessments/oneGuid/config");
+    }
 }
