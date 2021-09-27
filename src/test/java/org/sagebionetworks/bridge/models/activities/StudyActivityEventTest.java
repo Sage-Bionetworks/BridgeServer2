@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.testng.Assert.assertEquals;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,16 +30,17 @@ public class StudyActivityEventTest {
         event.setClientTimeZone("America/Los_Angeles");
         event.setCreatedOn(CREATED_ON);
         event.setRecordCount(10);
+        event.setUpdateType(FUTURE_ONLY);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(event);
-        assertEquals(node.size(), 7);
+        assertEquals(node.size(), 8);
         assertEquals(node.get("eventId").textValue(), "eventKey");
         assertEquals(node.get("timestamp").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("answerValue").textValue(), "my answer");
         assertEquals(node.get("clientTimeZone").textValue(), "America/Los_Angeles");
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("recordCount").intValue(), 10);
+        assertEquals(node.get("updateType").textValue(), "future_only");
         assertEquals(node.get("type").textValue(), "ActivityEvent");
     }
-    
 }

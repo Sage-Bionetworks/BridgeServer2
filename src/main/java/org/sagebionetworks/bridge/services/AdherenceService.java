@@ -45,14 +45,16 @@ import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.SessionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -61,7 +63,7 @@ public class AdherenceService {
     
     private AdherenceRecordDao dao;
     
-    private AppService appService;
+    private StudyService studyService;
 
     private StudyActivityEventService studyActivityEventService;
     
@@ -71,10 +73,10 @@ public class AdherenceService {
     final void setAdherenceRecordDao(AdherenceRecordDao dao) {
         this.dao = dao;
     }
-    
+
     @Autowired
-    final void setAppService(AppService appService) {
-        this.appService = appService;
+    final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
     }
     
     @Autowired
@@ -170,23 +172,24 @@ public class AdherenceService {
 
     protected void publishEvent(String appId, TimelineMetadata meta, AdherenceRecord record) {
         if (meta != null && record.getFinishedOn() != null) {
-            StudyActivityEventRequest request = new StudyActivityEventRequest()
-                    .appId(appId)
-                    .studyId(record.getStudyId())
-                    .userId(record.getUserId())
-                    .eventType(FINISHED)
-                    .timestamp(record.getFinishedOn());
+            StudyActivityEventParams params = new StudyActivityEventParams()
+                    .withAppId(appId)
+                    .withStudyId(record.getStudyId())
+                    .withUserId(record.getUserId())
+                    .withEventType(FINISHED)
+                    .withTimestamp(record.getFinishedOn());
             if (meta.getAssessmentInstanceGuid() == null) {
-                request.objectType(SESSION);
-                request.objectId(meta.getSessionGuid());
+                params.withObjectType(SESSION);
+                params.withObjectId(meta.getSessionGuid());
             } else {
                 // Shared and local assessment ID are conceptually different but not 
                 // differentiated for events scheduling. It might be helpful to end
                 // users or we might need to change this.
-                request.objectType(ASSESSMENT);
-                request.objectId(meta.getAssessmentId());
+                params.withObjectType(ASSESSMENT);
+                params.withObjectId(meta.getAssessmentId());
             }
-            studyActivityEventService.publishEvent(request);
+            System.out.println(params);
+            studyActivityEventService.publishEvent(params);
         }
     }
 
@@ -234,7 +237,10 @@ public class AdherenceService {
         AdherenceRecordsSearch.Builder builder = search.toBuilder();
         
         if (TRUE.equals(search.getCurrentTimestampsOnly()) || !search.getEventTimestamps().isEmpty()) {
-            Set<String> customEventIds = appService.getApp(appId).getCustomEvents().keySet();
+            Study study = studyService.getStudy(appId, search.getStudyId(), true);
+            Map<String, ActivityEventUpdateType> customEvents = study.getCustomEventsMap();
+            Map<String, ActivityEventUpdateType> studyBursts = scheduleService
+                    .getStudyBurstsForStudy(appId, study);
             
             Map<String, DateTime> fixedMap = new HashMap<>();
             if (TRUE.equals(search.getCurrentTimestampsOnly())) {
@@ -243,11 +249,11 @@ public class AdherenceService {
                         .getRecentStudyActivityEvents(appId, search.getUserId(), search.getStudyId())
                         .getItems().stream()
                         .collect(toMap(StudyActivityEvent::getEventId, StudyActivityEvent::getTimestamp));
-                addToMap(events, customEventIds, fixedMap);
+                addToMap(events, customEvents, studyBursts, fixedMap);
             }
             if (!search.getEventTimestamps().isEmpty()) {
                 // This fixes things like failing to put a "custom:" prefix on a custom event.
-                addToMap(search.getEventTimestamps(), customEventIds, fixedMap);
+                addToMap(search.getEventTimestamps(), customEvents, studyBursts, fixedMap);
             }
             builder.withEventTimestamps(fixedMap);
         }
@@ -271,11 +277,11 @@ public class AdherenceService {
         return builder.build();
     }
 
-    protected void addToMap(Map<String, DateTime> events, 
-            Set<String> activityEventIds, Map<String, DateTime> fixedMap) {
+    protected void addToMap(Map<String, DateTime> events, Map<String, ActivityEventUpdateType> customEvents,
+            Map<String, ActivityEventUpdateType> studyBursts, Map<String, DateTime> fixedMap) {
         for (Map.Entry<String, DateTime> entry : events.entrySet()) {
             String eventId = entry.getKey();
-            String fixedEventId = formatActivityEventId(activityEventIds, eventId);
+            String fixedEventId = formatActivityEventId(customEvents, studyBursts, eventId);
             if (fixedEventId != null) {
                 fixedMap.put(fixedEventId, entry.getValue());    
             }

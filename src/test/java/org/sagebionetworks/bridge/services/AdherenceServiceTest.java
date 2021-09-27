@@ -63,16 +63,15 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
-import org.sagebionetworks.bridge.models.activities.ActivityEventType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
-import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 
 public class AdherenceServiceTest extends Mockito {
     
@@ -84,7 +83,7 @@ public class AdherenceServiceTest extends Mockito {
     AdherenceRecordDao mockDao;
     
     @Mock
-    AppService mockAppService;
+    StudyService mockStudyService;
     
     @Mock
     StudyActivityEventService mockStudyActivityEventService;
@@ -96,7 +95,7 @@ public class AdherenceServiceTest extends Mockito {
     ArgumentCaptor<AdherenceRecordsSearch> searchCaptor;
     
     @Captor
-    ArgumentCaptor<StudyActivityEventRequest> requestCaptor;
+    ArgumentCaptor<StudyActivityEventParams> paramsCaptor;
     
     @Captor
     ArgumentCaptor<AdherenceRecord> recordCaptor;
@@ -173,20 +172,18 @@ public class AdherenceServiceTest extends Mockito {
         
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(0));
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(1));
-        verify(mockStudyActivityEventService, times(3)).publishEvent(requestCaptor.capture());
+        verify(mockStudyActivityEventService, times(3)).publishEvent(paramsCaptor.capture());
         
-        StudyActivityEventRequest request = requestCaptor.getAllValues().get(2);
-        assertEquals(request.getAppId(), TEST_APP_ID);
-        assertEquals(request.getStudyId(), TEST_STUDY_ID);
-        assertEquals(request.getUserId(), TEST_USER_ID);
-        assertEquals(request.getObjectType(), ActivityEventObjectType.SESSION);
-        assertEquals(request.getObjectId(), "sessionGuid");
-        assertEquals(request.getEventType(), ActivityEventType.FINISHED);
-        assertEquals(request.getTimestamp(), FINISHED_ON); 
+        StudyActivityEvent event = paramsCaptor.getAllValues().get(2).toStudyActivityEvent();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getEventId(), "session:sessionGuid:finished");
+        assertEquals(event.getTimestamp(), FINISHED_ON); 
     }
 
     @Test
-    public void updateAdherenceRecords_recordAssessmentFinished() {
+    public void updateAdherenceRecords_recordAssessmentFinished() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID)
                 .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
@@ -200,15 +197,14 @@ public class AdherenceServiceTest extends Mockito {
         
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(0));
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(1));
-        verify(mockStudyActivityEventService).publishEvent(requestCaptor.capture());
+        verify(mockStudyActivityEventService, times(1)).publishEvent(paramsCaptor.capture());
         
-        StudyActivityEventRequest request = requestCaptor.getValue();
-        assertEquals(request.getAppId(), TEST_APP_ID);
-        assertEquals(request.getStudyId(), TEST_STUDY_ID);
-        assertEquals(request.getUserId(), TEST_USER_ID);
-        assertEquals(request.getObjectType(), ActivityEventObjectType.ASSESSMENT);
-        assertEquals(request.getEventType(), ActivityEventType.FINISHED);
-        assertEquals(request.getTimestamp(), FINISHED_ON); 
+        StudyActivityEvent event = paramsCaptor.getValue().toStudyActivityEvent();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getEventId(), "assessment:idBBB:finished");
+        assertEquals(event.getTimestamp(), FINISHED_ON); 
     }
     
     @Test
@@ -509,9 +505,9 @@ public class AdherenceServiceTest extends Mockito {
                 .withCallerUserId(TEST_USER_ID)
                 .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
         
-        App app = App.create();
-        app.setCustomEvents(ImmutableMap.of("event1", IMMUTABLE));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        Study study = Study.create();
+        study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("event1", IMMUTABLE)));
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
 
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
                 .withInstanceGuids(ImmutableSet.of("AAA@" + CREATED_ON.toString()))
@@ -579,9 +575,11 @@ public class AdherenceServiceTest extends Mockito {
 
     @Test
     public void cleanupSearchNormalizesEventIds() {
-        App app = App.create();
-        app.setCustomEvents(ImmutableMap.of("event1", IMMUTABLE, "event_2", IMMUTABLE));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        Study study = Study.create();
+        study.setCustomEvents(ImmutableList.of(
+                new StudyCustomEvent("event1", IMMUTABLE), 
+                new StudyCustomEvent("event_2", IMMUTABLE)));
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
                 .withUserId(TEST_USER_ID)
@@ -591,8 +589,8 @@ public class AdherenceServiceTest extends Mockito {
                         "custom:event3", CREATED_ON)).build();
         
         AdherenceRecordsSearch retValue = service.cleanupSearch(TEST_APP_ID, search);
-        assertEquals(ImmutableSet.of("enrollment", "custom:event1", "custom:event_2"),
-                retValue.getEventTimestamps().keySet());
+        assertEquals(retValue.getEventTimestamps().keySet(), 
+                ImmutableSet.of("enrollment", "custom:event1", "custom:event_2"));
     }
     
     @Test
@@ -610,9 +608,11 @@ public class AdherenceServiceTest extends Mockito {
     
     @Test
     public void cleanupSearchRetrievesActivityEventsMap() {
-        App app = App.create();
-        app.setCustomEvents(ImmutableMap.of("event1", IMMUTABLE, "event2", IMMUTABLE));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        Study study = Study.create();
+        study.setCustomEvents(ImmutableList.of(
+                new StudyCustomEvent("event1", IMMUTABLE), 
+                new StudyCustomEvent("event2", IMMUTABLE)));
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
 
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
                 .withUserId(TEST_USER_ID)
@@ -799,6 +799,7 @@ public class AdherenceServiceTest extends Mockito {
             meta1.setSessionInstanceGuid("sessionInstanceGuid");
             meta1.setAssessmentInstanceGuid(rec1.getInstanceGuid());
             meta1.setSessionStartEventId("enrollment");
+            meta1.setAssessmentId("id"+rec1.getInstanceGuid());
             metas.add(meta1);
             when(mockScheduleService.getTimelineMetadata(rec1.getInstanceGuid())).thenReturn(Optional.of(meta1));
         }
@@ -811,6 +812,7 @@ public class AdherenceServiceTest extends Mockito {
             meta2.setSessionInstanceGuid("sessionInstanceGuid");
             meta2.setAssessmentInstanceGuid(rec2.getInstanceGuid());
             meta2.setSessionStartEventId("enrollment");
+            meta2.setAssessmentId("id"+rec2.getInstanceGuid());
             metas.add(meta2);
             when(mockScheduleService.getTimelineMetadata(rec2.getInstanceGuid())).thenReturn(Optional.of(meta2));
         }

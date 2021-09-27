@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
@@ -48,6 +49,7 @@ import org.joda.time.LocalDateTime;
 import org.jsoup.safety.Safelist;
 import org.mockito.Mockito;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
@@ -58,6 +60,7 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
@@ -1006,89 +1009,43 @@ public class BridgeUtilsTest extends Mockito {
         assertEquals(e.getMessage(), "Error parsing JSON in request body: error");
     }
     
-    @Test
-    public void formatActivityEventId_validCustomNoPrefix() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("FOO"), "FOO");
-        assertEquals(retValue, "custom:FOO");
-        
+    @DataProvider(name = "formatActvityEventIdParams")
+    public static Object[][] formatActvityEventIdParams() {
+        return new Object[][] {
+            {"FOO", "custom:FOO", m("FOO"), m()},
+            {"foo", "custom:foo", m("foo"), m()},
+            {"custom:foo", "custom:foo", m("foo"), m()},
+            {"foo", null, m(), m()},
+            {"custom:foo", null, m(), m()},
+            {"activities_retrieved", "activities_retrieved", m("foo"), m()},
+            {"ACTIVITIES_RETRIEVED", "activities_retrieved", m("foo"), m()},
+            {"session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished", "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished", m("foo"), m()},
+            {"", null, m(), m()},
+            {null, null, m(), m()},
+            {"custom:timeline_retrieved", "custom:timeline_retrieved", m("timeline_retrieved"), m()},
+            {"custom:TIMELINE_RETRIEVED", null, m("timeline_retrieved"), m()},
+            {"timeline_retrieved", "timeline_retrieved", m("timeline_retrieved"), m()},
+            {"timeline_retrieved", "timeline_retrieved", m("timeline_retrieved"), m()},
+            {"custom:timeline_retrieved", null, m(), m()},
+            {"study_burst:foo:01", "study_burst:foo:01", m(), m("foo")},
+            {"study_burst:foo:01", null, m(), m()},
+            {"study_burst:bar:01", null, m(), m("foo")},
+        };
     }
     
-    @Test
-    public void formatActivityEventId_validCustomWithPrefixUppercase() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "CUSTOM:foo");
-        assertEquals(retValue, "custom:foo");
-    }
-
-    @Test
-    public void formatActivityEventId_validCustomWithPrefix() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "custom:foo");
-        assertEquals(retValue, "custom:foo");
+    private static Map<String, ActivityEventUpdateType> m(String... values) {
+        Map<String, ActivityEventUpdateType> map = new HashMap<>();
+        for (String eventId : values) {
+            map.put(eventId, MUTABLE);
+        }
+        return map;
     }
     
-    @Test
-    public void formatActivityEventId_invalidWithoutPrefix() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of(), "foo");
-        assertNull(retValue);
-    }
-    
-    @Test
-    public void formatActivityEventId_invalidCustomWithPrefix() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of(), "custom:foo");
-        assertNull(retValue);
-    }
-    
-    @Test
-    public void formatActivityEventId_validUnarySystemId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "activities_retrieved");
-        assertEquals(retValue, "activities_retrieved");
-    }
-
-    @Test
-    public void formatActivityEventId_validUnarySystemIdWrongCase() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "ACTIVITIES_RETRIEVED");
-        assertEquals(retValue, "activities_retrieved");
-    }
-    
-    @Test
-    public void formatActivityEventId_validCompoundSystemId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
-        assertEquals(retValue, "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
-    }
-    
-    @Test
-    public void formatActivityEventId_invalidBlank() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "");
-        assertNull(retValue);
-    }
-
-    @Test
-    public void formatActivityEventId_invalidNull() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), null);
-        assertNull(retValue);
-    }
-    
-    @Test
-    public void formatActivityEventId_customShadowsSystemEvent() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "custom:timeline_retrieved");
-        assertEquals(retValue, "custom:timeline_retrieved");
-    }
-    
-    @Test
-    public void formatActivityEventId_customDoesNotShadowSystemEvent() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "timeline_retrieved");
-        assertEquals(retValue, "timeline_retrieved");
-    }
-    
-    @Test
-    public void formatActivityEventId_validStudyBurst() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "study_burst:foo:01");
-        assertEquals(retValue, "study_burst:foo:01");
-    }
-    
-    @Test
-    public void formatActivityEventId_invalidStudyBurst() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of(), "study_burst:foo:01");
-        assertNull(retValue);
+    @Test(dataProvider = "formatActvityEventIdParams")
+    public void formatActivityEventId(String input, String expectedOutput, Map<String, 
+            ActivityEventUpdateType> customEvents, Map<String, ActivityEventUpdateType> studyBursts) {
+        String retValue = BridgeUtils.formatActivityEventId(customEvents, studyBursts, input);
+        assertEquals(retValue, expectedOutput);
     }
     
     @Test

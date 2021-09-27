@@ -54,7 +54,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
@@ -76,6 +76,9 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Mock
     ActivityEventService mockActivityEventService;
+    
+    @Mock
+    Schedule2Service scheduleService;
     
     @InjectMocks
     @Spy
@@ -99,23 +102,23 @@ public class StudyActivityEventServiceTest extends Mockito {
         doReturn(CREATED_ON).when(service).getCreatedOn();
     }
     
-    private StudyActivityEventRequest makeRequest() { 
-        return new StudyActivityEventRequest()
-                .appId(TEST_APP_ID)
-                .studyId(TEST_STUDY_ID)
-                .userId(TEST_USER_ID);
+    private StudyActivityEventParams makeParams() { 
+        return new StudyActivityEventParams()
+                .withAppId(TEST_APP_ID)
+                .withStudyId(TEST_STUDY_ID)
+                .withUserId(TEST_USER_ID);
     }
     
     @Test
     public void deleteCustomEvent() {
-        StudyActivityEventRequest request = makeRequest()
-                .objectType(CUSTOM).objectId("event1");
+        StudyActivityEventParams params = makeParams().withObjectType(CUSTOM).withObjectId("event1")
+                .withUpdateType(MUTABLE);
         
         StudyActivityEvent persistedEvent = new StudyActivityEvent();
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any()))
             .thenReturn(persistedEvent);
 
-        service.deleteCustomEvent(request);
+        service.deleteCustomEvent(params);
         
         verify(mockDao).deleteCustomEvent(eventCaptor.capture());
         StudyActivityEvent event = eventCaptor.getValue();
@@ -127,26 +130,24 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Test
     public void deleteCustomEvent_eventIsImmutable() {
-        StudyActivityEventRequest request = makeRequest()
-                .objectType(CUSTOM).objectId("event2");
+        StudyActivityEventParams params = makeParams().withObjectType(CUSTOM).withObjectId("event2");
         
         StudyActivityEvent persistedEvent = new StudyActivityEvent();
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any()))
             .thenReturn(persistedEvent);
 
-        service.deleteCustomEvent(request);
+        service.deleteCustomEvent(params);
         
         verify(mockDao, never()).deleteCustomEvent(any());
     }
 
     @Test
     public void deleteCustomEvent_noEventPersisted() {
-        StudyActivityEventRequest request = makeRequest().objectId("event2")
-                .objectType(CUSTOM);
+        StudyActivityEventParams params = makeParams().withObjectId("event2").withObjectType(CUSTOM);
         
         // no event returned from a query of the DAO 
 
-        service.deleteCustomEvent(request);
+        service.deleteCustomEvent(params);
         
         verify(mockDao, never()).deleteCustomEvent(any());
     }
@@ -155,10 +156,10 @@ public class StudyActivityEventServiceTest extends Mockito {
     public void deleteCustomEvent_eventInvalid() {
         // this is not a custom event. Object ID needs to be included or you
         // get (correctly) a validation error for not including an eventId.
-        StudyActivityEventRequest request = makeRequest().objectType(CUSTOM);
+        StudyActivityEventParams params = makeParams().withObjectType(CUSTOM);
         
         try {
-            service.deleteCustomEvent(request);
+            service.deleteCustomEvent(params);
             fail("should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals(e.getErrors().get("eventId").get(0), "eventId " + INVALID_EVENT_ID);
@@ -167,25 +168,25 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Test
     public void publishCustomEvent_eventIsImmutable() {
-        StudyActivityEventRequest request = makeRequest()
-                .objectType(CUSTOM).objectId("event2").timestamp(MODIFIED_ON);
+        StudyActivityEventParams params = makeParams()
+                .withObjectType(CUSTOM).withObjectId("event2").withTimestamp(MODIFIED_ON);
         
         StudyActivityEvent persistedEvent = new StudyActivityEvent();
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any()))
             .thenReturn(persistedEvent);
 
-        service.publishEvent(request);
+        service.publishEvent(params);
         
         verify(mockDao, never()).publishEvent(any());
     }
     
     @Test
     public void publishEvent() {
-        StudyActivityEventRequest request = makeRequest()
-                .objectType(CUSTOM).objectId("event1").timestamp(MODIFIED_ON)
-                .clientTimeZone("America/Los_Angeles");
+        StudyActivityEventParams params = makeParams().withObjectType(CUSTOM)
+                .withObjectId("event1").withTimestamp(MODIFIED_ON)
+                .withClientTimeZone("America/Los_Angeles");
         
-        service.publishEvent(request);
+        service.publishEvent(params);
         
         verify(mockDao).publishEvent(eventCaptor.capture());
         StudyActivityEvent event = eventCaptor.getValue();
@@ -202,10 +203,10 @@ public class StudyActivityEventServiceTest extends Mockito {
     public void publishEvent_noEventPersisted() {
         // This event doesn’t update unless there is no persisted event. Here
         // it persists
-        StudyActivityEventRequest request = makeRequest().objectId("timeline_retrieved")
-                .timestamp(TIMELINE_RETRIEVED_TS).objectType(TIMELINE_RETRIEVED);
+        StudyActivityEventParams params = makeParams().withObjectId("timeline_retrieved")
+                .withTimestamp(TIMELINE_RETRIEVED_TS).withObjectType(TIMELINE_RETRIEVED);
         
-        service.publishEvent(request);
+        service.publishEvent(params);
         
         verify(mockDao).publishEvent(any());
     }
@@ -214,74 +215,24 @@ public class StudyActivityEventServiceTest extends Mockito {
     public void publishEvent_eventPersisted() {
         // This event doesn’t update unless there is no persisted event. Here
         // it does not persist.
-        StudyActivityEventRequest request = makeRequest().objectId(ENROLLMENT_FIELD)
-                .timestamp(ENROLLMENT_TS).objectType(ENROLLMENT);
+        StudyActivityEventParams params = makeParams().withObjectId(ENROLLMENT_FIELD)
+                .withTimestamp(ENROLLMENT_TS).withObjectType(ENROLLMENT);
         
         StudyActivityEvent persistedEvent = new StudyActivityEvent();
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any()))
             .thenReturn(persistedEvent);
 
-        service.publishEvent(request);
+        service.publishEvent(params);
         
         verify(mockDao, never()).publishEvent(any());
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
     public void publishEvent_eventInvalid() {
-        StudyActivityEventRequest request = makeRequest();
+        StudyActivityEventParams params = makeParams();
         
-        service.publishEvent(request);
+        service.publishEvent(params);
     }
-    
-//    @Test
-//    public void publishEvent_autoEventsAlsoPublished() {
-//        StudyActivityEventRequest request = makeRequest()
-//                .objectType(ENROLLMENT).timestamp(ENROLLMENT_TS);
-//        
-//        service.publishEvent(request);
-//        
-//        verify(mockDao, times(2)).publishEvent(eventCaptor.capture());
-//        StudyActivityEvent event = eventCaptor.getAllValues().get(0);
-//        assertEquals(event.getAppId(), TEST_APP_ID);
-//        assertEquals(event.getStudyId(), TEST_STUDY_ID);
-//        assertEquals(event.getUserId(), TEST_USER_ID);
-//        assertEquals(event.getEventId(), ENROLLMENT_FIELD);
-//        assertEquals(event.getTimestamp(), ENROLLMENT_TS);
-//        assertEquals(event.getCreatedOn(), CREATED_ON);
-//
-//        event = eventCaptor.getAllValues().get(1);
-//        assertEquals(event.getAppId(), TEST_APP_ID);
-//        assertEquals(event.getStudyId(), TEST_STUDY_ID);
-//        assertEquals(event.getUserId(), TEST_USER_ID);
-//        assertEquals(event.getEventId(), "custom:event3");
-//        assertEquals(event.getTimestamp(), ENROLLMENT_TS.plusWeeks(3));
-//        assertEquals(event.getCreatedOn(), CREATED_ON);
-//    }
-//    
-//    @Test
-//    public void publishEvent_autoEventsPublishWithCustomEvent() {
-//        StudyActivityEventRequest request = makeRequest()
-//                .objectType(CUSTOM).objectId("event2").timestamp(ENROLLMENT_TS);
-//        
-//        service.publishEvent(request);
-//        
-//        verify(mockDao, times(2)).publishEvent(eventCaptor.capture());
-//        StudyActivityEvent event = eventCaptor.getAllValues().get(0);
-//        assertEquals(event.getAppId(), TEST_APP_ID);
-//        assertEquals(event.getStudyId(), TEST_STUDY_ID);
-//        assertEquals(event.getUserId(), TEST_USER_ID);
-//        assertEquals(event.getEventId(), "custom:event2");
-//        assertEquals(event.getTimestamp(), ENROLLMENT_TS);
-//        assertEquals(event.getCreatedOn(), CREATED_ON);
-//
-//        event = eventCaptor.getAllValues().get(1);
-//        assertEquals(event.getAppId(), TEST_APP_ID);
-//        assertEquals(event.getStudyId(), TEST_STUDY_ID);
-//        assertEquals(event.getUserId(), TEST_USER_ID);
-//        assertEquals(event.getEventId(), "custom:event4");
-//        assertEquals(event.getTimestamp(), ENROLLMENT_TS.plusMonths(6));
-//        assertEquals(event.getCreatedOn(), CREATED_ON);
-//    }
     
     @Test
     public void getRecentStudyActivityEvents() {

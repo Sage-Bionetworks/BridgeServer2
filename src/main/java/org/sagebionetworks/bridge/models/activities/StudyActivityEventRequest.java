@@ -1,12 +1,10 @@
 package org.sagebionetworks.bridge.models.activities;
 
-import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
+import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -20,19 +18,10 @@ import org.joda.time.DateTime;
  */
 public class StudyActivityEventRequest {
 
-    private String appId; 
-    private String userId;
-    private String studyId;
+    private String eventKey;
     private DateTime timestamp;
     private String answerValue;
     private String clientTimeZone;
-    private DateTime createdOn;
-    private ActivityEventObjectType objectType = CUSTOM;
-    private String objectId;
-    private ActivityEventType eventType;
-    private ActivityEventUpdateType updateType = IMMUTABLE;
-    private Map<String,ActivityEventUpdateType> customEvents;
-    private Set<String> eventKeys = new HashSet<>();
     
     public StudyActivityEventRequest() { 
     }
@@ -43,145 +32,99 @@ public class StudyActivityEventRequest {
      */
     @JsonCreator
     public StudyActivityEventRequest(
-            @JsonProperty("eventId") @JsonAlias("eventKey") String thisObjectId,
+            @JsonProperty("eventId") @JsonAlias("eventKey") String eventKey,
             @JsonProperty("timestamp") DateTime timestamp, 
             @JsonProperty("answerValue") String answerValue,
             @JsonProperty("clientTimeZone") String clientTimeZone) {
-        
-        // this possesses logic we want to run, however the value is set
-        this.objectId(thisObjectId); 
+        this.eventKey = eventKey;
         this.timestamp = timestamp;
         this.answerValue = answerValue;
         this.clientTimeZone = clientTimeZone;
     }
     
-    public StudyActivityEventRequest appId(String appId) {
-        this.appId = appId;
-        return this;
+    protected String getEventKey() {
+        return eventKey;
     }
-    public StudyActivityEventRequest userId(String userId) {
-        this.userId = userId;
-        return this;
-    }
-    public StudyActivityEventRequest studyId(String studyId) {
-        this.studyId = studyId;
-        return this;
-    }
-    public StudyActivityEventRequest timestamp(DateTime timestamp) {
-        this.timestamp = timestamp;
-        return this;
-    }
-    public StudyActivityEventRequest answerValue(String answerValue) {
-        this.answerValue = answerValue;
-        return this;
-    }
-    public StudyActivityEventRequest clientTimeZone(String clientTimeZone) {
-        this.clientTimeZone = clientTimeZone;
-        return this;
-    }
-    public StudyActivityEventRequest createdOn(DateTime createdOn) {
-        this.createdOn = createdOn;
-        return this;
-    }
-    public StudyActivityEventRequest objectType(ActivityEventObjectType objectType) {
-        this.objectType = objectType;
-        return this;
-    }
-    public StudyActivityEventRequest objectId(String objectId) {
-        this.objectId = objectId;
-        return this;
-    }
-    public StudyActivityEventRequest eventType(ActivityEventType eventType) {
-        this.eventType = eventType;
-        return this;
-    }
-    public StudyActivityEventRequest updateType(ActivityEventUpdateType updateType) {
-        this.updateType = updateType;
-        return this;
-    }
-    public StudyActivityEventRequest customEvents(Map<String,ActivityEventUpdateType> customEvents) {
-        this.customEvents = customEvents;
-        this.eventKeys.addAll(this.customEvents.keySet());
-        return this;
-    }
-    public StudyActivityEventRequest autoCustomEvents(Map<String,String> autoCustomEvents) {
-        this.eventKeys.addAll(autoCustomEvents.keySet());
-        return this;
-    }
-    public String getAppId() {
-        return appId;
-    }
-    public String getUserId() {
-        return userId;
-    }
-    public String getStudyId() {
-        return studyId;
-    }
-    public DateTime getTimestamp() {
+    protected DateTime getTimestamp() {
         return timestamp;
     }
-    public String getAnswerValue() {
+    protected String getAnswerValue() {
         return answerValue;
     }
-    public String getClientTimeZone() {
+    protected String getClientTimeZone() {
         return clientTimeZone;
     }
-    public DateTime getCreatedOn() {
-        return createdOn;
-    }
-    public ActivityEventObjectType getObjectType() {
-        return objectType;
-    }
-    public String getObjectId() {
-        fixUpdateTypeAndObjectId();
-        return objectId;
-    }
-    public ActivityEventType getEventType() {
-        return eventType;
-    }
-    public ActivityEventUpdateType getUpdateType() {
-        fixUpdateTypeAndObjectId();
-        return updateType;
-    }
-    public StudyActivityEvent toStudyActivityEvent() {
-        fixUpdateTypeAndObjectId();
-        String eventId = objectType.getEventId(objectId, eventType, answerValue);
-        
-        StudyActivityEvent event = new StudyActivityEvent();
-        event.setAppId(appId);
-        event.setUserId(userId);
-        event.setStudyId(studyId);
-        event.setEventId(eventId);
-        event.setTimestamp(timestamp);
-        event.setAnswerValue(answerValue);
-        event.setClientTimeZone(clientTimeZone);
-        event.setCreatedOn(createdOn);
-        return event;
-    }
-    private void fixUpdateTypeAndObjectId() { 
-        // This will be reformatted by the CUSTOM object type
-        if (objectId != null && objectId.toLowerCase().startsWith("custom:")) {
-            objectId = objectId.substring(7);
+    
+    /**
+     * Convert a request using a compound eventId into the individual fields of the 
+     * builder. If the string is not valid, the builder is not valid, the study activity
+     * event it generates is not valid, and validation fails.
+     */
+    public StudyActivityEventParams parseRequest(
+            Map<String,ActivityEventUpdateType> customEvents,
+            Map<String,ActivityEventUpdateType> studyBursts) {
+        StudyActivityEventParams params = new StudyActivityEventParams();
+        params.withTimestamp(timestamp);
+        params.withClientTimeZone(clientTimeZone);
+
+        if (isBlank(eventKey)) {
+            return params;
         }
-        updateType = objectType.getUpdateType();
-        if (objectType == CUSTOM && customEvents != null) {
-            updateType = customEvents.get(objectId);
-            objectId = formatActivityEventId(eventKeys, objectId);
+        String[] elements = eventKey.split(":");
+
+        ActivityEventObjectType objectType = parseObjectType(elements[0]);
+        // This covers system events which have no qualifiers
+        if (objectType != null) {
+            params.withObjectType(objectType);
+            params.withUpdateType(objectType.getUpdateType());
         }
+        // However, custom events were originally submitted without a prefix, so check that
+        else if (elements.length == 1 && customEvents.containsKey(elements[0])) {
+            params.withObjectType(CUSTOM);
+            params.withObjectId(elements[0]);
+            params.withUpdateType(customEvents.get(elements[0]));
+        }
+        // Fully specified custom events are two parts
+        if (elements.length == 2 && objectType == CUSTOM && customEvents.containsKey(elements[1])) {
+            params.withObjectId(elements[1]);
+            params.withUpdateType(customEvents.get(elements[1]));
+        }
+        // This covers system events with two qualifiers (an objectId and an answerValue)
+        if (elements.length == 3) {
+            if (objectType == STUDY_BURST) {
+                if (studyBursts.containsKey(elements[1])) {
+                    params.withObjectId(elements[1]);
+                    params.withUpdateType(studyBursts.get(elements[1]));
+                    params.withAnswerValue(elements[2]); // the iteration #
+                }
+            } else {
+                if (elements[2].contains("=")) { // question with an answer
+                    String[] answer = elements[2].split("=");
+                    params.withObjectId(elements[1]);
+                    params.withEventType(parseEventType(answer[0]));
+                    params.withAnswerValue(answer[1]);
+                } else { // survey, activity, assessment finished
+                    params.withObjectId(elements[1]);
+                    params.withEventType(parseEventType(elements[2]));
+                }
+            }
+        }
+        return params;
     }
-    public StudyActivityEventRequest copy() {
-        StudyActivityEventRequest copy = new StudyActivityEventRequest();
-        copy.appId = appId; 
-        copy.userId = userId;
-        copy.studyId = studyId;
-        copy.timestamp = timestamp;
-        copy.answerValue = answerValue;
-        copy.clientTimeZone = clientTimeZone;
-        copy.createdOn = createdOn;
-        copy.objectType = objectType;
-        copy.objectId = objectId;
-        copy.eventType = eventType;
-        copy.updateType = updateType;
-        return copy;
+    
+    private ActivityEventObjectType parseObjectType(String value) {
+        try {
+            return ActivityEventObjectType.valueOf(value.toUpperCase());
+        } catch(IllegalArgumentException e) {
+        }
+        return null;
+    }
+    
+    private ActivityEventType parseEventType(String value) {
+        try {
+            return ActivityEventType.valueOf(value.toUpperCase());
+        } catch(IllegalArgumentException e) {
+        }
+        return null;
     }
 }

@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
@@ -8,9 +7,9 @@ import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.DELETE_INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.CREATE_INSTANCE;
@@ -19,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.DateTime;
@@ -32,8 +32,11 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -65,6 +68,7 @@ public class StudyActivityEventService {
     private StudyService studyService;
     private AccountService accountService;
     private ActivityEventService activityEventService;
+    private Schedule2Service scheduleService;
     
     @Autowired
     final void setStudyActivityEventDao(StudyActivityEventDao dao) {
@@ -82,6 +86,10 @@ public class StudyActivityEventService {
     final void setActivityEventService(ActivityEventService activityEventService) {
         this.activityEventService = activityEventService;
     }
+    @Autowired
+    final void setSchedule2Service(Schedule2Service scheduleService) {
+        this.scheduleService = scheduleService;
+    }
     
     DateTime getCreatedOn() { 
         return DateTime.now();
@@ -91,42 +99,39 @@ public class StudyActivityEventService {
      * Only custom events can be deleted (if they are mutable). Other requests 
      * are silently ignored. 
      */
-    public void deleteCustomEvent(StudyActivityEventRequest request) {
-        checkNotNull(request);
-        checkArgument(request.getObjectType() == CUSTOM);
+    public void deleteCustomEvent(StudyActivityEventParams params) {
+        checkNotNull(params);
 
-        Study study = studyService.getStudy(request.getAppId(), request.getStudyId(), true);
-        request.customEvents(study.getCustomEventsMap());
-        
-        StudyActivityEvent event = request.toStudyActivityEvent();
+        StudyActivityEvent event = params.toStudyActivityEvent();
         
         Validate.entityThrowingException(DELETE_INSTANCE, event);
         
         StudyActivityEvent mostRecent = dao.getRecentStudyActivityEvent(
                 event.getUserId(), event.getStudyId(), event.getEventId());
 
-        if (request.getUpdateType().canDelete(mostRecent, event)) {
+        if (event.getUpdateType().canDelete(mostRecent, event)) {
             dao.deleteCustomEvent(event);
         }
     }
     
-    public void publishEvent(StudyActivityEventRequest request) {
-        checkNotNull(request);
+    public void publishEvent(StudyActivityEventParams params) {
+        checkNotNull(params);
 
-        Study study = studyService.getStudy(request.getAppId(), request.getStudyId(), true);
-        request.customEvents(study.getCustomEventsMap());
-        request.createdOn(getCreatedOn());
-        
-        StudyActivityEvent event = request.toStudyActivityEvent();
+        params.withCreatedOn(getCreatedOn());
+        StudyActivityEvent event = params.toStudyActivityEvent();
         
         Validate.entityThrowingException(CREATE_INSTANCE, event);
         
         StudyActivityEvent mostRecent = dao.getRecentStudyActivityEvent(
-                request.getUserId(), request.getStudyId(), event.getEventId());
+                event.getUserId(), event.getStudyId(), event.getEventId());
         
-        if (request.getUpdateType().canUpdate(mostRecent, event)) {
+        if (event.getUpdateType().canUpdate(mostRecent, event)) {
             dao.publishEvent(event);
-            createAutomaticCustomEvents(study, request);
+        }
+        Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
+        Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
+        if (schedule != null) {
+            createStudyBurstEvents(schedule, params);
         }
     }
     
@@ -166,7 +171,9 @@ public class StudyActivityEventService {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         Study study = studyService.getStudy(accountId.getAppId(), studyId, true);
-        eventId = formatActivityEventId(study.getCustomEventsMap().keySet(), eventId);
+        Map<String, ActivityEventUpdateType> studyBursts = scheduleService.getStudyBurstsForStudy(accountId.getAppId(), study);
+
+        eventId = formatActivityEventId(study.getCustomEventsMap(), studyBursts, eventId);
         if (eventId == null) {
             throw new BadRequestException(INVALID_EVENT_ID);
         }
@@ -208,29 +215,36 @@ public class StudyActivityEventService {
     /**
      * If the triggering event is mutable, these events can be created as well.
      */
-    private void createAutomaticCustomEvents(Study study, StudyActivityEventRequest request) {
-        /* This will be redone with a more explicit model of study bursts.
-        String eventId = request.toStudyActivityEvent().getEventId();
-        for (Map.Entry<String, String> oneAutomaticEvent : app.getAutomaticCustomEvents().entrySet()) {
-            String automaticEventKey = oneAutomaticEvent.getKey(); // new event key
-            Tuple<String> autoEventSpec = parseAutoEventValue(oneAutomaticEvent.getValue());
-            String triggerEventId = autoEventSpec.getLeft();
-            
-            // enrollment, activities_retrieved, or any of the custom:* events defined by the user.
-            if (eventId.equals(triggerEventId)) {
-                Period automaticEventDelay = Period.parse(autoEventSpec.getRight());
-                DateTime automaticEventTime = new DateTime(request.getTimestamp()).plus(automaticEventDelay);
+    private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEventParams builder) {
+        StudyActivityEvent originEvent = builder.toStudyActivityEvent();
+        String eventId = originEvent.getEventId();
+        for(StudyBurst burst : schedule.getStudyBursts()) {
+            if (burst.getOriginEventId().equals(eventId)) {
                 
-                StudyActivityEvent automaticEvent = request.copy()
-                    .customEvents(ImmutableMap.of(automaticEventKey, MUTABLE))
-                    .objectType(CUSTOM)
-                    .objectId(automaticEventKey)
-                    .timestamp(automaticEventTime)
-                    .toStudyActivityEvent();
-                dao.publishEvent(automaticEvent);
+                DateTime eventTime = new DateTime(originEvent.getTimestamp());
+                int len =  burst.getOccurrences().intValue();
+                
+                for (int i=0; i < len; i++) {
+                    String iteration = Strings.padStart(Integer.toString(i+1), 2, '0');
+                    eventTime = new DateTime(eventTime).plus(burst.getInterval());
+                    
+                    StudyActivityEvent burstEvent = builder
+                            .withObjectType(STUDY_BURST)
+                            .withObjectId(burst.getIdentifier())
+                            .withAnswerValue(iteration)
+                            .withTimestamp(eventTime)
+                            .toStudyActivityEvent();
+                    
+                    StudyActivityEvent mostRecent = dao.getRecentStudyActivityEvent(
+                            burstEvent.getUserId(), burstEvent.getStudyId(), burstEvent.getEventId());
+
+                    // Study bursts also have an update type that must be respected.
+                    if (burst.getUpdateType().canUpdate(mostRecent, burstEvent)) {
+                        dao.publishEvent(burstEvent);    
+                    }
+                }
             }
         }
-        */        
     }
     
     /**

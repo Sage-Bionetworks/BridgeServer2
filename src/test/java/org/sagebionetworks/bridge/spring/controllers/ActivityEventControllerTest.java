@@ -13,7 +13,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.spring.controllers.ActivityEventController.EVENT_DELETED_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.ActivityEventController.EVENT_RECORDED_MSG;
 import static org.testng.Assert.assertEquals;
@@ -48,12 +48,16 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
+import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
+import org.sagebionetworks.bridge.services.StudyService;
 
 public class ActivityEventControllerTest extends Mockito {
 
@@ -65,6 +69,12 @@ public class ActivityEventControllerTest extends Mockito {
     
     @Mock
     private StudyActivityEventService mockStudyActivityEventService;
+    
+    @Mock
+    private StudyService mockStudyService;
+    
+    @Mock
+    private Schedule2Service mockScheduleService;
     
     @Mock
     private RequestInfoService mockRequestInfoService;
@@ -80,7 +90,7 @@ public class ActivityEventControllerTest extends Mockito {
     private ActivityEventController controller = new ActivityEventController();
     
     @Captor
-    ArgumentCaptor<StudyActivityEventRequest> requestCaptor;
+    ArgumentCaptor<StudyActivityEventParams> paramsCaptor;
     
     @Captor
     ArgumentCaptor<RequestInfo> requestInfoCaptor;
@@ -176,13 +186,13 @@ public class ActivityEventControllerTest extends Mockito {
         ResourceList<StudyActivityEvent> retList = controller.getRecentActivityEventsForSelf(TEST_STUDY_ID);
         assertEquals(retList.getItems().size(), 1);
 
-        verify(mockStudyActivityEventService).publishEvent(requestCaptor.capture());
-        StudyActivityEventRequest request = requestCaptor.getValue();
-        assertEquals(request.getAppId(), TEST_APP_ID);
-        assertEquals(request.getStudyId(), TEST_STUDY_ID);
-        assertEquals(request.getUserId(), TEST_USER_ID);
-        assertEquals(request.getObjectType(), TIMELINE_RETRIEVED);
-        assertEquals(request.getTimestamp(), CREATED_ON);
+        verify(mockStudyActivityEventService).publishEvent(paramsCaptor.capture());
+        StudyActivityEvent event = paramsCaptor.getValue().toStudyActivityEvent();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getEventId(), "timeline_retrieved");
+        assertEquals(event.getTimestamp(), CREATED_ON);
         
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
         assertEquals(requestInfoCaptor.getValue().getTimelineAccessedOn(), CREATED_ON);
@@ -198,17 +208,21 @@ public class ActivityEventControllerTest extends Mockito {
 
         TestUtils.mockRequestBody(mockRequest, createJson(
                 "{'eventKey':'eventKey','timestamp':'"+CREATED_ON+"'}"));
+
+        Study study = Study.create();
+        study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
+        when(mockStudyService.getStudy(session.getAppId(), TEST_STUDY_ID, true)).thenReturn(study);
         
         StatusMessage retValue = controller.publishActivityEventForSelf(TEST_STUDY_ID);
         assertEquals(retValue, EVENT_RECORDED_MSG);
         
-        verify(mockStudyActivityEventService).publishEvent(requestCaptor.capture());
-        StudyActivityEventRequest request = requestCaptor.getValue();
-        assertEquals(request.getAppId(), TEST_APP_ID);
-        assertEquals(request.getStudyId(), TEST_STUDY_ID);
-        assertEquals(request.getUserId(), TEST_USER_ID);
-        assertEquals(request.getObjectId(), "eventKey");
-        assertEquals(request.getTimestamp(), CREATED_ON);
+        verify(mockStudyActivityEventService).publishEvent(paramsCaptor.capture());
+        StudyActivityEvent event = paramsCaptor.getValue().toStudyActivityEvent();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getEventId(), "custom:eventKey");
+        assertEquals(event.getTimestamp(), CREATED_ON);
     }
     
     @Test
@@ -222,12 +236,12 @@ public class ActivityEventControllerTest extends Mockito {
         StatusMessage retValue = controller.deleteActivityEventForSelf(TEST_STUDY_ID, "eventKey");
         assertEquals(retValue, EVENT_DELETED_MSG);
         
-        verify(mockStudyActivityEventService).deleteCustomEvent(requestCaptor.capture());
-        StudyActivityEventRequest request = requestCaptor.getValue();
-        assertEquals(request.getAppId(), TEST_APP_ID);
-        assertEquals(request.getStudyId(), TEST_STUDY_ID);
-        assertEquals(request.getUserId(), TEST_USER_ID);
-        assertEquals(request.getObjectId(), "eventKey");
+        verify(mockStudyActivityEventService).deleteCustomEvent(paramsCaptor.capture());
+        StudyActivityEvent event = paramsCaptor.getValue().toStudyActivityEvent();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getEventId(), "custom:eventKey");
     }
     
     @Test

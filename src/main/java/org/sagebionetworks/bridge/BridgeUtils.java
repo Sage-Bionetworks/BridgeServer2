@@ -6,7 +6,6 @@ import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
@@ -60,7 +59,8 @@ import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -730,7 +730,15 @@ public class BridgeUtils {
      * to indicate that the custom event is being used (overridding system events is confusing and 
      * discouraged).
      */
-    public static String formatActivityEventId(Set<String> activityEventIds, String id) {
+    public static String formatActivityEventId(
+            Map<String,ActivityEventUpdateType> customEvents,
+            Map<String,ActivityEventUpdateType> studyBursts, 
+            String id) {
+        
+        return new StudyActivityEventRequest(id, null, null, null)
+            .parseRequest(customEvents, studyBursts)
+            .toStudyActivityEvent().getEventId();
+        /*
         if (isNotBlank(id)) {
             // return as is, but lower-case the prefix
             if (id.toLowerCase().startsWith("custom:") || id.toLowerCase().startsWith("study_burst:")) {
@@ -757,6 +765,7 @@ public class BridgeUtils {
             }
         }
         return null;
+    */
     }
     
     /**

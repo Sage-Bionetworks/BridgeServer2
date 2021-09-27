@@ -42,6 +42,8 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     private DateTime createdOn;
     @Transient
     private int recordCount;
+    @Transient
+    private ActivityEventUpdateType updateType;
     
     public StudyActivityEvent() {}
     
@@ -105,4 +107,19 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     public void setRecordCount(int recordCount) {
         this.recordCount = recordCount;
     }
+    public ActivityEventUpdateType getUpdateType() {
+        return updateType;
+    }
+    public void setUpdateType(ActivityEventUpdateType updateType) {
+        this.updateType = updateType;
+    }
+
+    @Override
+    public String toString() {
+        return "StudyActivityEvent [appId=" + appId + ", userId=" + userId + ", studyId=" + studyId + ", eventId="
+                + eventId + ", timestamp=" + timestamp + ", answerValue=" + answerValue + ", clientTimeZone="
+                + clientTimeZone + ", createdOn=" + createdOn + ", recordCount=" + recordCount + ", updateType="
+                + updateType + "]";
+    }
+    
 }
