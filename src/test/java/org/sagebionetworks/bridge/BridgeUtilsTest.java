@@ -1044,6 +1044,12 @@ public class BridgeUtilsTest extends Mockito {
     }
 
     @Test
+    public void formatActivityEventId_validUnarySystemIdWrongCase() {
+        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "ACTIVITIES_RETRIEVED");
+        assertEquals(retValue, "activities_retrieved");
+    }
+    
+    @Test
     public void formatActivityEventId_validCompoundSystemId() {
         String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
         assertEquals(retValue, "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");

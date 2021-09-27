@@ -724,14 +724,15 @@ public class BridgeUtils {
     /**
      * Verifies that the activity eventId is valid, and formats the casing correctly. (It doesn't 
      * handle absolutely everything, but system events are known to be formatted correctly thanks 
-     * to the StudyActivityEventRequestBuilder). Returns the value if valid, or null otherwise. 
-     * This is then handled by validation. If the event submitted is an overridden system event, 
-     * it will be treated as the system event so in that case, you *must* prepend "custom:" to 
-     * indicate that the custom event is being used (overridding system events is confusing and 
+     * to the StudyActivityEventRequestParams). Returns the value if valid, or null otherwise. 
+     * This is then validated as an invalid value. If the event submitted is an overridden system 
+     * event, it will be treated as the system event so in that case, you *must* prepend "custom:" 
+     * to indicate that the custom event is being used (overridding system events is confusing and 
      * discouraged).
      */
     public static String formatActivityEventId(Set<String> activityEventIds, String id) {
         if (isNotBlank(id)) {
+            // return as is, but lower-case the prefix
             if (id.toLowerCase().startsWith("custom:") || id.toLowerCase().startsWith("study_burst:")) {
                 String[] elements = id.split(":");
                 if (activityEventIds.contains(elements[1])) {
@@ -740,13 +741,17 @@ public class BridgeUtils {
                 }
                 return null;
             }
+            // the first part should be a known event type (other than custom or study burst).
+            // if it is, the id is returned, lower-cased if need be.
             try {
-                String[] parts = id.split(":");
-                ActivityEventObjectType.valueOf(parts[0].toUpperCase());
-                return id;
+                String[] elements = id.split(":");
+                ActivityEventObjectType.valueOf(elements[0].toUpperCase());
+                elements[0] = elements[0].toLowerCase();
+                return COLON_JOINER.join(elements);
             } catch(IllegalArgumentException e) {
             }
-            // backwards compatibility
+            // backwards compatibility: we allowed custom events to be submitted without the 
+            // custom: prefix 
             if (activityEventIds.contains(id)) {
                 return "custom:" + id;
             }
