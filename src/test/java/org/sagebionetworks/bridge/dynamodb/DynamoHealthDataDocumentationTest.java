@@ -7,6 +7,8 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.HealthDataDocumentation;
 import org.testng.annotations.Test;
 
+import java.util.Date;
+
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.testng.Assert.assertEquals;
@@ -30,7 +32,8 @@ public class DynamoHealthDataDocumentationTest {
 
         JsonNode node = MAPPER.readTree(json);
         assertEquals(node.get("identifier").textValue(), IDENTIFIER);
-        assertEquals(Long.valueOf(node.get("modifiedOn").longValue()), TIMESTAMP);
+        Long modifiedOn = new DateTime(node.get("modifiedOn").textValue()).getMillis();
+        assertEquals(modifiedOn, TIMESTAMP);
         assertEquals((Long)node.get("version").longValue(), VERSION);
 
         HealthDataDocumentation deserialize = MAPPER.readValue(json, HealthDataDocumentation.class);

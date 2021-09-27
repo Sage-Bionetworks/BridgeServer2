@@ -35,7 +35,7 @@ public class HealthDataDocumentationController extends BaseController {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.DEVELOPER);
 
         HealthDataDocumentation documentation = parseJson(HealthDataDocumentation.class);
-        documentation.setParentId(session.getAppId());
+        setDocParentIdHelper(documentation, session.getAppId());
 
         return healthDataDocumentationService.createOrUpdateHealthDataDocumentation(documentation);
     }
@@ -80,5 +80,9 @@ public class HealthDataDocumentationController extends BaseController {
 
         healthDataDocumentationService.deleteAllHealthDataDocumentation(session.getAppId());
         return new StatusMessage("Health data documentation has been deleted.");
+    }
+
+    void setDocParentIdHelper(HealthDataDocumentation doc, String parentId) {
+        doc.setParentId(parentId);
     }
 }

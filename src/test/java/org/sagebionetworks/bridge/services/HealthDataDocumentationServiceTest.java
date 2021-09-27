@@ -1,26 +1,32 @@
 package org.sagebionetworks.bridge.services;
 
 import com.google.common.collect.ImmutableList;
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeUtils;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.HealthDataDocumentationDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.HealthDataDocumentation;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
-import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
-import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.*;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_KEY;
+import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertSame;
 
 public class HealthDataDocumentationServiceTest {
+    private static final Long MOCK_NOW_MILLIS = DateTime.parse("2017-09-26T18:04:13.855-0700").getMillis();
 
     @Mock
     private HealthDataDocumentationDao mockDao;
@@ -33,15 +39,30 @@ public class HealthDataDocumentationServiceTest {
         MockitoAnnotations.initMocks(this);
     }
 
+    @BeforeClass
+    public static void mockNow() {
+        DateTimeUtils.setCurrentMillisFixed(MOCK_NOW_MILLIS);
+    }
+
+    @AfterClass
+    public static void unmockNow() {
+        DateTimeUtils.setCurrentMillisSystem();
+    }
+
     @Test
     public void createOrUpdateHealthDataDocumentation() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
         HealthDataDocumentation doc = makeValidDoc();
         when(mockDao.createOrUpdateDocumentation(doc)).thenReturn(doc);
 
         HealthDataDocumentation result = service.createOrUpdateHealthDataDocumentation(doc);
         assertSame(result, doc);
+        assertEquals(result.getModifiedBy(), TEST_USER_ID);
+        assertEquals(result.getModifiedOn(), MOCK_NOW_MILLIS);
 
         verify(mockDao).createOrUpdateDocumentation(doc);
+
+        RequestContext.set(null);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)

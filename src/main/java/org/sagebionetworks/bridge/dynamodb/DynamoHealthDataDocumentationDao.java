@@ -32,11 +32,6 @@ public class DynamoHealthDataDocumentationDao implements HealthDataDocumentation
     public HealthDataDocumentation createOrUpdateDocumentation(@Nonnull HealthDataDocumentation documentation) {
         HealthDataDocumentation dynamoDocumentation = (DynamoHealthDataDocumentation) documentation;
 
-        if (dynamoDocumentation.getIdentifier() == null) {
-            // Documentation doesn't have ID assigned yet (new documentation). Create ID and assign it.
-            dynamoDocumentation.setIdentifier(BridgeUtils.generateGuid());
-        }
-
         // Save to DynamoDB.
         mapper.save(dynamoDocumentation);
         return dynamoDocumentation;

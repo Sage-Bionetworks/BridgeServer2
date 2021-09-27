@@ -89,11 +89,13 @@ public class DynamoHealthDataDocumentation implements HealthDataDocumentation {
 
     @Override
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
+    @JsonSerialize(using = DateTimeToLongSerializer.class)
     public Long getModifiedOn() {
         return this.modifiedOn;
     }
 
     @Override
+    @JsonDeserialize(using = DateTimeToLongDeserializer.class)
     public void setModifiedOn(Long modifiedOn) {
         this.modifiedOn = modifiedOn;
     }
