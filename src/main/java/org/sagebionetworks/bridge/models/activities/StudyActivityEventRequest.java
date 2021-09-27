@@ -4,8 +4,6 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -60,9 +58,7 @@ public class StudyActivityEventRequest {
      * builder. If the string is not valid, the builder is not valid, the study activity
      * event it generates is not valid, and validation fails.
      */
-    public StudyActivityEventParams parseRequest(
-            Map<String,ActivityEventUpdateType> customEvents,
-            Map<String,ActivityEventUpdateType> studyBursts) {
+    public StudyActivityEventParams parseRequest(StudyActivityEventMap eventMap) {
         StudyActivityEventParams params = new StudyActivityEventParams();
         params.withTimestamp(timestamp);
         params.withClientTimeZone(clientTimeZone);
@@ -79,22 +75,22 @@ public class StudyActivityEventRequest {
             params.withUpdateType(objectType.getUpdateType());
         }
         // However, custom events were originally submitted without a prefix, so check that
-        else if (elements.length == 1 && customEvents.containsKey(elements[0])) {
+        else if (elements.length == 1 && eventMap.containsCustomId(elements[0])) {
             params.withObjectType(CUSTOM);
             params.withObjectId(elements[0]);
-            params.withUpdateType(customEvents.get(elements[0]));
+            params.withUpdateType(eventMap.getCustomUpdateType((elements[0])));
         }
         // Fully specified custom events are two parts
-        if (elements.length == 2 && objectType == CUSTOM && customEvents.containsKey(elements[1])) {
+        if (elements.length == 2 && objectType == CUSTOM && eventMap.containsCustomId(elements[1])) {
             params.withObjectId(elements[1]);
-            params.withUpdateType(customEvents.get(elements[1]));
+            params.withUpdateType(eventMap.getCustomUpdateType((elements[1])));
         }
         // This covers system events with two qualifiers (an objectId and an answerValue)
         if (elements.length == 3) {
             if (objectType == STUDY_BURST) {
-                if (studyBursts.containsKey(elements[1])) {
+                if (eventMap.containsBurstId(elements[1])) {
                     params.withObjectId(elements[1]);
-                    params.withUpdateType(studyBursts.get(elements[1]));
+                    params.withUpdateType(eventMap.getBurstUpdateType((elements[1])));
                     params.withAnswerValue(elements[2]); // the iteration #
                 }
             } else {

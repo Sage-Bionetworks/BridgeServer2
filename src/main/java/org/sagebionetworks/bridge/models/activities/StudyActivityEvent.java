@@ -113,13 +113,4 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     public void setUpdateType(ActivityEventUpdateType updateType) {
         this.updateType = updateType;
     }
-
-    @Override
-    public String toString() {
-        return "StudyActivityEvent [appId=" + appId + ", userId=" + userId + ", studyId=" + studyId + ", eventId="
-                + eventId + ", timestamp=" + timestamp + ", answerValue=" + answerValue + ", clientTimeZone="
-                + clientTimeZone + ", createdOn=" + createdOn + ", recordCount=" + recordCount + ", updateType="
-                + updateType + "]";
-    }
-    
 }

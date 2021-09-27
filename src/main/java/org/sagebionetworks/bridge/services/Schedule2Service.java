@@ -20,7 +20,6 @@ import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Consumer;
 
@@ -29,8 +28,6 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import com.google.common.collect.ImmutableMap;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
@@ -38,7 +35,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
 import org.sagebionetworks.bridge.models.schedules2.HasGuid;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
@@ -171,16 +168,6 @@ public class Schedule2Service {
             CAN_READ_SCHEDULES.checkAndThrow(STUDY_ID, study.getIdentifier(), ORG_ID, optional.get().getOwnerId());    
         }
         return optional;
-    }
-    
-    public Map<String, ActivityEventUpdateType> getStudyBurstsForStudy(String appId, Study study) {
-        Map<String, ActivityEventUpdateType> studyBursts = ImmutableMap.of();
-        if (study.getScheduleGuid() != null) {
-            Schedule2 schedule2 = getScheduleForStudy(appId, study)
-                    .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
-            studyBursts = schedule2.getStudyBurstsMap();
-        }
-        return studyBursts;
     }
     
     public Schedule2 createOrUpdateStudySchedule(Study study, Schedule2 schedule) {
@@ -365,7 +352,11 @@ public class Schedule2Service {
     void preValidationCleanup(Study study, Schedule2 schedule, Consumer<HasGuid> consumer) {
         checkNotNull(study);
         checkNotNull(schedule);
-        
+
+        StudyActivityEventMap map = new StudyActivityEventMap();
+        map.addCustomEvents(study.getCustomEvents());
+        map.addStudyBursts(schedule.getStudyBursts());
+
         // Set<String> keys = study.getCustomEventsMap().keySet();
         for (Session session : schedule.getSessions()) {
             consumer.accept(session);
@@ -374,7 +365,7 @@ public class Schedule2Service {
                 consumer.accept(window);
             }
             List<String> events = session.getStartEventIds().stream()
-                .map(s -> formatActivityEventId(study.getCustomEventsMap(), schedule.getStudyBurstsMap(), s))
+                .map(s -> formatActivityEventId(map, s))
                 .collect(toList());
             session.setStartEventIds(events);
         }

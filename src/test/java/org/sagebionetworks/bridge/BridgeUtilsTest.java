@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
@@ -61,13 +62,16 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigValidatorTest;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
+import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 
 import com.google.common.collect.Lists;
@@ -1030,6 +1034,9 @@ public class BridgeUtilsTest extends Mockito {
             {"study_burst:foo:01", "study_burst:foo:01", m(), m("foo")},
             {"study_burst:foo:01", null, m(), m()},
             {"study_burst:bar:01", null, m(), m("foo")},
+            {"question:foo:answered=4", "question:foo:answered=4", m(), m()},
+            {"question:foo:answer portion wrong", null, m(), m()},
+            {"question:foo:answer=4", null, m(), m()}, // also wrong
         };
     }
     
@@ -1042,9 +1049,29 @@ public class BridgeUtilsTest extends Mockito {
     }
     
     @Test(dataProvider = "formatActvityEventIdParams")
-    public void formatActivityEventId(String input, String expectedOutput, Map<String, 
-            ActivityEventUpdateType> customEvents, Map<String, ActivityEventUpdateType> studyBursts) {
-        String retValue = BridgeUtils.formatActivityEventId(customEvents, studyBursts, input);
+    public void formatActivityEventId(String input, String expectedOutput, 
+            Map<String, ActivityEventUpdateType> customEvents, 
+            Map<String, ActivityEventUpdateType> studyBursts) {
+        
+        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        
+        List<StudyCustomEvent> events = customEvents.entrySet().stream().map(entry -> {
+            StudyCustomEvent event = new StudyCustomEvent();
+            event.setEventId(entry.getKey());
+            event.setUpdateType(entry.getValue());
+            return event;
+        }).collect(toList());
+        eventMap.addCustomEvents(events);
+        
+        List<StudyBurst> bursts = studyBursts.entrySet().stream().map(entry -> {
+            StudyBurst burst = new StudyBurst();
+            burst.setIdentifier(entry.getKey());
+            burst.setUpdateType(entry.getValue());
+            return burst;
+        }).collect(toList());
+        eventMap.addStudyBursts(bursts);
+        
+        String retValue = BridgeUtils.formatActivityEventId(eventMap, input);
         assertEquals(retValue, expectedOutput);
     }
     

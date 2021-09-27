@@ -45,8 +45,8 @@ import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
@@ -54,7 +54,6 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSe
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.SessionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -188,7 +187,6 @@ public class AdherenceService {
                 params.withObjectType(ASSESSMENT);
                 params.withObjectId(meta.getAssessmentId());
             }
-            System.out.println(params);
             studyActivityEventService.publishEvent(params);
         }
     }
@@ -237,11 +235,9 @@ public class AdherenceService {
         AdherenceRecordsSearch.Builder builder = search.toBuilder();
         
         if (TRUE.equals(search.getCurrentTimestampsOnly()) || !search.getEventTimestamps().isEmpty()) {
-            Study study = studyService.getStudy(appId, search.getStudyId(), true);
-            Map<String, ActivityEventUpdateType> customEvents = study.getCustomEventsMap();
-            Map<String, ActivityEventUpdateType> studyBursts = scheduleService
-                    .getStudyBurstsForStudy(appId, study);
             
+            StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(appId, search.getStudyId());;
+
             Map<String, DateTime> fixedMap = new HashMap<>();
             if (TRUE.equals(search.getCurrentTimestampsOnly())) {
                 // This adds current server timestamps to the search filters
@@ -249,11 +245,11 @@ public class AdherenceService {
                         .getRecentStudyActivityEvents(appId, search.getUserId(), search.getStudyId())
                         .getItems().stream()
                         .collect(toMap(StudyActivityEvent::getEventId, StudyActivityEvent::getTimestamp));
-                addToMap(events, customEvents, studyBursts, fixedMap);
+                addToMap(events, eventMap, fixedMap);
             }
             if (!search.getEventTimestamps().isEmpty()) {
                 // This fixes things like failing to put a "custom:" prefix on a custom event.
-                addToMap(search.getEventTimestamps(), customEvents, studyBursts, fixedMap);
+                addToMap(search.getEventTimestamps(), eventMap, fixedMap);
             }
             builder.withEventTimestamps(fixedMap);
         }
@@ -277,11 +273,10 @@ public class AdherenceService {
         return builder.build();
     }
 
-    protected void addToMap(Map<String, DateTime> events, Map<String, ActivityEventUpdateType> customEvents,
-            Map<String, ActivityEventUpdateType> studyBursts, Map<String, DateTime> fixedMap) {
+    protected void addToMap(Map<String, DateTime> events, StudyActivityEventMap eventMap, Map<String, DateTime> fixedMap) {
         for (Map.Entry<String, DateTime> entry : events.entrySet()) {
             String eventId = entry.getKey();
-            String fixedEventId = formatActivityEventId(customEvents, studyBursts, eventId);
+            String fixedEventId = formatActivityEventId(eventMap, eventId);
             if (fixedEventId != null) {
                 fixedMap.put(fixedEventId, entry.getValue());    
             }

@@ -64,13 +64,13 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 
 public class AdherenceServiceTest extends Mockito {
@@ -505,9 +505,11 @@ public class AdherenceServiceTest extends Mockito {
                 .withCallerUserId(TEST_USER_ID)
                 .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
         
-        Study study = Study.create();
-        study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("event1", IMMUTABLE)));
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        eventMap.addCustomEvents(ImmutableList.of(
+                new StudyCustomEvent("event1", IMMUTABLE)));
+        
+        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
 
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
                 .withInstanceGuids(ImmutableSet.of("AAA@" + CREATED_ON.toString()))
@@ -575,11 +577,12 @@ public class AdherenceServiceTest extends Mockito {
 
     @Test
     public void cleanupSearchNormalizesEventIds() {
-        Study study = Study.create();
-        study.setCustomEvents(ImmutableList.of(
+        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        eventMap.addCustomEvents(ImmutableList.of(
                 new StudyCustomEvent("event1", IMMUTABLE), 
-                new StudyCustomEvent("event_2", IMMUTABLE)));
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+                new StudyCustomEvent("event2", IMMUTABLE)));
+        
+        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
         
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
                 .withUserId(TEST_USER_ID)
@@ -588,9 +591,10 @@ public class AdherenceServiceTest extends Mockito {
                         "custom:event1", CREATED_ON, "event_2", CREATED_ON,
                         "custom:event3", CREATED_ON)).build();
         
+        // This now actually removes invalid event IDs, which seems okay.
         AdherenceRecordsSearch retValue = service.cleanupSearch(TEST_APP_ID, search);
         assertEquals(retValue.getEventTimestamps().keySet(), 
-                ImmutableSet.of("enrollment", "custom:event1", "custom:event_2"));
+                ImmutableSet.of("enrollment", "custom:event1"));
     }
     
     @Test
@@ -608,11 +612,12 @@ public class AdherenceServiceTest extends Mockito {
     
     @Test
     public void cleanupSearchRetrievesActivityEventsMap() {
-        Study study = Study.create();
-        study.setCustomEvents(ImmutableList.of(
+        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        eventMap.addCustomEvents(ImmutableList.of(
                 new StudyCustomEvent("event1", IMMUTABLE), 
                 new StudyCustomEvent("event2", IMMUTABLE)));
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
 
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
                 .withUserId(TEST_USER_ID)

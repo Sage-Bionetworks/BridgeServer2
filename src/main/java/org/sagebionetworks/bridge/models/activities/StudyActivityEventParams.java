@@ -81,11 +81,4 @@ public class StudyActivityEventParams {
         event.setUpdateType(updateType);
         return event;
     }
-    @Override
-    public String toString() {
-        return "StudyActivityEventParams [appId=" + appId + ", userId=" + userId + ", studyId=" + studyId
-                + ", clientTimeZone=" + clientTimeZone + ", createdOn=" + createdOn + ", objectType=" + objectType
-                + ", objectId=" + objectId + ", eventType=" + eventType + ", updateType=" + updateType
-                + ", answerValue=" + answerValue + ", timestamp=" + timestamp + "]";
-    }
 }

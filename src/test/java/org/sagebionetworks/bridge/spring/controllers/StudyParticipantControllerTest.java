@@ -43,7 +43,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
@@ -82,6 +81,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -267,9 +267,9 @@ public class StudyParticipantControllerTest extends Mockito {
         App app = App.create();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
-        Study study = Study.create();
-        study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
-        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
+        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
         
         doReturn(session).when(controller).getAdministrativeSession();
 
@@ -277,8 +277,6 @@ public class StudyParticipantControllerTest extends Mockito {
                 "{'eventId':'eventKey','timestamp':'"+CREATED_ON+"'}"));
         
         mockAccountInStudy();
-        
-        when(mockScheduleService.getStudyBurstsForStudy(TEST_APP_ID, study)).thenReturn(ImmutableMap.of());
         
         StatusMessage retValue = controller.publishActivityEvent(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);

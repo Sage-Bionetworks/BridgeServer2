@@ -59,7 +59,7 @@ import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
@@ -730,42 +730,10 @@ public class BridgeUtils {
      * to indicate that the custom event is being used (overridding system events is confusing and 
      * discouraged).
      */
-    public static String formatActivityEventId(
-            Map<String,ActivityEventUpdateType> customEvents,
-            Map<String,ActivityEventUpdateType> studyBursts, 
-            String id) {
-        
+    public static String formatActivityEventId(StudyActivityEventMap eventMap, String id) {
         return new StudyActivityEventRequest(id, null, null, null)
-            .parseRequest(customEvents, studyBursts)
+            .parseRequest(eventMap)
             .toStudyActivityEvent().getEventId();
-        /*
-        if (isNotBlank(id)) {
-            // return as is, but lower-case the prefix
-            if (id.toLowerCase().startsWith("custom:") || id.toLowerCase().startsWith("study_burst:")) {
-                String[] elements = id.split(":");
-                if (activityEventIds.contains(elements[1])) {
-                    elements[0] = elements[0].toLowerCase();
-                    return COLON_JOINER.join(elements);
-                }
-                return null;
-            }
-            // the first part should be a known event type (other than custom or study burst).
-            // if it is, the id is returned, lower-cased if need be.
-            try {
-                String[] elements = id.split(":");
-                ActivityEventObjectType.valueOf(elements[0].toUpperCase());
-                elements[0] = elements[0].toLowerCase();
-                return COLON_JOINER.join(elements);
-            } catch(IllegalArgumentException e) {
-            }
-            // backwards compatibility: we allowed custom events to be submitted without the 
-            // custom: prefix 
-            if (activityEventIds.contains(id)) {
-                return "custom:" + id;
-            }
-        }
-        return null;
-    */
     }
     
     /**

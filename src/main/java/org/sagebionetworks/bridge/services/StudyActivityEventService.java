@@ -32,8 +32,8 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
@@ -170,10 +170,9 @@ public class StudyActivityEventService {
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        Study study = studyService.getStudy(accountId.getAppId(), studyId, true);
-        Map<String, ActivityEventUpdateType> studyBursts = scheduleService.getStudyBurstsForStudy(accountId.getAppId(), study);
+        StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(accountId.getAppId(), studyId);
 
-        eventId = formatActivityEventId(study.getCustomEventsMap(), studyBursts, eventId);
+        eventId = formatActivityEventId(eventMap, eventId);
         if (eventId == null) {
             throw new BadRequestException(INVALID_EVENT_ID);
         }

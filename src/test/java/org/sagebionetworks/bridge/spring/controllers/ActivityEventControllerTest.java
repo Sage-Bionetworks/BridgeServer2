@@ -48,14 +48,13 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.services.ActivityEventService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.RequestInfoService;
-import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
 
@@ -72,9 +71,6 @@ public class ActivityEventControllerTest extends Mockito {
     
     @Mock
     private StudyService mockStudyService;
-    
-    @Mock
-    private Schedule2Service mockScheduleService;
     
     @Mock
     private RequestInfoService mockRequestInfoService;
@@ -209,9 +205,9 @@ public class ActivityEventControllerTest extends Mockito {
         TestUtils.mockRequestBody(mockRequest, createJson(
                 "{'eventKey':'eventKey','timestamp':'"+CREATED_ON+"'}"));
 
-        Study study = Study.create();
-        study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
-        when(mockStudyService.getStudy(session.getAppId(), TEST_STUDY_ID, true)).thenReturn(study);
+        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
+        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
         
         StatusMessage retValue = controller.publishActivityEventForSelf(TEST_STUDY_ID);
         assertEquals(retValue, EVENT_RECORDED_MSG);

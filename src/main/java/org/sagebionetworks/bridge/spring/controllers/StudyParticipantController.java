@@ -19,7 +19,6 @@ import static org.springframework.http.HttpStatus.OK;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -54,8 +53,8 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -497,10 +496,9 @@ public class StudyParticipantController extends BaseController {
         
         StudyActivityEventRequest request = parseJson(StudyActivityEventRequest.class);
         
-        Study study = studyService.getStudy(session.getAppId(), studyId, true);
-        Map<String,ActivityEventUpdateType> studyBursts = scheduleService.getStudyBurstsForStudy(userId, study);
+        StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(session.getAppId(), studyId);
         
-        studyActivityEventService.publishEvent(request.parseRequest(study.getCustomEventsMap(), studyBursts)
+        studyActivityEventService.publishEvent(request.parseRequest(eventMap)
                 .withAppId(session.getAppId())
                 .withStudyId(studyId)
                 .withUserId(account.getId()));
