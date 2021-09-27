@@ -3,10 +3,17 @@ package org.sagebionetworks.bridge.models.schedules2.timelines;
 import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.ENCODER;
+import static org.sagebionetworks.bridge.BridgeUtils.addAllToList;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.hash.HashFunction;
@@ -15,11 +22,11 @@ import com.google.common.hash.Hashing;
 
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
-
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
 public class Scheduler {
@@ -37,8 +44,14 @@ public class Scheduler {
         builder.withSchedule(schedule);
         calculateLanguageKey(builder);
         
+        Map<String,Set<String>> studyBurstEventsMap = getStudyBurstEventMap(schedule);
+
         for (Session session : schedule.getSessions()) {
             if (!session.getAssessments().isEmpty()) {
+                for (String studyBurstId : session.getStudyBurstIds()) {
+                    List<String> combinedSet = addAllToList(session.getStartEventIds(), studyBurstEventsMap.get(studyBurstId));
+                    session.setStartEventIds(combinedSet);
+                }
                 for (TimeWindow window : session.getTimeWindows()) {
                     scheduleTimeWindowSequence(builder, schedule, session, window);
                 }
@@ -54,6 +67,25 @@ public class Scheduler {
             callerLangs = callerLangs.stream().map(s -> s.toLowerCase()).collect(toList());
             builder.withLang(COMMA_JOINER.join(callerLangs));
         }
+    }
+    
+    /**
+     * Expand study bursts into a set of events, and add them to each session before
+     * producing the timeline. ScheduledSessions fall out correctly from this.
+     */
+    Map<String,Set<String>> getStudyBurstEventMap(Schedule2 schedule) {
+        Map<String,Set<String>> studyBurstEventsMap = new HashMap<>();
+        for (StudyBurst burst : schedule.getStudyBursts()) {
+            int len =  burst.getOccurrences().intValue();
+            Set<String> burstEventIds = new HashSet<>();
+            for (int i=0; i < len; i++) {
+                String iteration = Strings.padStart(Integer.toString(i+1), 2, '0');
+                String eventId = STUDY_BURST.getEventId(burst.getIdentifier(), null, iteration);
+                burstEventIds.add(eventId);
+            }
+            studyBurstEventsMap.put(burst.getIdentifier(), burstEventIds);
+        }
+        return studyBurstEventsMap;
     }
     
     int calculateEndDay(int studyLengthInDays, LocalTime startTime, int startDay, Period expiration) {

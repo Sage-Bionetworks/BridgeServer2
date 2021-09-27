@@ -798,3 +798,19 @@ DROP FOREIGN KEY `fk_substudy`;
 ALTER TABLE `AccountsSubstudies`
 ADD CONSTRAINT `fk_substudy` FOREIGN KEY (`substudyId`, `studyId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE;
 
+-- changeset bridge:48
+
+CREATE TABLE `ScheduleStudyBursts` (
+  `scheduleGuid` varchar(60) NOT NULL,
+  `identifier` varchar(255) NOT NULL,
+  `originEventId` varchar(255) NOT NULL,
+  `intervalPeriod` varchar(60),
+  `occurrences` int(10) unsigned,
+  `updateType` enum('MUTABLE', 'IMMUTABLE', 'FUTURE_ONLY') DEFAULT 'IMMUTABLE',
+  `position` int(10) signed,
+  PRIMARY KEY (`scheduleGuid`, `identifier`),
+  CONSTRAINT `ScheduleStudyBursts-Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+ALTER TABLE `Sessions`
+ADD COLUMN `studyBurstIds` varchar(512);
