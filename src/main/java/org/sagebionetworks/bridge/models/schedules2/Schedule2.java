@@ -1,10 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules2;
 
-import static java.util.stream.Collectors.toMap;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import javax.persistence.CascadeType;
 import javax.persistence.CollectionTable;
@@ -32,7 +29,6 @@ import org.sagebionetworks.bridge.hibernate.JsonNodeAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.PeriodToStringConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 
 @Entity
 @Table(name = "Schedules")
@@ -158,11 +154,5 @@ public class Schedule2 implements BridgeEntity {
     }
     public void setVersion(long version) {
         this.version = version;
-    }
-    @JsonIgnore
-    public Map<String, ActivityEventUpdateType> getStudyBurstsUpdateMap() {
-        return getStudyBursts().stream()
-                .filter(b -> b != null && b.getIdentifier() != null && b.getUpdateType() != null)
-                .collect(toMap(StudyBurst::getIdentifier, StudyBurst::getUpdateType));
     }
 }

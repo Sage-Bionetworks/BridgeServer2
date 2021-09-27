@@ -6,15 +6,11 @@ import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestUtils.getClientData;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
-
-import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -24,7 +20,6 @@ import org.joda.time.Period;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 
 public class Schedule2Test {
     
@@ -96,24 +91,5 @@ public class Schedule2Test {
         assertTrue(deser.isDeleted());
         assertTrue(deser.isPublished());
         assertEquals(deser.getVersion(), 10L);
-    }
-    
-    @Test
-    public void getStudyBurstsUpdateMap() {
-        Schedule2 schedule = createValidSchedule();
-        
-        StudyBurst burst = new StudyBurst();
-        burst.setIdentifier("burst2");
-        burst.setOriginEventId(ENROLLMENT.name().toLowerCase());
-        burst.setInterval(Period.parse("P1W"));
-        burst.setOccurrences(2);
-        burst.setUpdateType(FUTURE_ONLY);
-        
-        schedule.setStudyBursts(ImmutableList.of(schedule.getStudyBursts().get(0), burst));
-        
-        Map<String, ActivityEventUpdateType> map = schedule.getStudyBurstsUpdateMap();
-        assertEquals(map.size(), 2);
-        assertEquals(map.get("burst1"), MUTABLE);
-        assertEquals(map.get("burst2"), FUTURE_ONLY);
     }
 }
