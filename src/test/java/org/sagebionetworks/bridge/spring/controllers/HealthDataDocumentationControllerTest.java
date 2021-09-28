@@ -1,7 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import com.google.common.collect.ImmutableList;
-import org.mockito.*;
+import org.mockito.ArgumentCaptor;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Spy;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.HealthDataDocumentation;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -14,7 +18,10 @@ import org.testng.annotations.Test;
 import javax.servlet.http.HttpServletRequest;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
