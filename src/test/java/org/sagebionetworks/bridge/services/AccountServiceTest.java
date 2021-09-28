@@ -73,7 +73,6 @@ import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -135,7 +134,7 @@ public class AccountServiceTest extends Mockito {
     ArgumentCaptor<Account> accountCaptor;
     
     @Captor
-    ArgumentCaptor<StudyActivityEventParams> paramsCaptor;
+    ArgumentCaptor<StudyActivityEvent> eventCaptor;
 
     @BeforeClass
     public static void mockNow() {
@@ -850,16 +849,16 @@ public class AccountServiceTest extends Mockito {
 
         verify(mockAccountDao).createAccount(app, account);
         verify(activityEventService).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, times(2)).publishEvent(paramsCaptor.capture());
+        verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture());
         
-        StudyActivityEvent event1 = paramsCaptor.getAllValues().get(0).toStudyActivityEvent();
+        StudyActivityEvent event1 = eventCaptor.getAllValues().get(0);
         assertEquals(event1.getAppId(), TEST_APP_ID);
         assertEquals(event1.getStudyId(), STUDY_A);
         assertEquals(event1.getUserId(), TEST_USER_ID);
         assertEquals(event1.getEventId(), "enrollment");
         assertEquals(event1.getTimestamp(), account.getCreatedOn());
         
-        StudyActivityEvent event2 = paramsCaptor.getAllValues().get(1).toStudyActivityEvent();
+        StudyActivityEvent event2 = eventCaptor.getAllValues().get(1);
         assertEquals(event2.getAppId(), TEST_APP_ID);
         assertEquals(event2.getStudyId(), STUDY_B);
         assertEquals(event2.getUserId(), TEST_USER_ID);
@@ -961,8 +960,8 @@ public class AccountServiceTest extends Mockito {
         
         verify(activityEventService).publishEnrollmentEvent(
                 eq(app), eq(HEALTH_CODE), any(DateTime.class));
-        verify(studyActivityEventService).publishEvent(paramsCaptor.capture());
-        StudyActivityEvent event = paramsCaptor.getValue().toStudyActivityEvent();
+        verify(studyActivityEventService).publishEvent(eventCaptor.capture());
+        StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), STUDY_B);
         assertEquals(event.getUserId(), TEST_USER_ID);

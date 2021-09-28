@@ -106,7 +106,7 @@ public class StudyActivityEventRequestTest {
 
         StudyActivityEventRequest request = new StudyActivityEventRequest(input, null, null, null); 
         
-        String retValue = request.parse(eventMap).toStudyActivityEvent().getEventId();
+        String retValue = request.parse(eventMap).build().getEventId();
         assertEquals(retValue, expectedOutput);
     }
     

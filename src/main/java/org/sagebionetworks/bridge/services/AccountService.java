@@ -48,7 +48,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -230,13 +230,13 @@ public class AccountService {
             activityEventService.publishEnrollmentEvent(
                     app, account.getHealthCode(), account.getCreatedOn());
         }
+        StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
+                .withAppId(app.getIdentifier())
+                .withUserId(account.getId())
+                .withObjectType(ENROLLMENT)
+                .withTimestamp(account.getCreatedOn());
         for (Enrollment en : account.getEnrollments()) {
-            studyActivityEventService.publishEvent(new StudyActivityEventParams()
-                    .withAppId(app.getIdentifier())
-                    .withStudyId(en.getStudyId())
-                    .withUserId(account.getId())
-                    .withObjectType(ENROLLMENT)
-                    .withTimestamp(account.getCreatedOn()));
+            studyActivityEventService.publishEvent(builder.withStudyId(en.getStudyId()).build());
         }
     }
     
@@ -280,13 +280,15 @@ public class AccountService {
             App app = appService.getApp(account.getAppId());
             activityEventService.publishEnrollmentEvent(app, 
                     account.getHealthCode(), account.getModifiedOn());
+            
+            StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
+                    .withAppId(app.getIdentifier())
+                    .withUserId(account.getId())
+                    .withObjectType(ENROLLMENT)
+                    .withTimestamp(account.getModifiedOn());
+                    
             for (String studyId : newStudies) {
-                studyActivityEventService.publishEvent(new StudyActivityEventParams()
-                        .withAppId(app.getIdentifier())
-                        .withStudyId(studyId)
-                        .withUserId(account.getId())
-                        .withObjectType(ENROLLMENT)
-                        .withTimestamp(account.getModifiedOn()));
+                studyActivityEventService.publishEvent(builder.withStudyId(studyId).build());
             }
         }
     }

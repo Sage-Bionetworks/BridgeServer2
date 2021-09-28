@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 
 import java.util.List;
@@ -32,7 +31,6 @@ import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.ActivityEventService;
@@ -120,12 +118,12 @@ public class ActivityEventController extends BaseController {
                 .withTimelineAccessedOn(timelineRequestedOn).build();
         requestInfoService.updateRequestInfo(requestInfo);
         
-        studyActivityEventService.publishEvent(new StudyActivityEventParams()
+        studyActivityEventService.publishEvent(new StudyActivityEvent.Builder()
                 .withAppId(session.getAppId())
                 .withStudyId(studyId)
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
-                .withTimestamp(timelineRequestedOn));
+                .withTimestamp(timelineRequestedOn).build());
 
         return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), session.getId(), studyId);
     }
@@ -162,12 +160,11 @@ public class ActivityEventController extends BaseController {
         StudyActivityEventRequest request = parseJson(StudyActivityEventRequest.class);
         StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(session.getAppId(), studyId);
 
-        StudyActivityEventParams builder = request.parse(eventMap);
-        builder.withAppId(session.getAppId());
-        builder.withStudyId(studyId);
-        builder.withUserId(session.getId());
-        
-        studyActivityEventService.publishEvent(builder);
+        studyActivityEventService.publishEvent(request.parse(eventMap)
+                .withAppId(session.getAppId())
+                .withStudyId(studyId)
+                .withUserId(session.getId())
+                .build());
         
         return EVENT_RECORDED_MSG;
     }   
@@ -180,12 +177,13 @@ public class ActivityEventController extends BaseController {
             throw new EntityNotFoundException(Account.class);
         }
         
-        studyActivityEventService.deleteCustomEvent(new StudyActivityEventParams()
+        StudyActivityEventRequest request = new StudyActivityEventRequest(eventId, null, null, null);
+        StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(session.getAppId(), studyId);
+        
+        studyActivityEventService.deleteEvent(request.parse(eventMap)
                 .withAppId(session.getAppId())
                 .withStudyId(studyId)
-                .withUserId(session.getId())
-                .withObjectId(eventId)
-                .withObjectType(CUSTOM));
+                .withUserId(session.getId()).build());
         
         return EVENT_DELETED_MSG;
     }

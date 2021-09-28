@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestUtils.createEvent;
 import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.ASSESSMENT_IDS;
 import static org.sagebionetworks.bridge.models.ResourceList.CURRENT_TIMESTAMPS_ONLY;
@@ -65,7 +66,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
@@ -95,7 +95,7 @@ public class AdherenceServiceTest extends Mockito {
     ArgumentCaptor<AdherenceRecordsSearch> searchCaptor;
     
     @Captor
-    ArgumentCaptor<StudyActivityEventParams> paramsCaptor;
+    ArgumentCaptor<StudyActivityEvent> eventCaptor;
     
     @Captor
     ArgumentCaptor<AdherenceRecord> recordCaptor;
@@ -172,9 +172,9 @@ public class AdherenceServiceTest extends Mockito {
         
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(0));
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(1));
-        verify(mockStudyActivityEventService, times(3)).publishEvent(paramsCaptor.capture());
+        verify(mockStudyActivityEventService, times(3)).publishEvent(eventCaptor.capture());
         
-        StudyActivityEvent event = paramsCaptor.getAllValues().get(2).toStudyActivityEvent();
+        StudyActivityEvent event = eventCaptor.getAllValues().get(2);
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
         assertEquals(event.getUserId(), TEST_USER_ID);
@@ -197,9 +197,9 @@ public class AdherenceServiceTest extends Mockito {
         
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(0));
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(1));
-        verify(mockStudyActivityEventService, times(1)).publishEvent(paramsCaptor.capture());
+        verify(mockStudyActivityEventService, times(1)).publishEvent(eventCaptor.capture());
         
-        StudyActivityEvent event = paramsCaptor.getValue().toStudyActivityEvent();
+        StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
         assertEquals(event.getUserId(), TEST_USER_ID);
@@ -625,12 +625,8 @@ public class AdherenceServiceTest extends Mockito {
                 .withCurrentTimestampsOnly(TRUE)
                 .withEventTimestamps(ImmutableMap.of("event1", CREATED_ON)).build();
         
-        StudyActivityEvent event1 = new StudyActivityEvent();
-        event1.setEventId("custom:event1");
-        event1.setTimestamp(MODIFIED_ON);
-        StudyActivityEvent event2 = new StudyActivityEvent();
-        event2.setEventId("custom:event2");
-        event2.setTimestamp(MODIFIED_ON);
+        StudyActivityEvent event1 = createEvent("custom:event1", MODIFIED_ON);
+        StudyActivityEvent event2 = createEvent("custom:event2", MODIFIED_ON);
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID))
             .thenReturn(new ResourceList<StudyActivityEvent>(ImmutableList.of(event1, event2)));
         

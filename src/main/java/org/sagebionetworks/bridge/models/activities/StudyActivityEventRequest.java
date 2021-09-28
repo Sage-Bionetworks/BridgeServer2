@@ -55,54 +55,54 @@ public class StudyActivityEventRequest {
      * parameter object. If the string is not valid, the builder is not valid, the 
      * study activity event it generates will be null, and validation will fail.
      */
-    public StudyActivityEventParams parse(StudyActivityEventMap eventMap) {
-        StudyActivityEventParams params = new StudyActivityEventParams();
-        params.withTimestamp(timestamp);
-        params.withClientTimeZone(clientTimeZone);
+    public StudyActivityEvent.Builder parse(StudyActivityEventMap eventMap) {
+        StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder();
+        builder.withTimestamp(timestamp);
+        builder.withClientTimeZone(clientTimeZone);
 
         if (isBlank(eventKey)) {
-            return params;
+            return builder;
         }
         String[] elements = eventKey.split(":");
 
         ActivityEventObjectType objectType = parseObjectType(elements[0]);
+        // However, custom events were originally submitted without a prefix, so check that
         // This covers system events which have no qualifiers
         if (objectType != null) {
-            params.withObjectType(objectType);
-            params.withUpdateType(objectType.getUpdateType());
+            builder.withObjectType(objectType);
+            builder.withUpdateType(objectType.getUpdateType());
         }
-        // However, custom events were originally submitted without a prefix, so check that
         else if (elements.length == 1 && eventMap.hasCustomId(elements[0])) {
-            params.withObjectType(CUSTOM);
-            params.withObjectId(elements[0]);
-            params.withUpdateType(eventMap.getCustomUpdateType((elements[0])));
+            builder.withObjectType(CUSTOM);
+            builder.withObjectId(elements[0]);
+            builder.withUpdateType(eventMap.getCustomUpdateType((elements[0])));
         }
         // Fully specified custom events are two parts
         if (elements.length == 2 && objectType == CUSTOM && eventMap.hasCustomId(elements[1])) {
-            params.withObjectId(elements[1]);
-            params.withUpdateType(eventMap.getCustomUpdateType((elements[1])));
+            builder.withObjectId(elements[1]);
+            builder.withUpdateType(eventMap.getCustomUpdateType((elements[1])));
         }
         // This covers system events with two qualifiers (an objectId and an answerValue)
         if (elements.length == 3) {
             if (objectType == STUDY_BURST) {
                 if (eventMap.hasBurstId(elements[1])) {
-                    params.withObjectId(elements[1]);
-                    params.withUpdateType(eventMap.getBurstUpdateType((elements[1])));
-                    params.withAnswerValue(elements[2]); // the iteration #
+                    builder.withObjectId(elements[1]);
+                    builder.withUpdateType(eventMap.getBurstUpdateType((elements[1])));
+                    builder.withAnswerValue(elements[2]); // the iteration #
                 }
             } else {
                 if (elements[2].contains("=")) { // question with an answer
                     String[] answer = elements[2].split("=");
-                    params.withObjectId(elements[1]);
-                    params.withEventType(parseEventType(answer[0]));
-                    params.withAnswerValue(answer[1]);
+                    builder.withObjectId(elements[1]);
+                    builder.withEventType(parseEventType(answer[0]));
+                    builder.withAnswerValue(answer[1]);
                 } else { // survey, activity, assessment finished
-                    params.withObjectId(elements[1]);
-                    params.withEventType(parseEventType(elements[2]));
+                    builder.withObjectId(elements[1]);
+                    builder.withEventType(parseEventType(elements[2]));
                 }
             }
         }
-        return params;
+        return builder;
     }
     
     private ActivityEventObjectType parseObjectType(String value) {

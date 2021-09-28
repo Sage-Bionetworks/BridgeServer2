@@ -86,19 +86,19 @@ public class HibernateStudyActivityEventDao implements StudyActivityEventDao {
      * the total subselect, so I went this route.
      */
     private static StudyActivityEvent construct(Object[] record) {
-        StudyActivityEvent event = new StudyActivityEvent();
-        event.setAppId(toString(record[0]));
-        event.setUserId(toString(record[1]));
-        event.setStudyId(toString(record[2]));
-        event.setEventId(toString(record[3]));
-        event.setTimestamp(toDateTime(record[4]));
-        event.setAnswerValue(toString(record[5]));
-        event.setClientTimeZone(toString(record[6]));
-        event.setCreatedOn(toDateTime(record[7]));
+        StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder();
+        builder.withAppId(toString(record[0]));
+        builder.withUserId(toString(record[1]));
+        builder.withStudyId(toString(record[2]));
+        builder.withEventId(toString(record[3]));
+        builder.withTimestamp(toDateTime(record[4]));
+        builder.withAnswerValue(toString(record[5]));
+        builder.withClientTimeZone(toString(record[6]));
+        builder.withCreatedOn(toDateTime(record[7]));
         if (record.length > 8) {
-            event.setRecordCount(toInt(record[8]));    
+            builder.withRecordCount(toInt(record[8]));    
         }
-        return event;
+        return builder.build();
     }
     
     private static int toInt(Object obj) {

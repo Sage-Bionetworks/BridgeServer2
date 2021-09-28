@@ -34,7 +34,6 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
@@ -99,10 +98,8 @@ public class StudyActivityEventService {
      * Only custom events can be deleted (if they are mutable). Other requests 
      * are silently ignored. 
      */
-    public void deleteCustomEvent(StudyActivityEventParams params) {
-        checkNotNull(params);
-
-        StudyActivityEvent event = params.toStudyActivityEvent();
+    public void deleteEvent(StudyActivityEvent event) {
+        checkNotNull(event);
         
         Validate.entityThrowingException(DELETE_INSTANCE, event);
         
@@ -114,11 +111,10 @@ public class StudyActivityEventService {
         }
     }
     
-    public void publishEvent(StudyActivityEventParams params) {
-        checkNotNull(params);
+    public void publishEvent(StudyActivityEvent event) {
+        checkNotNull(event);
 
-        params.withCreatedOn(getCreatedOn());
-        StudyActivityEvent event = params.toStudyActivityEvent();
+        event.setCreatedOn(getCreatedOn());
         
         Validate.entityThrowingException(CREATE_INSTANCE, event);
         
@@ -131,7 +127,7 @@ public class StudyActivityEventService {
         Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
         Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
         if (schedule != null) {
-            createStudyBurstEvents(schedule, params);
+            createStudyBurstEvents(schedule, event);
         }
     }
     
@@ -196,9 +192,9 @@ public class StudyActivityEventService {
         if (eventId.equals(ENROLLMENT_FIELD) && results.getItems().size() == 0) {
             Enrollment en = findEnrollmentByStudyId(account, studyId);
             if (en != null) {
-                List<StudyActivityEvent> events = new ArrayList<>();
-                events.add(new StudyActivityEvent(ENROLLMENT_FIELD, en.getEnrolledOn()));
-                results = new PagedResourceList<>(events, 1, true);
+                StudyActivityEvent event = new StudyActivityEvent.Builder()
+                        .withEventId(ENROLLMENT_FIELD).withTimestamp(en.getEnrolledOn()).build();
+                results = new PagedResourceList<>(ImmutableList.of(event), 1, true);
             }
         }
         return results.withRequestParam(ResourceList.OFFSET_BY, offsetBy)
@@ -207,20 +203,29 @@ public class StudyActivityEventService {
     
     private void addIfPresent(List<StudyActivityEvent> events, Map<String, DateTime> map, String field) {
         if (map.containsKey(field)) {
-            events.add(new StudyActivityEvent(field, map.get(field)));
+            StudyActivityEvent event = new StudyActivityEvent.Builder()
+                    .withEventId(field).withTimestamp(map.get(field)).build();
+            events.add(event);
         }
     }
 
     /**
      * If the triggering event is mutable, these events can be created as well.
      */
-    private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEventParams builder) {
-        StudyActivityEvent originEvent = builder.toStudyActivityEvent();
-        String eventId = originEvent.getEventId();
+    private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event) {
+        String eventId = event.getEventId();
+        
+        StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder();
+        builder.withAppId(event.getAppId());
+        builder.withUserId(event.getUserId());
+        builder.withStudyId(event.getStudyId());
+        builder.withClientTimeZone(event.getClientTimeZone());
+        builder.withCreatedOn(event.getCreatedOn());
+        
         for(StudyBurst burst : schedule.getStudyBursts()) {
             if (burst.getOriginEventId().equals(eventId)) {
                 
-                DateTime eventTime = new DateTime(originEvent.getTimestamp());
+                DateTime eventTime = new DateTime(event.getTimestamp());
                 int len =  burst.getOccurrences().intValue();
                 
                 for (int i=0; i < len; i++) {
@@ -232,7 +237,7 @@ public class StudyActivityEventService {
                             .withObjectId(burst.getIdentifier())
                             .withAnswerValue(iteration)
                             .withTimestamp(eventTime)
-                            .toStudyActivityEvent();
+                            .build();
                     
                     StudyActivityEvent mostRecent = dao.getRecentStudyActivityEvent(
                             burstEvent.getUserId(), burstEvent.getStudyId(), burstEvent.getEventId());
@@ -257,7 +262,9 @@ public class StudyActivityEventService {
         }
         Enrollment en = findEnrollmentByStudyId(account, studyId);
         if (en != null) {
-            events.add(new StudyActivityEvent(ENROLLMENT_FIELD, en.getEnrolledOn()));
+            StudyActivityEvent event = new StudyActivityEvent.Builder()
+                    .withEventId(ENROLLMENT_FIELD).withTimestamp(en.getEnrolledOn()).build();
+            events.add(event);
         }
     }
     

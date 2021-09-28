@@ -47,7 +47,6 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
@@ -171,23 +170,23 @@ public class AdherenceService {
 
     protected void publishEvent(String appId, TimelineMetadata meta, AdherenceRecord record) {
         if (meta != null && record.getFinishedOn() != null) {
-            StudyActivityEventParams params = new StudyActivityEventParams()
+            StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
                     .withAppId(appId)
                     .withStudyId(record.getStudyId())
                     .withUserId(record.getUserId())
                     .withEventType(FINISHED)
                     .withTimestamp(record.getFinishedOn());
             if (meta.getAssessmentInstanceGuid() == null) {
-                params.withObjectType(SESSION);
-                params.withObjectId(meta.getSessionGuid());
+                builder.withObjectType(SESSION);
+                builder.withObjectId(meta.getSessionGuid());
             } else {
                 // Shared and local assessment ID are conceptually different but not 
                 // differentiated for events scheduling. It might be helpful to end
                 // users or we might need to change this.
-                params.withObjectType(ASSESSMENT);
-                params.withObjectId(meta.getAssessmentId());
+                builder.withObjectType(ASSESSMENT);
+                builder.withObjectId(meta.getAssessmentId());
             }
-            studyActivityEventService.publishEvent(params);
+            studyActivityEventService.publishEvent(builder.build());
         }
     }
 

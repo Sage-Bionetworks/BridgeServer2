@@ -731,7 +731,7 @@ public class BridgeUtils {
     public static String formatActivityEventId(StudyActivityEventMap eventMap, String id) {
         return new StudyActivityEventRequest(id, null, null, null)
             .parse(eventMap)
-            .toStudyActivityEvent().getEventId();
+            .build().getEventId();
     }
     
     /**

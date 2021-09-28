@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.hibernate.HibernateStudyActivityEventDa
 import static org.sagebionetworks.bridge.hibernate.HibernateStudyActivityEventDao.USER_ID_FIELD;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -53,10 +54,11 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
     
     @Test
     public void deleteCustomEvent() {
-        StudyActivityEvent event = new StudyActivityEvent();
-        event.setUserId(TEST_USER_ID);
-        event.setStudyId(TEST_STUDY_ID);
-        event.setEventId("custom:event1");
+        StudyActivityEvent event = new StudyActivityEvent.Builder()
+            .withUserId(TEST_USER_ID)
+            .withStudyId(TEST_STUDY_ID)
+            .withObjectType(CUSTOM)
+            .withObjectId("event1").build();
         
         dao.deleteCustomEvent(event);
         
@@ -69,7 +71,7 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
     
     @Test
     public void publishEvent() {
-        StudyActivityEvent event = new StudyActivityEvent();
+        StudyActivityEvent event = new StudyActivityEvent.Builder().build();
         
         dao.publishEvent(event);
         
@@ -119,7 +121,8 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
     
     @Test
     public void getStudyActivityEventHistory() {
-        List<StudyActivityEvent> list = ImmutableList.of(new StudyActivityEvent(), new StudyActivityEvent());
+        StudyActivityEvent event = new StudyActivityEvent.Builder().build();
+        List<StudyActivityEvent> list = ImmutableList.of(event, event);
         
         when(mockHelper.nativeQueryGet(eq("SELECT * " + HISTORY_SQL), any(), 
                 eq(150), eq(50), eq(StudyActivityEvent.class))).thenReturn(list);

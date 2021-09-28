@@ -10,7 +10,6 @@ import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDelet
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler.INSTANCE;
 import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
@@ -55,7 +54,6 @@ import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventParams;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
@@ -165,12 +163,12 @@ public class StudyParticipantController extends BaseController {
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
         cacheProvider.setObject(scheduleModificationTimestamp(studyId), schedule.getModifiedOn().toString());
         
-        studyActivityEventService.publishEvent(new StudyActivityEventParams()
+        studyActivityEventService.publishEvent(new StudyActivityEvent.Builder()
                 .withAppId(session.getAppId())
                 .withStudyId(studyId)
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
-                .withTimestamp(timelineRequestedOn));
+                .withTimestamp(timelineRequestedOn).build());
         
         return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
     }
@@ -495,13 +493,12 @@ public class StudyParticipantController extends BaseController {
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
         StudyActivityEventRequest request = parseJson(StudyActivityEventRequest.class);
-        
         StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(session.getAppId(), studyId);
         
         studyActivityEventService.publishEvent(request.parse(eventMap)
                 .withAppId(session.getAppId())
                 .withStudyId(studyId)
-                .withUserId(account.getId()));
+                .withUserId(account.getId()).build());
         
         return EVENT_RECORDED_MSG;
     }
@@ -514,12 +511,13 @@ public class StudyParticipantController extends BaseController {
         
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
-        studyActivityEventService.deleteCustomEvent(new StudyActivityEventParams()
+        StudyActivityEventRequest request = new StudyActivityEventRequest(eventId, null, null, null);
+        StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(session.getAppId(), studyId);
+
+        studyActivityEventService.deleteEvent(request.parse(eventMap)
                 .withAppId(session.getAppId())
                 .withStudyId(studyId)
-                .withUserId(account.getId())
-                .withObjectId(eventId)
-                .withObjectType(CUSTOM));
+                .withUserId(account.getId()).build());
         
         return EVENT_DELETED_MSG;
     }
