@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestUtils.getClientData;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -35,7 +37,15 @@ public class Schedule2Test {
         schedule.setPublished(true);
         schedule.setVersion(10L);
         
+        StudyBurst burst = new StudyBurst();
+        burst.setIdentifier("burst1");
+        burst.setOriginEventId(TIMELINE_RETRIEVED.name().toLowerCase());
+        burst.setInterval(Period.parse("P1W"));
+        burst.setOccurrences(2);
+        burst.setUpdateType(MUTABLE);
+        
         schedule.setSessions(ImmutableList.of(SessionTest.createValidSession()));
+        schedule.setStudyBursts(ImmutableList.of(burst));
         return schedule;
     }
     
@@ -48,7 +58,7 @@ public class Schedule2Test {
         schedule.setSessions(ImmutableList.of(session));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(schedule);
-        assertEquals(node.size(), 12);
+        assertEquals(node.size(), 13);
         assertNull(node.get("appId"));
         assertEquals(node.get("ownerId").textValue(), TEST_ORG_ID);
         assertEquals(node.get("name").textValue(), "Schedule name");
@@ -63,6 +73,11 @@ public class Schedule2Test {
         
         ArrayNode arrayNode = (ArrayNode)node.get("sessions");
         assertEquals(arrayNode.get(0).get("guid").textValue(), "sessionGuid");
+        
+        arrayNode = (ArrayNode)node.get("studyBursts");
+        assertEquals(arrayNode.get(0).size(), 6);
+        assertEquals(arrayNode.get(0).get("identifier").textValue(), "burst1");
+        assertEquals(arrayNode.get(0).get("updateType").textValue(), "mutable");
         
         Schedule2 deser = BridgeObjectMapper.get().readValue(node.toString(), Schedule2.class);
         assertNull(deser.getAppId());
