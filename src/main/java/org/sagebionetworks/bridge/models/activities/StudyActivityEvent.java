@@ -19,11 +19,10 @@ import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 /**
- * When events are submitted through the API, they are submitted partly as a compound string with 
- * some of these values encoded in the string, and some provided in separate JSON fields. These 
- * values are deserialized into the StudyActivityEventRequest object, which can produce a valid 
- * study activity event object. In our system code, these values can be supplied directly through 
- * the builder.
+ * When events are submitted through the API, they are submitted partly as a compound string along
+ * with some separate JSON fields. The compound string may or may not be valid so it it parsed 
+ * and all the data is returned as a Builder for a study activity event. In our system code, these 
+ * values can be supplied directly through the builder.
  */
 @Entity
 @Table(name = "StudyActivityEvents")
@@ -55,7 +54,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     private ActivityEventUpdateType updateType;
     
     // Hibernate is happy with default (package) visibility constructor and setters, ensuring
-    // that objects are constructed in code through a builder.
+    // that objects can only be constructed in code through a builder.
     
     StudyActivityEvent() {}
     
@@ -189,7 +188,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
          * because our code is not organized in packages correctly. This method should be called by 
          * code that is constructing events from the database, or from a couple of exceptional 
          * places in our code where we are “faking” the existence of database events. Normal events 
-         * should be constructed with object type, event type, and object ID.
+         * should be parsed for correctness or constructed with object type, event type, and object ID.
          */
         public Builder withEventId(String eventId) {
             this.eventId = eventId;
@@ -207,12 +206,15 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
             event.setCreatedOn(createdOn);
             event.setUpdateType(updateType);
             event.setRecordCount(recordCount);
+            // We’re constructing the event with a known (already validated) event ID
             if (eventId != null) {
                 if (updateType == null) {
                     event.setUpdateType(IMMUTABLE);    
                 }
                 event.setEventId(eventId);
-            } else if (objectType != null) {
+            } 
+            // We’re constructing the event ID from its constituent parts
+            else if (objectType != null) {
                 if (updateType == null) {
                     event.setUpdateType(objectType.getUpdateType());
                 }

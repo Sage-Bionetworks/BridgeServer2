@@ -82,7 +82,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -267,9 +267,9 @@ public class StudyParticipantControllerTest extends Mockito {
         App app = App.create();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
-        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
-        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
         
         doReturn(session).when(controller).getAdministrativeSession();
 
@@ -303,9 +303,9 @@ public class StudyParticipantControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAdministrativeSession();
 
-        StudyActivityEventMap map = new StudyActivityEventMap();
+        StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
         map.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", MUTABLE)));
-        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID))
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID))
             .thenReturn(map);
 
         TestUtils.mockRequestBody(mockRequest, createJson(

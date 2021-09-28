@@ -55,7 +55,7 @@ import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
@@ -273,9 +273,9 @@ public class StudyActivityEventServiceTest extends Mockito {
         account.setId(TEST_USER_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
-        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("event1", MUTABLE)));
-        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
         
         PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(
                 ACCOUNT_ID, TEST_STUDY_ID, "custom:event1", 10, 100);
@@ -343,8 +343,8 @@ public class StudyActivityEventServiceTest extends Mockito {
         account.setCreatedOn(CREATED_ON);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
-        StudyActivityEventMap eventMap = new StudyActivityEventMap();
-        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
 
         service.getStudyActivityEventHistory(ACCOUNT_ID, TEST_STUDY_ID, "nonsense", 0, 50);
     }
@@ -362,9 +362,9 @@ public class StudyActivityEventServiceTest extends Mockito {
         account.setCreatedOn(CREATED_ON);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
-        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("event1", MUTABLE)));
-        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
         
         PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(
                 ACCOUNT_ID, TEST_STUDY_ID, "event1", null, null);

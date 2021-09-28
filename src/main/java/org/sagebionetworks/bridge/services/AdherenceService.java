@@ -46,7 +46,7 @@ import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
@@ -234,7 +234,7 @@ public class AdherenceService {
         AdherenceRecordsSearch.Builder builder = search.toBuilder();
         
         if (TRUE.equals(search.getCurrentTimestampsOnly()) || !search.getEventTimestamps().isEmpty()) {
-            StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(appId, search.getStudyId());
+            StudyActivityEventIdsMap eventMap = studyService.getStudyActivityEventIdsMap(appId, search.getStudyId());
 
             Map<String, DateTime> fixedMap = new HashMap<>();
             if (TRUE.equals(search.getCurrentTimestampsOnly())) {
@@ -271,7 +271,7 @@ public class AdherenceService {
         return builder.build();
     }
 
-    protected void addToMap(Map<String, DateTime> events, StudyActivityEventMap eventMap, Map<String, DateTime> fixedMap) {
+    protected void addToMap(Map<String, DateTime> events, StudyActivityEventIdsMap eventMap, Map<String, DateTime> fixedMap) {
         for (Map.Entry<String, DateTime> entry : events.entrySet()) {
             String eventId = entry.getKey();
             String fixedEventId = formatActivityEventId(eventMap, eventId);

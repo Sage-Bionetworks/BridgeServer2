@@ -33,7 +33,7 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
@@ -166,7 +166,7 @@ public class StudyActivityEventService {
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(accountId.getAppId(), studyId);
+        StudyActivityEventIdsMap eventMap = studyService.getStudyActivityEventIdsMap(accountId.getAppId(), studyId);
 
         eventId = formatActivityEventId(eventMap, eventId);
         if (eventId == null) {

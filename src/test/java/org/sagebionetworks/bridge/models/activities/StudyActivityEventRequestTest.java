@@ -92,7 +92,7 @@ public class StudyActivityEventRequestTest {
             Map<String, ActivityEventUpdateType> customEvents, 
             Map<String, ActivityEventUpdateType> studyBursts) {
         
-        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         
         List<StudyCustomEvent> events = customEvents.entrySet().stream()
                 .map(entry -> new StudyCustomEvent(entry.getKey(), entry.getValue()))

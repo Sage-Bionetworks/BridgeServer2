@@ -59,7 +59,7 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
@@ -1013,7 +1013,7 @@ public class BridgeUtilsTest extends Mockito {
     // StudyActivityEventRequest’s implementation.
     @Test
     public void formatActivityEventId() {
-        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         
         String retValue = BridgeUtils.formatActivityEventId(eventMap, "custom:foo");
         assertNull(retValue);

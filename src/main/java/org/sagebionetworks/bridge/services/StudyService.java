@@ -38,7 +38,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyPhase;
@@ -110,8 +110,8 @@ public class StudyService {
                 .collect(toSet());
     }
     
-    public StudyActivityEventMap getStudyActivityEventMap(String appId, String studyId) {
-        StudyActivityEventMap map = new StudyActivityEventMap();
+    public StudyActivityEventIdsMap getStudyActivityEventIdsMap(String appId, String studyId) {
+        StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
 
         Study study = getStudy(appId, studyId, true);
         map.addCustomEvents(study.getCustomEvents());

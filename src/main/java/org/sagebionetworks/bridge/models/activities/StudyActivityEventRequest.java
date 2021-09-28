@@ -11,10 +11,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.joda.time.DateTime;
 
 /**
- * Accumulate information from the client and provide the parsing logic to create 
- * the appropriate StudyActivityEventParams object. If the eventKey is not found to 
- * be valid, the parameter object that results will generate an activity event with 
- * a null eventId.
+ * Accumulate information from the client and provide the parsing logic to create the appropriate 
+ * StudyActivityEvent.Builder. If the eventKey is not found to be valid, the builder that results 
+ * will generate a study activity event with a null eventId.
  */
 public class StudyActivityEventRequest {
 
@@ -50,12 +49,7 @@ public class StudyActivityEventRequest {
         return clientTimeZone;
     }
     
-    /**
-     * Convert a request using a compound eventId into the individual fields of the 
-     * parameter object. If the string is not valid, the builder is not valid, the 
-     * study activity event it generates will be null, and validation will fail.
-     */
-    public StudyActivityEvent.Builder parse(StudyActivityEventMap eventMap) {
+    public StudyActivityEvent.Builder parse(StudyActivityEventIdsMap eventMap) {
         StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder();
         builder.withTimestamp(timestamp);
         builder.withClientTimeZone(clientTimeZone);

@@ -24,7 +24,7 @@ public class StudyActivityEventMapTest {
     
     @Test
     public void nullSafe() {
-        StudyActivityEventMap map = new StudyActivityEventMap();
+        StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
         
         assertFalse(map.hasBurstId("key"));
         assertFalse(map.hasCustomId("key"));
@@ -50,7 +50,7 @@ public class StudyActivityEventMapTest {
                 new StudyBurst("burst1", MUTABLE),
                 new StudyBurst("burst2", IMMUTABLE));
         
-        StudyActivityEventMap map = new StudyActivityEventMap();
+        StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
         map.addCustomEvents(customEvents);
         map.addStudyBursts(studyBursts);
         

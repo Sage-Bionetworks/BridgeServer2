@@ -50,7 +50,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.services.ActivityEventService;
@@ -206,9 +206,9 @@ public class ActivityEventControllerTest extends Mockito {
         TestUtils.mockRequestBody(mockRequest, createJson(
                 "{'eventKey':'eventKey','timestamp':'"+CREATED_ON+"'}"));
 
-        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
-        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
         
         StatusMessage retValue = controller.publishActivityEventForSelf(TEST_STUDY_ID);
         assertEquals(retValue, EVENT_RECORDED_MSG);
@@ -230,9 +230,9 @@ public class ActivityEventControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         
-        StudyActivityEventMap map = new StudyActivityEventMap();
+        StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
         map.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", MUTABLE)));
-        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID))
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID))
             .thenReturn(map);
 
         StatusMessage retValue = controller.deleteActivityEventForSelf(TEST_STUDY_ID, "eventKey");

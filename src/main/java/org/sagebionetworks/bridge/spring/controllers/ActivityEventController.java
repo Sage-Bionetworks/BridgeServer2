@@ -30,7 +30,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
 import org.sagebionetworks.bridge.models.activities.CustomActivityEventRequest;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.services.ActivityEventService;
@@ -158,7 +158,7 @@ public class ActivityEventController extends BaseController {
         }
         
         StudyActivityEventRequest request = parseJson(StudyActivityEventRequest.class);
-        StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(session.getAppId(), studyId);
+        StudyActivityEventIdsMap eventMap = studyService.getStudyActivityEventIdsMap(session.getAppId(), studyId);
 
         studyActivityEventService.publishEvent(request.parse(eventMap)
                 .withAppId(session.getAppId())
@@ -178,7 +178,7 @@ public class ActivityEventController extends BaseController {
         }
         
         StudyActivityEventRequest request = new StudyActivityEventRequest(eventId, null, null, null);
-        StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(session.getAppId(), studyId);
+        StudyActivityEventIdsMap eventMap = studyService.getStudyActivityEventIdsMap(session.getAppId(), studyId);
         
         studyActivityEventService.deleteEvent(request.parse(eventMap)
                 .withAppId(session.getAppId())

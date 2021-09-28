@@ -35,7 +35,7 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.HasGuid;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
@@ -353,7 +353,7 @@ public class Schedule2Service {
         checkNotNull(study);
         checkNotNull(schedule);
 
-        StudyActivityEventMap map = new StudyActivityEventMap();
+        StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
         map.addCustomEvents(study.getCustomEvents());
         map.addStudyBursts(schedule.getStudyBursts());
 

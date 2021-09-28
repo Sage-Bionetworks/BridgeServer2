@@ -65,7 +65,7 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
@@ -505,11 +505,11 @@ public class AdherenceServiceTest extends Mockito {
                 .withCallerUserId(TEST_USER_ID)
                 .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
         
-        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         eventMap.addCustomEvents(ImmutableList.of(
                 new StudyCustomEvent("event1", IMMUTABLE)));
         
-        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
 
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
                 .withInstanceGuids(ImmutableSet.of("AAA@" + CREATED_ON.toString()))
@@ -577,12 +577,12 @@ public class AdherenceServiceTest extends Mockito {
 
     @Test
     public void cleanupSearchNormalizesEventIds() {
-        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         eventMap.addCustomEvents(ImmutableList.of(
                 new StudyCustomEvent("event1", IMMUTABLE), 
                 new StudyCustomEvent("event2", IMMUTABLE)));
         
-        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
         
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
                 .withUserId(TEST_USER_ID)
@@ -612,12 +612,12 @@ public class AdherenceServiceTest extends Mockito {
     
     @Test
     public void cleanupSearchRetrievesActivityEventsMap() {
-        StudyActivityEventMap eventMap = new StudyActivityEventMap();
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         eventMap.addCustomEvents(ImmutableList.of(
                 new StudyCustomEvent("event1", IMMUTABLE), 
                 new StudyCustomEvent("event2", IMMUTABLE)));
         
-        when(mockStudyService.getStudyActivityEventMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
 
         AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
                 .withUserId(TEST_USER_ID)

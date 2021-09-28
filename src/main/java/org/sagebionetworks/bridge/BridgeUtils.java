@@ -59,7 +59,7 @@ import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
@@ -107,7 +107,6 @@ public class BridgeUtils {
     public static final Joiner COMMA_JOINER = Joiner.on(",");
     public static final Joiner SEMICOLON_SPACE_JOINER = Joiner.on("; ");
     public static final Joiner SPACE_JOINER = Joiner.on(" ");
-    public static final Joiner COLON_JOINER = Joiner.on(":");
     private static final int ONE_HOUR = 60*60;
     private static final int ONE_DAY = 60*60*24;
     private static final int ONE_MINUTE = 60;
@@ -728,7 +727,7 @@ public class BridgeUtils {
      * case, you *must* prepend "custom:" to indicate that the custom event is being used 
      * (overriding system events is confusing and discouraged).
      */
-    public static String formatActivityEventId(StudyActivityEventMap eventMap, String id) {
+    public static String formatActivityEventId(StudyActivityEventIdsMap eventMap, String id) {
         return new StudyActivityEventRequest(id, null, null, null)
             .parse(eventMap)
             .build().getEventId();

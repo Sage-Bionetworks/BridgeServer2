@@ -11,12 +11,12 @@ import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
  * Some events include a user-defined identifier (custom events, study burst events). This class
  * provides the custom values so we can validate an event string is using a known identifier.  
  */
-public class StudyActivityEventMap {
+public class StudyActivityEventIdsMap {
 
     Map<String, ActivityEventUpdateType> customEvents;
     Map<String, ActivityEventUpdateType> studyBursts;
     
-    public StudyActivityEventMap() {
+    public StudyActivityEventIdsMap() {
         customEvents = new HashMap<>();
         studyBursts = new HashMap<>();
     }
