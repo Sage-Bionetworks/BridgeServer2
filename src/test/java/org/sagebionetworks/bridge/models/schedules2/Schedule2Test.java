@@ -18,7 +18,6 @@ import com.google.common.collect.ImmutableList;
 
 import org.joda.time.Period;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 public class Schedule2Test {
