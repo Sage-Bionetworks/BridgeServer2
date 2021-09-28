@@ -3,9 +3,12 @@ package org.sagebionetworks.bridge.services;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.joda.time.DateTimeZone.UTC;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -56,7 +59,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
@@ -267,11 +269,126 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
         assertEquals(createdAccount.getNote(), TEST_NOTE);
         assertEquals(createdAccount.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+        // This was not set because the caller is not definitively a dev account.
+        assertEquals(createdAccount.getDataGroups(), ImmutableSet.of());
+    }
+    
+    @Test
+    public void createAccountByDevCreatesTestAccount() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        service.createAccount(app, account);
+        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
+        
+        Account createdAccount = accountCaptor.getValue();
+        assertEquals(createdAccount.getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
+    }
+    
+    @Test
+    public void createAccountByStudyDesignerCreatesTestAccount() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        service.createAccount(app, account);
+        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
+        
+        Account createdAccount = accountCaptor.getValue();
+        assertEquals(createdAccount.getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
     }
 
     @Test
     public void updateAccount() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);
+
+        service.updateAccount(account);
+        
+        verify(mockAccountDao).updateAccount(account);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateAccountFailsForDevUpdatingProdAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+
+        service.updateAccount(account);
+    }
+    
+    @Test
+    public void updateAccountDevCannotRemoveTestFlag() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        
+        // mockGetAccountById() returns the account that is returned from persistence,
+        // so to remove the flag you need to create a different account without it
+        Account updatedAccount = Account.create();
+        updatedAccount.setAppId(TEST_APP_ID);
+        updatedAccount.setId(TEST_USER_ID);
+        // no test flag
+
+        service.updateAccount(updatedAccount);
+        
+        // nevertheless it remains
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
+        assertEquals(accountCaptor.getValue().getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
+    }
+    
+    @Test
+    public void updateAccountSucceedsForDevUpdatingTestAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+
+        service.updateAccount(account);
+        
+        verify(mockAccountDao).updateAccount(account);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateAccountFailsForStudyDesignerUpdatingProdAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
+
+        service.updateAccount(account);
+    }
+    
+    @Test
+    public void updateAccountSucceedsForStudyDesignerUpdatingTestAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
 
         service.updateAccount(account);
         
@@ -314,7 +431,27 @@ public class AccountServiceTest extends Mockito {
         }
         verify(mockConsumer, never()).accept(any());
     }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void editAccountFailsForDevelopersOperatingOnProdAccounts() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("adminId")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        mockGetAccountById(ACCOUNT_ID, false);
 
+        service.editAccount(ACCOUNT_ID, mockConsumer);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void editAccountFailsForStudyDesignerOperatingOnProdAccounts() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("adminId")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        mockGetAccountById(ACCOUNT_ID, false);
+
+        service.editAccount(ACCOUNT_ID, mockConsumer);
+    }
+    
     @Test
     public void getAccount() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);

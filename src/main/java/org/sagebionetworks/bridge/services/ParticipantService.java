@@ -10,6 +10,9 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.IS_ONLY_DEVELOPER;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.studyAssociationsVisibleToCaller;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
@@ -425,6 +428,10 @@ public class ParticipantService {
         
         Validate.entityThrowingException(new AccountSummarySearchValidator(app.getDataGroups()), search);
         
+        if (IS_ONLY_DEVELOPER.check()) {
+            Set<String> newDataGroups = addToSet(search.getAllOfGroups(), TEST_USER_GROUP);
+            search = search.toBuilder().withAllOfGroups(newDataGroups).build();
+        }
         return accountService.getPagedAccountSummaries(app.getIdentifier(), search);
     }
 

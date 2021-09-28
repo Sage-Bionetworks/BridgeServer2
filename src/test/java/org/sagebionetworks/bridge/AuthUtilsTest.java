@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge;
 
+import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.OWNER_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
@@ -10,6 +11,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SHARED_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_TRANSITION_STUDY;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_EXTERNAL_IDS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
@@ -32,6 +34,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
+import java.util.Arrays;
 import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
@@ -41,6 +44,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 public class AuthUtilsTest extends Mockito {
     private static final String SHARED_OWNER_ID = TEST_APP_ID + ":" + TEST_OWNER_ID;
@@ -88,16 +93,10 @@ public class AuthUtilsTest extends Mockito {
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void canEditEnrollmentsFailsForDev() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(OTHER_USER_ID)
-                .withCallerRoles(ImmutableSet.of(DEVELOPER))
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .build());
-        
-        CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID);
-    }
+    // A test used to verify that developers could not change enrollments. They can now change
+    // enrollments, but they can only do this on accounts they can “see,” and that only includes
+    // test accounts. So the test has been removed.
+    // canEditEnrollmentsFailsForDev
 
     @Test
     public void canEditEnrollmentsSucceedsForMatchingOrgId() {
@@ -695,5 +694,168 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         AuthUtils.CAN_EDIT_ORG.checkAndThrow(ORG_ID, TEST_ORG_ID);
+    }
+    
+    
+    @Test
+    public void canAccessAccount_nullFails() {
+        assertFalse(AuthUtils.canAccessAccount(null));
+    }
+
+    @Test
+    public void canAccessAccount_selfSucceeds() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
+
+        assertTrue(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_adminSucceeds() {
+        Account account = Account.create();
+        
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+
+        assertTrue(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_workerSucceeds() {
+        Account account = Account.create();
+        
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(WORKER)).build());
+
+        assertTrue(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_orgAdminSucceedsInOrg() {
+        Account account = Account.create();
+        account.setOrgMembership(TEST_ORG_ID);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+
+        assertTrue(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_orgAdminFailsFromOtherOrg() {
+        Account account = Account.create();
+        account.setOrgMembership("other-organization");
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+
+        assertFalse(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_devSucceedsWithTestAccount() {
+        Account account = Account.create();
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+
+        assertTrue(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_studyDesignerSucceedsWithTestAccount() {
+        Account account = getAccountEnrolledIn(TEST_STUDY_ID);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+
+        assertTrue(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_devFailsWithProdAccount() {
+        Account account = Account.create();
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+
+        assertFalse(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_studyDesignerFailsWithProdAccount() {
+        Account account = getAccountEnrolledIn(TEST_STUDY_ID);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+
+        assertFalse(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_researcherSucceedsWithEnrollee() {
+        Account account = getAccountEnrolledIn(TEST_STUDY_ID);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        assertTrue(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_studyCoordinatorSucceedsWithEnrollee() {
+        Account account = getAccountEnrolledIn(TEST_STUDY_ID);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+
+        assertTrue(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_researcherSucceedsWithNonEnrollee() {
+        Account account = getAccountEnrolledIn("other-study");
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        assertTrue(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_studyCoordinatorFailsWithNonEnrollee() {
+        Account account = getAccountEnrolledIn("other-study");
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+
+        assertFalse(AuthUtils.canAccessAccount(account));
+    }
+
+    private Account getAccountEnrolledIn(String... studyIds) {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        Set<Enrollment> enrollments = Arrays.asList(studyIds)
+                .stream()
+                .map(id -> Enrollment.create(TEST_APP_ID, id, TEST_USER_ID))
+                .collect(toSet());
+        account.setEnrollments(enrollments);
+        return account;
     }
 }

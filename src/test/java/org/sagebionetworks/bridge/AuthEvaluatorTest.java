@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -29,6 +30,44 @@ public class AuthEvaluatorTest {
     @AfterMethod
     public void afterMethod() {
         RequestContext.set(NULL_INSTANCE);
+    }
+    
+    @Test
+    public void isNotSelf() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
+        
+        AuthEvaluator evaluator = new AuthEvaluator().isNotSelf();
+        assertTrue(evaluator.check(USER_ID, "other-user"));
+        assertTrue(evaluator.check(USER_ID, null));
+        assertFalse(evaluator.check(USER_ID, TEST_USER_ID));
+    }
+    
+    @Test
+    public void hasOnlyRoles() {
+        // This doesn't match against the null request context
+        AuthEvaluator evaluator = new AuthEvaluator().hasOnlyRoles(DEVELOPER);
+        assertFalse(evaluator.check());
+
+        // User is developer and must only be a developer
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        assertTrue(evaluator.check());
+        
+        // User is required to be only these roles, and developer still passes 
+        evaluator = new AuthEvaluator().hasOnlyRoles(DEVELOPER, RESEARCHER);
+        assertTrue(evaluator.check());
+
+        // But throw in something else, and they don't
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER, STUDY_DESIGNER)).build());
+        assertFalse(evaluator.check());
+
+        // Now make them more more than the roles listed
+        evaluator = new AuthEvaluator().hasOnlyRoles(DEVELOPER);
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER, RESEARCHER)).build());
+        // so this is false
+        assertFalse(evaluator.check());
     }
     
     @Test

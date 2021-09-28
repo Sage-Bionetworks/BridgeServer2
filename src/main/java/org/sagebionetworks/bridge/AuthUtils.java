@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge;
 
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
@@ -11,6 +15,9 @@ import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.Set;
 
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
+
 /**
  * Utility methods to check caller authorization in service methods. Given the way the code and the 
  * authorization rules are written, ADMIN and SUPERADMIN roles will currently always pass. They
@@ -21,6 +28,13 @@ import java.util.Set;
  * All methods throw UnauthorizedException if they fail.
  */
 public class AuthUtils {
+    
+    /**
+     * Calling account is only a developer, and thus should only have access to test
+     * accounts, not production accounts.
+     */
+    public static final AuthEvaluator IS_ONLY_DEVELOPER = new AuthEvaluator()
+            .isNotSelf().hasOnlyRoles(DEVELOPER, STUDY_DESIGNER);
     
     public static final AuthEvaluator CAN_TRANSITION_STUDY = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
@@ -88,32 +102,33 @@ public class AuthUtils {
      * own account, must have access to the study, or be a worker. 
      */
     public static final AuthEvaluator CAN_READ_STUDY_ASSOCIATIONS = new AuthEvaluator().isSelf().or()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**
      * Can the caller view participants (through the original Participants API)? Must be reading self,
      * be an organization admin, or be a worker.
      */
     public static final AuthEvaluator CAN_READ_PARTICIPANTS = new AuthEvaluator().isSelf().or()
+            // This allows an org admin to see study participants, but we block this in the relevant API calls.
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**
      * Can the caller edit participants? Must be editing one’s own account, or be a study coordinator
      * with access to the participant’s study, or be a researcher, or a worker.
      */
     public static final AuthEvaluator CAN_EDIT_PARTICIPANTS = new AuthEvaluator().isSelf().or()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**
      * Can the caller read participant reports? 
      */
     public static final AuthEvaluator CAN_READ_PARTICIPANT_REPORTS = new AuthEvaluator().isSelf().or()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(RESEARCHER, WORKER, ADMIN);
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**
      * Can the caller read study reports?
@@ -127,8 +142,8 @@ public class AuthUtils {
      * be a study coordinator with access to the study involved, or be a researcher. 
      */
     public static final AuthEvaluator CAN_EDIT_ENROLLMENTS = new AuthEvaluator().isSelf().or()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(RESEARCHER, ADMIN);
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
 
     public static final AuthEvaluator CAN_DELETE_PARTICIPANTS = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
@@ -139,7 +154,7 @@ public class AuthUtils {
      * (external IDs are pretty lax because in theory, they are not identifying).
      */
     public static final AuthEvaluator CAN_READ_EXTERNAL_IDS = new AuthEvaluator()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER).or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
 
     /**
@@ -148,7 +163,7 @@ public class AuthUtils {
      */
     public static final AuthEvaluator CAN_READ_STUDIES = new AuthEvaluator()
             .isEnrolledInStudy().or()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR, STUDY_DESIGNER, ORG_ADMIN).or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN).or()
             .hasAnyRole(DEVELOPER, ADMIN);
     
     /**
@@ -164,8 +179,8 @@ public class AuthUtils {
      */
     public static final AuthEvaluator CAN_EDIT_STUDY_PARTICIPANTS = new AuthEvaluator()
             .isEnrolledInStudy().isSelf().or()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(RESEARCHER, ADMIN);
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
     
     /**
      * Can the caller import a shared assessment under the supplied organization? Yes if
@@ -221,8 +236,8 @@ public class AuthUtils {
      */
     public static final AuthEvaluator CAN_ACCESS_ADHERENCE_DATA = new AuthEvaluator()
             .isSelf().isEnrolledInStudy().or()
-            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
-            .hasAnyRole(RESEARCHER, ADMIN);
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
     
     /**
      * Is the caller in the provided role? Superadmins always pass this test.
@@ -238,5 +253,40 @@ public class AuthUtils {
     public static boolean isInRole(Set<Roles> callerRoles, Set<Roles> requiredRoles) {
         return callerRoles != null && requiredRoles != null && 
                 requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
+    }
+    
+    
+    /**
+     * To access an individual account, one of these conditions must hold true:
+     * 
+     * 1) it's the caller's account;
+     * 2) the account is enrolled in a study and the caller is a researcher;
+     * 3) the account is enrolled in a study and the caller is a study coordinator 
+     *    with access to that study;
+     * 4) the account is a test account and the caller is a developer;
+     * 5) the account is a test account enrolled in a study and the caller is a 
+     *    study coordinator with access to that study.
+     */
+    public static final boolean canAccessAccount(Account account) {
+        if (account != null) {
+            Set<String> userDataGroups = account.getDataGroups();
+            if (IS_ONLY_DEVELOPER.check(USER_ID, account.getId()) && !userDataGroups.contains(TEST_USER_GROUP)) {
+                return false;
+            }
+            // If the account is in a study that the caller can access with the correct role, 
+            // return the account. We must iterate over this check because the account can be 
+            // in multiple studies.
+            for (Enrollment en : account.getEnrollments()) {
+                if (CAN_READ_PARTICIPANTS.check(USER_ID, account.getId(), ORG_ID, 
+                        account.getOrgMembership(), STUDY_ID, en.getStudyId())) {
+                    return true;
+                }
+            }
+            // Otherwise call this auth rule without a study and see if the caller matches any of
+            // the other authorization criteria (the above check won't have happend for accounts 
+            // without any enrollments).
+            return CAN_READ_PARTICIPANTS.check(USER_ID, account.getId(), ORG_ID, account.getOrgMembership());
+        }
+        return false;
     }
 }
