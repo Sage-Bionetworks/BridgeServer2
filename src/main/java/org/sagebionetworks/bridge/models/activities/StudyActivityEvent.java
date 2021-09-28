@@ -18,6 +18,13 @@ import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
+/**
+ * When events are submitted through the API, they are submitted partly as a compound string with 
+ * some of these values encoded in the string, and some provided in separate JSON fields. These 
+ * values are deserialized into the StudyActivityEventRequest object, which can produce a valid 
+ * study activity event object. In our system code, these values can be supplied directly through 
+ * the builder.
+ */
 @Entity
 @Table(name = "StudyActivityEvents")
 @IdClass(StudyActivityEventId.class)

@@ -215,12 +215,13 @@ public class StudyActivityEventService {
     private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event) {
         String eventId = event.getEventId();
         
-        StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder();
-        builder.withAppId(event.getAppId());
-        builder.withUserId(event.getUserId());
-        builder.withStudyId(event.getStudyId());
-        builder.withClientTimeZone(event.getClientTimeZone());
-        builder.withCreatedOn(event.getCreatedOn());
+        StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
+            .withAppId(event.getAppId())
+            .withUserId(event.getUserId())
+            .withStudyId(event.getStudyId())
+            .withClientTimeZone(event.getClientTimeZone())
+            .withCreatedOn(event.getCreatedOn())
+            .withObjectType(STUDY_BURST);
         
         for(StudyBurst burst : schedule.getStudyBursts()) {
             if (burst.getOriginEventId().equals(eventId)) {
@@ -233,7 +234,6 @@ public class StudyActivityEventService {
                     eventTime = new DateTime(eventTime).plus(burst.getInterval());
                     
                     StudyActivityEvent burstEvent = builder
-                            .withObjectType(STUDY_BURST)
                             .withObjectId(burst.getIdentifier())
                             .withAnswerValue(iteration)
                             .withTimestamp(eventTime)

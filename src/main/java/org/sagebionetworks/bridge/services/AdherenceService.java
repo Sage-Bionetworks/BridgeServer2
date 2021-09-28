@@ -234,7 +234,7 @@ public class AdherenceService {
         AdherenceRecordsSearch.Builder builder = search.toBuilder();
         
         if (TRUE.equals(search.getCurrentTimestampsOnly()) || !search.getEventTimestamps().isEmpty()) {
-            StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(appId, search.getStudyId());;
+            StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(appId, search.getStudyId());
 
             Map<String, DateTime> fixedMap = new HashMap<>();
             if (TRUE.equals(search.getCurrentTimestampsOnly())) {
