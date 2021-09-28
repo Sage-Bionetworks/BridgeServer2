@@ -498,7 +498,7 @@ public class StudyParticipantController extends BaseController {
         
         StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(session.getAppId(), studyId);
         
-        studyActivityEventService.publishEvent(request.parseRequest(eventMap)
+        studyActivityEventService.publishEvent(request.parse(eventMap)
                 .withAppId(session.getAppId())
                 .withStudyId(studyId)
                 .withUserId(account.getId()));

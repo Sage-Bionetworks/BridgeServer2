@@ -162,7 +162,7 @@ public class ActivityEventController extends BaseController {
         StudyActivityEventRequest request = parseJson(StudyActivityEventRequest.class);
         StudyActivityEventMap eventMap = studyService.getStudyActivityEventMap(session.getAppId(), studyId);
 
-        StudyActivityEventParams builder = request.parseRequest(eventMap);
+        StudyActivityEventParams builder = request.parse(eventMap);
         builder.withAppId(session.getAppId());
         builder.withStudyId(studyId);
         builder.withUserId(session.getId());

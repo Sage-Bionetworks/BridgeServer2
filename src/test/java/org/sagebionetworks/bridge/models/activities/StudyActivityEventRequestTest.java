@@ -68,6 +68,7 @@ public class StudyActivityEventRequestTest {
             {"question:foo:answer portion wrong", null, m(), m()},
             {"question:foo:answer=4", null, m(), m()}, // also wrong
             {"question:foo:answered=4", "question:foo:answered=4", m(), m()},
+            {"QUESTION:foo:ANSWERED=4", "question:foo:answered=4", m(), m()},
             {"session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished", "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished", m("foo"), m()},
             {"study_burst:bar:01", null, m(), m("foo")},
             {"study_burst:foo:01", "study_burst:foo:01", m(), m("foo")},
@@ -98,17 +99,14 @@ public class StudyActivityEventRequestTest {
                 .collect(toList());
         eventMap.addCustomEvents(events);
         
-        List<StudyBurst> bursts = studyBursts.entrySet().stream().map(entry -> {
-            StudyBurst burst = new StudyBurst();
-            burst.setIdentifier(entry.getKey());
-            burst.setUpdateType(entry.getValue());
-            return burst;
-        }).collect(toList());
+        List<StudyBurst> bursts = studyBursts.entrySet().stream()
+                .map(entry -> new StudyBurst(entry.getKey(), entry.getValue()))
+                .collect(toList());
         eventMap.addStudyBursts(bursts);
 
         StudyActivityEventRequest request = new StudyActivityEventRequest(input, null, null, null); 
         
-        String retValue = request.parseRequest(eventMap).toStudyActivityEvent().getEventId();
+        String retValue = request.parse(eventMap).toStudyActivityEvent().getEventId();
         assertEquals(retValue, expectedOutput);
     }
     

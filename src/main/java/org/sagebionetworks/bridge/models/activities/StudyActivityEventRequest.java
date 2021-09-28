@@ -11,8 +11,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.joda.time.DateTime;
 
 /**
- * Accumulate information from the client, from the code path, and then put it together
- * to form a valid StudyActivityEvent with the correct event ID and update type.
+ * Accumulate information from the client and provide the parsing logic to create 
+ * the appropriate StudyActivityEventParams object. If the eventKey is not found to 
+ * be valid, the parameter object that results will generate an activity event with 
+ * a null eventId.
  */
 public class StudyActivityEventRequest {
 
@@ -21,13 +23,6 @@ public class StudyActivityEventRequest {
     private String answerValue;
     private String clientTimeZone;
     
-    public StudyActivityEventRequest() { 
-    }
-    
-    /**
-     * These are the only properties an API user can submit for custom events.
-     * The rest are set on the server.
-     */
     @JsonCreator
     public StudyActivityEventRequest(
             @JsonProperty("eventId") @JsonAlias("eventKey") String eventKey,
@@ -39,6 +34,8 @@ public class StudyActivityEventRequest {
         this.answerValue = answerValue;
         this.clientTimeZone = clientTimeZone;
     }
+    
+    // Getters exist for testing purposes only
     
     protected String getEventKey() {
         return eventKey;
@@ -55,10 +52,10 @@ public class StudyActivityEventRequest {
     
     /**
      * Convert a request using a compound eventId into the individual fields of the 
-     * builder. If the string is not valid, the builder is not valid, the study activity
-     * event it generates is not valid, and validation fails.
+     * parameter object. If the string is not valid, the builder is not valid, the 
+     * study activity event it generates will be null, and validation will fail.
      */
-    public StudyActivityEventParams parseRequest(StudyActivityEventMap eventMap) {
+    public StudyActivityEventParams parse(StudyActivityEventMap eventMap) {
         StudyActivityEventParams params = new StudyActivityEventParams();
         params.withTimestamp(timestamp);
         params.withClientTimeZone(clientTimeZone);

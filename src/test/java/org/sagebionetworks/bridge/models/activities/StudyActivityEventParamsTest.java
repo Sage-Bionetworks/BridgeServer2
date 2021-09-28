@@ -77,7 +77,6 @@ public class StudyActivityEventParamsTest {
                 .withAnswerValue("anAnswer")
                 .withTimestamp(MODIFIED_ON)
                 .withCreatedOn(CREATED_ON)
-                .withUpdateType(FUTURE_ONLY)
                 .withEventType(ANSWERED).toStudyActivityEvent();
         assertEquals(event.getUpdateType(), FUTURE_ONLY);
     }

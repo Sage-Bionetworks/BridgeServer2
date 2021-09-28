@@ -2,6 +2,15 @@ package org.sagebionetworks.bridge.models.activities;
 
 import org.joda.time.DateTime;
 
+/**
+ * The parameters used to construct a valid StudyActivityEvent. When events are submitted through
+ * the API, they are submitted partly as a compound string with some of these values encoded in
+ * the string, and some provided in separate JSON fields. These values are deserialized into the 
+ * StudyActivityEventRequest object, which can produce this parameters object. In our system code,
+ * these values can be supplied directly through this parameter object. The 
+ * StudyActivityEventParams is accepted by the StudyActivityEventService so that both these code 
+ * paths have been aligned by the time we call the service.
+ */
 public class StudyActivityEventParams {
     
     private String appId;
