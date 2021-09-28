@@ -357,7 +357,6 @@ public class Schedule2Service {
         map.addCustomEvents(study.getCustomEvents());
         map.addStudyBursts(schedule.getStudyBursts());
 
-        // Set<String> keys = study.getCustomEventsMap().keySet();
         for (Session session : schedule.getSessions()) {
             consumer.accept(session);
             session.setSchedule(schedule);

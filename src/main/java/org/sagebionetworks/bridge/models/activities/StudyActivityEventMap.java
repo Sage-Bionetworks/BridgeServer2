@@ -32,7 +32,7 @@ public class StudyActivityEventMap {
         }
     }
     
-    public boolean containsCustomId(String key) {
+    public boolean hasCustomId(String key) {
         return map.get(CUSTOM).containsKey(key);
     }
 
@@ -40,16 +40,11 @@ public class StudyActivityEventMap {
         return map.get(CUSTOM).get(key);
     }
 
-    public boolean containsBurstId(String key) {
+    public boolean hasBurstId(String key) {
         return map.get(STUDY_BURST).containsKey(key);
     }
 
     public ActivityEventUpdateType getBurstUpdateType(String key) {
         return map.get(STUDY_BURST).get(key);
-    }
-
-    @Override
-    public String toString() {
-        return "StudyActivityEventMap " + map;
     }
 }

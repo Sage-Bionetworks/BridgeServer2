@@ -75,20 +75,20 @@ public class StudyActivityEventRequest {
             params.withUpdateType(objectType.getUpdateType());
         }
         // However, custom events were originally submitted without a prefix, so check that
-        else if (elements.length == 1 && eventMap.containsCustomId(elements[0])) {
+        else if (elements.length == 1 && eventMap.hasCustomId(elements[0])) {
             params.withObjectType(CUSTOM);
             params.withObjectId(elements[0]);
             params.withUpdateType(eventMap.getCustomUpdateType((elements[0])));
         }
         // Fully specified custom events are two parts
-        if (elements.length == 2 && objectType == CUSTOM && eventMap.containsCustomId(elements[1])) {
+        if (elements.length == 2 && objectType == CUSTOM && eventMap.hasCustomId(elements[1])) {
             params.withObjectId(elements[1]);
             params.withUpdateType(eventMap.getCustomUpdateType((elements[1])));
         }
         // This covers system events with two qualifiers (an objectId and an answerValue)
         if (elements.length == 3) {
             if (objectType == STUDY_BURST) {
-                if (eventMap.containsBurstId(elements[1])) {
+                if (eventMap.hasBurstId(elements[1])) {
                     params.withObjectId(elements[1]);
                     params.withUpdateType(eventMap.getBurstUpdateType((elements[1])));
                     params.withAnswerValue(elements[2]); // the iteration #

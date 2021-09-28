@@ -722,13 +722,11 @@ public class BridgeUtils {
     }
     
     /**
-     * Verifies that the activity eventId is valid, and formats the casing correctly. (It doesn't 
-     * handle absolutely everything, but system events are known to be formatted correctly thanks 
-     * to the StudyActivityEventRequestParams). Returns the value if valid, or null otherwise. 
-     * This is then validated as an invalid value. If the event submitted is an overridden system 
-     * event, it will be treated as the system event so in that case, you *must* prepend "custom:" 
-     * to indicate that the custom event is being used (overridding system events is confusing and 
-     * discouraged).
+     * Verifies that the activity eventId is valid, and formats the casing correctly. Returns the 
+     * value if valid, or null otherwise. This is then validated as an invalid value. If the event 
+     * submitted is an overridden system event, it will be treated as the system event so in that 
+     * case, you *must* prepend "custom:" to indicate that the custom event is being used 
+     * (overriding system events is confusing and discouraged).
      */
     public static String formatActivityEventId(StudyActivityEventMap eventMap, String id) {
         return new StudyActivityEventRequest(id, null, null, null)

@@ -1013,66 +1013,19 @@ public class BridgeUtilsTest extends Mockito {
         assertEquals(e.getMessage(), "Error parsing JSON in request body: error");
     }
     
-    @DataProvider(name = "formatActvityEventIdParams")
-    public static Object[][] formatActvityEventIdParams() {
-        return new Object[][] {
-            {"FOO", "custom:FOO", m("FOO"), m()},
-            {"foo", "custom:foo", m("foo"), m()},
-            {"custom:foo", "custom:foo", m("foo"), m()},
-            {"foo", null, m(), m()},
-            {"custom:foo", null, m(), m()},
-            {"activities_retrieved", "activities_retrieved", m("foo"), m()},
-            {"ACTIVITIES_RETRIEVED", "activities_retrieved", m("foo"), m()},
-            {"session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished", "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished", m("foo"), m()},
-            {"", null, m(), m()},
-            {null, null, m(), m()},
-            {"custom:timeline_retrieved", "custom:timeline_retrieved", m("timeline_retrieved"), m()},
-            {"custom:TIMELINE_RETRIEVED", null, m("timeline_retrieved"), m()},
-            {"timeline_retrieved", "timeline_retrieved", m("timeline_retrieved"), m()},
-            {"timeline_retrieved", "timeline_retrieved", m("timeline_retrieved"), m()},
-            {"custom:timeline_retrieved", null, m(), m()},
-            {"study_burst:foo:01", "study_burst:foo:01", m(), m("foo")},
-            {"study_burst:foo:01", null, m(), m()},
-            {"study_burst:bar:01", null, m(), m("foo")},
-            {"question:foo:answered=4", "question:foo:answered=4", m(), m()},
-            {"question:foo:answer portion wrong", null, m(), m()},
-            {"question:foo:answer=4", null, m(), m()}, // also wrong
-        };
-    }
-    
-    private static Map<String, ActivityEventUpdateType> m(String... values) {
-        Map<String, ActivityEventUpdateType> map = new HashMap<>();
-        for (String eventId : values) {
-            map.put(eventId, MUTABLE);
-        }
-        return map;
-    }
-    
-    @Test(dataProvider = "formatActvityEventIdParams")
-    public void formatActivityEventId(String input, String expectedOutput, 
-            Map<String, ActivityEventUpdateType> customEvents, 
-            Map<String, ActivityEventUpdateType> studyBursts) {
-        
+    // Just demonstrate this works, as the underlying code is now tested as part of 
+    // StudyActivityEventRequest’s implementation.
+    @Test
+    public void formatActivityEventId() {
         StudyActivityEventMap eventMap = new StudyActivityEventMap();
         
-        List<StudyCustomEvent> events = customEvents.entrySet().stream().map(entry -> {
-            StudyCustomEvent event = new StudyCustomEvent();
-            event.setEventId(entry.getKey());
-            event.setUpdateType(entry.getValue());
-            return event;
-        }).collect(toList());
-        eventMap.addCustomEvents(events);
+        String retValue = BridgeUtils.formatActivityEventId(eventMap, "custom:foo");
+        assertNull(retValue);
         
-        List<StudyBurst> bursts = studyBursts.entrySet().stream().map(entry -> {
-            StudyBurst burst = new StudyBurst();
-            burst.setIdentifier(entry.getKey());
-            burst.setUpdateType(entry.getValue());
-            return burst;
-        }).collect(toList());
-        eventMap.addStudyBursts(bursts);
+        eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("foo", MUTABLE)));
         
-        String retValue = BridgeUtils.formatActivityEventId(eventMap, input);
-        assertEquals(retValue, expectedOutput);
+        retValue = BridgeUtils.formatActivityEventId(eventMap, "foo");
+        assertEquals(retValue, "custom:foo");
     }
     
     @Test
