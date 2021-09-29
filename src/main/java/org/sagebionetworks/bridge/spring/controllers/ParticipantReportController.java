@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -213,7 +214,7 @@ public class ParticipantReportController extends BaseController {
     @PostMapping({"/v4/participants/{userIdToken}/reports/{identifier}", "/v3/participants/{userIdToken}/reports/{identifier}"})
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveParticipantReport(@PathVariable String userIdToken, @PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_COORDINATOR);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
 
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
         Account account = accountService.getAccount(accountId)

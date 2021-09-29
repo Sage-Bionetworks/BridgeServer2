@@ -782,12 +782,43 @@ public class Schedule2ServiceTest extends Mockito {
         study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("event1", MUTABLE)));
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
-        // This will fail validation unless the app declares it as a custom event
-        schedule.getSessions().get(0).setStartEventId("event1");
+        // This will fail validation unless the app declares it as a custom event (it does)
+        schedule.getSessions().get(0).setStartEventIds(ImmutableList.of("event1"));
+        
+        // This will fail validation unless it's included in the schedule (it is)
+        schedule.getSessions().get(0).setStudyBurstIds(ImmutableList.of("burst1"));
         
         service.createSchedule(study, schedule);
         
-        assertEquals(schedule.getSessions().get(0).getStartEventId(), "custom:event1");
+        assertEquals(schedule.getSessions().get(0).getStartEventIds().get(0), "custom:event1");
+    }
+    
+    @Test
+    public void cleanupEventIdsOnCreateFails() {
+        // We want to verify that clean up occurs that will trigger validation errors
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withCallerAppId(TEST_APP_ID)
+                .build());
+
+        Study study = Study.create();
+        // no cutsom events, no study bursts
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        schedule.setStudyBursts(ImmutableList.of());
+        
+        // That makes the following two lines invalid
+        schedule.getSessions().get(0).setStartEventIds(ImmutableList.of("event1"));
+        schedule.getSessions().get(0).setStudyBurstIds(ImmutableList.of("burst1"));
+        
+        try {
+            service.createSchedule(study, schedule);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals(e.getErrors().get("sessions[0].studyBurstIds[0]").get(0), 
+                    "sessions[0].studyBurstIds[0] does not refer to a defined study burst ID");
+            assertEquals(e.getErrors().get("sessions[0].startEventIds[0]").get(0), 
+                    "sessions[0].startEventIds[0] is not a valid custom event ID");
+        }
     }
     
     @Test
@@ -798,14 +829,43 @@ public class Schedule2ServiceTest extends Mockito {
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         schedule.setDeleted(false);
         schedule.setPublished(false);
-        // This will fail validation unless the app declares it as a custom event
-        schedule.getSessions().get(0).setStartEventId("event1");
+        // This will fail validation unless the app declares it as a custom event (it does)
+        schedule.getSessions().get(0).setStartEventIds(ImmutableList.of("event1"));
+        
+        // This will fail validation unless it's included in the schedule (it is)
+        schedule.getSessions().get(0).setStudyBurstIds(ImmutableList.of("burst1"));
         
         Schedule2 existing = Schedule2Test.createValidSchedule();
         existing.setPublished(false);
         service.updateSchedule(study, existing, schedule);
         
-        assertEquals(schedule.getSessions().get(0).getStartEventId(), "custom:event1");
+        assertEquals(schedule.getSessions().get(0).getStartEventIds().get(0), "custom:event1");
+    }
+    
+    @Test
+    public void cleanupEventIdsOnUpdateFails() {
+        Study study = Study.create();
+        
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        schedule.setStudyBursts(ImmutableList.of());
+        schedule.setDeleted(false);
+        // These will fail
+        schedule.getSessions().get(0).setStartEventIds(ImmutableList.of("event1"));
+        schedule.getSessions().get(0).setStudyBurstIds(ImmutableList.of("burst1"));
+        
+        Schedule2 existing = Schedule2Test.createValidSchedule();
+        existing.setDeleted(false);
+        existing.setPublished(false);
+        
+        try {
+            service.updateSchedule(study, existing, schedule);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals(e.getErrors().get("sessions[0].studyBurstIds[0]").get(0), 
+                    "sessions[0].studyBurstIds[0] does not refer to a defined study burst ID");
+            assertEquals(e.getErrors().get("sessions[0].startEventIds[0]").get(0), 
+                    "sessions[0].startEventIds[0] is not a valid custom event ID");
+        }
     }
     
     @Test
@@ -930,5 +990,11 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(schedule.getGuid(), SCHEDULE_GUID);
         
         verify(mockDao).updateSchedule(schedule);
+    }
+    
+    @Test
+    public void deleteAllSchedules() { 
+        service.deleteAllSchedules(TEST_APP_ID);
+        verify(mockDao).deleteAllSchedules(TEST_APP_ID);
     }
 }

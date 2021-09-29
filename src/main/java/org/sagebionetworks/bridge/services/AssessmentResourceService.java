@@ -4,7 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.jsoup.safety.Whitelist.simpleText;
+import static org.jsoup.safety.Safelist.simpleText;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.OWNER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ASSESSMENTS;
@@ -223,6 +223,12 @@ public class AssessmentResourceService {
         CAN_EDIT_SHARED_ASSESSMENTS.checkAndThrow(OWNER_ID, assessment.getOwnerId());
         
         return copyResources(appId, SHARED_APP_ID, assessment, guids);
+    }
+    
+    public void deleteAllAssessmentResources(String appId) {
+        checkArgument(isNotBlank(appId));
+        
+        dao.deleteAllAssessmentResources(appId);
     }
     
     List<AssessmentResource> copyResources(String originId, String targetId, Assessment assessment, Set<String> guids) {

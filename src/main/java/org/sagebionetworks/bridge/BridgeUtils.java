@@ -4,15 +4,14 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
-import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_DELETE_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
@@ -45,8 +44,7 @@ import org.jsoup.nodes.Document.OutputSettings.Syntax;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities.EscapeMode;
 import org.jsoup.safety.Cleaner;
-import org.jsoup.safety.Whitelist;
-
+import org.jsoup.safety.Safelist;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -54,6 +52,7 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.HasLang;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -65,7 +64,7 @@ import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
-
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -152,40 +151,6 @@ public class BridgeUtils {
         return account.getActiveEnrollments().stream()
                 .map(Enrollment::getStudyId)
                 .collect(toImmutableSet());
-    }
-    
-    /**
-     * Return the account if the caller has access to it; false otherwise. Currently, 
-     * the account must be 1) the caller's account; 2) enrolled in a study that the 
-     * caller has access to; or 3) the caller is associated to no studies at all 
-     * (this last part is transitional as we migrate to a multi-study security model). 
-     * Do not call this method before updating the account; this method may remove
-     * enrollments from the account that are not visible to the caller so it can be
-     * displayed to the caller without leaking enrollment information.
-     */
-    public static Account filterForStudy(Account account) {
-        if (account != null) {
-            RequestContext context = RequestContext.get();
-            Set<String> callerStudies = context.getOrgSponsoredStudies();
-            
-            // If this is a call for one’s own record, or the caller is an admin or 
-            // worker, or the account is in the same organization as the caller who 
-            // is an org admin, return the account.
-            if (CAN_READ_PARTICIPANTS.check(ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
-                return account;
-            }
-            // If after removing all enrollments that are not visible to the caller, 
-            // there are no remaining enrollments, then we do not return the 
-            // account to the caller.
-            Set<Enrollment> removals = account.getEnrollments().stream()
-                    .filter(en -> !callerStudies.contains(en.getStudyId()))
-                    .collect(toSet());
-            account.getEnrollments().removeAll(removals);
-            if (!account.getEnrollments().isEmpty()) {
-                return account;
-            }
-        }
-        return null;
     }
     
     /**
@@ -416,12 +381,12 @@ public class BridgeUtils {
      */
     public @Nonnull static <T> ImmutableSet<T> nullSafeImmutableSet(Set<T> set) {
         return (set == null) ? ImmutableSet.of() : ImmutableSet.copyOf(set.stream()
-                .filter(element -> element != null).collect(Collectors.toSet()));
+                .filter(Objects::nonNull).collect(Collectors.toSet()));
     }
     
     public @Nonnull static <T> ImmutableList<T> nullSafeImmutableList(List<T> list) {
         return (list == null) ? ImmutableList.of() : ImmutableList.copyOf(list.stream()
-                .filter(element -> element != null).collect(Collectors.toList()));
+                .filter(Objects::nonNull).collect(Collectors.toList()));
     }
     
     public @Nonnull static <S,T> ImmutableMap<S,T> nullSafeImmutableMap(Map<S,T> map) {
@@ -630,8 +595,8 @@ public class BridgeUtils {
         return sanitizeHTML(CKEDITOR_WHITELIST, documentContent);
     }
     
-    public static String sanitizeHTML(Whitelist whitelist, String documentContent) {
-        checkNotNull(whitelist);
+    public static String sanitizeHTML(Safelist safelist, String documentContent) {
+        checkNotNull(safelist);
         
         if (isBlank(documentContent)) {
             return documentContent;
@@ -639,7 +604,7 @@ public class BridgeUtils {
         // the prior version of this still pretty printed the output... this uglier use of JSoup's
         // APIs does not pretty print the output.
         Document dirty = Jsoup.parseBodyFragment(documentContent);
-        Cleaner cleaner = new Cleaner(whitelist);
+        Cleaner cleaner = new Cleaner(safelist);
         Document clean = cleaner.clean(dirty);
         // All variants of the sanitizer remove this, so put it back. It's used in the consent document.
         // "brimg" is not a valid attribute, it marks our one template image.
@@ -771,4 +736,53 @@ public class BridgeUtils {
         }
         return defaultValue;
     }
+    
+    /**
+     * Return a new immutable set that includes the additional item..
+     */
+    public static <T> Set<T> addToSet(Set<T> set, T item) {
+        return new ImmutableSet.Builder<T>().addAll(set).add(item).build();
+    }
+    
+    public static boolean participantEligibleForDeletion(RequestInfoService requestInfoService, Account account) {
+        // Test accounts can always be deleted
+        boolean testAccount = account.getDataGroups().contains(TEST_USER_GROUP);
+        if (testAccount) {
+            return true;
+        }
+        // Accounts enrolled in multiple studies cannot be deleted, too risky.
+        if (account.getEnrollments().size() > 1) {
+            return false;
+        }
+        // Get a studyId if there is one. If it's null, that part of the security rule will just fail to match.
+        String studyId = Iterables.getFirst(collectStudyIds(account), null);
+        boolean unused = participantHasNeverSignedIn(requestInfoService, account.getId());
+        
+        // If the account is unused, *and* the caller has access to the participant, allow the delete 
+        return (unused && CAN_DELETE_PARTICIPANTS.check(STUDY_ID, studyId));
+    }
+    
+    private static boolean participantHasNeverSignedIn(RequestInfoService requestInfoService, String userId) {
+        RequestInfo info = requestInfoService.getRequestInfo(userId);
+        if (info == null) {
+            return true;
+        }
+        if (info.getSignedInOn() == null) {
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Maintaining the order of items in the list and the collection, return a new
+     * immutable list of both while preventing the duplication of elements from
+     * either list.
+     */
+    public static <T> List<T> addAllToList(List<T> list, Collection<T> elements) {
+        Set<T> orderedSet = new LinkedHashSet<>();
+        orderedSet.addAll(list);
+        orderedSet.addAll(elements);
+        return ImmutableList.copyOf(orderedSet);
+    }
+  
 }

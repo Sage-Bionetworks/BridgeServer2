@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_CREATE_SCHEDULES;
@@ -338,6 +339,12 @@ public class Schedule2Service {
         return dao.getAssessmentsForSessionInstance(instanceGuid);
     }
     
+    public void deleteAllSchedules(String appId) {
+        checkNotNull(appId);
+        
+        dao.deleteAllSchedules(appId);
+    }
+    
     /**
      * Set GUIDs on objects that don't have them; clean up event keys or set
      * them to null if they're not valid, so they will fail validation.
@@ -353,7 +360,10 @@ public class Schedule2Service {
             for (TimeWindow window : session.getTimeWindows()) {
                 consumer.accept(window);
             }
-            session.setStartEventId(formatActivityEventId(keys, session.getStartEventId()));
+            List<String> events = session.getStartEventIds().stream()
+                .map(s -> formatActivityEventId(keys, s))
+                .collect(toList());
+            session.setStartEventIds(events);
         }
     }
 }

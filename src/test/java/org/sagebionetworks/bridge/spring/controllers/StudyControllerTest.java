@@ -121,7 +121,7 @@ public class StudyControllerTest extends Mockito {
 
         controller.setStudyService(mockStudyService);
 
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR, STUDY_DESIGNER, ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN, ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
         doReturn(session).when(controller).getAdministrativeSession();
@@ -291,17 +291,6 @@ public class StudyControllerTest extends Mockito {
         assertEquals(result, StudyController.DELETED_MSG);
 
         verify(mockStudyService).deleteStudyPermanently(TEST_APP_ID, TEST_STUDY_ID);
-    }
-    
-    @Test
-    public void deleteStudyPhysicalFallsbacktoLogical() throws Exception {
-        session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(DEVELOPER)).build());
-        
-        StatusMessage result = controller.deleteStudy(TEST_STUDY_ID, "true");
-        assertEquals(result, StudyController.DELETED_MSG);
-
-        verify(mockStudyService).deleteStudy(TEST_APP_ID, TEST_STUDY_ID);
     }
     
     @Test

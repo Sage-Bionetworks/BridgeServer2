@@ -5,7 +5,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.DateTimeZone;
-import org.jsoup.safety.Whitelist;
+import org.jsoup.safety.Safelist;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -157,7 +157,7 @@ public class BridgeConstants {
      * This whitelist adds a few additional tags and attributes that are used by the CKEDITOR options 
      * we have displayed in the UI.
      */
-    public static final Whitelist CKEDITOR_WHITELIST = Whitelist.relaxed()
+    public static final Safelist CKEDITOR_WHITELIST = Safelist.relaxed()
             .preserveRelativeLinks(true)
             .addTags("hr", "s", "caption")
             .addAttributes(":all", "style", "scope", "class")

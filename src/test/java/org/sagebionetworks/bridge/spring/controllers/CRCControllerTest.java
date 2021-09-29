@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.net.HttpHeaders.AUTHORIZATION;
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static org.hl7.fhir.dstu3.model.Appointment.AppointmentStatus.BOOKED;
@@ -704,7 +705,7 @@ public class CRCControllerTest extends Mockito {
 
         HttpEntity mockEntity = mock(HttpEntity.class);
         when(mockResponse.getEntity()).thenReturn(mockEntity);
-        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream("This was an error."));
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream("This was an error.", UTF_8));
         
         ResponseEntity<StatusMessage> retValue = controller.postAppointment();
         assertEquals(retValue.getBody().getMessage(), "Appointment created (status = booked).");
@@ -990,7 +991,7 @@ public class CRCControllerTest extends Mockito {
 
         HttpEntity mockEntity = mock(HttpEntity.class);
         when(mockResponse.getEntity()).thenReturn(mockEntity);
-        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(payload));
+        when(mockEntity.getContent()).thenReturn(IOUtils.toInputStream(payload, UTF_8));
     }
     
 //    void mockGetGeocoding() throws Exception {

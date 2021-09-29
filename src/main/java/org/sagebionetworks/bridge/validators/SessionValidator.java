@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
@@ -13,7 +14,9 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabel
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateMessages;
 
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -44,20 +47,27 @@ public class SessionValidator implements Validator {
     static final String OCCURRENCES_FIELD = "occurrences";
     static final String OFFSET_FIELD = "offset";
     static final String PERFORMANCE_ORDER_FIELD = "performanceOrder";
-    static final String START_EVENT_ID_FIELD = "startEventId";
+    static final String START_EVENT_IDS_FIELD = "startEventIds";
     static final String START_TIME_FIELD = "startTime";
+    static final String STUDY_BURST_IDS_FIELD = "studyBurstIds";
     static final String TIME_WINDOWS_FIELD = "timeWindows";
     
     static final String EXPIRATION_LONGER_THAN_INTERVAL_ERROR = "cannot be longer than the session interval";
     static final String EXPIRATION_REQUIRED_ERROR = "is required when a session has an interval";
     static final String LONGER_THAN_WINDOW_EXPIRATION_ERROR = "cannot be longer than the shortest window expiration";
+    static final String MUST_DEFINE_TRIGGER_ERROR = "must define one or more startEventIds or studyBurstIds";
     static final String START_TIME_MILLIS_INVALID_ERROR = "cannot specify milliseconds";
     static final String START_TIME_SECONDS_INVALID_ERROR = "cannot specify seconds";
     static final String WINDOW_OVERLAPS_ERROR = "overlaps another time window";
     static final String WINDOW_SHORTER_THAN_DAY_ERROR = "cannot be set when the shortest window is less than a day";
     static final String LESS_THAN_ONE_ERROR = "cannot be less than one";
+    static final String UNDEFINED_STUDY_BURST = "does not refer to a defined study burst ID";
     
-    public static final SessionValidator INSTANCE = new SessionValidator();
+    private final Set<String> studyBurstIds;
+    
+    public SessionValidator(Set<String> studyBurstIds) {
+        this.studyBurstIds = studyBurstIds;
+    }
     
     public static final Comparator<TimeWindow> START_TIME_COMPARATOR = (a, b) -> {
         if (a.getStartTime() == null) {
@@ -93,9 +103,47 @@ public class SessionValidator implements Validator {
         if (isBlank(session.getName())) {
             errors.rejectValue(NAME_FIELD, CANNOT_BE_BLANK);
         }
-        if (isBlank(session.getStartEventId())) {
-            errors.rejectValue(START_EVENT_ID_FIELD, INVALID_EVENT_ID);
+        if (session.getStartEventIds().isEmpty() && session.getStudyBurstIds().isEmpty()) {
+            errors.rejectValue("", MUST_DEFINE_TRIGGER_ERROR);
         }
+        // Not catching duplicates, here and in study bursts
+        Set<String> uniqueStartEventIds = new HashSet<>();
+        for (int i=0; i < session.getStartEventIds().size(); i++) {
+            String eventId = session.getStartEventIds().get(i);
+            errors.pushNestedPath(START_EVENT_IDS_FIELD + '[' + i + ']');
+            
+            if (uniqueStartEventIds.contains(eventId)) {
+                errors.rejectValue("", CANNOT_BE_DUPLICATE);
+            }
+            uniqueStartEventIds.add(eventId);
+            if (eventId == null) {
+                errors.rejectValue("", INVALID_EVENT_ID);
+            } else if (isBlank(eventId)) {
+                errors.rejectValue("", CANNOT_BE_BLANK);
+            }                
+            errors.popNestedPath();
+        }
+        
+        Set<String> uniqueStudyBurstIds = new HashSet<>();
+        for (int i=0; i < session.getStudyBurstIds().size(); i++) {
+            String burstId = session.getStudyBurstIds().get(i);
+            errors.pushNestedPath(STUDY_BURST_IDS_FIELD + '[' + i + ']');
+            
+            if (uniqueStudyBurstIds.contains(burstId)) {
+                errors.rejectValue("", CANNOT_BE_DUPLICATE);
+            }
+            uniqueStudyBurstIds.add(burstId);
+            if (burstId == null) {
+                errors.rejectValue("", CANNOT_BE_NULL);
+            } else if (isBlank(burstId)) {
+                errors.rejectValue("", CANNOT_BE_BLANK);
+            }
+            if (!studyBurstIds.contains(burstId)) {
+                errors.rejectValue("", UNDEFINED_STUDY_BURST);
+            }
+            errors.popNestedPath();
+        }
+        
         if (session.getOccurrences() != null && session.getOccurrences() < 1) {
             errors.rejectValue(OCCURRENCES_FIELD, LESS_THAN_ONE_ERROR);
         }

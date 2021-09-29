@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -30,7 +32,6 @@ import org.mockito.Spy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -95,7 +96,7 @@ public class AdherenceControllerTest extends Mockito {
     
     @Test
     public void updateAdherenceRecords() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
         
         when(mockAccountService.getAccountId(TEST_APP_ID, TEST_USER_ID))
             .thenReturn(Optional.of(TEST_USER_ID));
@@ -167,7 +168,7 @@ public class AdherenceControllerTest extends Mockito {
 
     @Test
     public void searchForAdherenceRecords() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
         
         when(mockAccountService.getAccountId(any(), any())).thenReturn(Optional.of("some-other-id"));
 
@@ -196,7 +197,7 @@ public class AdherenceControllerTest extends Mockito {
 
     @Test
     public void deleteAdherenceRecord() {
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
 
         when(mockAccountService.getAccountId(TEST_APP_ID, TEST_USER_ID))
                 .thenReturn(Optional.of(TEST_USER_ID));
@@ -225,7 +226,7 @@ public class AdherenceControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Account not found.")
     public void deleteWithInvalidUserIdThrowsException() {
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
 
         controller.deleteAdherenceRecord(
                 "fake-study-id", "fake-user-id",

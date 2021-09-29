@@ -21,5 +21,7 @@ public interface AssessmentResourceDao {
     List<AssessmentResource> saveResources(String appId, String assessmentId, List<AssessmentResource> resources);
     
     void deleteResource(String appId, AssessmentResource resource);
+    
+    void deleteAllAssessmentResources(String appId);
 
 }

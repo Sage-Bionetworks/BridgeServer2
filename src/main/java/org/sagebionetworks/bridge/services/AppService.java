@@ -129,6 +129,10 @@ public class AppService {
     private TemplateService templateService;
     private FileService fileService;
     private OrganizationService organizationService;
+    private Schedule2Service scheduleService;
+    private AccountService accountService;
+    private AssessmentService assessmentService;
+    private AssessmentResourceService assessmentResourceService;
 
     // Not defaults, if you wish to change these, change in source. Not configurable per app
     private String appEmailVerificationTemplate;
@@ -225,6 +229,22 @@ public class AppService {
     @Autowired
     final void setOrganizationService(OrganizationService organizationService) {
         this.organizationService = organizationService;
+    }
+    @Autowired
+    final void setSchedule2Service(Schedule2Service scheduleService) {
+        this.scheduleService = scheduleService;
+    }
+    @Autowired
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
+    }
+    @Autowired
+    final void setAssessmentService(AssessmentService assessmentService) {
+        this.assessmentService = assessmentService;
+    }
+    @Autowired
+    final void setAssessmentResourceService(AssessmentResourceService assessmentResourceService) {
+        this.assessmentResourceService = assessmentResourceService;
     }
     
     public App getApp(String identifier, boolean includeDeleted) {
@@ -633,18 +653,22 @@ public class AppService {
             }
             appDao.deactivateApp(existing.getIdentifier());
         } else {
-            // actual delete
-            appDao.deleteApp(existing);
-
             // delete app data
+            accountService.deleteAllAccounts(existing.getIdentifier());
             studyService.deleteAllStudies(existing.getIdentifier());
+            scheduleService.deleteAllSchedules(existing.getIdentifier());
+            assessmentResourceService.deleteAllAssessmentResources(existing.getIdentifier());
+            assessmentService.deleteAllAssessments(existing.getIdentifier());
             organizationService.deleteAllOrganizations(existing.getIdentifier());
-            templateService.deleteTemplatesForApp(existing.getIdentifier());
+            templateService.deleteAllTemplates(existing.getIdentifier());
             compoundActivityDefinitionService.deleteAllCompoundActivityDefinitionsInApp(
                     existing.getIdentifier());
             subpopService.deleteAllSubpopulations(existing.getIdentifier());
             topicService.deleteAllTopics(existing.getIdentifier());
             fileService.deleteAllAppFiles(existing.getIdentifier());
+            
+            // actual delete
+            appDao.deleteApp(existing);
         }
 
         cacheProvider.removeApp(identifier);

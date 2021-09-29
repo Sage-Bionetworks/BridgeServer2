@@ -18,7 +18,6 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import org.apache.commons.io.IOUtils;
 import org.hibernate.jdbc.Work;
 import org.hibernate.query.NativeQuery;
 import org.slf4j.Logger;
@@ -28,7 +27,6 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
-import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
@@ -54,7 +52,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
             + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     static final String DELETE_TIMELINE_RECORDS = "DELETE FROM TimelineMetadata WHERE scheduleGuid = :scheduleGuid";
     static final String SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE = "SELECT * FROM TimelineMetadata WHERE sessionInstanceGuid = :instanceGuid AND assessmentInstanceGuid IS NOT NULL";
-
+    static final String DELETE_ALL_SCHEDULES = "DELETE FROM Schedules WHERE appId = :appId";
     static final String BATCH_SIZE_PROPERTY = "schedule.batch.size";
 
     static final String APP_ID = "appId";
@@ -294,5 +292,15 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
 
         return hibernateHelper.nativeQueryGet(builder.getQuery(), builder.getParameters(), null, null,
                 TimelineMetadata.class);
+    }
+    
+    @Override
+    public void deleteAllSchedules(String appId) {
+        checkNotNull(appId);
+
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(DELETE_ALL_SCHEDULES, APP_ID, appId);
+
+        hibernateHelper.nativeQueryUpdate(builder.getQuery(), builder.getParameters());
     }
 }

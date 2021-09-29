@@ -652,6 +652,7 @@ CREATE TABLE `StudyActivityEvents` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 -- changeset bridge:34
+
 ALTER TABLE `Sessions`
 DROP COLUMN `reminderPeriod`,
 DROP COLUMN `messages`,
@@ -771,7 +772,45 @@ CREATE TABLE `StudyCustomEvents` (
 ALTER TABLE `Accounts`
 ADD COLUMN `clientTimeZone` varchar(64) DEFAULT NULL;
 
+-- changeset bridge:44
+
+ALTER TABLE `Sessions`
+DROP COLUMN `startEventId`;
+
+CREATE TABLE `SessionStartEvents` (
+  `sessionGuid` varchar(60) NOT NULL,
+  `position` int(10) signed,
+  `eventId` varchar(255),
+  PRIMARY KEY (`sessionGuid`, `position`),
+  CONSTRAINT `SessionEvents-Session-Constraint` FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
 -- changeset bridge:46
 
 ALTER TABLE `TimelineMetadata` 
 ADD INDEX `TimelineMetadata-ScheduleGuid` (scheduleGuid);
+
+-- changeset bridge:47
+
+ALTER TABLE `AccountsSubstudies` 
+DROP FOREIGN KEY `fk_substudy`;
+
+ALTER TABLE `AccountsSubstudies`
+ADD CONSTRAINT `fk_substudy` FOREIGN KEY (`substudyId`, `studyId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE;
+
+-- changeset bridge:48
+
+CREATE TABLE `ScheduleStudyBursts` (
+  `scheduleGuid` varchar(60) NOT NULL,
+  `identifier` varchar(255) NOT NULL,
+  `originEventId` varchar(255) NOT NULL,
+  `intervalPeriod` varchar(60),
+  `occurrences` int(10) unsigned,
+  `updateType` enum('MUTABLE', 'IMMUTABLE', 'FUTURE_ONLY') DEFAULT 'IMMUTABLE',
+  `position` int(10) signed,
+  PRIMARY KEY (`scheduleGuid`, `identifier`),
+  CONSTRAINT `ScheduleStudyBursts-Schedule-Constraint` FOREIGN KEY (`scheduleGuid`) REFERENCES `Schedules` (`guid`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+ALTER TABLE `Sessions`
+ADD COLUMN `studyBurstIds` varchar(512);

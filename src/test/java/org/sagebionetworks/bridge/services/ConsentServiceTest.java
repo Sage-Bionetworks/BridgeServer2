@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
@@ -149,7 +150,7 @@ public class ConsentServiceTest extends Mockito {
         MockitoAnnotations.initMocks(this);
 
         String documentString = IOUtils.toString(
-                new FileInputStream(new ClassPathResource("conf/app-defaults/consent-page.xhtml").getFile()));
+                new FileInputStream(new ClassPathResource("conf/app-defaults/consent-page.xhtml").getFile()), UTF_8);
 
         consentService.setConsentTemplate(new ByteArrayResource((documentString).getBytes()));
 

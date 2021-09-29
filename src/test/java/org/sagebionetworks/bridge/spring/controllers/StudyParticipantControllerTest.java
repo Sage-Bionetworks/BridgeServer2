@@ -5,7 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
-import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
@@ -212,7 +212,7 @@ public class StudyParticipantControllerTest extends Mockito {
         assertGet(StudyParticipantController.class, "getUploads");
         assertGet(StudyParticipantController.class, "getNotificationRegistrations");
         assertPost(StudyParticipantController.class, "sendNotification");
-        assertDelete(StudyParticipantController.class, "deleteTestParticipant");
+        assertDelete(StudyParticipantController.class, "deleteTestOrUnusedParticipant");
         assertGet(StudyParticipantController.class, "getRecentActivityEvents");
         assertGet(StudyParticipantController.class, "getActivityEventHistory");
         assertPost(StudyParticipantController.class, "publishActivityEvent");
@@ -990,7 +990,7 @@ public class StudyParticipantControllerTest extends Mockito {
         account.setEnrollments(ImmutableSet.of(en));
         account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
         
-        StatusMessage retValue = controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
+        StatusMessage retValue = controller.deleteTestOrUnusedParticipant(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getMessage(), "User deleted.");
         
         verify(mockUserAdminService).deleteUser(app, TEST_USER_ID);
@@ -1010,7 +1010,7 @@ public class StudyParticipantControllerTest extends Mockito {
         AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
-        controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
+        controller.deleteTestOrUnusedParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1022,7 +1022,7 @@ public class StudyParticipantControllerTest extends Mockito {
         AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.empty());
         
-        controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
+        controller.deleteTestOrUnusedParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }    
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -1032,13 +1032,17 @@ public class StudyParticipantControllerTest extends Mockito {
                 .build());
         
         Account account = Account.create();
+        account.setId(TEST_USER_ID);
         Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(en));
+        
+        RequestInfo requestInfo = new RequestInfo.Builder().withSignedInOn(CREATED_ON).build();
+        when(mockRequestInfoService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
         
         AccountId accountId = BridgeUtils.parseAccountId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
-        controller.deleteTestParticipant(TEST_STUDY_ID, TEST_USER_ID);
+        controller.deleteTestOrUnusedParticipant(TEST_STUDY_ID, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1331,11 +1335,11 @@ public class StudyParticipantControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getTimelineForUser_notAuthorized() {
         RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withCallerRoles(ImmutableSet.of(WORKER))
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
         session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+                .withRoles(ImmutableSet.of(WORKER)).build());
         doReturn(session).when(controller).getAdministrativeSession();
         
         Account account = Account.create();

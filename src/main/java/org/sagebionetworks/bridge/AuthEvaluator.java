@@ -29,6 +29,24 @@ public class AuthEvaluator {
     public AuthEvaluator() {
         predicates = new HashSet<>();
     }
+    
+    /**
+     * Caller must have at least one of the roles specified. If the caller has no
+     * roles, or any role other than the roles specified, this method will return
+     * false.
+     */
+    public AuthEvaluator hasOnlyRoles(Roles... roles) {
+        predicates.add((factMap) -> {
+            Set<Roles> callerRoles = RequestContext.get().getCallerRoles();
+            if (callerRoles.isEmpty() && roles.length > 0) {
+                return false;
+            }
+            Set<Roles> requiredRoles = ImmutableSet.copyOf(roles);
+            return requiredRoles.containsAll(callerRoles);
+        });
+        return this;
+    }
+
     /**
      * Caller must have one of the supplied roles. If no roles are included, the caller must 
      * have any role (they must be an administrative account).
@@ -115,6 +133,15 @@ public class AuthEvaluator {
         return this;
     }
 
+    public AuthEvaluator isNotSelf() {
+        predicates.add((factMap) -> {
+            String userId = factMap.get(USER_ID);
+            String callerUserId = RequestContext.get().getCallerUserId();
+            return callerUserId != null && !callerUserId.equals(userId);
+        });
+        return this;
+    }
+    
     public AuthEvaluator isSharedOwner() {
         predicates.add((factMap) -> {
             String ownerId = factMap.get(OWNER_ID);
@@ -198,6 +225,16 @@ public class AuthEvaluator {
         Map<AuthEvaluatorField,String> factMap = new HashMap<>(); // can contain nulls
         factMap.put(arg1, val1);
         factMap.put(arg2, val2);
+        return checkInternal(factMap);
+    }
+    public boolean check(AuthEvaluatorField arg1, String val1, AuthEvaluatorField arg2, String val2, AuthEvaluatorField arg3, String val3) {
+        checkNotNull(arg1);
+        checkNotNull(arg2);
+        checkNotNull(arg3);
+        Map<AuthEvaluatorField,String> factMap = new HashMap<>(); // can contain nulls
+        factMap.put(arg1, val1);
+        factMap.put(arg2, val2);
+        factMap.put(arg3, val3);
         return checkInternal(factMap);
     }
     protected boolean checkInternal(Map<AuthEvaluatorField,String> factMap) {

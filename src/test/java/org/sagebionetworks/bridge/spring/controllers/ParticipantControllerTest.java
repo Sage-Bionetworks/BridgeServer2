@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -309,7 +310,7 @@ public class ParticipantControllerTest extends Mockito {
         assertCreate(ParticipantController.class, "createSmsRegistration");
         assertGet(ParticipantController.class, "getSelfParticipant");
         assertPost(ParticipantController.class, "updateSelfParticipant");
-        assertDelete(ParticipantController.class, "deleteTestParticipant");
+        assertDelete(ParticipantController.class, "deleteTestOrUnusedParticipant");
         assertGet(ParticipantController.class, "getActivityEventsForWorker");
         assertGet(ParticipantController.class, "getActivityHistoryForWorkerV3");
         assertGet(ParticipantController.class, "getActivityHistoryForWorkerV2");
@@ -428,10 +429,13 @@ public class ParticipantControllerTest extends Mockito {
         verify(mockParticipantService).getParticipant(app, "aUser", true);
     }
     
+    // This test and some others here are now somewhat silly since devs can call these 
+    // methods and they fail much deeper in the system, when verifying the account being
+    // operated on is a test account. Still this security restrict exists.
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void getParticipantDeveloperIsNotSelf() throws Exception {
+    public void getParticipantWorkerIsNotSelf() throws Exception {
         session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(ImmutableSet.of(DEVELOPER)).build());
+                .withRoles(ImmutableSet.of(WORKER)).build());
 
         controller.getParticipant("aUser", true);
     }
@@ -955,7 +959,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void cannotResetPasswordIfNotResearcher() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withId("notUserId").withRoles(ImmutableSet.of(DEVELOPER)).build();
+                .withId("notUserId").withRoles(ImmutableSet.of(WORKER)).build();
         session.setParticipant(participant);
 
         controller.requestResetPassword(TEST_USER_ID);
@@ -1490,30 +1494,40 @@ public class ParticipantControllerTest extends Mockito {
 
     @Test
     public void deleteTestUserWorks() {
-        participant = new StudyParticipant.Builder().copyOf(participant).withDataGroups(ImmutableSet.of("test_user"))
-                .build();
-
+        Account account = Account.create();
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        account.setId(TEST_USER_ID);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+        
         when(mockParticipantService.getParticipant(app, TEST_USER_ID, false)).thenReturn(participant);
-        controller.deleteTestParticipant(TEST_USER_ID);
+        controller.deleteTestOrUnusedParticipant(TEST_USER_ID);
 
         verify(mockUserAdminService).deleteUser(app, TEST_USER_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteTestUserNotAResearcher() {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(Roles.DEVELOPER))
+        participant = new StudyParticipant.Builder().copyOf(participant)
+                .withRoles(ImmutableSet.of(WORKER))
                 .withId("notUserId").build();
         session.setParticipant(participant);
 
-        controller.deleteTestParticipant(TEST_USER_ID);
+        Account account = Account.create();
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+        
+        controller.deleteTestOrUnusedParticipant(TEST_USER_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteTestUserNotATestAccount() {
-        participant = new StudyParticipant.Builder().copyOf(participant).withDataGroups(EMPTY_SET).build();
+        Account account = Account.create();
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+        
+        RequestInfo requestInfo = new RequestInfo.Builder().withSignedInOn(START_TIME).build();
+        when(mockRequestInfoService.getRequestInfo(any())).thenReturn(requestInfo);
 
         when(mockParticipantService.getParticipant(app, TEST_USER_ID, false)).thenReturn(participant);
-        controller.deleteTestParticipant(TEST_USER_ID);
+        controller.deleteTestOrUnusedParticipant(TEST_USER_ID);
     }
 
     @SuppressWarnings("deprecation")
