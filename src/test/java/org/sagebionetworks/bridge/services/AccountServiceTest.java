@@ -5,6 +5,7 @@ import static java.lang.Boolean.TRUE;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
@@ -364,6 +365,42 @@ public class AccountServiceTest extends Mockito {
         service.updateAccount(account);
         
         verify(mockAccountDao).updateAccount(account);
+    }
+    
+    @Test
+    public void updateAccountSucceedsForDevUpdatingSelfAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        // not a developer account, but the same user ID
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+
+        service.updateAccount(account);
+        
+        verify(mockAccountDao).updateAccount(account);
+    }
+    
+    @Test
+    public void updateAccountCannotRemoveTestAccountFlag() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        // not a developer account, but the same user ID
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
+        persistedAccount.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        // no data groups.
+        service.updateAccount(account);
+        
+        verify(mockAccountDao).updateAccount(account);
+        
+        // test flag is restored
+        assertEquals(account.getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)

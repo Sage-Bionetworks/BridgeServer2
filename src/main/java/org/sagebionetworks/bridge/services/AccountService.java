@@ -262,15 +262,14 @@ public class AccountService {
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        // If a developer is trying to update a production account, that is not allowed.
-        if (IS_ONLY_DEVELOPER.check(USER_ID, persistedAccount.getId())) {
-            if (!persistedAccount.getDataGroups().contains(TEST_USER_GROUP)) {
-                throw new UnauthorizedException();
-            }
-            // The account update cannot remove this flag because the caller is a developer...
-            // add it in case it has been removed.
+        // The test_user flag taints an account; once set it cannot be unset. If the account is a production
+        // account, however, check the caller and don’t allow the update if it is a developer account not
+        // operating on itself.
+        if (persistedAccount.getDataGroups().contains(TEST_USER_GROUP)) {
             Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
             account.setDataGroups(newDataGroups);
+        } else if (IS_ONLY_DEVELOPER.check(USER_ID, persistedAccount.getId())) {
+            throw new UnauthorizedException();
         }
 
         // None of these values should be changeable by the user.
