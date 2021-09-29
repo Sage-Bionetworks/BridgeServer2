@@ -25,17 +25,17 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 public class StudyActivityEventTest {
 
     @Test
-    public void test() throws Exception { 
-        StudyActivityEvent event = new StudyActivityEvent();
-        event.setAppId(TEST_APP_ID);
-        event.setUserId(TEST_USER_ID);
-        event.setEventId("eventKey");
-        event.setTimestamp(MODIFIED_ON);
-        event.setAnswerValue("my answer");
-        event.setClientTimeZone("America/Los_Angeles");
-        event.setCreatedOn(CREATED_ON);
-        event.setRecordCount(10);
-        event.setUpdateType(FUTURE_ONLY);
+    public void test() throws Exception {
+        StudyActivityEvent event = new StudyActivityEvent.Builder()
+                .withAppId(TEST_APP_ID)
+                .withUserId(TEST_USER_ID)
+                .withEventId("eventKey")
+                .withTimestamp(MODIFIED_ON)
+                .withAnswerValue("my answer")
+                .withClientTimeZone("America/Los_Angeles")
+                .withCreatedOn(CREATED_ON)
+                .withRecordCount(10)
+                .withUpdateType(FUTURE_ONLY).build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(event);
         assertEquals(node.size(), 8);
@@ -48,7 +48,6 @@ public class StudyActivityEventTest {
         assertEquals(node.get("updateType").textValue(), "future_only");
         assertEquals(node.get("type").textValue(), "ActivityEvent");
     }
-    
     
     @Test
     public void createsValidEvent() {

@@ -53,70 +53,39 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     @Transient
     private ActivityEventUpdateType updateType;
     
-    // Hibernate is happy with default (package) visibility constructor and setters, ensuring
-    // that objects can only be constructed in code through a builder.
-    
-    StudyActivityEvent() {}
-    
     public String getAppId() {
         return appId;
-    }
-    void setAppId(String appId) {
-        this.appId = appId;
     }
     public String getUserId() {
         return userId;
     }
-    void setUserId(String userId) {
-        this.userId = userId;
-    }
     public String getStudyId() {
         return studyId;
-    }
-    void setStudyId(String studyId) {
-        this.studyId = studyId;
     }
     public String getEventId() {
         return eventId;
     }
-    void setEventId(String eventId) {
-        this.eventId = eventId;
-    }
     public DateTime getTimestamp() {
         return timestamp;
-    }
-    void setTimestamp(DateTime timestamp) {
-        this.timestamp = timestamp;
     }
     public String getAnswerValue() {
         return answerValue;
     }
-    void setAnswerValue(String answerValue) {
-        this.answerValue = answerValue;
-    }
     public String getClientTimeZone() {
         return clientTimeZone;
-    }
-    void setClientTimeZone(String clientTimeZone) {
-        this.clientTimeZone = clientTimeZone;
     }
     public DateTime getCreatedOn() {
         return createdOn;
     }
+    // the service needs to set this, not the builder 
     public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
     }
     public int getRecordCount() {
         return recordCount;
     }
-    void setRecordCount(int recordCount) {
-        this.recordCount = recordCount;
-    }
     public ActivityEventUpdateType getUpdateType() {
         return updateType;
-    }
-    void setUpdateType(ActivityEventUpdateType updateType) {
-        this.updateType = updateType;
     }
     
     public static final class Builder {
@@ -197,28 +166,29 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         
         public StudyActivityEvent build() {
             StudyActivityEvent event = new StudyActivityEvent();
-            event.setAppId(appId);
-            event.setUserId(userId);
-            event.setStudyId(studyId);
-            event.setClientTimeZone(clientTimeZone);
-            event.setTimestamp(timestamp);
-            event.setAnswerValue(answerValue);
-            event.setCreatedOn(createdOn);
-            event.setUpdateType(updateType);
-            event.setRecordCount(recordCount);
+            event.appId = appId;
+            event.userId = userId;
+            event.studyId = studyId;
+            event.clientTimeZone = clientTimeZone;
+            event.timestamp = timestamp;
+            event.answerValue = answerValue;
+            event.createdOn = createdOn;
+            event.updateType = updateType;
+            event.recordCount = recordCount;
+
             // We’re constructing the event with a known (already validated) event ID
             if (eventId != null) {
                 if (updateType == null) {
-                    event.setUpdateType(IMMUTABLE);    
+                    event.updateType = IMMUTABLE;
                 }
-                event.setEventId(eventId);
+                event.eventId = eventId;
             } 
             // We’re constructing the event ID from its constituent parts
             else if (objectType != null) {
                 if (updateType == null) {
-                    event.setUpdateType(objectType.getUpdateType());
+                    event.updateType = objectType.getUpdateType();
                 }
-                event.setEventId(objectType.getEventId(objectId, eventType, answerValue));
+                event.eventId = objectType.getEventId(objectId, eventType, answerValue);
             }
             return event;
         }        

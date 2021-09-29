@@ -60,6 +60,7 @@ public class StudyActivityEventRequestTest {
             {"custom:foo", "custom:foo", m("foo"), m()},
             {"custom:foo", null, m(), m("foo")},
             {"custom:foo", null, m(), m()},
+            {"custom:timeline_retrieved", "custom:timeline_retrieved", m("timeline_retrieved"), m()},
             {"custom:TIMELINE_RETRIEVED", null, m("timeline_retrieved"), m()},
             {"custom:timeline_retrieved", null, m(), m()},
             {"foo", "custom:foo", m("foo"), m()},
