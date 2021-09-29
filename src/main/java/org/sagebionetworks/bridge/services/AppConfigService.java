@@ -111,7 +111,17 @@ public class AppConfigService {
     
     public List<AppConfig> getAppConfigs(String appId, boolean includeDeleted) {
         checkNotNull(appId);
-        
+
+        /*
+         TODO: Check if this is useful. It seems like the resolveReferences method
+            already fills out the assessment reference fields, and it just isn't used
+            in this path. But that could be intentional.
+        */
+//        List<AppConfig> appConfigs = appConfigDao.getAppConfigs(appId, includeDeleted);
+//        for (AppConfig appConfig : appConfigs) {
+//            resolveReferences(appId, appConfig);
+//        }
+//        return appConfigs;
         return appConfigDao.getAppConfigs(appId, includeDeleted);
     }
     
@@ -175,8 +185,8 @@ public class AppConfigService {
         if (assessment == null) {
             return ref;
         }
-        String sharedId = getSharedAssessmentId(assessment);
-        return new AssessmentReference(ref.getGuid(), assessment.getIdentifier(), sharedId, appId);
+        String originSharedId = getSharedAssessmentId(assessment);
+        return new AssessmentReference(ref.getGuid(), assessment.getIdentifier(), originSharedId, appId);
     }
     
     protected Assessment getAssessment(String appId, String guid) {
@@ -195,6 +205,7 @@ public class AppConfigService {
             try {
                 Assessment shared = assessmentService.getAssessmentByGuid(
                         SHARED_APP_ID, null, assessment.getOriginGuid());
+                System.out.println("--- " + shared.getIdentifier() + " ---");
                 return shared.getIdentifier();
             } catch(EntityNotFoundException e) {
                 return null;
