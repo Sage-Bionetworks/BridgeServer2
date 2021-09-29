@@ -112,16 +112,6 @@ public class AppConfigService {
     public List<AppConfig> getAppConfigs(String appId, boolean includeDeleted) {
         checkNotNull(appId);
 
-        /*
-         TODO: Check if this is useful. It seems like the resolveReferences method
-            already fills out the assessment reference fields, and it just isn't used
-            in this path. But that could be intentional.
-        */
-//        List<AppConfig> appConfigs = appConfigDao.getAppConfigs(appId, includeDeleted);
-//        for (AppConfig appConfig : appConfigs) {
-//            resolveReferences(appId, appConfig);
-//        }
-//        return appConfigs;
         return appConfigDao.getAppConfigs(appId, includeDeleted);
     }
     
@@ -180,13 +170,14 @@ public class AppConfigService {
     }
     
     protected AssessmentReference resolveAssessment(String appId, AssessmentReference ref) {
-        Assessment assessment = getAssessment(appId, ref.getGuid());
+        String assessmentAppId = (ref.getAppId() == null) ? appId : ref.getAppId();
+        Assessment assessment = getAssessment(assessmentAppId, ref.getGuid());
         // We validated the GUID was valid when the config was saved, but this can change.
         if (assessment == null) {
             return ref;
         }
         String originSharedId = getSharedAssessmentId(assessment);
-        return new AssessmentReference(ref.getGuid(), assessment.getIdentifier(), originSharedId, appId);
+        return new AssessmentReference(ref.getGuid(), assessment.getIdentifier(), originSharedId, assessment.getAppId());
     }
     
     protected Assessment getAssessment(String appId, String guid) {
@@ -205,7 +196,6 @@ public class AppConfigService {
             try {
                 Assessment shared = assessmentService.getAssessmentByGuid(
                         SHARED_APP_ID, null, assessment.getOriginGuid());
-                System.out.println("--- " + shared.getIdentifier() + " ---");
                 return shared.getIdentifier();
             } catch(EntityNotFoundException e) {
                 return null;
