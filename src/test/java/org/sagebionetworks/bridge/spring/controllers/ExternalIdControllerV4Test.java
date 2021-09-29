@@ -40,7 +40,6 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
-import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -156,16 +155,10 @@ public class ExternalIdControllerV4Test extends Mockito {
         assertEquals(externalIdCaptor.getValue().getAppId(), TEST_APP_ID);
     }
 
-    @Test(expectedExceptions = NotAuthenticatedException.class)
-    public void generatePasswordRequiresResearcher() throws Exception {
-        controller.generatePassword("extid");
-    }
-
     @Test
     public void generatePassword() throws Exception {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
 
-        doReturn(session).when(controller).getAuthenticatedSession(RESEARCHER);
         GeneratedPassword password = new GeneratedPassword("extid", "user-id", "some-password");
         when(mockAuthService.generatePassword(app, "extid")).thenReturn(password);
 

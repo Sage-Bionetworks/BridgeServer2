@@ -2,8 +2,15 @@ package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.TRUE;
+import static java.util.stream.Collectors.toSet;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.IS_ONLY_DEVELOPER;
+import static org.sagebionetworks.bridge.AuthUtils.canAccessAccount;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.collectStudyIds;
-import static org.sagebionetworks.bridge.BridgeUtils.filterForStudy;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
@@ -31,7 +38,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
@@ -222,6 +228,10 @@ public class AccountService {
         account.setModifiedOn(timestamp);
         account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(MIGRATION_VERSION);
+        if (IS_ONLY_DEVELOPER.check()) {
+            Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
+            account.setDataGroups(newDataGroups);
+        }
 
         // Create account. We don't verify studies because this is handled by validation
         accountDao.createAccount(app, account);
@@ -251,6 +261,17 @@ public class AccountService {
         // Can't change app, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        // The test_user flag taints an account; once set it cannot be unset. If the account is a production
+        // account, however, check the caller and don’t allow the update if it is a developer account not
+        // operating on itself.
+        if (persistedAccount.getDataGroups().contains(TEST_USER_GROUP)) {
+            Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
+            account.setDataGroups(newDataGroups);
+        } else if (IS_ONLY_DEVELOPER.check(USER_ID, persistedAccount.getId())) {
+            throw new UnauthorizedException();
+        }
+
         // None of these values should be changeable by the user.
         account.setAppId(persistedAccount.getAppId());
         account.setCreatedOn(persistedAccount.getCreatedOn());
@@ -266,7 +287,6 @@ public class AccountService {
         if (!RequestContext.get().isAdministrator()) {
             account.setNote(persistedAccount.getNote());
         }
-
         // Update. We don't verify studies because this is handled by validation
         accountDao.updateAccount(account);
         
@@ -294,16 +314,22 @@ public class AccountService {
     }
     
     /**
-     * Load, and if it exists, edit and save an account. Authorization constraints are not enforced
-     * by this method. It is intended to be used internally to update the account table state, and 
-     * should not be used to propagate changes that come from an API caller.
+     * Load, and if it exists, edit and save an account. This method is intended to be used 
+     * internally to update the account table state, and should not be used to propagate changes 
+     * that come from an API caller. It does not perform all security checks. Some operations 
+     * like enrollment would fail because the user is not yet in a study that's visible to 
+     * the caller. But it does enforce the fact that developers/study designers should only 
+     * be operating on test users. 
      */
     public void editAccount(AccountId accountId, Consumer<Account> accountEdits) {
         checkNotNull(accountId);
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-
+ 
+        if (IS_ONLY_DEVELOPER.check(USER_ID, account.getId()) && !account.getDataGroups().contains(TEST_USER_GROUP)) {
+            throw new UnauthorizedException();
+        }
         accountEdits.accept(account);
         accountDao.updateAccount(account);
     }
@@ -318,9 +344,23 @@ public class AccountService {
         checkNotNull(accountId);
 
         Optional<Account> optional = accountDao.getAccount(accountId);
-        if (!optional.isPresent() || filterForStudy(optional.get()) == null) {
+        if (!optional.isPresent()) {
+            return optional;
+        }
+        if (!canAccessAccount( optional.get() )) {
             return Optional.empty();
         }
+        Account account = optional.get();
+        if (CAN_READ_PARTICIPANTS.check(USER_ID, account.getId(), ORG_ID, account.getOrgMembership())) {
+            return optional;
+        }
+        // This was accessed through study rights, so remove the other studies from what the caller
+        // can see.
+        RequestContext context = RequestContext.get();
+        Set<String> callerStudies = context.getOrgSponsoredStudies();
+        Set<Enrollment> removals = account.getEnrollments().stream()
+                .filter(en -> !callerStudies.contains(en.getStudyId())).collect(toSet());
+        account.getEnrollments().removeAll(removals);
         return optional;
     }
     

@@ -91,7 +91,7 @@ public class ExternalIdControllerV4 extends BaseController {
     
     @PostMapping(path = {"/v3/externalids/{externalId}/password", "/v3/externalIds/{externalId}/password"})
     public GeneratedPassword generatePassword(@PathVariable String externalId) throws Exception {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         
         App app = appService.getApp(session.getAppId());
         return authenticationService.generatePassword(app, externalId);
