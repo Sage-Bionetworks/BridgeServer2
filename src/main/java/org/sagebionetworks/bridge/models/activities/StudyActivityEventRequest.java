@@ -60,18 +60,19 @@ public class StudyActivityEventRequest {
         String[] elements = eventKey.split(":");
 
         ActivityEventObjectType objectType = parseObjectType(elements[0]);
-        // However, custom events were originally submitted without a prefix, so check that
         // This covers system events which have no qualifiers
         if (objectType != null) {
             builder.withObjectType(objectType);
             builder.withUpdateType(objectType.getUpdateType());
         }
+        // However, custom events were originally submitted without a prefix, so check that
         else if (elements.length == 1 && eventMap.hasCustomId(elements[0])) {
             builder.withObjectType(CUSTOM);
             builder.withObjectId(elements[0]);
             builder.withUpdateType(eventMap.getCustomUpdateType((elements[0])));
         }
-        // Fully specified custom events are two parts
+        // Fully specified custom events are two parts, and the first part will have been parsed
+        // to type CUSTOM
         if (elements.length == 2 && objectType == CUSTOM && eventMap.hasCustomId(elements[1])) {
             builder.withObjectId(elements[1]);
             builder.withUpdateType(eventMap.getCustomUpdateType((elements[1])));
