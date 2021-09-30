@@ -54,7 +54,8 @@ public class Schedule2Controller extends BaseController {
         Study study = studyService.getStudy(session.getAppId(), studyId, true);
         CAN_READ_STUDIES.checkAndThrow(STUDY_ID, studyId);
         
-        return service.getScheduleForStudy(session.getAppId(), study);
+        return service.getScheduleForStudy(session.getAppId(), study)
+                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
     }
     
     @PostMapping("/v5/studies/{studyId}/schedule")

@@ -3,7 +3,7 @@ package org.sagebionetworks.bridge.models.schedules2.timelines;
 import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.ENCODER;
-import static org.sagebionetworks.bridge.BridgeUtils.addAllToList;
+import static org.sagebionetworks.bridge.BridgeUtils.addUniqueItemsToList;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 
 import java.util.HashMap;
@@ -44,12 +44,12 @@ public class Scheduler {
         builder.withSchedule(schedule);
         calculateLanguageKey(builder);
         
-        Map<String,Set<String>> studyBurstEventsMap = getStudyBurstEventMap(schedule);
+        Map<String,Set<String>> studyBurstEventsMap = getStudyBurstEventIdsMap(schedule);
 
         for (Session session : schedule.getSessions()) {
             if (!session.getAssessments().isEmpty()) {
                 for (String studyBurstId : session.getStudyBurstIds()) {
-                    List<String> combinedSet = addAllToList(session.getStartEventIds(), studyBurstEventsMap.get(studyBurstId));
+                    List<String> combinedSet = addUniqueItemsToList(session.getStartEventIds(), studyBurstEventsMap.get(studyBurstId));
                     session.setStartEventIds(combinedSet);
                 }
                 for (TimeWindow window : session.getTimeWindows()) {
@@ -70,10 +70,10 @@ public class Scheduler {
     }
     
     /**
-     * Expand study bursts into a set of events, and add them to each session before
-     * producing the timeline. ScheduledSessions fall out correctly from this.
+     * Expand study bursts into a set of events, returned in a map that is keyed
+     * to the original burst identifiers.
      */
-    Map<String,Set<String>> getStudyBurstEventMap(Schedule2 schedule) {
+    Map<String,Set<String>> getStudyBurstEventIdsMap(Schedule2 schedule) {
         Map<String,Set<String>> studyBurstEventsMap = new HashMap<>();
         for (StudyBurst burst : schedule.getStudyBursts()) {
             int len =  burst.getOccurrences().intValue();

@@ -38,6 +38,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyPhase;
@@ -107,6 +108,19 @@ public class StudyService {
                 .getItems().stream()
                 .map(Study::getIdentifier)
                 .collect(toSet());
+    }
+    
+    public StudyActivityEventIdsMap getStudyActivityEventIdsMap(String appId, String studyId) {
+        StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
+
+        Study study = getStudy(appId, studyId, true);
+        map.addCustomEvents(study.getCustomEvents());
+        
+        Schedule2 schedule = scheduleService.getScheduleForStudy(appId, study).orElse(null);
+        if (schedule != null) {
+            map.addStudyBursts(schedule.getStudyBursts());            
+        }
+        return map;
     }
     
     public PagedResourceList<Study> getStudies(String appId, Integer offsetBy, Integer pageSize, 

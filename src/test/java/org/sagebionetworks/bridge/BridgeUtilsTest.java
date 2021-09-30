@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
@@ -55,6 +56,7 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
@@ -62,6 +64,7 @@ import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigVali
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 
 import com.google.common.collect.Lists;
@@ -907,66 +910,19 @@ public class BridgeUtilsTest extends Mockito {
         assertEquals(e.getMessage(), "Error parsing JSON in request body: error");
     }
     
+    // Just demonstrate this works, as the underlying code is now tested as part of 
+    // StudyActivityEventRequest’s implementation.
     @Test
-    public void formatActivityEventIdIsValidCustomId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("FOO"), "FOO");
-        assertEquals(retValue, "custom:FOO");
+    public void formatActivityEventId() {
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         
-    }
-    
-    @Test
-    public void formatActivityEventIdIsValidCustomIdWithCustomPrefix() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "CUSTOM:foo");
+        String retValue = BridgeUtils.formatActivityEventId(eventMap, "custom:foo");
+        assertNull(retValue);
+        
+        eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("foo", MUTABLE)));
+        
+        retValue = BridgeUtils.formatActivityEventId(eventMap, "foo");
         assertEquals(retValue, "custom:foo");
-    }
-
-    @Test
-    public void formatActivityEventIdIsValidSystemId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "activities_retrieved");
-        assertEquals(retValue, "activities_retrieved");
-    }
-
-    @Test
-    public void formatActivityEventIdIsValidCompoundSystemId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
-        assertEquals(retValue, "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
-    }
-    
-    @Test
-    public void formatActivityEventIdBlank() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "");
-        assertNull(retValue);
-        
-    }
-
-    @Test
-    public void formatActivityEventIdNull() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), null);
-        assertNull(retValue);
-    }
-    
-    @Test
-    public void formatActivityEventIdWithCasing() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("Event1"), "custom:Event1");
-        assertEquals(retValue, "custom:Event1");
-    }
-    
-    @Test
-    public void formatActivityEventIdCustomShadowsSystemEvent() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "custom:timeline_retrieved");
-        assertEquals(retValue, "custom:timeline_retrieved");
-    }
-    
-    @Test
-    public void formatActivityEventIdSystemEventCorrectlyInterpreted() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "timeline_retrieved");
-        assertEquals(retValue, "timeline_retrieved");
-    }
-    
-    @Test
-    public void formatActivityEventIdDeclaredCustomIsNotPresent() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "custom:bar");
-        assertNull(retValue);
     }
     
     @Test
@@ -1161,6 +1117,17 @@ public class BridgeUtilsTest extends Mockito {
         account.setId(TEST_USER_ID);
         
         assertFalse( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void addAllToList() {
+        List<String> retValue = BridgeUtils.addUniqueItemsToList(ImmutableList.of("A", "B"), ImmutableList.of("C", "D"));
+        assertEquals(retValue, ImmutableList.of("A", "B", "C", "D"));
+        assertTrue(retValue instanceof ImmutableList);
+        
+        retValue = BridgeUtils.addUniqueItemsToList(ImmutableList.of("A", "B"), ImmutableSet.of("C"));
+        assertEquals(retValue, ImmutableList.of("A", "B", "C"));
+        assertTrue(retValue instanceof ImmutableList);
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

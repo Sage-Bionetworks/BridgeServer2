@@ -15,6 +15,8 @@ import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.testng.Assert.assertEquals;
 
+import java.util.Optional;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -118,7 +120,7 @@ public class Schedule2ControllerTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         Schedule2 schedule = new Schedule2();
-        when(mockService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        when(mockService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
         
         Schedule2 retValue = controller.getSchedule(TEST_STUDY_ID);
         assertEquals(retValue, schedule);

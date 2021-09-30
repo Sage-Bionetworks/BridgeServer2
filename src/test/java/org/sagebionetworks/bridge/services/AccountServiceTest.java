@@ -28,7 +28,6 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.STORMPATH_HMAC_SHA_256;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.services.AccountService.ROTATIONS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -76,7 +75,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -138,7 +137,7 @@ public class AccountServiceTest extends Mockito {
     ArgumentCaptor<Account> accountCaptor;
     
     @Captor
-    ArgumentCaptor<StudyActivityEventRequest> requestCaptor;
+    ArgumentCaptor<StudyActivityEvent> eventCaptor;
 
     @BeforeClass
     public static void mockNow() {
@@ -1024,21 +1023,21 @@ public class AccountServiceTest extends Mockito {
 
         verify(mockAccountDao).createAccount(app, account);
         verify(activityEventService).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, times(2)).publishEvent(requestCaptor.capture());
+        verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture());
         
-        StudyActivityEventRequest req1 = requestCaptor.getAllValues().get(0);
-        assertEquals(req1.getAppId(), TEST_APP_ID);
-        assertEquals(req1.getStudyId(), STUDY_A);
-        assertEquals(req1.getUserId(), TEST_USER_ID);
-        assertEquals(req1.getObjectType(), ENROLLMENT);
-        assertEquals(req1.getTimestamp(), account.getCreatedOn());
+        StudyActivityEvent event1 = eventCaptor.getAllValues().get(0);
+        assertEquals(event1.getAppId(), TEST_APP_ID);
+        assertEquals(event1.getStudyId(), STUDY_A);
+        assertEquals(event1.getUserId(), TEST_USER_ID);
+        assertEquals(event1.getEventId(), "enrollment");
+        assertEquals(event1.getTimestamp(), account.getCreatedOn());
         
-        StudyActivityEventRequest req2 = requestCaptor.getAllValues().get(1);
-        assertEquals(req2.getAppId(), TEST_APP_ID);
-        assertEquals(req2.getStudyId(), STUDY_B);
-        assertEquals(req2.getUserId(), TEST_USER_ID);
-        assertEquals(req2.getObjectType(), ENROLLMENT);
-        assertEquals(req2.getTimestamp(), account.getCreatedOn());
+        StudyActivityEvent event2 = eventCaptor.getAllValues().get(1);
+        assertEquals(event2.getAppId(), TEST_APP_ID);
+        assertEquals(event2.getStudyId(), STUDY_B);
+        assertEquals(event2.getUserId(), TEST_USER_ID);
+        assertEquals(event2.getEventId(), "enrollment");
+        assertEquals(event2.getTimestamp(), account.getCreatedOn());
     }
 
     @Test
@@ -1135,13 +1134,13 @@ public class AccountServiceTest extends Mockito {
         
         verify(activityEventService).publishEnrollmentEvent(
                 eq(app), eq(HEALTH_CODE), any(DateTime.class));
-        verify(studyActivityEventService).publishEvent(requestCaptor.capture());
-        StudyActivityEventRequest req = requestCaptor.getValue();
-        assertEquals(req.getAppId(), TEST_APP_ID);
-        assertEquals(req.getStudyId(), STUDY_B);
-        assertEquals(req.getUserId(), TEST_USER_ID);
-        assertEquals(req.getTimestamp(), MOCK_DATETIME);
-        assertEquals(req.getObjectType(), ENROLLMENT);
+        verify(studyActivityEventService).publishEvent(eventCaptor.capture());
+        StudyActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), STUDY_B);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getTimestamp(), MOCK_DATETIME);
+        assertEquals(event.getEventId(), "enrollment");
     }
     
     @Test

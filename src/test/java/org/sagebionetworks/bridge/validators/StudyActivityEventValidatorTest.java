@@ -5,6 +5,8 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.TestUtils.createEvent;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.CREATE_INSTANCE;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.DELETE_INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
@@ -22,114 +24,112 @@ public class StudyActivityEventValidatorTest extends Mockito {
 
     @Test
     public void valid() {
-        Validate.entityThrowingException(CREATE_INSTANCE, createEvent());
-        Validate.entityThrowingException(DELETE_INSTANCE, createEvent());
+        Validate.entityThrowingException(CREATE_INSTANCE, createBuilder().build());
+        Validate.entityThrowingException(DELETE_INSTANCE, createBuilder().build());
     }
     
     @Test
     public void appIdNull() {
-        StudyActivityEvent event = createEvent();
-        event.setAppId(null);
-        assertValidatorMessage(CREATE_INSTANCE, event, "appId", CANNOT_BE_BLANK);
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withAppId(null);
+        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "appId", CANNOT_BE_BLANK);
     }
     
     @Test
     public void appIdBlank() {
-        StudyActivityEvent event = createEvent();
-        event.setAppId(" ");
-        assertValidatorMessage(CREATE_INSTANCE, event, "appId", CANNOT_BE_BLANK);
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withAppId(" ");
+        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "appId", CANNOT_BE_BLANK);
     }
 
     @Test
     public void userIdNull() {
-        StudyActivityEvent event = createEvent();
-        event.setUserId(null);
-        assertValidatorMessage(CREATE_INSTANCE, event, "userId", CANNOT_BE_BLANK);
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withUserId(null);
+        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "userId", CANNOT_BE_BLANK);
     }
     
     @Test
     public void userIdBlank() {
-        StudyActivityEvent event = createEvent();
-        event.setUserId("");
-        assertValidatorMessage(CREATE_INSTANCE, event, "userId", CANNOT_BE_BLANK);
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withUserId("");
+        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "userId", CANNOT_BE_BLANK);
     }
 
     @Test
     public void studyIdNull() {
-        StudyActivityEvent event = createEvent();
-        event.setStudyId(null);
-        assertValidatorMessage(CREATE_INSTANCE, event, "studyId", CANNOT_BE_BLANK);
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withStudyId(null);
+        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "studyId", CANNOT_BE_BLANK);
     }
     
     @Test
     public void studyIdBlank() {
-        StudyActivityEvent event = createEvent();
-        event.setStudyId("\t");
-        assertValidatorMessage(CREATE_INSTANCE, event, "studyId", CANNOT_BE_BLANK);
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withStudyId("\t");
+        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "studyId", CANNOT_BE_BLANK);
     }
 
     @Test
     public void eventIdNull() {
-        StudyActivityEvent event = createEvent();
-        event.setEventId(null);
+        StudyActivityEvent event = createEvent(null, MODIFIED_ON);
         assertValidatorMessage(CREATE_INSTANCE, event, "eventId", INVALID_EVENT_ID);
     }
     
     @Test
     public void eventIdBlank() {
-        StudyActivityEvent event = createEvent();
-        event.setEventId("");
+        StudyActivityEvent event = createEvent("", MODIFIED_ON);
         assertValidatorMessage(CREATE_INSTANCE, event, "eventId", INVALID_EVENT_ID);
     }
     
     @Test
     public void timestampNull() {
-        StudyActivityEvent event = createEvent();
-        event.setTimestamp(null);
-        assertValidatorMessage(CREATE_INSTANCE, event, "timestamp", CANNOT_BE_NULL);
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withTimestamp(null);
+        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "timestamp", CANNOT_BE_NULL);
     }
 
     @Test
     public void createdOnNull() {
-        StudyActivityEvent event = createEvent();
-        event.setCreatedOn(null);
-        assertValidatorMessage(CREATE_INSTANCE, event, "createdOn", CANNOT_BE_NULL);
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withCreatedOn(null);
+        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "createdOn", CANNOT_BE_NULL);
     }
 
     @Test
     public void clientTimeZoneInvalid() {
-        StudyActivityEvent event = createEvent();
-        event.setClientTimeZone("America/Europe");
-        assertValidatorMessage(CREATE_INSTANCE, event, "clientTimeZone", TIME_ZONE_ERROR);
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withClientTimeZone("America/Europe");
+        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "clientTimeZone", TIME_ZONE_ERROR);
     }
     
     @Test
     public void clientTimeZoneNullOK() {
-        StudyActivityEvent event = createEvent();
-        event.setClientTimeZone(null);
-        Validate.entityThrowingException(CREATE_INSTANCE, event);
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withClientTimeZone(null);
+        Validate.entityThrowingException(CREATE_INSTANCE, builder.build());
     }
     
     @Test
     public void deleteSkipsCertainFields() {
-        StudyActivityEvent event = createEvent();
-        event.setTimestamp(null);
-        event.setCreatedOn(null);
-        event.setClientTimeZone("America/Europe"); // we just ignore this
-        Validate.entityThrowingException(DELETE_INSTANCE, createEvent());
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withTimestamp(null);
+        builder.withCreatedOn(null);
+        builder.withClientTimeZone("America/Europe"); // we just ignore this
+        Validate.entityThrowingException(DELETE_INSTANCE, builder.build());
     }
     
-    private StudyActivityEvent createEvent() { 
-        StudyActivityEvent event = new StudyActivityEvent();
-        event.setAppId(TEST_APP_ID);
-        event.setUserId(TEST_USER_ID);
-        event.setStudyId(TEST_STUDY_ID);
-        event.setEventId("timeline_retrieved");
-        event.setTimestamp(MODIFIED_ON);
-        event.setAnswerValue("my answer");
-        event.setClientTimeZone("America/Los_Angeles");
-        event.setCreatedOn(TestConstants.CREATED_ON);
-        return event;
+    private StudyActivityEvent.Builder createBuilder() { 
+        StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder();
+        builder.withAppId(TEST_APP_ID);
+        builder.withUserId(TEST_USER_ID);
+        builder.withStudyId(TEST_STUDY_ID);
+        builder.withObjectType(TIMELINE_RETRIEVED);
+        builder.withTimestamp(MODIFIED_ON);
+        builder.withAnswerValue("my answer");
+        builder.withClientTimeZone("America/Los_Angeles");
+        builder.withCreatedOn(TestConstants.CREATED_ON);
+        return builder;
     }
     
 }
