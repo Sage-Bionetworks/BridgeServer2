@@ -1493,7 +1493,7 @@ public class ParticipantControllerTest extends Mockito {
     }
 
     @Test
-    public void deleteTestUserWorks() {
+    public void deleteUserWorks() {
         Account account = Account.create();
         account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
         account.setId(TEST_USER_ID);
@@ -1506,7 +1506,7 @@ public class ParticipantControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void deleteTestUserNotAResearcher() {
+    public void deleteUserNotAResearcher() {
         participant = new StudyParticipant.Builder().copyOf(participant)
                 .withRoles(ImmutableSet.of(WORKER))
                 .withId("notUserId").build();
@@ -1519,7 +1519,7 @@ public class ParticipantControllerTest extends Mockito {
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void deleteTestUserNotATestAccount() {
+    public void deleteUserNotATestAccount() {
         Account account = Account.create();
         when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
         

@@ -734,16 +734,13 @@ public class BridgeUtils {
         if (testAccount) {
             return true;
         }
-        // Accounts enrolled in multiple studies cannot be deleted, too risky.
-        if (account.getEnrollments().size() > 1) {
-            return false;
+        // Must have rights to delete participant in all studies using this account.
+        for (Enrollment en : account.getEnrollments()) {
+            if (!CAN_DELETE_PARTICIPANTS.check(STUDY_ID, en.getStudyId())) {
+                return false;
+            }
         }
-        // Get a studyId if there is one. If it's null, that part of the security rule will just fail to match.
-        String studyId = Iterables.getFirst(collectStudyIds(account), null);
-        boolean unused = participantHasNeverSignedIn(requestInfoService, account.getId());
-        
-        // If the account is unused, *and* the caller has access to the participant, allow the delete 
-        return (unused && CAN_DELETE_PARTICIPANTS.check(STUDY_ID, studyId));
+        return participantHasNeverSignedIn(requestInfoService, account.getId());
     }
     
     private static boolean participantHasNeverSignedIn(RequestInfoService requestInfoService, String userId) {

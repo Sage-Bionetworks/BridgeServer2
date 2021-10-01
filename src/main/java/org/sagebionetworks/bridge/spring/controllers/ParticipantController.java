@@ -90,7 +90,8 @@ import org.sagebionetworks.bridge.services.EnrollmentService;
 @RestController
 public class ParticipantController extends BaseController {
     
-    private static final String NOTIFY_SUCCESS_MESSAGE = "Message has been sent to external notification service.";
+    static final String CANNOT_DELETE_ACCOUNT_ERROR = "Account is not a test account, it is already in use, or it is enrolled in a study that is not managed by the caller’s organization.";
+    static final String NOTIFY_SUCCESS_MESSAGE = "Message has been sent to external notification service.";
 
     private ParticipantService participantService;
     
@@ -210,7 +211,7 @@ public class ParticipantController extends BaseController {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
         if (!participantEligibleForDeletion(requestInfoService, account)) {
-            throw new UnauthorizedException("Account is not a test account or it is already in use.");
+            throw new UnauthorizedException(CANNOT_DELETE_ACCOUNT_ERROR);
         }
         App app = appService.getApp(session.getAppId());
         userAdminService.deleteUser(app, account.getId());
