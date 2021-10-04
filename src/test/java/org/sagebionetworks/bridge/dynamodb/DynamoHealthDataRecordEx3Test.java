@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.ClientInfo;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
@@ -157,11 +158,12 @@ public class DynamoHealthDataRecordEx3Test {
         record.setExported(true);
         record.setExportedOn(TestConstants.EXPORTED_ON.getMillis());
         record.setMetadata(METADATA_MAP);
+        record.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
         record.setVersion(VERSION);
 
         // Convert to JsonNode.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(record, JsonNode.class);
-        assertEquals(jsonNode.size(), 11);
+        assertEquals(jsonNode.size(), 12);
         assertEquals(jsonNode.get("id").textValue(), RECORD_ID);
         assertEquals(jsonNode.get("appId").textValue(), TestConstants.TEST_APP_ID);
         assertEquals(jsonNode.get("studyId").textValue(), STUDY_ID);
@@ -170,6 +172,7 @@ public class DynamoHealthDataRecordEx3Test {
         assertEquals(jsonNode.get("clientInfo").textValue(), CLIENT_INFO_STRING);
         assertTrue(jsonNode.get("exported").booleanValue());
         assertEquals(jsonNode.get("exportedOn").textValue(), TestConstants.EXPORTED_ON.toString());
+        assertEquals(jsonNode.get("sharingScope").textValue(), "sponsors_and_partners");
         assertEquals(jsonNode.get("version").longValue(), VERSION);
         assertEquals(jsonNode.get("type").textValue(), "HealthDataRecordEx3");
 
@@ -187,6 +190,7 @@ public class DynamoHealthDataRecordEx3Test {
         assertEquals(record.getClientInfo(), CLIENT_INFO_STRING);
         assertTrue(record.isExported());
         assertEquals(record.getExportedOn().longValue(), TestConstants.EXPORTED_ON.getMillis());
+        assertEquals(record.getSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
         assertEquals(record.getMetadata(), METADATA_MAP);
         assertEquals(record.getVersion().longValue(), VERSION);
     }

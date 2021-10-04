@@ -12,6 +12,7 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecordEx3;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.upload.Upload;
 
 /**
@@ -100,6 +101,13 @@ public interface HealthDataRecordEx3 extends BridgeEntity {
     /** Client-submitted metadata, as a map of key-value pairs. */
     Map<String, String> getMetadata();
     void setMetadata(Map<String, String> metadata);
+
+    /**
+     * Sharing scope at the time the participant uploaded their data. This allows us to preserve the participant's
+     * sharing preferences if export is delayed (due to Synapse maintenance or a redrive).
+     */
+    SharingScope getSharingScope();
+    void setSharingScope(SharingScope sharingScope);
 
     /**
      * Record version. This is used to detect concurrency conflicts. For creating new health data records, this field
