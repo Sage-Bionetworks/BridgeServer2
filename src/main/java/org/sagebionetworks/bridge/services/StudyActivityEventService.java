@@ -11,7 +11,6 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.DELETE_INSTANCE;
-import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.CREATE_INSTANCE;
 
 import java.util.ArrayList;
@@ -168,18 +167,18 @@ public class StudyActivityEventService {
 
         StudyActivityEventIdsMap eventMap = studyService.getStudyActivityEventIdsMap(accountId.getAppId(), studyId);
 
-        eventId = formatActivityEventId(eventMap, eventId);
-        if (eventId == null) {
-            throw new BadRequestException(INVALID_EVENT_ID);
+        String adjEventId = formatActivityEventId(eventMap, eventId);
+        if (adjEventId == null) {
+            throw new BadRequestException("“" + eventId + "” is not a valid event ID");
         }
         
         // Global events emulate history for a cleaner and less confusing API, but there 
         // will only ever be one value.
-        if (GLOBAL_EVENTS_OF_INTEREST.contains(eventId)) {
+        if (GLOBAL_EVENTS_OF_INTEREST.contains(adjEventId)) {
             Map<String, DateTime> map = activityEventService.getActivityEventMap(
                     account.getAppId(), account.getHealthCode());
             List<StudyActivityEvent> events = new ArrayList<>();
-            addIfPresent(events, map, eventId);
+            addIfPresent(events, map, adjEventId);
             
             return new PagedResourceList<>(events, 1, true)
                     .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
@@ -187,9 +186,9 @@ public class StudyActivityEventService {
         }
         
         PagedResourceList<StudyActivityEvent> results = dao.getStudyActivityEventHistory(
-                account.getId(), studyId, eventId, offsetBy, pageSize);
+                account.getId(), studyId, adjEventId, offsetBy, pageSize);
         
-        if (eventId.equals(ENROLLMENT_FIELD) && results.getItems().size() == 0) {
+        if (adjEventId.equals(ENROLLMENT_FIELD) && results.getItems().size() == 0) {
             Enrollment en = findEnrollmentByStudyId(account, studyId);
             if (en != null) {
                 StudyActivityEvent event = new StudyActivityEvent.Builder()
