@@ -30,7 +30,7 @@ public class HealthDataDocumentationController extends BaseController {
     }
 
     /** Create or update a health data documentation. */
-    @PostMapping(path="/v3/healthdataDocumentation")
+    @PostMapping(path="/v3/healthdatadocumentation")
     public HealthDataDocumentation createOrUpdateHealthDataDocumentation() {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.DEVELOPER);
 
@@ -41,7 +41,7 @@ public class HealthDataDocumentationController extends BaseController {
     }
 
     /** Get a health data documentation with the given identifier. */
-    @GetMapping(path="/v3/healthdataDocumentation/{identifier}")
+    @GetMapping(path="/v3/healthdatadocumentation/{identifier}")
     public HealthDataDocumentation getHealthDataDocumentationForId(@PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.DEVELOPER);
 
@@ -52,7 +52,7 @@ public class HealthDataDocumentationController extends BaseController {
     }
 
     /** Get all health data documentation with the given parentId. */
-    @GetMapping(path="/v3/healthdataDocumentation")
+    @GetMapping(path="/v3/healthdatadocumentation")
     public ForwardCursorPagedResourceList<HealthDataDocumentation> getAllHealthDataDocumentationForParentId(
             @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
         UserSession session = getAuthenticatedSession(Roles.RESEARCHER, Roles.DEVELOPER);
@@ -63,7 +63,7 @@ public class HealthDataDocumentationController extends BaseController {
     }
 
     /** Delete a health data documentation with the given identifier. */
-    @DeleteMapping(path="v3/healthdataDocumentation/{identifier}")
+    @DeleteMapping(path="v3/healthdatadocumentation/{identifier}")
     public StatusMessage deleteHealthDataDocumentationForIdentifier(@PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(Roles.ADMIN);
 
@@ -74,7 +74,7 @@ public class HealthDataDocumentationController extends BaseController {
     }
 
     /** Delete all health data documentation with the given parentId. */
-    @DeleteMapping(path="/v3/healthdataDocumentation")
+    @DeleteMapping(path="/v3/healthdatadocumentation")
     public StatusMessage deleteAllHealthDataDocumentationForParentId() {
         UserSession session = getAuthenticatedSession(Roles.ADMIN);
 
