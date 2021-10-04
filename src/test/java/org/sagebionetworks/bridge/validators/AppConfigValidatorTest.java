@@ -55,8 +55,8 @@ public class AppConfigValidatorTest extends Mockito {
     private static final SchemaReference INVALID_SCHEMA_REF = new SchemaReference("guid", null);
     private static final SchemaReference VALID_SCHEMA_REF = new SchemaReference("guid", 3);
     private static final ConfigReference VALID_CONFIG_REF = new ConfigReference("id", 3L);
-    private static final AssessmentReference INVALID_ASSESSMENT_REF = new AssessmentReference(null, null, null, null);
-    private static final AssessmentReference VALID_ASSESSMENT_REF = new AssessmentReference(GUID, null, null, null);
+    private static final AssessmentReference INVALID_ASSESSMENT_REF = new AssessmentReference(null, null);
+    private static final AssessmentReference VALID_ASSESSMENT_REF = new AssessmentReference(GUID, null);
 
     @Mock
     private SurveyService mockSurveyService;
@@ -127,8 +127,25 @@ public class AppConfigValidatorTest extends Mockito {
     }
 
     @Test
+    public void assessmentReferenceInvalidAppId() {
+        appConfig.setAssessmentReferences(ImmutableList.of(new AssessmentReference(GUID, "fakeAppId")));
+
+        assertValidatorMessage(newValidator, appConfig, "assessmentReferences[0].appId", "does not refer to a valid app");
+    }
+
+    @Test
+    public void assessmentReferenceGuidNotFound() {
+        appConfig.setAssessmentReferences(ImmutableList.of(new AssessmentReference(GUID, TEST_APP_ID)));
+
+        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID))
+                .thenThrow(new EntityNotFoundException(Assessment.class));
+
+        assertValidatorMessage(newValidator, appConfig, "assessmentReferences[0].guid", "does not refer to an assessment");
+    }
+
+    @Test
     public void assessmentReferenceWithDifferentAppIdFromConfigValidates() {
-        AssessmentReference sharedAssessmentRef = new AssessmentReference(GUID, null, null, SHARED_APP_ID);
+        AssessmentReference sharedAssessmentRef = new AssessmentReference(GUID, SHARED_APP_ID);
         appConfig.setAssessmentReferences(ImmutableList.of(sharedAssessmentRef));
 
         try {
@@ -140,7 +157,7 @@ public class AppConfigValidatorTest extends Mockito {
         verify(mockAssessmentService).getAssessmentByGuid(SHARED_APP_ID, null, GUID);
     }
 
-    @Test void assessmentReferenceWithoutAppIdDefaultsToAppConfig() {
+    @Test void assessmentReferenceWithoutAppIdDefaultsToAppConfigsAppId() {
         // The AppConfig's appId should be used when an AssessmentRef does not have it specified
         appConfig.setAssessmentReferences(ImmutableList.of(VALID_ASSESSMENT_REF));
 

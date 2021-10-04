@@ -6,6 +6,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.sagebionetworks.bridge.models.appconfig.ConfigResolver.INSTANCE;
 
 import java.util.HashSet;
 import java.util.List;
@@ -53,8 +54,8 @@ public class DynamoAppConfigTest {
             new FileReference(GUID, TIMESTAMP),
             new FileReference("twoGuid", TIMESTAMP));
     private static final List<AssessmentReference> ASSESSMENT_REFS = ImmutableList.of(
-            new AssessmentReference("guid1", "id1", "originSharedId1", "appId1"),
-            new AssessmentReference("guid2", "id2", "originSharedId2", "appId2"));
+            new AssessmentReference(INSTANCE, "guid1", "id1", "originSharedId1", "appId1"),
+            new AssessmentReference(INSTANCE, "guid2", "id2", "originSharedId2", "appId2"));
     
     private static final String APP_ID = TestUtils.randomName(DynamoAppConfigTest.class);
     

@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Comparator.comparingLong;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
+import static org.sagebionetworks.bridge.models.appconfig.ConfigResolver.INSTANCE;
 
 import java.util.List;
 import java.util.Set;
@@ -177,7 +178,7 @@ public class AppConfigService {
             return ref;
         }
         String originSharedId = getSharedAssessmentId(assessment);
-        return new AssessmentReference(ref.getGuid(), assessment.getIdentifier(), originSharedId, assessment.getAppId());
+        return new AssessmentReference(INSTANCE, ref.getGuid(), assessment.getIdentifier(), originSharedId, assessment.getAppId());
     }
     
     protected Assessment getAssessment(String appId, String guid) {
@@ -289,7 +290,7 @@ public class AppConfigService {
         AppConfig persistedConfig = appConfigDao.getAppConfig(appId, appConfig.getGuid());
         appConfig.setCreatedOn(persistedConfig.getCreatedOn());
         appConfig.setModifiedOn(getCurrentTimestamp());
-        
+
         return appConfigDao.updateAppConfig(appConfig);
     }
     

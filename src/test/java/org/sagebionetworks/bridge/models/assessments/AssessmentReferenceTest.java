@@ -68,7 +68,7 @@ public class AssessmentReferenceTest extends Mockito {
     
     @Test
     public void noGuid() {
-        AssessmentReference ref = new AssessmentReference(null, null, null, null);
+        AssessmentReference ref = new AssessmentReference(null, null);
         assertNull(ref.getConfigHref());
     }
     
@@ -89,6 +89,10 @@ public class AssessmentReferenceTest extends Mockito {
         AssessmentReference deser = BridgeObjectMapper.get().readValue(
                 node.toString(), AssessmentReference.class);
         assertEquals(deser, ref);
+        assertEquals(deser.getGuid(), "oneGuid");
+        assertEquals(deser.getAppId(), "appId");
+        assertNull(deser.getId());
+        assertNull(deser.getOriginSharedId());
     }
 
     @Test

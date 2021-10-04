@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
@@ -16,15 +15,15 @@ public final class AssessmentReference {
     private final ConfigResolver resolver;
     private final String guid;
     private final String appId;
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private final String id;
-    @JsonIgnore
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private final String originSharedId;
 
     @JsonCreator
-    public AssessmentReference(@JsonProperty("guid") String guid, @JsonProperty("id") String id,
-                               @JsonProperty("originSharedId") String originSharedId, @JsonProperty("appId") String appId) {
-        this(INSTANCE, guid, id, originSharedId, appId);
+    public AssessmentReference(@JsonProperty("guid") String guid,
+                               @JsonProperty("appId") String appId) {
+        this(INSTANCE, guid, null, null, appId);
     }
 
     public AssessmentReference(ConfigResolver resolver, String guid, String id, String originSharedId, String appId) {
