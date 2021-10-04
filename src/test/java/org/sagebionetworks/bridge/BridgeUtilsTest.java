@@ -78,6 +78,10 @@ public class BridgeUtilsTest extends Mockito {
     private static final Label LABEL_JA = new Label("ja", "Japanese");
     private static final Label LABEL_ES = new Label("es", "Spanish");
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
+    private static final Set<Enrollment> STUDY_A_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID));
+    private static final Set<Enrollment> STUDY_B_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID));
+    private static final Set<Enrollment> STUDY_A_AND_B_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID), 
+            Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID));
     
     @AfterMethod
     public void after() {
@@ -992,52 +996,62 @@ public class BridgeUtilsTest extends Mockito {
     }
 
     @Test
-    public void participantEligibleForDeletion_prohibitedByDefault() {
-        RequestInfoService mockService = mock(RequestInfoService.class);
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        
-        // It exists, but there's nothing recorded for a sign in, so we consider
-        // the account unused.
-        RequestInfo requestInfo = new RequestInfo.Builder().build();
-        when(mockService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
-        
-        assertFalse( participantEligibleForDeletion(mockService, account) );
-    }
-
-    @Test
     public void participantEligibleForDeletion_testUserAllowed() {
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
-        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        account.setId(TEST_USER_ID);
         
-        assertTrue( participantEligibleForDeletion(mockService, account) );
-    }
-    
-    @Test
-    public void participantEligibleForDeletion_testAccountInUseAllowed() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        
-        RequestInfoService mockService = mock(RequestInfoService.class);
-        RequestInfo requestInfo = new RequestInfo.Builder()
-                .withSignedInOn(CREATED_ON).build();
+        // User hasn't signed in
+        RequestInfo requestInfo = new RequestInfo.Builder().build();
         when(mockService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
         
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+
+    @Test
+    public void participantEligibleForDeletion_testUserAllowedAfterSignIn() {
+        RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
-        account.setId(TEST_USER_ID);
         account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+
+        // User has signed in, and is still eligible for deletion
+        RequestInfoService mockRequestService = mock(RequestInfoService.class);
+        RequestInfo requestInfo = new RequestInfo.Builder()
+                .withSignedInOn(CREATED_ON).build();
+        when(mockRequestService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
         
         assertTrue( participantEligibleForDeletion(mockService, account) );
     }
     
     @Test
-    public void participantEligibleForDeletion_unusedByResearcherAllowed() {
+    public void participantEligibleForDeletion_unusedAllowed() {
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_unaffiliatedResearcherAllowed() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
+        account.setEnrollments(STUDY_A_ENROLLMENT);
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_affiliatedResearcherAllowed() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(USER_STUDY_IDS)
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
         
         assertTrue( participantEligibleForDeletion(mockService, account) );
     }
@@ -1049,6 +1063,7 @@ public class BridgeUtilsTest extends Mockito {
         
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
+        account.setEnrollments(STUDY_A_ENROLLMENT);
         
         assertFalse( participantEligibleForDeletion(mockService, account) );
     }
@@ -1061,7 +1076,7 @@ public class BridgeUtilsTest extends Mockito {
         
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
-        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID)));
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
         
         assertTrue( participantEligibleForDeletion(mockService, account) );
     }
@@ -1078,27 +1093,38 @@ public class BridgeUtilsTest extends Mockito {
     }
 
     @Test
-    public void participantEligibleForDeletion_noEnrollmentsProhibitedForStudyCoordinators() {
+    public void participantEligibleForDeletion_noEnrollmentsAllowedForStudyCoordinators() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
         
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
         
-        assertFalse( participantEligibleForDeletion(mockService, account) );
+        assertTrue( participantEligibleForDeletion(mockService, account) );
     }
     
     @Test
-    public void participantEligibleForDeletion_multipleEnrollmentsProhibited() {
+    public void participantEligibleForDeletion_multipleEnrollmentsPass() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(USER_STUDY_IDS)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
         
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
-        account.setEnrollments(ImmutableSet.of(
-                Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID),
-                Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID)));
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_multipleEnrollmentsFail() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyC")) // mismatch
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
         
         assertFalse( participantEligibleForDeletion(mockService, account) );
     }
