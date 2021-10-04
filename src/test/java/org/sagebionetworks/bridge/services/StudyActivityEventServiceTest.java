@@ -337,7 +337,7 @@ public class StudyActivityEventServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = ".*"+INVALID_EVENT_ID+".*")
+            expectedExceptionsMessageRegExp = "“nonsense” is not a valid event ID")
     public void getStudyActivityEventHistory_invalidEventId() {
         Account account = Account.create();
         account.setCreatedOn(CREATED_ON);
