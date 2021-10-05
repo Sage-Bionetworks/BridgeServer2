@@ -48,7 +48,6 @@ public class EnrollmentInfoTest {
         Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         en.setExternalId(TEST_EXTERNAL_ID);
         en.setEnrolledOn(CREATED_ON);
-        en.setEnrolledBy(TEST_USER_ID);
         en.setConsentRequired(true);
         EnrollmentInfo detail = EnrollmentInfo.create(en);
         
@@ -86,7 +85,6 @@ public class EnrollmentInfoTest {
         en.setEnrolledBy("other-user");
         en.setConsentRequired(true);
         en.setWithdrawnOn(MODIFIED_ON);
-        en.setWithdrawnBy(TEST_USER_ID);
         EnrollmentInfo detail = EnrollmentInfo.create(en);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(detail);

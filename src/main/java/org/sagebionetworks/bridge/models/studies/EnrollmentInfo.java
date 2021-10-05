@@ -15,13 +15,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 public final class EnrollmentInfo {
     
     public static final EnrollmentInfo create(Enrollment enrollment) {
-        boolean enrolledBySelf = enrollment.getAccountId().equals(enrollment.getEnrolledBy());
-        boolean withdrawnBySelf = enrollment.getAccountId().equals(enrollment.getWithdrawnBy());
+        boolean withdrawnBySelf = enrollment.getWithdrawnOn() != null && enrollment.getWithdrawnBy() == null;
+        boolean enrolledBySelf = enrollment.getEnrolledOn() != null && enrollment.getEnrolledBy() == null;
         return new EnrollmentInfo(enrollment.getExternalId(), 
                 enrollment.getEnrolledOn(), 
                 enrollment.getWithdrawnOn(), 
-                (enrolledBySelf == true) ? TRUE : null, 
-                (withdrawnBySelf == true) ? TRUE : null, 
+                (enrolledBySelf) ? TRUE : null, 
+                (withdrawnBySelf) ? TRUE : null, 
                 enrollment.isConsentRequired());
     }
 
