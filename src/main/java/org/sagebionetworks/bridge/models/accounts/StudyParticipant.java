@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.crypto.AesGcmEncryptor;
 import org.sagebionetworks.bridge.crypto.Encryptor;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.studies.EnrollmentInfo;
 
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonFilter;
@@ -24,7 +25,6 @@ import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.ser.impl.SimpleBeanPropertyFilter;
 import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Sets;
 
@@ -68,6 +68,7 @@ public final class StudyParticipant implements BridgeEntity {
     private final String healthCode;
     private final Map<String,String> attributes;
     private final Map<String,List<UserConsentHistory>> consentHistories;
+    private final Map<String,EnrollmentInfo> enrollments;
     private final Boolean consented;
     private final Set<Roles> roles;
     private final List<String> languages;
@@ -82,52 +83,47 @@ public final class StudyParticipant implements BridgeEntity {
     private final String note;
     private final String clientTimeZone;
     
-    private StudyParticipant(String firstName, String lastName, String email, Phone phone, Boolean emailVerified,
-            Boolean phoneVerified, String externalId, String synapseUserId, String password, SharingScope sharingScope,
-            Boolean notifyByEmail, Set<String> dataGroups, String healthCode, Map<String, String> attributes,
-            Map<String, List<UserConsentHistory>> consentHistories, Boolean consented, Set<Roles> roles,
-            List<String> languages, AccountStatus status, DateTime createdOn, String id, DateTimeZone timeZone,
-            JsonNode clientData, Set<String> studyIds, Map<String, String> externalIds, String orgId, String note,
-            String clientTimeZone) {
+    private StudyParticipant(StudyParticipant.Builder builder) {
         
-        ImmutableMap.Builder<String, List<UserConsentHistory>> immutableConsentsBuilder = new ImmutableMap.Builder<>();
-        if (consentHistories != null) {
-            for (Map.Entry<String, List<UserConsentHistory>> entry : consentHistories.entrySet()) {
-                if (entry.getValue() != null) {
-                    List<UserConsentHistory> immutableList = BridgeUtils.nullSafeImmutableList(entry.getValue());
-                    immutableConsentsBuilder.put(entry.getKey(), immutableList);
-                }
+        Boolean emailVerified = builder.emailVerified;
+        if (emailVerified == null) {
+            if (builder.status == AccountStatus.ENABLED) {
+                emailVerified = Boolean.TRUE;
+            } else if (builder.status == AccountStatus.UNVERIFIED) {
+                emailVerified = Boolean.FALSE;
             }
         }
         
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.phone = phone;
+        this.firstName = builder.firstName;
+        this.lastName = builder.lastName;
+        this.email = builder.email;
+        this.phone = builder.phone;
         this.emailVerified = emailVerified;
-        this.phoneVerified = phoneVerified;
-        this.externalId = externalId;
-        this.synapseUserId = synapseUserId;
-        this.password = password;
-        this.sharingScope = sharingScope;
-        this.notifyByEmail = notifyByEmail;
-        this.dataGroups = BridgeUtils.nullSafeImmutableSet(dataGroups);
-        this.healthCode = healthCode;
-        this.attributes = BridgeUtils.nullSafeImmutableMap(attributes);
-        this.consentHistories = immutableConsentsBuilder.build();
-        this.consented = consented;
-        this.roles = BridgeUtils.nullSafeImmutableSet(roles);
-        this.languages = BridgeUtils.nullSafeImmutableList(languages);
-        this.status = status;
-        this.createdOn = createdOn;
-        this.id = id;
-        this.timeZone = timeZone;
-        this.clientData = clientData;
-        this.studyIds = BridgeUtils.nullSafeImmutableSet(studyIds);
-        this.externalIds = BridgeUtils.nullSafeImmutableMap(externalIds);
-        this.orgMembership = orgId;
-        this.note = note;
-        this.clientTimeZone = clientTimeZone;
+        this.phoneVerified = builder.phoneVerified;
+        this.externalId = builder.externalId;
+        this.synapseUserId = builder.synapseUserId;
+        this.password = builder.password;
+        this.sharingScope = builder.sharingScope;
+        this.notifyByEmail = builder.notifyByEmail;
+        this.dataGroups = BridgeUtils.nullSafeImmutableSet(builder.dataGroups);
+        this.healthCode = builder.healthCode;
+        this.attributes = BridgeUtils.nullSafeImmutableMap(builder.attributes);
+        // this.consentHistories = immutableConsentsBuilder.build();
+        this.consentHistories = BridgeUtils.nullSafeImmutableMap(builder.consentHistories);
+        this.enrollments = BridgeUtils.nullSafeImmutableMap(builder.enrollments);
+        this.consented = builder.consented;
+        this.roles = BridgeUtils.nullSafeImmutableSet(builder.roles);
+        this.languages = BridgeUtils.nullSafeImmutableList(builder.languages);
+        this.status = builder.status;
+        this.createdOn = builder.createdOn;
+        this.id = builder.id;
+        this.timeZone = builder.timeZone;
+        this.clientData = builder.clientData;
+        this.studyIds = BridgeUtils.nullSafeImmutableSet(builder.studyIds);
+        this.externalIds = BridgeUtils.nullSafeImmutableMap(builder.externalIds);
+        this.orgMembership = builder.orgMembership;
+        this.note = builder.note;
+        this.clientTimeZone = builder.clientTimeZone;
     }
     
     public String getFirstName() {
@@ -185,7 +181,9 @@ public final class StudyParticipant implements BridgeEntity {
     public Map<String, List<UserConsentHistory>> getConsentHistories() {
         return consentHistories;
     }
-
+    public Map<String, EnrollmentInfo> getEnrollments() { 
+        return enrollments;
+    }
     /**
      * True if the user has consented to all required consents, based on the user's most recent request info (client
      * info, languages, data groups). May be null if this object was not constructed with consent histories, or if
@@ -234,10 +232,10 @@ public final class StudyParticipant implements BridgeEntity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(attributes, consentHistories, consented, createdOn, dataGroups, email, phone, emailVerified,
-                phoneVerified, externalId, synapseUserId, firstName, healthCode, id, languages, lastName, notifyByEmail,
-                password, roles, sharingScope, status, timeZone, clientData, studyIds, externalIds, orgMembership, note,
-                clientTimeZone);
+        return Objects.hash(attributes, consentHistories, enrollments, consented, createdOn, dataGroups, email, phone,
+                emailVerified, phoneVerified, externalId, synapseUserId, firstName, healthCode, id, languages, lastName,
+                notifyByEmail, password, roles, sharingScope, status, timeZone, clientData, studyIds, externalIds,
+                orgMembership, note, clientTimeZone);
     }
 
     @Override
@@ -248,23 +246,19 @@ public final class StudyParticipant implements BridgeEntity {
             return false;
         StudyParticipant other = (StudyParticipant) obj;
         return Objects.equals(attributes, other.attributes) && Objects.equals(consentHistories, other.consentHistories)
-                && Objects.equals(consented, other.consented)
+                && Objects.equals(enrollments, other.enrollments) && Objects.equals(consented, other.consented)
                 && Objects.equals(createdOn, other.createdOn) && Objects.equals(dataGroups, other.dataGroups)
                 && Objects.equals(email, other.email) && Objects.equals(phone, other.phone)
                 && Objects.equals(emailVerified, other.emailVerified) && Objects.equals(phoneVerified, other.phoneVerified)
-                && Objects.equals(externalId, other.externalId)
-                && Objects.equals(synapseUserId, other.synapseUserId)
+                && Objects.equals(externalId, other.externalId) && Objects.equals(synapseUserId, other.synapseUserId)
                 && Objects.equals(firstName, other.firstName) && Objects.equals(healthCode, other.healthCode)
                 && Objects.equals(id, other.id) && Objects.equals(languages, other.languages)
                 && Objects.equals(lastName, other.lastName) && Objects.equals(notifyByEmail, other.notifyByEmail)
                 && Objects.equals(password, other.password) && Objects.equals(roles, other.roles)
                 && Objects.equals(sharingScope, other.sharingScope) && Objects.equals(status, other.status)
-                && Objects.equals(timeZone, other.timeZone)
-                && Objects.equals(clientData, other.clientData)
-                && Objects.equals(studyIds, other.studyIds)
-                && Objects.equals(externalIds, other.externalIds)
-                && Objects.equals(orgMembership, other.orgMembership)
-                && Objects.equals(note, other.note)
+                && Objects.equals(timeZone, other.timeZone) && Objects.equals(clientData, other.clientData)
+                && Objects.equals(studyIds, other.studyIds) && Objects.equals(externalIds, other.externalIds)
+                && Objects.equals(orgMembership, other.orgMembership) && Objects.equals(note, other.note)
                 && Objects.equals(clientTimeZone, other.clientTimeZone);
     }
 
@@ -284,6 +278,7 @@ public final class StudyParticipant implements BridgeEntity {
         private String healthCode;
         private Map<String,String> attributes;
         private Map<String,List<UserConsentHistory>> consentHistories;
+        private Map<String,EnrollmentInfo> enrollments;
         private Boolean consented;
         private Set<Roles> roles;
         private List<String> languages;
@@ -314,6 +309,7 @@ public final class StudyParticipant implements BridgeEntity {
             this.dataGroups = participant.getDataGroups();
             this.attributes = participant.getAttributes();
             this.consentHistories = participant.getConsentHistories();
+            this.enrollments = participant.getEnrollments();
             this.consented = participant.isConsented();
             this.roles = participant.getRoles();
             this.languages = participant.getLanguages();
@@ -374,6 +370,9 @@ public final class StudyParticipant implements BridgeEntity {
             }
             if (fieldNames.contains("consentHistories")) {
                 withConsentHistories(participant.getConsentHistories());    
+            }
+            if (fieldNames.contains("enrollments")) {
+                withEnrollments(participant.getEnrollments());    
             }
             if (fieldNames.contains("consented")) {
                 withConsented(participant.isConsented());
@@ -486,6 +485,12 @@ public final class StudyParticipant implements BridgeEntity {
             }
             return this;
         }
+        public Builder withEnrollments(Map<String,EnrollmentInfo> enrollments) {
+            if (enrollments != null) {
+                this.enrollments = enrollments;    
+            }
+            return this;
+        }
         public Builder withConsented(Boolean consented) {
             this.consented = consented;
             return this;
@@ -544,22 +549,11 @@ public final class StudyParticipant implements BridgeEntity {
             return this;
         }
         public StudyParticipant build() {
-            Boolean emailVerified = this.emailVerified;
-            if (emailVerified == null) {
-                if (status == AccountStatus.ENABLED) {
-                    emailVerified = Boolean.TRUE;
-                } else if (status == AccountStatus.UNVERIFIED) {
-                    emailVerified = Boolean.FALSE;
-                }
-            }
             // deduplicate language codes if they have been doubled
             if (languages != null) {
                 languages = ImmutableList.copyOf(Sets.newLinkedHashSet(languages));
             }
-            return new StudyParticipant(firstName, lastName, email, phone, emailVerified, phoneVerified, externalId,
-                    synapseUserId, password, sharingScope, notifyByEmail, dataGroups, healthCode, attributes,
-                    consentHistories, consented, roles, languages, status, createdOn, id, timeZone, clientData,
-                    studyIds, externalIds, orgMembership, note, clientTimeZone);
+            return new StudyParticipant(this);
         }
     }
 

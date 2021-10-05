@@ -95,7 +95,7 @@ public class UserSessionInfoTest {
         assertEquals(consentStatus.size(), 7);
         
         // ... and no things that shouldn't be there
-        assertEquals(node.size(), 24);
+        assertEquals(node.size(), 25);
     }
     
     @Test

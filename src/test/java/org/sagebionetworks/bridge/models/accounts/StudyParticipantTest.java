@@ -115,7 +115,7 @@ public class StudyParticipantTest {
 
         assertEquals(node.get("attributes").get("A").textValue(), "B");
         assertEquals(node.get("attributes").get("C").textValue(), "D");
-        assertEquals(node.size(), 29);
+        assertEquals(node.size(), 30);
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals(deserParticipant.getFirstName(), "firstName");

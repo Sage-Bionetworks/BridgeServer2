@@ -4,6 +4,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+import static java.util.stream.Collectors.toMap;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
@@ -96,6 +97,7 @@ import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.sms.SmsType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentInfo;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
@@ -352,7 +354,6 @@ public class ParticipantService {
         StudyParticipant.Builder builder = new StudyParticipant.Builder();
         StudyAssociations assoc = studyAssociationsVisibleToCaller(account);
         copyAccountToParticipant(builder, assoc, account);
-
         if (includeHistory) {
             copyHistoryToParticipant(builder, account, app.getIdentifier());
         }
@@ -400,6 +401,9 @@ public class ParticipantService {
             builder.withNote(account.getNote());
         }
         builder.withClientTimeZone(account.getClientTimeZone());
+        Map<String, EnrollmentInfo> enrollmentMap = account.getEnrollments().stream()
+                .collect(toMap(e -> e.getStudyId(), EnrollmentInfo::create));
+        builder.withEnrollments(enrollmentMap);
         return builder;
     }
     
