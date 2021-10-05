@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.testng.Assert.fail;
 
 import java.util.List;
 import java.util.Optional;
@@ -56,7 +57,7 @@ public class AppConfigValidatorTest extends Mockito {
     private static final SchemaReference VALID_SCHEMA_REF = new SchemaReference("guid", 3);
     private static final ConfigReference VALID_CONFIG_REF = new ConfigReference("id", 3L);
     private static final AssessmentReference INVALID_ASSESSMENT_REF = new AssessmentReference(null, null);
-    private static final AssessmentReference VALID_ASSESSMENT_REF = new AssessmentReference(GUID, null);
+    private static final AssessmentReference VALID_ASSESSMENT_REF = new AssessmentReference(GUID, TEST_APP_ID);
 
     @Mock
     private SurveyService mockSurveyService;
@@ -108,7 +109,7 @@ public class AppConfigValidatorTest extends Mockito {
         
         assertValidatorMessage(newValidator, appConfig, "assessmentReferences[1].guid", "is required");
     }
-    
+
     @Test
     public void assessmentReferenceInvalidGuidValidated() {
         appConfig.setAssessmentReferences(ImmutableList.of(VALID_ASSESSMENT_REF));
@@ -116,7 +117,7 @@ public class AppConfigValidatorTest extends Mockito {
         when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID))
             .thenThrow(new EntityNotFoundException(Assessment.class));
         
-        assertValidatorMessage(newValidator, appConfig, "assessmentReferences[0].guid", "does not refer to an assessment");
+        assertValidatorMessage(newValidator, appConfig, "assessmentReferences[0].guid", "does not refer to an assessment in given app");
     }
     
     @Test
@@ -127,20 +128,17 @@ public class AppConfigValidatorTest extends Mockito {
     }
 
     @Test
+    public void assessmentReferenceMissingAppId() {
+        appConfig.setAssessmentReferences(ImmutableList.of(new AssessmentReference(GUID, null)));
+
+        assertValidatorMessage(newValidator, appConfig, "assessmentReferences[0].appId", "is required");
+    }
+
+    @Test
     public void assessmentReferenceInvalidAppId() {
         appConfig.setAssessmentReferences(ImmutableList.of(new AssessmentReference(GUID, "fakeAppId")));
 
         assertValidatorMessage(newValidator, appConfig, "assessmentReferences[0].appId", "does not refer to a valid app");
-    }
-
-    @Test
-    public void assessmentReferenceGuidNotFound() {
-        appConfig.setAssessmentReferences(ImmutableList.of(new AssessmentReference(GUID, TEST_APP_ID)));
-
-        when(mockAssessmentService.getAssessmentByGuid(TEST_APP_ID, null, GUID))
-                .thenThrow(new EntityNotFoundException(Assessment.class));
-
-        assertValidatorMessage(newValidator, appConfig, "assessmentReferences[0].guid", "does not refer to an assessment");
     }
 
     @Test
@@ -150,6 +148,7 @@ public class AppConfigValidatorTest extends Mockito {
 
         try {
             Validate.entityThrowingException(newValidator, appConfig);
+            fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
             // Expecting errors
         }
@@ -157,12 +156,14 @@ public class AppConfigValidatorTest extends Mockito {
         verify(mockAssessmentService).getAssessmentByGuid(SHARED_APP_ID, null, GUID);
     }
 
-    @Test void assessmentReferenceWithoutAppIdDefaultsToAppConfigsAppId() {
+    @Test
+    public void assessmentReferenceWithoutAppIdDefaultsToAppConfigsAppId() {
         // The AppConfig's appId should be used when an AssessmentRef does not have it specified
         appConfig.setAssessmentReferences(ImmutableList.of(VALID_ASSESSMENT_REF));
 
         try {
             Validate.entityThrowingException(newValidator, appConfig);
+            fail("Should have thrown exception");
         } catch (InvalidEntityException e) {
             // Expecting errors
         }

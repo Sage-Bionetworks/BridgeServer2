@@ -15,7 +15,6 @@ import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolder;
 import org.sagebionetworks.bridge.models.GuidCreatedOnVersionHolderImpl;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
-import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentReference;
 import org.sagebionetworks.bridge.models.files.FileReference;
 import org.sagebionetworks.bridge.models.files.FileRevision;
@@ -207,20 +206,25 @@ public class AppConfigValidator implements Validator {
             for (int i=0; i < appConfig.getAssessmentReferences().size(); i++) {
                 AssessmentReference ref = appConfig.getAssessmentReferences().get(i);
                 errors.pushNestedPath("assessmentReferences["+i+"]");
+                boolean validAppId = true;
+                if (ref.getAppId() == null) {
+                    validAppId = false;
+                    errors.rejectValue("appId", "is required");
+                } else if (!ref.getAppId().equals(appConfig.getAppId()) && !ref.getAppId().equals(SHARED_APP_ID)) {
+                    validAppId = false;
+                    errors.rejectValue("appId", "does not refer to a valid app");
+                }
                 if (ref.getGuid() == null) {
                     errors.rejectValue("guid", "is required");
                 } else {
                     if (uniqueRefs.contains(ref)) {
                         errors.rejectValue("guid", "refers to the same assessment as another reference");
                     } else {
-                        String assessmentAppId = (ref.getAppId() != null) ? ref.getAppId() : appConfig.getAppId();
-                        if (!assessmentAppId.equals(appConfig.getAppId()) && !assessmentAppId.equals(SHARED_APP_ID)) {
-                            errors.rejectValue("appId", "does not refer to a valid app");
-                        } else {
+                        if (validAppId) {
                             try {
-                                assessmentService.getAssessmentByGuid(assessmentAppId, null, ref.getGuid());
+                                assessmentService.getAssessmentByGuid(ref.getAppId(), null, ref.getGuid());
                             } catch(EntityNotFoundException e) {
-                                errors.rejectValue("guid", "does not refer to an assessment");
+                                errors.rejectValue("guid", "does not refer to an assessment in given app");
                             }
                         }
                     }
