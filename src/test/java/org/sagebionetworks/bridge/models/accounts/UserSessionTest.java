@@ -8,7 +8,6 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_EXTERNAL_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
@@ -45,14 +44,13 @@ public class UserSessionTest {
     
     @Test
     public void canSerialize() throws Exception {
-        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
         en1.setExternalId(TEST_EXTERNAL_ID);
-        
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);
         en1.setExternalId("another-external-id");
         
         Map<String, EnrollmentInfo> enrollments = ImmutableMap.of(
-                TEST_STUDY_ID, EnrollmentInfo.create(en1),
+                "studyA", EnrollmentInfo.create(en1),
                 "studyB", EnrollmentInfo.create(en2));
         
         SubpopulationGuid guid = SubpopulationGuid.create("subpop-guid");

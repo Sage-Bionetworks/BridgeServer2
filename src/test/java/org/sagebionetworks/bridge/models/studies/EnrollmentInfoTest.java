@@ -41,6 +41,9 @@ public class EnrollmentInfoTest {
         assertNull(node.get("enrolledBySelf"));
         assertNull(node.get("withdrawnBySelf"));
         assertEquals(node.get("type").textValue(), "EnrollmentInfo");
+        
+        EnrollmentInfo deser = BridgeObjectMapper.get().readValue(node.toString(), EnrollmentInfo.class);
+        assertEquals(deser, detail);
     }
     
     @Test
@@ -56,7 +59,7 @@ public class EnrollmentInfoTest {
     }
     
     @Test
-    public void withdrawnAccount() {
+    public void withdrawnAccount() throws Exception {
         Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         en.setExternalId(TEST_EXTERNAL_ID);
         en.setEnrolledOn(CREATED_ON);
@@ -75,6 +78,9 @@ public class EnrollmentInfoTest {
         assertEquals(node.get("withdrawnOn").textValue(), MODIFIED_ON.toString());
         assertNull(node.get("withdrawnBySelf"));
         assertEquals(node.get("type").textValue(), "EnrollmentInfo");
+        
+        EnrollmentInfo deser = BridgeObjectMapper.get().readValue(node.toString(), EnrollmentInfo.class);
+        assertEquals(deser, detail);
     }
     
     @Test

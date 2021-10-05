@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.accounts;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -18,6 +19,8 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.Environment;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentInfo;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,6 +32,11 @@ public class UserSessionInfoTest {
 
     @Test
     public void userSessionInfoSerializesCorrectly() throws Exception {
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
+        en1.setExternalId("externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);
+        en2.setExternalId("externalIdB");
+        
         DateTime timestamp = DateTime.now(DateTimeZone.UTC);
                 
         StudyParticipant participant = new StudyParticipant.Builder()
@@ -43,6 +51,7 @@ public class UserSessionInfoTest {
                 .withExternalIds(ImmutableMap.of("studyA", "externalIdA"))
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
                 .withDataGroups(Sets.newHashSet("foo"))
+                .withEnrollments(ImmutableMap.of("studyA", EnrollmentInfo.create(en1), "studyB", EnrollmentInfo.create(en2)))
                 .withOrgMembership(TEST_ORG_ID).build();
         
         Map<SubpopulationGuid, ConsentStatus> map = TestUtils
@@ -81,6 +90,8 @@ public class UserSessionInfoTest {
         assertEquals(node.get("externalIds").get("studyA").textValue(), "externalIdA");
         assertEquals(node.get("orgMembership").textValue(), TEST_ORG_ID);
         assertEquals(node.get("type").asText(), "UserSessionInfo");
+        assertEquals(node.get("enrollments").get("studyA").get("externalId").textValue(), "externalIdA");
+        assertEquals(node.get("enrollments").get("studyB").get("externalId").textValue(), "externalIdB");
         
         JsonNode consentMap = node.get("consentStatuses");
         
