@@ -6,6 +6,7 @@ import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.sagebionetworks.bridge.Roles;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.google.common.collect.Iterables;
@@ -28,26 +29,27 @@ public final class AccountSummary {
     private final String orgMembership;
     private final String note;
     private final String clientTimeZone;
+    private final Set<Roles> roles;
+    private final Set<String> dataGroups; 
     
-    private AccountSummary(String firstName, String lastName, String email, String synapseUserId, Phone phone,
-            Map<String, String> externalIds, String id, DateTime createdOn, AccountStatus status, String appId,
-            Set<String> studyIds, Map<String, String> attributes, String orgMembership, String note,
-            String clientTimeZone) {
-        this.firstName = firstName;
-        this.lastName = lastName;
-        this.email = email;
-        this.synapseUserId = synapseUserId;
-        this.phone = phone;
-        this.externalIds = externalIds;
-        this.id = id;
-        this.createdOn = (createdOn == null) ? null : createdOn.withZone(DateTimeZone.UTC);
-        this.status = status;
-        this.appId = appId;
-        this.studyIds = studyIds;
-        this.attributes = attributes;
-        this.orgMembership = orgMembership;
-        this.note = note;
-        this.clientTimeZone = clientTimeZone;
+    private AccountSummary(AccountSummary.Builder builder) {
+        this.firstName = builder.firstName;
+        this.lastName = builder.lastName;
+        this.email = builder.email;
+        this.synapseUserId = builder.synapseUserId;
+        this.phone = builder.phone;
+        this.externalIds = builder.externalIds;
+        this.id = builder.id;
+        this.createdOn = (builder.createdOn == null) ? null : builder.createdOn.withZone(DateTimeZone.UTC);
+        this.status = builder.status;
+        this.appId = builder.appId;
+        this.studyIds = builder.studyIds;
+        this.attributes = builder.attributes;
+        this.orgMembership = builder.orgMembership;
+        this.note = builder.note;
+        this.clientTimeZone = builder.clientTimeZone;
+        this.roles = builder.roles;
+        this.dataGroups = builder.dataGroups;
     }
     
     public String getFirstName() {
@@ -120,11 +122,19 @@ public final class AccountSummary {
     public String getClientTimeZone() {
         return clientTimeZone;
     }
+    
+    public Set<Roles> getRoles() {
+        return roles;
+    }
+    
+    public Set<String> getDataGroups() {
+        return dataGroups;
+    }
 
     @Override
     public int hashCode() {
         return Objects.hash(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn, status,
-                appId, studyIds, attributes, orgMembership, note, clientTimeZone);
+                appId, studyIds, attributes, orgMembership, note, clientTimeZone, roles, dataGroups);
     }
 
     @Override
@@ -143,7 +153,9 @@ public final class AccountSummary {
                 && Objects.equals(attributes, other.attributes)
                 && Objects.equals(orgMembership, other.orgMembership)
                 && Objects.equals(note, other.note)
-                && Objects.equals(clientTimeZone, other.clientTimeZone);
+                && Objects.equals(clientTimeZone, other.clientTimeZone)
+                && Objects.equals(roles, other.roles)
+                && Objects.equals(dataGroups, other.dataGroups);
     }
     
     // no toString() method as the information is sensitive.
@@ -163,6 +175,8 @@ public final class AccountSummary {
         private String orgMembership;
         private String note;
         private String clientTimeZone;
+        private Set<Roles> roles;
+        private Set<String> dataGroups;
         
         public Builder withAppId(String appId) {
             this.appId = appId;
@@ -224,9 +238,16 @@ public final class AccountSummary {
             this.clientTimeZone = clientTimeZone;
             return this;
         }
+        public Builder withRoles(Set<Roles> roles) {
+            this.roles = roles;
+            return this;
+        }
+        public Builder withDataGroups(Set<String> dataGroups) {
+            this.dataGroups = dataGroups;
+            return this;
+        }
         public AccountSummary build() {
-            return new AccountSummary(firstName, lastName, email, synapseUserId, phone, externalIds, id, createdOn,
-                    status, appId, studyIds, attributes, orgMembership, note, clientTimeZone);
+            return new AccountSummary(this);
         }
     }
 }
