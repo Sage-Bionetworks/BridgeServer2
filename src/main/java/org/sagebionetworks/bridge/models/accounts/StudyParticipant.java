@@ -84,21 +84,11 @@ public final class StudyParticipant implements BridgeEntity {
     private final String clientTimeZone;
     
     private StudyParticipant(StudyParticipant.Builder builder) {
-        
-        Boolean emailVerified = builder.emailVerified;
-        if (emailVerified == null) {
-            if (builder.status == AccountStatus.ENABLED) {
-                emailVerified = Boolean.TRUE;
-            } else if (builder.status == AccountStatus.UNVERIFIED) {
-                emailVerified = Boolean.FALSE;
-            }
-        }
-        
         this.firstName = builder.firstName;
         this.lastName = builder.lastName;
         this.email = builder.email;
         this.phone = builder.phone;
-        this.emailVerified = emailVerified;
+        this.emailVerified = builder.emailVerified;
         this.phoneVerified = builder.phoneVerified;
         this.externalId = builder.externalId;
         this.synapseUserId = builder.synapseUserId;
@@ -108,7 +98,6 @@ public final class StudyParticipant implements BridgeEntity {
         this.dataGroups = BridgeUtils.nullSafeImmutableSet(builder.dataGroups);
         this.healthCode = builder.healthCode;
         this.attributes = BridgeUtils.nullSafeImmutableMap(builder.attributes);
-        // this.consentHistories = immutableConsentsBuilder.build();
         this.consentHistories = BridgeUtils.nullSafeImmutableMap(builder.consentHistories);
         this.enrollments = BridgeUtils.nullSafeImmutableMap(builder.enrollments);
         this.consented = builder.consented;
@@ -549,7 +538,17 @@ public final class StudyParticipant implements BridgeEntity {
             return this;
         }
         public StudyParticipant build() {
-            // deduplicate language codes if they have been doubled
+            // This maintained backwards compatibility for older accounts when we added 
+            // the emailVerified flag (we used the account status value as a proxy, since
+            // it pre-existed the emailVerified flag).
+            if (emailVerified == null) {
+                if (status == AccountStatus.ENABLED) {
+                    emailVerified = Boolean.TRUE;
+                } else if (status == AccountStatus.UNVERIFIED) {
+                    emailVerified = Boolean.FALSE;
+                }
+            }
+            // de-duplicate language codes if they have been doubled
             if (languages != null) {
                 languages = ImmutableList.copyOf(Sets.newLinkedHashSet(languages));
             }

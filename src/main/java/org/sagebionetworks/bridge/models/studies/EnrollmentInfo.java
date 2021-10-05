@@ -10,18 +10,18 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
- * Information about an enrollment that we care to expose through the participant API.
+ * Information about an enrollment that we care to expose to participants through the participant APIs.
  */
 public final class EnrollmentInfo {
     
     public static final EnrollmentInfo create(Enrollment enrollment) {
-        boolean ebs = enrollment.getAccountId().equals(enrollment.getEnrolledBy());
-        boolean wbs = enrollment.getAccountId().equals(enrollment.getWithdrawnBy());
+        boolean enrolledBySelf = enrollment.getAccountId().equals(enrollment.getEnrolledBy());
+        boolean withdrawnBySelf = enrollment.getAccountId().equals(enrollment.getWithdrawnBy());
         return new EnrollmentInfo(enrollment.getExternalId(), 
                 enrollment.getEnrolledOn(), 
                 enrollment.getWithdrawnOn(), 
-                (ebs == true) ? TRUE : null, 
-                (wbs == true) ? TRUE : null, 
+                (enrolledBySelf == true) ? TRUE : null, 
+                (withdrawnBySelf == true) ? TRUE : null, 
                 enrollment.isConsentRequired());
     }
 
