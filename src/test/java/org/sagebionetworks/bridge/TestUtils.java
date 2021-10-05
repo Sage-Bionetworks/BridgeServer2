@@ -140,6 +140,10 @@ public class TestUtils {
         return String.format(json.replaceAll("'", "\""), args);
     }
     
+    public static StudyActivityEvent createEvent(String eventId, DateTime timestamp) {
+        return new StudyActivityEvent.Builder().withEventId(eventId).withTimestamp(timestamp).build();
+    }
+    
     /**
      * The correctness of annotations on controller methods is very important, so here is a utilty 
      * to add verification to tests.

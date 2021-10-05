@@ -25,7 +25,12 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
@@ -69,6 +74,7 @@ public class Exporter3Service {
     private String synapseTrackingViewId;
     private String workerQueueUrl;
 
+    private AccountService accountService;
     private AppService appService;
     private HealthDataEx3Service healthDataEx3Service;
     private S3Helper s3Helper;
@@ -84,6 +90,11 @@ public class Exporter3Service {
         rawHealthDataBucket = config.getProperty(CONFIG_KEY_RAW_HEALTH_DATA_BUCKET);
         synapseTrackingViewId = config.getProperty(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
         workerQueueUrl = config.getProperty(CONFIG_KEY_WORKER_SQS_URL);
+    }
+
+    @Autowired
+    public final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
     }
 
     @Autowired
@@ -244,9 +255,24 @@ public class Exporter3Service {
     public void completeUpload(App app, Upload upload) {
         // Create record.
         HealthDataRecordEx3 record = HealthDataRecordEx3.createFromUpload(upload);
+
+        // Mark record with sharing scope.
+        Account account = accountService.getAccount(AccountId.forHealthCode(app.getIdentifier(),
+                upload.getHealthCode())).orElseThrow(() -> {
+            // This should never happen. If it does, log a warning and throw.
+            LOG.warn("Account disappeared in the middle of upload, healthCode=" + upload.getHealthCode() + ", appId="
+                    + app.getIdentifier() + ", uploadId=" + upload.getUploadId());
+            return new EntityNotFoundException(StudyParticipant.class);
+        });
+        SharingScope sharingScope = account.getSharingScope();
+        record.setSharingScope(sharingScope);
+
+        // Save record.
         record = healthDataEx3Service.createOrUpdateRecord(record);
 
-        exportUpload(app.getIdentifier(), record.getId());
+        if (sharingScope != SharingScope.NO_SHARING) {
+            exportUpload(app.getIdentifier(), record.getId());
+        }
     }
 
     // This is separate because we might need a separate redrive process in the future.

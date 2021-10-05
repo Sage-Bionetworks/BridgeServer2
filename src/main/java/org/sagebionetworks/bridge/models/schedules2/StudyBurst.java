@@ -42,7 +42,15 @@ public final class StudyBurst {
     private Integer occurrences;
     @Enumerated(EnumType.STRING)
     private ActivityEventUpdateType updateType;
+    
+    public StudyBurst() {
+    }
 
+    public StudyBurst(String identifier, ActivityEventUpdateType updateType) {
+        this.identifier = identifier;
+        this.updateType = updateType;
+    }
+    
     public String getIdentifier() {
         return identifier;
     }

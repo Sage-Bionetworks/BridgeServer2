@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
@@ -55,6 +56,7 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
@@ -62,6 +64,7 @@ import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigVali
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.services.RequestInfoService;
 
 import com.google.common.collect.Lists;
@@ -75,6 +78,10 @@ public class BridgeUtilsTest extends Mockito {
     private static final Label LABEL_JA = new Label("ja", "Japanese");
     private static final Label LABEL_ES = new Label("es", "Spanish");
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
+    private static final Set<Enrollment> STUDY_A_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID));
+    private static final Set<Enrollment> STUDY_B_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID));
+    private static final Set<Enrollment> STUDY_A_AND_B_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID), 
+            Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID));
     
     @AfterMethod
     public void after() {
@@ -907,66 +914,19 @@ public class BridgeUtilsTest extends Mockito {
         assertEquals(e.getMessage(), "Error parsing JSON in request body: error");
     }
     
+    // Just demonstrate this works, as the underlying code is now tested as part of 
+    // StudyActivityEventRequest’s implementation.
     @Test
-    public void formatActivityEventIdIsValidCustomId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("FOO"), "FOO");
-        assertEquals(retValue, "custom:FOO");
+    public void formatActivityEventId() {
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         
-    }
-    
-    @Test
-    public void formatActivityEventIdIsValidCustomIdWithCustomPrefix() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "CUSTOM:foo");
+        String retValue = BridgeUtils.formatActivityEventId(eventMap, "custom:foo");
+        assertNull(retValue);
+        
+        eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("foo", MUTABLE)));
+        
+        retValue = BridgeUtils.formatActivityEventId(eventMap, "foo");
         assertEquals(retValue, "custom:foo");
-    }
-
-    @Test
-    public void formatActivityEventIdIsValidSystemId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "activities_retrieved");
-        assertEquals(retValue, "activities_retrieved");
-    }
-
-    @Test
-    public void formatActivityEventIdIsValidCompoundSystemId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
-        assertEquals(retValue, "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
-    }
-    
-    @Test
-    public void formatActivityEventIdBlank() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "");
-        assertNull(retValue);
-        
-    }
-
-    @Test
-    public void formatActivityEventIdNull() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), null);
-        assertNull(retValue);
-    }
-    
-    @Test
-    public void formatActivityEventIdWithCasing() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("Event1"), "custom:Event1");
-        assertEquals(retValue, "custom:Event1");
-    }
-    
-    @Test
-    public void formatActivityEventIdCustomShadowsSystemEvent() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "custom:timeline_retrieved");
-        assertEquals(retValue, "custom:timeline_retrieved");
-    }
-    
-    @Test
-    public void formatActivityEventIdSystemEventCorrectlyInterpreted() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("timeline_retrieved"), "timeline_retrieved");
-        assertEquals(retValue, "timeline_retrieved");
-    }
-    
-    @Test
-    public void formatActivityEventIdDeclaredCustomIsNotPresent() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "custom:bar");
-        assertNull(retValue);
     }
     
     @Test
@@ -1036,52 +996,62 @@ public class BridgeUtilsTest extends Mockito {
     }
 
     @Test
-    public void participantEligibleForDeletion_prohibitedByDefault() {
-        RequestInfoService mockService = mock(RequestInfoService.class);
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        
-        // It exists, but there's nothing recorded for a sign in, so we consider
-        // the account unused.
-        RequestInfo requestInfo = new RequestInfo.Builder().build();
-        when(mockService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
-        
-        assertFalse( participantEligibleForDeletion(mockService, account) );
-    }
-
-    @Test
     public void participantEligibleForDeletion_testUserAllowed() {
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
-        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        account.setId(TEST_USER_ID);
         
-        assertTrue( participantEligibleForDeletion(mockService, account) );
-    }
-    
-    @Test
-    public void participantEligibleForDeletion_testAccountInUseAllowed() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        
-        RequestInfoService mockService = mock(RequestInfoService.class);
-        RequestInfo requestInfo = new RequestInfo.Builder()
-                .withSignedInOn(CREATED_ON).build();
+        // User hasn't signed in
+        RequestInfo requestInfo = new RequestInfo.Builder().build();
         when(mockService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
         
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+
+    @Test
+    public void participantEligibleForDeletion_testUserAllowedAfterSignIn() {
+        RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
-        account.setId(TEST_USER_ID);
         account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+
+        // User has signed in, and is still eligible for deletion
+        RequestInfoService mockRequestService = mock(RequestInfoService.class);
+        RequestInfo requestInfo = new RequestInfo.Builder()
+                .withSignedInOn(CREATED_ON).build();
+        when(mockRequestService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
         
         assertTrue( participantEligibleForDeletion(mockService, account) );
     }
     
     @Test
-    public void participantEligibleForDeletion_unusedByResearcherAllowed() {
+    public void participantEligibleForDeletion_unusedAllowed() {
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_unaffiliatedResearcherAllowed() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
         
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
+        account.setEnrollments(STUDY_A_ENROLLMENT);
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_affiliatedResearcherAllowed() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(USER_STUDY_IDS)
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
         
         assertTrue( participantEligibleForDeletion(mockService, account) );
     }
@@ -1093,6 +1063,7 @@ public class BridgeUtilsTest extends Mockito {
         
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
+        account.setEnrollments(STUDY_A_ENROLLMENT);
         
         assertFalse( participantEligibleForDeletion(mockService, account) );
     }
@@ -1105,7 +1076,7 @@ public class BridgeUtilsTest extends Mockito {
         
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
-        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID)));
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
         
         assertTrue( participantEligibleForDeletion(mockService, account) );
     }
@@ -1122,27 +1093,38 @@ public class BridgeUtilsTest extends Mockito {
     }
 
     @Test
-    public void participantEligibleForDeletion_noEnrollmentsProhibitedForStudyCoordinators() {
+    public void participantEligibleForDeletion_noEnrollmentsAllowedForStudyCoordinators() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
         
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
         
-        assertFalse( participantEligibleForDeletion(mockService, account) );
+        assertTrue( participantEligibleForDeletion(mockService, account) );
     }
     
     @Test
-    public void participantEligibleForDeletion_multipleEnrollmentsProhibited() {
+    public void participantEligibleForDeletion_multipleEnrollmentsPass() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(USER_STUDY_IDS)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
         
         RequestInfoService mockService = mock(RequestInfoService.class);
         Account account = Account.create();
-        account.setEnrollments(ImmutableSet.of(
-                Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID),
-                Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID)));
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_multipleEnrollmentsFail() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyC")) // mismatch
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
         
         assertFalse( participantEligibleForDeletion(mockService, account) );
     }
@@ -1161,6 +1143,17 @@ public class BridgeUtilsTest extends Mockito {
         account.setId(TEST_USER_ID);
         
         assertFalse( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void addAllToList() {
+        List<String> retValue = BridgeUtils.addUniqueItemsToList(ImmutableList.of("A", "B"), ImmutableList.of("C", "D"));
+        assertEquals(retValue, ImmutableList.of("A", "B", "C", "D"));
+        assertTrue(retValue instanceof ImmutableList);
+        
+        retValue = BridgeUtils.addUniqueItemsToList(ImmutableList.of("A", "B"), ImmutableSet.of("C"));
+        assertEquals(retValue, ImmutableList.of("A", "B", "C"));
+        assertTrue(retValue instanceof ImmutableList);
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

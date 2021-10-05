@@ -5,7 +5,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
@@ -57,7 +56,8 @@ import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
@@ -684,32 +684,16 @@ public class BridgeUtils {
     }
     
     /**
-     * Verifies that the activity eventId is valid, and prepends "custom:" to a custom ID if 
-     * necessary. Returns the value property cased if valid, or null otherwise. This is 
-     * then handled by validation. If the event submitted is an overridden system event, 
-     * it will be treated as the system event so in that case, you *must* prepend "custom:" 
-     * to indicate that the custom event is being used (overridding system events is 
-     * confusing and discouraged).
+     * Verifies that the activity eventId is valid, and formats the casing correctly. Returns the 
+     * value if valid, or null otherwise. This is then validated as an invalid value. If the event 
+     * submitted is an overridden system event, it will be treated as the system event so in that 
+     * case, you *must* prepend "custom:" to indicate that the custom event is being used 
+     * (overriding system events is confusing and discouraged).
      */
-    public static String formatActivityEventId(Set<String> activityEventIds, String id) {
-        if (isNotBlank(id)) {
-            boolean declaredCustom = id.toLowerCase().startsWith("custom:");
-            if (declaredCustom) {
-                id = id.substring(7);
-            }
-            if (!declaredCustom) {
-                try {
-                    String[] parts = id.split(":");
-                    ActivityEventObjectType.valueOf(parts[0].toUpperCase());
-                    return id;
-                } catch(IllegalArgumentException e) {
-                }
-            }
-            if (activityEventIds.contains(id)) {
-                return "custom:" + id;
-            }
-        }
-        return null;
+    public static String formatActivityEventId(StudyActivityEventIdsMap eventMap, String id) {
+        return new StudyActivityEventRequest(id, null, null, null)
+            .parse(eventMap)
+            .build().getEventId();
     }
     
     /**
@@ -750,16 +734,13 @@ public class BridgeUtils {
         if (testAccount) {
             return true;
         }
-        // Accounts enrolled in multiple studies cannot be deleted, too risky.
-        if (account.getEnrollments().size() > 1) {
-            return false;
+        // Must have rights to delete participant in all studies using this account.
+        for (Enrollment en : account.getEnrollments()) {
+            if (!CAN_DELETE_PARTICIPANTS.check(STUDY_ID, en.getStudyId())) {
+                return false;
+            }
         }
-        // Get a studyId if there is one. If it's null, that part of the security rule will just fail to match.
-        String studyId = Iterables.getFirst(collectStudyIds(account), null);
-        boolean unused = participantHasNeverSignedIn(requestInfoService, account.getId());
-        
-        // If the account is unused, *and* the caller has access to the participant, allow the delete 
-        return (unused && CAN_DELETE_PARTICIPANTS.check(STUDY_ID, studyId));
+        return participantHasNeverSignedIn(requestInfoService, account.getId());
     }
     
     private static boolean participantHasNeverSignedIn(RequestInfoService requestInfoService, String userId) {
@@ -775,10 +756,9 @@ public class BridgeUtils {
     
     /**
      * Maintaining the order of items in the list and the collection, return a new
-     * immutable list of both while preventing the duplication of elements from
-     * either list.
+     * immutable list of both that contains no duplicate elements.
      */
-    public static <T> List<T> addAllToList(List<T> list, Collection<T> elements) {
+    public static <T> List<T> addUniqueItemsToList(List<T> list, Collection<T> elements) {
         Set<T> orderedSet = new LinkedHashSet<>();
         orderedSet.addAll(list);
         orderedSet.addAll(elements);

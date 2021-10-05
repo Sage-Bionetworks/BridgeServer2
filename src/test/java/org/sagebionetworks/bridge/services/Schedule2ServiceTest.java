@@ -262,8 +262,8 @@ public class Schedule2ServiceTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
         
-        Schedule2 retValue = service.getScheduleForStudy(TEST_APP_ID, study);
-        assertEquals(retValue, schedule);
+        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, study);
+        assertEquals(retValue.get(), schedule);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -287,16 +287,13 @@ public class Schedule2ServiceTest extends Mockito {
         Study study = Study.create();
         study.setIdentifier(TEST_STUDY_ID);
         
-        try {
-            service.getScheduleForStudy(TEST_APP_ID, study);
-            fail("Should have thrown exception");
-        } catch(EntityNotFoundException e) {
-            assertEquals("Schedule not found.", e.getMessage());
-        }
+        Optional<Schedule2> optional = service.getScheduleForStudy(TEST_APP_ID, study);
+        assertFalse(optional.isPresent());
+
         verify(mockDao, never()).getSchedule(any(), any());
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test
     public void getScheduleForStudyScheduleNotFound() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID))
@@ -308,7 +305,8 @@ public class Schedule2ServiceTest extends Mockito {
         
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
         
-        service.getScheduleForStudy(TEST_APP_ID, study);
+        Optional<Schedule2> optional = service.getScheduleForStudy(TEST_APP_ID, study);
+        assertFalse(optional.isPresent());
     }
     
     @Test

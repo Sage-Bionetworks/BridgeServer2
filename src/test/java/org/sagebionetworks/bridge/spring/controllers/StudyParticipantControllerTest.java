@@ -25,7 +25,8 @@ import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.EVENT_DELETED_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
@@ -81,7 +82,7 @@ import org.sagebionetworks.bridge.models.accounts.IdentifierHolder;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
@@ -90,6 +91,7 @@ import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AccountService;
@@ -153,7 +155,7 @@ public class StudyParticipantControllerTest extends Mockito {
     ArgumentCaptor<NotificationMessage> messageCaptor;
     
     @Captor
-    ArgumentCaptor<StudyActivityEventRequest> requestCaptor;
+    ArgumentCaptor<StudyActivityEvent> eventCaptor;
     
     @Captor
     ArgumentCaptor<RequestInfo> requestInfoCaptor;
@@ -227,7 +229,7 @@ public class StudyParticipantControllerTest extends Mockito {
                 .build());
         doReturn(session).when(controller).getAdministrativeSession();
         
-        List<StudyActivityEvent> list = ImmutableList.of(new StudyActivityEvent());
+        List<StudyActivityEvent> list = ImmutableList.of(new StudyActivityEvent.Builder().build());
         ResourceList<StudyActivityEvent> page = new ResourceList<>(list);
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(
                 TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID)).thenReturn(page);
@@ -265,6 +267,10 @@ public class StudyParticipantControllerTest extends Mockito {
         App app = App.create();
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
+        eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        
         doReturn(session).when(controller).getAdministrativeSession();
 
         TestUtils.mockRequestBody(mockRequest, createJson(
@@ -275,13 +281,13 @@ public class StudyParticipantControllerTest extends Mockito {
         StatusMessage retValue = controller.publishActivityEvent(TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);
         
-        verify(mockStudyActivityEventService).publishEvent(requestCaptor.capture());
-        StudyActivityEventRequest request = requestCaptor.getValue();
-        assertEquals(request.getAppId(), TEST_APP_ID);
-        assertEquals(request.getStudyId(), TEST_STUDY_ID);
-        assertEquals(request.getUserId(), TEST_USER_ID);
-        assertEquals(request.getObjectId(), "eventKey");
-        assertEquals(request.getTimestamp(), CREATED_ON);
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture());
+        StudyActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getEventId(), "custom:eventKey");
+        assertEquals(event.getTimestamp(), CREATED_ON);
     }
     
     @Test
@@ -297,6 +303,11 @@ public class StudyParticipantControllerTest extends Mockito {
         
         doReturn(session).when(controller).getAdministrativeSession();
 
+        StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
+        map.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", MUTABLE)));
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID))
+            .thenReturn(map);
+
         TestUtils.mockRequestBody(mockRequest, createJson(
                 "{'eventkey':'eventKey','timestamp':'"+CREATED_ON+"'}"));
         
@@ -306,12 +317,12 @@ public class StudyParticipantControllerTest extends Mockito {
                 TEST_STUDY_ID, TEST_USER_ID, "eventKey");
         assertEquals(retValue, EVENT_DELETED_MSG);
         
-        verify(mockStudyActivityEventService).deleteCustomEvent(requestCaptor.capture());
-        StudyActivityEventRequest request = requestCaptor.getValue();
-        assertEquals(request.getAppId(), TEST_APP_ID);
-        assertEquals(request.getStudyId(), TEST_STUDY_ID);
-        assertEquals(request.getUserId(), TEST_USER_ID);
-        assertEquals(request.getObjectId(), "eventKey");
+        verify(mockStudyActivityEventService).deleteEvent(eventCaptor.capture());
+        StudyActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getEventId(), "custom:eventKey");
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
@@ -1072,7 +1083,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
         
         when(controller.getDateTime()).thenReturn(CREATED_ON);
         
@@ -1141,7 +1152,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
         
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);
@@ -1173,7 +1184,7 @@ public class StudyParticipantControllerTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         // just make this different so we can verify this is set
         schedule.setModifiedOn(CREATED_ON); 
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
         
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);
@@ -1204,7 +1215,7 @@ public class StudyParticipantControllerTest extends Mockito {
         Schedule2 schedule = new Schedule2();
         // just make this different so we can verify this is set
         schedule.setModifiedOn(CREATED_ON); 
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
 
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);
@@ -1231,7 +1242,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
         
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);
@@ -1260,7 +1271,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
-        when(mockScheduleService.getScheduleForStudy(TEST_STUDY_ID, study)).thenReturn(schedule);
+        when(mockScheduleService.getScheduleForStudy(TEST_STUDY_ID, study)).thenReturn(Optional.of(schedule));
         
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 304);
@@ -1288,7 +1299,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
-        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(schedule);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
         
         ResponseEntity<Timeline> retValue = controller.getTimelineForSelf(TEST_STUDY_ID);
         assertEquals(retValue.getStatusCodeValue(), 200);
@@ -1297,13 +1308,13 @@ public class StudyParticipantControllerTest extends Mockito {
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
         verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
-        verify(mockStudyActivityEventService).publishEvent(requestCaptor.capture());
-        StudyActivityEventRequest request = requestCaptor.getValue();
-        assertEquals(request.getAppId(), TEST_APP_ID);
-        assertEquals(request.getStudyId(), TEST_STUDY_ID);
-        assertEquals(request.getUserId(), TEST_USER_ID);
-        assertEquals(request.getObjectType(), TIMELINE_RETRIEVED);
-        assertEquals(request.getTimestamp(), CREATED_ON);
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture());
+        StudyActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getEventId(), "timeline_retrieved");
+        assertEquals(event.getTimestamp(), CREATED_ON);
     }
     
     @Test

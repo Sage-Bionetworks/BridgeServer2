@@ -54,7 +54,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountSummary;
 import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -240,13 +240,13 @@ public class AccountService {
             activityEventService.publishEnrollmentEvent(
                     app, account.getHealthCode(), account.getCreatedOn());
         }
+        StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
+                .withAppId(app.getIdentifier())
+                .withUserId(account.getId())
+                .withObjectType(ENROLLMENT)
+                .withTimestamp(account.getCreatedOn());
         for (Enrollment en : account.getEnrollments()) {
-            studyActivityEventService.publishEvent(new StudyActivityEventRequest()
-                    .appId(app.getIdentifier())
-                    .studyId(en.getStudyId())
-                    .userId(account.getId())
-                    .objectType(ENROLLMENT)
-                    .timestamp(account.getCreatedOn()));
+            studyActivityEventService.publishEvent(builder.withStudyId(en.getStudyId()).build());
         }
     }
     
@@ -262,15 +262,14 @@ public class AccountService {
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        // If a developer is trying to update a production account, that is not allowed.
-        if (IS_ONLY_DEVELOPER.check(USER_ID, persistedAccount.getId())) {
-            if (!persistedAccount.getDataGroups().contains(TEST_USER_GROUP)) {
-                throw new UnauthorizedException();
-            }
-            // The account update cannot remove this flag because the caller is a developer...
-            // add it in case it has been removed.
+        // The test_user flag taints an account; once set it cannot be unset. If the account is a production
+        // account, however, check the caller and don’t allow the update if it is a developer account not
+        // operating on itself.
+        if (persistedAccount.getDataGroups().contains(TEST_USER_GROUP)) {
             Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
             account.setDataGroups(newDataGroups);
+        } else if (IS_ONLY_DEVELOPER.check(USER_ID, persistedAccount.getId())) {
+            throw new UnauthorizedException();
         }
 
         // None of these values should be changeable by the user.
@@ -301,13 +300,15 @@ public class AccountService {
             App app = appService.getApp(account.getAppId());
             activityEventService.publishEnrollmentEvent(app, 
                     account.getHealthCode(), account.getModifiedOn());
+            
+            StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
+                    .withAppId(app.getIdentifier())
+                    .withUserId(account.getId())
+                    .withObjectType(ENROLLMENT)
+                    .withTimestamp(account.getModifiedOn());
+                    
             for (String studyId : newStudies) {
-                studyActivityEventService.publishEvent(new StudyActivityEventRequest()
-                        .appId(app.getIdentifier())
-                        .studyId(studyId)
-                        .userId(account.getId())
-                        .objectType(ENROLLMENT)
-                        .timestamp(account.getModifiedOn()));
+                studyActivityEventService.publishEvent(builder.withStudyId(studyId).build());
             }
         }
     }
