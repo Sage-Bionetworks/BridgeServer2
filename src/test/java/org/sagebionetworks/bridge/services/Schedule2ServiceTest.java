@@ -270,7 +270,6 @@ public class Schedule2ServiceTest extends Mockito {
     @Test
     public void getScheduleForStudy_studyDesigner() {
         RequestContext.set(new RequestContext.Builder()
-                //.withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerOrgMembership("not-the-owning-study-of-schedule")
                 .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
