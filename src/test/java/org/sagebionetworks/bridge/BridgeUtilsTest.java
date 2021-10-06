@@ -79,7 +79,6 @@ public class BridgeUtilsTest extends Mockito {
     private static final Label LABEL_ES = new Label("es", "Spanish");
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
     private static final Set<Enrollment> STUDY_A_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID));
-    private static final Set<Enrollment> STUDY_B_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID));
     private static final Set<Enrollment> STUDY_A_AND_B_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID), 
             Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID));
     

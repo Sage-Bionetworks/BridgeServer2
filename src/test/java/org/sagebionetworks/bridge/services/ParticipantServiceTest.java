@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
@@ -111,6 +112,7 @@ import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
 import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentInfo;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.Subpopulation;
@@ -960,9 +962,12 @@ public class ParticipantServiceTest extends Mockito {
         account.setId(ID);
         account.setSynapseUserId(SYNAPSE_USER_ID);
         Set<Enrollment> enrollments = new HashSet<>();
+        DateTime ts = ENROLLMENT;
         for (String studyId : ImmutableList.of("studyA", "studyB", "studyC")) {
             Enrollment enrollment = Enrollment.create(APP.getIdentifier(), studyId, ID);
+            enrollment.setEnrolledOn(ts);
             enrollments.add(enrollment);
+            ts = ts.plusDays(1);
         }
         account.setEnrollments(enrollments);
         SubpopulationGuid subpopGuid = SubpopulationGuid.create("foo1");
@@ -981,6 +986,9 @@ public class ParticipantServiceTest extends Mockito {
         assertTrue(retrieved.isConsented());
         // There is no history
         assertTrue(retrieved.getConsentHistories().isEmpty());
+        assertEquals(retrieved.getEnrollments().get("studyA").getEnrolledOn(), ENROLLMENT);
+        assertEquals(retrieved.getEnrollments().get("studyB").getEnrolledOn(), ENROLLMENT.plusDays(1));
+        assertEquals(retrieved.getEnrollments().get("studyC").getEnrolledOn(), ENROLLMENT.plusDays(2));
     }
     
     @Test
@@ -1014,8 +1022,12 @@ public class ParticipantServiceTest extends Mockito {
         account.setTimeZone(USER_TIME_ZONE);
         account.setSynapseUserId(SYNAPSE_USER_ID);
         Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", ID, "externalIdA");
+        en1.setEnrolledOn(ENROLLMENT);
         Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", ID, "externalIdB");
+        en2.setEnrolledOn(ENROLLMENT.plusDays(1));
         Enrollment en3 = Enrollment.create(TEST_APP_ID, "studyC", ID);
+        en3.setEnrolledOn(ENROLLMENT.plusDays(2));
+
         // no third external ID, this one is just not in the external IDs map
         account.setEnrollments(ImmutableSet.of(en1, en2, en3));
         account.setOrgMembership(TEST_ORG_ID);
@@ -1076,6 +1088,15 @@ public class ParticipantServiceTest extends Mockito {
         assertEquals(participant.getOrgMembership(), TEST_ORG_ID);
         assertEquals(participant.getNote(), TEST_NOTE);
         assertEquals(participant.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+        EnrollmentInfo detailA = participant.getEnrollments().get("studyA");
+        assertEquals(detailA.getExternalId(), "externalIdA");
+        assertEquals(detailA.getEnrolledOn(), ENROLLMENT);
+        EnrollmentInfo detailB = participant.getEnrollments().get("studyB");
+        assertEquals(detailB.getExternalId(), "externalIdB");
+        assertEquals(detailB.getEnrolledOn(), ENROLLMENT.plusDays(1));
+        EnrollmentInfo detailC = participant.getEnrollments().get("studyC");
+        assertNull(detailC.getExternalId());
+        assertEquals(detailC.getEnrolledOn(), ENROLLMENT.plusDays(2));
         
         assertNull(participant.getAttributes().get("attr1"));
         assertEquals(participant.getAttributes().get("attr2"), "anAttribute2");

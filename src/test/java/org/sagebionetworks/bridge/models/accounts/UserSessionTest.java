@@ -7,6 +7,8 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_EXTERNAL_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.config.Environment.PROD;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
@@ -28,6 +30,8 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentInfo;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.google.common.collect.ImmutableMap;
@@ -40,6 +44,15 @@ public class UserSessionTest {
     
     @Test
     public void canSerialize() throws Exception {
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
+        en1.setExternalId(TEST_EXTERNAL_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);
+        en1.setExternalId("another-external-id");
+        
+        Map<String, EnrollmentInfo> enrollments = ImmutableMap.of(
+                "studyA", EnrollmentInfo.create(en1),
+                "studyB", EnrollmentInfo.create(en2));
+        
         SubpopulationGuid guid = SubpopulationGuid.create("subpop-guid");
         ConsentStatus status = new ConsentStatus.Builder().withName("Name").withGuid(guid).withRequired(true).build();
         Map<SubpopulationGuid,ConsentStatus> statuses = Maps.newHashMap();
@@ -53,7 +66,8 @@ public class UserSessionTest {
             .withHealthCode("healthCode")
             .withSharingScope(ALL_QUALIFIED_RESEARCHERS)
             .withRoles(ImmutableSet.of(ADMIN))
-            .withDataGroups(ImmutableSet.of("group1", "group2")).build();
+            .withDataGroups(ImmutableSet.of("group1", "group2"))
+            .withEnrollments(enrollments).build();
         
         UserSession session = new UserSession(participant);
         session.setSessionToken("ABC");
