@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_CREATE_SCHEDULES;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SCHEDULES;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_SCHEDULES;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDIES;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -27,7 +28,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
@@ -165,7 +165,7 @@ public class Schedule2Service {
         Optional<Schedule2> optional = dao.getSchedule(appId, study.getScheduleGuid());
 
         if (optional.isPresent()) {
-            CAN_READ_SCHEDULES.checkAndThrow(STUDY_ID, study.getIdentifier(), ORG_ID, optional.get().getOwnerId());    
+            CAN_READ_STUDIES.checkAndThrow(STUDY_ID, study.getIdentifier());    
         }
         return optional;
     }
