@@ -5,8 +5,12 @@ import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
@@ -29,6 +33,8 @@ import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.EnrollmentInfo;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -92,14 +98,15 @@ public class StudyParticipantTest {
         assertEquals(node.get("type").textValue(), "StudyParticipant");
         assertEquals(node.get("note").textValue(), TEST_NOTE);
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
+        assertEquals(node.get("enrollments").get("studyA").get("externalId").textValue(), "externalIdA");
+        assertEquals(node.get("enrollments").get("studyB").get("externalId").textValue(), "externalIdB");
         
         JsonNode clientData = node.get("clientData");
         assertTrue(clientData.get("booleanFlag").booleanValue());
         assertEquals(clientData.get("stringValue").textValue(), "testString");
         assertEquals(clientData.get("intValue").intValue(), 4);
 
-        Set<String> roleNames = Sets.newHashSet(
-                Roles.ADMIN.name().toLowerCase(), Roles.WORKER.name().toLowerCase());
+        Set<String> roleNames = ImmutableSet.of(ADMIN.name().toLowerCase(), WORKER.name().toLowerCase());
         ArrayNode rolesArray = (ArrayNode)node.get("roles");
         assertTrue(roleNames.contains(rolesArray.get(0).textValue()));
         assertTrue(roleNames.contains(rolesArray.get(1).textValue()));
@@ -115,7 +122,7 @@ public class StudyParticipantTest {
 
         assertEquals(node.get("attributes").get("A").textValue(), "B");
         assertEquals(node.get("attributes").get("C").textValue(), "D");
-        assertEquals(node.size(), 29);
+        assertEquals(node.size(), 30);
         
         StudyParticipant deserParticipant = BridgeObjectMapper.get().readValue(node.toString(), StudyParticipant.class);
         assertEquals(deserParticipant.getFirstName(), "firstName");
@@ -149,6 +156,12 @@ public class StudyParticipantTest {
         assertEquals(deserHistory.getName(), "Test User");
         assertEquals(deserHistory.getSubpopulationGuid(), "AAA");
         assertEquals(deserHistory.getWithdrewOn(), new Long(3000000L));
+        
+        EnrollmentInfo info1 = deserParticipant.getEnrollments().get("studyA");
+        assertEquals(info1.getExternalId(), "externalIdA");
+        
+        EnrollmentInfo info2 = deserParticipant.getEnrollments().get("studyB");
+        assertEquals(info2.getExternalId(), "externalIdB");
     }
     
     @Test
@@ -437,6 +450,12 @@ public class StudyParticipantTest {
         histories.add(history);
         historiesMap.put("AAA", histories);
         builder.withConsentHistories(historiesMap);
+        
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID);
+        en1.setExternalId("externalIdA");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID);
+        en2.setExternalId("externalIdB");
+        builder.withEnrollments(ImmutableMap.of("studyA", EnrollmentInfo.create(en1), "studyB", EnrollmentInfo.create(en2)));
         
         return builder;
     }
