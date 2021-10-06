@@ -178,7 +178,7 @@ public class AppConfigService {
             return ref;
         }
         String originSharedId = getSharedAssessmentId(assessment);
-        return new AssessmentReference(INSTANCE, ref.getGuid(), assessment.getIdentifier(), originSharedId, assessment.getAppId());
+        return new AssessmentReference(INSTANCE, assessment.getAppId(), ref.getGuid(), assessment.getIdentifier(), originSharedId);
     }
     
     protected Assessment getAssessment(String appId, String guid) {

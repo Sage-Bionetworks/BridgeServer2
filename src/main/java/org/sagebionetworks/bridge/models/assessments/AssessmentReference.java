@@ -13,27 +13,30 @@ import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 public final class AssessmentReference {
     
     private final ConfigResolver resolver;
-    private final String guid;
     private final String appId;
+    private final String guid;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private final String id;
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private final String originSharedId;
 
     @JsonCreator
-    public AssessmentReference(@JsonProperty("guid") String guid,
-                               @JsonProperty("appId") String appId) {
-        this(INSTANCE, guid, null, null, appId);
+    public AssessmentReference(@JsonProperty("appId") String appId,
+                               @JsonProperty("guid") String guid) {
+        this(INSTANCE, appId, guid, null, null);
     }
 
-    public AssessmentReference(ConfigResolver resolver, String guid, String id, String originSharedId, String appId) {
+    public AssessmentReference(ConfigResolver resolver, String appId, String guid, String id, String originSharedId) {
         this.resolver = resolver;
+        this.appId = appId;
         this.guid = guid;
         this.id = id;
         this.originSharedId = originSharedId;
-        this.appId = appId;
     }
     
+    public String getAppId() {
+        return appId;
+    }
     public String getGuid() {
         return guid;
     }
@@ -49,15 +52,12 @@ public final class AssessmentReference {
     }
     /**
      * If this assessment was derived from a shared assessment, the shared assessment's
-     * identifier may help to find it in config. We do not provide a GUID or revision 
+     * identifier may help to find it in config. We do not provide a GUID or revision
      * because we don't anticipate clients will want to retrieve the original shared
      * assessment.
      */
     public String getOriginSharedId() {
         return originSharedId;
-    }
-    public String getAppId() {
-        return appId;
     }
 
     @Override

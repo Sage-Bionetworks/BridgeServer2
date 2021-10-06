@@ -54,8 +54,8 @@ public class DynamoAppConfigTest {
             new FileReference(GUID, TIMESTAMP),
             new FileReference("twoGuid", TIMESTAMP));
     private static final List<AssessmentReference> ASSESSMENT_REFS = ImmutableList.of(
-            new AssessmentReference(INSTANCE, "guid1", "id1", "originSharedId1", "appId1"),
-            new AssessmentReference(INSTANCE, "guid2", "id2", "originSharedId2", "appId2"));
+            new AssessmentReference(INSTANCE, "appId1", "guid1", "id1", "originSharedId1"),
+            new AssessmentReference(INSTANCE, "appId2", "guid2", "id2", "originSharedId2"));
     
     private static final String APP_ID = TestUtils.randomName(DynamoAppConfigTest.class);
     
@@ -172,19 +172,19 @@ public class DynamoAppConfigTest {
         assertEquals(node.get("fileReferences").get(1).get("createdOn").textValue(), TIMESTAMP.toString());
         
         assertEquals(node.get("assessmentReferences").size(), 2);
+        assertEquals(node.get("assessmentReferences").get(0).get("appId").textValue(), "appId1");
+        assertEquals(node.get("assessmentReferences").get(0).get("guid").textValue(), "guid1");
         assertEquals(node.get("assessmentReferences").get(0).get("id").textValue(), "id1");
         assertEquals(node.get("assessmentReferences").get(0).get("originSharedId").textValue(), "originSharedId1");
-        assertEquals(node.get("assessmentReferences").get(0).get("guid").textValue(), "guid1");
         assertTrue(node.get("assessmentReferences").get(0).get("configHref").textValue()
                 .contains("/v1/assessments/guid1/config"));
-        assertEquals(node.get("assessmentReferences").get(0).get("appId").textValue(), "appId1");
 
+        assertEquals(node.get("assessmentReferences").get(1).get("appId").textValue(), "appId2");
+        assertEquals(node.get("assessmentReferences").get(1).get("guid").textValue(), "guid2");
         assertEquals(node.get("assessmentReferences").get(1).get("id").textValue(), "id2");
         assertEquals(node.get("assessmentReferences").get(1).get("originSharedId").textValue(), "originSharedId2");
-        assertEquals(node.get("assessmentReferences").get(1).get("guid").textValue(), "guid2");
         assertTrue(node.get("assessmentReferences").get(1).get("configHref").textValue()
                 .contains("/v1/assessments/guid2/config"));
-        assertEquals(node.get("assessmentReferences").get(1).get("appId").textValue(), "appId2");
 
         AppConfig deser = BridgeObjectMapper.get().treeToValue(node, AppConfig.class);
         assertNull(deser.getAppId());

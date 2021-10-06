@@ -69,7 +69,7 @@ public class AppConfigServiceTest {
     private static final List<SchemaReference> SCHEMA_REF_LIST = ImmutableList.of(new SchemaReference("id", 3));
     private static final List<ConfigReference> CONFIG_REF_LIST = ImmutableList.of(new ConfigReference("id", 1L));
     private static final List<FileReference> FILE_REF_LIST = ImmutableList.of(new FileReference(GUID, TIMESTAMP));
-    private static final List<AssessmentReference> ASSESSMENT_REF_LIST = ImmutableList.of(new AssessmentReference(GUID, TEST_APP_ID));
+    private static final List<AssessmentReference> ASSESSMENT_REF_LIST = ImmutableList.of(new AssessmentReference(TEST_APP_ID, GUID));
     private static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(SURVEY_REF_LIST.get(0));
     
     @Mock
@@ -577,7 +577,7 @@ public class AppConfigServiceTest {
 
     @Test
     public void resolveAssessmentUsesAssessmentReferenceAppIdIfAvailable() {
-        AssessmentReference sharedAssessmentRef = new AssessmentReference(GUID, SHARED_APP_ID);
+        AssessmentReference sharedAssessmentRef = new AssessmentReference(SHARED_APP_ID, GUID);
 
         service.resolveAssessment(TEST_APP_ID, sharedAssessmentRef);
 
@@ -586,7 +586,7 @@ public class AppConfigServiceTest {
 
     @Test
     public void resolveAssessmentUsesAppConfigAppIdWhenMissingFromAssessmentReference() {
-        AssessmentReference sharedAssessmentRef = new AssessmentReference(GUID, null);
+        AssessmentReference sharedAssessmentRef = new AssessmentReference(null, GUID);
 
         service.resolveAssessment(TEST_APP_ID, sharedAssessmentRef);
 

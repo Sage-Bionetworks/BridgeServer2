@@ -206,29 +206,27 @@ public class AppConfigValidator implements Validator {
             for (int i=0; i < appConfig.getAssessmentReferences().size(); i++) {
                 AssessmentReference ref = appConfig.getAssessmentReferences().get(i);
                 errors.pushNestedPath("assessmentReferences["+i+"]");
-                boolean validAppId = true;
+                boolean validRef = true;
                 if (ref.getAppId() == null) {
-                    validAppId = false;
+                    validRef = false;
                     errors.rejectValue("appId", "is required");
                 } else if (!ref.getAppId().equals(appConfig.getAppId()) && !ref.getAppId().equals(SHARED_APP_ID)) {
-                    validAppId = false;
-                    errors.rejectValue("appId", "does not refer to a valid app");
+                    validRef = false;
+                    errors.rejectValue("appId", "is not a valid app");
                 }
                 if (ref.getGuid() == null) {
+                    validRef = false;
                     errors.rejectValue("guid", "is required");
-                } else {
-                    if (uniqueRefs.contains(ref)) {
-                        errors.rejectValue("guid", "refers to the same assessment as another reference");
-                    } else {
-                        if (validAppId) {
-                            try {
-                                assessmentService.getAssessmentByGuid(ref.getAppId(), null, ref.getGuid());
-                            } catch(EntityNotFoundException e) {
-                                errors.rejectValue("guid", "does not refer to an assessment in given app");
-                            }
-                        }
+                } else if (!uniqueRefs.add(ref)) {
+                    validRef = false;
+                    errors.rejectValue("guid", "refers to the same assessment as another reference");
+                }
+                if (validRef) {
+                    try {
+                        assessmentService.getAssessmentByGuid(ref.getAppId(), null, ref.getGuid());
+                    } catch(EntityNotFoundException e) {
+                        errors.rejectValue("guid", "does not refer to an assessment in given app");
                     }
-                    uniqueRefs.add(ref);
                 }
                 errors.popNestedPath();
             }
