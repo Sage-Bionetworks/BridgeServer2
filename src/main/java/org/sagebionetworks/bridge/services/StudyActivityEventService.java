@@ -202,8 +202,13 @@ public class StudyActivityEventService {
     
     private void addIfPresent(List<StudyActivityEvent> events, Map<String, DateTime> map, String field) {
         if (map.containsKey(field)) {
+            DateTime ts = map.get(field);
             StudyActivityEvent event = new StudyActivityEvent.Builder()
-                    .withEventId(field).withTimestamp(map.get(field)).build();
+                    .withEventId(field)
+                    .withTimestamp(ts)
+                    // the app-scoped events did not have a createdOn date. Copy ts.
+                    .withCreatedOn(ts)
+                    .withRecordCount(1).build();
             events.add(event);
         }
     }
