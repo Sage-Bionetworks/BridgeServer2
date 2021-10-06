@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.hibernate.HibernateAccountDao.APP_IDS_FOR_USER_QUERY;
@@ -55,6 +56,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -80,6 +82,7 @@ public class HibernateAccountDaoTest extends Mockito {
     private static final String FIRST_NAME = "Eggplant";
     private static final String LAST_NAME = "McTester";
     private static final String EXTERNAL_ID = "an-external-id";
+    private static final Set<Roles> ROLES = ImmutableSet.of(RESEARCHER, STUDY_COORDINATOR);
     private static final AccountId ACCOUNT_ID_WITH_ID = AccountId.forId(TEST_APP_ID, ACCOUNT_ID);
     private static final AccountId ACCOUNT_ID_WITH_EMAIL = AccountId.forEmail(TEST_APP_ID, EMAIL);
     private static final AccountId ACCOUNT_ID_WITH_PHONE = AccountId.forPhone(TEST_APP_ID, PHONE);
@@ -865,6 +868,8 @@ public class HibernateAccountDaoTest extends Mockito {
         hibernateAccount.setEnrollments(ImmutableSet.of(en1, en2));
         hibernateAccount.setOrgMembership(TEST_ORG_ID);
         hibernateAccount.setNote(TEST_NOTE);
+        hibernateAccount.setRoles(ROLES);
+        hibernateAccount.setDataGroups(USER_DATA_GROUPS);
 
         // Unmarshall
         AccountSummary accountSummary = dao.unmarshallAccountSummary(hibernateAccount);
@@ -878,6 +883,8 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(accountSummary.getStatus(), ENABLED);
         assertEquals(accountSummary.getOrgMembership(), TEST_ORG_ID);
         assertEquals(accountSummary.getNote(), TEST_NOTE);
+        assertEquals(accountSummary.getRoles(), ROLES);
+        assertEquals(accountSummary.getDataGroups(), USER_DATA_GROUPS);
 
         // createdOn is stored as a long, so just compare epoch milliseconds.
         assertEquals(accountSummary.getCreatedOn().getMillis(), CREATED_ON.getMillis());
