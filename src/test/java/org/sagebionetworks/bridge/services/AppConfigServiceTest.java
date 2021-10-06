@@ -69,7 +69,7 @@ public class AppConfigServiceTest {
     private static final List<SchemaReference> SCHEMA_REF_LIST = ImmutableList.of(new SchemaReference("id", 3));
     private static final List<ConfigReference> CONFIG_REF_LIST = ImmutableList.of(new ConfigReference("id", 1L));
     private static final List<FileReference> FILE_REF_LIST = ImmutableList.of(new FileReference(GUID, TIMESTAMP));
-    private static final List<AssessmentReference> ASSESSMENT_REF_LIST = ImmutableList.of(new AssessmentReference(GUID, null, null));
+    private static final List<AssessmentReference> ASSESSMENT_REF_LIST = ImmutableList.of(new AssessmentReference(TEST_APP_ID, GUID));
     private static final GuidCreatedOnVersionHolder SURVEY_KEY = new GuidCreatedOnVersionHolderImpl(SURVEY_REF_LIST.get(0));
     
     @Mock
@@ -253,7 +253,7 @@ public class AppConfigServiceTest {
         // Verify that we called the resolver on this as well
         assertEquals(retValue.getSurveyReferences().get(0).getIdentifier(), "theIdentifier");
         assertEquals(retValue.getAssessmentReferences().get(0).getId(), "assessmentId");
-        assertEquals(retValue.getAssessmentReferences().get(0).getSharedId(), "sharedAssessmentId");
+        assertEquals(retValue.getAssessmentReferences().get(0).getOriginSharedId(), "sharedAssessmentId");
         assertEquals(retValue.getConfigElements().get("clientData"), TestUtils.getClientData());  
         
         return retValue;
@@ -277,7 +277,7 @@ public class AppConfigServiceTest {
         
         // Verify that we called the resolver on this as well
         assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
-        assertNull(match.getAssessmentReferences().get(0).getSharedId());
+        assertNull(match.getAssessmentReferences().get(0).getOriginSharedId());
     }
     
     @Test
@@ -301,7 +301,7 @@ public class AppConfigServiceTest {
         
         // Verify that we called the resolver on this as well
         assertEquals(match.getAssessmentReferences().get(0).getId(), "assessmentId");
-        assertNull(match.getAssessmentReferences().get(0).getSharedId());
+        assertNull(match.getAssessmentReferences().get(0).getOriginSharedId());
     }
     
     @Test
@@ -520,6 +520,7 @@ public class AppConfigServiceTest {
         assertEquals(captured.getSchemaReferences(), SCHEMA_REF_LIST);
         assertEquals(captured.getConfigReferences(), CONFIG_REF_LIST);
         assertEquals(captured.getFileReferences(), FILE_REF_LIST);
+        assertEquals(captured.getAssessmentReferences(), ASSESSMENT_REF_LIST);
         
         verify(mockStudyService).getStudyIds(TEST_APP_ID);
     }
@@ -572,5 +573,23 @@ public class AppConfigServiceTest {
         service.deleteAppConfigPermanently(TEST_APP_ID, GUID);
         
         verify(mockDao).deleteAppConfigPermanently(TEST_APP_ID, GUID);
+    }
+
+    @Test
+    public void resolveAssessmentUsesAssessmentReferenceAppIdIfAvailable() {
+        AssessmentReference sharedAssessmentRef = new AssessmentReference(SHARED_APP_ID, GUID);
+
+        service.resolveAssessment(TEST_APP_ID, sharedAssessmentRef);
+
+        verify(mockAssessmentService).getAssessmentByGuid(SHARED_APP_ID, null, GUID);
+    }
+
+    @Test
+    public void resolveAssessmentUsesAppConfigAppIdWhenMissingFromAssessmentReference() {
+        AssessmentReference sharedAssessmentRef = new AssessmentReference(null, GUID);
+
+        service.resolveAssessment(TEST_APP_ID, sharedAssessmentRef);
+
+        verify(mockAssessmentService).getAssessmentByGuid(TEST_APP_ID, null, GUID);
     }
 }

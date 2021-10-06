@@ -6,6 +6,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.sagebionetworks.bridge.models.appconfig.ConfigResolver.INSTANCE;
 
 import java.util.HashSet;
 import java.util.List;
@@ -53,8 +54,8 @@ public class DynamoAppConfigTest {
             new FileReference(GUID, TIMESTAMP),
             new FileReference("twoGuid", TIMESTAMP));
     private static final List<AssessmentReference> ASSESSMENT_REFS = ImmutableList.of(
-            new AssessmentReference("guid1", "id1", "sharedId1"),
-            new AssessmentReference("guid2", "id2", "sharedId2"));
+            new AssessmentReference(INSTANCE, "appId1", "guid1", "id1", "originSharedId1"),
+            new AssessmentReference(INSTANCE, "appId2", "guid2", "id2", "originSharedId2"));
     
     private static final String APP_ID = TestUtils.randomName(DynamoAppConfigTest.class);
     
@@ -72,18 +73,21 @@ public class DynamoAppConfigTest {
         assertNotNull(config.getSchemaReferences());
         assertNotNull(config.getSurveyReferences());
         assertNotNull(config.getFileReferences());
+        assertNotNull(config.getAssessmentReferences());
         
         config.setConfigElements(null);
         config.setConfigReferences(null);
         config.setSchemaReferences(null);
         config.setSurveyReferences(null);
         config.setFileReferences(null);
+        config.setAssessmentReferences(null);
         
         assertNotNull(config.getConfigElements());
         assertNotNull(config.getConfigReferences());
         assertNotNull(config.getSchemaReferences());
         assertNotNull(config.getSurveyReferences());
         assertNotNull(config.getFileReferences());
+        assertNotNull(config.getAssessmentReferences());
     }
 
     @Test
@@ -168,15 +172,17 @@ public class DynamoAppConfigTest {
         assertEquals(node.get("fileReferences").get(1).get("createdOn").textValue(), TIMESTAMP.toString());
         
         assertEquals(node.get("assessmentReferences").size(), 2);
-        assertEquals(node.get("assessmentReferences").get(0).get("id").textValue(), "id1");
-        assertEquals(node.get("assessmentReferences").get(0).get("sharedId").textValue(), "sharedId1");
+        assertEquals(node.get("assessmentReferences").get(0).get("appId").textValue(), "appId1");
         assertEquals(node.get("assessmentReferences").get(0).get("guid").textValue(), "guid1");
+        assertEquals(node.get("assessmentReferences").get(0).get("id").textValue(), "id1");
+        assertEquals(node.get("assessmentReferences").get(0).get("originSharedId").textValue(), "originSharedId1");
         assertTrue(node.get("assessmentReferences").get(0).get("configHref").textValue()
                 .contains("/v1/assessments/guid1/config"));
 
-        assertEquals(node.get("assessmentReferences").get(1).get("id").textValue(), "id2");
-        assertEquals(node.get("assessmentReferences").get(1).get("sharedId").textValue(), "sharedId2");
+        assertEquals(node.get("assessmentReferences").get(1).get("appId").textValue(), "appId2");
         assertEquals(node.get("assessmentReferences").get(1).get("guid").textValue(), "guid2");
+        assertEquals(node.get("assessmentReferences").get(1).get("id").textValue(), "id2");
+        assertEquals(node.get("assessmentReferences").get(1).get("originSharedId").textValue(), "originSharedId2");
         assertTrue(node.get("assessmentReferences").get(1).get("configHref").textValue()
                 .contains("/v1/assessments/guid2/config"));
 
