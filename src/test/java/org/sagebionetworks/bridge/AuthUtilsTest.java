@@ -731,7 +731,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void canAccessAccount_orgAdminSucceedsInOrg() {
+    public void canAccessAccount_orgAdminSucceedsOnProductionAccountInOrg() {
         Account account = Account.create();
         account.setOrgMembership(TEST_ORG_ID);
         
@@ -743,7 +743,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void canAccessAccount_orgAdminFailsFromOtherOrg() {
+    public void canAccessAccount_orgAdminFailsOnProductionAccountOtherOrg() {
         Account account = Account.create();
         account.setOrgMembership("other-organization");
         
@@ -753,6 +753,60 @@ public class AuthUtilsTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID).build());
 
         assertFalse(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_orgAdminSucceedsOnTextAccountInOrg() {
+        Account account = Account.create();
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        account.setOrgMembership(TEST_ORG_ID);
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+
+        assertTrue(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_orgAdminFailsOnTestAccountOtherOrg() {
+        Account account = Account.create();
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        account.setOrgMembership("other-organization");
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN))
+                .withCallerOrgMembership(TEST_ORG_ID).build());
+
+        assertFalse(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_orgAdminFailsOnProdParticipant() {
+        Account account = Account.create();
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+
+        assertFalse(AuthUtils.canAccessAccount(account));
+    }
+    
+    @Test
+    public void canAccessAccount_orgAdminSucceedsOnTestParticipant() {
+        Account account = Account.create();
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
+        
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+
+        assertTrue(AuthUtils.canAccessAccount(account));
     }
     
     @Test

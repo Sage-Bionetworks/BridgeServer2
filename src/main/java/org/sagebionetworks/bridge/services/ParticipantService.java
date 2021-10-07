@@ -9,9 +9,9 @@ import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CANNOT_SEE_PROD_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
-import static org.sagebionetworks.bridge.AuthUtils.IS_ONLY_DEVELOPER;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.studyAssociationsVisibleToCaller;
@@ -54,7 +54,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
@@ -432,7 +431,7 @@ public class ParticipantService {
         
         Validate.entityThrowingException(new AccountSummarySearchValidator(app.getDataGroups()), search);
         
-        if (IS_ONLY_DEVELOPER.check()) {
+        if (CANNOT_SEE_PROD_PARTICIPANTS.check()) {
             Set<String> newDataGroups = addToSet(search.getAllOfGroups(), TEST_USER_GROUP);
             search = search.toBuilder().withAllOfGroups(newDataGroups).build();
         }

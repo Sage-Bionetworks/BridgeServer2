@@ -56,7 +56,6 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 @CrossOrigin
 @RestController
 public class AccountsController extends BaseController  {
-    private static final ImmutableSet<Roles> ADMIN_ROLES = ImmutableSet.of(ADMIN, SUPERADMIN);
     private static final StatusMessage UPDATED_MSG = new StatusMessage("Member updated.");
     private static final StatusMessage DELETED_MSG = new StatusMessage("Member account deleted.");
     private static final StatusMessage RESET_PWD_MSG = new StatusMessage("Request to reset password sent to user.");
@@ -235,22 +234,10 @@ public class AccountsController extends BaseController  {
         AccountId accountId = parseAccountId(session.getAppId(), userIdToken);
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-                
-        if (session.isInRole(ADMIN_ROLES)) {
-            return account;
-        }
-        // The caller needs to be associated to an organization
-        String callerOrgId = session.getParticipant().getOrgMembership();
-        if (callerOrgId == null) {
+        
+        // The caller needs to have permissions to update the account
+        if (!CAN_EDIT_ACCOUNTS.check(ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
             throw new UnauthorizedException();
-        }
-        // The caller needs to be an administrator of the account's organization
-        if (!callerOrgId.equals(account.getOrgMembership())) {
-            throw new UnauthorizedException();
-        }
-        // The caller needs to have permissions to manipulate the account
-        if (!CAN_EDIT_ACCOUNTS.check(ORG_ID, callerOrgId, USER_ID, account.getId())) {
-            throw new EntityNotFoundException(Account.class);
         }
         return account;
     }

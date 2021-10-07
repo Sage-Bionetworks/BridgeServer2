@@ -35,6 +35,9 @@ public class AuthUtils {
      */
     public static final AuthEvaluator IS_ONLY_DEVELOPER = new AuthEvaluator()
             .isNotSelf().hasOnlyRoles(DEVELOPER, STUDY_DESIGNER);
+
+    public static final AuthEvaluator CANNOT_SEE_PROD_PARTICIPANTS = new AuthEvaluator()
+            .isNotSelf().hasOnlyRoles(DEVELOPER, STUDY_DESIGNER, ORG_ADMIN);
     
     public static final AuthEvaluator CAN_TRANSITION_STUDY = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
@@ -112,7 +115,7 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_READ_PARTICIPANTS = new AuthEvaluator().isSelf().or()
             // This allows an org admin to see study participants, but we block this in the relevant API calls.
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
-            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**
@@ -269,9 +272,11 @@ public class AuthUtils {
      */
     public static final boolean canAccessAccount(Account account) {
         if (account != null) {
-            Set<String> userDataGroups = account.getDataGroups();
-            if (IS_ONLY_DEVELOPER.check(USER_ID, account.getId()) && !userDataGroups.contains(TEST_USER_GROUP)) {
-                return false;
+            if (account.getOrgMembership() == null) {
+                Set<String> userDataGroups = account.getDataGroups();
+                if (CANNOT_SEE_PROD_PARTICIPANTS.check(USER_ID, account.getId()) && !userDataGroups.contains(TEST_USER_GROUP)) {
+                    return false;
+                }
             }
             // If the account is in a study that the caller can access with the correct role, 
             // return the account. We must iterate over this check because the account can be 
@@ -283,7 +288,7 @@ public class AuthUtils {
                 }
             }
             // Otherwise call this auth rule without a study and see if the caller matches any of
-            // the other authorization criteria (the above check won't have happend for accounts 
+            // the other authorization criteria (the above check won't have happened for accounts 
             // without any enrollments).
             return CAN_READ_PARTICIPANTS.check(USER_ID, account.getId(), ORG_ID, account.getOrgMembership());
         }
