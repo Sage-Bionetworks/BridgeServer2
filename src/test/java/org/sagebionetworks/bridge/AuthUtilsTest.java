@@ -796,7 +796,7 @@ public class AuthUtilsTest extends Mockito {
     }
     
     @Test
-    public void canAccessAccount_orgAdminSucceedsOnTestParticipant() {
+    public void canAccessAccount_orgAdminFailsOnTestParticipant() {
         Account account = Account.create();
         account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
         account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
@@ -806,7 +806,7 @@ public class AuthUtilsTest extends Mockito {
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
 
-        assertTrue(AuthUtils.canAccessAccount(account));
+        assertFalse(AuthUtils.canAccessAccount(account));
     }
     
     @Test

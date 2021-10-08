@@ -34,7 +34,7 @@ public class AuthUtils {
      * accounts, not production accounts.
      */
     public static final AuthEvaluator IS_ONLY_DEVELOPER = new AuthEvaluator()
-            .isNotSelf().hasOnlyRoles(DEVELOPER, STUDY_DESIGNER);
+            .isNotSelf().hasNoRole(RESEARCHER, STUDY_COORDINATOR, WORKER, ADMIN);
 
     public static final AuthEvaluator CAN_TRANSITION_STUDY = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
@@ -269,11 +269,14 @@ public class AuthUtils {
      */
     public static final boolean canAccessAccount(Account account) {
         if (account != null) {
-            if (account.getOrgMembership() == null) {
-                Set<String> userDataGroups = account.getDataGroups();
-                if (IS_ONLY_DEVELOPER.check(USER_ID, account.getId()) && !userDataGroups.contains(TEST_USER_GROUP)) {
-                    return false;
-                }
+            // There are some admin account endpoints that need to work with administrative 
+            // accounts, even if they are marked as test users (it’s a balancing act working 
+            // with these accounts that are admin accounts, but that are also used as 
+            // participant accounts).
+            boolean prodParticipant = account.getRoles().isEmpty() 
+                    && !account.getDataGroups().contains(TEST_USER_GROUP);
+            if (prodParticipant && IS_ONLY_DEVELOPER.check(USER_ID, account.getId())) {
+                return false;
             }
             // If the account is in a study that the caller can access with the correct role, 
             // return the account. We must iterate over this check because the account can be 
