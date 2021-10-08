@@ -265,10 +265,13 @@ public class AccountService {
         // The test_user flag taints an account; once set it cannot be unset. If the account is a production
         // account, however, check the caller and don’t allow the update if it is a developer account not
         // operating on itself.
-        if (persistedAccount.getDataGroups().contains(TEST_USER_GROUP)) {
+        boolean testUser = persistedAccount.getDataGroups().contains(TEST_USER_GROUP);
+        if (testUser) {
             Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
             account.setDataGroups(newDataGroups);
-        } else if (IS_ONLY_DEVELOPER.check(USER_ID, persistedAccount.getId())) {
+        }
+        boolean prodParticipant = persistedAccount.getRoles().isEmpty() && !testUser;
+        if (prodParticipant && IS_ONLY_DEVELOPER.check(USER_ID, persistedAccount.getId())) {
             throw new UnauthorizedException();
         }
 
