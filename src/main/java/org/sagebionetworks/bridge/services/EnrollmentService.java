@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 
 import java.util.List;
+import java.util.Optional;
 
 import javax.annotation.Nullable;
 
@@ -232,5 +233,26 @@ public class EnrollmentService {
             }
         }
         throw new EntityNotFoundException(Enrollment.class);
+    }
+
+    // TODO: Add an update method that updates editable fields of an enrollment record
+    //       specifically in order to update the note field. (Could just make it specifically only
+    //       retrieve the previous record, update the note field, and save)
+    public void updateEnrollmentNote(Enrollment enrollment) {
+        checkNotNull(enrollment);
+
+        AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
+        Optional<Account> optionalAccount = accountService.getAccount(accountId);
+
+        if (optionalAccount.isPresent()) {
+            Account account = optionalAccount.get();
+            for (Enrollment accountEnrollment : account.getEnrollments()) {
+                if (accountEnrollment.getStudyId().equals(enrollment.getStudyId())) {
+                    accountEnrollment.setNote(enrollment.getNote());
+                }
+            }
+
+            accountService.updateAccount(account);
+        }
     }
 }

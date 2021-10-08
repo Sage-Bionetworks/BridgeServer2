@@ -88,6 +88,24 @@ public class EnrollmentController extends BaseController {
         
         return service.unenroll(enrollment);
     }
+
+    // TODO: Make an update route that is study specific for a user
+    //       to allow for note updates.
+    @PostMapping("/v5/studies/{studyId}/enrollments/{userId}")
+    public StatusMessage updateEnrollment(@PathVariable String studyId, @PathVariable String userId) {
+        UserSession session = getAdministrativeSession();
+
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+
+        Enrollment enrollment = parseJson(Enrollment.class);
+        enrollment.setAppId(session.getAppId());
+        enrollment.setStudyId(studyId);
+        enrollment.setAccountId(userId);
+
+        service.updateEnrollmentNote(enrollment);
+
+        return new StatusMessage("Enrollment updated.");
+    }
     
     @PostMapping("/v3/participants/{userId}/enrollments")
     public StatusMessage updateUserEnrollments(@PathVariable String userId) {

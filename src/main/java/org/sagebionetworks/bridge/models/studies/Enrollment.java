@@ -93,4 +93,11 @@ public interface Enrollment extends BridgeEntity {
      */
     String getWithdrawalNote();
     void setWithdrawalNote(String note);
+
+    // TODO: add description of note field's use
+    /**
+     *
+     */
+    String getNote();
+    void setNote(String note);
 }

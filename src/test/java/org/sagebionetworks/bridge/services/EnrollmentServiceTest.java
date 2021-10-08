@@ -400,15 +400,18 @@ public class EnrollmentServiceTest extends Mockito {
         enrollment.setWithdrawalNote("Withdrawal reason");
         
         Enrollment retValue = service.unenroll(enrollment);
+        System.out.println(retValue);
         assertEquals(retValue.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(retValue.getWithdrawnBy());
         assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
 
         verify(mockAccountService).editAccount(any(), any());
         Enrollment captured = Iterables.getLast(account.getEnrollments(), null);
+        System.out.println(captured);
+        System.out.println(account.getEnrollments());
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(captured.getWithdrawnBy());
-        assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");        
+        assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");
     }
     
     @Test
