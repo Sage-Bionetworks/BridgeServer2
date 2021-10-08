@@ -29,7 +29,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -224,19 +223,13 @@ public class AccountsController extends BaseController  {
         return SIGN_OUT_MSG;
     }
     
-    /**
-     * This kind of code is driving me nuts... I'm not sure how to rationalize it further. We need
-     * to retrieve the account and test its organization membership. 
-     */
     public Account verifyOrgAdminIsActingOnOrgMember(UserSession session, String userIdToken) {
         AccountId accountId = parseAccountId(session.getAppId(), userIdToken);
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
-        // The caller needs to have permissions to update the account
-        if (!CAN_EDIT_ACCOUNTS.check(ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
-            throw new UnauthorizedException();
-        }
+        // Check that caller has permissions to edit an administrative account.
+        CAN_EDIT_ACCOUNTS.checkAndThrow(ORG_ID, account.getOrgMembership(), USER_ID, account.getId());
         return account;
     }
 }

@@ -6,11 +6,12 @@ import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
-import static org.sagebionetworks.bridge.AuthUtils.IS_ONLY_DEVELOPER;
+import static org.sagebionetworks.bridge.AuthUtils.CANNOT_ACCESS_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.canAccessAccount;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.collectStudyIds;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
@@ -228,7 +229,7 @@ public class AccountService {
         account.setModifiedOn(timestamp);
         account.setPasswordModifiedOn(timestamp);
         account.setMigrationVersion(MIGRATION_VERSION);
-        if (IS_ONLY_DEVELOPER.check()) {
+        if (CANNOT_ACCESS_PARTICIPANTS.check()) {
             Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
             account.setDataGroups(newDataGroups);
         }
@@ -260,20 +261,24 @@ public class AccountService {
 
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-
-        // The test_user flag taints an account; once set it cannot be unset. 
+        
+        // The test_user flag taints an account; once set it cannot be unset.
         boolean testUser = persistedAccount.getDataGroups().contains(TEST_USER_GROUP);
         if (testUser) {
             Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
             account.setDataGroups(newDataGroups);
         }
-        // If the account is a production account, check the caller and don’t allow the update if 
-        // it is a developer account not operating on itself.
-        boolean prodParticipant = persistedAccount.getRoles().isEmpty() && !testUser;
-        if (prodParticipant && IS_ONLY_DEVELOPER.check(USER_ID, persistedAccount.getId())) {
-            throw new UnauthorizedException();
+        // Participant accounts shouldn't be submitted to this endpoint; but if they are we check
+        // access, and throw if the caller is an org admin or a developer trying to operate on a 
+        // production account. These checks cannot currently be represented in the AuthEvaluator 
+        // checks.
+        boolean isParticipant = persistedAccount.getRoles().isEmpty();
+        if (isParticipant && CANNOT_ACCESS_PARTICIPANTS.check(USER_ID, persistedAccount.getId())) {
+            if (RequestContext.get().isInRole(ORG_ADMIN) || !testUser) {
+                throw new UnauthorizedException();    
+            }
         }
-
+        
         // None of these values should be changeable by the user.
         account.setAppId(persistedAccount.getAppId());
         account.setCreatedOn(persistedAccount.getCreatedOn());
@@ -329,7 +334,7 @@ public class AccountService {
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
  
-        if (IS_ONLY_DEVELOPER.check(USER_ID, account.getId()) && !account.getDataGroups().contains(TEST_USER_GROUP)) {
+        if (CANNOT_ACCESS_PARTICIPANTS.check(USER_ID, account.getId()) && !account.getDataGroups().contains(TEST_USER_GROUP)) {
             throw new UnauthorizedException();
         }
         accountEdits.accept(account);

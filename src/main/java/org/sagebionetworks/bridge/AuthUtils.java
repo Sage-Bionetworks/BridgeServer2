@@ -33,7 +33,7 @@ public class AuthUtils {
      * Calling account is only a developer, and thus should only have access to test
      * accounts, not production accounts.
      */
-    public static final AuthEvaluator IS_ONLY_DEVELOPER = new AuthEvaluator()
+    public static final AuthEvaluator CANNOT_ACCESS_PARTICIPANTS = new AuthEvaluator()
             .isNotSelf().hasNoRole(RESEARCHER, STUDY_COORDINATOR, WORKER, ADMIN);
 
     public static final AuthEvaluator CAN_TRANSITION_STUDY = new AuthEvaluator()
@@ -275,7 +275,7 @@ public class AuthUtils {
             // participant accounts).
             boolean prodParticipant = account.getRoles().isEmpty() 
                     && !account.getDataGroups().contains(TEST_USER_GROUP);
-            if (prodParticipant && IS_ONLY_DEVELOPER.check(USER_ID, account.getId())) {
+            if (prodParticipant && CANNOT_ACCESS_PARTICIPANTS.check(USER_ID, account.getId())) {
                 return false;
             }
             // If the account is in a study that the caller can access with the correct role, 

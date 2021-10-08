@@ -436,20 +436,17 @@ public class AccountServiceTest extends Mockito {
     public void updateAccountSucceedsForOrgAdminUpdatingAdminAccount() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("id")
-                // .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
         Account account = mockGetAccountById(ACCOUNT_ID, false);
         account.setRoles(ImmutableSet.of(STUDY_DESIGNER));
-        // account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
-        // account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
 
         service.updateAccount(account);
         
         verify(mockAccountDao).updateAccount(account);
     }
     
-    @Test
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void updateAccountFailsForOrgAdminUpdatingParticipantAccount() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("id")
@@ -457,13 +454,10 @@ public class AccountServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
         Account account = mockGetAccountById(ACCOUNT_ID, false);
-        // account.setRoles(ImmutableSet.of(STUDY_DESIGNER));
         account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
         account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
 
         service.updateAccount(account);
-        
-        verify(mockAccountDao).updateAccount(account);
     }
     
     @Test
