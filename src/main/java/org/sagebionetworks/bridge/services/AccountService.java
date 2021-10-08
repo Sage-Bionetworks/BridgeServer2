@@ -258,18 +258,17 @@ public class AccountService {
         
         AccountId accountId = AccountId.forId(account.getAppId(),  account.getId());
 
-        // Can't change app, email, phone, emailVerified, phoneVerified, createdOn, or passwordModifiedOn.
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        // The test_user flag taints an account; once set it cannot be unset. If the account is a production
-        // account, however, check the caller and don’t allow the update if it is a developer account not
-        // operating on itself.
+        // The test_user flag taints an account; once set it cannot be unset. 
         boolean testUser = persistedAccount.getDataGroups().contains(TEST_USER_GROUP);
         if (testUser) {
             Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
             account.setDataGroups(newDataGroups);
         }
+        // If the account is a production account, check the caller and don’t allow the update if 
+        // it is a developer account not operating on itself.
         boolean prodParticipant = persistedAccount.getRoles().isEmpty() && !testUser;
         if (prodParticipant && IS_ONLY_DEVELOPER.check(USER_ID, persistedAccount.getId())) {
             throw new UnauthorizedException();
