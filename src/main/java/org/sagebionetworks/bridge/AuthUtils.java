@@ -36,9 +36,6 @@ public class AuthUtils {
     public static final AuthEvaluator IS_ONLY_DEVELOPER = new AuthEvaluator()
             .isNotSelf().hasOnlyRoles(DEVELOPER, STUDY_DESIGNER);
 
-    public static final AuthEvaluator CANNOT_SEE_PROD_PARTICIPANTS = new AuthEvaluator()
-            .isNotSelf().hasOnlyRoles(DEVELOPER, STUDY_DESIGNER, ORG_ADMIN);
-    
     public static final AuthEvaluator CAN_TRANSITION_STUDY = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(RESEARCHER, ADMIN);
@@ -115,7 +112,7 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_READ_PARTICIPANTS = new AuthEvaluator().isSelf().or()
             // This allows an org admin to see study participants, but we block this in the relevant API calls.
             .isInOrg().hasAnyRole(ORG_ADMIN).or()
-            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN).or()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**
@@ -274,7 +271,7 @@ public class AuthUtils {
         if (account != null) {
             if (account.getOrgMembership() == null) {
                 Set<String> userDataGroups = account.getDataGroups();
-                if (CANNOT_SEE_PROD_PARTICIPANTS.check(USER_ID, account.getId()) && !userDataGroups.contains(TEST_USER_GROUP)) {
+                if (IS_ONLY_DEVELOPER.check(USER_ID, account.getId()) && !userDataGroups.contains(TEST_USER_GROUP)) {
                     return false;
                 }
             }
