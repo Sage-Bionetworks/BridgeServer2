@@ -46,7 +46,8 @@ public class AuthUtils {
      * when using the APIs.
      */
     public static final AuthEvaluator CAN_READ_ORG_SPONSORED_STUDIES = new AuthEvaluator()
-            .hasAnyRole(ORG_ADMIN, STUDY_DESIGNER, STUDY_COORDINATOR).hasNoRole(DEVELOPER, RESEARCHER, ADMIN, WORKER);
+            .hasAnyRole(ORG_ADMIN, STUDY_DESIGNER, STUDY_COORDINATOR)
+            .hasNoRole(DEVELOPER, RESEARCHER, ADMIN, WORKER);
 
     /**
      * Can the caller edit assessments? Must be a study designer in the organization that 
@@ -164,7 +165,7 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_READ_STUDIES = new AuthEvaluator()
             .isEnrolledInStudy().or()
             .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN).or()
-            .hasAnyRole(DEVELOPER, ADMIN);
+            .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
     
     /**
      * Can the caller edit studies? Caller must be a study coordinator, or a developer.
