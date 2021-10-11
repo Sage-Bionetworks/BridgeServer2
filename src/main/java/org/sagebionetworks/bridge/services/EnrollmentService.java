@@ -10,6 +10,8 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT_FILTER;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
@@ -28,6 +30,7 @@ import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -104,18 +107,22 @@ public class EnrollmentService {
         checkNotNull(appId);
         checkNotNull(userIdToken);
         
+        // verify the study exists if it is passed in
         if (studyId != null) {
             studyService.getStudy(appId, studyId, true);    
         }
-        // We want all enrollments, even withdrawn enrollments, so don't filter here.
+        // Developers accessing production accounts will be prevented by getAccount()
         AccountId accountId = BridgeUtils.parseAccountId(appId, userIdToken);
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
+        // Study-scoped users must have access to the study, roles like developer/researcher/admin are also OK
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, studyId, USER_ID, account.getId());
         
+        // Global roles can see all enrollments, but study-scoped roles only see studies they are associated to 
         RequestContext context = RequestContext.get();
-        Set<String> studyIds = context.isInRole(ADMIN) ? ImmutableSet.of() : context.getOrgSponsoredStudies();
+        Set<String> studyIds = context.isInRole(ImmutableSet.of(DEVELOPER, RESEARCHER, ADMIN)) ? 
+                ImmutableSet.of() : context.getOrgSponsoredStudies();
         return enrollmentDao.getEnrollmentsForUser(appId, studyIds, account.getId());
     }
     
