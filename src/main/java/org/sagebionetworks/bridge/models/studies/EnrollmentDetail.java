@@ -16,7 +16,7 @@ public class EnrollmentDetail {
     private final AccountRef participant;
     private final AccountRef enrolledBy;
     private final AccountRef withdrawnBy;
-    
+
     public EnrollmentDetail(Enrollment enrollment, AccountRef participant, AccountRef enrolledBy,
             AccountRef withdrawnBy) {
         this.enrollment = enrollment;
@@ -42,6 +42,9 @@ public class EnrollmentDetail {
     }
     public String getWithdrawalNote() {
         return enrollment.getWithdrawalNote();
+    }
+    public String getNote() {
+        return enrollment.getNote();
     }
     public AccountRef getParticipant() {
         return participant;

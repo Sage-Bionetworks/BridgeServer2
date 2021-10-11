@@ -238,8 +238,15 @@ public class EnrollmentService {
     // TODO: Add an update method that updates editable fields of an enrollment record
     //       specifically in order to update the note field. (Could just make it specifically only
     //       retrieve the previous record, update the note field, and save)
-    public void updateEnrollmentNote(Enrollment enrollment) {
+    //       - Also note the method name could change to updateEnrollment but would conflict
+    //         with existing method above.
+    public void editEnrollment(Enrollment enrollment) {
         checkNotNull(enrollment);
+
+        Validate.entityThrowingException(INSTANCE, enrollment);
+
+        // TODO: Check on these permissions, is isSelf() applicable
+        CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID, enrollment.getAccountId());
 
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
         Optional<Account> optionalAccount = accountService.getAccount(accountId);
@@ -249,6 +256,7 @@ public class EnrollmentService {
             for (Enrollment accountEnrollment : account.getEnrollments()) {
                 if (accountEnrollment.getStudyId().equals(enrollment.getStudyId())) {
                     accountEnrollment.setNote(enrollment.getNote());
+                    break;
                 }
             }
 

@@ -2,7 +2,10 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_EXISTING_ENROLLMENT;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 
@@ -89,20 +92,24 @@ public class EnrollmentController extends BaseController {
         return service.unenroll(enrollment);
     }
 
-    // TODO: Make an update route that is study specific for a user
-    //       to allow for note updates.
     @PostMapping("/v5/studies/{studyId}/enrollments/{userId}")
     public StatusMessage updateEnrollment(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
 
-        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+        // TODO: Check on the permission here:
+        //       - study designers for test accounts
+        //       - study coordinators for all accounts
+        //       Should "isSelf" be allowed as well? If not, need to customize the Auth
+//        CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, studyId, USER_ID, userId);
+//        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+        CAN_EDIT_EXISTING_ENROLLMENT.checkAndThrow(STUDY_ID, studyId, USER_ID, userId);
 
         Enrollment enrollment = parseJson(Enrollment.class);
         enrollment.setAppId(session.getAppId());
         enrollment.setStudyId(studyId);
         enrollment.setAccountId(userId);
 
-        service.updateEnrollmentNote(enrollment);
+        service.editEnrollment(enrollment);
 
         return new StatusMessage("Enrollment updated.");
     }

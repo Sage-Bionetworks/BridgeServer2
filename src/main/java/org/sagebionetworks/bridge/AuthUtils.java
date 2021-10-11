@@ -145,6 +145,14 @@ public class AuthUtils {
             .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
 
+    /**
+     * Can the caller edit an existing enrollment to create a study-scoped note? Must be a
+     * study designer for test accounts or a study coordinator for any account.
+     */
+    public static final AuthEvaluator CAN_EDIT_EXISTING_ENROLLMENT = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
+            .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
+
     public static final AuthEvaluator CAN_DELETE_PARTICIPANTS = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(RESEARCHER, ADMIN); 
