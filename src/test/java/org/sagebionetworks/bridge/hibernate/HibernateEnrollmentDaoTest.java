@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -189,7 +190,7 @@ public class HibernateEnrollmentDaoTest extends Mockito {
     
     @SuppressWarnings("unchecked")
     @Test
-    public void getEnrollmentsForUser() {
+    public void getEnrollmentsForUser_noStudies() {
         HibernateEnrollment en1 = new HibernateEnrollment();
         en1.setAccountId("id1");
         en1.setEnrolledBy("id2");
@@ -209,7 +210,7 @@ public class HibernateEnrollmentDaoTest extends Mockito {
         when(mockHelper.queryGet(eq(REF_QUERY), any(), isNull(), eq(1), eq(HibernateAccount.class)))
             .thenReturn(ImmutableList.of(account1), ImmutableList.of(account2), ImmutableList.of(account3));
         
-        List<EnrollmentDetail> retValue = dao.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID);
+        List<EnrollmentDetail> retValue = dao.getEnrollmentsForUser(TEST_APP_ID, null, TEST_USER_ID);
         EnrollmentDetail detail1 = retValue.get(0);
         assertEquals(detail1.getParticipant().getLastName(), "account1");
         assertEquals(detail1.getEnrolledBy().getLastName(), "account2");
@@ -223,4 +224,36 @@ public class HibernateEnrollmentDaoTest extends Mockito {
         assertEquals(paramsCaptor.getValue().get("userId"), TEST_USER_ID);
     }
 
+    @SuppressWarnings("unchecked")
+    @Test
+    public void getEnrollmentsForUser_filterStudies() {
+        HibernateEnrollment en1 = new HibernateEnrollment();
+        en1.setAccountId("id1");
+        en1.setEnrolledBy("id2");
+        en1.setWithdrawnBy("id3");
+        HibernateEnrollment en2 = new HibernateEnrollment();
+        List<HibernateEnrollment> page = ImmutableList.of(en1, en2);
+        
+        when(mockHelper.queryGet(any(), any(), isNull(), isNull(), eq(HibernateEnrollment.class))).thenReturn(page);
+        
+        HibernateAccount account1 = new HibernateAccount();
+        account1.setLastName("account1");
+        HibernateAccount account2 = new HibernateAccount();
+        account2.setLastName("account2");
+        HibernateAccount account3 = new HibernateAccount();
+        account3.setLastName("account3");
+        
+        when(mockHelper.queryGet(eq(REF_QUERY), any(), isNull(), eq(1), eq(HibernateAccount.class)))
+            .thenReturn(ImmutableList.of(account1), ImmutableList.of(account2), ImmutableList.of(account3));
+        
+        dao.getEnrollmentsForUser(TEST_APP_ID, ImmutableSet.of("studyA"), TEST_USER_ID);
+
+        verify(mockHelper).queryGet(queryCaptor.capture(),
+                paramsCaptor.capture(), isNull(), isNull(), eq(HibernateEnrollment.class));
+        
+        assertEquals(queryCaptor.getValue(), "FROM HibernateEnrollment WHERE appId = :appId AND accountId = :userId AND studyId IN :studyIds");
+        assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
+        assertEquals(paramsCaptor.getValue().get("userId"), TEST_USER_ID);
+        assertEquals(paramsCaptor.getValue().get("studyIds"), ImmutableSet.of("studyA"));
+    }
 }

@@ -9,18 +9,22 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT_FILTER;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Nullable;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.google.common.collect.ImmutableSet;
 
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
@@ -109,8 +113,10 @@ public class EnrollmentService {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, studyId, USER_ID, account.getId());
-
-        return enrollmentDao.getEnrollmentsForUser(appId, account.getId());
+        
+        RequestContext context = RequestContext.get();
+        Set<String> studyIds = context.isInRole(ADMIN) ? ImmutableSet.of() : context.getOrgSponsoredStudies();
+        return enrollmentDao.getEnrollmentsForUser(appId, studyIds, account.getId());
     }
     
     public Enrollment enroll(Enrollment enrollment) {
