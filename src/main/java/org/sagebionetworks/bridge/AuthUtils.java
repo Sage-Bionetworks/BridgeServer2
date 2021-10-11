@@ -33,9 +33,9 @@ public class AuthUtils {
      * Calling account is only a developer, and thus should only have access to test
      * accounts, not production accounts.
      */
-    public static final AuthEvaluator IS_ONLY_DEVELOPER = new AuthEvaluator()
-            .isNotSelf().hasOnlyRoles(DEVELOPER, STUDY_DESIGNER);
-    
+    public static final AuthEvaluator CANNOT_ACCESS_PARTICIPANTS = new AuthEvaluator()
+            .isNotSelf().hasNoRole(RESEARCHER, STUDY_COORDINATOR, WORKER, ADMIN);
+
     public static final AuthEvaluator CAN_TRANSITION_STUDY = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
             .hasAnyRole(RESEARCHER, ADMIN);
@@ -46,7 +46,8 @@ public class AuthUtils {
      * when using the APIs.
      */
     public static final AuthEvaluator CAN_READ_ORG_SPONSORED_STUDIES = new AuthEvaluator()
-            .hasAnyRole(ORG_ADMIN, STUDY_DESIGNER, STUDY_COORDINATOR).hasNoRole(DEVELOPER, RESEARCHER, ADMIN, WORKER);
+            .hasAnyRole(ORG_ADMIN, STUDY_DESIGNER, STUDY_COORDINATOR)
+            .hasNoRole(DEVELOPER, RESEARCHER, ADMIN, WORKER);
 
     /**
      * Can the caller edit assessments? Must be a study designer in the organization that 
@@ -164,7 +165,7 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_READ_STUDIES = new AuthEvaluator()
             .isEnrolledInStudy().or()
             .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN).or()
-            .hasAnyRole(DEVELOPER, ADMIN);
+            .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
     
     /**
      * Can the caller edit studies? Caller must be a study coordinator, or a developer.
@@ -269,8 +270,13 @@ public class AuthUtils {
      */
     public static final boolean canAccessAccount(Account account) {
         if (account != null) {
-            Set<String> userDataGroups = account.getDataGroups();
-            if (IS_ONLY_DEVELOPER.check(USER_ID, account.getId()) && !userDataGroups.contains(TEST_USER_GROUP)) {
+            // There are some admin account endpoints that need to work with administrative 
+            // accounts, even if they are marked as test users (it’s a balancing act working 
+            // with these accounts that are admin accounts, but that are also used as 
+            // participant accounts).
+            boolean prodParticipant = account.getRoles().isEmpty() 
+                    && !account.getDataGroups().contains(TEST_USER_GROUP);
+            if (prodParticipant && CANNOT_ACCESS_PARTICIPANTS.check(USER_ID, account.getId())) {
                 return false;
             }
             // If the account is in a study that the caller can access with the correct role, 
@@ -283,7 +289,7 @@ public class AuthUtils {
                 }
             }
             // Otherwise call this auth rule without a study and see if the caller matches any of
-            // the other authorization criteria (the above check won't have happend for accounts 
+            // the other authorization criteria (the above check won't have happened for accounts 
             // without any enrollments).
             return CAN_READ_PARTICIPANTS.check(USER_ID, account.getId(), ORG_ID, account.getOrgMembership());
         }

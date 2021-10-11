@@ -424,8 +424,7 @@ public class AccountsControllerTest extends Mockito {
         controller.verifyOrgAdminIsActingOnOrgMember(session, TEST_USER_ID);
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class, 
-            expectedExceptionsMessageRegExp = "Account not found.")
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void verifyOrgAdminIsActingOnOrgMemberFailsNotOrgAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("callerUserId")
@@ -467,9 +466,8 @@ public class AccountsControllerTest extends Mockito {
     @Test
     public void verifySuperadminCanAccessAccount() {
         // Not part of the target organization, but it doesn't matter
-        session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(SUPERADMIN))
-                .withOrgMembership(null).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(SUPERADMIN)).build());
         
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
@@ -480,9 +478,8 @@ public class AccountsControllerTest extends Mockito {
     @Test
     public void verifyAdminCanAccessAccount() {
         // Not part of the target organization, but it doesn't matter
-        session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(ADMIN))
-                .withOrgMembership(null).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         

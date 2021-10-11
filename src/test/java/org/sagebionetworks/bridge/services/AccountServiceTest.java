@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
@@ -432,7 +433,35 @@ public class AccountServiceTest extends Mockito {
     }
     
     @Test
-    public void updateAccountNotFound() {
+    public void updateAccountSucceedsForOrgAdminUpdatingAdminAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setRoles(ImmutableSet.of(STUDY_DESIGNER));
+
+        service.updateAccount(account);
+        
+        verify(mockAccountDao).updateAccount(account);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateAccountFailsForOrgAdminUpdatingParticipantAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
+
+        service.updateAccount(account);
+    }
+    
+    @Test
+    public void updateAccountNotFound() throws Exception {
         // mock hibernate
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);

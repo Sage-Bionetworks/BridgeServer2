@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
@@ -887,6 +888,36 @@ public class ParticipantServiceTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("some-id")
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder().build();
+        
+        participantService.getPagedAccountSummaries(APP, search);
+        
+        verify(accountService).getPagedAccountSummaries(
+                eq(TEST_APP_ID), searchCaptor.capture());
+        assertEquals(searchCaptor.getValue().getAllOfGroups(), ImmutableSet.of(TEST_USER_GROUP));
+    }
+    
+    @Test
+    public void getPagedAccountSummariesAddsTestFlagForStudyDesigners() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("some-id")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        
+        AccountSummarySearch search = new AccountSummarySearch.Builder().build();
+        
+        participantService.getPagedAccountSummaries(APP, search);
+        
+        verify(accountService).getPagedAccountSummaries(
+                eq(TEST_APP_ID), searchCaptor.capture());
+        assertEquals(searchCaptor.getValue().getAllOfGroups(), ImmutableSet.of(TEST_USER_GROUP));
+    }
+    
+    @Test
+    public void getPagedAccountSummariesAddsTestFlagForOrgAdmins() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("some-id")
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
         AccountSummarySearch search = new AccountSummarySearch.Builder().build();
         
