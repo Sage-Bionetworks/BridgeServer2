@@ -24,7 +24,6 @@ public class BridgeConfig implements Config {
     private static final String WEBSERVICES_URL = "webservices.url";
 
     private static final String EXPORTER_SYNAPSE_ID = "exporter.synapse.id";
-    private static final String TEST_SYNAPSE_USER_ID = "test.synapse.user.id";
 
     private static final String USE_HTTPS_FORWARDING = "use.https.forwarding";
 
@@ -114,10 +113,6 @@ public class BridgeConfig implements Config {
 
     public String getExporterSynapseId() {
         return config.get(EXPORTER_SYNAPSE_ID);
-    }
-
-    public String getTestSynapseUserId() {
-        return config.get(TEST_SYNAPSE_USER_ID);
     }
 
     public boolean useHttpsForwarding() {

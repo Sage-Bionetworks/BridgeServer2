@@ -730,18 +730,32 @@ public class SpringConfig {
 
     @Bean(name="bridgePFSynapseClient")
     public SynapseClient synapseClient() {
+        Config config = bridgeConfig();
+
         SynapseClient synapseClient = new SynapseAdminClientImpl();
-        synapseClient.setUsername(bridgeConfig().get("synapse.user"));
-        synapseClient.setApiKey(bridgeConfig().get("synapse.api.key"));
+        synapseClient.setUsername(config.get("synapse.user"));
+        synapseClient.setApiKey(config.get("synapse.api.key"));
+        setSynapseEndpoint(synapseClient, config);
         return synapseClient;
     }
 
     @Bean(name="exporterSynapseClient")
     public SynapseClient exporterSynapseClient() {
+        Config config = bridgeConfig();
+
         SynapseClient synapseClient = new SynapseAdminClientImpl();
-        synapseClient.setUsername(bridgeConfig().get("exporter.synapse.user"));
-        synapseClient.setApiKey(bridgeConfig().get("exporter.synapse.api.key"));
+        synapseClient.setUsername(config.get("exporter.synapse.user"));
+        synapseClient.setApiKey(config.get("exporter.synapse.api.key"));
+        setSynapseEndpoint(synapseClient, config);
         return synapseClient;
+    }
+
+    private static void setSynapseEndpoint(SynapseClient synapseClient, Config config) {
+        // Based on config, we either talk to Synapse Dev (local/dev/staging) or Synapse Prod.
+        String synapseEndpoint = config.get("synapse.endpoint");
+        synapseClient.setAuthEndpoint(synapseEndpoint + "auth/v1");
+        synapseClient.setFileEndpoint(synapseEndpoint + "file/v1");
+        synapseClient.setRepositoryEndpoint(synapseEndpoint + "repo/v1");
     }
 
     @Bean(name="exporterSynapseHelper")
