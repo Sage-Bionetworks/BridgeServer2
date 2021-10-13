@@ -1782,6 +1782,24 @@ public class ParticipantServiceTest extends Mockito {
         participantService.resendVerification(APP, null, ID);
     }
 
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = "Email address has not been set.")
+    public void resendEmailVerificationWhenEmailNull() {
+        mockHealthCodeAndAccountRetrieval();
+        account.setEmail(null);
+        
+        participantService.resendVerification(APP, ChannelType.EMAIL, ID);    
+    }
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = "Phone number has not been set.")
+    public void resendPhoneVerificationWhenEmailNull() {
+        mockHealthCodeAndAccountRetrieval();
+        account.setPhone(null);
+        
+        participantService.resendVerification(APP, ChannelType.PHONE, ID);    
+    }
+
     @Test
     public void resendConsentAgreement() {
         mockHealthCodeAndAccountRetrieval();

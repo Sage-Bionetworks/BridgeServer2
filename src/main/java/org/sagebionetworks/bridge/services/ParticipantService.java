@@ -703,16 +703,18 @@ public class ParticipantService {
         checkArgument(isNotBlank(userId));
 
         StudyParticipant participant = getParticipant(app, userId, false);
-        if (type == ChannelType.EMAIL) { 
-            if (participant.getEmail() != null) {
-                AccountId accountId = AccountId.forEmail(app.getIdentifier(), participant.getEmail());
-                accountWorkflowService.resendVerificationToken(type, accountId);
+        if (type == ChannelType.EMAIL) {
+            if (participant.getEmail() == null) {
+                throw new BadRequestException("Email address has not been set.");
             }
+            AccountId accountId = AccountId.forEmail(app.getIdentifier(), participant.getEmail());
+            accountWorkflowService.resendVerificationToken(type, accountId);
         } else if (type == ChannelType.PHONE) {
-            if (participant.getPhone() != null) {
-                AccountId accountId = AccountId.forPhone(app.getIdentifier(), participant.getPhone());
-                accountWorkflowService.resendVerificationToken(type, accountId);
+            if (participant.getPhone() == null) {
+                throw new BadRequestException("Phone number has not been set.");
             }
+            AccountId accountId = AccountId.forPhone(app.getIdentifier(), participant.getPhone());
+            accountWorkflowService.resendVerificationToken(type, accountId);
         } else {
             throw new UnsupportedOperationException("Channel type not implemented");
         }
