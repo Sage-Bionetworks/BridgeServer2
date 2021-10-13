@@ -50,6 +50,7 @@ public class DynamoHealthDataDocumentationDaoTest {
     @Test
     public void createOrUpdateDocumentation_NewDoc() {
         HealthDataDocumentation doc = new DynamoHealthDataDocumentation();
+        doc.setIdentifier(IDENTIFIER);
 
         HealthDataDocumentation returnedDoc = dao.createOrUpdateDocumentation(doc);
         assertSame(returnedDoc, doc);
