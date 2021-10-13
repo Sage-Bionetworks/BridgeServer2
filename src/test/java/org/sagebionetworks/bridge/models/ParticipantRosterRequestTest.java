@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
 
 public class ParticipantRosterRequestTest {
     private static final String PASSWORD = "P@ssword1";
