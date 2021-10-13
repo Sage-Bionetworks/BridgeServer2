@@ -250,16 +250,27 @@ public class AccountWorkflowService {
         
         App app = appService.getApp(accountId.getAppId());
         
-        Account account = accountService.getAccount(accountId).orElse(null);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
-        if (account != null) {
-            if (type == ChannelType.EMAIL) {
-                sendEmailVerificationToken(app, account.getId(), account.getEmail());
-            } else if (type == ChannelType.PHONE) {
-                sendPhoneVerificationToken(app, account.getId(), account.getPhone());
-            } else {
-                throw new UnsupportedOperationException("Channel type not implemented");
+        if (type == ChannelType.EMAIL) {
+            if (account.getEmail() == null) {
+                throw new BadRequestException("Email address has not been set.");
             }
+            if (account.getEmailVerified() == TRUE) {
+                throw new BadRequestException("Email address is already verified.");
+            }
+            sendEmailVerificationToken(app, account.getId(), account.getEmail());
+        } else if (type == ChannelType.PHONE) {
+            if (account.getPhone() == null) {
+                throw new BadRequestException("Phone number has not been set.");
+            }
+            if (account.getPhoneVerified() == TRUE) {
+                throw new BadRequestException("Phone number is already verified.");
+            }
+            sendPhoneVerificationToken(app, account.getId(), account.getPhone());
+        } else {
+            throw new UnsupportedOperationException("Channel type not implemented");
         }
     }
     
