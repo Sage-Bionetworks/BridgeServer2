@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_OTHER_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.IS_ONLY_DEVELOPER;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
@@ -247,7 +248,7 @@ public class EnrollmentService {
 
         Validate.entityThrowingException(INSTANCE, enrollment);
 
-        CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID, enrollment.getAccountId());
+        CAN_EDIT_OTHER_ENROLLMENTS.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID, enrollment.getAccountId());
 
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
         Optional<Account> optionalAccount = accountService.getAccount(accountId);
