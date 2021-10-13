@@ -149,7 +149,7 @@ public class AuthUtils {
      * Can the caller edit an existing enrollment to create a study-scoped note? Must be a
      * study designer for test accounts or a study coordinator for any account.
      */
-    public static final AuthEvaluator CAN_EDIT_EXISTING_ENROLLMENT = new AuthEvaluator()
+    public static final AuthEvaluator CAN_EDIT_OTHER_ENROLLMENTS = new AuthEvaluator()
             .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
             .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
 

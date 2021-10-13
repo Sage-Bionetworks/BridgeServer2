@@ -5,10 +5,12 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
+import static org.sagebionetworks.bridge.AuthUtils.IS_ONLY_DEVELOPER;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT_FILTER;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
@@ -245,7 +247,6 @@ public class EnrollmentService {
 
         Validate.entityThrowingException(INSTANCE, enrollment);
 
-        // TODO: Check on these permissions, is isSelf() applicable
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID, enrollment.getAccountId());
 
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
@@ -253,6 +254,10 @@ public class EnrollmentService {
 
         if (optionalAccount.isPresent()) {
             Account account = optionalAccount.get();
+
+            if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
+                IS_ONLY_DEVELOPER.checkAndThrow();
+            }
             for (Enrollment accountEnrollment : account.getEnrollments()) {
                 if (accountEnrollment.getStudyId().equals(enrollment.getStudyId())) {
                     accountEnrollment.setNote(enrollment.getNote());

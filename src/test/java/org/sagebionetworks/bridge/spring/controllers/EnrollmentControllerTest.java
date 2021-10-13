@@ -227,5 +227,14 @@ public class EnrollmentControllerTest extends Mockito {
         
         verify(mockAccount, times(2)).getEnrollments();
         assertTrue(enrollments.isEmpty());
-    }    
+    }
+
+    @Test
+    public void updateEnrollmentNote() {
+        UserSession session = new UserSession();
+        session.setAppId(TEST_APP_ID);
+        doReturn(session).when(controller).getAuthenticatedSession();
+
+
+    }
 }
