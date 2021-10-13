@@ -257,7 +257,7 @@ public class AccountWorkflowService {
             if (account.getEmail() == null) {
                 throw new BadRequestException("Email address has not been set.");
             }
-            if (account.getEmailVerified() == TRUE) {
+            if (TRUE.equals(account.getEmailVerified())) {
                 throw new BadRequestException("Email address is already verified.");
             }
             sendEmailVerificationToken(app, account.getId(), account.getEmail());
@@ -265,7 +265,7 @@ public class AccountWorkflowService {
             if (account.getPhone() == null) {
                 throw new BadRequestException("Phone number has not been set.");
             }
-            if (account.getPhoneVerified() == TRUE) {
+            if (TRUE.equals(account.getPhoneVerified())) {
                 throw new BadRequestException("Phone number is already verified.");
             }
             sendPhoneVerificationToken(app, account.getId(), account.getPhone());
