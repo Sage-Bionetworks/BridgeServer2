@@ -43,6 +43,7 @@ public class Session implements BridgeEntity, HasGuid {
     @JsonIgnore
     private int position;
     private String name;
+    private String symbol;
     @Convert(converter = PeriodToStringConverter.class)
     @Column(name = "delayPeriod")
     private Period delay;
@@ -107,6 +108,12 @@ public class Session implements BridgeEntity, HasGuid {
     }
     public void setName(String name) {
         this.name = name;
+    }
+    public String getSymbol() {
+        return symbol;
+    }
+    public void setSymbol(String symbol) {
+        this.symbol = symbol;
     }
     public List<Label> getLabels() {
         if (labels == null) {

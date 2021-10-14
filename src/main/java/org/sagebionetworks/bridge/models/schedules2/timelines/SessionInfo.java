@@ -18,6 +18,7 @@ public class SessionInfo {
 
     private String guid;
     private String label;
+    private String symbol;
     private String startEventId;
     private PerformanceOrder performanceOrder;
     private Integer minutesToComplete;
@@ -38,6 +39,7 @@ public class SessionInfo {
         SessionInfo info = new SessionInfo();
         info.guid = session.getGuid();
         info.label = label.getValue();
+        info.symbol = session.getSymbol();
         info.startEventId = Iterables.getFirst(session.getStartEventIds(), null);
         info.performanceOrder = session.getPerformanceOrder();
         info.timeWindowGuids = session.getTimeWindows().stream()
@@ -57,6 +59,9 @@ public class SessionInfo {
     }
     public String getLabel() {
         return label;
+    }
+    public String getSymbol() {
+        return symbol;
     }
     public String getStartEventId() {
         return startEventId;
