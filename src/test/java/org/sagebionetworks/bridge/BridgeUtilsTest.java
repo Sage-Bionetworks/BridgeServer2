@@ -446,7 +446,7 @@ public class BridgeUtilsTest extends Mockito {
     }
     
     @Test
-    public void participantTemplateVariblesWorks() {
+    public void participantTemplateVariablesWorks() {
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withFirstName("aFirstName")
                 .withLastName("aLastName")
@@ -459,8 +459,8 @@ public class BridgeUtilsTest extends Mockito {
         assertEquals(map.get("participantLastName"), "aLastName");
         assertEquals(map.get("participantPhone"), "+19712486796");
         assertEquals(map.get("participantPhoneRegion"), "US");
-        assertEquals(map.get("participantFirstProp"), "A");
-        assertEquals(map.get("participantSecondProp"), "B");
+        assertEquals(map.get("participant.first_prop"), "A");
+        assertEquals(map.get("participant.second prop"), "B");
         assertEquals(map.get("participantEmail"), "email@email.com");
         assertEquals(map.get("participantPhoneNationalFormat"), "(971) 248-6796");
     }

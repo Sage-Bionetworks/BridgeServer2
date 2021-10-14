@@ -53,8 +53,8 @@ public class BasicEmailProviderTest {
                 "studyId", "appName", "appShortName", "appId", "sponsorName", "supportEmail", 
                 "technicalEmail", "consentEmail", "url", "expirationPeriod", 
                 "participantFirstName", "participantLastName", "participantEmail", 
-                "participantPropA", "participantPropB", "participantPhone", "participantPhoneRegion",
-                "participantPhoneNationalFormat");
+                "participant.prop_A", "participant.prop_B", "participantPhone", 
+                "participantPhoneRegion", "participantPhoneNationalFormat");
         
         String documentContent = Joiner.on("~").join(documentContentElements.stream()
                 .map(s -> ("${" + s + "}")).collect(Collectors.toList()));

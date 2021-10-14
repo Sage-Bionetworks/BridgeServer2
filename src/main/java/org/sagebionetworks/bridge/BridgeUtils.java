@@ -278,10 +278,7 @@ public class BridgeUtils {
             map.put("participantPhoneNationalFormat", participant.getPhone().getNationalFormat());
         }
         for (Entry<String,String> entry : participant.getAttributes().entrySet()) {
-            String attName = entry.getKey();
-            attName = attName.replaceAll("[^a-zA-Z0-9]", " ");
-            String propName = "participant" + CaseUtils.toCamelCase(attName, true);
-            map.put(propName, entry.getValue());
+            map.put("participant." + entry.getKey(), entry.getValue());
         }
         return map;
     }
