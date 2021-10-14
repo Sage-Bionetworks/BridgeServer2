@@ -6,7 +6,9 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
@@ -441,6 +443,26 @@ public class BridgeUtilsTest extends Mockito {
         assertEquals(map.get("consentEmail"), "consentNotificationEmail2");
         assertEquals(map.get("thisMap"), "isMutable");
         assertEquals(map.get("host"), host);
+    }
+    
+    @Test
+    public void participantTemplateVariblesWorks() {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withFirstName("aFirstName")
+                .withLastName("aLastName")
+                .withEmail(EMAIL)
+                .withPhone(PHONE)
+                .withAttributes(ImmutableMap.of("first_prop", "A", "second prop", "B"))
+                .build();
+        Map<String,String> map = BridgeUtils.participantTemplateVariables(participant);
+        assertEquals(map.get("participantFirstName"), "aFirstName");
+        assertEquals(map.get("participantLastName"), "aLastName");
+        assertEquals(map.get("participantPhone"), "+19712486796");
+        assertEquals(map.get("participantPhoneRegion"), "US");
+        assertEquals(map.get("participantFirstProp"), "A");
+        assertEquals(map.get("participantSecondProp"), "B");
+        assertEquals(map.get("participantEmail"), "email@email.com");
+        assertEquals(map.get("participantPhoneNationalFormat"), "(971) 248-6796");
     }
     
     @Test
