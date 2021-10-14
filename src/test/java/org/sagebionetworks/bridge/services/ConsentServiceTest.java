@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
@@ -37,6 +38,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -70,6 +72,7 @@ import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -181,6 +184,11 @@ public class ConsentServiceTest extends Mockito {
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
     }
 
+    @AfterMethod
+    public void after() {
+        RequestContext.set(NULL_INSTANCE);
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void userCannotGetConsentSignatureForSubpopulationToWhichTheyAreNotMapped() {
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID))
@@ -996,7 +1004,20 @@ public class ConsentServiceTest extends Mockito {
         verify(accountService).updateAccount(account);
         verify(mockEnrollmentService, never()).addEnrollment(any(), any());
     }
+    
+    @Test
+    public void consentToResearchUpdatesRequestContext() {
+        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(USER_DATA_GROUPS);
 
+        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        consentService.consentToResearch(app, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
+                SharingScope.NO_SHARING, false);
+        
+        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of(TEST_STUDY_ID));
+    }
+    
     @Test
     public void resendConsentAgreementWithPhoneOK() throws Exception {
         doReturn("asdf.pdf").when(consentService).getSignedConsentUrl();

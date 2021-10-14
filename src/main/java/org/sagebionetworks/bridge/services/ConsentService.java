@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Boolean.FALSE;
+import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.commaListToOrderedSet;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_SIGNED_CONSENT;
@@ -22,6 +23,7 @@ import javax.annotation.Resource;
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -209,6 +211,12 @@ public class ConsentService {
         if (subpop.getStudyId() != null) {
             Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), subpop.getStudyId(), account.getId());
             enrollmentService.addEnrollment(account, newEnrollment);
+            
+            // The account update will eventually publish events and these will try and retrieve a study, requiring 
+            // that the caller have access through enrollment. Set the request context here for the rest of the call.
+            RequestContext context = RequestContext.get();
+            RequestContext.set(context.toBuilder().withCallerEnrolledStudies(
+                    addToSet(context.getCallerEnrolledStudies(), subpop.getStudyId())).build());
         }
         accountService.updateAccount(account);
 
