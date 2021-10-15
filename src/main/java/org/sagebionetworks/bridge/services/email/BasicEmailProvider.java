@@ -16,6 +16,7 @@ import javax.mail.internet.MimeBodyPart;
 import javax.mail.util.ByteArrayDataSource;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.MimeType;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
@@ -103,6 +104,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
 
     public static class Builder {
         private App app;
+        private StudyParticipant participant;
         private String overrideSenderEmail;
         private Map<String,String> tokenMap = Maps.newHashMap();
         private Set<String> recipientEmails = Sets.newHashSet();
@@ -112,6 +114,11 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
 
         public Builder withApp(App app) {
             this.app = app;
+            return this;
+        }
+        
+        public Builder withParticipant(StudyParticipant participant) {
+            this.participant = participant;
             return this;
         }
 
@@ -170,6 +177,7 @@ public class BasicEmailProvider extends MimeTypeEmailProvider {
             checkNotNull(revision);
             
             tokenMap.putAll(BridgeUtils.appTemplateVariables(app));
+            tokenMap.putAll(BridgeUtils.participantTemplateVariables(participant));
             // Nulls will cause ImmutableMap.of to fail
             tokenMap.values().removeIf(Objects::isNull);
             

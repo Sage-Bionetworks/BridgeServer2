@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDocumentation;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 

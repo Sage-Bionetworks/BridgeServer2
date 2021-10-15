@@ -234,6 +234,7 @@ public class ConsentService {
                 
                 BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
                         .withApp(app)
+                        .withParticipant(participant)
                         .withTemplateRevision(revision)
                         .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                         .withType(EmailType.SIGN_CONSENT);
@@ -430,6 +431,7 @@ public class ConsentService {
             
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
                     .withApp(app)
+                    .withParticipant(participant)
                     .withTemplateRevision(revision)
                     .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                     .withRecipientEmail(participant.getEmail())
