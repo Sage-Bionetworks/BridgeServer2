@@ -632,11 +632,7 @@ public class ParticipantService {
                 String externalId = entry.getValue();
                 
                 Enrollment enrollment = Enrollment.create(account.getAppId(), studyId, account.getId(), externalId);
-                enrollmentService.addEnrollment(account, enrollment);
-                
-                RequestContext context = RequestContext.get(); 
-                RequestContext.set(context.toBuilder().withCallerEnrolledStudies(
-                        addToSet(context.getCallerEnrolledStudies(), studyId)).build());            
+                enrollmentService.addEnrollment(account, enrollment, requestContext.getCallerUserId() == null);
             }
         }
         

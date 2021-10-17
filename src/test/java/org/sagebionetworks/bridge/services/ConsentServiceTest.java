@@ -1020,7 +1020,7 @@ public class ConsentServiceTest extends Mockito {
 
         assertEquals(account.getDataGroups(), TestConstants.USER_DATA_GROUPS);
         
-        verify(mockEnrollmentService).addEnrollment(any(), enrollmentCaptor.capture());
+        verify(mockEnrollmentService).addEnrollment(any(), enrollmentCaptor.capture(), eq(true));
         
         Enrollment en = enrollmentCaptor.getValue();
         assertEquals(en.getStudyId(), TEST_STUDY_ID);
@@ -1039,20 +1039,7 @@ public class ConsentServiceTest extends Mockito {
                 SharingScope.NO_SHARING, false);
 
         verify(accountService).updateAccount(account);
-        verify(mockEnrollmentService, never()).addEnrollment(any(), any());
-    }
-    
-    @Test
-    public void consentToResearchUpdatesRequestContext() {
-        when(subpopulation.getDataGroupsAssignedWhileConsented()).thenReturn(USER_DATA_GROUPS);
-
-        when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
-        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
-
-        consentService.consentToResearch(app, SUBPOP_GUID, PHONE_PARTICIPANT, CONSENT_SIGNATURE,
-                SharingScope.NO_SHARING, false);
-        
-        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of(TEST_STUDY_ID));
+        verify(mockEnrollmentService, never()).addEnrollment(any(), any(), eq(true));
     }
     
     @Test
