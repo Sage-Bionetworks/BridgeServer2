@@ -508,7 +508,6 @@ public class StudyParticipantController extends BaseController {
             @PathVariable String userId,
             @PathVariable String eventId) {
         UserSession session = getAdministrativeSession();
-        
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         StudyActivityEventRequest request = new StudyActivityEventRequest(eventId, null, null, null);

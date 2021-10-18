@@ -449,6 +449,8 @@ public class ParticipantServiceTest extends Mockito {
     
     @Test
     public void createParticipantWithEnrollment_anonymous() {
+        // This works because the request context is mocked in the @Before method, not in
+        // mockHealthCodeAndAccountRetrieval (below it)
         RequestContext.set(RequestContext.get().toBuilder().withCallerUserId(null).build());
         mockHealthCodeAndAccountRetrieval();
         when(studyService.getStudy(TEST_APP_ID, STUDY_ID, false)).thenReturn(Study.create());

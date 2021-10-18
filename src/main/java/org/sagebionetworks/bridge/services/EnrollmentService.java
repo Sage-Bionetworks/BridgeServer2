@@ -156,10 +156,10 @@ public class EnrollmentService {
      * 
      * @param account - the account to be altered (but not persisted)
      * @param newEnrollment - the enrollment to add to the account.
-     * @param updateRequestContext - should the current request context be updated to indicate the
-     *      caller is enrolled in this study? Some calls are triggered by the participant, and will 
-     *      go on to fire study-related events that check for study access permission, requiring the 
-     *      context to be updated.
+     * @param updateRequestContext - update the current request context to reflect enrollment in the 
+     *      study. Some calls are triggered by the participant, and will go on to fire study-related 
+     *      events that check for study access permission, requiring the context to be updated event
+     *      before the session is updated and returned from the call.
      * @return - the enrollment object instance used to enroll the user (usually the enrollment passed to 
      *      this method with modifications).
      */
