@@ -91,12 +91,24 @@ public class EnrollmentController extends BaseController {
         return service.unenroll(enrollment);
     }
 
+    @PostMapping("/v3/participants/{userId}/enrollments")
+    public StatusMessage updateUserEnrollments(@PathVariable String userId) {
+        UserSession session = getAuthenticatedSession(SUPERADMIN);
+
+        List<EnrollmentMigration> migrations = parseJson(new TypeReference<List<EnrollmentMigration>>() {});
+
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
+        accountService.editAccount(accountId, (acct) -> {
+            acct.getEnrollments().clear();
+            acct.getEnrollments().addAll(migrations.stream().map(m -> m.asEnrollment()).collect(toSet()));
+        });
+        return new StatusMessage("Enrollments updated.");
+    }
+
     @PostMapping("/v5/studies/{studyId}/enrollments/{userId}")
     public StatusMessage updateEnrollment(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
 
-        // TODO: Check on the permission here:
-        //       - study designers for test accounts
         CAN_EDIT_OTHER_ENROLLMENTS.checkAndThrow(STUDY_ID, studyId, USER_ID, userId);
 
         Enrollment enrollment = parseJson(Enrollment.class);
@@ -108,18 +120,4 @@ public class EnrollmentController extends BaseController {
 
         return new StatusMessage("Enrollment updated.");
     }
-    
-    @PostMapping("/v3/participants/{userId}/enrollments")
-    public StatusMessage updateUserEnrollments(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
-        
-        List<EnrollmentMigration> migrations = parseJson(new TypeReference<List<EnrollmentMigration>>() {});
-        
-        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
-        accountService.editAccount(accountId, (acct) -> {
-            acct.getEnrollments().clear();
-            acct.getEnrollments().addAll(migrations.stream().map(m -> m.asEnrollment()).collect(toSet()));
-        });
-        return new StatusMessage("Enrollments updated.");
-    }    
 }

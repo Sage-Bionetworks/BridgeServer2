@@ -202,6 +202,7 @@ public class EnrollmentServiceTest extends Mockito {
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setExternalId("extId");
         enrollment.setEnrolledOn(timestamp);
+        enrollment.setNote("test enr note");
 
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAppId(), TEST_APP_ID);
@@ -214,6 +215,7 @@ public class EnrollmentServiceTest extends Mockito {
         assertNull(retValue.getWithdrawnBy());
         assertNull(retValue.getWithdrawalNote());
         assertFalse(retValue.isConsentRequired());
+        assertNull(enrollment.getNote());
         
         assertTrue(account.getEnrollments().contains(retValue));
     }
@@ -643,7 +645,7 @@ public class EnrollmentServiceTest extends Mockito {
     @Test
     public void editEnrollment_canUpdateOnlyNoteField() {
         RequestContext.set(new RequestContext.Builder()
-//                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerUserId("otherId")
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
 
         Enrollment targetEnrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
@@ -657,10 +659,6 @@ public class EnrollmentServiceTest extends Mockito {
 
         AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
         Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        // TODO: This line shouldn't be required for a researcher, something is wrong here
-        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
         account.setEnrollments(ImmutableSet.of(targetEnrollment));
 
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
@@ -691,39 +689,8 @@ public class EnrollmentServiceTest extends Mockito {
                 .withCallerRoles(ImmutableSet.of()).build());
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
 
-        service.editEnrollment(enrollment);
-    }
-
-    @Test
-    public void editEnrollment_allowsStudyDesignerAccessToTestAccounts() {
-        RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-
         AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
         Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
-        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
-
-        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
-
-        service.editEnrollment(enrollment);
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void editEnrollment_preventsStudyDesignerAccessToNonTestAccounts() {
-        RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
-
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-
-        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-        Account account = Account.create();
-        account.setAppId(TEST_APP_ID);
-        account.setId(TEST_USER_ID);
 
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
 

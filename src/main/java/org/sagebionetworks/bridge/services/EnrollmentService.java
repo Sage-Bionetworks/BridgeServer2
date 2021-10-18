@@ -238,35 +238,24 @@ public class EnrollmentService {
         throw new EntityNotFoundException(Enrollment.class);
     }
 
-    // TODO: Add an update method that updates editable fields of an enrollment record
-    //       specifically in order to update the note field. (Could just make it specifically only
-    //       retrieve the previous record, update the note field, and save)
-    //       - Also note the method name could change to updateEnrollment but would conflict
-    //         with existing method above.
     public void editEnrollment(Enrollment enrollment) {
         checkNotNull(enrollment);
 
         Validate.entityThrowingException(INSTANCE, enrollment);
 
+        AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         CAN_EDIT_OTHER_ENROLLMENTS.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID, enrollment.getAccountId());
 
-        AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
-        Optional<Account> optionalAccount = accountService.getAccount(accountId);
-
-        if (optionalAccount.isPresent()) {
-            Account account = optionalAccount.get();
-
-            if (!account.getDataGroups().contains(TEST_USER_GROUP)) {
-                IS_ONLY_DEVELOPER.checkAndThrow();
+        for (Enrollment accountEnrollment : account.getEnrollments()) {
+            if (accountEnrollment.getStudyId().equals(enrollment.getStudyId())) {
+                accountEnrollment.setNote(enrollment.getNote());
+                break;
             }
-            for (Enrollment accountEnrollment : account.getEnrollments()) {
-                if (accountEnrollment.getStudyId().equals(enrollment.getStudyId())) {
-                    accountEnrollment.setNote(enrollment.getNote());
-                    break;
-                }
-            }
-
-            accountService.updateAccount(account);
         }
+
+        accountService.updateAccount(account);
     }
 }
