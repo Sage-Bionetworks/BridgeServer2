@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -39,6 +40,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
@@ -143,18 +145,25 @@ public class EnrollmentService {
         final EnrollmentHolder holder = new EnrollmentHolder();
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
         accountService.editAccount(accountId, (acct) -> {
-            holder.enrollment = addEnrollment(acct, enrollment);
+            holder.enrollment = addEnrollment(acct, enrollment, false);
         });
         return holder.enrollment;
     }
     
     /**
      * For methods that are going to save the account, this method adds an enrollment correctly
-     * to an account, but does not persist it or fire an enrollment event. It will also tag
-     * the user as a test user if the enrollment is for a study in the design phase. Once 
-     * tagged as a test account, an account is always a test account.
+     * to an account, but does not persist it or fire an enrollment event. 
+     * 
+     * @param account - the account to be altered (but not persisted)
+     * @param newEnrollment - the enrollment to add to the account.
+     * @param updateRequestContext - update the current request context to reflect enrollment in the 
+     *      study. Some calls are triggered by the participant, and will go on to fire study-related 
+     *      events that check for study access permission, requiring the context to be updated event
+     *      before the session is updated and returned from the call.
+     * @return - the enrollment object instance used to enroll the user (usually the enrollment passed to 
+     *      this method with modifications).
      */
-    public Enrollment addEnrollment(Account account, Enrollment newEnrollment) {
+    public Enrollment addEnrollment(Account account, Enrollment newEnrollment, boolean updateRequestContext) {
         checkNotNull(account);
         checkNotNull(newEnrollment);
         
@@ -163,7 +172,12 @@ public class EnrollmentService {
         studyService.getStudy(newEnrollment.getAppId(), newEnrollment.getStudyId(), true);
         
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, newEnrollment.getStudyId(), USER_ID, account.getId());
-
+        
+        if (updateRequestContext) {
+            RequestContext context = RequestContext.get();
+            RequestContext.set(context.toBuilder().withCallerEnrolledStudies(
+                    addToSet(context.getCallerEnrolledStudies(), newEnrollment.getStudyId())).build());            
+        }
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             if (existingEnrollment.getStudyId().equals(newEnrollment.getStudyId())) {
                 updateEnrollment(account, newEnrollment, existingEnrollment);

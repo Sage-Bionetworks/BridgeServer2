@@ -208,7 +208,7 @@ public class ConsentService {
         // declare a study ID. 
         if (subpop.getStudyId() != null) {
             Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), subpop.getStudyId(), account.getId());
-            enrollmentService.addEnrollment(account, newEnrollment);
+            enrollmentService.addEnrollment(account, newEnrollment, true);
         }
         accountService.updateAccount(account);
 
