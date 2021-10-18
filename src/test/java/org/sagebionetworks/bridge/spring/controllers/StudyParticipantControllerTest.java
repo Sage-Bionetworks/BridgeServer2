@@ -12,6 +12,7 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -31,6 +32,7 @@ import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.EVENT_DELETED_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.INSTALL_LINK_SEND_MSG;
 import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.NOTIFY_SUCCESS_MSG;
+import static org.sagebionetworks.bridge.spring.controllers.StudyParticipantController.PREPARING_ROSTER_MSG;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -64,6 +66,7 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -72,6 +75,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -160,6 +164,9 @@ public class StudyParticipantControllerTest extends Mockito {
     @Captor
     ArgumentCaptor<RequestInfo> requestInfoCaptor;
     
+    @Captor
+    ArgumentCaptor<ParticipantRosterRequest> requestCaptor;
+    
     @InjectMocks
     @Spy
     StudyParticipantController controller;
@@ -219,6 +226,67 @@ public class StudyParticipantControllerTest extends Mockito {
         assertGet(StudyParticipantController.class, "getActivityEventHistory");
         assertPost(StudyParticipantController.class, "publishActivityEvent");
         assertDelete(StudyParticipantController.class, "deleteActivityEvent");
+    }
+    
+    @Test
+    public void getParticipantRoster() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withEmail(EMAIL).withEmailVerified(true).build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR);
+        
+        mockRequestBody(mockRequest, 
+                createJson("{'studyId':'"+TEST_STUDY_ID+"', 'password': '"+PASSWORD+"'}"));
+        
+        StatusMessage retValue = controller.getParticipantRoster(TEST_STUDY_ID);
+        assertEquals(retValue, PREPARING_ROSTER_MSG);
+        
+        verify(mockParticipantService).getParticipantRoster(
+                eq(TEST_APP_ID), eq(TEST_USER_ID), requestCaptor.capture());
+        assertEquals(requestCaptor.getValue().getStudyId(), TEST_STUDY_ID);
+        assertEquals(requestCaptor.getValue().getPassword(), PASSWORD);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getParticipantRoster_notAssociatedToStudy() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withEmail(EMAIL).withEmailVerified(true).build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR);
+        
+        mockRequestBody(mockRequest, 
+                createJson("{'studyId':'"+TEST_STUDY_ID+"', 'password': '"+PASSWORD+"'}"));
+        
+        controller.getParticipantRoster(TEST_STUDY_ID);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getParticipantRoster_unverifiedEmail() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withEmail(EMAIL).build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR);
+        
+        controller.getParticipantRoster(TEST_STUDY_ID);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getParticipantRoster_noEmail() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).build());
+        
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR);
+        
+        controller.getParticipantRoster(TEST_STUDY_ID);
     }
     
     @Test

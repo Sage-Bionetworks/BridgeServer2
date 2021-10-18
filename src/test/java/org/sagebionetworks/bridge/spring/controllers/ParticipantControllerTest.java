@@ -307,6 +307,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(ParticipantController.class);
+        assertPost(ParticipantController.class, "getParticipantRoster");
         assertCreate(ParticipantController.class, "createSmsRegistration");
         assertGet(ParticipantController.class, "getSelfParticipant");
         assertPost(ParticipantController.class, "updateSelfParticipant");
@@ -1644,25 +1645,10 @@ public class ParticipantControllerTest extends Mockito {
         controller.getParticipantRoster();
     }
 
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = ".*Caller is a study coordinator without an org membership.*")
-    public void getParticipantRosterStudyCoordinatorWithoutOrg() throws JsonProcessingException {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(STUDY_COORDINATOR))
-                .withEmail("example@example.org").withEmailVerified(true).build();
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getParticipantRosterOnlyWorksForResearcher() throws JsonProcessingException {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build();
         session.setParticipant(participant);
-
-        controller.getParticipantRoster();
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = ".*Requested studyId is not sponsored by the caller's org.*")
-    public void getParticipantRosterStudyIdNotSponsored() throws Exception {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER, STUDY_COORDINATOR))
-                .withEmail("example@example.org").withEmailVerified(true).withOrgMembership("testOrg123").build();
-        session.setParticipant(participant);
-
-        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withStudyId("testStudy").build();
-        mockRequestBody(mockRequest, request);
 
         controller.getParticipantRoster();
     }

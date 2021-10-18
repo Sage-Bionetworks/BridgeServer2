@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
@@ -37,11 +38,14 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -90,6 +94,7 @@ public class StudyParticipantController extends BaseController {
     static final StatusMessage NOTIFY_SUCCESS_MSG = new StatusMessage("Message has been sent to external notification service.");
     static final StatusMessage EVENT_RECORDED_MSG = new StatusMessage("Event recorded.");
     static final StatusMessage EVENT_DELETED_MSG = new StatusMessage("Event deleted.");
+    static final StatusMessage PREPARING_ROSTER_MSG = new StatusMessage("Preparing participant roster.");
     public static final StatusMessage INSTALL_LINK_SEND_MSG = new StatusMessage("Install instructions sent to participant.");
 
     private ParticipantService participantService;
@@ -184,6 +189,24 @@ public class StudyParticipantController extends BaseController {
     
     private boolean isUpToDate(DateTime modifiedSince, DateTime modifiedOn) {
         return modifiedSince != null && modifiedOn != null && modifiedSince.isAfter(modifiedOn);
+    }
+    
+    @PostMapping("/v5/studies/{studyid}/participants/emailRoster")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public StatusMessage getParticipantRoster(@PathVariable String studyId) throws JsonProcessingException {
+        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR);
+
+        if (!RequestContext.get().getOrgSponsoredStudies().contains(studyId)) {
+            throw new UnauthorizedException();   
+        }
+        StudyParticipant participant = session.getParticipant();
+        if (participant.getEmail() == null || !TRUE.equals(participant.getEmailVerified())) {
+            throw new BadRequestException("A valid email address is required to send the requested participant roster.");
+        }
+        ParticipantRosterRequest request = parseJson(ParticipantRosterRequest.class);
+        participantService.getParticipantRoster(session.getAppId(), session.getId(), request);
+
+        return PREPARING_ROSTER_MSG;
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/timeline")
