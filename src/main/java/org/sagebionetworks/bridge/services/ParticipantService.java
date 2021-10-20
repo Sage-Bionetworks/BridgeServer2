@@ -959,7 +959,7 @@ public class ParticipantService {
         return getParticipant(app, account.getId(), false);
     }
 
-    public void getParticipantRoster(App app, String userId, ParticipantRosterRequest request) throws JsonProcessingException {
+    public void requestParticipantRoster(App app, String userId, ParticipantRosterRequest request) throws JsonProcessingException {
         Validate.entityThrowingException(ParticipantRosterRequestValidator.INSTANCE, request);
 
         StudyParticipant participant = getParticipant(app, userId, false);

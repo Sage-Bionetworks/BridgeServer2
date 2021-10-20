@@ -642,13 +642,13 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/emailRoster")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public StatusMessage getParticipantRoster() throws JsonProcessingException {
+    public StatusMessage requestParticipantRoster() throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(RESEARCHER);
         
         App app = appService.getApp(session.getAppId());
 
         ParticipantRosterRequest request = parseJson(ParticipantRosterRequest.class);
-        participantService.getParticipantRoster(app, session.getId(), request);
+        participantService.requestParticipantRoster(app, session.getId(), request);
 
         return new StatusMessage("Download initiated.");
     }

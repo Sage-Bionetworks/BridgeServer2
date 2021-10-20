@@ -190,7 +190,7 @@ public class StudyParticipantController extends BaseController {
     
     @PostMapping("/v5/studies/{studyid}/participants/emailRoster")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public StatusMessage getParticipantRoster(@PathVariable String studyId) throws JsonProcessingException {
+    public StatusMessage requestParticipantRoster(@PathVariable String studyId) throws JsonProcessingException {
         UserSession session = getAdministrativeSession();
 
         CAN_EXPORT_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
@@ -202,7 +202,7 @@ public class StudyParticipantController extends BaseController {
                 .withStudyId(studyId)
                 .withPassword(request.getPassword()).build();
 
-        participantService.getParticipantRoster(app, session.getId(), finalRequest);
+        participantService.requestParticipantRoster(app, session.getId(), finalRequest);
 
         return PREPARING_ROSTER_MSG;
     }

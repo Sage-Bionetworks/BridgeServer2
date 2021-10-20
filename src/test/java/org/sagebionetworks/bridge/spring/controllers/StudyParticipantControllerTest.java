@@ -210,7 +210,7 @@ public class StudyParticipantControllerTest extends Mockito {
         assertPost(StudyParticipantController.class, "searchForAccountSummaries");
         assertCreate(StudyParticipantController.class, "createParticipant");
         assertGet(StudyParticipantController.class, "getParticipant");
-        assertPost(StudyParticipantController.class, "getParticipantRoster");
+        assertPost(StudyParticipantController.class, "requestParticipantRoster");
         assertGet(StudyParticipantController.class, "getRequestInfo");
         assertPost(StudyParticipantController.class, "updateParticipant");
         assertPost(StudyParticipantController.class, "signOut");
@@ -229,7 +229,7 @@ public class StudyParticipantControllerTest extends Mockito {
     }
     
     @Test
-    public void getParticipantRoster() throws Exception {
+    public void requestParticipantRoster() throws Exception {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
@@ -242,17 +242,17 @@ public class StudyParticipantControllerTest extends Mockito {
         mockRequestBody(mockRequest, 
                 createJson("{'studyId':'the-wrong-study', 'password': '"+PASSWORD+"'}"));
         
-        StatusMessage retValue = controller.getParticipantRoster(TEST_STUDY_ID);
+        StatusMessage retValue = controller.requestParticipantRoster(TEST_STUDY_ID);
         assertEquals(retValue, PREPARING_ROSTER_MSG);
         
-        verify(mockParticipantService).getParticipantRoster(
+        verify(mockParticipantService).requestParticipantRoster(
                 eq(app), eq(TEST_USER_ID), requestCaptor.capture());
         assertEquals(requestCaptor.getValue().getStudyId(), TEST_STUDY_ID);
         assertEquals(requestCaptor.getValue().getPassword(), PASSWORD);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void getParticipantRoster_notAssociatedToStudy() throws Exception {
+    public void requestParticipantRoster_notAssociatedToStudy() throws Exception {
         session.setParticipant(new StudyParticipant.Builder()
                 .withId(TEST_USER_ID).withEmail(EMAIL).withEmailVerified(true).build());
         
@@ -261,7 +261,7 @@ public class StudyParticipantControllerTest extends Mockito {
         mockRequestBody(mockRequest, 
                 createJson("{'studyId':'"+TEST_STUDY_ID+"', 'password': '"+PASSWORD+"'}"));
         
-        controller.getParticipantRoster(TEST_STUDY_ID);
+        controller.requestParticipantRoster(TEST_STUDY_ID);
     }
     
     @Test
