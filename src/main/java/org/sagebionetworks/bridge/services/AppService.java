@@ -532,7 +532,6 @@ public class AppService {
             app.setExporter3Configuration(originalApp.getExporter3Configuration());
             app.setHealthCodeExportEnabled(originalApp.isHealthCodeExportEnabled());
             app.setEmailVerificationEnabled(originalApp.isEmailVerificationEnabled());
-            app.setExternalIdRequiredOnSignup(originalApp.isExternalIdRequiredOnSignup());
             app.setEmailSignInEnabled(originalApp.isEmailSignInEnabled());
             app.setPhoneSignInEnabled(originalApp.isPhoneSignInEnabled());
             app.setReauthenticationEnabled(originalApp.isReauthenticationEnabled());

@@ -638,7 +638,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
 
     @Test
-    public void addEnrollment_updatesRequestContext() {
+    public void addEnrollment() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("123")
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
@@ -649,7 +649,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         en.setExternalId("externalId");
-        service.addEnrollment(account, en, true);
+        service.addEnrollment(account, en);
         
         assertEquals(account.getEnrollments().size(), 1);
         Enrollment updated = Iterables.getFirst(account.getEnrollments(), null);
@@ -659,19 +659,6 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(updated.getEnrolledOn(), CREATED_ON);
         assertEquals(updated.getStudyId(), TEST_STUDY_ID);
         assertEquals(updated.getExternalId(), "externalId");
-        
-        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of(TEST_STUDY_ID));
-    }
-    
-    @Test
-    public void addEnrollment_doesNotUpdateRequestContext() { 
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-
-        service.addEnrollment(account, en, false);
-        
-        assertTrue(RequestContext.get().getCallerEnrolledStudies().isEmpty());
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -680,7 +667,7 @@ public class EnrollmentServiceTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
             .thenThrow(new EntityNotFoundException(Study.class));
         
-        service.addEnrollment(Account.create(), Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID), false);
+        service.addEnrollment(Account.create(), Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID));
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class,

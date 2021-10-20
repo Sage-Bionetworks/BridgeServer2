@@ -56,9 +56,10 @@ public class SponsorController extends BaseController {
     }
 
     @GetMapping("/v1/apps/{appId}/organizations/{orgId}/studies")
-    public PagedResourceList<Study> getSponsoredStudiesForApp(@PathVariable String appId, @PathVariable String orgId,
-                                                                 @RequestParam(required = false) String offsetBy,
-                                                                 @RequestParam(required = false) String pageSize) {
+    public PagedResourceList<Study> getSponsoredStudiesForApp(@PathVariable String appId, 
+            @PathVariable String orgId,
+            @RequestParam(required = false) String offsetBy,
+            @RequestParam(required = false) String pageSize) {
         getAuthenticatedSession(WORKER);
 
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);

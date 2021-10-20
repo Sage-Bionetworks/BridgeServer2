@@ -334,6 +334,7 @@ public class TestUtils {
             Validate.entityThrowingException(validator, object);
             fail("Should have thrown exception");
         } catch(InvalidEntityException e) {
+            System.out.println(e.getErrors());
             if (e.getErrors().get(fieldName).contains(error)) {
                 return;
             }
@@ -558,7 +559,6 @@ public class TestUtils {
         app.setEmailSignInEnabled(true);
         app.setPhoneSignInEnabled(true);
         app.setVerifyChannelOnSignInEnabled(true);
-        app.setExternalIdRequiredOnSignup(true);
         app.setActive(true);
         app.setDisableExport(false);
         app.setAccountLimit(0);

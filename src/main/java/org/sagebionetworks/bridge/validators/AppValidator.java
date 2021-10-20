@@ -175,14 +175,6 @@ public class AppValidator implements Validator {
         }
         validateDataGroupNamesAndFitForSynapseExport(errors, app.getDataGroups());
 
-        // emailVerificationEnabled=true (public app):
-        //     externalIdValidationEnabled and externalIdRequiredOnSignup can vary independently
-        // emailVerificationEnabled=false:
-        //     externalIdValidationEnabled and externalIdRequiredOnSignup must both be true
-        if (!app.isEmailVerificationEnabled() && !app.isExternalIdRequiredOnSignup()) {
-            errors.rejectValue("externalIdRequiredOnSignup", "cannot be disabled if email verification has been disabled");
-        }
-
         // Links in installedLinks are length-constrained by SMS.
         if (!app.getInstallLinks().isEmpty()) {
             for (Map.Entry<String,String> entry : app.getInstallLinks().entrySet()) {

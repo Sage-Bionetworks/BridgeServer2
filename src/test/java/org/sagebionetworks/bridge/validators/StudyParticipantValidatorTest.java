@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -72,13 +73,14 @@ public class StudyParticipantValidatorTest {
     
     @AfterMethod
     public void afterMethod() {
-        RequestContext.set(RequestContext.NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
     }
     
     @Test
     public void validatesNew() throws Exception {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId("id").build());
+
         validator = makeValidator(true);
-        app.setExternalIdRequiredOnSignup(true);
         
         Map<String,String> attrs = Maps.newHashMap();
         attrs.put("badValue", "value");
@@ -89,7 +91,6 @@ public class StudyParticipantValidatorTest {
                 .withPassword("bad")
                 .build();
         assertValidatorMessage(validator, participant, "StudyParticipant", "email, phone, synapseUserId or externalId is required");
-        assertValidatorMessage(validator, participant, "externalId", "is required");
         assertValidatorMessage(validator, participant, "dataGroups", "'badGroup' is not defined for app (use group1, group2, bluebell)");
         assertValidatorMessage(validator, participant, "attributes", "'badValue' is not defined for app (use attr1, attr2, phone)");
         assertValidatorMessage(validator, participant, "password", "must be at least 8 characters");
@@ -139,6 +140,8 @@ public class StudyParticipantValidatorTest {
     
     @Test
     public void validPasses() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId("id").build());
+
         validator = makeValidator(true);
         Validate.entityThrowingException(validator, withEmail("email@email.com"));
         Validate.entityThrowingException(validator, withDataGroup("bluebell"));
@@ -188,7 +191,8 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
-    public void externalIdsOK() {
+    public void externalIdsOKForNonAnonymousCaller() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId("id").build());
         when(studyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(Study.create());
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withExternalIds(ImmutableMap.of(TEST_STUDY_ID, "external-id")).build();
@@ -198,7 +202,18 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
+    public void externalIdsDisallowedForAnonymousCaller() {
+        when(studyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, false)).thenReturn(Study.create());
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withExternalIds(ImmutableMap.of(TEST_STUDY_ID, "external-id")).build();
+        
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, participant, "StudyParticipant", "email or phone number is required");
+    }
+    
+    @Test
     public void synapseUserIdOnlyOK() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId("id").build());
         StudyParticipant participant = new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID).build();
 
         validator = makeValidator(true);
@@ -313,24 +328,6 @@ public class StudyParticipantValidatorTest {
     @Test
     public void createWithoutExternalIdManagedOk() {
         StudyParticipant participant = withEmail("email@email.com");
-        
-        validator = makeValidator(true);
-        Validate.entityThrowingException(validator, participant);
-    }
-    @Test
-    public void createWithoutExternalIdManagedInvalid() {
-        app.setExternalIdRequiredOnSignup(true);
-        StudyParticipant participant = withEmail("email@email.com");
-        
-        validator = makeValidator(true);
-        assertValidatorMessage(validator, participant, "externalId", "is required");
-    }
-    @Test
-    public void createWithoutExternalIdManagedButHasRolesOK() {
-        app.setExternalIdRequiredOnSignup(true);
-        
-        StudyParticipant participant = new StudyParticipant.Builder().withEmail("email@email.com")
-                .withRoles(Sets.newHashSet(Roles.DEVELOPER)).build();
         
         validator = makeValidator(true);
         Validate.entityThrowingException(validator, participant);

@@ -937,7 +937,6 @@ public class AppServiceTest extends Mockito {
         App app = getTestApp();
         app.setSynapseProjectId(null);
         app.setSynapseDataAccessTeamId(null);
-        app.setExternalIdRequiredOnSignup(false);
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
@@ -1010,7 +1009,6 @@ public class AppServiceTest extends Mockito {
     @Test
     public void createAppAndUsersDefaultsPasswordPolicy() throws SynapseException {
         app.setPasswordPolicy(null);
-        app.setExternalIdRequiredOnSignup(false);
         app.setSynapseDataAccessTeamId(null);
         app.setSynapseProjectId(null);
         List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL)
@@ -1057,7 +1055,6 @@ public class AppServiceTest extends Mockito {
     }
     
     private void createAppAndUserInWrongRole(Set<Roles> roles) throws SynapseException {
-        app.setExternalIdRequiredOnSignup(false);
         app.setSynapseDataAccessTeamId(null);
         app.setSynapseProjectId(null);
         List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder()
@@ -1071,7 +1068,6 @@ public class AppServiceTest extends Mockito {
     @Test(expectedExceptions = InvalidEntityException.class, 
             expectedExceptionsMessageRegExp = ".*users\\[0\\].roles should have at least one role.*")
     public void createAppAndUsersUserHasNoRole() throws SynapseException {
-        app.setExternalIdRequiredOnSignup(false);
         app.setSynapseDataAccessTeamId(null);
         app.setSynapseProjectId(null);
         List<StudyParticipant> participants = ImmutableList.of(new StudyParticipant.Builder().withEmail(TEST_USER_EMAIL)
@@ -1233,7 +1229,6 @@ public class AppServiceTest extends Mockito {
         // mock
         App app = getTestApp();
         app.setSynapseDataAccessTeamId(null);
-        app.setExternalIdRequiredOnSignup(false);
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
@@ -1336,7 +1331,6 @@ public class AppServiceTest extends Mockito {
         // mock
         App app = getTestApp();
         app.setSynapseProjectId(null);
-        app.setExternalIdRequiredOnSignup(false);
         app.setPasswordPolicy(PasswordPolicy.DEFAULT_PASSWORD_POLICY);
 
         StudyParticipant mockUser1 = new StudyParticipant.Builder()
@@ -1358,7 +1352,6 @@ public class AppServiceTest extends Mockito {
     public void createSynapseProjectTeamNullAppName() throws Exception {
         // mock
         App app = getTestApp();
-        app.setExternalIdRequiredOnSignup(false);
         app.setSynapseProjectId(null);
         app.setSynapseDataAccessTeamId(null);
         app.setName(null); // This is not a good name...
@@ -1370,7 +1363,6 @@ public class AppServiceTest extends Mockito {
     public void createSynapseProjectTeamBadAppName() throws Exception {
         // mock
         App app = getTestApp();
-        app.setExternalIdRequiredOnSignup(false);
         app.setSynapseProjectId(null);
         app.setSynapseDataAccessTeamId(null);
         app.setName("# # "); // This is not a good name...
@@ -1756,7 +1748,6 @@ public class AppServiceTest extends Mockito {
         app = TestUtils.getValidApp(AppServiceTest.class);
         app.setAppIdExcludedInExport(true);
         app.setEmailVerificationEnabled(true);
-        app.setExternalIdRequiredOnSignup(false);
         app.setEmailSignInEnabled(false);
         app.setPhoneSignInEnabled(false);
         app.setReauthenticationEnabled(false);
@@ -1764,7 +1755,6 @@ public class AppServiceTest extends Mockito {
         app.setVerifyChannelOnSignInEnabled(false);
 
         App existing = TestUtils.getValidApp(AppServiceTest.class);
-        existing.setExternalIdRequiredOnSignup(false);
         existing.setEmailSignInEnabled(false);
         existing.setPhoneSignInEnabled(false);
         existing.setReauthenticationEnabled(false);
@@ -1793,7 +1783,6 @@ public class AppServiceTest extends Mockito {
         assertNull(app.getExporter3Configuration());
         assertFalse(app.isVerifyChannelOnSignInEnabled());
         assertTrue(app.isAutoVerificationPhoneSuppressed());
-        assertTrue(app.isExternalIdRequiredOnSignup());
         assertTrue(app.isEmailSignInEnabled());
         assertTrue(app.isPhoneSignInEnabled());
         assertTrue(app.isReauthenticationEnabled());
@@ -1804,7 +1793,6 @@ public class AppServiceTest extends Mockito {
         assertTrue(app.isAppIdExcludedInExport());
         assertTrue(app.isEmailVerificationEnabled());
         assertTrue(app.isVerifyChannelOnSignInEnabled());
-        assertFalse(app.isExternalIdRequiredOnSignup());
         assertFalse(app.isEmailSignInEnabled());
         assertFalse(app.isPhoneSignInEnabled());
         assertFalse(app.isReauthenticationEnabled());
@@ -1815,7 +1803,6 @@ public class AppServiceTest extends Mockito {
         app.setAppIdExcludedInExport(false);
         app.setEmailVerificationEnabled(false);
         app.setVerifyChannelOnSignInEnabled(false);
-        app.setExternalIdRequiredOnSignup(true);
         app.setEmailSignInEnabled(true);
         app.setPhoneSignInEnabled(true);
         app.setReauthenticationEnabled(true);

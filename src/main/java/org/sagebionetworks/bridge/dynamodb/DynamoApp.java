@@ -96,10 +96,8 @@ public final class DynamoApp implements App {
     private boolean strictUploadValidationEnabled;
     private boolean healthCodeExportEnabled;
     private boolean emailVerificationEnabled;
-    private boolean externalIdValidationEnabled;
     private boolean emailSignInEnabled;
     private boolean phoneSignInEnabled;
-    private boolean externalIdRequiredOnSignup;
     private Boolean reauthenticationEnabled;
     private boolean autoVerificationPhoneSuppressed;
     private boolean verifyChannelOnSignInEnabled;
@@ -596,16 +594,6 @@ public final class DynamoApp implements App {
     }
 
     @Override
-    public boolean isExternalIdRequiredOnSignup() {
-        return externalIdRequiredOnSignup;
-    }
-
-    @Override
-    public void setExternalIdRequiredOnSignup(boolean externalIdRequiredOnSignup) {
-        this.externalIdRequiredOnSignup = externalIdRequiredOnSignup;
-    }
-    
-    @Override
     public int getAccountLimit() {
         return accountLimit;
     }
@@ -672,14 +660,14 @@ public final class DynamoApp implements App {
     @Override
     public int hashCode() {
         return Objects.hash(name, shortName, sponsorName, identifier, automaticCustomEvents,
-                autoVerificationEmailSuppressed, exporter3Configuration, exporter3Enabled, participantIpLockingEnabled, appIdExcludedInExport,
-                supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, usesCustomExportSchedule,
-                uploadMetadataFieldDefinitions, uploadValidationStrictness, consentNotificationEmail,
-                consentNotificationEmailVerified, minAgeOfConsent, accountLimit, version, active, profileAttributes,
-                taskIdentifiers, activityEventKeys, customEvents, dataGroups, passwordPolicy, strictUploadValidationEnabled,
-                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, emailSignInEnabled,
-                phoneSignInEnabled, externalIdRequiredOnSignup, minSupportedAppVersions, pushNotificationARNs,
-                installLinks, disableExport, oauthProviders, appleAppLinks, androidAppLinks, reauthenticationEnabled,
+                autoVerificationEmailSuppressed, exporter3Configuration, exporter3Enabled, participantIpLockingEnabled,
+                appIdExcludedInExport, supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail,
+                usesCustomExportSchedule, uploadMetadataFieldDefinitions, uploadValidationStrictness,
+                consentNotificationEmail, consentNotificationEmailVerified, minAgeOfConsent, accountLimit, version,
+                active, profileAttributes, taskIdentifiers, activityEventKeys, customEvents, dataGroups, passwordPolicy,
+                strictUploadValidationEnabled, healthCodeExportEnabled, emailVerificationEnabled, emailSignInEnabled,
+                phoneSignInEnabled, minSupportedAppVersions, pushNotificationARNs, installLinks, disableExport,
+                oauthProviders, appleAppLinks, androidAppLinks, reauthenticationEnabled,
                 autoVerificationPhoneSuppressed, verifyChannelOnSignInEnabled, defaultTemplates);
     }
 
@@ -721,9 +709,7 @@ public final class DynamoApp implements App {
                 && Objects.equals(usesCustomExportSchedule, other.usesCustomExportSchedule)
                 && Objects.equals(strictUploadValidationEnabled, other.strictUploadValidationEnabled)
                 && Objects.equals(healthCodeExportEnabled, other.healthCodeExportEnabled)
-                && Objects.equals(externalIdValidationEnabled, other.externalIdValidationEnabled)
                 && Objects.equals(emailVerificationEnabled, other.emailVerificationEnabled)
-                && Objects.equals(externalIdRequiredOnSignup, other.externalIdRequiredOnSignup)
                 && Objects.equals(minSupportedAppVersions, other.minSupportedAppVersions)
                 && Objects.equals(pushNotificationARNs, other.pushNotificationARNs)
                 && Objects.equals(installLinks, other.installLinks)
@@ -749,21 +735,20 @@ public final class DynamoApp implements App {
                         + "technicalEmail=%s, uploadValidationStrictness=%s, consentNotificationEmail=%s, "
                         + "consentNotificationEmailVerified=%s, version=%s, userProfileAttributes=%s, taskIdentifiers=%s, "
                         + "activityEventKeys=%s, customEvents=%s, dataGroups=%s, passwordPolicy=%s, strictUploadValidationEnabled=%s, "
-                        + "healthCodeExportEnabled=%s, emailVerificationEnabled=%s, externalIdValidationEnabled=%s, "
-                        + "externalIdRequiredOnSignup=%s, minSupportedAppVersions=%s, usesCustomExportSchedule=%s, "
+                        + "healthCodeExportEnabled=%s, emailVerificationEnabled=%s, minSupportedAppVersions=%s, usesCustomExportSchedule=%s, "
                         + "pushNotificationARNs=%s, installLinks=%s, disableExport=%s, emailSignInEnabled=%s, "
                         + "phoneSignInEnabled=%s, accountLimit=%s, oauthProviders=%s, appleAppLinks=%s, androidAppLinks=%s, "
                         + "reauthenticationEnabled=%s, autoVerificationPhoneSuppressed=%s, verifyChannelOnSignInEnabled=%s, "
                         + "defaultTemplates=%s]",
                 name, shortName, active, sponsorName, identifier, automaticCustomEvents,
-                autoVerificationEmailSuppressed, minAgeOfConsent, exporter3Configuration, exporter3Enabled, participantIpLockingEnabled, appIdExcludedInExport,
-                supportEmail, synapseDataAccessTeamId, synapseProjectId, technicalEmail, uploadValidationStrictness,
-                consentNotificationEmail, consentNotificationEmailVerified, version, profileAttributes, taskIdentifiers,
-                activityEventKeys, customEvents, dataGroups, passwordPolicy, strictUploadValidationEnabled, 
-                healthCodeExportEnabled, emailVerificationEnabled, externalIdValidationEnabled, externalIdRequiredOnSignup,
-                minSupportedAppVersions, usesCustomExportSchedule, pushNotificationARNs, installLinks, disableExport,
-                emailSignInEnabled, phoneSignInEnabled, accountLimit, oauthProviders, appleAppLinks, androidAppLinks,
-                reauthenticationEnabled, autoVerificationPhoneSuppressed, verifyChannelOnSignInEnabled,
-                defaultTemplates);
+                autoVerificationEmailSuppressed, minAgeOfConsent, exporter3Configuration, exporter3Enabled,
+                participantIpLockingEnabled, appIdExcludedInExport, supportEmail, synapseDataAccessTeamId,
+                synapseProjectId, technicalEmail, uploadValidationStrictness, consentNotificationEmail,
+                consentNotificationEmailVerified, version, profileAttributes, taskIdentifiers, activityEventKeys,
+                customEvents, dataGroups, passwordPolicy, strictUploadValidationEnabled, healthCodeExportEnabled,
+                emailVerificationEnabled, minSupportedAppVersions, usesCustomExportSchedule, pushNotificationARNs,
+                installLinks, disableExport, emailSignInEnabled, phoneSignInEnabled, accountLimit, oauthProviders,
+                appleAppLinks, androidAppLinks, reauthenticationEnabled, autoVerificationPhoneSuppressed,
+                verifyChannelOnSignInEnabled, defaultTemplates);
     }
 }

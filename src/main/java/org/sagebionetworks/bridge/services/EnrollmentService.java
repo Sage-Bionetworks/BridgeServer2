@@ -9,7 +9,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -40,7 +39,6 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
-import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
@@ -145,7 +143,7 @@ public class EnrollmentService {
         final EnrollmentHolder holder = new EnrollmentHolder();
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
         accountService.editAccount(accountId, (acct) -> {
-            holder.enrollment = addEnrollment(acct, enrollment, false);
+            holder.enrollment = addEnrollment(acct, enrollment);
         });
         return holder.enrollment;
     }
@@ -163,7 +161,7 @@ public class EnrollmentService {
      * @return - the enrollment object instance used to enroll the user (usually the enrollment passed to 
      *      this method with modifications).
      */
-    public Enrollment addEnrollment(Account account, Enrollment newEnrollment, boolean updateRequestContext) {
+    public Enrollment addEnrollment(Account account, Enrollment newEnrollment) {
         checkNotNull(account);
         checkNotNull(newEnrollment);
         
@@ -173,11 +171,6 @@ public class EnrollmentService {
         
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, newEnrollment.getStudyId(), USER_ID, account.getId());
         
-        if (updateRequestContext) {
-            RequestContext context = RequestContext.get();
-            RequestContext.set(context.toBuilder().withCallerEnrolledStudies(
-                    addToSet(context.getCallerEnrolledStudies(), newEnrollment.getStudyId())).build());            
-        }
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             if (existingEnrollment.getStudyId().equals(newEnrollment.getStudyId())) {
                 updateEnrollment(account, newEnrollment, existingEnrollment);

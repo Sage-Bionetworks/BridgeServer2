@@ -360,20 +360,6 @@ public class AppValidatorTest {
     }
 
     @Test
-    public void publicAppWithoutExternalIdOnSignUpIsValid() {
-        app.setExternalIdRequiredOnSignup(false);
-        Validate.entityThrowingException(INSTANCE, app);
-    }
-
-    @Test
-    public void nonPublicAppsMustRequireExternalIdOnSignUp() {
-        app.setEmailVerificationEnabled(false);
-        app.setExternalIdRequiredOnSignup(false);
-        assertValidatorMessage(INSTANCE, app, "externalIdRequiredOnSignup",
-                "cannot be disabled if email verification has been disabled");
-    } 
-
-    @Test
     public void oauthProviderRequiresClientId() {
         OAuthProvider provider = new OAuthProvider(null, "secret", "endpoint", CALLBACK_URL,
                 null);

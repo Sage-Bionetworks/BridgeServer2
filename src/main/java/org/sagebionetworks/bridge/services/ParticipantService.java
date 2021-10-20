@@ -622,17 +622,18 @@ public class ParticipantService {
         account.setMigrationVersion(MIGRATION_VERSION);
         account.setClientTimeZone(participant.getClientTimeZone());
        
-        RequestContext requestContext = RequestContext.get();
+        RequestContext context = RequestContext.get();
         
-        // New accounts can simultaneously enroll themselves in a study using an external ID.
+        // New accounts can be enrolled in a study using an external ID, but only through code paths that are
+        // authenticated (that is, userId is not null in the context and we've checked permissions elsewhere).
         // Legacy apps do this so we must continue to support it.
-        if (isNew) {
+        if (isNew && context.getCallerUserId() != null) {
             for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
                 String studyId = entry.getKey();
                 String externalId = entry.getValue();
                 
                 Enrollment enrollment = Enrollment.create(account.getAppId(), studyId, account.getId(), externalId);
-                enrollmentService.addEnrollment(account, enrollment, requestContext.getCallerUserId() == null);
+                enrollmentService.addEnrollment(account, enrollment);
             }
         }
         
@@ -641,8 +642,8 @@ public class ParticipantService {
             String value = participant.getAttributes().get(attribute);
             account.getAttributes().put(attribute, value);
         }
-        if (requestContext.isAdministrator()) {
-            updateRoles(requestContext, participant, account);
+        if (context.isAdministrator()) {
+            updateRoles(context, participant, account);
         }
     }
     

@@ -21,6 +21,7 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -58,8 +59,12 @@ public class StudyParticipantValidator implements Validator {
             if (!ValidatorUtils.participantHasValidIdentifier(participant)) {
                 errors.reject("email, phone, synapseUserId or externalId is required");
             }
-            // If provided, phone must be valid
             Phone phone = participant.getPhone();
+            String email = participant.getEmail();
+            // if the call is anonymous, then external ID is not sufficient, and we could validate for that.
+            if (RequestContext.get().getCallerUserId() == null && phone == null && email == null) {
+                errors.reject("email or phone number is required");   
+            }
             if (phone != null && !Phone.isValid(phone)) {
                 errors.rejectValue("phone", INVALID_PHONE_ERROR);
             }
@@ -67,13 +72,8 @@ public class StudyParticipantValidator implements Validator {
             // fail because the word "test" appears in the user name, for reasons I could not 
             // deduce from their code. So we have switched to using OWASP regular expression to 
             // match valid email addresses.
-            String email = participant.getEmail();
             if (email != null && !email.matches(OWASP_REGEXP_VALID_EMAIL)) {
                 errors.rejectValue("email", INVALID_EMAIL_ERROR);
-            }
-            // External ID is required for non-administrative accounts when it is required on sign-up.
-            if (participant.getRoles().isEmpty() && app.isExternalIdRequiredOnSignup() && participant.getExternalIds().isEmpty()) {
-                errors.rejectValue("externalId", "is required");
             }
             // Password is optional, but validation is applied if supplied, any time it is 
             // supplied (such as in the password reset workflow).
@@ -82,7 +82,6 @@ public class StudyParticipantValidator implements Validator {
                 PasswordPolicy passwordPolicy = app.getPasswordPolicy();
                 ValidatorUtils.validatePassword(errors, passwordPolicy, password);
             }
-            
             // After account creation, organizational membership cannot be changed by updating an account
             // Instead, use the OrganizationService
             if (isNotBlank(participant.getOrgMembership())) {
