@@ -1626,25 +1626,6 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(captured.getTimestamp(), TIMESTAMP);
     }
 
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = ".*Cannot request user data.*")
-    public void getParticipantRosterNoEmail() throws JsonProcessingException {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER)).build();
-        session.setParticipant(participant);
-
-        controller.getParticipantRoster();
-    }
-
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = ".*Cannot request user data.*")
-    public void getParticipantRosterEmailNotVerified() throws JsonProcessingException {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER))
-                .withEmail("example@example.org").withEmailVerified(false).build();
-        session.setParticipant(participant);
-
-        controller.getParticipantRoster();
-    }
-
     @Test(expectedExceptions = UnauthorizedException.class)
     public void getParticipantRosterOnlyWorksForResearcher() throws JsonProcessingException {
         participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build();
@@ -1664,7 +1645,7 @@ public class ParticipantControllerTest extends Mockito {
 
         controller.getParticipantRoster();
 
-        verify(mockParticipantService).getParticipantRoster(eq(TEST_APP_ID), eq(TEST_USER_ID), participantRosterCaptor.capture());
+        verify(mockParticipantService).getParticipantRoster(eq(app), eq(TEST_USER_ID), participantRosterCaptor.capture());
         ParticipantRosterRequest participantRosterRequest = participantRosterCaptor.getValue();
         assertEquals(participantRosterRequest.getPassword(), "password");
     }

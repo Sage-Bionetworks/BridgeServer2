@@ -645,15 +645,11 @@ public class ParticipantController extends BaseController {
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage getParticipantRoster() throws JsonProcessingException {
         UserSession session = getAuthenticatedSession(RESEARCHER);
-        String appId = session.getAppId();
-
-        StudyParticipant participant = session.getParticipant();
-        if (participant.getEmail() == null || !participant.getEmailVerified()) {
-            throw new BadRequestException("Cannot request user data.");
-        }
         
+        App app = appService.getApp(session.getAppId());
+
         ParticipantRosterRequest request = parseJson(ParticipantRosterRequest.class);
-        participantService.getParticipantRoster(appId, session.getId(), request);
+        participantService.getParticipantRoster(app, session.getId(), request);
 
         return new StatusMessage("Download initiated.");
     }

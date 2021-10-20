@@ -2542,25 +2542,29 @@ public class ParticipantServiceTest extends Mockito {
     public void getParticipantRosterNullPassword() throws JsonProcessingException {
         ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(null).build();
 
-        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+        participantService.getParticipantRoster(APP, TEST_USER_ID, request);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void getParticipantRosterBlankPassword() throws JsonProcessingException {
         ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("").build();
 
-        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+        participantService.getParticipantRoster(APP, TEST_USER_ID, request);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
     public void getParticipantRosterInvalidPassword() throws JsonProcessingException {
         ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("badPassword").build();
 
-        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+        participantService.getParticipantRoster(APP, TEST_USER_ID, request);
     }
 
     @Test
     public void getParticipantRoster() throws JsonProcessingException {
+        account.setEmail(EMAIL);
+        account.setEmailVerified(TRUE);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        
         ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
 
         String queueUrl = "https://sqs.us-east-1.amazonaws.com/420786776710/Bridge-WorkerPlatform-Request-local";
@@ -2568,13 +2572,30 @@ public class ParticipantServiceTest extends Mockito {
 
         when(sqsClient.sendMessage(eq(queueUrl), anyString())).thenReturn(mock(SendMessageResult.class));
 
-        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+        participantService.getParticipantRoster(APP, TEST_USER_ID, request);
 
         String requestJson = "{\"service\":\"DownloadParticipantRosterWorker\",\"body\":{\"appId\":\"test-app\"," +
                 "\"userId\":\"userId\",\"password\":\"P@ssword1\",\"studyId\":\"studyId\"}}";
         verify(sqsClient).sendMessage(queueUrl, requestJson);
     }
 
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getParticipantRoster_emailNotVerified() throws JsonProcessingException {
+        account.setEmail(EMAIL);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
+
+        participantService.getParticipantRoster(APP, TEST_USER_ID, request);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getParticipantRoster_noEmail() throws JsonProcessingException {
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
+
+        participantService.getParticipantRoster(APP, TEST_USER_ID, request);
+    }
+    
     @Test
     public void updateParticipantNoteSuccessfulAsAdmin() {
         // RESEARCHER role set in Before method

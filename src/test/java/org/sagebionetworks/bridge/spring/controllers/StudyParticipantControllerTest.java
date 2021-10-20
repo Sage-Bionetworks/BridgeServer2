@@ -66,7 +66,6 @@ import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheProvider;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
@@ -211,6 +210,7 @@ public class StudyParticipantControllerTest extends Mockito {
         assertPost(StudyParticipantController.class, "searchForAccountSummaries");
         assertCreate(StudyParticipantController.class, "createParticipant");
         assertGet(StudyParticipantController.class, "getParticipant");
+        assertPost(StudyParticipantController.class, "getParticipantRoster");
         assertGet(StudyParticipantController.class, "getRequestInfo");
         assertPost(StudyParticipantController.class, "updateParticipant");
         assertPost(StudyParticipantController.class, "signOut");
@@ -231,21 +231,22 @@ public class StudyParticipantControllerTest extends Mockito {
     @Test
     public void getParticipantRoster() throws Exception {
         RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
         
         session.setParticipant(new StudyParticipant.Builder()
                 .withId(TEST_USER_ID).withEmail(EMAIL).withEmailVerified(true).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR);
+        doReturn(session).when(controller).getAdministrativeSession();
         
         mockRequestBody(mockRequest, 
-                createJson("{'studyId':'"+TEST_STUDY_ID+"', 'password': '"+PASSWORD+"'}"));
+                createJson("{'studyId':'the-wrong-study', 'password': '"+PASSWORD+"'}"));
         
         StatusMessage retValue = controller.getParticipantRoster(TEST_STUDY_ID);
         assertEquals(retValue, PREPARING_ROSTER_MSG);
         
         verify(mockParticipantService).getParticipantRoster(
-                eq(TEST_APP_ID), eq(TEST_USER_ID), requestCaptor.capture());
+                eq(app), eq(TEST_USER_ID), requestCaptor.capture());
         assertEquals(requestCaptor.getValue().getStudyId(), TEST_STUDY_ID);
         assertEquals(requestCaptor.getValue().getPassword(), PASSWORD);
     }
@@ -259,32 +260,6 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockRequestBody(mockRequest, 
                 createJson("{'studyId':'"+TEST_STUDY_ID+"', 'password': '"+PASSWORD+"'}"));
-        
-        controller.getParticipantRoster(TEST_STUDY_ID);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class)
-    public void getParticipantRoster_unverifiedEmail() throws Exception {
-        RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
-        
-        session.setParticipant(new StudyParticipant.Builder()
-                .withId(TEST_USER_ID).withEmail(EMAIL).build());
-        
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR);
-        
-        controller.getParticipantRoster(TEST_STUDY_ID);
-    }
-    
-    @Test(expectedExceptions = BadRequestException.class)
-    public void getParticipantRoster_noEmail() throws Exception {
-        RequestContext.set(new RequestContext.Builder()
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
-        
-        session.setParticipant(new StudyParticipant.Builder()
-                .withId(TEST_USER_ID).build());
-        
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_COORDINATOR);
         
         controller.getParticipantRoster(TEST_STUDY_ID);
     }

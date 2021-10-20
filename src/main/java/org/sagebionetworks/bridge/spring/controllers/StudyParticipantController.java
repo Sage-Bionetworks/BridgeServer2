@@ -4,11 +4,11 @@ import static java.lang.Boolean.TRUE;
 import static org.apache.http.HttpHeaders.IF_MODIFIED_SINCE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EXPORT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
@@ -36,10 +36,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -194,17 +191,18 @@ public class StudyParticipantController extends BaseController {
     @PostMapping("/v5/studies/{studyid}/participants/emailRoster")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage getParticipantRoster(@PathVariable String studyId) throws JsonProcessingException {
-        UserSession session = getAuthenticatedSession(STUDY_COORDINATOR);
+        UserSession session = getAdministrativeSession();
 
-        if (!RequestContext.get().getOrgSponsoredStudies().contains(studyId)) {
-            throw new UnauthorizedException();   
-        }
-        StudyParticipant participant = session.getParticipant();
-        if (participant.getEmail() == null || !TRUE.equals(participant.getEmailVerified())) {
-            throw new BadRequestException("A valid email address is required to send the requested participant roster.");
-        }
+        CAN_EXPORT_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+
+        App app = appService.getApp(session.getAppId());
+        
         ParticipantRosterRequest request = parseJson(ParticipantRosterRequest.class);
-        participantService.getParticipantRoster(session.getAppId(), session.getId(), request);
+        ParticipantRosterRequest finalRequest = new ParticipantRosterRequest.Builder()
+                .withStudyId(studyId)
+                .withPassword(request.getPassword()).build();
+
+        participantService.getParticipantRoster(app, session.getId(), finalRequest);
 
         return PREPARING_ROSTER_MSG;
     }
