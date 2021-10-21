@@ -960,14 +960,19 @@ public class ParticipantService {
         return getParticipant(app, account.getId(), false);
     }
 
-    public void getParticipantRoster(String appId, String userId, ParticipantRosterRequest request) throws JsonProcessingException {
+    public void requestParticipantRoster(App app, String userId, ParticipantRosterRequest request) throws JsonProcessingException {
         Validate.entityThrowingException(ParticipantRosterRequestValidator.INSTANCE, request);
+
+        StudyParticipant participant = getParticipant(app, userId, false);
+        if (participant.getEmail() == null || !TRUE.equals(participant.getEmailVerified())) {
+            throw new BadRequestException("A valid email address is required to send the requested participant roster.");
+        }
 
         ObjectMapper jsonObjectMapper = BridgeObjectMapper.get();
 
         // wrap message as nested json node
         ObjectNode requestNode = jsonObjectMapper.createObjectNode();
-        requestNode.put(REQUEST_KEY_APP_ID, appId);
+        requestNode.put(REQUEST_KEY_APP_ID, app.getIdentifier());
         requestNode.put(REQUEST_KEY_USER_ID, userId);
         requestNode.put(REQUEST_KEY_PASSWORD, request.getPassword());
         requestNode.put(REQUEST_KEY_STUDY_ID, request.getStudyId());
@@ -981,8 +986,8 @@ public class ParticipantService {
         // sent to SQS
         String queueUrl = bridgeConfig.getProperty(CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL);
         SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJson);
-        LOG.info("Sent request to SQS for userId=" + userId + ", app=" + appId + "; received message ID=" +
-                sqsResult.getMessageId());
+        LOG.info("Sent request to SQS for userId=" + userId + ", app=" + app.getIdentifier() + "; received message ID="
+                + sqsResult.getMessageId());
     }
     
     private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {

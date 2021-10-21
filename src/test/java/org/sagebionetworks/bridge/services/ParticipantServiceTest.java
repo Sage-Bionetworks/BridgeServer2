@@ -2508,28 +2508,32 @@ public class ParticipantServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void getParticipantRosterNullPassword() throws JsonProcessingException {
+    public void requestParticipantRosterNullPassword() throws JsonProcessingException {
         ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(null).build();
 
-        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+        participantService.requestParticipantRoster(APP, TEST_USER_ID, request);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void getParticipantRosterBlankPassword() throws JsonProcessingException {
+    public void requestParticipantRosterBlankPassword() throws JsonProcessingException {
         ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("").build();
 
-        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+        participantService.requestParticipantRoster(APP, TEST_USER_ID, request);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void getParticipantRosterInvalidPassword() throws JsonProcessingException {
+    public void requestParticipantRosterInvalidPassword() throws JsonProcessingException {
         ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("badPassword").build();
 
-        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+        participantService.requestParticipantRoster(APP, TEST_USER_ID, request);
     }
 
     @Test
-    public void getParticipantRoster() throws JsonProcessingException {
+    public void requestParticipantRoster() throws JsonProcessingException {
+        account.setEmail(EMAIL);
+        account.setEmailVerified(TRUE);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        
         ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
 
         String queueUrl = "https://sqs.us-east-1.amazonaws.com/420786776710/Bridge-WorkerPlatform-Request-local";
@@ -2537,13 +2541,30 @@ public class ParticipantServiceTest extends Mockito {
 
         when(sqsClient.sendMessage(eq(queueUrl), anyString())).thenReturn(mock(SendMessageResult.class));
 
-        participantService.getParticipantRoster(TEST_APP_ID, TEST_USER_ID, request);
+        participantService.requestParticipantRoster(APP, TEST_USER_ID, request);
 
         String requestJson = "{\"service\":\"DownloadParticipantRosterWorker\",\"body\":{\"appId\":\"test-app\"," +
                 "\"userId\":\"userId\",\"password\":\"P@ssword1\",\"studyId\":\"studyId\"}}";
         verify(sqsClient).sendMessage(queueUrl, requestJson);
     }
 
+    @Test(expectedExceptions = BadRequestException.class)
+    public void requestParticipantRoster_emailNotVerified() throws JsonProcessingException {
+        account.setEmail(EMAIL);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
+
+        participantService.requestParticipantRoster(APP, TEST_USER_ID, request);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class)
+    public void requestParticipantRoster_noEmail() throws JsonProcessingException {
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
+
+        participantService.requestParticipantRoster(APP, TEST_USER_ID, request);
+    }
+    
     @Test
     public void updateParticipantNoteSuccessfulAsAdmin() {
         // RESEARCHER role set in Before method
