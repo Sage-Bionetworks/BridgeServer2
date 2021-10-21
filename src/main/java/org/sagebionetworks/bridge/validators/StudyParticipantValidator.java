@@ -56,14 +56,13 @@ public class StudyParticipantValidator implements Validator {
         StudyParticipant participant = (StudyParticipant)object;
         
         if (isNew) {
-            if (!ValidatorUtils.participantHasValidIdentifier(participant)) {
-                errors.reject("email, phone, synapseUserId or externalId is required");
-            }
             Phone phone = participant.getPhone();
             String email = participant.getEmail();
-            // if the call is anonymous, then external ID is not sufficient, and we could validate for that.
+            // if the call is anonymous, then the account must include email or phone
             if (RequestContext.get().getCallerUserId() == null && phone == null && email == null) {
                 errors.reject("email or phone number is required");   
+            } else if (!ValidatorUtils.participantHasValidIdentifier(participant)) {
+                errors.reject("email, phone, synapseUserId or externalId is required");
             }
             if (phone != null && !Phone.isValid(phone)) {
                 errors.rejectValue("phone", INVALID_PHONE_ERROR);

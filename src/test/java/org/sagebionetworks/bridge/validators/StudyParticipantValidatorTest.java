@@ -149,11 +149,18 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
-    public void emailPhoneSynapseUserIdOrExternalIdRequired() {
+    public void emailPhoneSynapseUserIdOrExternalIdRequired_anonymous() {
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, withEmail(null), "StudyParticipant", "email or phone number is required");
+    }
+    
+    @Test
+    public void emailPhoneSynapseUserIdOrExternalIdRequired_nonAnonymous() {
+        RequestContext.set(new RequestContext.Builder().withCallerUserId("id").build());
         validator = makeValidator(true);
         assertValidatorMessage(validator, withEmail(null), "StudyParticipant", "email, phone, synapseUserId or externalId is required");
     }
-    
+  
     @Test
     public void emailCannotBeEmptyString() {
         validator = makeValidator(true);
