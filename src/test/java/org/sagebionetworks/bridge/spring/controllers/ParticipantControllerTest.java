@@ -307,6 +307,7 @@ public class ParticipantControllerTest extends Mockito {
     @Test
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(ParticipantController.class);
+        assertPost(ParticipantController.class, "requestParticipantRoster");
         assertCreate(ParticipantController.class, "createSmsRegistration");
         assertGet(ParticipantController.class, "getSelfParticipant");
         assertPost(ParticipantController.class, "updateSelfParticipant");
@@ -341,7 +342,6 @@ public class ParticipantControllerTest extends Mockito {
         assertGet(ParticipantController.class, "getActivityEvents");
         assertAccept(ParticipantController.class, "sendSmsMessageForWorker");
         assertPost(ParticipantController.class, "createCustomActivityEvent");
-        assertPost(ParticipantController.class, "getParticipantRoster");
     }
 
     @Test
@@ -1625,50 +1625,16 @@ public class ParticipantControllerTest extends Mockito {
         assertEquals(captured.getTimestamp(), TIMESTAMP);
     }
 
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = ".*Cannot request user data.*")
-    public void getParticipantRosterNoEmail() throws JsonProcessingException {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER)).build();
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void requestParticipantRosterOnlyWorksForResearcher() throws JsonProcessingException {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(STUDY_COORDINATOR)).build();
         session.setParticipant(participant);
 
-        controller.getParticipantRoster();
-    }
-
-    @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = ".*Cannot request user data.*")
-    public void getParticipantRosterEmailNotVerified() throws JsonProcessingException {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER))
-                .withEmail("example@example.org").withEmailVerified(false).build();
-        session.setParticipant(participant);
-
-        controller.getParticipantRoster();
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = ".*Caller is a study coordinator without an org membership.*")
-    public void getParticipantRosterStudyCoordinatorWithoutOrg() throws JsonProcessingException {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(STUDY_COORDINATOR))
-                .withEmail("example@example.org").withEmailVerified(true).build();
-        session.setParticipant(participant);
-
-        controller.getParticipantRoster();
-    }
-
-    @Test(expectedExceptions = UnauthorizedException.class,
-            expectedExceptionsMessageRegExp = ".*Requested studyId is not sponsored by the caller's org.*")
-    public void getParticipantRosterStudyIdNotSponsored() throws Exception {
-        participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER, STUDY_COORDINATOR))
-                .withEmail("example@example.org").withEmailVerified(true).withOrgMembership("testOrg123").build();
-        session.setParticipant(participant);
-
-        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withStudyId("testStudy").build();
-        mockRequestBody(mockRequest, request);
-
-        controller.getParticipantRoster();
+        controller.requestParticipantRoster();
     }
 
     @Test
-    public void getParticipantRoster() throws Exception {
+    public void requestParticipantRoster() throws Exception {
         participant = new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER, STUDY_COORDINATOR))
                 .withEmail("example@example.org").withEmailVerified(true).build();
         session.setParticipant(participant);
@@ -1676,9 +1642,9 @@ public class ParticipantControllerTest extends Mockito {
         ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword("password").build();
         mockRequestBody(mockRequest, request);
 
-        controller.getParticipantRoster();
+        controller.requestParticipantRoster();
 
-        verify(mockParticipantService).getParticipantRoster(eq(TEST_APP_ID), eq(TEST_USER_ID), participantRosterCaptor.capture());
+        verify(mockParticipantService).requestParticipantRoster(eq(app), eq(TEST_USER_ID), participantRosterCaptor.capture());
         ParticipantRosterRequest participantRosterRequest = participantRosterCaptor.getValue();
         assertEquals(participantRosterRequest.getPassword(), "password");
     }
