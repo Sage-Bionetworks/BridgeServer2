@@ -188,7 +188,7 @@ public class StudyParticipantController extends BaseController {
         return modifiedSince != null && modifiedOn != null && modifiedSince.isAfter(modifiedOn);
     }
     
-    @PostMapping("/v5/studies/{studyid}/participants/emailRoster")
+    @PostMapping("/v5/studies/{studyId}/participants/emailRoster")
     @ResponseStatus(HttpStatus.ACCEPTED)
     public StatusMessage requestParticipantRoster(@PathVariable String studyId) throws JsonProcessingException {
         UserSession session = getAdministrativeSession();
