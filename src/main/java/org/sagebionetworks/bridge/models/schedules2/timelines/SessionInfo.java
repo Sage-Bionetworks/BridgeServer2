@@ -63,6 +63,7 @@ public class SessionInfo {
     public String getSymbol() {
         return symbol;
     }
+    @Deprecated
     public String getStartEventId() {
         return startEventId;
     }
