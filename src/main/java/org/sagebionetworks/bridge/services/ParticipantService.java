@@ -11,7 +11,7 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
-import static org.sagebionetworks.bridge.AuthUtils.IS_ONLY_DEVELOPER;
+import static org.sagebionetworks.bridge.AuthUtils.CANNOT_ACCESS_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.studyAssociationsVisibleToCaller;
@@ -54,7 +54,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
@@ -432,7 +431,7 @@ public class ParticipantService {
         
         Validate.entityThrowingException(new AccountSummarySearchValidator(app.getDataGroups()), search);
         
-        if (IS_ONLY_DEVELOPER.check()) {
+        if (CANNOT_ACCESS_PARTICIPANTS.check()) {
             Set<String> newDataGroups = addToSet(search.getAllOfGroups(), TEST_USER_GROUP);
             search = search.toBuilder().withAllOfGroups(newDataGroups).build();
         }
@@ -633,7 +632,7 @@ public class ParticipantService {
                 String externalId = entry.getValue();
                 
                 Enrollment enrollment = Enrollment.create(account.getAppId(), studyId, account.getId(), externalId);
-                enrollmentService.addEnrollment(account, enrollment);
+                enrollmentService.addEnrollment(account, enrollment, requestContext.getCallerUserId() == null);
             }
         }
         
@@ -704,16 +703,18 @@ public class ParticipantService {
         checkArgument(isNotBlank(userId));
 
         StudyParticipant participant = getParticipant(app, userId, false);
-        if (type == ChannelType.EMAIL) { 
-            if (participant.getEmail() != null) {
-                AccountId accountId = AccountId.forEmail(app.getIdentifier(), participant.getEmail());
-                accountWorkflowService.resendVerificationToken(type, accountId);
+        if (type == ChannelType.EMAIL) {
+            if (participant.getEmail() == null) {
+                throw new BadRequestException("Email address has not been set.");
             }
+            AccountId accountId = AccountId.forEmail(app.getIdentifier(), participant.getEmail());
+            accountWorkflowService.resendVerificationToken(type, accountId);
         } else if (type == ChannelType.PHONE) {
-            if (participant.getPhone() != null) {
-                AccountId accountId = AccountId.forPhone(app.getIdentifier(), participant.getPhone());
-                accountWorkflowService.resendVerificationToken(type, accountId);
+            if (participant.getPhone() == null) {
+                throw new BadRequestException("Phone number has not been set.");
             }
+            AccountId accountId = AccountId.forPhone(app.getIdentifier(), participant.getPhone());
+            accountWorkflowService.resendVerificationToken(type, accountId);
         } else {
             throw new UnsupportedOperationException("Channel type not implemented");
         }
@@ -958,14 +959,19 @@ public class ParticipantService {
         return getParticipant(app, account.getId(), false);
     }
 
-    public void getParticipantRoster(String appId, String userId, ParticipantRosterRequest request) throws JsonProcessingException {
+    public void requestParticipantRoster(App app, String userId, ParticipantRosterRequest request) throws JsonProcessingException {
         Validate.entityThrowingException(ParticipantRosterRequestValidator.INSTANCE, request);
+
+        StudyParticipant participant = getParticipant(app, userId, false);
+        if (participant.getEmail() == null || !TRUE.equals(participant.getEmailVerified())) {
+            throw new BadRequestException("A valid email address is required to send the requested participant roster.");
+        }
 
         ObjectMapper jsonObjectMapper = BridgeObjectMapper.get();
 
         // wrap message as nested json node
         ObjectNode requestNode = jsonObjectMapper.createObjectNode();
-        requestNode.put(REQUEST_KEY_APP_ID, appId);
+        requestNode.put(REQUEST_KEY_APP_ID, app.getIdentifier());
         requestNode.put(REQUEST_KEY_USER_ID, userId);
         requestNode.put(REQUEST_KEY_PASSWORD, request.getPassword());
         requestNode.put(REQUEST_KEY_STUDY_ID, request.getStudyId());
@@ -979,8 +985,8 @@ public class ParticipantService {
         // sent to SQS
         String queueUrl = bridgeConfig.getProperty(CONFIG_KEY_DOWNLOAD_ROSTER_SQS_URL);
         SendMessageResult sqsResult = sqsClient.sendMessage(queueUrl, requestJson);
-        LOG.info("Sent request to SQS for userId=" + userId + ", app=" + appId + "; received message ID=" +
-                sqsResult.getMessageId());
+        LOG.info("Sent request to SQS for userId=" + userId + ", app=" + app.getIdentifier() + "; received message ID="
+                + sqsResult.getMessageId());
     }
     
     private CriteriaContext getCriteriaContextForParticipant(App app, StudyParticipant participant) {

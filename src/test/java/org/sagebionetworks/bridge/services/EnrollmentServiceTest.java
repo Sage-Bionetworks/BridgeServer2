@@ -167,13 +167,13 @@ public class EnrollmentServiceTest extends Mockito {
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         List<EnrollmentDetail> details = ImmutableList.of();
-        when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID)).thenReturn(details);
+        when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, null, TEST_USER_ID)).thenReturn(details);
         
         List<EnrollmentDetail> retValue = service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID,
                 "externalId:extId");
-        assertSame(retValue, details);
+        assertEquals(retValue, details);
         
-        verify(mockEnrollmentDao).getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID);
+        verify(mockEnrollmentDao).getEnrollmentsForUser(TEST_APP_ID, ImmutableSet.of(), TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -615,6 +615,27 @@ public class EnrollmentServiceTest extends Mockito {
         service.getEnrollmentsForUser(TEST_APP_ID, null, TEST_USER_ID);
     }
     
+    @Test
+    public void getEnrollmentsForUserFilteringForStudies() {
+        Set<String> callerStudies = ImmutableSet.of("studyA", "studyB");
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(callerStudies)
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        AccountId accountId = AccountId.forExternalId(TEST_APP_ID, "extId");
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
+        
+        List<EnrollmentDetail> details = ImmutableList.of();
+        when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, callerStudies, TEST_USER_ID)).thenReturn(details);
+        
+        List<EnrollmentDetail> retValue = service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, "externalId:extId");
+        assertSame(retValue, details);
+        
+        verify(mockEnrollmentDao).getEnrollmentsForUser(TEST_APP_ID, callerStudies, TEST_USER_ID);
+    }
+
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Study not found.")
     public void enrollStudyNotFound() {
@@ -624,13 +645,50 @@ public class EnrollmentServiceTest extends Mockito {
         service.enroll(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID));
     }
 
+    @Test
+    public void addEnrollment_updatesRequestContext() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("123")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build()); 
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        en.setExternalId("externalId");
+        service.addEnrollment(account, en, true);
+        
+        assertEquals(account.getEnrollments().size(), 1);
+        Enrollment updated = Iterables.getFirst(account.getEnrollments(), null);
+        assertEquals(updated.getAccountId(), TEST_USER_ID);
+        assertEquals(updated.getAppId(), TEST_APP_ID);
+        assertEquals(updated.getEnrolledBy(), "123");
+        assertEquals(updated.getEnrolledOn(), CREATED_ON);
+        assertEquals(updated.getStudyId(), TEST_STUDY_ID);
+        assertEquals(updated.getExternalId(), "externalId");
+        
+        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of(TEST_STUDY_ID));
+    }
+    
+    @Test
+    public void addEnrollment_doesNotUpdateRequestContext() { 
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+
+        service.addEnrollment(account, en, false);
+        
+        assertTrue(RequestContext.get().getCallerEnrolledStudies().isEmpty());
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Study not found.")
     public void addEnrollmentStudyNotFound() {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
             .thenThrow(new EntityNotFoundException(Study.class));
         
-        service.addEnrollment(Account.create(), Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID));
+        service.addEnrollment(Account.create(), Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID), false);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class,

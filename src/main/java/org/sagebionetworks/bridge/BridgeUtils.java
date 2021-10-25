@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
@@ -260,6 +261,25 @@ public class BridgeUtils {
     
     public static Map<String,String> appTemplateVariables(App app) {
         return appTemplateVariables(app, null);
+    }
+    
+    public static Map<String,String> participantTemplateVariables(StudyParticipant participant) {
+        Map<String,String> map = Maps.newHashMap();
+        if (participant == null) {
+            return map;
+        }
+        map.put("participantFirstName", participant.getFirstName());
+        map.put("participantLastName", participant.getLastName());
+        map.put("participantEmail", participant.getEmail());
+        if (participant.getPhone() != null) {
+            map.put("participantPhone", participant.getPhone().getNumber());
+            map.put("participantPhoneRegion", participant.getPhone().getRegionCode());
+            map.put("participantPhoneNationalFormat", participant.getPhone().getNationalFormat());
+        }
+        for (Entry<String,String> entry : participant.getAttributes().entrySet()) {
+            map.put("participant." + entry.getKey(), entry.getValue());
+        }
+        return map;
     }
     
     /**

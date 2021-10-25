@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
@@ -37,6 +39,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -70,6 +73,7 @@ import org.sagebionetworks.bridge.sms.SmsMessageProvider;
 
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -96,7 +100,7 @@ public class ConsentServiceTest extends Mockito {
             .withConsentSignature(CONSENT_SIGNATURE).withSignedOn(SIGNED_ON - 20000).withWithdrewOn(SIGNED_ON - 10000)
             .build();
     private static final StudyParticipant PARTICIPANT = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
-            .withId(ID).withEmail(EMAIL).withEmailVerified(Boolean.TRUE)
+            .withId(ID).withEmail(EMAIL).withPhone(PHONE).withEmailVerified(Boolean.TRUE)
             .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS).withExternalId(EXTERNAL_ID).build();
     private static final StudyParticipant PHONE_PARTICIPANT = new StudyParticipant.Builder().withHealthCode(HEALTH_CODE)
             .withId(ID).withPhone(TestConstants.PHONE).withPhoneVerified(Boolean.TRUE)
@@ -181,6 +185,11 @@ public class ConsentServiceTest extends Mockito {
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID)).thenReturn(subpopulation);
     }
 
+    @AfterMethod
+    public void after() {
+        RequestContext.set(NULL_INSTANCE);
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void userCannotGetConsentSignatureForSubpopulationToWhichTheyAreNotMapped() {
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID))
@@ -208,7 +217,7 @@ public class ConsentServiceTest extends Mockito {
     }
 
     @Test
-    public void giveConsentSuccess() {
+    public void consentToResearch() {
         when(subpopulation.getStudyId()).thenReturn(TEST_STUDY_ID);
         
         // Account already has a withdrawn consent, to make sure we're correctly appending consents.
@@ -242,13 +251,31 @@ public class ConsentServiceTest extends Mockito {
         verify(sendMailService).sendEmail(emailCaptor.capture());
 
         // We notify the app administrator and send a copy to the user.
-        BasicEmailProvider email = emailCaptor.getValue();
-        assertEquals(email.getType(), EmailType.SIGN_CONSENT);
+        BasicEmailProvider provider = emailCaptor.getValue();
+        assertEquals(provider.getType(), EmailType.SIGN_CONSENT);
 
-        Set<String> recipients = email.getRecipientEmails();
+        Set<String> recipients = provider.getRecipientEmails();
         assertEquals(recipients.size(), 2);
         assertTrue(recipients.contains(app.getConsentNotificationEmail()));
         assertTrue(recipients.contains(PARTICIPANT.getEmail()));
+        
+        Map<String,String> tokenMap = provider.getTokenMap();
+        assertEquals(tokenMap.get("studyName"), "Test App [ConsentServiceTest]");
+        assertEquals(tokenMap.get("appName"), "Test App [ConsentServiceTest]");
+        assertEquals(tokenMap.get("sponsorName"), "The Council on Test Studies");
+        assertEquals(tokenMap.get("appShortName"), "ShortName");
+        assertEquals(tokenMap.get("supportEmail"), "bridge-testing+support@sagebase.org");
+        assertEquals(tokenMap.get("technicalEmail"), "bridge-testing+technical@sagebase.org");
+        assertEquals(tokenMap.get("consentEmail"), "bridge-testing+consent@sagebase.org");
+        assertEquals(tokenMap.get("studyShortName"), "ShortName");
+        assertEquals(tokenMap.get("appId"), app.getIdentifier());
+        assertEquals(tokenMap.get("studyId"), app.getIdentifier());
+        assertEquals(tokenMap.get("participantFirstName"), PARTICIPANT.getFirstName());
+        assertEquals(tokenMap.get("participantLastName"), PARTICIPANT.getLastName());
+        assertEquals(tokenMap.get("participantEmail"), PARTICIPANT.getEmail());
+        assertEquals(tokenMap.get("participantPhone"), PARTICIPANT.getPhone().getNumber());
+        assertEquals(tokenMap.get("participantPhoneRegion"), PARTICIPANT.getPhone().getRegionCode());
+        assertEquals(tokenMap.get("participantPhoneNationalFormat"), PARTICIPANT.getPhone().getNationalFormat());
     }
 
     @Test
@@ -258,10 +285,28 @@ public class ConsentServiceTest extends Mockito {
         consentService.resendConsentAgreement(app, SUBPOP_GUID, PARTICIPANT);
 
         verify(sendMailService).sendEmail(emailCaptor.capture());
-        BasicEmailProvider email = emailCaptor.getValue();
-        assertEquals(email.getRecipientEmails().size(), 1);
-        assertTrue(email.getRecipientEmails().contains(PARTICIPANT.getEmail()));
-        assertEquals(email.getType(), EmailType.RESEND_CONSENT);
+        BasicEmailProvider provider = emailCaptor.getValue();
+        assertEquals(provider.getRecipientEmails().size(), 1);
+        assertTrue(provider.getRecipientEmails().contains(PARTICIPANT.getEmail()));
+        assertEquals(provider.getType(), EmailType.RESEND_CONSENT);
+        
+        Map<String,String> tokenMap = provider.getTokenMap();
+        assertEquals(tokenMap.get("studyName"), "Test App [ConsentServiceTest]");
+        assertEquals(tokenMap.get("appName"), "Test App [ConsentServiceTest]");
+        assertEquals(tokenMap.get("sponsorName"), "The Council on Test Studies");
+        assertEquals(tokenMap.get("appShortName"), "ShortName");
+        assertEquals(tokenMap.get("supportEmail"), "bridge-testing+support@sagebase.org");
+        assertEquals(tokenMap.get("technicalEmail"), "bridge-testing+technical@sagebase.org");
+        assertEquals(tokenMap.get("consentEmail"), "bridge-testing+consent@sagebase.org");
+        assertEquals(tokenMap.get("studyShortName"), "ShortName");
+        assertEquals(tokenMap.get("appId"), app.getIdentifier());
+        assertEquals(tokenMap.get("studyId"), app.getIdentifier());
+        assertEquals(tokenMap.get("participantFirstName"), PARTICIPANT.getFirstName());
+        assertEquals(tokenMap.get("participantLastName"), PARTICIPANT.getLastName());
+        assertEquals(tokenMap.get("participantEmail"), PARTICIPANT.getEmail());
+        assertEquals(tokenMap.get("participantPhone"), PARTICIPANT.getPhone().getNumber());
+        assertEquals(tokenMap.get("participantPhoneRegion"), PARTICIPANT.getPhone().getRegionCode());
+        assertEquals(tokenMap.get("participantPhoneNationalFormat"), PARTICIPANT.getPhone().getNationalFormat());
     }
 
     @Test
@@ -975,7 +1020,7 @@ public class ConsentServiceTest extends Mockito {
 
         assertEquals(account.getDataGroups(), TestConstants.USER_DATA_GROUPS);
         
-        verify(mockEnrollmentService).addEnrollment(any(), enrollmentCaptor.capture());
+        verify(mockEnrollmentService).addEnrollment(any(), enrollmentCaptor.capture(), eq(true));
         
         Enrollment en = enrollmentCaptor.getValue();
         assertEquals(en.getStudyId(), TEST_STUDY_ID);
@@ -994,9 +1039,9 @@ public class ConsentServiceTest extends Mockito {
                 SharingScope.NO_SHARING, false);
 
         verify(accountService).updateAccount(account);
-        verify(mockEnrollmentService, never()).addEnrollment(any(), any());
+        verify(mockEnrollmentService, never()).addEnrollment(any(), any(), eq(true));
     }
-
+    
     @Test
     public void resendConsentAgreementWithPhoneOK() throws Exception {
         doReturn("asdf.pdf").when(consentService).getSignedConsentUrl();

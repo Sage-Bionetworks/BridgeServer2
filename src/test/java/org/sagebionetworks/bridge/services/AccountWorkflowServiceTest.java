@@ -372,14 +372,32 @@ public class AccountWorkflowServiceTest extends Mockito {
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
-    @Test
-    public void resendEmailVerificationTokenFailsQuietlyWithMissingAccount() {
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void resendEmailVerificationTokenFailsWithMissingAccount() {
         when(mockAccountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.empty());
         
         service.resendVerificationToken(ChannelType.EMAIL, ACCOUNT_ID_WITH_EMAIL);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = "Email address has not been set.")
+    public void resendEmailVerificationTokenFailsWithMissingEmail() {
+        // Logically this isn't possible, but test it
+        Account account = Account.create();
+        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(account));
         
-        verify(service, never()).sendEmailVerificationToken(any(), any(), any());
-        verifyNoMoreInteractions(mockCacheProvider);
+        service.resendVerificationToken(ChannelType.EMAIL, ACCOUNT_ID_WITH_EMAIL);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = "Email address is already verified.")
+    public void resendEmailVerificationTokenFailsWhenEmailAlreadyVerified() {
+        Account account = Account.create();
+        account.setEmail(EMAIL);
+        account.setEmailVerified(TRUE);
+        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_EMAIL)).thenReturn(Optional.of(account));
+        
+        service.resendVerificationToken(ChannelType.EMAIL, ACCOUNT_ID_WITH_EMAIL);
     }
     
     @Test
@@ -412,14 +430,32 @@ public class AccountWorkflowServiceTest extends Mockito {
         verifyNoMoreInteractions(mockCacheProvider);
     }
     
-    @Test
-    public void resendPhoneVerificationTokenFailsQuietlyWithMissingAccount() {
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void resendPhoneVerificationTokenFailsWithMissingAccount() {
         when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.empty());
         
-        service.resendVerificationToken(ChannelType.EMAIL, ACCOUNT_ID_WITH_PHONE);
+        service.resendVerificationToken(ChannelType.PHONE, ACCOUNT_ID_WITH_PHONE);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = "Phone number has not been set.")
+    public void resendPhoneVerificationTokenFailsWithMissingPhone() {
+        // Not logically possible, but test it
+        Account account = Account.create();
+        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(account));
         
-        verify(service, never()).sendPhoneVerificationToken(any(), any(), any());
-        verifyNoMoreInteractions(mockCacheProvider);
+        service.resendVerificationToken(ChannelType.PHONE, ACCOUNT_ID_WITH_PHONE);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = "Phone number is already verified.")
+    public void resendPhoneVerificationTokenFailsWhenPhoneAlreadyVerified() {
+        Account account = Account.create();
+        account.setPhone(PHONE);
+        account.setPhoneVerified(TRUE);
+        when(mockAccountService.getAccount(ACCOUNT_ID_WITH_PHONE)).thenReturn(Optional.of(account));
+        
+        service.resendVerificationToken(ChannelType.PHONE, ACCOUNT_ID_WITH_PHONE);
     }
     
     @Test

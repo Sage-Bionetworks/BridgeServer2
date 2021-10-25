@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.annotation.Resource;
 
@@ -26,7 +27,7 @@ public class HibernateEnrollmentDao implements EnrollmentDao {
     static final String REF_QUERY = "SELECT new org.sagebionetworks.bridge.hibernate.HibernateAccount("
             + "a.firstName, a.lastName, a.email, a.phone, a.synapseUserId, a.orgMembership, a.id) FROM "
             + "org.sagebionetworks.bridge.hibernate.HibernateAccount a WHERE a.appId = :appId AND a.id = :id";
-
+    
     private HibernateHelper hibernateHelper;
     
     @Resource(name = "basicHibernateHelper")
@@ -65,11 +66,13 @@ public class HibernateEnrollmentDao implements EnrollmentDao {
     }
     
     @Override
-    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, String userId) {
+    public List<EnrollmentDetail> getEnrollmentsForUser(String appId, Set<String> studyIds, String userId) {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM HibernateEnrollment WHERE");
         builder.append("appId = :appId AND accountId = :userId", "appId", appId, "userId", userId);
-        
+        if (studyIds != null && !studyIds.isEmpty()) {
+            builder.append("AND studyId IN :studyIds", "studyIds", studyIds);
+        }
         List<HibernateEnrollment> enrollments = hibernateHelper.queryGet(builder.getQuery(),
                 builder.getParameters(), null, null, HibernateEnrollment.class);
         return enrollments.stream().map(enrollment -> {
