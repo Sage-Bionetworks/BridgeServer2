@@ -6,19 +6,16 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_OTHER_ENROLLMENTS;
-import static org.sagebionetworks.bridge.AuthUtils.IS_ONLY_DEVELOPER;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT_FILTER;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 
 import java.util.List;
-import java.util.Optional;
 
 import javax.annotation.Nullable;
 
@@ -187,6 +184,7 @@ public class EnrollmentService {
         String callerUserId = RequestContext.get().getCallerUserId();
         if (!account.getId().equals(callerUserId)) {
             existingEnrollment.setEnrolledBy(callerUserId);
+            existingEnrollment.setNote(newEnrollment.getNote());
         }
     }
     

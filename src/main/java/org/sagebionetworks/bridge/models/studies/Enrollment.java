@@ -94,9 +94,8 @@ public interface Enrollment extends BridgeEntity {
     String getWithdrawalNote();
     void setWithdrawalNote(String note);
 
-    // TODO: add description of note field's use
-    /**
-     *
+    /** Note field is accessible only by users with administrative roles. The enrolled participant
+     * can not get or set the note.
      */
     String getNote();
     void setNote(String note);

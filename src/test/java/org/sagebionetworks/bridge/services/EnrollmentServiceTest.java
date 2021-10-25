@@ -28,6 +28,7 @@ import static org.testng.Assert.assertTrue;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -215,7 +216,7 @@ public class EnrollmentServiceTest extends Mockito {
         assertNull(retValue.getWithdrawnBy());
         assertNull(retValue.getWithdrawalNote());
         assertFalse(retValue.isConsentRequired());
-        assertNull(enrollment.getNote());
+        assertNull(retValue.getNote());
         
         assertTrue(account.getEnrollments().contains(retValue));
     }
@@ -387,38 +388,37 @@ public class EnrollmentServiceTest extends Mockito {
         service.enroll(enrollment);
     }
 
-    // TODO: recomment in this test
-//    @Test
-//    public void unenrollBySelf() {
-//        RequestContext.set(new RequestContext.Builder()
-//                .withCallerUserId(TEST_USER_ID).build());
-//
-//        Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-//        Enrollment otherStudy = Enrollment.create(TEST_APP_ID, "otherStudy", TEST_USER_ID);
-//
-//        Account account = Account.create();
-//        account.setId(TEST_USER_ID);
-//        account.setEnrollments(Sets.newHashSet(otherStudy, existing));
-//        TestUtils.mockEditAccount(mockAccountService, account);
-//
-//        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-//        enrollment.setWithdrawnOn(MODIFIED_ON.minusHours(1));
-//        enrollment.setWithdrawalNote("Withdrawal reason");
-//
-//        Enrollment retValue = service.unenroll(enrollment);
-//        System.out.println(retValue);
-//        assertEquals(retValue.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
-//        assertNull(retValue.getWithdrawnBy());
-//        assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
-//
-//        verify(mockAccountService).editAccount(any(), any());
-//        Enrollment captured = Iterables.getLast(account.getEnrollments(), null);
-//        System.out.println(captured);
-//        System.out.println(account.getEnrollments());
-//        assertEquals(captured.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
-//        assertNull(captured.getWithdrawnBy());
-//        assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");
-//    }
+    @Test
+    public void unenrollBySelf() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID).build());
+
+        Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        Enrollment otherStudy = Enrollment.create(TEST_APP_ID, "otherStudy", TEST_USER_ID);
+
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setEnrollments(Sets.newHashSet(otherStudy, existing));
+        TestUtils.mockEditAccount(mockAccountService, account);
+
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        enrollment.setWithdrawnOn(MODIFIED_ON.minusHours(1));
+        enrollment.setWithdrawalNote("Withdrawal reason");
+
+        Enrollment retValue = service.unenroll(enrollment);
+        System.out.println(retValue);
+        assertEquals(retValue.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
+        assertNull(retValue.getWithdrawnBy());
+        assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
+
+        verify(mockAccountService).editAccount(any(), any());
+        Enrollment captured = Iterables.getLast(account.getEnrollments(), null);
+        System.out.println(captured);
+        System.out.println(account.getEnrollments());
+        assertEquals(captured.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
+        assertNull(captured.getWithdrawnBy());
+        assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");
+    }
     
     @Test
     public void unenrollBySelfDefaultsWithdrawnOn() {
@@ -719,12 +719,18 @@ public class EnrollmentServiceTest extends Mockito {
 
         service.editEnrollment(incomingEnrollment);
 
-        verify(mockAccountService).updateAccount(account);
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
 
-        assertEquals(account.getEnrollments().size(), 2);
-        assertTrue(account.getEnrollments().contains(targetEnrollment));
-        assertTrue(account.getEnrollments().contains(otherEnrollment));
-        assertEquals(targetEnrollment.getNote(), TEST_NOTE);
-        assertNull(otherEnrollment.getNote());
+        Set<Enrollment> capturedEnrollments = accountCaptor.getValue().getEnrollments();
+        assertEquals(capturedEnrollments.size(), 2);
+        assertTrue(capturedEnrollments.contains(targetEnrollment));
+        assertTrue(capturedEnrollments.contains(otherEnrollment));
+        for (Enrollment captureEnrollment : capturedEnrollments) {
+            if (captureEnrollment.getStudyId().equals(TEST_STUDY_ID)) {
+                assertEquals(captureEnrollment.getNote(), TEST_NOTE);
+            } else {
+                assertNull(captureEnrollment.getNote());
+            }
+        }
     }
 }

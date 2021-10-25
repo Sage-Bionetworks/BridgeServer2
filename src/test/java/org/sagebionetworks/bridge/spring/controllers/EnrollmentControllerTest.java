@@ -38,6 +38,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -100,7 +101,6 @@ public class EnrollmentControllerTest extends Mockito {
         assertGet(EnrollmentController.class, "getEnrollmentsForStudy");
         assertCreate(EnrollmentController.class, "enroll");
         assertDelete(EnrollmentController.class, "unenroll");
-        // TODO: should this include the updateUserEnrollments route?
         assertPost(EnrollmentController.class, "updateEnrollment");
     }
     
@@ -259,29 +259,11 @@ public class EnrollmentControllerTest extends Mockito {
         assertEquals(captured.getNote(), TEST_NOTE);
     }
 
-    @Test
-    public void updateEnrollmentValidatesRoles() throws Exception {
-        UserSession session = new UserSession();
-        session.setAppId(TEST_APP_ID);
-        // TODO: Shouldn't this fail? With no roles in the session?
-        doReturn(session).when(controller).getAdministrativeSession();
-
-        Enrollment enrollment = new HibernateEnrollment();
-        enrollment.setAppId("otherAppId");
-        enrollment.setStudyId("otherStudyId");
-        enrollment.setAccountId("otherUserId");
-        enrollment.setNote(TEST_NOTE);
-
-        mockRequestBody(mockRequest, enrollment);
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateEnrollmentValidatesRoles() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID).build());
 
         controller.updateEnrollment(TEST_STUDY_ID, TEST_USER_ID);
-
-        verify(mockService).editEnrollment(enrollmentCaptor.capture());
-
-        Enrollment captured = enrollmentCaptor.getValue();
-        assertEquals(captured.getAppId(), TEST_APP_ID);
-        assertEquals(captured.getStudyId(), TEST_STUDY_ID);
-        assertEquals(captured.getAccountId(), TEST_USER_ID);
-        assertEquals(captured.getNote(), TEST_NOTE);
     }
 }
