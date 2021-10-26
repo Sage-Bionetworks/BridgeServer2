@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
-import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
