@@ -180,16 +180,16 @@ public class EnrollmentService {
         }
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             if (existingEnrollment.getStudyId().equals(newEnrollment.getStudyId())) {
-                updateEnrollment(account, newEnrollment, existingEnrollment);
+                editEnrollment(account, newEnrollment, existingEnrollment);
                 return existingEnrollment;
             }
         }
-        updateEnrollment(account, newEnrollment, newEnrollment);
+        editEnrollment(account, newEnrollment, newEnrollment);
         account.getEnrollments().add(newEnrollment);
         return newEnrollment;
     }
     
-    private void updateEnrollment(Account account, Enrollment newEnrollment, Enrollment existingEnrollment) {
+    private void editEnrollment(Account account, Enrollment newEnrollment, Enrollment existingEnrollment) {
         existingEnrollment.setWithdrawnOn(null);
         existingEnrollment.setWithdrawnBy(null);
         existingEnrollment.setWithdrawalNote(null);
@@ -263,7 +263,7 @@ public class EnrollmentService {
         throw new EntityNotFoundException(Enrollment.class);
     }
 
-    public void editEnrollment(Enrollment enrollment) {
+    public void updateEnrollment(Enrollment enrollment) {
         checkNotNull(enrollment);
 
         Validate.entityThrowingException(INSTANCE, enrollment);

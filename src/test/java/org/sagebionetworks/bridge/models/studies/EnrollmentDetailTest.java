@@ -52,7 +52,7 @@ public class EnrollmentDetailTest {
         assertEquals(node.get("participant").size(), 2);
         assertEquals(node.get("enrolledBy").size(), 2);
         assertEquals(node.get("withdrawnBy").size(), 2);
-
+        
         assertEquals(node.get("participant").get("email").textValue(), "email1@email.com");
         assertEquals(node.get("enrolledBy").get("email").textValue(), "email2@email.com");
         assertEquals(node.get("withdrawnBy").get("email").textValue(), "email3@email.com");

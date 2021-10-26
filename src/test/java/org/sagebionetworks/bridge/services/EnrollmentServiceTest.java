@@ -395,31 +395,31 @@ public class EnrollmentServiceTest extends Mockito {
 
         service.enroll(enrollment);
     }
-
+    
     @Test
     public void unenrollBySelf() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID).build());
-
+        
         Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         Enrollment otherStudy = Enrollment.create(TEST_APP_ID, "otherStudy", TEST_USER_ID);
-
+        
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         account.setEnrollments(Sets.newHashSet(otherStudy, existing));
         TestUtils.mockEditAccount(mockAccountService, account);
-
+        
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setWithdrawnOn(MODIFIED_ON.minusHours(1));
         enrollment.setWithdrawalNote("Withdrawal reason");
-
+        
         Enrollment retValue = service.unenroll(enrollment);
         assertEquals(retValue.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(retValue.getWithdrawnBy());
         assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
-
+        
         verify(mockAccountService).editAccount(any(), any());
-
+        
         Enrollment captured = account.getEnrollments().stream().filter(e -> e.getStudyId().equals(TEST_STUDY_ID)).findAny().orElse(null);
         assertNotNull(captured);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
@@ -708,7 +708,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
 
     @Test
-    public void editEnrollment_canUpdateOnlyNoteField() {
+    public void updateEnrollment_canUpdateOnlyNoteField() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("otherId")
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
@@ -728,7 +728,7 @@ public class EnrollmentServiceTest extends Mockito {
 
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
 
-        service.editEnrollment(incomingEnrollment);
+        service.updateEnrollment(incomingEnrollment);
 
         verify(mockAccountService).updateAccount(account);
 
@@ -741,15 +741,15 @@ public class EnrollmentServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void editEnrollment_incomingEnrollmentIsValidated() {
+    public void updateEnrollment_incomingEnrollmentIsValidated() {
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setAccountId(null);
 
-        service.editEnrollment(enrollment);
+        service.updateEnrollment(enrollment);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void editEnrollment_verifiesAdministrativeAccessToEdit() {
+    public void updateEnrollment_verifiesAdministrativeAccessToEdit() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of()).build());
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
@@ -759,11 +759,11 @@ public class EnrollmentServiceTest extends Mockito {
 
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
 
-        service.editEnrollment(enrollment);
+        service.updateEnrollment(enrollment);
     }
 
     @Test
-    public void editEnrollment_onlyUpdatesTargetedEnrollment() {
+    public void updateEnrollment_onlyUpdatesTargetedEnrollment() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
@@ -782,7 +782,7 @@ public class EnrollmentServiceTest extends Mockito {
 
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
 
-        service.editEnrollment(incomingEnrollment);
+        service.updateEnrollment(incomingEnrollment);
 
         verify(mockAccountService).updateAccount(accountCaptor.capture());
 

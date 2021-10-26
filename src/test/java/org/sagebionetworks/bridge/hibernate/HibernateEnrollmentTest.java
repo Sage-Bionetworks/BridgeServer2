@@ -54,7 +54,7 @@ public class HibernateEnrollmentTest {
         assertTrue(node.get("consentRequired").booleanValue());
         assertEquals(node.get("note").textValue(), TEST_NOTE);
         assertEquals(node.get("type").textValue(), "Enrollment");
-
+        
         Enrollment deser = BridgeObjectMapper.get().readValue(node.toString(), Enrollment.class);
         assertNull(deser.getAppId());
         assertNull(deser.getStudyId());

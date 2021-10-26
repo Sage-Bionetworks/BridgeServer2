@@ -249,7 +249,7 @@ public class EnrollmentControllerTest extends Mockito {
 
         controller.updateEnrollment(TEST_STUDY_ID, TEST_USER_ID);
 
-        verify(mockService).editEnrollment(enrollmentCaptor.capture());
+        verify(mockService).updateEnrollment(enrollmentCaptor.capture());
 
         Enrollment captured = enrollmentCaptor.getValue();
         assertEquals(captured.getAppId(), TEST_APP_ID);

@@ -90,13 +90,13 @@ public class EnrollmentController extends BaseController {
         
         return service.unenroll(enrollment);
     }
-
+    
     @PostMapping("/v3/participants/{userId}/enrollments")
     public StatusMessage updateUserEnrollments(@PathVariable String userId) {
         UserSession session = getAuthenticatedSession(SUPERADMIN);
-
+        
         List<EnrollmentMigration> migrations = parseJson(new TypeReference<List<EnrollmentMigration>>() {});
-
+        
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
         accountService.editAccount(accountId, (acct) -> {
             acct.getEnrollments().clear();
@@ -116,7 +116,7 @@ public class EnrollmentController extends BaseController {
         enrollment.setStudyId(studyId);
         enrollment.setAccountId(userId);
 
-        service.editEnrollment(enrollment);
+        service.updateEnrollment(enrollment);
 
         return new StatusMessage("Enrollment updated.");
     }
