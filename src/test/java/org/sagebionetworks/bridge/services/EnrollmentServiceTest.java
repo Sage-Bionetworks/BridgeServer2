@@ -23,6 +23,7 @@ import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLE
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -203,7 +204,7 @@ public class EnrollmentServiceTest extends Mockito {
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setExternalId("extId");
         enrollment.setEnrolledOn(timestamp);
-        enrollment.setNote("test enr note");
+        enrollment.setNote(TEST_NOTE);
 
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAppId(), TEST_APP_ID);
@@ -216,6 +217,7 @@ public class EnrollmentServiceTest extends Mockito {
         assertNull(retValue.getWithdrawnBy());
         assertNull(retValue.getWithdrawalNote());
         assertFalse(retValue.isConsentRequired());
+        // The note does not set because the caller is self.
         assertNull(retValue.getNote());
         
         assertTrue(account.getEnrollments().contains(retValue));
@@ -232,10 +234,12 @@ public class EnrollmentServiceTest extends Mockito {
         TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        enrollment.setNote(TEST_NOTE);
 
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAccountId(), TEST_USER_ID);
         assertEquals(retValue.getEnrolledBy(), "adminUser");
+        assertEquals(retValue.getNote(), TEST_NOTE);
     }
     
     @Test
@@ -251,10 +255,12 @@ public class EnrollmentServiceTest extends Mockito {
         TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        enrollment.setNote(TEST_NOTE);
 
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAccountId(), TEST_USER_ID);
         assertEquals(retValue.getEnrolledBy(), "adminUser");
+        assertEquals(retValue.getNote(), TEST_NOTE);
     }
     
     @Test
@@ -268,9 +274,11 @@ public class EnrollmentServiceTest extends Mockito {
         TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        enrollment.setNote(TEST_NOTE);
 
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAccountId(), TEST_USER_ID);
+        assertEquals(retValue.getNote(), TEST_NOTE);
     }
     
     // TODO: Should this throw an exception? I think during migration, it cannot
@@ -406,15 +414,14 @@ public class EnrollmentServiceTest extends Mockito {
         enrollment.setWithdrawalNote("Withdrawal reason");
 
         Enrollment retValue = service.unenroll(enrollment);
-        System.out.println(retValue);
         assertEquals(retValue.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(retValue.getWithdrawnBy());
         assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
 
         verify(mockAccountService).editAccount(any(), any());
-        Enrollment captured = Iterables.getLast(account.getEnrollments(), null);
-        System.out.println(captured);
-        System.out.println(account.getEnrollments());
+
+        Enrollment captured = account.getEnrollments().stream().filter(e -> e.getStudyId().equals(TEST_STUDY_ID)).findAny().orElse(null);
+        assertNotNull(captured);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(captured.getWithdrawnBy());
         assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");

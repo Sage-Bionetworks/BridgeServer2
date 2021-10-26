@@ -210,6 +210,8 @@ public class EnrollmentService {
         if (!account.getId().equals(callerUserId)) {
             existingEnrollment.setEnrolledBy(callerUserId);
             existingEnrollment.setNote(newEnrollment.getNote());
+        } else {
+            newEnrollment.setNote(null);
         }
     }
     
