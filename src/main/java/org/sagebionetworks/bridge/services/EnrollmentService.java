@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_OTHER_ENROLLMENTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
@@ -179,19 +180,20 @@ public class EnrollmentService {
         }
         for (Enrollment existingEnrollment : account.getEnrollments()) {
             if (existingEnrollment.getStudyId().equals(newEnrollment.getStudyId())) {
-                updateEnrollment(account, newEnrollment, existingEnrollment);
+                editEnrollment(account, newEnrollment, existingEnrollment);
                 return existingEnrollment;
             }
         }
-        updateEnrollment(account, newEnrollment, newEnrollment);
+        editEnrollment(account, newEnrollment, newEnrollment);
         account.getEnrollments().add(newEnrollment);
         return newEnrollment;
     }
     
-    private void updateEnrollment(Account account, Enrollment newEnrollment, Enrollment existingEnrollment) {
+    private void editEnrollment(Account account, Enrollment newEnrollment, Enrollment existingEnrollment) {
         existingEnrollment.setWithdrawnOn(null);
         existingEnrollment.setWithdrawnBy(null);
         existingEnrollment.setWithdrawalNote(null);
+        existingEnrollment.setNote(newEnrollment.getNote());
         existingEnrollment.setConsentRequired(newEnrollment.isConsentRequired());
         // We might want eventually to allow this to be nullified, but right now with two 
         // systems for enrolling the user, ParticipantService and ConsentService can easily
@@ -257,5 +259,27 @@ public class EnrollmentService {
             }
         }
         throw new EntityNotFoundException(Enrollment.class);
+    }
+
+    public void updateEnrollment(Enrollment enrollment) {
+        checkNotNull(enrollment);
+        
+        Validate.entityThrowingException(INSTANCE, enrollment);
+        
+        AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        CAN_EDIT_OTHER_ENROLLMENTS.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID, enrollment.getAccountId());
+        
+        for (Enrollment accountEnrollment : account.getEnrollments()) {
+            if (accountEnrollment.getStudyId().equals(enrollment.getStudyId())) {
+                accountEnrollment.setNote(enrollment.getNote());
+                accountEnrollment.setWithdrawalNote(enrollment.getWithdrawalNote());
+                break;
+            }
+        }
+        
+        accountService.updateAccount(account);
     }
 }

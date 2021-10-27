@@ -33,6 +33,7 @@ import static org.sagebionetworks.bridge.services.AccountService.ROTATIONS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -1053,15 +1054,19 @@ public class AccountServiceTest extends Mockito {
         verify(mockAccountDao).createAccount(app, account);
         verify(activityEventService).publishEnrollmentEvent(any(), any(), any());
         verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture());
-        
-        StudyActivityEvent event1 = eventCaptor.getAllValues().get(0);
+
+        StudyActivityEvent event1 = eventCaptor.getAllValues().stream()
+                .filter(event -> event.getStudyId().equals(STUDY_A)).findFirst().orElse(null);
+        assertNotNull(event1);
         assertEquals(event1.getAppId(), TEST_APP_ID);
         assertEquals(event1.getStudyId(), STUDY_A);
         assertEquals(event1.getUserId(), TEST_USER_ID);
         assertEquals(event1.getEventId(), "enrollment");
         assertEquals(event1.getTimestamp(), account.getCreatedOn());
-        
-        StudyActivityEvent event2 = eventCaptor.getAllValues().get(1);
+
+        StudyActivityEvent event2 = eventCaptor.getAllValues().stream()
+                .filter(event -> event.getStudyId().equals(STUDY_B)).findFirst().orElse(null);
+        assertNotNull(event2);
         assertEquals(event2.getAppId(), TEST_APP_ID);
         assertEquals(event2.getStudyId(), STUDY_B);
         assertEquals(event2.getUserId(), TEST_USER_ID);

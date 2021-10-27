@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SHARED_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ENROLLMENTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_OTHER_ENROLLMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_TRANSITION_STUDY;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
@@ -986,5 +987,85 @@ public class AuthUtilsTest extends Mockito {
                 .collect(toSet());
         account.setEnrollments(enrollments);
         return account;
+    }
+
+    @Test
+    public void canEditOtherEnrollments_baseCaseFails() {
+        RequestContext.set(new RequestContext.Builder().build());
+
+        assertFalse(CAN_EDIT_OTHER_ENROLLMENTS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canEditOtherEnrollments_selfFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID).build());
+
+        assertFalse(CAN_EDIT_OTHER_ENROLLMENTS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canEditOtherEnrollments_studyDesignerWithStudyAccessSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+
+        assertTrue(CAN_EDIT_OTHER_ENROLLMENTS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canEditOtherEnrollments_studyDesignerWithoutStudyAccessFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .build());
+
+        assertFalse(CAN_EDIT_OTHER_ENROLLMENTS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canEditOtherEnrollments_studyCoordinatorWithStudyAccessSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+
+        assertTrue(CAN_EDIT_OTHER_ENROLLMENTS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canEditOtherEnrollments_studyCoordinatorWithoutStudyAccessFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+
+        assertFalse(CAN_EDIT_OTHER_ENROLLMENTS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canEditOtherEnrollments_adminSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+
+        assertTrue(CAN_EDIT_OTHER_ENROLLMENTS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canEditOtherEnrollments_researcherSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .build());
+
+        assertTrue(CAN_EDIT_OTHER_ENROLLMENTS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void canEditOtherEnrollments_developerSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(DEVELOPER))
+                .build());
+
+        assertTrue(CAN_EDIT_OTHER_ENROLLMENTS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
     }
 }

@@ -44,6 +44,7 @@ public final class HibernateEnrollment implements Enrollment {
     private String withdrawnBy;
     private String withdrawalNote;
     private boolean consentRequired;
+    private String note;
     
     // Needed for Hibernate, or else you have to create an instantiation helper class
     public HibernateEnrollment() {
@@ -109,11 +110,17 @@ public final class HibernateEnrollment implements Enrollment {
     public void setConsentRequired(boolean consentRequired) {
         this.consentRequired = consentRequired;
     }
+    public String getNote() {
+        return note;
+    }
+    public void setNote(String note) {
+        this.note = note;
+    }
 
     @Override
     public int hashCode() {
         return Objects.hash(accountId, externalId, appId, studyId, enrolledOn, 
-                withdrawnOn, enrolledBy, withdrawnBy, withdrawalNote, consentRequired);
+                withdrawnOn, enrolledBy, withdrawnBy, withdrawalNote, consentRequired, note);
     }
 
     @Override
@@ -132,7 +139,8 @@ public final class HibernateEnrollment implements Enrollment {
                Objects.equals(enrolledBy, other.enrolledBy) &&
                Objects.equals(withdrawnBy, other.withdrawnBy) &&
                Objects.equals(withdrawalNote, other.withdrawalNote) &&
-               Objects.equals(consentRequired, other.consentRequired);
+               Objects.equals(consentRequired, other.consentRequired) &&
+               Objects.equals(note, other.note);
     }
 
     @Override
@@ -141,6 +149,6 @@ public final class HibernateEnrollment implements Enrollment {
                 + accountId + ", externalId=" + externalId + ", enrolledOn=" + enrolledOn 
                 + ", withdrawnOn=" + withdrawnOn + ", enrolledBy=" + enrolledBy 
                 + ", withdrawnBy=" + withdrawnBy + ", withdrawalNote=" + withdrawalNote 
-                + ", consentRequired=" + consentRequired + "]";
+                + ", consentRequired=" + consentRequired + ", note=" + note + "]";
     }
 }
