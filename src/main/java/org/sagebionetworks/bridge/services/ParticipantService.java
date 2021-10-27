@@ -625,8 +625,9 @@ public class ParticipantService {
         RequestContext context = RequestContext.get();
         
         // New accounts can be enrolled in a study using an external ID, but only through code paths that are
-        // authenticated (that is, userId is not null in the context and we've checked permissions elsewhere).
-        // Legacy apps do this so we must continue to support it.
+        // authenticated (there are five of these, and then there is signUp, which is anonymous at this point 
+        // and cannot enroll the user as part of sign up). No other form of enrollment is supported (it must 
+        // be done in a second step).
         if (isNew && context.getCallerUserId() != null) {
             for (Map.Entry<String, String> entry : participant.getExternalIds().entrySet()) {
                 String studyId = entry.getKey();
