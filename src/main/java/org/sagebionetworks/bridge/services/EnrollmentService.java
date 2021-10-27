@@ -193,6 +193,7 @@ public class EnrollmentService {
         existingEnrollment.setWithdrawnOn(null);
         existingEnrollment.setWithdrawnBy(null);
         existingEnrollment.setWithdrawalNote(null);
+        existingEnrollment.setNote(newEnrollment.getNote());
         existingEnrollment.setConsentRequired(newEnrollment.isConsentRequired());
         // We might want eventually to allow this to be nullified, but right now with two 
         // systems for enrolling the user, ParticipantService and ConsentService can easily
@@ -209,9 +210,6 @@ public class EnrollmentService {
         String callerUserId = RequestContext.get().getCallerUserId();
         if (!account.getId().equals(callerUserId)) {
             existingEnrollment.setEnrolledBy(callerUserId);
-            existingEnrollment.setNote(newEnrollment.getNote());
-        } else {
-            newEnrollment.setNote(null);
         }
     }
     
@@ -265,22 +263,23 @@ public class EnrollmentService {
 
     public void updateEnrollment(Enrollment enrollment) {
         checkNotNull(enrollment);
-
+        
         Validate.entityThrowingException(INSTANCE, enrollment);
-
+        
         AccountId accountId = AccountId.forId(enrollment.getAppId(), enrollment.getAccountId());
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-
+        
         CAN_EDIT_OTHER_ENROLLMENTS.checkAndThrow(STUDY_ID, enrollment.getStudyId(), USER_ID, enrollment.getAccountId());
-
+        
         for (Enrollment accountEnrollment : account.getEnrollments()) {
             if (accountEnrollment.getStudyId().equals(enrollment.getStudyId())) {
                 accountEnrollment.setNote(enrollment.getNote());
+                accountEnrollment.setWithdrawalNote(enrollment.getWithdrawalNote());
                 break;
             }
         }
-
+        
         accountService.updateAccount(account);
     }
 }

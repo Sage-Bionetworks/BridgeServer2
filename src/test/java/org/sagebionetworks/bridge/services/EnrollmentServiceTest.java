@@ -217,8 +217,7 @@ public class EnrollmentServiceTest extends Mockito {
         assertNull(retValue.getWithdrawnBy());
         assertNull(retValue.getWithdrawalNote());
         assertFalse(retValue.isConsentRequired());
-        // The note does not set because the caller is self.
-        assertNull(retValue.getNote());
+        assertEquals(retValue.getNote(), TEST_NOTE);
         
         assertTrue(account.getEnrollments().contains(retValue));
     }
@@ -708,7 +707,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
 
     @Test
-    public void updateEnrollment_canUpdateOnlyNoteField() {
+    public void updateEnrollment_canUpdateOnlyNoteFields() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("otherId")
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
@@ -737,7 +736,7 @@ public class EnrollmentServiceTest extends Mockito {
         assertNull(targetEnrollment.getEnrolledOn());
         assertNull(targetEnrollment.getWithdrawnBy());
         assertNull(targetEnrollment.getWithdrawnOn());
-        assertNull(targetEnrollment.getWithdrawalNote());
+        assertEquals(targetEnrollment.getWithdrawalNote(), TEST_NOTE);
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -787,15 +786,9 @@ public class EnrollmentServiceTest extends Mockito {
         verify(mockAccountService).updateAccount(accountCaptor.capture());
 
         Set<Enrollment> capturedEnrollments = accountCaptor.getValue().getEnrollments();
-        assertEquals(capturedEnrollments.size(), 2);
-        assertTrue(capturedEnrollments.contains(targetEnrollment));
-        assertTrue(capturedEnrollments.contains(otherEnrollment));
-        for (Enrollment captureEnrollment : capturedEnrollments) {
-            if (captureEnrollment.getStudyId().equals(TEST_STUDY_ID)) {
-                assertEquals(captureEnrollment.getNote(), TEST_NOTE);
-            } else {
-                assertNull(captureEnrollment.getNote());
-            }
-        }
+        Enrollment captured = capturedEnrollments.stream().filter(e -> e.getStudyId().equals(TEST_STUDY_ID))
+                .findFirst().orElse(null);
+        assertNotNull(captured);
+        assertEquals(captured.getNote(), TEST_NOTE);
     }
 }
