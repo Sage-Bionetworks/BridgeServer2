@@ -68,9 +68,8 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("phone", INVALID_PHONE_ERROR);
             }
             // If provided, email must be valid. Commons email validator v1.7 causes our test to 
-            // fail because the word "test" appears in the user name, for reasons I could not 
-            // deduce from their code. So we have switched to using OWASP regular expression to 
-            // match valid email addresses.
+            // fail because the word "test" appears in the user name, so we have switched to using 
+            // OWASP regular expression to match valid email addresses.
             if (email != null && !email.matches(OWASP_REGEXP_VALID_EMAIL)) {
                 errors.rejectValue("email", INVALID_EMAIL_ERROR);
             }
