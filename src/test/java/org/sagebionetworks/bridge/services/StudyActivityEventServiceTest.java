@@ -258,6 +258,38 @@ public class StudyActivityEventServiceTest extends Mockito {
         service.publishEvent(event, true);
     }
     
+    @Test
+    public void publishEvent_throwsErrorWithMultipleFields() { 
+        StudyActivityEvent event = makeBuilder().withObjectId(ENROLLMENT_FIELD)
+                .withTimestamp(ENROLLMENT_TS).withObjectType(ENROLLMENT).build();
+
+        // This covers all the events, even the study burst events below
+        when(mockDao.getRecentStudyActivityEvent(any(), any(), any())).thenReturn(PERSISTED_EVENT);
+        
+        Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyBurst burst = new StudyBurst();
+        burst.setOriginEventId(ENROLLMENT_FIELD);
+        burst.setIdentifier("foo");
+        burst.setInterval(Period.parse("P1W"));
+        burst.setOccurrences(1);
+        burst.setUpdateType(IMMUTABLE);
+
+        Schedule2 schedule = new Schedule2();
+        schedule.setStudyBursts(ImmutableList.of(burst));
+        
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+                .thenReturn(Optional.of(schedule));
+        try {
+            service.publishEvent(event, true);
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {
+            assertTrue(e.getMessage().contains("enrollment, study_burst:foo:01 cannot be published."));
+        }
+    }
+    
     @Test(expectedExceptions = BadRequestException.class)
     public void publishEvent_studyBurstEventThrowsError() { 
         // This event doesn’t update unless there is no persisted event. Here

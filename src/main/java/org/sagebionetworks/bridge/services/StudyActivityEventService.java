@@ -5,6 +5,8 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
@@ -23,7 +25,7 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -122,15 +124,22 @@ public class StudyActivityEventService {
         StudyActivityEvent mostRecent = dao.getRecentStudyActivityEvent(
                 event.getUserId(), event.getStudyId(), event.getEventId());
         
+        // Throwing exceptions will prevent study burst updates from happening if 
+        // an error occurs in earlier order...so we collect errors and only show 
+        // them at the end if we want to throw an exception.
+        List<String> failedEventIds = new ArrayList<>();
         if (event.getUpdateType().canUpdate(mostRecent, event)) {
             dao.publishEvent(event);
-        } else if (showError) {
-            throw new BadRequestException(event.getEventId() + " cannot be published.");
+        } else {
+            failedEventIds.add(event.getEventId());
         }
         Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
         Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
         if (schedule != null) {
-            createStudyBurstEvents(schedule, event, showError);
+            createStudyBurstEvents(schedule, event, failedEventIds);
+        }
+        if (showError && !failedEventIds.isEmpty()) {
+            throw new BadRequestException(COMMA_SPACE_JOINER.join(failedEventIds) + " cannot be published.");
         }
     }
     
@@ -216,11 +225,12 @@ public class StudyActivityEventService {
             events.add(event);
         }
     }
-
+    
     /**
-     * If the triggering event is mutable, these events can be created as well.
+     * If the triggering event is mutable, these events can be created as well. Returns true
+     * if any study burst failed to update, or false otherwise.
      */
-    private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event, boolean showError) {
+    private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event, List<String> failedEventIds) {
         String eventId = event.getEventId();
         
         StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
@@ -254,8 +264,8 @@ public class StudyActivityEventService {
                     // Study bursts also have an update type that must be respected.
                     if (burst.getUpdateType().canUpdate(mostRecent, burstEvent)) {
                         dao.publishEvent(burstEvent);    
-                    }  else if (showError) {
-                        throw new BadRequestException(burstEvent.getEventId() + " cannot be published.");
+                    }  else {
+                        failedEventIds.add(burstEvent.getEventId());
                     } 
                 }
             }
