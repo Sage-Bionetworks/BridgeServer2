@@ -1032,7 +1032,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
         
         verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, never()).publishEvent(any());
+        verify(studyActivityEventService, never()).publishEvent(any(), anyBoolean());
     }
     
     @Test
@@ -1053,7 +1053,7 @@ public class AccountServiceTest extends Mockito {
 
         verify(mockAccountDao).createAccount(app, account);
         verify(activityEventService).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture());
+        verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture(), eq(false));
 
         StudyActivityEvent event1 = eventCaptor.getAllValues().stream()
                 .filter(event -> event.getStudyId().equals(STUDY_A)).findFirst().orElse(null);
@@ -1133,7 +1133,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(updatedAccount.getClientTimeZone(), OTHER_CLIENT_TIME_ZONE);
         
         verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, never()).publishEvent(any());
+        verify(studyActivityEventService, never()).publishEvent(any(), anyBoolean());
     }
 
     @Test
@@ -1168,7 +1168,7 @@ public class AccountServiceTest extends Mockito {
         
         verify(activityEventService).publishEnrollmentEvent(
                 eq(app), eq(HEALTH_CODE), any(DateTime.class));
-        verify(studyActivityEventService).publishEvent(eventCaptor.capture());
+        verify(studyActivityEventService).publishEvent(eventCaptor.capture(), eq(false));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), STUDY_B);

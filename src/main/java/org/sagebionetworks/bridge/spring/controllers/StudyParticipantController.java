@@ -170,7 +170,7 @@ public class StudyParticipantController extends BaseController {
                 .withStudyId(studyId)
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
-                .withTimestamp(timelineRequestedOn).build());
+                .withTimestamp(timelineRequestedOn).build(), false);
         
         return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
     }
@@ -508,18 +508,20 @@ public class StudyParticipantController extends BaseController {
     
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/activityevents")
     @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage publishActivityEvent(@PathVariable String studyId, @PathVariable String userId) {
+    public StatusMessage publishActivityEvent(@PathVariable String studyId, @PathVariable String userId,
+            @RequestParam(required = false) String showError) {
         UserSession session = getAdministrativeSession();
         
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
         StudyActivityEventRequest request = parseJson(StudyActivityEventRequest.class);
         StudyActivityEventIdsMap eventMap = studyService.getStudyActivityEventIdsMap(session.getAppId(), studyId);
+        boolean showErrorBool = "true".equals(showError);
         
         studyActivityEventService.publishEvent(request.parse(eventMap)
                 .withAppId(session.getAppId())
                 .withStudyId(studyId)
-                .withUserId(account.getId()).build());
+                .withUserId(account.getId()).build(), showErrorBool);
         
         return EVENT_RECORDED_MSG;
     }
@@ -527,17 +529,19 @@ public class StudyParticipantController extends BaseController {
     @DeleteMapping("/v5/studies/{studyId}/participants/{userId}/activityevents/{eventId}")
     public StatusMessage deleteActivityEvent(@PathVariable String studyId, 
             @PathVariable String userId,
-            @PathVariable String eventId) {
+            @PathVariable String eventId,
+            @RequestParam(required = false) String showError) {
         UserSession session = getAdministrativeSession();
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         StudyActivityEventRequest request = new StudyActivityEventRequest(eventId, null, null, null);
         StudyActivityEventIdsMap eventMap = studyService.getStudyActivityEventIdsMap(session.getAppId(), studyId);
-
+        boolean showErrorBool = "true".equals(showError);
+        
         studyActivityEventService.deleteEvent(request.parse(eventMap)
                 .withAppId(session.getAppId())
                 .withStudyId(studyId)
-                .withUserId(account.getId()).build());
+                .withUserId(account.getId()).build(), showErrorBool);
         
         return EVENT_DELETED_MSG;
     }

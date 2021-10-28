@@ -179,10 +179,10 @@ public class ActivityEventControllerTest extends Mockito {
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(
                 TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID)).thenReturn(page);
         
-        ResourceList<StudyActivityEvent> retList = controller.getRecentActivityEventsForSelf(TEST_STUDY_ID);
+        ResourceList<StudyActivityEvent> retList = controller.getRecentActivityEventsForSelf(TEST_STUDY_ID, null);
         assertEquals(retList.getItems().size(), 1);
 
-        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture());
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
@@ -209,10 +209,10 @@ public class ActivityEventControllerTest extends Mockito {
         eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
         when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
         
-        StatusMessage retValue = controller.publishActivityEventForSelf(TEST_STUDY_ID);
+        StatusMessage retValue = controller.publishActivityEventForSelf(TEST_STUDY_ID, null);
         assertEquals(retValue, EVENT_RECORDED_MSG);
         
-        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture());
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
@@ -234,10 +234,10 @@ public class ActivityEventControllerTest extends Mockito {
         when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID))
             .thenReturn(map);
 
-        StatusMessage retValue = controller.deleteActivityEventForSelf(TEST_STUDY_ID, "eventKey");
+        StatusMessage retValue = controller.deleteActivityEventForSelf(TEST_STUDY_ID, "eventKey", null);
         assertEquals(retValue, EVENT_DELETED_MSG);
         
-        verify(mockStudyActivityEventService).deleteEvent(eventCaptor.capture());
+        verify(mockStudyActivityEventService).deleteEvent(eventCaptor.capture(), eq(false));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
@@ -272,7 +272,7 @@ public class ActivityEventControllerTest extends Mockito {
     public void getSelfActivityEventsInStudy_notInStudy() throws Exception {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
 
-        controller.getRecentActivityEventsForSelf(TEST_STUDY_ID);
+        controller.getRecentActivityEventsForSelf(TEST_STUDY_ID, null);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -313,7 +313,7 @@ public class ActivityEventControllerTest extends Mockito {
         TestUtils.mockRequestBody(mockRequest, createJson(
                 "{'eventKey':'eventKey','timestamp':'"+CREATED_ON+"'}"));
         
-        controller.publishActivityEventForSelf(TEST_STUDY_ID);
+        controller.publishActivityEventForSelf(TEST_STUDY_ID, null);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -321,6 +321,6 @@ public class ActivityEventControllerTest extends Mockito {
     public void deleteSelfActivityEventInStudy_notInStudy() throws Exception {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         
-        controller.deleteActivityEventForSelf(TEST_STUDY_ID, "eventKey");
+        controller.deleteActivityEventForSelf(TEST_STUDY_ID, "eventKey", null);
     }
 }

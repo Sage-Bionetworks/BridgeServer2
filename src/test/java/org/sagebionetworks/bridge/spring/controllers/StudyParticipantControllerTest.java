@@ -321,10 +321,10 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountInStudy();
         
-        StatusMessage retValue = controller.publishActivityEvent(TEST_STUDY_ID, TEST_USER_ID);
+        StatusMessage retValue = controller.publishActivityEvent(TEST_STUDY_ID, TEST_USER_ID, null);
         assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);
         
-        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture());
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
@@ -357,10 +357,10 @@ public class StudyParticipantControllerTest extends Mockito {
         mockAccountInStudy();
         
         StatusMessage retValue = controller.deleteActivityEvent(
-                TEST_STUDY_ID, TEST_USER_ID, "eventKey");
+                TEST_STUDY_ID, TEST_USER_ID, "eventKey", null);
         assertEquals(retValue, EVENT_DELETED_MSG);
         
-        verify(mockStudyActivityEventService).deleteEvent(eventCaptor.capture());
+        verify(mockStudyActivityEventService).deleteEvent(eventCaptor.capture(), eq(false));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
@@ -1351,7 +1351,7 @@ public class StudyParticipantControllerTest extends Mockito {
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
         verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
-        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture());
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);

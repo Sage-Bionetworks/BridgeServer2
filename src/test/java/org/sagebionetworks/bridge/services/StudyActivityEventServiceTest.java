@@ -117,7 +117,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any())).thenReturn(PERSISTED_EVENT);
 
-        service.deleteEvent(originEvent);
+        service.deleteEvent(originEvent, false);
         
         verify(mockDao).deleteCustomEvent(eventCaptor.capture());
         StudyActivityEvent event = eventCaptor.getValue();
@@ -133,7 +133,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any())).thenReturn(PERSISTED_EVENT);
 
-        service.deleteEvent(originEvent);
+        service.deleteEvent(originEvent, false);
         
         verify(mockDao, never()).deleteCustomEvent(any());
     }
@@ -144,7 +144,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         // no event returned from a query of the DAO 
 
-        service.deleteEvent(originEvent);
+        service.deleteEvent(originEvent, false);
         
         verify(mockDao, never()).deleteCustomEvent(any());
     }
@@ -156,7 +156,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyActivityEvent originEvent = makeBuilder().withObjectType(CUSTOM).build();
         
         try {
-            service.deleteEvent(originEvent);
+            service.deleteEvent(originEvent, false);
             fail("should have thrown exception");
         } catch(InvalidEntityException e) {
             assertEquals(e.getErrors().get("eventId").get(0), "eventId " + INVALID_EVENT_ID);
@@ -170,7 +170,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any())).thenReturn(PERSISTED_EVENT);
 
-        service.publishEvent(originEvent);
+        service.publishEvent(originEvent, false);
         
         verify(mockDao, never()).publishEvent(any());
     }
@@ -181,7 +181,7 @@ public class StudyActivityEventServiceTest extends Mockito {
                 .withObjectId("event1").withTimestamp(MODIFIED_ON)
                 .withClientTimeZone("America/Los_Angeles").build();
         
-        service.publishEvent(originEvent);
+        service.publishEvent(originEvent, false);
         
         verify(mockDao).publishEvent(eventCaptor.capture());
         StudyActivityEvent event = eventCaptor.getValue();
@@ -200,7 +200,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyActivityEvent event = makeBuilder().withObjectId("timeline_retrieved")
                 .withTimestamp(TIMELINE_RETRIEVED_TS).withObjectType(TIMELINE_RETRIEVED).build();
         
-        service.publishEvent(event);
+        service.publishEvent(event, false);
         
         verify(mockDao).publishEvent(any());
     }
@@ -214,7 +214,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any())).thenReturn(PERSISTED_EVENT);
 
-        service.publishEvent(event);
+        service.publishEvent(event, false);
         
         verify(mockDao, never()).publishEvent(any());
     }
@@ -223,7 +223,7 @@ public class StudyActivityEventServiceTest extends Mockito {
     public void publishEvent_eventInvalid() {
         StudyActivityEvent event = makeBuilder().build();
         
-        service.publishEvent(event);
+        service.publishEvent(event, false);
     }
     
     @Test

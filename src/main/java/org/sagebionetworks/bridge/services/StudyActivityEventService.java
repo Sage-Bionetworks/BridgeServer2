@@ -97,7 +97,7 @@ public class StudyActivityEventService {
      * Only custom events can be deleted (if they are mutable). Other requests 
      * are silently ignored. 
      */
-    public void deleteEvent(StudyActivityEvent event) {
+    public void deleteEvent(StudyActivityEvent event, boolean showError) {
         checkNotNull(event);
         
         Validate.entityThrowingException(DELETE_INSTANCE, event);
@@ -107,10 +107,12 @@ public class StudyActivityEventService {
 
         if (event.getUpdateType().canDelete(mostRecent, event)) {
             dao.deleteCustomEvent(event);
+        } else if (showError) {
+            throw new BadRequestException(event.getEventId() + " cannot be deleted.");
         }
     }
     
-    public void publishEvent(StudyActivityEvent event) {
+    public void publishEvent(StudyActivityEvent event, boolean showError) {
         checkNotNull(event);
 
         event.setCreatedOn(getCreatedOn());
@@ -122,11 +124,13 @@ public class StudyActivityEventService {
         
         if (event.getUpdateType().canUpdate(mostRecent, event)) {
             dao.publishEvent(event);
+        } else if (showError) {
+            throw new BadRequestException(event.getEventId() + " cannot be published.");
         }
         Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
         Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
         if (schedule != null) {
-            createStudyBurstEvents(schedule, event);
+            createStudyBurstEvents(schedule, event, showError);
         }
     }
     
@@ -216,7 +220,7 @@ public class StudyActivityEventService {
     /**
      * If the triggering event is mutable, these events can be created as well.
      */
-    private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event) {
+    private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event, boolean showError) {
         String eventId = event.getEventId();
         
         StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
@@ -249,7 +253,9 @@ public class StudyActivityEventService {
                     // Study bursts also have an update type that must be respected.
                     if (burst.getUpdateType().canUpdate(mostRecent, burstEvent)) {
                         dao.publishEvent(burstEvent);    
-                    }
+                    }  else if (showError) {
+                        throw new BadRequestException(burstEvent.getEventId() + " cannot be published.");
+                    } 
                 }
             }
         }
