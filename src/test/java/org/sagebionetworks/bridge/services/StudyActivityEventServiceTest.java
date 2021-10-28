@@ -21,6 +21,7 @@ import static org.sagebionetworks.bridge.services.StudyActivityEventService.INST
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
@@ -166,7 +167,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         }
     }
     
-    @Test(expectedExceptions = BadRequestException.class)
+    @Test
     public void deleteEvent_throwsError() { 
         StudyActivityEvent originEvent = makeBuilder()
                 .withObjectType(CUSTOM).withObjectId("event2")
@@ -174,7 +175,12 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any())).thenReturn(PERSISTED_EVENT);
 
-        service.publishEvent(originEvent, true);
+        try {
+            service.deleteEvent(originEvent, true);
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {
+            assertTrue(e.getMessage().contains("event2 cannot be deleted"));
+        }
     }
     
     @Test
