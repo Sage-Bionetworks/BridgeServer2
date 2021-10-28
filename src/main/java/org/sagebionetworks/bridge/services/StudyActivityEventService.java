@@ -233,6 +233,7 @@ public class StudyActivityEventService {
         
         for(StudyBurst burst : schedule.getStudyBursts()) {
             if (burst.getOriginEventId().equals(eventId)) {
+                builder.withUpdateType(burst.getUpdateType());
                 
                 DateTime eventTime = new DateTime(event.getTimestamp());
                 int len =  burst.getOccurrences().intValue();
@@ -240,7 +241,7 @@ public class StudyActivityEventService {
                 for (int i=0; i < len; i++) {
                     String iteration = Strings.padStart(Integer.toString(i+1), 2, '0');
                     eventTime = new DateTime(eventTime).plus(burst.getInterval());
-                    
+
                     StudyActivityEvent burstEvent = builder
                             .withObjectId(burst.getIdentifier())
                             .withAnswerValue(iteration)
