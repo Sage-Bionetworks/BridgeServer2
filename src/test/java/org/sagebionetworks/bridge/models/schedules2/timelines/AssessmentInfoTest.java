@@ -52,7 +52,6 @@ public class AssessmentInfoTest extends Mockito {
         AssessmentInfo info = AssessmentInfo.create(ref);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
-        System.out.println(node.toString());
         assertEquals(node.get("guid").textValue(), "guid");
         assertEquals(node.get("appId").textValue(), TEST_APP_ID);
         assertEquals(node.get("identifier").textValue(), "identifier");
