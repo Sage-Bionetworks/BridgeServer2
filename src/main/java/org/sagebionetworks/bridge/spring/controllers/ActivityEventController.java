@@ -104,8 +104,7 @@ public class ActivityEventController extends BaseController {
     /* v2 study-scoped APIs for participants */
     
     @GetMapping("/v5/studies/{studyId}/participants/self/activityevents")
-    public ResourceList<StudyActivityEvent> getRecentActivityEventsForSelf(@PathVariable String studyId,
-            @RequestParam(required = false) String showError) throws JsonProcessingException {
+    public ResourceList<StudyActivityEvent> getRecentActivityEventsForSelf(@PathVariable String studyId) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
         
         if (!session.getParticipant().getStudyIds().contains(studyId)) {
@@ -113,7 +112,6 @@ public class ActivityEventController extends BaseController {
         }
         
         DateTime timelineRequestedOn = getDateTime();
-        boolean showErrorBool = "true".equals(showError);
         
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withTimelineAccessedOn(timelineRequestedOn).build();
@@ -124,7 +122,7 @@ public class ActivityEventController extends BaseController {
                 .withStudyId(studyId)
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
-                .withTimestamp(timelineRequestedOn).build(), showErrorBool);
+                .withTimestamp(timelineRequestedOn).build(), false);
 
         return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), session.getId(), studyId);
     }

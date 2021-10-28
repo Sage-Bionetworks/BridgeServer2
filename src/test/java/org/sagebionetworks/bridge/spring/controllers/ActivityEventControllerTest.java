@@ -179,7 +179,7 @@ public class ActivityEventControllerTest extends Mockito {
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(
                 TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID)).thenReturn(page);
         
-        ResourceList<StudyActivityEvent> retList = controller.getRecentActivityEventsForSelf(TEST_STUDY_ID, null);
+        ResourceList<StudyActivityEvent> retList = controller.getRecentActivityEventsForSelf(TEST_STUDY_ID);
         assertEquals(retList.getItems().size(), 1);
 
         verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false));
@@ -195,7 +195,7 @@ public class ActivityEventControllerTest extends Mockito {
     }
 
     @Test
-    public void createSelfActivityEventInStudy() throws Exception {
+    public void publishActivityEventForSelf() throws Exception {
         session.setParticipant(new StudyParticipant.Builder()
                 .withStudyIds(ImmutableSet.of(TEST_STUDY_ID))
                 .withId(TEST_USER_ID).build());
@@ -272,7 +272,7 @@ public class ActivityEventControllerTest extends Mockito {
     public void getSelfActivityEventsInStudy_notInStudy() throws Exception {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
 
-        controller.getRecentActivityEventsForSelf(TEST_STUDY_ID, null);
+        controller.getRecentActivityEventsForSelf(TEST_STUDY_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -307,13 +307,33 @@ public class ActivityEventControllerTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Account not found.")
-    public void createSelfActivityEventInStudy_notInStudy() throws Exception {
+    public void publishActivityEventForSelf_notInStudy() throws Exception {
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
 
         TestUtils.mockRequestBody(mockRequest, createJson(
                 "{'eventKey':'eventKey','timestamp':'"+CREATED_ON+"'}"));
         
         controller.publishActivityEventForSelf(TEST_STUDY_ID, null);
+    }
+    
+    @Test
+    public void publishActivityEventForSelf_showError() throws Exception {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withStudyIds(ImmutableSet.of(TEST_STUDY_ID))
+                .withId(TEST_USER_ID).build());
+        
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+
+        TestUtils.mockRequestBody(mockRequest, createJson(
+                "{'eventKey':'eventKey','timestamp':'"+CREATED_ON+"'}"));
+
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
+        eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        
+        controller.publishActivityEventForSelf(TEST_STUDY_ID, "true");
+        
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(true));
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -323,4 +343,23 @@ public class ActivityEventControllerTest extends Mockito {
         
         controller.deleteActivityEventForSelf(TEST_STUDY_ID, "eventKey", null);
     }
+    
+    @Test
+    public void deleteSelfActivityEventInStudy_throwError() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID)
+                .withStudyIds(ImmutableSet.of(TEST_STUDY_ID))
+                .withHealthCode(HEALTH_CODE)
+                .build());
+        
+        StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
+        when(mockStudyService.getStudyActivityEventIdsMap(any(), any())).thenReturn(map);
+        
+        controller.deleteActivityEventForSelf(TEST_STUDY_ID, "eventKey", "true");
+        
+        verify(mockStudyActivityEventService).deleteEvent(any(), eq(true));
+    }
+    
 }
