@@ -179,7 +179,7 @@ public class StudyActivityEventServiceTest extends Mockito {
             service.deleteEvent(originEvent, true);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
-            assertTrue(e.getMessage().contains("event2 cannot be deleted"));
+            assertTrue(e.getMessage().contains("Study event failed to delete: custom:event2"));
         }
     }
     
@@ -286,11 +286,11 @@ public class StudyActivityEventServiceTest extends Mockito {
             service.publishEvent(event, true);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
-            assertTrue(e.getMessage().contains("enrollment, study_burst:foo:01 cannot be published."));
+            assertTrue(e.getMessage().contains("Study event(s) failed to publish: enrollment, study_burst:foo:01."));
         }
     }
     
-    @Test(expectedExceptions = BadRequestException.class)
+    @Test
     public void publishEvent_studyBurstEventThrowsError() { 
         // This event doesn’t update unless there is no persisted event. Here
         // it does not persist.
@@ -317,7 +317,12 @@ public class StudyActivityEventServiceTest extends Mockito {
         // The existence of the first event will be enough to throw an error
         when(mockDao.getRecentStudyActivityEvent(any(), any(), eq("study_burst:foo:01"))).thenReturn(PERSISTED_EVENT);
         
-        service.publishEvent(event, true);
+        try {
+            service.publishEvent(event, true);
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {
+            assertEquals(e.getMessage(), "Study event(s) failed to publish: study_burst:foo:01.");
+        }
     }
     
     @Test

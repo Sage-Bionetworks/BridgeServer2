@@ -5,7 +5,6 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
-import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
@@ -25,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -40,6 +38,8 @@ import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Activity events that are scoped to a person participating in a specific study. 
@@ -57,6 +57,7 @@ import org.sagebionetworks.bridge.validators.Validate;
  */
 @Component
 public class StudyActivityEventService {
+    private static Logger LOG = LoggerFactory.getLogger(StudyActivityEventService.class);
     
     static final String CREATED_ON_FIELD = CREATED_ON.name().toLowerCase();
     static final String ENROLLMENT_FIELD = ENROLLMENT.name().toLowerCase();
@@ -109,8 +110,13 @@ public class StudyActivityEventService {
 
         if (event.getUpdateType().canDelete(mostRecent, event)) {
             dao.deleteCustomEvent(event);
-        } else if (showError) {
-            throw new BadRequestException(event.getEventId() + " cannot be deleted.");
+        } else {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("User " + event.getUserId() + " failed to delete study event: " + event.getEventId());
+            }
+            if (showError) {
+                throw new BadRequestException("Study event failed to delete: " + event.getEventId() + ".");    
+            }
         }
     }
     
@@ -138,8 +144,14 @@ public class StudyActivityEventService {
         if (schedule != null) {
             createStudyBurstEvents(schedule, event, failedEventIds);
         }
-        if (showError && !failedEventIds.isEmpty()) {
-            throw new BadRequestException(COMMA_SPACE_JOINER.join(failedEventIds) + " cannot be published.");
+        if (!failedEventIds.isEmpty()) {
+            String eventNames = COMMA_SPACE_JOINER.join(failedEventIds);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("User " + event.getUserId() + " failed to publish study event(s): " + eventNames);    
+            }
+            if (showError) {
+                throw new BadRequestException("Study event(s) failed to publish: " + eventNames + ".");
+            }
         }
     }
     
