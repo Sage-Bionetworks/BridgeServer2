@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -784,5 +785,24 @@ public class BridgeUtils {
         orderedSet.addAll(elements);
         return ImmutableList.copyOf(orderedSet);
     }
-  
+    
+    /**
+     * Select one element from a collection or other iterable, using a method reference, e.g.
+     * getElement(account.getEnrollments(), Enrollment::getStudyId, "studyA"). We do this all
+     * over the place in our code.
+     */
+    public static <T, S> Optional<T> getElement(Iterable<T> iterable, Function<T, S> func, S value) {
+        if (iterable == null) {
+            return Optional.empty();
+        }
+        for (T item : iterable) {
+            S retValue = func.apply(item);
+            if (value == null && retValue == null) {
+                return Optional.of(item);   
+            } else if (retValue != null && retValue.equals(value)) {
+                return Optional.of(item);
+            }
+        }
+        return Optional.empty();
+    }
 }

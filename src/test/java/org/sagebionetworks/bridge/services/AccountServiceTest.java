@@ -4,6 +4,7 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
@@ -1055,8 +1056,8 @@ public class AccountServiceTest extends Mockito {
         verify(activityEventService).publishEnrollmentEvent(any(), any(), any());
         verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture());
 
-        StudyActivityEvent event1 = eventCaptor.getAllValues().stream()
-                .filter(event -> event.getStudyId().equals(STUDY_A)).findFirst().orElse(null);
+        StudyActivityEvent event1 = getElement(
+                eventCaptor.getAllValues(), StudyActivityEvent::getStudyId, STUDY_A).orElse(null);
         assertNotNull(event1);
         assertEquals(event1.getAppId(), TEST_APP_ID);
         assertEquals(event1.getStudyId(), STUDY_A);
@@ -1064,8 +1065,8 @@ public class AccountServiceTest extends Mockito {
         assertEquals(event1.getEventId(), "enrollment");
         assertEquals(event1.getTimestamp(), account.getCreatedOn());
 
-        StudyActivityEvent event2 = eventCaptor.getAllValues().stream()
-                .filter(event -> event.getStudyId().equals(STUDY_B)).findFirst().orElse(null);
+        StudyActivityEvent event2 = getElement(
+                eventCaptor.getAllValues(), StudyActivityEvent::getStudyId, STUDY_B).orElse(null);
         assertNotNull(event2);
         assertEquals(event2.getAppId(), TEST_APP_ID);
         assertEquals(event2.getStudyId(), STUDY_B);

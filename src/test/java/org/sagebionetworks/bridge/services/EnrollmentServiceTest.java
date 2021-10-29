@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -46,7 +47,6 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
@@ -419,7 +419,7 @@ public class EnrollmentServiceTest extends Mockito {
         
         verify(mockAccountService).editAccount(any(), any());
         
-        Enrollment captured = account.getEnrollments().stream().filter(e -> e.getStudyId().equals(TEST_STUDY_ID)).findAny().orElse(null);
+        Enrollment captured = getElement(account.getEnrollments(), Enrollment::getStudyId, TEST_STUDY_ID).orElse(null);
         assertNotNull(captured);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(captured.getWithdrawnBy());
@@ -786,8 +786,8 @@ public class EnrollmentServiceTest extends Mockito {
         verify(mockAccountService).updateAccount(accountCaptor.capture());
 
         Set<Enrollment> capturedEnrollments = accountCaptor.getValue().getEnrollments();
-        Enrollment captured = capturedEnrollments.stream().filter(e -> e.getStudyId().equals(TEST_STUDY_ID))
-                .findFirst().orElse(null);
+        Enrollment captured = getElement(
+                capturedEnrollments, Enrollment::getStudyId, TEST_STUDY_ID).orElse(null);
         assertNotNull(captured);
         assertEquals(captured.getNote(), TEST_NOTE);
     }
