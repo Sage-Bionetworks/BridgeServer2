@@ -33,7 +33,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -607,13 +607,16 @@ public class ActivityEventServiceTest {
         
         List<ActivityEvent> results = activityEventService.getActivityEventList(TEST_APP_ID, null, HEALTH_CODE);
         
-        ActivityEvent ar = getEventByKey(results, "activities_retrieved");
+        ActivityEvent ar = BridgeUtils.getElement(results, ActivityEvent::getEventId, "activities_retrieved")
+                .orElseThrow(() -> new RuntimeException("Could not find activity event"));
         assertEquals(ar.getTimestamp(), ACTIVITIES_RETRIEVED);
         
-        ActivityEvent en = getEventByKey(results, "enrollment");
+        ActivityEvent en = BridgeUtils.getElement(results, ActivityEvent::getEventId, "enrollment")
+                .orElseThrow(() -> new RuntimeException("Could not find activity event"));
         assertEquals(en.getTimestamp(), ENROLLMENT);
         
-        ActivityEvent co = getEventByKey(results, "created_on");
+        ActivityEvent co = BridgeUtils.getElement(results, ActivityEvent::getEventId, "created_on")
+                .orElseThrow(() -> new RuntimeException("Could not find activity event"));
         assertEquals(co.getTimestamp(), CREATED_ON);
         
         verify(activityEventDao).getActivityEventMap(HEALTH_CODE);
@@ -666,12 +669,5 @@ public class ActivityEventServiceTest {
         App app = App.create();
         
         activityEventService.deleteCustomEvent(app, HEALTH_CODE, "eventKey");
-    }
-    
-    private ActivityEvent getEventByKey(List<ActivityEvent> results, String key) {
-        return results.stream()
-                .filter(event -> event.getEventId().equals(key))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Could not find activity event"));
     }
 }

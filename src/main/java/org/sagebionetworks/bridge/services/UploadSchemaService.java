@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeUtils.getElement;
+import static org.sagebionetworks.bridge.upload.UploadUtil.FIELD_ANSWERS;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -160,9 +162,8 @@ public class UploadSchemaService {
         if (!newSchemaRev && oldSchema != null) {
             // Check that the old schema already has the answers field.
             List<UploadFieldDefinition> oldFieldDefList = oldSchema.getFieldDefinitions();
-            UploadFieldDefinition answersFieldDef = oldFieldDefList.stream()
-                    .filter(fieldDef -> UploadUtil.FIELD_ANSWERS.equals(fieldDef.getName()))
-                    .findFirst().orElse(null);
+            UploadFieldDefinition answersFieldDef = getElement(
+                    oldFieldDefList, UploadFieldDefinition::getName, FIELD_ANSWERS).orElse(null);
 
             if (answersFieldDef == null) {
                 // Old schema doesn't have the

@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
+import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
@@ -23,7 +24,6 @@ import com.google.common.collect.ImmutableList;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -189,7 +189,7 @@ public class StudyActivityEventService {
                 account.getId(), studyId, adjEventId, offsetBy, pageSize);
         
         if (adjEventId.equals(ENROLLMENT_FIELD) && results.getItems().size() == 0) {
-            Enrollment en = findEnrollmentByStudyId(account, studyId);
+            Enrollment en = getElement(account.getEnrollments(), Enrollment::getStudyId, studyId).orElse(null);
             if (en != null) {
                 StudyActivityEvent event = new StudyActivityEvent.Builder()
                         .withEventId(ENROLLMENT_FIELD).withTimestamp(en.getEnrolledOn()).build();
@@ -264,20 +264,11 @@ public class StudyActivityEventService {
                 return;
             }
         }
-        Enrollment en = findEnrollmentByStudyId(account, studyId);
+        Enrollment en = getElement(account.getEnrollments(), Enrollment::getStudyId, studyId).orElse(null);
         if (en != null) {
             StudyActivityEvent event = new StudyActivityEvent.Builder()
                     .withEventId(ENROLLMENT_FIELD).withTimestamp(en.getEnrolledOn()).build();
             events.add(event);
         }
-    }
-    
-    private Enrollment findEnrollmentByStudyId(Account account, String studyId) {
-        for (Enrollment oneEnrollment : account.getEnrollments()) {
-            if (oneEnrollment.getStudyId().equals(studyId)) {
-                return oneEnrollment;
-            }
-        }
-        return null;
     }
 }

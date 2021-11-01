@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
+import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -178,11 +179,11 @@ public class EnrollmentService {
             RequestContext.set(context.toBuilder().withCallerEnrolledStudies(
                     addToSet(context.getCallerEnrolledStudies(), newEnrollment.getStudyId())).build());            
         }
-        for (Enrollment existingEnrollment : account.getEnrollments()) {
-            if (existingEnrollment.getStudyId().equals(newEnrollment.getStudyId())) {
-                editEnrollment(account, newEnrollment, existingEnrollment);
-                return existingEnrollment;
-            }
+        Enrollment existingEnrollment = getElement(account.getEnrollments(), 
+                Enrollment::getStudyId, newEnrollment.getStudyId()).orElse(null);
+        if (existingEnrollment != null) {
+            editEnrollment(account, newEnrollment, existingEnrollment);
+            return existingEnrollment;
         }
         editEnrollment(account, newEnrollment, newEnrollment);
         account.getEnrollments().add(newEnrollment);
