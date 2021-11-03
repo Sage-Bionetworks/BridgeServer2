@@ -132,7 +132,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(recordCaptor.getAllValues().get(2).getInstanceGuid(), "sessionInstanceGuid");
         
         // Nothing is finished, nothing is published.
-        verify(mockStudyActivityEventService, never()).publishEvent(any());
+        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false));
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -172,7 +172,7 @@ public class AdherenceServiceTest extends Mockito {
         
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(0));
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(1));
-        verify(mockStudyActivityEventService, times(3)).publishEvent(eventCaptor.capture());
+        verify(mockStudyActivityEventService, times(3)).publishEvent(eventCaptor.capture(), eq(false));
         
         StudyActivityEvent event = eventCaptor.getAllValues().get(2);
         assertEquals(event.getAppId(), TEST_APP_ID);
@@ -197,7 +197,7 @@ public class AdherenceServiceTest extends Mockito {
         
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(0));
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(1));
-        verify(mockStudyActivityEventService, times(1)).publishEvent(eventCaptor.capture());
+        verify(mockStudyActivityEventService, times(1)).publishEvent(eventCaptor.capture(), eq(false));
         
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
@@ -220,7 +220,7 @@ public class AdherenceServiceTest extends Mockito {
         
         service.updateAdherenceRecords(TEST_APP_ID, list);
         
-        verify(mockStudyActivityEventService, never()).publishEvent(any());
+        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false));
     }
     
     private AdherenceRecord mockAssessmentRecord(String id) {
@@ -266,7 +266,7 @@ public class AdherenceServiceTest extends Mockito {
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
         
         verify(mockDao, never()).updateAdherenceRecord(any());
-        verify(mockStudyActivityEventService, never()).publishEvent(any());
+        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false));
     }
     
     @Test
@@ -433,7 +433,7 @@ public class AdherenceServiceTest extends Mockito {
         assertNull(captured.getFinishedOn());
         assertFalse(captured.isDeclined());
         
-        verify(mockStudyActivityEventService, never()).publishEvent(any());
+        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false));
     }
     
     @Test

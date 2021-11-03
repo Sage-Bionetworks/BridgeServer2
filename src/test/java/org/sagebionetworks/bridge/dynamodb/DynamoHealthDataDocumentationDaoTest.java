@@ -71,6 +71,7 @@ public class DynamoHealthDataDocumentationDaoTest {
         verify(mockMapper).save(doc);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void deleteDocumentationForParentId() {
         // mock dependencies
@@ -153,6 +154,7 @@ public class DynamoHealthDataDocumentationDaoTest {
         assertNull(returned);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void getDocumentationForParentId() {
         // mock dependencies
