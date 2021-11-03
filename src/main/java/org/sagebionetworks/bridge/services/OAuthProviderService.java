@@ -102,15 +102,27 @@ class OAuthProviderService {
     static final String SYNAPSE_USERID_KEY = "userid";
     private static final String SYNAPSE_ID_TOKEN_KEY = "id_token";
     private static final String SYNAPSE_ERROR_KEY = "reason";
+    // These come from Synapse JWKS config. These are Base64URL-encoded. We decode them into a BigInt and hardcode the
+    // results here.
+    // https://repo-prod.prod.sagebase.org/auth/v1/oauth2/jwks
+    // https://repo-dev.dev.sagebase.org/auth/v1/oauth2/jwks
     private static final BigInteger MODULUS = new BigInteger("238499454829654749051455172686433749207979434713239851759657441457377"+
             "1656597474337243022411171242737524732939908302581624575831937041782355615027727710820665290995695103877971991185257319"+
             "7057021578055098390526471329800633323810194331080461575761929434803674679324161848934212115408664545557149085782355814"+
             "2203009343325468419362811405260745578631362098820497061936813369203864883181658617346770893793830626123962885974940082"+
             "6219064421262331213358876970410749141172687535654897753523188343873412905059109968922576374393735637734252722397997640"+
             "7213258598569748635314939347146403284906522122994148568855913460554935920381");
+    private static final BigInteger MODULUS_DEV = new BigInteger("25159655312783347884364772547748435634086427201698234303716556513"+
+            "7729410580787588545867155811350794512509709106307227925547818198442773657899912426428316219488030985437725560574786643"+
+            "7084312325975370218827691654202621804474741752982456390519875233862582355344320323419432100056890022373729963243244874"+
+            "2023913527144664645993395992704226693605312330024170969703515168220424835383129339227771799451777328144746815351791157"+
+            "6519217531094653932301202440450170518845133584029947053310629688248843358501502611734208642019539713376051085488732979" +
+            "92379718298635525844478538144348008297367792825995385863082648480751012984282901");
     private static final BigInteger EXPONENT = new BigInteger("65537");
     private static final RSAPublicKeySpec KEY_SPEC = new RSAPublicKeySpec(MODULUS, EXPONENT);
-    
+    private static final RSAPublicKeySpec KEY_SPEC_DEV = new RSAPublicKeySpec(MODULUS_DEV, EXPONENT);
+
+    private BridgeConfig config;
     private String synapseOauthURL;
     private String synapseClientID;
     private String synapseClientSecret;
@@ -118,6 +130,7 @@ class OAuthProviderService {
 
     @Autowired
     final void setBridgeConfig(BridgeConfig config) {
+        this.config = config;
         this.synapseOauthURL = config.get(SYNAPSE_OAUTH_URL);
         this.synapseClientID = config.get(SYNAPSE_OAUTH_CLIENT_ID);
         this.synapseClientSecret = config.get(SYNAPSE_OAUTH_CLIENT_SECRET);
@@ -261,7 +274,8 @@ class OAuthProviderService {
     private RSAPublicKey getRSAPublicKey() {
         try {
             KeyFactory kf = KeyFactory.getInstance("RSA");
-            return (RSAPublicKey)kf.generatePublic(KEY_SPEC);
+            RSAPublicKeySpec keySpec = config.isProduction() ? KEY_SPEC : KEY_SPEC_DEV;
+            return (RSAPublicKey)kf.generatePublic(keySpec);
         } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new RuntimeException(e);
         } 
