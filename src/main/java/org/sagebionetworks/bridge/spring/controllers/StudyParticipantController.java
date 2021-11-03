@@ -565,10 +565,11 @@ public class StudyParticipantController extends BaseController {
         return EVENT_DELETED_MSG;
     }
     
-    /* -------------- Study-scoped participant reports -------------- */
-
-    // NOTE: We will want to add participant files and participant data APIs that are study-scoped
-    // as well, *if* these are ever accessible to administrators, which right now they are not.
+    /* --------------------------------------------------------------- */
+    /* STUDY-SCOPED PARTICIPANT REPORTS */
+    /* --------------------------------------------------------------- */
+    
+    // INDICES
     
     @GetMapping("/v5/studies/{studyId}/participants/reports")
     public ReportTypeResourceList<? extends ReportIndex> listParticipantReportIndices(@PathVariable String studyId) {
@@ -623,7 +624,12 @@ public class StudyParticipantController extends BaseController {
         return REPORT_INDEX_DELETED_MSG;
     }
 
-    // Did not port over the date-only API, which is not paginated.
+    // REPORTS
+
+    /**
+     * I did not port over the date-only API. The date-time API can be made to serve for dates only
+     * (just set the time portion to T00:00:00.000Z")
+     */
     @GetMapping("/v5/studies/{studyId}/participants/{userIdToken}/reports/{identifier}")
     public ForwardCursorPagedResourceList<ReportData> getParticipantReport(@PathVariable String studyId,
             @PathVariable String userIdToken, @PathVariable String identifier,
@@ -649,7 +655,10 @@ public class StudyParticipantController extends BaseController {
                 account.getHealthCode(), startTimeDate, endTimeDate, offsetKey, pageSizeInt);
     }
 
-    // Did not port over the date-only API, which is not paginated.
+    /**
+     * I did not port over the date-only API. The date-time API can be made to serve for dates only
+     * (just set the time portion to T00:00:00.000Z")
+     */
     @GetMapping("/v5/studies/{studyId}/participants/self/reports/{identifier}")
     public ForwardCursorPagedResourceList<ReportData> getParticipantReportForSelf(@PathVariable String studyId,
             @PathVariable String identifier, @RequestParam(required = false) String startTime,
