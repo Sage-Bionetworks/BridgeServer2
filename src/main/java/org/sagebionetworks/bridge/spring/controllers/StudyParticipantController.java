@@ -599,7 +599,6 @@ public class StudyParticipantController extends BaseController {
                 .withAppId(session.getAppId()).build();
         
         ReportIndex index = reportService.getReportIndex(key);
-        System.out.println("################### " + index.getStudyIds());
         if (index == null || !index.getStudyIds().contains(studyId)) {
             throw new EntityNotFoundException(ReportIndex.class);
         }
@@ -619,7 +618,7 @@ public class StudyParticipantController extends BaseController {
         if (index == null || !index.getStudyIds().contains(studyId)) {
             throw new EntityNotFoundException(ReportIndex.class);
         }
-        reportService.deleteParticipantReportIndex(session.getAppId(), session.getId(), identifier);
+        reportService.deleteParticipantReportIndex(session.getAppId(), null, identifier);
         
         return REPORT_INDEX_DELETED_MSG;
     }

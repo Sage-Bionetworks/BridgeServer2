@@ -3,13 +3,6 @@ package org.sagebionetworks.bridge.services;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
@@ -26,7 +19,9 @@ import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.testng.annotations.AfterMethod;
@@ -41,7 +36,6 @@ import org.sagebionetworks.bridge.dao.ReportIndexDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -55,7 +49,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
-public class ReportServiceTest {
+public class ReportServiceTest extends Mockito {
 
     private static final String IDENTIFIER = "MyTestReport";
     
@@ -109,6 +103,7 @@ public class ReportServiceTest {
     private ArgumentCaptor<LocalDate> localDateCaptor;
     
     @Spy
+    @InjectMocks
     ReportService service;
     
     DateRangeResourceList<? extends ReportData> results;
@@ -119,9 +114,6 @@ public class ReportServiceTest {
     public void before() throws Exception {
         MockitoAnnotations.initMocks(this);
         
-        service.setReportDataDao(mockReportDataDao);
-        service.setReportIndexDao(mockReportIndexDao);
-
         List<ReportData> list = Lists.newArrayList();
         list.add(createReport(LocalDate.parse("2015-02-10"), "First", "Name"));
         list.add(createReport(LocalDate.parse("2015-02-12"), "Last", "Name"));
@@ -188,7 +180,7 @@ public class ReportServiceTest {
     }
 
     // If the index has studies, and the user doesn't have one of those studies, this fails
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void canAccessFailsIfCallerDoesNotMatchStudies() {
         ReportIndex index = ReportIndex.create();
         index.setStudyIds(USER_STUDY_IDS);
@@ -198,7 +190,7 @@ public class ReportServiceTest {
         service.checkParticipantReportAccess(TEST_USER_ID, index);        
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test
     public void canAccessIfPublic() {
         // Create a situation where the user shares no studies in common with the index, but 
         // the index is public. In that case, access is allowed.
@@ -206,8 +198,8 @@ public class ReportServiceTest {
         index.setStudyIds(ImmutableSet.of("studyC"));
         index.setPublic(true);
         
-        RequestContext.set(
-                new RequestContext.Builder().withCallerEnrolledStudies(TestConstants.USER_STUDY_IDS).build());
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerEnrolledStudies(TestConstants.USER_STUDY_IDS).build());
         service.checkParticipantReportAccess(TEST_USER_ID, index);        
     }
     
@@ -767,8 +759,8 @@ public class ReportServiceTest {
         service.getStudyReportV4(TEST_APP_ID, IDENTIFIER, END_TIME, START_TIME.withZone(zone), OFFSET_KEY, PAGE_SIZE);
     }
     
-    @Test
-    public void getReportIndexDoesNotAuthorize() {
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getReportIndexAuthorizes() {
         // These don't match, but the call succeeds
         RequestContext.set(new RequestContext.Builder()
                 .withCallerEnrolledStudies(ImmutableSet.of("studyC")).build());
@@ -778,8 +770,7 @@ public class ReportServiceTest {
         
         when(mockReportIndexDao.getIndex(STUDY_REPORT_DATA_KEY)).thenReturn(index);
         
-        ReportIndex retrieved = service.getReportIndex(STUDY_REPORT_DATA_KEY);
-        assertEquals(retrieved, index);
+        service.getReportIndex(STUDY_REPORT_DATA_KEY);
     }
     
     private ReportIndex setupMismatchedStudies(ReportDataKey reportKey, 
@@ -798,21 +789,21 @@ public class ReportServiceTest {
         return index;
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void getStudyReportAuthorizes() {
         setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         
         service.getStudyReport(TEST_APP_ID, IDENTIFIER, START_DATE, END_DATE);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantReportAuthorizes() {
         setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
         service.getParticipantReport(TEST_APP_ID, "not-user-id", IDENTIFIER, HEALTH_CODE, START_DATE, END_DATE);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void getParticipantReportV4Authorizes() {
         setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
@@ -826,7 +817,7 @@ public class ReportServiceTest {
                 END_TIME.withZone(DateTimeZone.UTC), null, BridgeConstants.API_MINIMUM_PAGE_SIZE);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void getStudyReportV4Authorizes() {
         setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         
@@ -834,7 +825,7 @@ public class ReportServiceTest {
                 START_TIME, END_TIME, null, BridgeConstants.API_MINIMUM_PAGE_SIZE);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void saveStudyReportAuthorizes() {
         setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         
@@ -843,7 +834,7 @@ public class ReportServiceTest {
         service.saveStudyReport(TEST_APP_ID, IDENTIFIER, data);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void saveParticipantReportAuthorizes() {
         setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
@@ -852,28 +843,28 @@ public class ReportServiceTest {
         service.saveParticipantReport(TEST_APP_ID, "some-other-user", IDENTIFIER, HEALTH_CODE, data);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteStudyReportAuthorizes() {
         setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         
         service.deleteStudyReport(TEST_APP_ID, IDENTIFIER);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteStudyReportRecordAuthorizes() {
         setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         
         service.deleteStudyReportRecord(TEST_APP_ID, IDENTIFIER, START_DATE.toString());
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteParticipantReportAuthorizes() {
         setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
         service.deleteParticipantReport(TEST_APP_ID, "some-user-id", IDENTIFIER, HEALTH_CODE);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteParticipantReportRecordAuthorizes() {
         setupMismatchedStudies(PARTICIPANT_REPORT_DATA_KEY);
         
@@ -881,7 +872,7 @@ public class ReportServiceTest {
                 IDENTIFIER, START_DATE.toString(), HEALTH_CODE);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteParticipantReportIndexAuthorizes() {
         ReportDataKey key = new ReportDataKey.Builder()
                    .withHealthCode("dummy-value") 
@@ -904,7 +895,7 @@ public class ReportServiceTest {
     }
     
     
-    @Test(expectedExceptions = UnauthorizedException.class)
+    @Test(expectedExceptions = EntityNotFoundException.class)
     public void updateReportIndexAuthorizes() {
         ReportIndex index = setupMismatchedStudies(STUDY_REPORT_DATA_KEY);
         

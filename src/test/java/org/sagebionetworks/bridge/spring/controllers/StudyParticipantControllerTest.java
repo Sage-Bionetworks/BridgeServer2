@@ -1646,7 +1646,7 @@ public class StudyParticipantControllerTest extends Mockito {
         StatusMessage retValue = controller.deleteParticipantReportIndex(TEST_STUDY_ID, IDENTIFIER);
         assertSame(retValue, REPORT_INDEX_DELETED_MSG);
         
-        verify(mockReportService).deleteParticipantReportIndex(TEST_APP_ID, TEST_STUDY_ID, IDENTIFIER);
+        verify(mockReportService).deleteParticipantReportIndex(TEST_APP_ID, null, IDENTIFIER);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1682,12 +1682,19 @@ public class StudyParticipantControllerTest extends Mockito {
         ForwardCursorPagedResourceList<ReportData> page = new ForwardCursorPagedResourceList(ImmutableList.of(),
                 "offsetKey", true);
         when(mockReportService.getParticipantReportV4(any(), any(), any(),
-                any(), any(), any(), any(), anyInt())).thenReturn(page);        
+                any(), any(), any(), any(), anyInt())).thenReturn(page);
+        
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(IDENTIFIER)
+                .withReportType(PARTICIPANT)
+                .withAppId(TEST_APP_ID).build();
+        ReportIndex index = ReportIndex.create();
+        index.setStudyIds(ImmutableSet.of(TEST_STUDY_ID));
+        when(mockReportService.getReportIndex(key)).thenReturn(index);
         
         ForwardCursorPagedResourceList<ReportData> retValue = controller.getParticipantReport(TEST_STUDY_ID,
                 TEST_USER_ID, IDENTIFIER, CREATED_ON.toString(), MODIFIED_ON.toString(), "offsetKey", "150");
         assertSame(retValue, page);
-        
 
         verify(mockReportService).getParticipantReportV4(TEST_APP_ID, TEST_USER_ID, IDENTIFIER,
                 HEALTH_CODE, CREATED_ON, MODIFIED_ON, "offsetKey", 150);
@@ -1701,7 +1708,15 @@ public class StudyParticipantControllerTest extends Mockito {
         
         ForwardCursorPagedResourceList<ReportData> page = new ForwardCursorPagedResourceList(ImmutableList.of(), "offsetKey", true);
         when(mockReportService.getParticipantReportV4(any(), any(), any(),
-                any(), any(), any(), any(), anyInt())).thenReturn(page);        
+                any(), any(), any(), any(), anyInt())).thenReturn(page);
+        
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(IDENTIFIER)
+                .withReportType(PARTICIPANT)
+                .withAppId(TEST_APP_ID).build();
+        ReportIndex index = ReportIndex.create();
+        index.setStudyIds(ImmutableSet.of(TEST_STUDY_ID));
+        when(mockReportService.getReportIndex(key)).thenReturn(index);
         
         controller.getParticipantReport(TEST_STUDY_ID, TEST_USER_ID, IDENTIFIER, null, null, null, null);
 
