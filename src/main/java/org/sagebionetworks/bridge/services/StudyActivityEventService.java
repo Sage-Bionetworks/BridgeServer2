@@ -239,8 +239,8 @@ public class StudyActivityEventService {
     }
     
     /**
-     * If the triggering event is mutable, these events can be created as well. Returns true
-     * if any study burst failed to update, or false otherwise.
+     * If the triggering event is mutable, study burst events can be created as well. Any errors
+     * that occur are collected in the list of failedEventIds. 
      */
     private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event, List<String> failedEventIds) {
         String eventId = event.getEventId();
