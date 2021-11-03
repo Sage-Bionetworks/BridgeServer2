@@ -153,20 +153,20 @@ public class ReportServiceTest {
     
     @Test
     public void canAccessIfNoIndex() {
-        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, null));
+        service.checkParticipantReportAccess(TEST_USER_ID, null);
     }
     
     @Test
     public void canAccessIfReportHasNullStudies() {
         ReportIndex index = ReportIndex.create();
-        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, index));
+        service.checkParticipantReportAccess(TEST_USER_ID, index);
     }
     
     @Test
     public void canAccessIfReportHasEmptyStudies() {
         ReportIndex index = ReportIndex.create();
         index.setStudyIds(ImmutableSet.of());
-        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, index));        
+        service.checkParticipantReportAccess(TEST_USER_ID, index);        
     }
 
     @Test
@@ -174,7 +174,7 @@ public class ReportServiceTest {
         RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
         ReportIndex index = ReportIndex.create();
         index.setStudyIds(USER_STUDY_IDS);
-        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, index));
+        service.checkParticipantReportAccess(TEST_USER_ID, index);
     }
 
     @Test
@@ -184,21 +184,21 @@ public class ReportServiceTest {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID)
                 .withCallerEnrolledStudies(ImmutableSet.of("studyB", "studyC")).build());
-        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, index));
+        service.checkParticipantReportAccess(TEST_USER_ID, index);
     }
 
     // If the index has studies, and the user doesn't have one of those studies, this fails
-    @Test
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void canAccessFailsIfCallerDoesNotMatchStudies() {
         ReportIndex index = ReportIndex.create();
         index.setStudyIds(USER_STUDY_IDS);
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("some-other-user-id")
                 .withCallerEnrolledStudies(ImmutableSet.of("studyC")).build());
-        assertFalse(service.canAccessParticipantReport(TEST_USER_ID, index));        
+        service.checkParticipantReportAccess(TEST_USER_ID, index);        
     }
     
-    @Test
+    @Test(expectedExceptions = UnauthorizedException.class)
     public void canAccessIfPublic() {
         // Create a situation where the user shares no studies in common with the index, but 
         // the index is public. In that case, access is allowed.
@@ -208,7 +208,7 @@ public class ReportServiceTest {
         
         RequestContext.set(
                 new RequestContext.Builder().withCallerEnrolledStudies(TestConstants.USER_STUDY_IDS).build());
-        assertTrue(service.canAccessParticipantReport(TEST_USER_ID, index));        
+        service.checkParticipantReportAccess(TEST_USER_ID, index);        
     }
     
     @Test

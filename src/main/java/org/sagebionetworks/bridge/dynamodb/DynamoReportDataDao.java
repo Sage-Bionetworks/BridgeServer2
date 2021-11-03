@@ -118,7 +118,7 @@ public class DynamoReportDataDao implements ReportDataDao {
         }
 
         int limit = Math.min(list.size(), pageSize);
-        return new ForwardCursorPagedResourceList<ReportData>(list.subList(0, limit), nextPageOffsetKey)
+        return new ForwardCursorPagedResourceList<ReportData>(list.subList(0, limit), nextPageOffsetKey, true)
                 .withRequestParam(PAGE_SIZE, pageSize)
                 .withRequestParam(OFFSET_KEY, offsetKey)
                 .withRequestParam(START_TIME, startTime)

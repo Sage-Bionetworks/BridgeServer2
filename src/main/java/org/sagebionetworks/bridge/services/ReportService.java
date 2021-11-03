@@ -81,12 +81,16 @@ public class ReportService {
     }
     
     /**
-     * Get a report index. Study memberships are ignored.
+     * Get a report index.
      */
     public ReportIndex getReportIndex(ReportDataKey key) {
         checkNotNull(key);
         
-        return reportIndexDao.getIndex(key);
+        ReportIndex index = reportIndexDao.getIndex(key);
+        if (!canAccessStudyReport(index)) {
+            throw new UnauthorizedException();
+        }
+        return index;
     }
     
     /**
@@ -131,9 +135,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }
+        checkParticipantReportAccess(userId, index);
+        
         return reportDataDao.getReportData(key, startDate, endDate);
     }
     
@@ -157,9 +160,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }
+        checkParticipantReportAccess(userId, index);
+        
         return reportDataDao.getReportDataV4(key, finalTimes.getStart(), finalTimes.getEnd(), offsetKey, pageSize);
     }
     
@@ -238,9 +240,7 @@ public class ReportService {
         reportData.setReportDataKey(key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }
+        checkParticipantReportAccess(userId, index);
         
         ReportDataValidator validator = new ReportDataValidator(index);
         Validate.entityThrowingException(validator, reportData);
@@ -326,9 +326,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }        
+        checkParticipantReportAccess(userId, index);
+        
         reportDataDao.deleteReportData(key);
     }
     
@@ -349,9 +348,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }        
+        checkParticipantReportAccess(userId, index);
+        
         reportDataDao.deleteReportDataRecord(key, date);
     }
     
@@ -369,9 +367,8 @@ public class ReportService {
                 .withAppId(appId).build();
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }        
+        checkParticipantReportAccess(userId, index);
+        
         reportIndexDao.removeIndex(key);
     }
 
@@ -407,18 +404,18 @@ public class ReportService {
         reportIndexDao.updateIndex(index);
     }
     
-    protected boolean canAccessParticipantReport(String userId, ReportIndex index) {
+    protected void checkParticipantReportAccess(String userId, ReportIndex index) {
         if (index == null || isEmpty(index.getStudyIds()) || index.isPublic()) {
-            return true;
+            return;
         }
         for (String studyId : index.getStudyIds()) {
             if (CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, userId, STUDY_ID, studyId)) {
-                return true;
+                return;
             }
         }
-        return false;
+        throw new EntityNotFoundException(ReportIndex.class);
     }
-
+    
     protected boolean canAccessStudyReport(ReportIndex index) {
         if (index == null || isEmpty(index.getStudyIds()) || index.isPublic()) {
             return true;
