@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
@@ -37,6 +38,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -280,14 +282,14 @@ public class StudyParticipantController extends BaseController {
 
         // Do not allow lookup by health code if health code access is disabled. Allow it however
         // if the user is an administrator.
-        if (!session.isInRole(ADMIN) && !app.isHealthCodeExportEnabled()
+        if (!app.isHealthCodeExportEnabled() && !session.isInRole(SUPERADMIN) 
                 && userId.toLowerCase().startsWith("healthcode:")) {
             throw new EntityNotFoundException(Account.class);
         }
         
         StudyParticipant participant = participantService.getParticipant(app, account, consents);
         
-        ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(ADMIN)) ?
+        ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(SUPERADMIN)) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
         return writer.writeValueAsString(participant);

@@ -3,10 +3,10 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACTIVITY_1;
 import static org.sagebionetworks.bridge.TestConstants.CONSENTED_STATUS_MAP;
@@ -476,8 +476,8 @@ public class ParticipantControllerTest extends Mockito {
     }
     
     @Test
-    public void getParticipantReturnsHealthCodeForAdmin() throws Exception {
-        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN, RESEARCHER))
+    public void getParticipantReturnsHealthCodeForSuperadmin() throws Exception {
+        participant = new StudyParticipant.Builder().withRoles(ImmutableSet.of(SUPERADMIN, RESEARCHER))
                 .withId(TEST_USER_ID).withStudyIds(CALLER_STUDIES).withId(TEST_USER_ID).build();
         session.setParticipant(participant);
 
@@ -502,9 +502,9 @@ public class ParticipantControllerTest extends Mockito {
     }
     
     @Test
-    public void getParticipantWithHealthCodeIfAdmin() throws Exception {
+    public void getParticipantWithHealthCodeIfSuperadmin() throws Exception {
         participant = new StudyParticipant.Builder().copyOf(participant)
-                .withRoles(ImmutableSet.of(RESEARCHER, ADMIN)).build();
+                .withRoles(ImmutableSet.of(RESEARCHER, SUPERADMIN)).build();
         session.setParticipant(participant);
         
         app.setHealthCodeExportEnabled(false);
@@ -731,7 +731,7 @@ public class ParticipantControllerTest extends Mockito {
 
         JsonNode node = MAPPER.readTree(result);
         assertEquals(node.get("firstName").textValue(), "Test");
-        assertEquals(node.get("healthCode").textValue(), UNENCRYPTED_HEALTH_CODE);
+        assertNull(node.get("healthCode"));
         assertNull(node.get("encryptedHealthCode"));
     }
 
@@ -748,6 +748,7 @@ public class ParticipantControllerTest extends Mockito {
         consentHistories.put("guid", ImmutableList.of(history));
 
         StudyParticipant studyParticipant = new StudyParticipant.Builder()
+                .withDataGroups(ImmutableSet.of(TEST_USER_GROUP))
                 .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).withFirstName("Test")
                 .withConsentHistories(consentHistories).build();
 
@@ -802,8 +803,9 @@ public class ParticipantControllerTest extends Mockito {
     }
     
     @Test
-    public void getSelfParticipantReturnsHealthCodeForAdmins() throws Exception {
+    public void getSelfParticipantReturnsHealthCodeForTestUsers() throws Exception {
         StudyParticipant studyParticipant = new StudyParticipant.Builder().withId(TEST_USER_ID)
+                .withDataGroups(ImmutableSet.of(TEST_USER_GROUP))
                 .withEncryptedHealthCode(ENCRYPTED_HEALTH_CODE).withFirstName("Test").build();
         when(mockParticipantService.getSelfParticipant(eq(app), any(), eq(false))).thenReturn(studyParticipant);
 
