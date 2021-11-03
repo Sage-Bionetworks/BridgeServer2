@@ -49,6 +49,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDocumentation;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
@@ -368,6 +369,12 @@ public class SpringConfig {
     @Autowired
     public DynamoDBMapper healthDataEx3DdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoHealthDataRecordEx3.class);
+    }
+
+    @Bean(name = "healthDataDocumentationDbMapper")
+    @Autowired
+    public DynamoDBMapper healthDataDocumentationDbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoHealthDataDocumentation.class);
     }
 
     @Bean(name = "activityEventDdbMapper")

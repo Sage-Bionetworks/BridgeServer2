@@ -26,7 +26,9 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -260,6 +262,25 @@ public class BridgeUtils {
     
     public static Map<String,String> appTemplateVariables(App app) {
         return appTemplateVariables(app, null);
+    }
+    
+    public static Map<String,String> participantTemplateVariables(StudyParticipant participant) {
+        Map<String,String> map = Maps.newHashMap();
+        if (participant == null) {
+            return map;
+        }
+        map.put("participantFirstName", participant.getFirstName());
+        map.put("participantLastName", participant.getLastName());
+        map.put("participantEmail", participant.getEmail());
+        if (participant.getPhone() != null) {
+            map.put("participantPhone", participant.getPhone().getNumber());
+            map.put("participantPhoneRegion", participant.getPhone().getRegionCode());
+            map.put("participantPhoneNationalFormat", participant.getPhone().getNationalFormat());
+        }
+        for (Entry<String,String> entry : participant.getAttributes().entrySet()) {
+            map.put("participant." + entry.getKey(), entry.getValue());
+        }
+        return map;
     }
     
     /**
@@ -764,5 +785,24 @@ public class BridgeUtils {
         orderedSet.addAll(elements);
         return ImmutableList.copyOf(orderedSet);
     }
-  
+    
+    /**
+     * Select one element from a collection or other iterable, using a method reference, e.g.
+     * getElement(account.getEnrollments(), Enrollment::getStudyId, "studyA"). We do this all
+     * over the place in our code.
+     */
+    public static <T, S> Optional<T> getElement(Iterable<T> iterable, Function<T, S> func, S value) {
+        if (iterable == null) {
+            return Optional.empty();
+        }
+        for (T item : iterable) {
+            S retValue = func.apply(item);
+            if (value == null && retValue == null) {
+                return Optional.of(item);   
+            } else if (retValue != null && retValue.equals(value)) {
+                return Optional.of(item);
+            }
+        }
+        return Optional.empty();
+    }
 }

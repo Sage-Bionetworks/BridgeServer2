@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Comparator.comparingLong;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
+import static org.sagebionetworks.bridge.models.appconfig.ConfigResolver.INSTANCE;
 
 import java.util.List;
 import java.util.Set;
@@ -111,7 +112,7 @@ public class AppConfigService {
     
     public List<AppConfig> getAppConfigs(String appId, boolean includeDeleted) {
         checkNotNull(appId);
-        
+
         return appConfigDao.getAppConfigs(appId, includeDeleted);
     }
     
@@ -170,13 +171,14 @@ public class AppConfigService {
     }
     
     protected AssessmentReference resolveAssessment(String appId, AssessmentReference ref) {
-        Assessment assessment = getAssessment(appId, ref.getGuid());
+        String assessmentAppId = (ref.getAppId() == null) ? appId : ref.getAppId();
+        Assessment assessment = getAssessment(assessmentAppId, ref.getGuid());
         // We validated the GUID was valid when the config was saved, but this can change.
         if (assessment == null) {
             return ref;
         }
-        String sharedId = getSharedAssessmentId(assessment);
-        return new AssessmentReference(ref.getGuid(), assessment.getIdentifier(), sharedId);
+        String originSharedId = getSharedAssessmentId(assessment);
+        return new AssessmentReference(INSTANCE, assessment.getAppId(), ref.getGuid(), assessment.getIdentifier(), originSharedId);
     }
     
     protected Assessment getAssessment(String appId, String guid) {
@@ -288,7 +290,7 @@ public class AppConfigService {
         AppConfig persistedConfig = appConfigDao.getAppConfig(appId, appConfig.getGuid());
         appConfig.setCreatedOn(persistedConfig.getCreatedOn());
         appConfig.setModifiedOn(getCurrentTimestamp());
-        
+
         return appConfigDao.updateAppConfig(appConfig);
     }
     

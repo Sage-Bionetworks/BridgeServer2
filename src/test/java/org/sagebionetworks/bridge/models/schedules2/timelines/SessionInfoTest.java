@@ -25,6 +25,7 @@ public class SessionInfoTest extends Mockito {
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
         assertEquals(node.get("guid").textValue(), SESSION_GUID_1);
         assertEquals(node.get("label").textValue(), "English");
+        assertEquals(node.get("symbol").textValue(), "✯");
         assertEquals(node.get("performanceOrder").textValue(), "randomized");
         assertEquals(node.get("timeWindowGuids").get(0).textValue(), SESSION_WINDOW_GUID_1);
         // this combines the minutes from two assessments, correctly

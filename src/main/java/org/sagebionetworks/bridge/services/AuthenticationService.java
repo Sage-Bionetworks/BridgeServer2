@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
+import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.services.AuthenticationService.ChannelType.EMAIL;
@@ -410,9 +411,7 @@ public class AuthenticationService {
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
                 
-        Enrollment en = account.getEnrollments().stream()
-                .filter(enrollment -> externalId.equals(enrollment.getExternalId()))
-                .findAny()
+        Enrollment en = getElement(account.getEnrollments(), Enrollment::getExternalId, externalId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         CAN_EDIT_PARTICIPANTS.checkAndThrow(STUDY_ID, en.getStudyId());

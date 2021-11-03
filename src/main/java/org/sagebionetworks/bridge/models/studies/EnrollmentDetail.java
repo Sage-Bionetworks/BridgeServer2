@@ -43,6 +43,9 @@ public class EnrollmentDetail {
     public String getWithdrawalNote() {
         return enrollment.getWithdrawalNote();
     }
+    public String getNote() {
+        return enrollment.getNote();
+    }
     public AccountRef getParticipant() {
         return participant;
     }

@@ -2,10 +2,13 @@ package org.sagebionetworks.bridge.services;
 
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
@@ -13,6 +16,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT_FILTER;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
@@ -20,11 +24,13 @@ import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLE
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -41,7 +47,6 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.EnrollmentDao;
@@ -163,13 +168,13 @@ public class EnrollmentServiceTest extends Mockito {
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         List<EnrollmentDetail> details = ImmutableList.of();
-        when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID)).thenReturn(details);
+        when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, null, TEST_USER_ID)).thenReturn(details);
         
         List<EnrollmentDetail> retValue = service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID,
                 "externalId:extId");
-        assertSame(retValue, details);
+        assertEquals(retValue, details);
         
-        verify(mockEnrollmentDao).getEnrollmentsForUser(TEST_APP_ID, TEST_USER_ID);
+        verify(mockEnrollmentDao).getEnrollmentsForUser(TEST_APP_ID, ImmutableSet.of(), TEST_USER_ID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -199,6 +204,7 @@ public class EnrollmentServiceTest extends Mockito {
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setExternalId("extId");
         enrollment.setEnrolledOn(timestamp);
+        enrollment.setNote(TEST_NOTE);
 
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAppId(), TEST_APP_ID);
@@ -211,6 +217,7 @@ public class EnrollmentServiceTest extends Mockito {
         assertNull(retValue.getWithdrawnBy());
         assertNull(retValue.getWithdrawalNote());
         assertFalse(retValue.isConsentRequired());
+        assertEquals(retValue.getNote(), TEST_NOTE);
         
         assertTrue(account.getEnrollments().contains(retValue));
     }
@@ -226,10 +233,12 @@ public class EnrollmentServiceTest extends Mockito {
         TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        enrollment.setNote(TEST_NOTE);
 
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAccountId(), TEST_USER_ID);
         assertEquals(retValue.getEnrolledBy(), "adminUser");
+        assertEquals(retValue.getNote(), TEST_NOTE);
     }
     
     @Test
@@ -245,10 +254,12 @@ public class EnrollmentServiceTest extends Mockito {
         TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        enrollment.setNote(TEST_NOTE);
 
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAccountId(), TEST_USER_ID);
         assertEquals(retValue.getEnrolledBy(), "adminUser");
+        assertEquals(retValue.getNote(), TEST_NOTE);
     }
     
     @Test
@@ -262,9 +273,11 @@ public class EnrollmentServiceTest extends Mockito {
         TestUtils.mockEditAccount(mockAccountService, account);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        enrollment.setNote(TEST_NOTE);
 
         Enrollment retValue = service.enroll(enrollment);
         assertEquals(retValue.getAccountId(), TEST_USER_ID);
+        assertEquals(retValue.getNote(), TEST_NOTE);
     }
     
     // TODO: Should this throw an exception? I think during migration, it cannot
@@ -386,7 +399,7 @@ public class EnrollmentServiceTest extends Mockito {
     public void unenrollBySelf() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID).build());
-                
+        
         Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         Enrollment otherStudy = Enrollment.create(TEST_APP_ID, "otherStudy", TEST_USER_ID);
         
@@ -403,12 +416,14 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(retValue.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(retValue.getWithdrawnBy());
         assertEquals(retValue.getWithdrawalNote(), "Withdrawal reason");
-
+        
         verify(mockAccountService).editAccount(any(), any());
-        Enrollment captured = Iterables.getLast(account.getEnrollments(), null);
+        
+        Enrollment captured = getElement(account.getEnrollments(), Enrollment::getStudyId, TEST_STUDY_ID).orElse(null);
+        assertNotNull(captured);
         assertEquals(captured.getWithdrawnOn(), MODIFIED_ON.minusHours(1));
         assertNull(captured.getWithdrawnBy());
-        assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");        
+        assertEquals(captured.getWithdrawalNote(), "Withdrawal reason");
     }
     
     @Test
@@ -606,6 +621,27 @@ public class EnrollmentServiceTest extends Mockito {
         service.getEnrollmentsForUser(TEST_APP_ID, null, TEST_USER_ID);
     }
     
+    @Test
+    public void getEnrollmentsForUserFilteringForStudies() {
+        Set<String> callerStudies = ImmutableSet.of("studyA", "studyB");
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(callerStudies)
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        AccountId accountId = AccountId.forExternalId(TEST_APP_ID, "extId");
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
+        
+        List<EnrollmentDetail> details = ImmutableList.of();
+        when(mockEnrollmentDao.getEnrollmentsForUser(TEST_APP_ID, callerStudies, TEST_USER_ID)).thenReturn(details);
+        
+        List<EnrollmentDetail> retValue = service.getEnrollmentsForUser(TEST_APP_ID, TEST_STUDY_ID, "externalId:extId");
+        assertSame(retValue, details);
+        
+        verify(mockEnrollmentDao).getEnrollmentsForUser(TEST_APP_ID, callerStudies, TEST_USER_ID);
+    }
+
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Study not found.")
     public void enrollStudyNotFound() {
@@ -615,13 +651,50 @@ public class EnrollmentServiceTest extends Mockito {
         service.enroll(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID));
     }
 
+    @Test
+    public void addEnrollment_updatesRequestContext() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("123")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build()); 
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        en.setExternalId("externalId");
+        service.addEnrollment(account, en, true);
+        
+        assertEquals(account.getEnrollments().size(), 1);
+        Enrollment updated = Iterables.getFirst(account.getEnrollments(), null);
+        assertEquals(updated.getAccountId(), TEST_USER_ID);
+        assertEquals(updated.getAppId(), TEST_APP_ID);
+        assertEquals(updated.getEnrolledBy(), "123");
+        assertEquals(updated.getEnrolledOn(), CREATED_ON);
+        assertEquals(updated.getStudyId(), TEST_STUDY_ID);
+        assertEquals(updated.getExternalId(), "externalId");
+        
+        assertEquals(RequestContext.get().getCallerEnrolledStudies(), ImmutableSet.of(TEST_STUDY_ID));
+    }
+    
+    @Test
+    public void addEnrollment_doesNotUpdateRequestContext() { 
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+
+        service.addEnrollment(account, en, false);
+        
+        assertTrue(RequestContext.get().getCallerEnrolledStudies().isEmpty());
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Study not found.")
     public void addEnrollmentStudyNotFound() {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
             .thenThrow(new EntityNotFoundException(Study.class));
         
-        service.addEnrollment(Account.create(), Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID));
+        service.addEnrollment(Account.create(), Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID), false);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -631,5 +704,91 @@ public class EnrollmentServiceTest extends Mockito {
             .thenThrow(new EntityNotFoundException(Study.class));
         
         service.unenroll(Account.create(), Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID));
+    }
+
+    @Test
+    public void updateEnrollment_canUpdateOnlyNoteFields() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("otherId")
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+
+        Enrollment targetEnrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        Enrollment incomingEnrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        incomingEnrollment.setNote(TEST_NOTE);
+        incomingEnrollment.setEnrolledBy("someone");
+        incomingEnrollment.setEnrolledOn(DateTime.now());
+        incomingEnrollment.setWithdrawnBy("someone");
+        incomingEnrollment.setWithdrawnOn(DateTime.now());
+        incomingEnrollment.setWithdrawalNote(TEST_NOTE);
+
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+        Account account = Account.create();
+        account.setEnrollments(ImmutableSet.of(targetEnrollment));
+
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
+
+        service.updateEnrollment(incomingEnrollment);
+
+        verify(mockAccountService).updateAccount(account);
+
+        assertEquals(targetEnrollment.getNote(), TEST_NOTE);
+        assertNull(targetEnrollment.getEnrolledBy());
+        assertNull(targetEnrollment.getEnrolledOn());
+        assertNull(targetEnrollment.getWithdrawnBy());
+        assertNull(targetEnrollment.getWithdrawnOn());
+        assertEquals(targetEnrollment.getWithdrawalNote(), TEST_NOTE);
+    }
+
+    @Test(expectedExceptions = InvalidEntityException.class)
+    public void updateEnrollment_incomingEnrollmentIsValidated() {
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        enrollment.setAccountId(null);
+
+        service.updateEnrollment(enrollment);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateEnrollment_verifiesAdministrativeAccessToEdit() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of()).build());
+        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+        Account account = Account.create();
+
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
+
+        service.updateEnrollment(enrollment);
+    }
+
+    @Test
+    public void updateEnrollment_onlyUpdatesTargetedEnrollment() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+
+        Enrollment targetEnrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        Enrollment otherEnrollment = Enrollment.create(TEST_APP_ID, "other-study-id", TEST_USER_ID);
+        Enrollment incomingEnrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        incomingEnrollment.setNote(TEST_NOTE);
+
+        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        account.setEnrollments(ImmutableSet.of(otherEnrollment, targetEnrollment));
+
+        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
+
+        service.updateEnrollment(incomingEnrollment);
+
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
+
+        Set<Enrollment> capturedEnrollments = accountCaptor.getValue().getEnrollments();
+        Enrollment captured = getElement(
+                capturedEnrollments, Enrollment::getStudyId, TEST_STUDY_ID).orElse(null);
+        assertNotNull(captured);
+        assertEquals(captured.getNote(), TEST_NOTE);
     }
 }

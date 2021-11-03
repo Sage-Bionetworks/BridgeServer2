@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models;
 
+import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.testng.Assert.assertEquals;
 
 import java.util.HashSet;
@@ -29,9 +30,9 @@ public class TagUtilsTest {
         Set<Tag> retValue = TagUtils.toTagSet(ImmutableSet.of("A", "B", "C"));
         assertEquals(retValue.size(), 3);
         
-        Optional<Tag> tagA = retValue.stream().filter(tag -> tag.getValue().equals("A")).findFirst();
-        Optional<Tag> tagB = retValue.stream().filter(tag -> tag.getValue().equals("B")).findFirst();
-        Optional<Tag> tagC = retValue.stream().filter(tag -> tag.getValue().equals("C")).findFirst();
+        Optional<Tag> tagA = getElement(retValue, Tag::getValue, "A");
+        Optional<Tag> tagB = getElement(retValue, Tag::getValue, "B");
+        Optional<Tag> tagC = getElement(retValue, Tag::getValue, "C");
         
         assertEquals(tagA.get().getValue(), "A");
         assertEquals(tagB.get().getValue(), "B");

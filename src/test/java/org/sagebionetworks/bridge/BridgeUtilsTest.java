@@ -6,8 +6,11 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
@@ -79,7 +82,6 @@ public class BridgeUtilsTest extends Mockito {
     private static final Label LABEL_ES = new Label("es", "Spanish");
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
     private static final Set<Enrollment> STUDY_A_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID));
-    private static final Set<Enrollment> STUDY_B_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID));
     private static final Set<Enrollment> STUDY_A_AND_B_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID), 
             Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID));
     
@@ -442,6 +444,26 @@ public class BridgeUtilsTest extends Mockito {
         assertEquals(map.get("consentEmail"), "consentNotificationEmail2");
         assertEquals(map.get("thisMap"), "isMutable");
         assertEquals(map.get("host"), host);
+    }
+    
+    @Test
+    public void participantTemplateVariablesWorks() {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withFirstName("aFirstName")
+                .withLastName("aLastName")
+                .withEmail(EMAIL)
+                .withPhone(PHONE)
+                .withAttributes(ImmutableMap.of("first_prop", "A", "second prop", "B"))
+                .build();
+        Map<String,String> map = BridgeUtils.participantTemplateVariables(participant);
+        assertEquals(map.get("participantFirstName"), "aFirstName");
+        assertEquals(map.get("participantLastName"), "aLastName");
+        assertEquals(map.get("participantPhone"), "+19712486796");
+        assertEquals(map.get("participantPhoneRegion"), "US");
+        assertEquals(map.get("participant.first_prop"), "A");
+        assertEquals(map.get("participant.second prop"), "B");
+        assertEquals(map.get("participantEmail"), "email@email.com");
+        assertEquals(map.get("participantPhoneNationalFormat"), "(971) 248-6796");
     }
     
     @Test
@@ -1154,6 +1176,54 @@ public class BridgeUtilsTest extends Mockito {
         retValue = BridgeUtils.addUniqueItemsToList(ImmutableList.of("A", "B"), ImmutableSet.of("C"));
         assertEquals(retValue, ImmutableList.of("A", "B", "C"));
         assertTrue(retValue instanceof ImmutableList);
+    }
+    
+    @Test
+    public void getElement() {
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
+        
+        Enrollment retValue = BridgeUtils.getElement(enrollments, Enrollment::getAccountId, TEST_USER_ID).orElse(null);
+        assertSame(retValue, en2);
+    }
+
+    @Test
+    public void getElement_noMatch() {
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId1");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId2");
+        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
+        
+        Enrollment retValue = BridgeUtils.getElement(enrollments, Enrollment::getAccountId, TEST_USER_ID).orElse(null);
+        assertNull(retValue);
+    }
+
+    @Test
+    public void getElement_emptyIterable() {
+        Enrollment retValue = BridgeUtils.getElement(ImmutableSet.of(), Enrollment::getAccountId, TEST_USER_ID).orElse(null);
+        assertNull(retValue);
+    }
+    
+    @Test
+    public void getElement_matchesNull() {
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId1");
+        en1.setExternalId("en1");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId2");
+        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
+        
+        Enrollment retValue = BridgeUtils.getElement(enrollments, Enrollment::getExternalId, null).orElse(null);
+        assertSame(retValue, en2);
+    }
+    
+    @Test
+    public void getElement_handlesNullFieldValues() {
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId1");
+        en1.setExternalId("en1");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId2");
+        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
+        
+        Enrollment retValue = BridgeUtils.getElement(enrollments, Enrollment::getExternalId, "en1").orElse(null);
+        assertSame(retValue, en1);
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

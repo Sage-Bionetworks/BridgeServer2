@@ -43,7 +43,6 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -284,6 +283,31 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(retValue.getRequestParams().get("pageSize"), Integer.valueOf(100));
     }
 
+    @Test
+    public void getStudyActivityEventHistory_appScopedEvent() {
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setHealthCode(HEALTH_CODE);
+        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
+        
+        when(mockActivityEventService.getActivityEventMap(
+                TEST_APP_ID, HEALTH_CODE)).thenReturn(ImmutableMap.of("install_link_sent", MODIFIED_ON));
+        
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        
+        PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(
+                ACCOUNT_ID, TEST_STUDY_ID, "install_link_sent", 10, 100);
+        StudyActivityEvent event = retValue.getItems().get(0);
+        assertEquals(retValue.getItems().size(), 1);
+        assertEquals(event.getTimestamp(), MODIFIED_ON);
+        assertEquals(event.getCreatedOn(), MODIFIED_ON);
+        assertEquals(event.getRecordCount(), 1);
+        assertEquals(retValue.getRequestParams().get("offsetBy"), Integer.valueOf(10));
+        assertEquals(retValue.getRequestParams().get("pageSize"), Integer.valueOf(100));
+    }
+    
     @Test(expectedExceptions = BadRequestException.class)
     public void getStudyActivityEventHistory_negativeOffset() {
         service.getStudyActivityEventHistory(ACCOUNT_ID, TEST_STUDY_ID, "event1", -10, 100);
@@ -315,7 +339,10 @@ public class StudyActivityEventServiceTest extends Mockito {
         PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(
                 ACCOUNT_ID, TEST_STUDY_ID, CREATED_ON_FIELD, 0, 50);
         assertEquals(retValue.getItems().size(), 1);
-        assertEquals(retValue.getItems().get(0).getTimestamp(), CREATED_ON);
+        StudyActivityEvent event = retValue.getItems().get(0);
+        assertEquals(event.getTimestamp(), CREATED_ON);
+        assertEquals(event.getCreatedOn(), CREATED_ON);
+        assertEquals(event.getRecordCount(), 1);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class,

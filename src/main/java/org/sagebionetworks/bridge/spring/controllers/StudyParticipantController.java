@@ -4,6 +4,7 @@ import static java.lang.Boolean.TRUE;
 import static org.apache.http.HttpHeaders.IF_MODIFIED_SINCE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_EXPORT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
@@ -35,13 +36,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -90,6 +91,7 @@ public class StudyParticipantController extends BaseController {
     static final StatusMessage NOTIFY_SUCCESS_MSG = new StatusMessage("Message has been sent to external notification service.");
     static final StatusMessage EVENT_RECORDED_MSG = new StatusMessage("Event recorded.");
     static final StatusMessage EVENT_DELETED_MSG = new StatusMessage("Event deleted.");
+    static final StatusMessage PREPARING_ROSTER_MSG = new StatusMessage("Preparing participant roster.");
     public static final StatusMessage INSTALL_LINK_SEND_MSG = new StatusMessage("Install instructions sent to participant.");
 
     private ParticipantService participantService;
@@ -184,6 +186,25 @@ public class StudyParticipantController extends BaseController {
     
     private boolean isUpToDate(DateTime modifiedSince, DateTime modifiedOn) {
         return modifiedSince != null && modifiedOn != null && modifiedSince.isAfter(modifiedOn);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/participants/emailRoster")
+    @ResponseStatus(HttpStatus.ACCEPTED)
+    public StatusMessage requestParticipantRoster(@PathVariable String studyId) throws JsonProcessingException {
+        UserSession session = getAdministrativeSession();
+
+        CAN_EXPORT_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+
+        App app = appService.getApp(session.getAppId());
+        
+        ParticipantRosterRequest request = parseJson(ParticipantRosterRequest.class);
+        ParticipantRosterRequest finalRequest = new ParticipantRosterRequest.Builder()
+                .withStudyId(studyId)
+                .withPassword(request.getPassword()).build();
+
+        participantService.requestParticipantRoster(app, session.getId(), finalRequest);
+
+        return PREPARING_ROSTER_MSG;
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/timeline")
@@ -508,7 +529,6 @@ public class StudyParticipantController extends BaseController {
             @PathVariable String userId,
             @PathVariable String eventId) {
         UserSession session = getAdministrativeSession();
-        
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
 
         StudyActivityEventRequest request = new StudyActivityEventRequest(eventId, null, null, null);
@@ -532,10 +552,9 @@ public class StudyParticipantController extends BaseController {
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));        
 
-        boolean matches = account.getEnrollments().stream().anyMatch(en -> studyId.equals(en.getStudyId()));
-        if (!matches) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        BridgeUtils.getElement(account.getEnrollments(), Enrollment::getStudyId, studyId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
         return account;
     }
 }

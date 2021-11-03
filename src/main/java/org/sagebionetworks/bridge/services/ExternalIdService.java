@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
+import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.models.ResourceList.ID_FILTER;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
@@ -57,10 +58,9 @@ public class ExternalIdService {
         AccountId accountId = AccountId.forExternalId(externalId.getAppId(), externalId.getIdentifier());
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-                
-        Enrollment enrollment = account.getEnrollments().stream()
-                .filter(en -> externalId.getIdentifier().equals(en.getExternalId()))
-                .findFirst()
+        
+        Enrollment enrollment = getElement(
+                account.getEnrollments(), Enrollment::getExternalId, externalId.getIdentifier())
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         enrollment.setExternalId(null);
         accountService.updateAccount(account);

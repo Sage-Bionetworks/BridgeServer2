@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.studies;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
@@ -33,6 +34,7 @@ public class EnrollmentDetailTest {
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setExternalId("anExternalId");
         enrollment.setConsentRequired(true);
+        enrollment.setNote(TEST_NOTE);
 
         EnrollmentDetail detail = new EnrollmentDetail(enrollment, ref1, ref2, ref3);
         
@@ -40,9 +42,10 @@ public class EnrollmentDetailTest {
         assertEquals(detail.getParticipant().getEmail(), "email1@email.com");
         assertEquals(detail.getEnrolledBy().getEmail(), "email2@email.com");
         assertEquals(detail.getWithdrawnBy().getEmail(), "email3@email.com");
+        assertEquals(detail.getNote(), TEST_NOTE);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(detail);
-        assertEquals(node.size(), 7);
+        assertEquals(node.size(), 8);
         
         // Note that other than email and type properties, there's nothing else exposed about account
         assertEquals(node.get("studyId").textValue(), TEST_STUDY_ID);
@@ -55,6 +58,7 @@ public class EnrollmentDetailTest {
         assertEquals(node.get("withdrawnBy").get("email").textValue(), "email3@email.com");
         assertEquals(node.get("externalId").textValue(), "anExternalId");
         assertTrue(node.get("consentRequired").booleanValue());
+        assertEquals(node.get("note").textValue(), TEST_NOTE);
         assertEquals(node.get("type").textValue(), "EnrollmentDetail");
         
         // This object is not deserialized on the server.

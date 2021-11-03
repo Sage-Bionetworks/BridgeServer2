@@ -250,7 +250,7 @@ public class Schedule2ServiceTest extends Mockito {
     }
     
     @Test
-    public void getScheduleForStudy() {
+    public void getScheduleForStudy_enrollee() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
@@ -260,6 +260,27 @@ public class Schedule2ServiceTest extends Mockito {
         study.setScheduleGuid(GUID);
         
         Schedule2 schedule = new Schedule2();
+        schedule.setOwnerId(TEST_ORG_ID);
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
+        
+        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, study);
+        assertEquals(retValue.get(), schedule);
+    }
+    
+    @Test
+    public void getScheduleForStudy_studyDesigner() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerOrgMembership("not-the-owning-study-of-schedule")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .build());
+        
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(GUID);
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setOwnerId(TEST_ORG_ID);
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
         
         Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, study);

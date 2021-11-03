@@ -814,3 +814,13 @@ CREATE TABLE `ScheduleStudyBursts` (
 
 ALTER TABLE `Sessions`
 ADD COLUMN `studyBurstIds` varchar(512);
+
+-- changeset bridge:49
+
+ALTER TABLE `Sessions`
+ADD COLUMN `symbol` varchar(32);
+
+-- changeset bridge:50
+
+ALTER TABLE `AccountsSubstudies`
+ADD COLUMN `note` text DEFAULT NULL;

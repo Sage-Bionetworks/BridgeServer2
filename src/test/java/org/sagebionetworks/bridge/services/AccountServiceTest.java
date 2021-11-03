@@ -4,9 +4,11 @@ import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
@@ -32,6 +34,7 @@ import static org.sagebionetworks.bridge.services.AccountService.ROTATIONS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -432,7 +435,35 @@ public class AccountServiceTest extends Mockito {
     }
     
     @Test
-    public void updateAccountNotFound() {
+    public void updateAccountSucceedsForOrgAdminUpdatingAdminAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setRoles(ImmutableSet.of(STUDY_DESIGNER));
+
+        service.updateAccount(account);
+        
+        verify(mockAccountDao).updateAccount(account);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateAccountFailsForOrgAdminUpdatingParticipantAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
+
+        service.updateAccount(account);
+    }
+    
+    @Test
+    public void updateAccountNotFound() throws Exception {
         // mock hibernate
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -1024,15 +1055,19 @@ public class AccountServiceTest extends Mockito {
         verify(mockAccountDao).createAccount(app, account);
         verify(activityEventService).publishEnrollmentEvent(any(), any(), any());
         verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture());
-        
-        StudyActivityEvent event1 = eventCaptor.getAllValues().get(0);
+
+        StudyActivityEvent event1 = getElement(
+                eventCaptor.getAllValues(), StudyActivityEvent::getStudyId, STUDY_A).orElse(null);
+        assertNotNull(event1);
         assertEquals(event1.getAppId(), TEST_APP_ID);
         assertEquals(event1.getStudyId(), STUDY_A);
         assertEquals(event1.getUserId(), TEST_USER_ID);
         assertEquals(event1.getEventId(), "enrollment");
         assertEquals(event1.getTimestamp(), account.getCreatedOn());
-        
-        StudyActivityEvent event2 = eventCaptor.getAllValues().get(1);
+
+        StudyActivityEvent event2 = getElement(
+                eventCaptor.getAllValues(), StudyActivityEvent::getStudyId, STUDY_B).orElse(null);
+        assertNotNull(event2);
         assertEquals(event2.getAppId(), TEST_APP_ID);
         assertEquals(event2.getStudyId(), STUDY_B);
         assertEquals(event2.getUserId(), TEST_USER_ID);

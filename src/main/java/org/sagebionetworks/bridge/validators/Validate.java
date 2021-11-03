@@ -42,6 +42,7 @@ public class Validate {
     public static final String INVALID_EVENT_ID = "is not a valid custom event ID";
     public static final String INVALID_EMAIL_ERROR = "does not appear to be an email address";
     public static final String INVALID_PHONE_ERROR = "does not appear to be a phone number";
+    public static final String EXCEEDS_MAXIMUM_SIZE = "%s exceeds the maximum allowed size";
     
     public static Errors getErrorsFor(Object object) {
         String entityName = BridgeUtils.getTypeName(object.getClass());
