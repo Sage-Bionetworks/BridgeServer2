@@ -34,11 +34,13 @@ public class StudyActivityEventTest {
                 .withAnswerValue("my answer")
                 .withClientTimeZone("America/Los_Angeles")
                 .withCreatedOn(CREATED_ON)
+                .withStudyBurstId("studyBurstId")
+                .withOriginEventId("originEventId")
                 .withRecordCount(10)
                 .withUpdateType(FUTURE_ONLY).build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(event);
-        assertEquals(node.size(), 8);
+        assertEquals(node.size(), 10);
         assertEquals(node.get("eventId").textValue(), "eventKey");
         assertEquals(node.get("timestamp").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("answerValue").textValue(), "my answer");
@@ -46,6 +48,8 @@ public class StudyActivityEventTest {
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("recordCount").intValue(), 10);
         assertEquals(node.get("updateType").textValue(), "future_only");
+        assertEquals(node.get("studyBurstId").textValue(), "studyBurstId");
+        assertEquals(node.get("originEventId").textValue(), "originEventId");
         assertEquals(node.get("type").textValue(), "ActivityEvent");
     }
     

@@ -48,6 +48,10 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     private String clientTimeZone;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
+    /** If this is a study burst event, the origin event that triggered it. */
+    private String originEventId;
+    /** If this is a study burst event, the studyBurstId separate from the eventId. */
+    private String studyBurstId;
     @Transient
     private int recordCount;
     @Transient
@@ -77,6 +81,12 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     public DateTime getCreatedOn() {
         return createdOn;
     }
+    public String getOriginEventId() { 
+        return originEventId;
+    }
+    public String getStudyBurstId() {
+        return studyBurstId;
+    }
     // the service needs to set this, not the builder 
     public void setCreatedOn(DateTime createdOn) {
         this.createdOn = createdOn;
@@ -100,6 +110,8 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         private ActivityEventUpdateType updateType;
         private String answerValue;
         private DateTime timestamp;
+        private String originEventId;
+        private String studyBurstId;
         private int recordCount;
         private String eventId;
         
@@ -139,6 +151,14 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
             this.createdOn = createdOn;
             return this;
         }
+        public Builder withOriginEventId(String originEventId) { 
+            this.originEventId = originEventId;
+            return this;
+        }
+        public Builder withStudyBurstId(String studyBurstId) {
+            this.studyBurstId = studyBurstId;
+            return this;
+        }
         public Builder withUpdateType(ActivityEventUpdateType updateType) {
             this.updateType = updateType;
             return this;
@@ -174,6 +194,8 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
             event.answerValue = answerValue;
             event.createdOn = createdOn;
             event.updateType = updateType;
+            event.originEventId = originEventId; 
+            event.studyBurstId = studyBurstId;
             event.recordCount = recordCount;
 
             // We’re constructing the event with a known (already validated) event ID

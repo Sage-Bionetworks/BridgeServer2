@@ -218,7 +218,9 @@ public class StudyActivityEventService {
             Enrollment en = getElement(account.getEnrollments(), Enrollment::getStudyId, studyId).orElse(null);
             if (en != null) {
                 StudyActivityEvent event = new StudyActivityEvent.Builder()
-                        .withEventId(ENROLLMENT_FIELD).withTimestamp(en.getEnrolledOn()).build();
+                        .withEventId(ENROLLMENT_FIELD)
+                        .withTimestamp(en.getEnrolledOn())
+                        .withRecordCount(1).build();
                 results = new PagedResourceList<>(ImmutableList.of(event), 1, true);
             }
         }
@@ -257,6 +259,8 @@ public class StudyActivityEventService {
         for(StudyBurst burst : schedule.getStudyBursts()) {
             if (burst.getOriginEventId().equals(eventId)) {
                 builder.withUpdateType(burst.getUpdateType());
+                builder.withStudyBurstId(burst.getIdentifier());
+                builder.withOriginEventId(burst.getOriginEventId());
                 
                 DateTime eventTime = new DateTime(event.getTimestamp());
                 int len =  burst.getOccurrences().intValue();
@@ -297,7 +301,10 @@ public class StudyActivityEventService {
         Enrollment en = getElement(account.getEnrollments(), Enrollment::getStudyId, studyId).orElse(null);
         if (en != null) {
             StudyActivityEvent event = new StudyActivityEvent.Builder()
-                    .withEventId(ENROLLMENT_FIELD).withTimestamp(en.getEnrolledOn()).build();
+                    .withEventId(ENROLLMENT_FIELD)
+                    .withTimestamp(en.getEnrolledOn())
+                    .withRecordCount(1)
+                    .build();
             events.add(event);
         }
     }

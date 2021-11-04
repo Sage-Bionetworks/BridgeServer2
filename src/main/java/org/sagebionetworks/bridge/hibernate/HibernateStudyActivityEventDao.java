@@ -95,8 +95,10 @@ public class HibernateStudyActivityEventDao implements StudyActivityEventDao {
         builder.withAnswerValue(toString(record[5]));
         builder.withClientTimeZone(toString(record[6]));
         builder.withCreatedOn(toDateTime(record[7]));
+        builder.withOriginEventId(toString(record[8]));
+        builder.withStudyBurstId(toString(record[9]));
         if (record.length > 8) {
-            builder.withRecordCount(toInt(record[8]));    
+            builder.withRecordCount(toInt(record[10]));    
         }
         return builder.build();
     }
