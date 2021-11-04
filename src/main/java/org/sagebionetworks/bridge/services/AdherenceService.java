@@ -186,7 +186,7 @@ public class AdherenceService {
                 builder.withObjectType(ASSESSMENT);
                 builder.withObjectId(meta.getAssessmentId());
             }
-            studyActivityEventService.publishEvent(builder.build());
+            studyActivityEventService.publishEvent(builder.build(), false);
         }
     }
 

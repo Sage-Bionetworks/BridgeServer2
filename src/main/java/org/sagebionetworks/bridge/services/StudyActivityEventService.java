@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CREATED_ON;
@@ -38,6 +39,8 @@ import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Activity events that are scoped to a person participating in a specific study. 
@@ -55,6 +58,7 @@ import org.sagebionetworks.bridge.validators.Validate;
  */
 @Component
 public class StudyActivityEventService {
+    private static Logger LOG = LoggerFactory.getLogger(StudyActivityEventService.class);
     
     static final String CREATED_ON_FIELD = CREATED_ON.name().toLowerCase();
     static final String ENROLLMENT_FIELD = ENROLLMENT.name().toLowerCase();
@@ -97,7 +101,7 @@ public class StudyActivityEventService {
      * Only custom events can be deleted (if they are mutable). Other requests 
      * are silently ignored. 
      */
-    public void deleteEvent(StudyActivityEvent event) {
+    public void deleteEvent(StudyActivityEvent event, boolean showError) {
         checkNotNull(event);
         
         Validate.entityThrowingException(DELETE_INSTANCE, event);
@@ -107,10 +111,17 @@ public class StudyActivityEventService {
 
         if (event.getUpdateType().canDelete(mostRecent, event)) {
             dao.deleteCustomEvent(event);
+        } else {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("User " + event.getUserId() + " failed to delete study event: " + event.getEventId());
+            }
+            if (showError) {
+                throw new BadRequestException("Study event failed to delete: " + event.getEventId() + ".");    
+            }
         }
     }
     
-    public void publishEvent(StudyActivityEvent event) {
+    public void publishEvent(StudyActivityEvent event, boolean showError) {
         checkNotNull(event);
 
         event.setCreatedOn(getCreatedOn());
@@ -120,13 +131,28 @@ public class StudyActivityEventService {
         StudyActivityEvent mostRecent = dao.getRecentStudyActivityEvent(
                 event.getUserId(), event.getStudyId(), event.getEventId());
         
+        // Throwing exceptions will prevent study burst updates from happening if 
+        // an error occurs in earlier order...so we collect errors and only show 
+        // them at the end if we want to throw an exception.
+        List<String> failedEventIds = new ArrayList<>();
         if (event.getUpdateType().canUpdate(mostRecent, event)) {
             dao.publishEvent(event);
+        } else {
+            failedEventIds.add(event.getEventId());
         }
         Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
         Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
         if (schedule != null) {
-            createStudyBurstEvents(schedule, event);
+            createStudyBurstEvents(schedule, event, failedEventIds);
+        }
+        if (!failedEventIds.isEmpty()) {
+            String eventNames = COMMA_SPACE_JOINER.join(failedEventIds);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("User " + event.getUserId() + " failed to publish study event(s): " + eventNames);    
+            }
+            if (showError) {
+                throw new BadRequestException("Study event(s) failed to publish: " + eventNames + ".");
+            }
         }
     }
     
@@ -212,11 +238,12 @@ public class StudyActivityEventService {
             events.add(event);
         }
     }
-
+    
     /**
-     * If the triggering event is mutable, these events can be created as well.
+     * If the triggering event is mutable, study burst events can be created as well. Any errors
+     * that occur are collected in the list of failedEventIds. 
      */
-    private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event) {
+    private void createStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event, List<String> failedEventIds) {
         String eventId = event.getEventId();
         
         StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
@@ -229,6 +256,7 @@ public class StudyActivityEventService {
         
         for(StudyBurst burst : schedule.getStudyBursts()) {
             if (burst.getOriginEventId().equals(eventId)) {
+                builder.withUpdateType(burst.getUpdateType());
                 
                 DateTime eventTime = new DateTime(event.getTimestamp());
                 int len =  burst.getOccurrences().intValue();
@@ -236,7 +264,7 @@ public class StudyActivityEventService {
                 for (int i=0; i < len; i++) {
                     String iteration = Strings.padStart(Integer.toString(i+1), 2, '0');
                     eventTime = new DateTime(eventTime).plus(burst.getInterval());
-                    
+
                     StudyActivityEvent burstEvent = builder
                             .withObjectId(burst.getIdentifier())
                             .withAnswerValue(iteration)
@@ -249,7 +277,9 @@ public class StudyActivityEventService {
                     // Study bursts also have an update type that must be respected.
                     if (burst.getUpdateType().canUpdate(mostRecent, burstEvent)) {
                         dao.publishEvent(burstEvent);    
-                    }
+                    }  else {
+                        failedEventIds.add(burstEvent.getEventId());
+                    } 
                 }
             }
         }
