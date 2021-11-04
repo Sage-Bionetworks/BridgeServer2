@@ -586,7 +586,7 @@ public class StudyParticipantController extends BaseController {
         List<ReportIndex> list = reportService
                 .getReportIndices(session.getAppId(), PARTICIPANT)
                 .getItems().stream()
-                .filter(index -> index.getStudyIds().contains(studyId))
+                .filter(index -> index.getStudyIds() == null || index.getStudyIds().contains(studyId))
                 .collect(Collectors.toList());
         
         return new ReportTypeResourceList<>(list, true)
