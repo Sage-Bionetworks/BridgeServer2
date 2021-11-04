@@ -5,13 +5,18 @@ import static org.apache.http.HttpHeaders.IF_MODIFIED_SINCE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_STUDY_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EXPORT_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
+import static org.sagebionetworks.bridge.models.reports.ReportType.PARTICIPANT;
 import static org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler.INSTANCE;
 import static org.sagebionetworks.bridge.models.sms.SmsType.PROMOTIONAL;
 import static org.springframework.http.HttpStatus.NOT_MODIFIED;
@@ -20,9 +25,11 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectWriter;
+import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,6 +50,7 @@ import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
+import org.sagebionetworks.bridge.models.ReportTypeResourceList;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -59,6 +67,9 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.notifications.NotificationRegistration;
+import org.sagebionetworks.bridge.models.reports.ReportData;
+import org.sagebionetworks.bridge.models.reports.ReportDataKey;
+import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
@@ -67,6 +78,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.ParticipantService;
+import org.sagebionetworks.bridge.services.ReportService;
 import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -81,6 +93,7 @@ import org.sagebionetworks.bridge.services.EnrollmentService;
 @CrossOrigin
 @RestController
 public class StudyParticipantController extends BaseController {
+    static final StatusMessage REPORT_RECORD_DELETED_MSG = new StatusMessage("Report record deleted.");
     static final StatusMessage UPDATE_MSG = new StatusMessage("Participant updated.");
     static final StatusMessage SIGN_OUT_MSG = new StatusMessage("User signed out.");
     static final StatusMessage RESET_PWD_MSG = new StatusMessage("Request to reset password sent to user.");
@@ -92,7 +105,10 @@ public class StudyParticipantController extends BaseController {
     static final StatusMessage EVENT_RECORDED_MSG = new StatusMessage("Event recorded.");
     static final StatusMessage EVENT_DELETED_MSG = new StatusMessage("Event deleted.");
     static final StatusMessage PREPARING_ROSTER_MSG = new StatusMessage("Preparing participant roster.");
-    public static final StatusMessage INSTALL_LINK_SEND_MSG = new StatusMessage("Install instructions sent to participant.");
+    static final StatusMessage INSTALL_LINK_SEND_MSG = new StatusMessage("Install instructions sent to participant.");
+    static final StatusMessage REPORT_DELETED_MSG = new StatusMessage("Report deleted.");
+    static final StatusMessage REPORT_SAVED_MSG = new StatusMessage("Participant report saved.");
+    static final StatusMessage REPORT_INDEX_DELETED_MSG = new StatusMessage("Participant report index deleted.");
 
     private ParticipantService participantService;
     
@@ -105,6 +121,8 @@ public class StudyParticipantController extends BaseController {
     private StudyService studyService;
     
     private Schedule2Service scheduleService;
+
+    private ReportService reportService;
     
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
@@ -134,6 +152,11 @@ public class StudyParticipantController extends BaseController {
     @Autowired
     final void setSchedule2Service(Schedule2Service scheduleService) {
         this.scheduleService = scheduleService;
+    }
+    
+    @Autowired
+    final void setReportService(ReportService reportService) {
+        this.reportService = reportService;
     }
     
     DateTime getDateTime() {
@@ -544,6 +567,206 @@ public class StudyParticipantController extends BaseController {
                 .withUserId(account.getId()).build(), showErrorBool);
         
         return EVENT_DELETED_MSG;
+    }
+    
+    /* --------------------------------------------------------------- */
+    /* STUDY-SCOPED PARTICIPANT REPORTS */
+    /* --------------------------------------------------------------- */
+    
+    // INDICES
+    
+    @GetMapping("/v5/studies/{studyId}/participants/reports")
+    public ReportTypeResourceList<? extends ReportIndex> listParticipantReportIndices(@PathVariable String studyId) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        // this test is done in the service, but it will miss cases where there are no
+        // indices. Fail faster. 
+        CAN_READ_PARTICIPANT_REPORTS.checkAndThrow(STUDY_ID, studyId);
+        
+        List<ReportIndex> list = reportService
+                .getReportIndices(session.getAppId(), PARTICIPANT)
+                .getItems().stream()
+                .filter(index -> index.getStudyIds().contains(studyId))
+                .collect(Collectors.toList());
+        
+        return new ReportTypeResourceList<>(list, true)
+                .withRequestParam(ResourceList.STUDY_ID, studyId)
+                .withRequestParam(ResourceList.REPORT_TYPE, PARTICIPANT);
+    }
+
+    @GetMapping("/v5/studies/{studyId}/participants/reports/{identifier}")
+    public ReportIndex getParticipantReportIndex(@PathVariable String studyId, @PathVariable String identifier) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(identifier)
+                .withReportType(PARTICIPANT)
+                .withAppId(session.getAppId()).build();
+        
+        ReportIndex index = reportService.getReportIndex(key);
+        if (index == null || !index.getStudyIds().contains(studyId)) {
+            throw new EntityNotFoundException(ReportIndex.class);
+        }
+        return index;
+    }
+
+    @DeleteMapping("/v5/studies/{studyId}/participants/reports/{identifier}")
+    public StatusMessage deleteParticipantReportIndex(@PathVariable String studyId, @PathVariable String identifier) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(identifier)
+                .withReportType(PARTICIPANT)
+                .withAppId(session.getAppId()).build();
+        
+        ReportIndex index = reportService.getReportIndex(key);
+        if (index == null || !index.getStudyIds().contains(studyId)) {
+            throw new EntityNotFoundException(ReportIndex.class);
+        }
+        reportService.deleteParticipantReportIndex(session.getAppId(), null, identifier);
+        
+        return REPORT_INDEX_DELETED_MSG;
+    }
+
+    // REPORTS
+
+    /**
+     * I did not port over the date-only API. The date-time API can be made to serve for dates only
+     * (just set the time portion to T00:00:00.000Z")
+     */
+    @GetMapping("/v5/studies/{studyId}/participants/{userIdToken}/reports/{identifier}")
+    public ForwardCursorPagedResourceList<ReportData> getParticipantReport(@PathVariable String studyId,
+            @PathVariable String userIdToken, @PathVariable String identifier,
+            @RequestParam(required = false) String startTime, @RequestParam(required = false) String endTime,
+            @RequestParam(required = false) String offsetKey, @RequestParam(required = false) String pageSize) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        DateTime startTimeDate = getDateTimeOrDefault(startTime, null);
+        DateTime endTimeDate = getDateTimeOrDefault(endTime, null);
+        Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
+
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(identifier)
+                .withReportType(PARTICIPANT)
+                .withAppId(session.getAppId()).build();
+        ReportIndex index = reportService.getReportIndex(key);
+        if (index == null || !index.getStudyIds().contains(studyId)) {
+            throw new EntityNotFoundException(ReportIndex.class);
+        }
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userIdToken);
+        
+        return reportService.getParticipantReportV4(session.getAppId(), account.getId(), identifier,
+                account.getHealthCode(), startTimeDate, endTimeDate, offsetKey, pageSizeInt);
+    }
+
+    /**
+     * I did not port over the date-only API. The date-time API can be made to serve for dates only
+     * (just set the time portion to T00:00:00.000Z")
+     */
+    @GetMapping("/v5/studies/{studyId}/participants/self/reports/{identifier}")
+    public ForwardCursorPagedResourceList<ReportData> getParticipantReportForSelf(@PathVariable String studyId,
+            @PathVariable String identifier, @RequestParam(required = false) String startTime,
+            @RequestParam(required = false) String endTime, @RequestParam(required = false) String offsetKey,
+            @RequestParam(required = false) String pageSize) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(identifier)
+                .withReportType(PARTICIPANT)
+                .withAppId(session.getAppId()).build();
+        ReportIndex index = reportService.getReportIndex(key);
+        if (index == null || !index.getStudyIds().contains(studyId)) {
+            throw new EntityNotFoundException(ReportIndex.class);
+        }
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, session.getId());
+
+        DateTime startTimeDate = getDateTimeOrDefault(startTime, null);
+        DateTime endTimeDate = getDateTimeOrDefault(endTime, null);
+        Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
+        
+        return reportService.getParticipantReportV4(session.getAppId(), account.getId(), identifier,
+                account.getHealthCode(), startTimeDate, endTimeDate, offsetKey, pageSizeInt);
+    }
+    
+    @PostMapping("/v5/studies/{studyId}/participants/{userIdToken}/reports/{identifier}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StatusMessage saveParticipantReport(@PathVariable String studyId, @PathVariable String userIdToken,
+            @PathVariable String identifier) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userIdToken);
+        
+        ReportData reportData = parseJson(ReportData.class);
+        reportData.setKey(null); // set in service, but just so no future use depends on it
+        if (reportData.getStudyIds() == null) {
+            reportData.setStudyIds(ImmutableSet.of());   
+        }
+        reportData.setStudyIds(addToSet(reportData.getStudyIds(), studyId));
+        
+        reportService.saveParticipantReport(session.getAppId(), account.getId(), 
+                identifier, account.getHealthCode(), reportData);
+        
+        return REPORT_SAVED_MSG;
+    }
+
+    @PostMapping("/v5/studies/{studyId}/participants/self/reports/{identifier}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public StatusMessage saveParticipantReportForSelf(@PathVariable String studyId, @PathVariable String identifier) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, session.getId());
+        
+        ReportData reportData = parseJson(ReportData.class);
+        reportData.setKey(null); // set in service, but just so no future use depends on it
+        if (reportData.getStudyIds() == null) {
+            reportData.setStudyIds(ImmutableSet.of());   
+        }
+        reportData.setStudyIds(addToSet(reportData.getStudyIds(), studyId));
+        
+        reportService.saveParticipantReport(session.getAppId(), account.getId(), 
+                identifier, account.getHealthCode(), reportData);
+        
+        return REPORT_SAVED_MSG;
+    }
+
+    @DeleteMapping("/v5/studies/{studyId}/participants/{userIdToken}/reports/{identifier}/{date}")
+    public StatusMessage deleteParticipantReportRecord(@PathVariable String studyId, @PathVariable String userIdToken,
+            @PathVariable String identifier, @PathVariable String date) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userIdToken);
+        
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(identifier)
+                .withReportType(PARTICIPANT)
+                .withAppId(session.getAppId()).build();
+        ReportIndex index = reportService.getReportIndex(key);
+        if (index == null || !index.getStudyIds().contains(studyId)) {
+            throw new EntityNotFoundException(ReportIndex.class);
+        }
+        reportService.deleteParticipantReportRecord(session.getAppId(), account.getId(), identifier, date, account.getHealthCode());
+        
+        return REPORT_RECORD_DELETED_MSG;
+    }
+
+    @DeleteMapping("/v5/studies/{studyId}/participants/{userIdToken}/reports/{identifier}")
+    public StatusMessage deleteParticipantReport(@PathVariable String studyId, @PathVariable String userIdToken,
+            @PathVariable String identifier) {
+        UserSession session = getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userIdToken);
+        
+        ReportDataKey key = new ReportDataKey.Builder()
+                .withIdentifier(identifier)
+                .withReportType(PARTICIPANT)
+                .withAppId(session.getAppId()).build();
+        ReportIndex index = reportService.getReportIndex(key);
+        if (index == null || !index.getStudyIds().contains(studyId)) {
+            throw new EntityNotFoundException(ReportIndex.class);
+        }
+        reportService.deleteParticipantReport(session.getAppId(), account.getId(), identifier, account.getHealthCode());
+        
+        return REPORT_DELETED_MSG;
     }
     
     /**

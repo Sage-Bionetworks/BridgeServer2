@@ -29,7 +29,6 @@ import org.sagebionetworks.bridge.dao.ReportDataDao;
 import org.sagebionetworks.bridge.dao.ReportIndexDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.DateRangeResourceList;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
@@ -81,12 +80,15 @@ public class ReportService {
     }
     
     /**
-     * Get a report index. Study memberships are ignored.
+     * Get a report index.
      */
     public ReportIndex getReportIndex(ReportDataKey key) {
         checkNotNull(key);
         
-        return reportIndexDao.getIndex(key);
+        ReportIndex index = reportIndexDao.getIndex(key);
+        checkStudyReportAccess(index);
+
+        return index;
     }
     
     /**
@@ -106,9 +108,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessStudyReport(index)) {
-            throw new UnauthorizedException();
-        }
+        checkStudyReportAccess(index);
+
         return reportDataDao.getReportData(key, startDate, endDate);
     }
     
@@ -131,9 +132,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }
+        checkParticipantReportAccess(userId, index);
+        
         return reportDataDao.getReportData(key, startDate, endDate);
     }
     
@@ -157,9 +157,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }
+        checkParticipantReportAccess(userId, index);
+        
         return reportDataDao.getReportDataV4(key, finalTimes.getStart(), finalTimes.getEnd(), offsetKey, pageSize);
     }
     
@@ -181,9 +180,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessStudyReport(index)) {
-            throw new UnauthorizedException();
-        }
+        checkStudyReportAccess(index);
+        
         return reportDataDao.getReportDataV4(key, finalTimes.getStart(), finalTimes.getEnd(), offsetKey, pageSize);
     }
     
@@ -207,9 +205,7 @@ public class ReportService {
         reportData.setReportDataKey(key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessStudyReport(index)) {
-            throw new UnauthorizedException();
-        }
+        checkStudyReportAccess(index);
         
         ReportDataValidator validator = new ReportDataValidator(index);
         Validate.entityThrowingException(validator, reportData);
@@ -238,9 +234,7 @@ public class ReportService {
         reportData.setReportDataKey(key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }
+        checkParticipantReportAccess(userId, index);
         
         ReportDataValidator validator = new ReportDataValidator(index);
         Validate.entityThrowingException(validator, reportData);
@@ -262,9 +256,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessStudyReport(index)) {
-            throw new UnauthorizedException();
-        }        
+        checkStudyReportAccess(index);
+        
         reportDataDao.deleteReportData(key);
         reportIndexDao.removeIndex(key);
     }
@@ -284,9 +277,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessStudyReport(index)) {
-            throw new UnauthorizedException();
-        }        
+        checkStudyReportAccess(index);
+        
         reportDataDao.deleteReportDataRecord(key, date);
         
         // If this is the last key visible in the window, you can delete the index because this is an app record
@@ -326,9 +318,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }        
+        checkParticipantReportAccess(userId, index);
+        
         reportDataDao.deleteReportData(key);
     }
     
@@ -349,9 +340,8 @@ public class ReportService {
         Validate.entityThrowingException(ReportDataKeyValidator.INSTANCE, key);
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }        
+        checkParticipantReportAccess(userId, index);
+        
         reportDataDao.deleteReportDataRecord(key, date);
     }
     
@@ -369,9 +359,8 @@ public class ReportService {
                 .withAppId(appId).build();
         
         ReportIndex index = reportIndexDao.getIndex(key);
-        if (!canAccessParticipantReport(userId, index)) {
-            throw new UnauthorizedException();
-        }        
+        checkParticipantReportAccess(userId, index);
+        
         reportIndexDao.removeIndex(key);
     }
 
@@ -393,9 +382,8 @@ public class ReportService {
         if (existingIndex == null) {
             throw new EntityNotFoundException(ReportIndex.class);
         }
-        if (!canAccessStudyReport(existingIndex)) {
-            throw new UnauthorizedException();
-        }
+        checkStudyReportAccess(index);
+        
         // Caller cannot change study relationships unless they are not associated to any study. 
         // We could allow users to add/remove the studies they have membership in, but in practice that's
         // only one study and not likely to be very useful. It requires about 5 lines of set-based checks 
@@ -407,20 +395,33 @@ public class ReportService {
         reportIndexDao.updateIndex(index);
     }
     
-    protected boolean canAccessParticipantReport(String userId, ReportIndex index) {
+    protected void checkParticipantReportAccess(String userId, ReportIndex index) {
         if (index == null || isEmpty(index.getStudyIds()) || index.isPublic()) {
-            return true;
+            return;
         }
         for (String studyId : index.getStudyIds()) {
             if (CAN_READ_PARTICIPANT_REPORTS.check(USER_ID, userId, STUDY_ID, studyId)) {
-                return true;
+                return;
             }
         }
-        return false;
+        throw new EntityNotFoundException(ReportIndex.class);
+    }
+    
+    protected void checkStudyReportAccess(ReportIndex index) {
+        if (index == null || isEmpty(index.getStudyIds()) || index.isPublic()) {
+            return;
+        }
+        for (String studyId : index.getStudyIds()) {
+            if (CAN_READ_STUDY_REPORTS.check(STUDY_ID, studyId)) {
+                return;
+            }
+        }
+        throw new EntityNotFoundException(ReportIndex.class);
     }
 
+    // Needed to filter the list of indices.
     protected boolean canAccessStudyReport(ReportIndex index) {
-        if (index == null || isEmpty(index.getStudyIds()) || index.isPublic()) {
+        if (isEmpty(index.getStudyIds()) || index.isPublic()) {
             return true;
         }
         for (String studyId : index.getStudyIds()) {
