@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.dynamodb;
 
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 
+import java.util.HashSet;
 import java.util.Set;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBAttribute;
@@ -48,7 +49,10 @@ public class DynamoReportIndex implements ReportIndex {
     @Override
     @JsonAlias("substudyIds")
     @DynamoDBAttribute(attributeName = "substudyIds")
-    public Set<String> getStudyIds(){
+    public Set<String> getStudyIds() {
+        if (this.studyIds == null) {
+            this.studyIds = new HashSet<>();
+        }
         return this.studyIds;
     }
     
