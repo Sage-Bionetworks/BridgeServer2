@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.config.BridgeConfig;
 
 public class S3InitializerTest extends Mockito {
     private static final String BUCKET_NAME = "oneBucketName";
+    private static final String SYNAPSE_AWS_ACCOUNT_ID = "1234567890";
 
     @Mock
     BridgeConfig mockBridgeConfig;
@@ -50,6 +51,10 @@ public class S3InitializerTest extends Mockito {
     @BeforeMethod
     public void beforeMethod() {
         MockitoAnnotations.initMocks(this);
+
+        // Mock config.
+        when(mockBridgeConfig.get("bucket.prop")).thenReturn(BUCKET_NAME);
+        when(mockBridgeConfig.get(S3Initializer.CONFIG_KEY_SYNAPSE_AWS_ACCOUNT_ID)).thenReturn(SYNAPSE_AWS_ACCOUNT_ID);
     }
     
     @Test
@@ -58,7 +63,6 @@ public class S3InitializerTest extends Mockito {
                 S3Initializer.BucketType.SYNAPSE_ACCESSIBLE);
         
         when(initializer.getBucketNames()).thenReturn(props);
-        when(mockBridgeConfig.get("bucket.prop")).thenReturn(BUCKET_NAME);
         when(mockS3Client.doesBucketExistV2(BUCKET_NAME)).thenReturn(true);
         
         initializer.initBuckets();
@@ -73,14 +77,14 @@ public class S3InitializerTest extends Mockito {
                 "bucket.prop", S3Initializer.BucketType.SYNAPSE_ACCESSIBLE);
         
         when(initializer.getBucketNames()).thenReturn(props);
-        when(mockBridgeConfig.get("bucket.prop")).thenReturn(BUCKET_NAME);
         when(mockS3Client.doesBucketExistV2(BUCKET_NAME)).thenReturn(false);
         
         initializer.initBuckets();
         
         String resolvedPolicy = BridgeUtils.resolveTemplate(
                 S3Initializer.BucketType.SYNAPSE_ACCESSIBLE.policy, 
-                ImmutableMap.of("bucketName", BUCKET_NAME));
+                ImmutableMap.of("bucketName", BUCKET_NAME,
+                        "synapseAwsAccountId", SYNAPSE_AWS_ACCOUNT_ID));
         
         verify(mockS3Client).createBucket(requestCaptor.capture());
         verify(mockS3Client).setBucketPolicy(BUCKET_NAME, resolvedPolicy);
@@ -95,7 +99,6 @@ public class S3InitializerTest extends Mockito {
                 "bucket.prop", S3Initializer.BucketType.PUBLIC_ACCESSIBLE);
         
         when(initializer.getBucketNames()).thenReturn(props);
-        when(mockBridgeConfig.get("bucket.prop")).thenReturn(BUCKET_NAME);
         when(mockS3Client.doesBucketExistV2(BUCKET_NAME)).thenReturn(false);
         
         initializer.initBuckets();
@@ -128,7 +131,6 @@ public class S3InitializerTest extends Mockito {
                 "bucket.prop", S3Initializer.BucketType.INTERNAL);
         
         when(initializer.getBucketNames()).thenReturn(props);
-        when(mockBridgeConfig.get("bucket.prop")).thenReturn(BUCKET_NAME);
         when(mockS3Client.doesBucketExistV2(BUCKET_NAME)).thenReturn(false);
         
         initializer.initBuckets();
@@ -158,7 +160,6 @@ public class S3InitializerTest extends Mockito {
                 "bucket.prop", S3Initializer.BucketType.INTERNAL_UPLOAD_ACCESSIBLE);
         
         when(initializer.getBucketNames()).thenReturn(props);
-        when(mockBridgeConfig.get("bucket.prop")).thenReturn(BUCKET_NAME);
         when(mockS3Client.doesBucketExistV2(BUCKET_NAME)).thenReturn(false);
         
         initializer.initBuckets();

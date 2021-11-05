@@ -27,13 +27,15 @@ import org.sagebionetworks.bridge.services.AccountService;
 public class S3Initializer {
     private static final Logger LOG = LoggerFactory.getLogger(AccountService.class);
 
+    static final String CONFIG_KEY_SYNAPSE_AWS_ACCOUNT_ID = "synapse.aws.account.id";
+
     private static final String SYNAPSE_ACCESS_POLICY = "{"
             + "    \"Version\": \"2008-10-17\","
             + "    \"Statement\": ["
             + "        {"
             + "            \"Effect\": \"Allow\","
             + "            \"Principal\": {"
-            + "                \"AWS\": \"arn:aws:iam::325565585839:root\""
+            + "                \"AWS\": \"arn:aws:iam::${synapseAwsAccountId}:root\""
             + "            },"
             + "            \"Action\": ["
             + "                \"s3:ListBucket*\","
@@ -44,7 +46,7 @@ public class S3Initializer {
             + "        {"
             + "            \"Effect\": \"Allow\","
             + "            \"Principal\": {"
-            + "                \"AWS\": \"arn:aws:iam::325565585839:root\""
+            + "                \"AWS\": \"arn:aws:iam::${synapseAwsAccountId}:root\""
             + "            },"
             + "            \"Action\": ["
             + "                \"s3:GetObject*\","
@@ -122,6 +124,8 @@ public class S3Initializer {
     }
     
     public void initBuckets() {
+        String synapseAwsAccountId = bridgeConfig.get(CONFIG_KEY_SYNAPSE_AWS_ACCOUNT_ID);
+
         for (Map.Entry<String, BucketType> entry : getBucketNames().entrySet()) {
             String propName = entry.getKey();
             BucketType type = entry.getValue();
@@ -136,7 +140,11 @@ public class S3Initializer {
                 s3Client.createBucket(new CreateBucketRequest(bucketName, Region.US_Standard));
                 
                 if (type.policy != null) {
-                    String policy = resolveTemplate(type.policy, ImmutableMap.of("bucketName", bucketName));
+                    Map<String, String> varMap = ImmutableMap.<String, String>builder()
+                            .put("bucketName", bucketName)
+                            .put("synapseAwsAccountId", synapseAwsAccountId)
+                            .build();
+                    String policy = resolveTemplate(type.policy, varMap);
                     s3Client.setBucketPolicy(bucketName, policy);
                 }
                 // For public buckets to serve for retrieving documents via HTTP, they 

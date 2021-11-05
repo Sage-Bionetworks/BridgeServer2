@@ -138,6 +138,7 @@ public class OAuthProviderServiceTest extends Mockito {
     public void before() throws IOException {
         MockitoAnnotations.initMocks(this);
         doReturn(NOW).when(service).getDateTime();
+        when(mockBridgeConfig.isProduction()).thenReturn(true);
         when(mockBridgeConfig.get(SYNAPSE_OAUTH_URL)).thenReturn(SYNAPSE_OAUTH_URL_VALUE);
         when(mockBridgeConfig.get(SYNAPSE_OAUTH_CLIENT_ID)).thenReturn(SYNAPSE_OAUTH_CLIENT_ID_VALUE);
         when(mockBridgeConfig.get(SYNAPSE_OAUTH_CLIENT_SECRET)).thenReturn(SYNAPSE_OAUTH_CLIENT_SECRET_VALUE);
