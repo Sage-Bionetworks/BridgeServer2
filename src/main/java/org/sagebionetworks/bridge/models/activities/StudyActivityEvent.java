@@ -34,7 +34,8 @@ import org.sagebionetworks.bridge.models.BridgeEntity;
 public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     
     /**
-     * This Mirrors the create method below, to maintained here. Only used for tests.
+     * This mirrors the create method below, so it is easier to keep the two synchronized.
+     * This method is only used to test the results of a SQL query. 
      */
     public static Object[] recordify(StudyActivityEvent event) {
         Object[] array = new Object[12];
@@ -52,7 +53,9 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         }
         array[8] = event.getStudyBurstId();
         array[9] = event.getOriginEventId();
-        array[10] = toString(event.getPeriodFromOrigin());
+        if (event.getPeriodFromOrigin() != null) {
+            array[10] = event.getPeriodFromOrigin().toString();    
+        }
         // Not in table, this is retrieved from the query itself
         array[11] = BigInteger.valueOf(event.getRecordCount());
         return array;

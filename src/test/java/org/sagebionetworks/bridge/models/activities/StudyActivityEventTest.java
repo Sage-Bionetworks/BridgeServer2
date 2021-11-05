@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.activities;
 
+import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -12,6 +13,9 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateTy
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
+import java.math.BigInteger;
+
+import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -125,5 +129,70 @@ public class StudyActivityEventTest {
                 .withCreatedOn(CREATED_ON)
                 .withEventType(ANSWERED).build();
         assertEquals(event.getUpdateType(), FUTURE_ONLY);
+    }
+    
+    @Test
+    public void recordify() throws Exception {
+        StudyActivityEvent event = new StudyActivityEvent.Builder()
+                .withAppId(TEST_APP_ID)
+                .withUserId(TEST_USER_ID)
+                .withStudyId(TEST_STUDY_ID)
+                .withClientTimeZone("America/Los_Angeles")
+                .withObjectType(QUESTION)
+                .withObjectId("foo")
+                .withAnswerValue("anAnswer")
+                .withTimestamp(MODIFIED_ON)
+                .withCreatedOn(CREATED_ON)
+                .withUpdateType(MUTABLE)
+                .withOriginEventId("enrollment")
+                .withStudyBurstId("foo")
+                .withPeriodFromOrigin(Period.parse("P2D"))
+                .withEventType(ANSWERED)
+                .withRecordCount(7).build();
+        
+        Object[] record = StudyActivityEvent.recordify(event);
+        assertEquals(record[0], TEST_APP_ID);
+        assertEquals(record[1], TEST_USER_ID);
+        assertEquals(record[2], TEST_STUDY_ID);
+        assertEquals(record[3], "question:foo:answered=anAnswer");
+        assertEquals(record[4], BigInteger.valueOf(MODIFIED_ON.getMillis()));
+        assertEquals(record[5], "anAnswer");
+        assertEquals(record[6], "America/Los_Angeles");
+        assertEquals(record[7], BigInteger.valueOf(CREATED_ON.getMillis()));
+        assertEquals(record[8], "foo");
+        assertEquals(record[9], "enrollment");
+        assertEquals(record[10], "P2D");
+        assertEquals(record[11], BigInteger.valueOf(7));
+    }
+    
+    @Test
+    public void create() {
+        Object[] record = new Object[12];
+        record[0] = TEST_APP_ID;
+        record[1] = TEST_USER_ID;
+        record[2] = TEST_STUDY_ID;
+        record[3] = "question:foo:answered=anAnswer";
+        record[4] = BigInteger.valueOf(MODIFIED_ON.getMillis());
+        record[5] = "anAnswer";
+        record[6] = "America/Los_Angeles";
+        record[7] = BigInteger.valueOf(CREATED_ON.getMillis());
+        record[8] = "foo";
+        record[9] = "enrollment";
+        record[10] = "P2D";
+        record[11] = BigInteger.valueOf(7);
+        
+        StudyActivityEvent event = StudyActivityEvent.create(record);
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getEventId(), "question:foo:answered=anAnswer");
+        assertEquals(event.getTimestamp().withZone(UTC), MODIFIED_ON);
+        assertEquals(event.getAnswerValue(), "anAnswer");
+        assertEquals(event.getClientTimeZone(), "America/Los_Angeles");
+        assertEquals(event.getCreatedOn().withZone(UTC), CREATED_ON);
+        assertEquals(event.getStudyBurstId(), "foo");
+        assertEquals(event.getOriginEventId(), "enrollment");
+        assertEquals(event.getPeriodFromOrigin(), Period.parse("P2D"));
+        assertEquals(event.getRecordCount(), 7);
     }
 }
