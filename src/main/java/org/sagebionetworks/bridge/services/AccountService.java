@@ -11,7 +11,6 @@ import static org.sagebionetworks.bridge.AuthUtils.canAccessAccount;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.collectStudyIds;
-import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
@@ -268,17 +267,6 @@ public class AccountService {
             Set<String> newDataGroups = addToSet(account.getDataGroups(), TEST_USER_GROUP);
             account.setDataGroups(newDataGroups);
         }
-        // Participant accounts shouldn't be submitted to this endpoint; but if they are we check
-        // access, and throw if the caller is an org admin or a developer trying to operate on a 
-        // production account. These checks cannot currently be represented in the AuthEvaluator 
-        // checks.
-        boolean isParticipant = persistedAccount.getRoles().isEmpty();
-        if (isParticipant && CANNOT_ACCESS_PARTICIPANTS.check(USER_ID, persistedAccount.getId())) {
-            if (RequestContext.get().isInRole(ORG_ADMIN) || !testUser) {
-                throw new UnauthorizedException();    
-            }
-        }
-        
         // None of these values should be changeable by the user.
         account.setAppId(persistedAccount.getAppId());
         account.setCreatedOn(persistedAccount.getCreatedOn());
