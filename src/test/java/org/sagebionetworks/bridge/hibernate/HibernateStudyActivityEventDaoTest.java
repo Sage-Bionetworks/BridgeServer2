@@ -18,8 +18,6 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateTy
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -95,21 +93,22 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
     
     @Test
     public void getRecentStudyActivityEvent() throws Exception {
-        List<Object[]> results = new ArrayList<>();
-        Object[] arr1 = new Object[11];
-        arr1[3] = "custom:event1";
-        arr1[4] = BigInteger.valueOf(CREATED_ON.getMillis()); // timestamp
-        arr1[7] = BigInteger.valueOf(MODIFIED_ON.getMillis()); // created on
-        arr1[10] = BigInteger.valueOf(1);
-        results.add(arr1);
-        Object[] arr2 = new Object[11];
-        arr2[3] = "custom:event2";
-        arr2[4] = BigInteger.valueOf(CREATED_ON.getMillis()); // timestamp
-        arr2[7] = BigInteger.valueOf(MODIFIED_ON.getMillis()); // created on
-        arr2[10] = BigInteger.valueOf(2);
-        results.add(arr2);
+        StudyActivityEvent event1 = new StudyActivityEvent.Builder()
+                .withEventId("custom:event1")
+                .withTimestamp(CREATED_ON)
+                .withCreatedOn(MODIFIED_ON)
+                .withRecordCount(1)
+                .build();
+        StudyActivityEvent event2 = new StudyActivityEvent.Builder()
+                .withEventId("custom:event2")
+                .withTimestamp(CREATED_ON)
+                .withCreatedOn(MODIFIED_ON)
+                .withRecordCount(2)
+                .build();
         
-        when(mockHelper.nativeQuery(any(), any())).thenReturn(ImmutableList.of(arr1, arr2));
+        List<Object[]> results = ImmutableList.of(StudyActivityEvent.recordify(event1),
+                StudyActivityEvent.recordify(event2));
+        when(mockHelper.nativeQuery(any(), any())).thenReturn(results);
         
         StudyActivityEvent retValue = dao.getRecentStudyActivityEvent(
                 TEST_USER_ID, TEST_STUDY_ID, "custom:event2");

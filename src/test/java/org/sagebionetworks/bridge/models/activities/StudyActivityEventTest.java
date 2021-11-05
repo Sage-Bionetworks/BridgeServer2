@@ -12,6 +12,8 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateTy
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
+import org.joda.time.Period;
+
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.testng.annotations.Test;
@@ -36,11 +38,12 @@ public class StudyActivityEventTest {
                 .withCreatedOn(CREATED_ON)
                 .withStudyBurstId("studyBurstId")
                 .withOriginEventId("originEventId")
+                .withPeriodFromOrigin(Period.parse("P3W"))
                 .withRecordCount(10)
                 .withUpdateType(FUTURE_ONLY).build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(event);
-        assertEquals(node.size(), 10);
+        assertEquals(node.size(), 11);
         assertEquals(node.get("eventId").textValue(), "eventKey");
         assertEquals(node.get("timestamp").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("answerValue").textValue(), "my answer");
@@ -50,6 +53,7 @@ public class StudyActivityEventTest {
         assertEquals(node.get("updateType").textValue(), "future_only");
         assertEquals(node.get("studyBurstId").textValue(), "studyBurstId");
         assertEquals(node.get("originEventId").textValue(), "originEventId");
+        assertEquals(node.get("periodFromOrigin").textValue(), "P3W");
         assertEquals(node.get("type").textValue(), "ActivityEvent");
     }
     
@@ -66,6 +70,9 @@ public class StudyActivityEventTest {
                 .withTimestamp(MODIFIED_ON)
                 .withCreatedOn(CREATED_ON)
                 .withUpdateType(MUTABLE)
+                .withOriginEventId("enrollment")
+                .withStudyBurstId("foo")
+                .withPeriodFromOrigin(Period.parse("P2D"))
                 .withEventType(ANSWERED).build();
         
         assertEquals(event.getAppId(), TEST_APP_ID);
@@ -76,6 +83,9 @@ public class StudyActivityEventTest {
         assertEquals(event.getAnswerValue(), "anAnswer");
         assertEquals(event.getClientTimeZone(), "America/Los_Angeles");
         assertEquals(event.getCreatedOn(), CREATED_ON);
+        assertEquals(event.getOriginEventId(), "enrollment");
+        assertEquals(event.getStudyBurstId(), "foo");
+        assertEquals(event.getPeriodFromOrigin(), Period.parse("P2D"));
         assertEquals(event.getRecordCount(), 0);
         assertEquals(event.getUpdateType(), MUTABLE);
     }

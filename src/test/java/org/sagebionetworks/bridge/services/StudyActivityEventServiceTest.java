@@ -368,14 +368,17 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(sb1.getUpdateType(), MUTABLE);
         assertEquals(sb1.getStudyBurstId(), "foo");
         assertEquals(sb1.getOriginEventId(), "enrollment");
+        assertEquals(sb1.getPeriodFromOrigin(), Period.parse("P1W"));
         
         StudyActivityEvent sb2 = eventCaptor.getAllValues().get(2);
         assertEquals(sb2.getEventId(), "study_burst:foo:02");
         assertEquals(sb2.getTimestamp(), ENROLLMENT_TS.plusWeeks(2));
+        assertEquals(sb2.getPeriodFromOrigin(), Period.parse("P2W"));
         
         StudyActivityEvent sb3 = eventCaptor.getAllValues().get(3);
         assertEquals(sb3.getEventId(), "study_burst:foo:03");
         assertEquals(sb3.getTimestamp(), ENROLLMENT_TS.plusWeeks(3));
+        assertEquals(sb3.getPeriodFromOrigin(), Period.parse("P3W"));
     }
     
     @Test

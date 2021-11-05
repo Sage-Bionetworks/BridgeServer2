@@ -828,5 +828,6 @@ ADD COLUMN `note` text DEFAULT NULL;
 -- changeset bridge:52
 
 ALTER TABLE `StudyActivityEvents`
+ADD COLUMN `studyBurstId` varchar(255),
 ADD COLUMN `originEventId` varchar(255),
-ADD COLUMN `studyBurstId` varchar(255);
+ADD COLUMN `periodFromOrigin` varchar(60);

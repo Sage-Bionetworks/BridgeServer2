@@ -23,6 +23,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.DateTime;
+import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
@@ -262,18 +263,22 @@ public class StudyActivityEventService {
                 builder.withStudyBurstId(burst.getIdentifier());
                 builder.withOriginEventId(burst.getOriginEventId());
                 
-                DateTime eventTime = new DateTime(event.getTimestamp());
+                Period period = burst.getInterval();
                 int len =  burst.getOccurrences().intValue();
-                
                 for (int i=0; i < len; i++) {
                     String iteration = Strings.padStart(Integer.toString(i+1), 2, '0');
-                    eventTime = new DateTime(eventTime).plus(burst.getInterval());
+                    DateTime eventTime = new DateTime(event.getTimestamp()).plus(period);
 
                     StudyActivityEvent burstEvent = builder
+                            .withEventId(null)
                             .withObjectId(burst.getIdentifier())
                             .withAnswerValue(iteration)
                             .withTimestamp(eventTime)
+                            .withPeriodFromOrigin(period)
                             .build();
+                    
+                    // now advance period for the next loop, if there is one.
+                    period = period.plus(burst.getInterval());
                     
                     StudyActivityEvent mostRecent = dao.getRecentStudyActivityEvent(
                             burstEvent.getUserId(), burstEvent.getStudyId(), burstEvent.getEventId());
