@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.joda.time.DateTimeZone.UTC;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -13,17 +14,15 @@ import static org.sagebionetworks.bridge.hibernate.HibernateStudyActivityEventDa
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
-import java.math.BigInteger;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import com.google.common.collect.ImmutableList;
 
-import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -32,7 +31,6 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 
@@ -80,7 +78,7 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
     
     @Test
     public void getRecentStudyActivityEvents() { 
-        List<Object[]> list = ImmutableList.of(new Object[8], new Object[8]);
+        List<Object[]> list = ImmutableList.of(new Object[11], new Object[11]);
         when(mockHelper.nativeQuery(any(), any())).thenReturn(list);
         
         List<StudyActivityEvent> retValue = dao.getRecentStudyActivityEvents(
@@ -94,24 +92,31 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
     }
     
     @Test
-    public void getRecentStudyActivityEvent() {
-        List<Object[]> results = new ArrayList<>();
-        Object[] arr1 = new Object[8];
-        arr1[3] = "custom:event1";
-        arr1[4] = BigInteger.valueOf(CREATED_ON.getMillis());
-        arr1[7] = BigInteger.valueOf(new DateTime().getMillis());
-        results.add(arr1);
-        Object[] arr2 = new Object[8];
-        arr2[3] = "custom:event2";
-        arr2[4] = BigInteger.valueOf(MODIFIED_ON.getMillis());
-        arr2[7] = BigInteger.valueOf(new DateTime().getMillis());
-        results.add(arr2);
+    public void getRecentStudyActivityEvent() throws Exception {
+        StudyActivityEvent event1 = new StudyActivityEvent.Builder()
+                .withEventId("custom:event1")
+                .withTimestamp(CREATED_ON)
+                .withCreatedOn(MODIFIED_ON)
+                .withRecordCount(1)
+                .build();
+        StudyActivityEvent event2 = new StudyActivityEvent.Builder()
+                .withEventId("custom:event2")
+                .withTimestamp(CREATED_ON)
+                .withCreatedOn(MODIFIED_ON)
+                .withRecordCount(2)
+                .build();
         
-        when(mockHelper.nativeQuery(any(), any())).thenReturn(ImmutableList.of(arr1, arr2));
+        List<Object[]> results = ImmutableList.of(StudyActivityEvent.recordify(event1),
+                StudyActivityEvent.recordify(event2));
+        when(mockHelper.nativeQuery(any(), any())).thenReturn(results);
         
         StudyActivityEvent retValue = dao.getRecentStudyActivityEvent(
                 TEST_USER_ID, TEST_STUDY_ID, "custom:event2");
-        assertSame(retValue.getEventId(), "custom:event2");
+        assertEquals(retValue.getEventId(), "custom:event2");
+        assertEquals(retValue.getTimestamp().withZone(UTC), CREATED_ON);
+        assertEquals(retValue.getCreatedOn().withZone(UTC), MODIFIED_ON);
+        assertEquals(retValue.getRecordCount(), 2);
+        assertEquals(retValue.getUpdateType(), IMMUTABLE);
         
         verify(mockHelper).nativeQuery(eq(GET_RECENT_SQL), paramsCaptor.capture());
         Map<String,Object> params = paramsCaptor.getValue();
