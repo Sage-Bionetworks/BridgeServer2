@@ -15,7 +15,6 @@ import static org.testng.Assert.assertNull;
 
 import java.math.BigInteger;
 
-import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 
 import com.fasterxml.jackson.databind.JsonNode;
