@@ -161,12 +161,13 @@ public class StudyActivityEventTest {
         assertEquals(record[8], "foo");
         assertEquals(record[9], "enrollment");
         assertEquals(record[10], "P2D");
-        assertEquals(record[11], BigInteger.valueOf(7));
+        assertEquals(record[11], "MUTABLE");
+        assertEquals(record[12], BigInteger.valueOf(7));
     }
     
     @Test
     public void create() {
-        Object[] record = new Object[12];
+        Object[] record = new Object[13];
         record[0] = TEST_APP_ID;
         record[1] = TEST_USER_ID;
         record[2] = TEST_STUDY_ID;
@@ -178,7 +179,8 @@ public class StudyActivityEventTest {
         record[8] = "foo";
         record[9] = "enrollment";
         record[10] = "P2D";
-        record[11] = BigInteger.valueOf(7);
+        record[11] = "MUTABLE";
+        record[12] = BigInteger.valueOf(7);
         
         StudyActivityEvent event = StudyActivityEvent.create(record);
         assertEquals(event.getAppId(), TEST_APP_ID);
@@ -192,6 +194,7 @@ public class StudyActivityEventTest {
         assertEquals(event.getStudyBurstId(), "foo");
         assertEquals(event.getOriginEventId(), "enrollment");
         assertEquals(event.getPeriodFromOrigin(), Period.parse("P2D"));
+        assertEquals(event.getUpdateType(), MUTABLE);
         assertEquals(event.getRecordCount(), 7);
     }
 }

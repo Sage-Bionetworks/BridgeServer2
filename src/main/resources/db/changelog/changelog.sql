@@ -831,3 +831,8 @@ ALTER TABLE `StudyActivityEvents`
 ADD COLUMN `studyBurstId` varchar(255),
 ADD COLUMN `originEventId` varchar(255),
 ADD COLUMN `periodFromOrigin` varchar(60);
+
+-- changeset bridge:53
+
+ALTER TABLE `StudyActivityEvents`
+ADD COLUMN `updateType` enum('MUTABLE', 'IMMUTABLE', 'FUTURE_ONLY') DEFAULT 'IMMUTABLE';
