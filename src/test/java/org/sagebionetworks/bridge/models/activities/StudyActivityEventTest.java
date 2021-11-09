@@ -166,6 +166,17 @@ public class StudyActivityEventTest {
     }
     
     @Test
+    public void recordify_nullValues() {
+        StudyActivityEvent event = new StudyActivityEvent();
+        Object[] record = StudyActivityEvent.recordify(event);
+        assertEquals(record.length, 13);
+        for (int i=0; i < 12; i++) {
+            assertNull(record[i]);
+        }
+        assertEquals(record[12], BigInteger.valueOf(0)); // recordCount
+    }
+    
+    @Test
     public void create() {
         Object[] record = new Object[13];
         record[0] = TEST_APP_ID;
@@ -197,4 +208,25 @@ public class StudyActivityEventTest {
         assertEquals(event.getUpdateType(), MUTABLE);
         assertEquals(event.getRecordCount(), 7);
     }
+    
+    @Test
+    public void create_nullValues() {
+        Object[] record = new Object[13];
+        
+        StudyActivityEvent event = StudyActivityEvent.create(record);
+        assertNull(event.getAppId());
+        assertNull(event.getUserId());
+        assertNull(event.getStudyId());
+        assertNull(event.getEventId());
+        assertNull(event.getTimestamp());
+        assertNull(event.getAnswerValue());
+        assertNull(event.getClientTimeZone());
+        assertNull(event.getCreatedOn());
+        assertNull(event.getStudyBurstId());
+        assertNull(event.getOriginEventId());
+        assertNull(event.getPeriodFromOrigin());
+        assertNull(event.getUpdateType());
+        assertEquals(event.getRecordCount(), 0);
+    }
+
 }

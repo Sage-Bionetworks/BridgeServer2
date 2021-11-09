@@ -58,7 +58,9 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         if (event.getPeriodFromOrigin() != null) {
             array[10] = event.getPeriodFromOrigin().toString();    
         }
-        array[11] = event.getUpdateType().name();
+        if (event.getUpdateType() != null) {
+            array[11] = event.getUpdateType().name();    
+        }
         // Not in table, this is retrieved from the query itself
         array[12] = BigInteger.valueOf(event.getRecordCount());
         return array;
@@ -91,7 +93,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         return builder.build();
     }
     private static int toInt(Object obj) {
-        return (obj == null) ? -1 : ((BigInteger)obj).intValue();
+        return (obj == null) ? 0 : ((BigInteger)obj).intValue();
     }
     private static String toString(Object obj) {
         return (obj == null) ? null : (String)obj;
