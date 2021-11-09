@@ -47,15 +47,16 @@ import org.slf4j.LoggerFactory;
  * Activity events that are scoped to a person participating in a specific study. 
  * Unlike v1 of activity events, these events maintain a history of their changes 
  * (if they are mutable). They also include some metadata that the earlier event 
- * system could not maintain, including a client time zone. This API will replace 
- * the v1 API, so some events that span all studies (like the creation of an 
- * account) are also in the events returned by this system. 
+ * system could not maintain, including a client time zone and their relationship 
+ * to study bursts. This API will replace the v1 API, so some events that span 
+ * all studies (like the creation of an account) are also in the events returned 
+ * by this service. 
  * 
  * The code in this class to insert an enrollment event, when there is no enrollment
  * event in the tables, is backfill code for accounts that were created and enrolled 
- * in a study before the deployment of study-specific events. There is no apparent 
- * reason to actually save them in the table at this point since the records should
- * only be accessed through this service.
+ * in a study before the deployment of study-specific events. There is no reason to 
+ * save them in the table at this point since the records should only be accessed 
+ * through this service.
  */
 @Component
 public class StudyActivityEventService {
