@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
@@ -664,14 +665,14 @@ public class StudyParticipantControllerTest extends Mockito {
     }
     
     @Test
-    public void getParticipantIncludesHealthCodeForAdmin() throws Exception {
+    public void getParticipantIncludesHealthCodeForSuperadmin() throws Exception {
         app.setHealthCodeExportEnabled(false);
         
         RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withCallerRoles(ImmutableSet.of(SUPERADMIN))
                 .build());
         session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(ADMIN))
+                .withRoles(ImmutableSet.of(SUPERADMIN))
                 .build());
         
         StudyParticipant participant = new StudyParticipant.Builder()
@@ -756,15 +757,15 @@ public class StudyParticipantControllerTest extends Mockito {
     }
     
     @Test
-    public void getParticipantPreventsNoHealthCodeExportOverrriddenByAdmin() throws Exception {
+    public void getParticipantPreventsNoHealthCodeExportOverrriddenBySuperadmin() throws Exception {
         app.setHealthCodeExportEnabled(false);
         
         RequestContext.set(new RequestContext.Builder()
-                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withCallerRoles(ImmutableSet.of(SUPERADMIN))
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
         session.setParticipant(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(ADMIN)).build());
+                .withRoles(ImmutableSet.of(SUPERADMIN)).build());
         
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withHealthCode("healthCode").build();

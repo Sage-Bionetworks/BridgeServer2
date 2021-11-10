@@ -4,6 +4,7 @@ import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
@@ -11,6 +12,7 @@ import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
@@ -48,6 +50,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -337,9 +340,8 @@ public class ParticipantController extends BaseController {
         CriteriaContext context = getCriteriaContext(session);
         StudyParticipant participant = participantService.getSelfParticipant(app, context, consents);
         
-        // Return the health code if this is an administrative account. This is because developers 
-        // should call this method to retrieve their own account.
-        ObjectWriter writer = (session.isInRole(ADMINISTRATIVE_ROLES)) ?
+        // Return the health code if this is a test account.
+        ObjectWriter writer = (participant.getDataGroups().contains(TEST_USER_GROUP)) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
         return writer.writeValueAsString(participant);
@@ -355,14 +357,14 @@ public class ParticipantController extends BaseController {
 
         // Do not allow lookup by health code if health code access is disabled. Allow it however
         // if the user is an administrator.
-        if (!session.isInRole(ADMIN) && !app.isHealthCodeExportEnabled()
+        if (!app.isHealthCodeExportEnabled() && !session.isInRole(SUPERADMIN) 
                 && userId.toLowerCase().startsWith("healthcode:")) {
             throw new EntityNotFoundException(Account.class);
         }
         
         StudyParticipant participant = participantService.getParticipant(app, userId, consents);
         
-        ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(ADMIN)) ?
+        ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(SUPERADMIN)) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
         return writer.writeValueAsString(participant);

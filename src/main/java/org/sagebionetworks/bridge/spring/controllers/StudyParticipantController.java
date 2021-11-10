@@ -10,7 +10,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
@@ -303,14 +303,14 @@ public class StudyParticipantController extends BaseController {
 
         // Do not allow lookup by health code if health code access is disabled. Allow it however
         // if the user is an administrator.
-        if (!session.isInRole(ADMIN) && !app.isHealthCodeExportEnabled()
+        if (!app.isHealthCodeExportEnabled() && !session.isInRole(SUPERADMIN) 
                 && userId.toLowerCase().startsWith("healthcode:")) {
             throw new EntityNotFoundException(Account.class);
         }
         
         StudyParticipant participant = participantService.getParticipant(app, account, consents);
         
-        ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(ADMIN)) ?
+        ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(SUPERADMIN)) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
         return writer.writeValueAsString(participant);
