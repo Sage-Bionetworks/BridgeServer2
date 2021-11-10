@@ -1,8 +1,5 @@
 package org.sagebionetworks.bridge.dynamodb;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,19 +55,16 @@ public class DynamoParticipantVersion implements ParticipantVersion {
 
     /**
      * Sets the DynamoDB key. This is generally only called by the DynamoDB mapper. If the key is null, empty, or
-     * malformatted, this will throw.
+     * malformatted, this will do nothing.
      */
     public void setKey(String key) {
-        checkNotNull(key, "key cannot be null");
-        checkArgument(!key.isEmpty(), "key cannot be empty");
-
-        String[] parts = key.split(":", 2);
-        checkArgument(parts.length == 2, "key has wrong number of parts");
-        checkArgument(!parts[0].isEmpty(), "key has empty appId");
-        checkArgument(!parts[1].isEmpty(), "key has empty healthCode");
-
-        this.appId = parts[0];
-        this.healthCode = parts[1];
+        if (key != null) {
+            String[] parts = key.split(":", 2);
+            if (parts.length == 2) {
+                this.appId = parts[0];
+                this.healthCode = parts[1];
+            }
+        }
     }
 
     @DynamoDBIndexHashKey(attributeName = "appId", globalSecondaryIndexName = "appId-index")
@@ -188,6 +182,7 @@ public class DynamoParticipantVersion implements ParticipantVersion {
      * concurrent modification.
      */
     @DynamoDBVersionAttribute
+    @JsonIgnore
     public Long getVersion() {
         return version;
     }

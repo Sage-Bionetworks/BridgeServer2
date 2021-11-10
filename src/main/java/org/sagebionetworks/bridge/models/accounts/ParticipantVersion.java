@@ -71,9 +71,9 @@ public interface ParticipantVersion extends BridgeEntity {
     void setStudyMemberships(Map<String, String> studyMemberships);
 
     /**
-     * Participant's time zone, expressed as a numerical offset (eg "-0800", "+0900"). We use this format because this
-     * is consistent with how apps send their time zone to Bridge Server (ie through ScheduledActivityController). The
-     * time zone will be updated when the user changes their time zone. */
+     * Participant's time zone, as an IANA time zone name (eg "America/Los_Angeles"). This corresponds to
+     * StudyParticipant.clientTimeZone.
+     */
     String getTimeZone();
     void setTimeZone(String timeZone);
 }

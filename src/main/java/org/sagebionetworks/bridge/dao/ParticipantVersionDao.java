@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
@@ -11,9 +12,12 @@ public interface ParticipantVersionDao {
     /** Delete all participant versions for the given app and health code. This is called by integration tests. */
     void deleteParticipantVersionsForHealthCode(String appId, String healthCode);
 
-    /** Retrieves the participant version. */
-    Optional<ParticipantVersion> getParticipantVersion(String appId, String healthCode, int participantVersion);
+    /** Get all participant versions for health code. */
+    List<ParticipantVersion> getAllParticipantVersionsForHealthCode(String appId, String healthCode);
 
     /** Retrieves the latest participant version for health code. */
     Optional<ParticipantVersion> getLatestParticipantVersionForHealthCode(String appId, String healthCode);
+
+    /** Retrieves the participant version. */
+    Optional<ParticipantVersion> getParticipantVersion(String appId, String healthCode, int participantVersion);
 }

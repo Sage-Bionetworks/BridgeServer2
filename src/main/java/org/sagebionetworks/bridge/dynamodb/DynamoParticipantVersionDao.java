@@ -7,6 +7,7 @@ import javax.annotation.Resource;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBQueryExpression;
 import com.amazonaws.services.dynamodbv2.datamodeling.QueryResultPage;
+import com.google.common.collect.ImmutableList;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -33,13 +34,8 @@ public class DynamoParticipantVersionDao implements ParticipantVersionDao {
     @Override
     public void deleteParticipantVersionsForHealthCode(String appId, String healthCode) {
         // First, query the records we need to delete.
-        DynamoParticipantVersion key = new DynamoParticipantVersion();
-        key.setAppId(appId);
-        key.setHealthCode(healthCode);
-
-        DynamoDBQueryExpression<DynamoParticipantVersion> query = new DynamoDBQueryExpression<DynamoParticipantVersion>()
-                .withHashKeyValues(key);
-        List<DynamoParticipantVersion> participantVersionsToDelete = queryHelper(query);
+        List<ParticipantVersion> participantVersionsToDelete = getAllParticipantVersionsForHealthCode(appId,
+                healthCode);
 
         // Next, batch delete.
         if (!participantVersionsToDelete.isEmpty()) {
@@ -49,14 +45,17 @@ public class DynamoParticipantVersionDao implements ParticipantVersionDao {
     }
 
     @Override
-    public Optional<ParticipantVersion> getParticipantVersion(String appId, String healthCode,
-            int participantVersion) {
+    public List<ParticipantVersion> getAllParticipantVersionsForHealthCode(String appId, String healthCode) {
         DynamoParticipantVersion key = new DynamoParticipantVersion();
         key.setAppId(appId);
         key.setHealthCode(healthCode);
-        key.setParticipantVersion(participantVersion);
 
-        return Optional.ofNullable(mapper.load(key));
+        DynamoDBQueryExpression<DynamoParticipantVersion> query = new DynamoDBQueryExpression<DynamoParticipantVersion>()
+                .withHashKeyValues(key);
+        List<DynamoParticipantVersion> participantVersionList = queryHelper(query);
+
+        // Because of typing issues, we need to convert the list.
+        return ImmutableList.copyOf(participantVersionList);
     }
 
     @Override
@@ -77,6 +76,17 @@ public class DynamoParticipantVersionDao implements ParticipantVersionDao {
         } else {
             return Optional.of(participantVersionList.get(0));
         }
+    }
+
+    @Override
+    public Optional<ParticipantVersion> getParticipantVersion(String appId, String healthCode,
+            int participantVersion) {
+        DynamoParticipantVersion key = new DynamoParticipantVersion();
+        key.setAppId(appId);
+        key.setHealthCode(healthCode);
+        key.setParticipantVersion(participantVersion);
+
+        return Optional.ofNullable(mapper.load(key));
     }
 
     // Helper method that wraps around mapper.query(). Because of typing issues, mapper.query() is hard to mock.

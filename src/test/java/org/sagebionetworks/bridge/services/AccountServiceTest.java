@@ -127,6 +127,9 @@ public class AccountServiceTest extends Mockito {
     @Mock
     Consumer<Account> mockConsumer;
 
+    @Mock
+    ParticipantVersionService mockParticipantVersionService;
+
     @InjectMocks
     @Spy
     AccountService service;
@@ -267,6 +270,9 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
         assertEquals(createdAccount.getNote(), TEST_NOTE);
         assertEquals(createdAccount.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+
+        // Verify we also create a participant version.
+        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(createdAccount));
     }
 
     @Test
@@ -276,6 +282,9 @@ public class AccountServiceTest extends Mockito {
         service.updateAccount(account);
         
         verify(mockAccountDao).updateAccount(account);
+
+        // Verify we also create a participant version.
+        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(account));
     }
     
     @Test
@@ -302,6 +311,9 @@ public class AccountServiceTest extends Mockito {
         service.editAccount(ACCOUNT_ID, mockConsumer);
 
         verify(mockConsumer).accept(account);
+
+        // Verify we also create a participant version.
+        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(account));
     }
 
     @Test
