@@ -321,17 +321,6 @@ public class AccountServiceTest extends Mockito {
         verify(mockAccountDao).updateAccount(account);
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void updateAccountFailsForDevUpdatingProdAccount() throws Exception {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("id")
-                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
-        
-        Account account = mockGetAccountById(ACCOUNT_ID, false);
-
-        service.updateAccount(account);
-    }
-    
     @Test
     public void updateAccountDevCannotRemoveTestFlag() throws Exception {
         RequestContext.set(new RequestContext.Builder()
@@ -405,19 +394,6 @@ public class AccountServiceTest extends Mockito {
         assertEquals(account.getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
     }
     
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void updateAccountFailsForStudyDesignerUpdatingProdAccount() throws Exception {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("id")
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
-        
-        Account account = mockGetAccountById(ACCOUNT_ID, false);
-        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
-
-        service.updateAccount(account);
-    }
-    
     @Test
     public void updateAccountSucceedsForStudyDesignerUpdatingTestAccount() throws Exception {
         RequestContext.set(new RequestContext.Builder()
@@ -446,20 +422,6 @@ public class AccountServiceTest extends Mockito {
         service.updateAccount(account);
         
         verify(mockAccountDao).updateAccount(account);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void updateAccountFailsForOrgAdminUpdatingParticipantAccount() throws Exception {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("id")
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        
-        Account account = mockGetAccountById(ACCOUNT_ID, false);
-        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
-        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
-
-        service.updateAccount(account);
     }
     
     @Test

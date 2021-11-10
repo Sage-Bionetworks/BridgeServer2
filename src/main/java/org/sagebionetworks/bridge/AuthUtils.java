@@ -135,6 +135,7 @@ public class AuthUtils {
      * Can the caller read study reports?
      */
     public static final AuthEvaluator CAN_READ_STUDY_REPORTS = new AuthEvaluator()
+            .isEnrolledInStudy().or()
             .canAccessStudy().or()
             .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     

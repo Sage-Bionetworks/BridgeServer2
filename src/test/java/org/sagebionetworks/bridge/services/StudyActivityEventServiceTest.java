@@ -20,6 +20,7 @@ import static org.sagebionetworks.bridge.services.StudyActivityEventService.ENRO
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.INSTALL_LINK_SENT_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -365,14 +366,19 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(sb1.getTimestamp(), ENROLLMENT_TS.plusWeeks(1));
         assertEquals(sb1.getClientTimeZone(), "America/Los_Angeles");
         assertEquals(sb1.getUpdateType(), MUTABLE);
+        assertEquals(sb1.getStudyBurstId(), "foo");
+        assertEquals(sb1.getOriginEventId(), "enrollment");
+        assertEquals(sb1.getPeriodFromOrigin(), Period.parse("P1W"));
         
         StudyActivityEvent sb2 = eventCaptor.getAllValues().get(2);
         assertEquals(sb2.getEventId(), "study_burst:foo:02");
         assertEquals(sb2.getTimestamp(), ENROLLMENT_TS.plusWeeks(2));
+        assertEquals(sb2.getPeriodFromOrigin(), Period.parse("P2W"));
         
         StudyActivityEvent sb3 = eventCaptor.getAllValues().get(3);
         assertEquals(sb3.getEventId(), "study_burst:foo:03");
         assertEquals(sb3.getTimestamp(), ENROLLMENT_TS.plusWeeks(3));
+        assertEquals(sb3.getPeriodFromOrigin(), Period.parse("P3W"));
     }
     
     @Test
@@ -684,10 +690,18 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         ResourceList<StudyActivityEvent> retValue = service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
         assertEquals(retValue.getItems().size(), 2);
-        assertEquals(retValue.getItems().get(0).getEventId(), ENROLLMENT_FIELD);
-        assertEquals(retValue.getItems().get(0).getTimestamp(), MODIFIED_ON);
-        assertEquals(retValue.getItems().get(1).getEventId(), CREATED_ON_FIELD);
-        assertEquals(retValue.getItems().get(1).getTimestamp(), CREATED_ON);
+        
+        StudyActivityEvent event = retValue.getItems().get(0);
+        assertEquals(event.getEventId(), "enrollment");
+        assertEquals(event.getTimestamp(), MODIFIED_ON);
+        assertNull(event.getOriginEventId());
+        assertNull(event.getStudyBurstId());
+        assertEquals(event.getRecordCount(), 1);
+        assertEquals(event.getUpdateType(), IMMUTABLE);
+        
+        event = retValue.getItems().get(1);
+        assertEquals(event.getEventId(), CREATED_ON_FIELD);
+        assertEquals(event.getTimestamp(), CREATED_ON);
     }
 
     @Test
@@ -724,6 +738,14 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(retValue.getTotal(), Integer.valueOf(1));
         assertEquals(retValue.getItems().get(0).getTimestamp(), MODIFIED_ON);
+        
+        StudyActivityEvent event = retValue.getItems().get(0);
+        assertEquals(event.getEventId(), "enrollment");
+        assertEquals(event.getTimestamp(), MODIFIED_ON);
+        assertNull(event.getOriginEventId());
+        assertNull(event.getStudyBurstId());
+        assertEquals(event.getRecordCount(), 1);
+        assertEquals(event.getUpdateType(), IMMUTABLE);
     }
 
     @Test
