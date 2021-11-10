@@ -462,6 +462,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         service.publishEvent(event, false, false);
         
         verify(mockDao, times(1)).publishEvent(eventCaptor.capture());
+        assertEquals(eventCaptor.getValue().getEventId(), "assessment:foo:finished");
     }
     
     @Test
