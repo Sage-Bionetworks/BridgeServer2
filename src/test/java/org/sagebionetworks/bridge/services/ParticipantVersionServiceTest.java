@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -29,6 +30,7 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.ParticipantVersionDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -115,6 +117,19 @@ public class ParticipantVersionServiceTest {
         assertEquals(studyMembershipMap.get(STUDY_ID_1), EXTERNAL_ID_1);
         assertTrue(studyMembershipMap.containsKey(STUDY_ID_2));
         assertNull(studyMembershipMap.get(STUDY_ID_2));
+    }
+
+    @Test
+    public void createParticipantVersionFromAccount_HasRoles() {
+        // Make Account with role.
+        Account account = Account.create();
+        account.setRoles(ImmutableSet.of(Roles.STUDY_DESIGNER));
+
+        // Execute.
+        participantVersionService.createParticipantVersionFromAccount(account);
+
+        // We never call through to the dao.
+        verifyZeroInteractions(mockParticipantVersionDao);
     }
 
     // branch coverage: initial version with no createdOn

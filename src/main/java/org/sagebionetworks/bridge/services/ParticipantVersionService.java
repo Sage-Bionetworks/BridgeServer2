@@ -29,6 +29,11 @@ public class ParticipantVersionService {
 
     /** Creates a participant version from an account. */
     public void createParticipantVersionFromAccount(Account account) {
+        if (!account.getRoles().isEmpty()) {
+            // Accounts that have roles aren't research participants. Don't export them to Synapse.
+            return;
+        }
+
         ParticipantVersion participantVersion = makeParticipantVersionFromAccount(account);
         createParticipantVersion(participantVersion);
     }
