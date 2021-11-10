@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -39,6 +40,7 @@ public class HibernateEnrollmentTest {
         enrollment.setWithdrawnBy("withdrawnBy");
         enrollment.setWithdrawalNote("note");
         enrollment.setConsentRequired(true);
+        enrollment.setNote(TEST_NOTE);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(enrollment);
         
@@ -50,6 +52,7 @@ public class HibernateEnrollmentTest {
         assertEquals(node.get("withdrawnBy").textValue(), "withdrawnBy");
         assertEquals(node.get("withdrawalNote").textValue(), "note");
         assertTrue(node.get("consentRequired").booleanValue());
+        assertEquals(node.get("note").textValue(), TEST_NOTE);
         assertEquals(node.get("type").textValue(), "Enrollment");
         
         Enrollment deser = BridgeObjectMapper.get().readValue(node.toString(), Enrollment.class);
@@ -63,6 +66,7 @@ public class HibernateEnrollmentTest {
         assertEquals(deser.getWithdrawnBy(), "withdrawnBy");
         assertEquals(deser.getWithdrawalNote(), "note");
         assertTrue(deser.isConsentRequired());
+        assertEquals(deser.getNote(), TEST_NOTE);
     }
     
     @Test
@@ -78,6 +82,7 @@ public class HibernateEnrollmentTest {
         enrollment.setWithdrawnBy("withdrawnBy");
         enrollment.setWithdrawalNote("note");
         enrollment.setConsentRequired(true);
+        enrollment.setNote(TEST_NOTE);
         
         assertEquals(enrollment.getAppId(), TEST_APP_ID);
         assertEquals(enrollment.getStudyId(), TEST_STUDY_ID);
@@ -88,5 +93,6 @@ public class HibernateEnrollmentTest {
         assertEquals(enrollment.getEnrolledBy(), "enrolledBy");
         assertEquals(enrollment.getWithdrawnBy(), "withdrawnBy");
         assertEquals(enrollment.getWithdrawalNote(), "note");
+        assertEquals(enrollment.getNote(), TEST_NOTE);
     }
 }

@@ -112,7 +112,7 @@ public class AppConfigController extends BaseController {
         
         AppConfig appConfig = parseJson(AppConfig.class);
         appConfig.setGuid(guid);
-        
+
         AppConfig updated = appConfigService.updateAppConfig(session.getAppId(), appConfig);
         cacheProvider.removeSetOfCacheKeys(CacheKey.appConfigList(session.getAppId()));
 

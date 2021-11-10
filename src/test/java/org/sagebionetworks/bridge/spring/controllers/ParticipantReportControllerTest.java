@@ -527,7 +527,7 @@ public class ParticipantReportControllerTest extends Mockito {
         StatusMessage result = controller.deleteParticipantReportIndex(REPORT_ID);
         assertEquals(result.getMessage(), "Report index deleted.");
         
-        verify(mockReportService).deleteParticipantReportIndex(TEST_APP_ID, null, REPORT_ID);
+        verify(mockReportService).deleteParticipantReportIndex(TEST_APP_ID, TEST_USER_ID, REPORT_ID);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)

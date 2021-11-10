@@ -1,7 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -51,7 +53,7 @@ public class AdherenceController extends BaseController {
     
     @PostMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence")
     public StatusMessage updateAdherenceRecords(@PathVariable String studyId, @PathVariable String userIdToken) {
-        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
         
         String userId = accountService.getAccountId(session.getAppId(), userIdToken)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
@@ -82,7 +84,7 @@ public class AdherenceController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence/search")
     public PagedResourceList<AdherenceRecord> searchForAdherenceRecords(@PathVariable String studyId,
             @PathVariable String userIdToken) {
-        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
         
         AdherenceRecordsSearch payload = parseJson(AdherenceRecordsSearch.class);
         String userId = accountService.getAccountId(session.getAppId(), userIdToken)
@@ -102,7 +104,7 @@ public class AdherenceController extends BaseController {
             @PathVariable String instanceGuid,
             @PathVariable String eventTimestamp,
             @PathVariable String startedOn) {
-        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
 
         String userId = accountService.getAccountId(session.getAppId(), userIdToken)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));

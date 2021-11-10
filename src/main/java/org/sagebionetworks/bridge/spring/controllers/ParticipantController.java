@@ -4,12 +4,15 @@ import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.BridgeUtils.getIntOrDefault;
+import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ADMINISTRATIVE_ROLES;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 import static org.sagebionetworks.bridge.models.ResourceList.END_DATE;
@@ -32,7 +35,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.ParticipantRosterRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -48,6 +50,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
@@ -88,7 +91,8 @@ import org.sagebionetworks.bridge.services.EnrollmentService;
 @RestController
 public class ParticipantController extends BaseController {
     
-    private static final String NOTIFY_SUCCESS_MESSAGE = "Message has been sent to external notification service.";
+    static final String CANNOT_DELETE_ACCOUNT_ERROR = "Account is not a test account, it is already in use, or it is enrolled in a study that is not managed by the caller’s organization.";
+    static final String NOTIFY_SUCCESS_MESSAGE = "Message has been sent to external notification service.";
 
     private ParticipantService participantService;
     
@@ -128,7 +132,7 @@ public class ParticipantController extends BaseController {
             "/v3/participants/{userId}/activityevents"})
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage createCustomActivityEvent(@PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         App app = appService.getApp(session.getAppId());
         
         CustomActivityEventRequest activityEvent = parseJson(CustomActivityEventRequest.class);
@@ -200,17 +204,18 @@ public class ParticipantController extends BaseController {
     }
     
     @DeleteMapping("/v3/participants/{userId}")
-    public StatusMessage deleteTestParticipant(@PathVariable String userId) {
+    public StatusMessage deleteTestOrUnusedParticipant(@PathVariable String userId) {
         UserSession session = getAdministrativeSession();
-        CAN_EDIT_PARTICIPANTS.checkAndThrow(USER_ID, userId);
-        App app = appService.getApp(session.getAppId());
         
-        StudyParticipant participant = participantService.getParticipant(app, userId, false);
-        if (!participant.getDataGroups().contains(BridgeConstants.TEST_USER_GROUP)) {
-            throw new UnauthorizedException("Account is not a test account.");
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        if (!participantEligibleForDeletion(requestInfoService, account)) {
+            throw new UnauthorizedException(CANNOT_DELETE_ACCOUNT_ERROR);
         }
-        userAdminService.deleteUser(app, userId);
-        
+        App app = appService.getApp(session.getAppId());
+        userAdminService.deleteUser(app, account.getId());
         return new StatusMessage("User deleted.");
     }
 
@@ -277,7 +282,7 @@ public class ParticipantController extends BaseController {
             @RequestParam(required = false) String phoneFilter, @RequestParam(required = false) String startDate,
             @RequestParam(required = false) String endDate, @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime) {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         App app = appService.getApp(session.getAppId());
         
         return getParticipantsInternal(app, offsetBy, pageSize, emailFilter, phoneFilter, startDate,
@@ -286,7 +291,7 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/search")
     public PagedResourceList<AccountSummary> searchForAccountSummaries() {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         App app = appService.getApp(session.getAppId());
         
         AccountSummarySearch search = parseJson(AccountSummarySearch.class);
@@ -320,7 +325,7 @@ public class ParticipantController extends BaseController {
     @PostMapping("/v3/participants")
     @ResponseStatus(HttpStatus.CREATED)
     public IdentifierHolder createParticipant() {
-        UserSession session = getAuthenticatedSession(RESEARCHER);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
         App app = appService.getApp(session.getAppId());
         
         StudyParticipant participant = parseJson(StudyParticipant.class);
@@ -335,9 +340,8 @@ public class ParticipantController extends BaseController {
         CriteriaContext context = getCriteriaContext(session);
         StudyParticipant participant = participantService.getSelfParticipant(app, context, consents);
         
-        // Return the health code if this is an administrative account. This is because developers 
-        // should call this method to retrieve their own account.
-        ObjectWriter writer = (session.isInRole(ADMINISTRATIVE_ROLES)) ?
+        // Return the health code if this is a test account.
+        ObjectWriter writer = (participant.getDataGroups().contains(TEST_USER_GROUP)) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
         return writer.writeValueAsString(participant);
@@ -353,14 +357,14 @@ public class ParticipantController extends BaseController {
 
         // Do not allow lookup by health code if health code access is disabled. Allow it however
         // if the user is an administrator.
-        if (!session.isInRole(ADMIN) && !app.isHealthCodeExportEnabled()
+        if (!app.isHealthCodeExportEnabled() && !session.isInRole(SUPERADMIN) 
                 && userId.toLowerCase().startsWith("healthcode:")) {
             throw new EntityNotFoundException(Account.class);
         }
         
         StudyParticipant participant = participantService.getParticipant(app, userId, consents);
         
-        ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(ADMIN)) ?
+        ObjectWriter writer = (app.isHealthCodeExportEnabled() || session.isInRole(SUPERADMIN)) ?
                 StudyParticipant.API_WITH_HEALTH_CODE_WRITER :
                 StudyParticipant.API_NO_HEALTH_CODE_WRITER;
         return writer.writeValueAsString(participant);
@@ -640,27 +644,13 @@ public class ParticipantController extends BaseController {
 
     @PostMapping("/v3/participants/emailRoster")
     @ResponseStatus(HttpStatus.ACCEPTED)
-    public StatusMessage getParticipantRoster() throws JsonProcessingException {
-        UserSession session = getAuthenticatedSession(RESEARCHER, STUDY_COORDINATOR);
-        String appId = session.getAppId();
-
-        StudyParticipant participant = session.getParticipant();
-        if (participant.getEmail() == null || !participant.getEmailVerified()) {
-            throw new BadRequestException("Cannot request user data.");
-        }
-        if (RequestContext.get().isInRole(STUDY_COORDINATOR) && !RequestContext.get().isInRole(RESEARCHER)
-            && RequestContext.get().getCallerOrgMembership() == null) {
-            throw new UnauthorizedException("Caller is a study coordinator without an org membership.");
-        }
+    public StatusMessage requestParticipantRoster() throws JsonProcessingException {
+        UserSession session = getAuthenticatedSession(RESEARCHER);
+        
+        App app = appService.getApp(session.getAppId());
 
         ParticipantRosterRequest request = parseJson(ParticipantRosterRequest.class);
-        String studyId = request.getStudyId();
-
-        if (studyId != null && !RequestContext.get().getOrgSponsoredStudies().contains(studyId)) {
-            throw new UnauthorizedException("Requested studyId is not sponsored by the caller's org.");
-        }
-
-        participantService.getParticipantRoster(appId, session.getId(), request);
+        participantService.requestParticipantRoster(app, session.getId(), request);
 
         return new StatusMessage("Download initiated.");
     }

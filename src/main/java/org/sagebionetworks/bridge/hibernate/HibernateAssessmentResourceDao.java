@@ -23,6 +23,7 @@ import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
 @Component
 public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
     static final String DELETE_QUERY = "DELETE FROM ExternalResources WHERE appId = :appId AND guid = :guid";
+    static final String DELETE_ALL_QUERY = "DELETE FROM ExternalResources WHERE appId = :appId";
     static final String ALL_RESOURCES_QUERY = "from HibernateAssessmentResource WHERE appId = :appId " + 
             "AND assessmentId = :assessmentId AND deleted = 0";
     private HibernateHelper hibernateHelper;
@@ -115,5 +116,13 @@ public class HibernateAssessmentResourceDao implements AssessmentResourceDao {
             query.executeUpdate();
             return null;
         });
+    }
+    
+    @Override
+    public void deleteAllAssessmentResources(String appId) {
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(DELETE_ALL_QUERY, "appId", appId);
+        
+        hibernateHelper.nativeQueryUpdate(builder.getQuery(), builder.getParameters());
     }
 }

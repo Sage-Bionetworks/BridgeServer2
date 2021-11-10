@@ -12,9 +12,11 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.SendMessageResult;
@@ -38,7 +40,11 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
@@ -55,6 +61,7 @@ public class Exporter3ServiceTest {
     private static final long DATA_ACCESS_TEAM_ID = 3333L;
     private static final long EXPORTER_SYNAPSE_ID = 4444L;
     private static final String EXPORTER_SYNAPSE_USER = "unit-test-user";
+    private static final String HEALTH_CODE = "test-health-code";
     private static final String NAME_SCOPING_TOKEN = "dummy-token";
     private static final String PROJECT_ID = "syn5555";
     private static final String PROJECT_ID_WITHOUT_PREFIX = "5555";
@@ -69,6 +76,9 @@ public class Exporter3ServiceTest {
     private static final String EXPECTED_TEAM_NAME = APP_NAME + " Access Team " + NAME_SCOPING_TOKEN;
 
     private App app;
+
+    @Mock
+    private AccountService mockAccountService;
 
     @Mock
     private AppService mockAppService;
@@ -313,7 +323,13 @@ public class Exporter3ServiceTest {
     public void completeUpload() throws Exception {
         // Set up inputs.
         Upload upload = Upload.create();
+        upload.setHealthCode(HEALTH_CODE);
         upload.setUploadId(RECORD_ID);
+
+        // Mock AccountService.
+        Account account = Account.create();
+        account.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
 
         // Mock HealthDataEx3Service.
         HealthDataRecordEx3 createdRecord = HealthDataRecordEx3.create();
@@ -326,6 +342,13 @@ public class Exporter3ServiceTest {
         // Execute.
         exporter3Service.completeUpload(app, upload);
 
+        // Verify call to AccountService.
+        ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
+        verify(mockAccountService).getAccount(accountIdCaptor.capture());
+        AccountId accountId = accountIdCaptor.getValue();
+        assertEquals(accountId.getAppId(), TestConstants.TEST_APP_ID);
+        assertEquals(accountId.getHealthCode(), HEALTH_CODE);
+
         // Verify call to HealthDataEx3Service. Just verify that the record ID was pass in through the upload is
         // propagated.
         ArgumentCaptor<HealthDataRecordEx3> recordToCreateCaptor = ArgumentCaptor.forClass(HealthDataRecordEx3.class);
@@ -333,6 +356,7 @@ public class Exporter3ServiceTest {
 
         HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
         assertEquals(recordToCreate.getId(), RECORD_ID);
+        assertEquals(recordToCreate.getSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
 
         // Verify call to SQS.
         ArgumentCaptor<String> requestJsonTextCaptor = ArgumentCaptor.forClass(String.class);
@@ -343,10 +367,56 @@ public class Exporter3ServiceTest {
         assertEquals(workerRequest.getService(), Exporter3Service.WORKER_NAME_EXPORTER_3);
 
         // Need to convert WorkerRequest.body again, because it doesn't carry inherent typing information. This is
-        // fine, since outside of unit tests, we never actuall need to deserialize it.
+        // fine, since outside of unit tests, we never actually need to deserialize it.
         Exporter3Request ex3Request = BridgeObjectMapper.get().convertValue(workerRequest.getBody(),
                 Exporter3Request.class);
         assertEquals(ex3Request.getAppId(), TestConstants.TEST_APP_ID);
         assertEquals(ex3Request.getRecordId(), RECORD_ID);
+    }
+
+    @Test
+    public void completeUpload_NoSharing() {
+        // Set up inputs.
+        Upload upload = Upload.create();
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setUploadId(RECORD_ID);
+
+        // Mock AccountService.
+        Account account = Account.create();
+        account.setSharingScope(SharingScope.NO_SHARING);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        // Mock HealthDataEx3Service.
+        HealthDataRecordEx3 createdRecord = HealthDataRecordEx3.create();
+        createdRecord.setId(RECORD_ID);
+        when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
+
+        // Execute.
+        exporter3Service.completeUpload(app, upload);
+
+        // No call to SQS.
+        verifyZeroInteractions(mockSqsClient);
+    }
+
+    @Test
+    public void completeUpload_NoAccount() {
+        // Set up inputs.
+        Upload upload = Upload.create();
+        upload.setHealthCode(HEALTH_CODE);
+        upload.setUploadId(RECORD_ID);
+
+        // Mock AccountService.
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.empty());
+
+        // Execute.
+        try {
+            exporter3Service.completeUpload(app, upload);
+            fail("expected exception");
+        } catch (EntityNotFoundException ex) {
+            assertEquals(ex.getEntityClass(), "StudyParticipant");
+        }
+
+        // No calls to HealthDataEx3Service or SQS.
+        verifyZeroInteractions(mockHealthDataEx3Service, mockSqsClient);
     }
 }

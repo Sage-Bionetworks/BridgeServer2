@@ -27,6 +27,7 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
     private static final Logger LOG = LoggerFactory.getLogger(AccountPersistenceExceptionConverter.class);
 
     static final String NON_UNIQUE_MSG = "This account has already been associated to the study (possibly through another external ID).";
+    static final String ENROLLED_BY_CONSTRAINT_MSG = "Cannot delete account because it has been recorded as enrolling another account.";
     
     private final AccountDao accountDao;
 
@@ -94,6 +95,9 @@ public class AccountPersistenceExceptionConverter implements PersistenceExceptio
                 } else if (message.matches(".*a foreign key constraint fails.*REFERENCES `Organizations`.*")) {
                     // This happens when the orgMembership key is not a real organization
                     return new EntityNotFoundException(Organization.class);
+                } else if (message.matches(".*a foreign key constraint fails.*enrolledBy.*")) {
+                    return new ConstraintViolationException.Builder()
+                            .withMessage(ENROLLED_BY_CONSTRAINT_MSG).build();
                 }
                 if (eae != null) {
                     return eae;

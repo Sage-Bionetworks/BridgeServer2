@@ -3,9 +3,15 @@ package org.sagebionetworks.bridge.services;
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
 import static org.joda.time.DateTimeZone.UTC;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
@@ -24,11 +30,11 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.DEFAULT_PASSWORD_ALGORITHM;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.STORMPATH_HMAC_SHA_256;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.services.AccountService.ROTATIONS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -56,7 +62,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
@@ -73,7 +78,7 @@ import org.sagebionetworks.bridge.models.accounts.ExternalIdentifierInfo;
 import org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
@@ -138,7 +143,7 @@ public class AccountServiceTest extends Mockito {
     ArgumentCaptor<Account> accountCaptor;
     
     @Captor
-    ArgumentCaptor<StudyActivityEventRequest> requestCaptor;
+    ArgumentCaptor<StudyActivityEvent> eventCaptor;
 
     @BeforeClass
     public static void mockNow() {
@@ -270,9 +275,47 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
         assertEquals(createdAccount.getNote(), TEST_NOTE);
         assertEquals(createdAccount.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+        // This was not set because the caller is not definitively a dev account.
+        assertEquals(createdAccount.getDataGroups(), ImmutableSet.of());
 
         // Verify we also create a participant version.
         verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(createdAccount));
+    }
+    
+    @Test
+    public void createAccountByDevCreatesTestAccount() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        service.createAccount(app, account);
+        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
+        
+        Account createdAccount = accountCaptor.getValue();
+        assertEquals(createdAccount.getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
+    }
+    
+    @Test
+    public void createAccountByStudyDesignerCreatesTestAccount() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        service.createAccount(app, account);
+        verify(mockAccountDao).createAccount(eq(app), accountCaptor.capture());
+        
+        Account createdAccount = accountCaptor.getValue();
+        assertEquals(createdAccount.getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
     }
 
     @Test
@@ -288,7 +331,110 @@ public class AccountServiceTest extends Mockito {
     }
     
     @Test
-    public void updateAccountNotFound() {
+    public void updateAccountDevCannotRemoveTestFlag() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        
+        // mockGetAccountById() returns the account that is returned from persistence,
+        // so to remove the flag you need to create a different account without it
+        Account updatedAccount = Account.create();
+        updatedAccount.setAppId(TEST_APP_ID);
+        updatedAccount.setId(TEST_USER_ID);
+        // no test flag
+
+        service.updateAccount(updatedAccount);
+        
+        // nevertheless it remains
+        verify(mockAccountDao).updateAccount(accountCaptor.capture());
+        assertEquals(accountCaptor.getValue().getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
+    }
+    
+    @Test
+    public void updateAccountSucceedsForDevUpdatingTestAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+
+        service.updateAccount(account);
+        
+        verify(mockAccountDao).updateAccount(account);
+    }
+    
+    @Test
+    public void updateAccountSucceedsForDevUpdatingSelfAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        
+        // not a developer account, but the same user ID
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+
+        service.updateAccount(account);
+        
+        verify(mockAccountDao).updateAccount(account);
+    }
+    
+    @Test
+    public void updateAccountCannotRemoveTestAccountFlag() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        // not a developer account, but the same user ID
+        Account persistedAccount = mockGetAccountById(ACCOUNT_ID, false);
+        persistedAccount.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        // no data groups.
+        service.updateAccount(account);
+        
+        verify(mockAccountDao).updateAccount(account);
+        
+        // test flag is restored
+        assertEquals(account.getDataGroups(), ImmutableSet.of(TEST_USER_GROUP));
+    }
+    
+    @Test
+    public void updateAccountSucceedsForStudyDesignerUpdatingTestAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
+
+        service.updateAccount(account);
+        
+        verify(mockAccountDao).updateAccount(account);
+    }
+    
+    @Test
+    public void updateAccountSucceedsForOrgAdminUpdatingAdminAccount() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
+        
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        account.setRoles(ImmutableSet.of(STUDY_DESIGNER));
+
+        service.updateAccount(account);
+        
+        verify(mockAccountDao).updateAccount(account);
+    }
+    
+    @Test
+    public void updateAccountNotFound() throws Exception {
         // mock hibernate
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -326,7 +472,27 @@ public class AccountServiceTest extends Mockito {
         }
         verify(mockConsumer, never()).accept(any());
     }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void editAccountFailsForDevelopersOperatingOnProdAccounts() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("adminId")
+                .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
+        mockGetAccountById(ACCOUNT_ID, false);
 
+        service.editAccount(ACCOUNT_ID, mockConsumer);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void editAccountFailsForStudyDesignerOperatingOnProdAccounts() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("adminId")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER)).build());
+        mockGetAccountById(ACCOUNT_ID, false);
+
+        service.editAccount(ACCOUNT_ID, mockConsumer);
+    }
+    
     @Test
     public void getAccount() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);
@@ -841,7 +1007,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
         
         verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, never()).publishEvent(any());
+        verify(studyActivityEventService, never()).publishEvent(any(), anyBoolean());
     }
     
     @Test
@@ -862,21 +1028,25 @@ public class AccountServiceTest extends Mockito {
 
         verify(mockAccountDao).createAccount(app, account);
         verify(activityEventService).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, times(2)).publishEvent(requestCaptor.capture());
-        
-        StudyActivityEventRequest req1 = requestCaptor.getAllValues().get(0);
-        assertEquals(req1.getAppId(), TEST_APP_ID);
-        assertEquals(req1.getStudyId(), STUDY_A);
-        assertEquals(req1.getUserId(), TEST_USER_ID);
-        assertEquals(req1.getObjectType(), ENROLLMENT);
-        assertEquals(req1.getTimestamp(), account.getCreatedOn());
-        
-        StudyActivityEventRequest req2 = requestCaptor.getAllValues().get(1);
-        assertEquals(req2.getAppId(), TEST_APP_ID);
-        assertEquals(req2.getStudyId(), STUDY_B);
-        assertEquals(req2.getUserId(), TEST_USER_ID);
-        assertEquals(req2.getObjectType(), ENROLLMENT);
-        assertEquals(req2.getTimestamp(), account.getCreatedOn());
+        verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture(), eq(false));
+
+        StudyActivityEvent event1 = getElement(
+                eventCaptor.getAllValues(), StudyActivityEvent::getStudyId, STUDY_A).orElse(null);
+        assertNotNull(event1);
+        assertEquals(event1.getAppId(), TEST_APP_ID);
+        assertEquals(event1.getStudyId(), STUDY_A);
+        assertEquals(event1.getUserId(), TEST_USER_ID);
+        assertEquals(event1.getEventId(), "enrollment");
+        assertEquals(event1.getTimestamp(), account.getCreatedOn());
+
+        StudyActivityEvent event2 = getElement(
+                eventCaptor.getAllValues(), StudyActivityEvent::getStudyId, STUDY_B).orElse(null);
+        assertNotNull(event2);
+        assertEquals(event2.getAppId(), TEST_APP_ID);
+        assertEquals(event2.getStudyId(), STUDY_B);
+        assertEquals(event2.getUserId(), TEST_USER_ID);
+        assertEquals(event2.getEventId(), "enrollment");
+        assertEquals(event2.getTimestamp(), account.getCreatedOn());
     }
 
     @Test
@@ -938,7 +1108,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(updatedAccount.getClientTimeZone(), OTHER_CLIENT_TIME_ZONE);
         
         verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, never()).publishEvent(any());
+        verify(studyActivityEventService, never()).publishEvent(any(), anyBoolean());
     }
 
     @Test
@@ -973,13 +1143,13 @@ public class AccountServiceTest extends Mockito {
         
         verify(activityEventService).publishEnrollmentEvent(
                 eq(app), eq(HEALTH_CODE), any(DateTime.class));
-        verify(studyActivityEventService).publishEvent(requestCaptor.capture());
-        StudyActivityEventRequest req = requestCaptor.getValue();
-        assertEquals(req.getAppId(), TEST_APP_ID);
-        assertEquals(req.getStudyId(), STUDY_B);
-        assertEquals(req.getUserId(), TEST_USER_ID);
-        assertEquals(req.getTimestamp(), MOCK_DATETIME);
-        assertEquals(req.getObjectType(), ENROLLMENT);
+        verify(studyActivityEventService).publishEvent(eventCaptor.capture(), eq(false));
+        StudyActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), STUDY_B);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getTimestamp(), MOCK_DATETIME);
+        assertEquals(event.getEventId(), "enrollment");
     }
     
     @Test
@@ -1187,6 +1357,12 @@ public class AccountServiceTest extends Mockito {
         assertSame(retValue, page);
     }
 
+    @Test
+    public void deleteAllAccounts() { 
+        service.deleteAllAccounts(TEST_APP_ID);
+        verify(mockAccountDao).deleteAllAccounts(TEST_APP_ID);
+    }
+    
     private Account mockGetAccountById(AccountId accountId, boolean generatePasswordHash) throws Exception {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);

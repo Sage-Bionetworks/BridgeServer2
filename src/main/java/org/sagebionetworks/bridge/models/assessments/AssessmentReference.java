@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.assessments;
 
 import static org.sagebionetworks.bridge.models.appconfig.ConfigResolver.INSTANCE;
+import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 
 import java.util.Objects;
 
@@ -12,23 +13,30 @@ import org.sagebionetworks.bridge.models.appconfig.ConfigResolver;
 public final class AssessmentReference {
     
     private final ConfigResolver resolver;
+    private final String appId;
     private final String guid;
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
     private final String id;
-    private final String sharedId;
-    
+    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
+    private final String originSharedId;
+
     @JsonCreator
-    public AssessmentReference(@JsonProperty("guid") String guid,
-            @JsonProperty("id") String id, @JsonProperty("sharedId") String sharedId) {
-        this(INSTANCE, guid, id, sharedId);
+    public AssessmentReference(@JsonProperty("appId") String appId,
+                               @JsonProperty("guid") String guid) {
+        this(INSTANCE, appId, guid, null, null);
     }
 
-    public AssessmentReference(ConfigResolver resolver, String guid, String id, String sharedId) {
+    public AssessmentReference(ConfigResolver resolver, String appId, String guid, String id, String originSharedId) {
         this.resolver = resolver;
+        this.appId = appId;
         this.guid = guid;
         this.id = id;
-        this.sharedId = sharedId;
+        this.originSharedId = originSharedId;
     }
     
+    public String getAppId() {
+        return appId;
+    }
     public String getGuid() {
         return guid;
     }
@@ -39,16 +47,17 @@ public final class AssessmentReference {
         if (guid == null) {
             return null;
         }
-        return resolver.url("ws", "/v1/assessments/" + guid + "/config");
+        String path = (appId != null && appId.equals(SHARED_APP_ID)) ? "/v1/sharedassessments/" : "/v1/assessments/";
+        return resolver.url("ws", path + guid + "/config");
     }
     /**
      * If this assessment was derived from a shared assessment, the shared assessment's
-     * identifier may help to find it in config. We do not provide a GUID or revision 
+     * identifier may help to find it in config. We do not provide a GUID or revision
      * because we don't anticipate clients will want to retrieve the original shared
      * assessment.
      */
-    public String getSharedId() {
-        return sharedId;
+    public String getOriginSharedId() {
+        return originSharedId;
     }
 
     @Override
@@ -68,7 +77,7 @@ public final class AssessmentReference {
 
     @Override
     public String toString() {
-        return "AssessmentReference [id=" + id + ", sharedId=" + sharedId + ", guid=" + guid + ", configHref="
-                + getConfigHref() + "]";
+        return "AssessmentReference [id=" + id + ", originSharedId=" + originSharedId + ", guid=" + guid + ", appId=" + appId
+                + ", configHref=" + getConfigHref() + "]";
     }
 }

@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.handlers;
 
+import static org.sagebionetworks.bridge.TestConstants.ENROLLMENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -46,6 +47,7 @@ import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.App;
+import org.sagebionetworks.bridge.models.studies.EnrollmentInfo;
 import org.sagebionetworks.bridge.spring.util.HttpUtilTest;
 import org.sagebionetworks.bridge.validators.AppValidator;
 import org.sagebionetworks.bridge.validators.Validate;
@@ -88,6 +90,10 @@ public class BridgeExceptionHandlerTest extends Mockito {
     
     @Test
     public void consentRequiredSessionSerializedCorrectly() throws Throwable {
+        EnrollmentInfo info = new EnrollmentInfo("externalIdA", ENROLLMENT, null, null,
+                null, false);
+        Map<String, EnrollmentInfo> enrollments = ImmutableMap.of("studyA", info);
+        
         StudyParticipant participant = new StudyParticipant.Builder()
                 .withEmail("email@email.com")
                 .withFirstName("firstName")
@@ -97,6 +103,7 @@ public class BridgeExceptionHandlerTest extends Mockito {
                 .withId("userId")
                 .withStudyIds(ImmutableSet.of("studyA"))
                 .withExternalIds(ImmutableMap.of("studyA", "externalIdA"))
+                .withEnrollments(enrollments)
                 .withSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS)
                 .withDataGroups(ImmutableSet.of("group1")).build();
         
@@ -128,6 +135,8 @@ public class BridgeExceptionHandlerTest extends Mockito {
         assertTrue(node.get("dataSharing").booleanValue());
         assertTrue(node.get("notifyByEmail").booleanValue());
         assertEquals(node.get("studyIds").get(0).textValue(), "studyA");
+        assertEquals(node.get("enrollments").get("studyA").get("externalId").textValue(), "externalIdA");
+        
         assertEquals(node.get("type").textValue(), "UserSessionInfo");
         ArrayNode array = (ArrayNode)node.get("roles");
         assertEquals(array.size(), 0);
@@ -138,7 +147,7 @@ public class BridgeExceptionHandlerTest extends Mockito {
         assertEquals(node.get("externalIds").get("studyA").textValue(), "externalIdA");
         assertEquals(node.get("externalId").textValue(), "externalIdA");
         // And no further properties
-        assertEquals(node.size(), 23);
+        assertEquals(node.size(), 24);
     }
     
     @Test

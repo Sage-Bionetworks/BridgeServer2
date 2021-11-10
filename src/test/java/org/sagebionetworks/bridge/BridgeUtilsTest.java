@@ -1,11 +1,19 @@
 package org.sagebionetworks.bridge;
 
-import static java.util.stream.Collectors.toSet;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
+import static org.sagebionetworks.bridge.BridgeUtils.participantEligibleForDeletion;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.PUBLICATION;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
@@ -20,7 +28,6 @@ import static org.testng.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,13 +41,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
-import org.jsoup.safety.Whitelist;
+import org.jsoup.safety.Safelist;
+import org.mockito.Mockito;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -48,9 +55,11 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.Label;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.assessments.ResourceCategory;
@@ -58,22 +67,27 @@ import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigVali
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
+import org.sagebionetworks.bridge.services.RequestInfoService;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-public class BridgeUtilsTest {
+public class BridgeUtilsTest extends Mockito {
     
     private static final Label LABEL_HI = new Label("hi", "Hindi");
     private static final Label LABEL_EN = new Label("en", "English");
     private static final Label LABEL_JA = new Label("ja", "Japanese");
     private static final Label LABEL_ES = new Label("es", "Spanish");
     private static final LocalDateTime LOCAL_DATE_TIME = LocalDateTime.parse("2010-10-10T10:10:10.111");
+    private static final Set<Enrollment> STUDY_A_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID));
+    private static final Set<Enrollment> STUDY_A_AND_B_ENROLLMENT = ImmutableSet.of(Enrollment.create(TEST_APP_ID, "studyA", TEST_USER_ID), 
+            Enrollment.create(TEST_APP_ID, "studyB", TEST_USER_ID));
     
     @AfterMethod
     public void after() {
-        RequestContext.set(RequestContext.NULL_INSTANCE);
+        RequestContext.set(NULL_INSTANCE);
     }
     
     @Test
@@ -301,102 +315,6 @@ public class BridgeUtilsTest {
     }
     
     @Test
-    public void filterForStudyAccountRemovesUnsharedStudyIds() {
-        Set<String> studies = ImmutableSet.of("studyA");
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(TEST_USER_ID)
-                .withOrgSponsoredStudies(studies).build());
-        
-        Account account = BridgeUtils.filterForStudy(getAccountWithStudy("studyB", "studyA"));
-        assertEquals(account.getEnrollments().size(), 1);
-        assertEquals(Iterables.getFirst(account.getEnrollments(), null).getStudyId(), "studyA");
-        
-        RequestContext.set(null);
-    }
-    
-    @Test
-    public void filterForStudyAccountReturnsAllUnsharedStudyIdsForNonStudyResearcher() {
-        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
-        
-        Account account = BridgeUtils.filterForStudy(getAccountWithStudy("studyB", "studyA"));
-        assertEquals(account.getEnrollments().size(), 2);
-    }
-    
-    @Test
-    public void filterForStudyAccountNullReturnsNull() {
-        assertNull(BridgeUtils.filterForStudy((Account)null));
-    }
-    
-    @Test
-    public void filterForStudyAccountNoContextReturnsAccount() {
-        RequestContext.set(RequestContext.NULL_INSTANCE);
-        assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
-    }
-    
-    @Test
-    public void filterForStudyAccountNoContextWithStudyDoesNotReturnAccount() {
-        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID).build());
-        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
-    }
-    
-    @Test
-    public void filterForStudyAccountWithStudiesHidesNormalAccount() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(TEST_USER_ID)
-                .withOrgSponsoredStudies(ImmutableSet.of("studyA")).build());
-        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy()));
-        RequestContext.set(null);
-    }
-
-    @Test
-    public void filterForStudyAccountWhichIsSelfReturnsStudyAccount() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("id").build());
-        assertNotNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
-    }
-    
-    @Test
-    public void filterForStudyAccountWithMismatchedStudiesHidesStudyAccount() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId(TEST_USER_ID)
-                .withOrgSponsoredStudies(ImmutableSet.of("notStudyA")).build());
-        assertNull(BridgeUtils.filterForStudy(getAccountWithStudy("studyA")));
-    }
-    
-    @Test
-    public void filterForStudyAccountReturnsSelfAccount() {
-        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID)
-                .withOrgSponsoredStudies(ImmutableSet.of("A")).build());
-        
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        
-        assertNotNull(BridgeUtils.filterForStudy(account));
-    }
-
-    @Test
-    public void filterForStudyAccountNotSelfReturnsNull() {
-        RequestContext.set(new RequestContext.Builder().withCallerUserId(TEST_USER_ID)
-                .withOrgSponsoredStudies(ImmutableSet.of("A")).build());
-        
-        Account account = Account.create();
-        account.setId("notTheSameUser");
-        
-        assertNull(BridgeUtils.filterForStudy(account));
-    }
-    
-    private Account getAccountWithStudy(String... studyIds) {
-        Account account = Account.create();
-        account.setId("id");
-        Set<Enrollment> enrollments = Arrays.asList(studyIds)
-                .stream()
-                .map(id -> Enrollment.create(TEST_APP_ID, id, "accountId"))
-                .collect(toSet());
-        account.setEnrollments(enrollments);
-        return account;
-    }
-    
-    @Test
     public void isExternalIdAccount() {
         StudyParticipant participant = new StudyParticipant.Builder().withExternalId("id").build();
         assertTrue(BridgeUtils.isExternalIdAccount(participant));
@@ -526,6 +444,26 @@ public class BridgeUtilsTest {
         assertEquals(map.get("consentEmail"), "consentNotificationEmail2");
         assertEquals(map.get("thisMap"), "isMutable");
         assertEquals(map.get("host"), host);
+    }
+    
+    @Test
+    public void participantTemplateVariablesWorks() {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withFirstName("aFirstName")
+                .withLastName("aLastName")
+                .withEmail(EMAIL)
+                .withPhone(PHONE)
+                .withAttributes(ImmutableMap.of("first_prop", "A", "second prop", "B"))
+                .build();
+        Map<String,String> map = BridgeUtils.participantTemplateVariables(participant);
+        assertEquals(map.get("participantFirstName"), "aFirstName");
+        assertEquals(map.get("participantLastName"), "aLastName");
+        assertEquals(map.get("participantPhone"), "+19712486796");
+        assertEquals(map.get("participantPhoneRegion"), "US");
+        assertEquals(map.get("participant.first_prop"), "A");
+        assertEquals(map.get("participant.second prop"), "B");
+        assertEquals(map.get("participantEmail"), "email@email.com");
+        assertEquals(map.get("participantPhoneNationalFormat"), "(971) 248-6796");
     }
     
     @Test
@@ -910,7 +848,7 @@ public class BridgeUtilsTest {
     @Test
     public void sanitizeHTMLWithWhitelist() {
         String content = "<p id=remove-me>Test<script>This should be removed</script><img onerror=''>";
-        String result = BridgeUtils.sanitizeHTML(Whitelist.none(), content);
+        String result = BridgeUtils.sanitizeHTML(Safelist.none(), content);
         assertEquals(result, "Test");
     }
     
@@ -998,48 +936,19 @@ public class BridgeUtilsTest {
         assertEquals(e.getMessage(), "Error parsing JSON in request body: error");
     }
     
+    // Just demonstrate this works, as the underlying code is now tested as part of 
+    // StudyActivityEventRequest’s implementation.
     @Test
-    public void formatActivityEventIdIsValidCustomId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("FOO"), "FOO");
-        assertEquals(retValue, "custom:FOO");
+    public void formatActivityEventId() {
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         
-    }
-    
-    @Test
-    public void formatActivityEventIdIsValidCustomIdWithCustomPrefix() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "CUSTOM:foo");
+        String retValue = BridgeUtils.formatActivityEventId(eventMap, "custom:foo");
+        assertNull(retValue);
+        
+        eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("foo", MUTABLE)));
+        
+        retValue = BridgeUtils.formatActivityEventId(eventMap, "foo");
         assertEquals(retValue, "custom:foo");
-    }
-
-    @Test
-    public void formatActivityEventIdIsValidSystemId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "activities_retrieved");
-        assertEquals(retValue, "activities_retrieved");
-    }
-
-    @Test
-    public void formatActivityEventIdIsValidCompoundSystemId() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
-        assertEquals(retValue, "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished");
-    }
-    
-    @Test
-    public void formatActivityEventIdBlank() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), "");
-        assertNull(retValue);
-        
-    }
-
-    @Test
-    public void formatActivityEventIdNull() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("foo"), null);
-        assertNull(retValue);
-    }
-    
-    @Test
-    public void formatActivityEventIdWithCasing() {
-        String retValue = BridgeUtils.formatActivityEventId(ImmutableSet.of("Event1"), "custom:Event1");
-        assertEquals(retValue, "custom:Event1");
     }
     
     @Test
@@ -1106,6 +1015,215 @@ public class BridgeUtilsTest {
         
         Label sel = BridgeUtils.selectByLang(items, null, LABEL_HI);
         assertEquals(sel, LABEL_HI);
+    }
+
+    @Test
+    public void participantEligibleForDeletion_testUserAllowed() {
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        
+        // User hasn't signed in
+        RequestInfo requestInfo = new RequestInfo.Builder().build();
+        when(mockService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+
+    @Test
+    public void participantEligibleForDeletion_testUserAllowedAfterSignIn() {
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setDataGroups(ImmutableSet.of(TEST_USER_GROUP));
+
+        // User has signed in, and is still eligible for deletion
+        RequestInfoService mockRequestService = mock(RequestInfoService.class);
+        RequestInfo requestInfo = new RequestInfo.Builder()
+                .withSignedInOn(CREATED_ON).build();
+        when(mockRequestService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_unusedAllowed() {
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_unaffiliatedResearcherAllowed() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setEnrollments(STUDY_A_ENROLLMENT);
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_affiliatedResearcherAllowed() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(USER_STUDY_IDS)
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_unaffiliatedStudyCoordinatorProhibited() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setEnrollments(STUDY_A_ENROLLMENT);
+        
+        assertFalse( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_affiliatedStudyCoordinatorAllowed() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(USER_STUDY_IDS)
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_noEnrollmentsAllowedForResearchers() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+
+    @Test
+    public void participantEligibleForDeletion_noEnrollmentsAllowedForStudyCoordinators() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_multipleEnrollmentsPass() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(USER_STUDY_IDS)
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
+        
+        assertTrue( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_multipleEnrollmentsFail() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyC")) // mismatch
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        Account account = Account.create();
+        account.setEnrollments(STUDY_A_AND_B_ENROLLMENT);
+        
+        assertFalse( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void participantEligibleForDeletion_inUseProhibited() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        
+        RequestInfoService mockService = mock(RequestInfoService.class);
+        RequestInfo requestInfo = new RequestInfo.Builder()
+                .withSignedInOn(CREATED_ON).build();
+        when(mockService.getRequestInfo(TEST_USER_ID)).thenReturn(requestInfo);
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        
+        assertFalse( participantEligibleForDeletion(mockService, account) );
+    }
+    
+    @Test
+    public void addAllToList() {
+        List<String> retValue = BridgeUtils.addUniqueItemsToList(ImmutableList.of("A", "B"), ImmutableList.of("C", "D"));
+        assertEquals(retValue, ImmutableList.of("A", "B", "C", "D"));
+        assertTrue(retValue instanceof ImmutableList);
+        
+        retValue = BridgeUtils.addUniqueItemsToList(ImmutableList.of("A", "B"), ImmutableSet.of("C"));
+        assertEquals(retValue, ImmutableList.of("A", "B", "C"));
+        assertTrue(retValue instanceof ImmutableList);
+    }
+    
+    @Test
+    public void getElement() {
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
+        
+        Enrollment retValue = BridgeUtils.getElement(enrollments, Enrollment::getAccountId, TEST_USER_ID).orElse(null);
+        assertSame(retValue, en2);
+    }
+
+    @Test
+    public void getElement_noMatch() {
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId1");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId2");
+        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
+        
+        Enrollment retValue = BridgeUtils.getElement(enrollments, Enrollment::getAccountId, TEST_USER_ID).orElse(null);
+        assertNull(retValue);
+    }
+
+    @Test
+    public void getElement_emptyIterable() {
+        Enrollment retValue = BridgeUtils.getElement(ImmutableSet.of(), Enrollment::getAccountId, TEST_USER_ID).orElse(null);
+        assertNull(retValue);
+    }
+    
+    @Test
+    public void getElement_matchesNull() {
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId1");
+        en1.setExternalId("en1");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId2");
+        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
+        
+        Enrollment retValue = BridgeUtils.getElement(enrollments, Enrollment::getExternalId, null).orElse(null);
+        assertSame(retValue, en2);
+    }
+    
+    @Test
+    public void getElement_handlesNullFieldValues() {
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId1");
+        en1.setExternalId("en1");
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, "someOtherId2");
+        Set<Enrollment> enrollments = ImmutableSet.of(en1, en2);
+        
+        Enrollment retValue = BridgeUtils.getElement(enrollments, Enrollment::getExternalId, "en1").orElse(null);
+        assertSame(retValue, en1);
     }
     
     // assertEquals with two sets doesn't verify the order is the same... hence this test method.

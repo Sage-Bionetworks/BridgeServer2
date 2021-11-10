@@ -49,6 +49,7 @@ import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.service.spi.ServiceRegistryImplementor;
+import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataDocumentation;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantFile;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.liquibase.LiquibaseDataSource;
@@ -377,6 +378,12 @@ public class SpringConfig {
         return dynamoUtils.getMapper(DynamoHealthDataRecordEx3.class);
     }
 
+    @Bean(name = "healthDataDocumentationDbMapper")
+    @Autowired
+    public DynamoDBMapper healthDataDocumentationDbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoHealthDataDocumentation.class);
+    }
+
     @Bean(name = "activityEventDdbMapper")
     @Autowired
     public DynamoDBMapper activityEventDdbMapper(DynamoUtils dynamoUtils) {
@@ -585,7 +592,7 @@ public class SpringConfig {
         String url = config.get("hibernate.connection.url");
         // Append SSL props to URL
         boolean useSsl = Boolean.valueOf(config.get("hibernate.connection.useSSL"));
-        url += "?serverTimezone=UTC&requireSSL="+useSsl+"&useSSL="+useSsl+"&verifyServerCertificate="+useSsl;
+        url += "?rewriteBatchedStatements=true&serverTimezone=UTC&requireSSL="+useSsl+"&useSSL="+useSsl+"&verifyServerCertificate="+useSsl;
         
         return url;
     }
@@ -737,18 +744,32 @@ public class SpringConfig {
 
     @Bean(name="bridgePFSynapseClient")
     public SynapseClient synapseClient() {
+        Config config = bridgeConfig();
+
         SynapseClient synapseClient = new SynapseAdminClientImpl();
-        synapseClient.setUsername(bridgeConfig().get("synapse.user"));
-        synapseClient.setApiKey(bridgeConfig().get("synapse.api.key"));
+        synapseClient.setUsername(config.get("synapse.user"));
+        synapseClient.setApiKey(config.get("synapse.api.key"));
+        setSynapseEndpoint(synapseClient, config);
         return synapseClient;
     }
 
     @Bean(name="exporterSynapseClient")
     public SynapseClient exporterSynapseClient() {
+        Config config = bridgeConfig();
+
         SynapseClient synapseClient = new SynapseAdminClientImpl();
-        synapseClient.setUsername(bridgeConfig().get("exporter.synapse.user"));
-        synapseClient.setApiKey(bridgeConfig().get("exporter.synapse.api.key"));
+        synapseClient.setUsername(config.get("exporter.synapse.user"));
+        synapseClient.setApiKey(config.get("exporter.synapse.api.key"));
+        setSynapseEndpoint(synapseClient, config);
         return synapseClient;
+    }
+
+    private static void setSynapseEndpoint(SynapseClient synapseClient, Config config) {
+        // Based on config, we either talk to Synapse Dev (local/dev/staging) or Synapse Prod.
+        String synapseEndpoint = config.get("synapse.endpoint");
+        synapseClient.setAuthEndpoint(synapseEndpoint + "auth/v1");
+        synapseClient.setFileEndpoint(synapseEndpoint + "file/v1");
+        synapseClient.setRepositoryEndpoint(synapseEndpoint + "repo/v1");
     }
 
     @Bean(name="exporterSynapseHelper")

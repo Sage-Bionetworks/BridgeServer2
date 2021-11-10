@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.BridgeUtils.getLocalDateOrDefault;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
-import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -167,7 +166,7 @@ public class ParticipantReportController extends BaseController {
             @PathVariable String identifier, @RequestParam(required = false) String startTime,
             @RequestParam(required = false) String endTime, @RequestParam(required = false) String offsetKey,
             @RequestParam(required = false) String pageSize) {
-        UserSession session = getAdministrativeSession();
+        UserSession session = getAuthenticatedSession();
 
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
         Account account = accountService.getAccount(accountId)
@@ -213,7 +212,7 @@ public class ParticipantReportController extends BaseController {
     @PostMapping({"/v4/participants/{userIdToken}/reports/{identifier}", "/v3/participants/{userIdToken}/reports/{identifier}"})
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveParticipantReport(@PathVariable String userIdToken, @PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_COORDINATOR);
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER);
 
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
         Account account = accountService.getAccount(accountId)
@@ -294,7 +293,7 @@ public class ParticipantReportController extends BaseController {
     public StatusMessage deleteParticipantReportIndex(@PathVariable String identifier) {
         UserSession session = getAuthenticatedSession(ADMIN);
         
-        reportService.deleteParticipantReportIndex(session.getAppId(), null, identifier);
+        reportService.deleteParticipantReportIndex(session.getAppId(), session.getId(), identifier);
         
         return new StatusMessage("Report index deleted.");
     }

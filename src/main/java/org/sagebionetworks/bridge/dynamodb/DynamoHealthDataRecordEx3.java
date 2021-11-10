@@ -6,6 +6,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexHashKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTable;
+import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.amazonaws.services.dynamodbv2.model.ProjectionType;
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -15,6 +16,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
 
 @DynamoDBTable(tableName = "HealthDataRecordEx3")
@@ -32,6 +34,7 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     private boolean exported;
     private Long exportedOn;
     private Map<String, String> metadata;
+    private SharingScope sharingScope;
     private Long version;
 
     @DynamoDBHashKey
@@ -165,6 +168,17 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     public void setMetadata(Map<String, String> metadata) {
         // Dynamo DB doesn't support empty maps.
         this.metadata = metadata != null && !metadata.isEmpty() ? metadata : null;
+    }
+
+    @DynamoDBTypeConverted(converter=EnumMarshaller.class)
+    @Override
+    public SharingScope getSharingScope() {
+        return sharingScope;
+    }
+
+    @Override
+    public void setSharingScope(SharingScope sharingScope) {
+        this.sharingScope = sharingScope;
     }
 
     @DynamoDBVersionAttribute

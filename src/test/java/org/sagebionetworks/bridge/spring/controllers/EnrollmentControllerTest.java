@@ -7,10 +7,12 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.mockEditAccount;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
@@ -35,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -97,6 +100,7 @@ public class EnrollmentControllerTest extends Mockito {
         assertGet(EnrollmentController.class, "getEnrollmentsForStudy");
         assertCreate(EnrollmentController.class, "enroll");
         assertDelete(EnrollmentController.class, "unenroll");
+        assertPost(EnrollmentController.class, "updateEnrollment");
     }
     
     @Test
@@ -227,5 +231,38 @@ public class EnrollmentControllerTest extends Mockito {
         
         verify(mockAccount, times(2)).getEnrollments();
         assertTrue(enrollments.isEmpty());
-    }    
+    }
+
+    @Test
+    public void updateEnrollmentNote() throws Exception {
+        UserSession session = new UserSession();
+        session.setAppId(TEST_APP_ID);
+        doReturn(session).when(controller).getAdministrativeSession();
+
+        Enrollment enrollment = new HibernateEnrollment();
+        enrollment.setAppId("otherAppId");
+        enrollment.setStudyId("otherStudyId");
+        enrollment.setAccountId("otherUserId");
+        enrollment.setNote(TEST_NOTE);
+
+        mockRequestBody(mockRequest, enrollment);
+
+        controller.updateEnrollment(TEST_STUDY_ID, TEST_USER_ID);
+
+        verify(mockService).updateEnrollment(enrollmentCaptor.capture());
+
+        Enrollment captured = enrollmentCaptor.getValue();
+        assertEquals(captured.getAppId(), TEST_APP_ID);
+        assertEquals(captured.getStudyId(), TEST_STUDY_ID);
+        assertEquals(captured.getAccountId(), TEST_USER_ID);
+        assertEquals(captured.getNote(), TEST_NOTE);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void updateEnrollmentValidatesRoles() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID).build());
+
+        controller.updateEnrollment(TEST_STUDY_ID, TEST_USER_ID);
+    }
 }

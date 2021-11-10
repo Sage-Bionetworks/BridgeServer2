@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.Period;
@@ -22,6 +23,7 @@ import org.sagebionetworks.bridge.models.schedules2.Schedule2;
  * are needed to track the performance of specific sessions and assessments, and 
  * the related information to display tasks in the UI.
  */
+@JsonPropertyOrder({"duration", "totalMinutes", "totalNotifications", "schedule", "sessions", "assessments", "type"})
 public class Timeline {
 
     private final String lang;
@@ -109,7 +111,7 @@ public class Timeline {
             sessionMeta.setSchedulePublished(schedule.isPublished());
             sessionMeta.setSessionInstanceGuid(schSession.getInstanceGuid());
             sessionMeta.setSessionGuid(schSession.getSession().getGuid());
-            sessionMeta.setSessionStartEventId(schSession.getSession().getStartEventId());
+            sessionMeta.setSessionStartEventId(schSession.getStartEventId());
             sessionMeta.setSessionInstanceStartDay(schSession.getStartDay());
             sessionMeta.setSessionInstanceEndDay(schSession.getEndDay());
             sessionMeta.setTimeWindowGuid(schSession.getTimeWindow().getGuid());

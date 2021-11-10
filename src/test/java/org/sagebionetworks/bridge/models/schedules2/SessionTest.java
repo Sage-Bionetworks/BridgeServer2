@@ -31,8 +31,10 @@ public class SessionTest {
         Session session = new Session();
         session.setLabels(LABELS);
         session.setName("Do weekly survey");
+        session.setSymbol("✯");
         session.setGuid(SESSION_GUID_1);
-        session.setStartEventId("activities_retrieved");
+        session.setStartEventIds(ImmutableList.of("activities_retrieved", "timeline_retrieved"));
+        session.setStudyBurstIds(ImmutableList.of("burst1"));
         session.setDelay(Period.parse("P1W"));
         session.setOccurrences(19);
         session.setInterval(Period.parse("P7D"));
@@ -83,10 +85,13 @@ public class SessionTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(session);
         
-        assertEquals(node.size(), 12);
+        assertEquals(node.size(), 14);
         assertEquals(node.get("guid").textValue(), SESSION_GUID_1);
         assertEquals(node.get("name").textValue(), "Do weekly survey");
-        assertEquals(node.get("startEventId").textValue(), "activities_retrieved");
+        assertEquals(node.get("symbol").textValue(), "✯");
+        assertEquals(node.get("startEventIds").get(0).textValue(), "activities_retrieved");
+        assertEquals(node.get("startEventIds").get(1).textValue(), "timeline_retrieved");
+        assertEquals(node.get("studyBurstIds").get(0).textValue(), "burst1");
         assertEquals(node.get("delay").textValue(), "P1W");
         assertEquals(node.get("occurrences").intValue(), 19);
         assertEquals(node.get("interval").textValue(), "P7D");
@@ -143,7 +148,10 @@ public class SessionTest {
         
         assertEquals(deser.getGuid(), SESSION_GUID_1);
         assertEquals(deser.getName(), "Do weekly survey");
-        assertEquals(deser.getStartEventId(), "activities_retrieved");
+        assertEquals(deser.getSymbol(), "✯");
+        assertEquals(deser.getStartEventIds().get(0), "activities_retrieved");
+        assertEquals(deser.getStartEventIds().get(1), "timeline_retrieved");
+        assertEquals(deser.getStudyBurstIds().get(0), "burst1");
         assertEquals(deser.getDelay(), Period.parse("P1W"));
         assertEquals(deser.getOccurrences(), Integer.valueOf(19));
         assertEquals(deser.getInterval(), Period.parse("P7D"));

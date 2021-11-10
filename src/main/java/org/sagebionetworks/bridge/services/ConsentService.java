@@ -208,7 +208,7 @@ public class ConsentService {
         // declare a study ID. 
         if (subpop.getStudyId() != null) {
             Enrollment newEnrollment = Enrollment.create(app.getIdentifier(), subpop.getStudyId(), account.getId());
-            enrollmentService.addEnrollment(account, newEnrollment);
+            enrollmentService.addEnrollment(account, newEnrollment, true);
         }
         accountService.updateAccount(account);
 
@@ -234,6 +234,7 @@ public class ConsentService {
                 
                 BasicEmailProvider.Builder consentEmailBuilder = new BasicEmailProvider.Builder()
                         .withApp(app)
+                        .withParticipant(participant)
                         .withTemplateRevision(revision)
                         .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                         .withType(EmailType.SIGN_CONSENT);
@@ -318,6 +319,9 @@ public class ConsentService {
         account.getDataGroups().removeAll(subpop.getDataGroupsAssignedWhileConsented());
 
         for (Enrollment enrollment : account.getActiveEnrollments()) {
+            // Only subpopulations that are required enroll a user in a study, so we only check withdrawal from required
+            // subpopulations to withdraw the enrollment. This is temporary until we have a more fully integrated v2
+            // consent system.
             if (subpop.isRequired() && subpop.getStudyIdsAssignedOnConsent().contains(enrollment.getStudyId())) {
                 Enrollment withdrawnEnrollment = Enrollment.create(app.getIdentifier(), enrollment.getStudyId(), account.getId());
                 withdrawnEnrollment.setWithdrawnOn(new DateTime(withdrewOn));
@@ -427,6 +431,7 @@ public class ConsentService {
             
             BasicEmailProvider provider = new BasicEmailProvider.Builder()
                     .withApp(app)
+                    .withParticipant(participant)
                     .withTemplateRevision(revision)
                     .withBinaryAttachment("consent.pdf", MimeType.PDF, consentPdf.getBytes())
                     .withRecipientEmail(participant.getEmail())

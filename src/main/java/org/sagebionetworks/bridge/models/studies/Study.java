@@ -6,12 +6,17 @@ import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.hibernate.HibernateStudy;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.BridgeEntity;
+import org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 
+import static java.util.stream.Collectors.toMap;
+
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -30,6 +35,12 @@ public interface Study extends BridgeEntity {
     
     public static Study create() {
         return new HibernateStudy();
+    }
+
+    @JsonIgnore
+    default Map<String, ActivityEventUpdateType> getCustomEventsMap() {
+        return getCustomEvents().stream().collect(
+            toMap(StudyCustomEvent::getEventId, StudyCustomEvent::getUpdateType));
     }
 
     String getIdentifier();

@@ -6,7 +6,6 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ACCOUNTS;
 import static org.sagebionetworks.bridge.BridgeUtils.parseAccountId;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.models.RequestInfo.REQUEST_INFO_WRITER;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -29,9 +28,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -56,7 +53,6 @@ import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 @CrossOrigin
 @RestController
 public class AccountsController extends BaseController  {
-    private static final ImmutableSet<Roles> ADMIN_ROLES = ImmutableSet.of(ADMIN, SUPERADMIN);
     private static final StatusMessage UPDATED_MSG = new StatusMessage("Member updated.");
     private static final StatusMessage DELETED_MSG = new StatusMessage("Member account deleted.");
     private static final StatusMessage RESET_PWD_MSG = new StatusMessage("Request to reset password sent to user.");
@@ -227,31 +223,13 @@ public class AccountsController extends BaseController  {
         return SIGN_OUT_MSG;
     }
     
-    /**
-     * This kind of code is driving me nuts... I'm not sure how to rationalize it further. We need
-     * to retrieve the account and test its organization membership. 
-     */
     public Account verifyOrgAdminIsActingOnOrgMember(UserSession session, String userIdToken) {
         AccountId accountId = parseAccountId(session.getAppId(), userIdToken);
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
-                
-        if (session.isInRole(ADMIN_ROLES)) {
-            return account;
-        }
-        // The caller needs to be associated to an organization
-        String callerOrgId = session.getParticipant().getOrgMembership();
-        if (callerOrgId == null) {
-            throw new UnauthorizedException();
-        }
-        // The caller needs to be an administrator of the account's organization
-        if (!callerOrgId.equals(account.getOrgMembership())) {
-            throw new UnauthorizedException();
-        }
-        // The caller needs to have permissions to manipulate the account
-        if (!CAN_EDIT_ACCOUNTS.check(ORG_ID, callerOrgId, USER_ID, account.getId())) {
-            throw new EntityNotFoundException(Account.class);
-        }
+        
+        // Check that caller has permissions to edit an administrative account.
+        CAN_EDIT_ACCOUNTS.checkAndThrow(ORG_ID, account.getOrgMembership(), USER_ID, account.getId());
         return account;
     }
 }

@@ -123,8 +123,6 @@ public class HealthDataEx3Controller extends BaseController {
         Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
         return healthDataEx3Service.getRecordsForHealthCode(healthCode, createdOnStartDateTime, createdOnEndDateTime,
                 pageSizeInt, offsetKey)
-                .withRequestParam("appId", appId)
-                .withRequestParam("userId", userIdToken)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
                 .withRequestParam(ResourceList.END_TIME, createdOnEnd)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSizeInt)
@@ -149,7 +147,6 @@ public class HealthDataEx3Controller extends BaseController {
         Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
         return healthDataEx3Service.getRecordsForApp(appId, createdOnStartDateTime, createdOnEndDateTime,
                 pageSizeInt, offsetKey)
-                .withRequestParam("appId", appId)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
                 .withRequestParam(ResourceList.END_TIME, createdOnEnd)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSizeInt)
@@ -172,8 +169,6 @@ public class HealthDataEx3Controller extends BaseController {
         Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
         return healthDataEx3Service.getRecordsForAppAndStudy(appId, studyId, createdOnStartDateTime,
                 createdOnEndDateTime, pageSizeInt, offsetKey)
-                .withRequestParam("appId", appId)
-                .withRequestParam("studyId", studyId)
                 .withRequestParam(ResourceList.START_TIME, createdOnStart)
                 .withRequestParam(ResourceList.END_TIME, createdOnEnd)
                 .withRequestParam(ResourceList.PAGE_SIZE, pageSizeInt)

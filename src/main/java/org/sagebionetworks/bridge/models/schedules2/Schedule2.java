@@ -4,10 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import javax.persistence.CascadeType;
+import javax.persistence.CollectionTable;
 import javax.persistence.Convert;
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.OneToMany;
 import javax.persistence.OrderColumn;
 import javax.persistence.Table;
@@ -16,6 +19,8 @@ import javax.persistence.Version;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.joda.time.DateTime;
 import org.joda.time.Period;
 
@@ -54,6 +59,15 @@ public class Schedule2 implements BridgeEntity {
             orphanRemoval = true, fetch = FetchType.EAGER)
     @OrderColumn(name = "position")
     private List<Session> sessions;
+    
+    @ElementCollection(fetch = FetchType.EAGER)
+    @Fetch(value = FetchMode.SUBSELECT)
+    @OrderColumn(name="position")
+    @CollectionTable(name="ScheduleStudyBursts", joinColumns= {
+            @JoinColumn(name="scheduleGuid")
+    })
+    private List<StudyBurst> studyBursts;
+    
     @Version
     private long version;
     
@@ -117,6 +131,15 @@ public class Schedule2 implements BridgeEntity {
     public void setDeleted(boolean deleted) {
         this.deleted = deleted;
     }
+    public List<StudyBurst> getStudyBursts() {
+        if (studyBursts == null) {
+            studyBursts = new ArrayList<>();
+        }
+        return studyBursts;
+    }
+    public void setStudyBursts(List<StudyBurst> studyBursts) {
+        this.studyBursts = studyBursts;
+    }    
     public List<Session> getSessions() {
         if (sessions == null) {
             sessions = new ArrayList<>();

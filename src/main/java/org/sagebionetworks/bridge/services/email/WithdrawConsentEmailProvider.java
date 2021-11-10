@@ -13,7 +13,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.jsoup.Jsoup;
-import org.jsoup.safety.Whitelist;
+import org.jsoup.safety.Safelist;
 
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Withdrawal;
@@ -96,7 +96,7 @@ public class WithdrawConsentEmailProvider extends MimeTypeEmailProvider {
         if (StringUtils.isBlank(in)) {
             return "";
         } else {
-            return Jsoup.clean(in, Whitelist.none());
+            return Jsoup.clean(in, Safelist.none());
         }
     }
 }

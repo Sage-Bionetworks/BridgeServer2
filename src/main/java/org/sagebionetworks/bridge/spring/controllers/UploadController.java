@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
@@ -9,6 +10,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 import java.util.EnumSet;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.collect.ImmutableSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -17,7 +19,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.dao.HealthCodeDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -67,8 +68,8 @@ public class UploadController extends BaseController {
     public String getValidationStatus(@PathVariable String uploadId) throws JsonProcessingException {
         UserSession session = getAuthenticatedAndConsentedSession();
         
-        // If not a researcher, validate that this user owns the upload
-        if (!session.isInRole(Roles.RESEARCHER)) {
+        // If not a developer or researcher, validate that this user owns the upload
+        if (!session.isInRole(ImmutableSet.of(DEVELOPER, RESEARCHER))) {
             Upload upload = uploadService.getUpload(uploadId);
             if (!session.getHealthCode().equals(upload.getHealthCode())) {
                 throw new UnauthorizedException();

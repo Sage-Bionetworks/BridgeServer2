@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.LocalTime;
@@ -62,6 +61,7 @@ import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.studies.Study;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 
 public class Schedule2ServiceTest extends Mockito {
     
@@ -250,7 +250,7 @@ public class Schedule2ServiceTest extends Mockito {
     }
     
     @Test
-    public void getScheduleForStudy() {
+    public void getScheduleForStudy_enrollee() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
@@ -260,10 +260,31 @@ public class Schedule2ServiceTest extends Mockito {
         study.setScheduleGuid(GUID);
         
         Schedule2 schedule = new Schedule2();
+        schedule.setOwnerId(TEST_ORG_ID);
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
         
-        Schedule2 retValue = service.getScheduleForStudy(TEST_APP_ID, study);
-        assertEquals(retValue, schedule);
+        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, study);
+        assertEquals(retValue.get(), schedule);
+    }
+    
+    @Test
+    public void getScheduleForStudy_studyDesigner() {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerOrgMembership("not-the-owning-study-of-schedule")
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .build());
+        
+        Study study = Study.create();
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setScheduleGuid(GUID);
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setOwnerId(TEST_ORG_ID);
+        when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(schedule));
+        
+        Optional<Schedule2> retValue = service.getScheduleForStudy(TEST_APP_ID, study);
+        assertEquals(retValue.get(), schedule);
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -287,16 +308,13 @@ public class Schedule2ServiceTest extends Mockito {
         Study study = Study.create();
         study.setIdentifier(TEST_STUDY_ID);
         
-        try {
-            service.getScheduleForStudy(TEST_APP_ID, study);
-            fail("Should have thrown exception");
-        } catch(EntityNotFoundException e) {
-            assertEquals("Schedule not found.", e.getMessage());
-        }
+        Optional<Schedule2> optional = service.getScheduleForStudy(TEST_APP_ID, study);
+        assertFalse(optional.isPresent());
+
         verify(mockDao, never()).getSchedule(any(), any());
     }
 
-    @Test(expectedExceptions = EntityNotFoundException.class)
+    @Test
     public void getScheduleForStudyScheduleNotFound() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID))
@@ -308,7 +326,8 @@ public class Schedule2ServiceTest extends Mockito {
         
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.empty());
         
-        service.getScheduleForStudy(TEST_APP_ID, study);
+        Optional<Schedule2> optional = service.getScheduleForStudy(TEST_APP_ID, study);
+        assertFalse(optional.isPresent());
     }
     
     @Test
@@ -337,7 +356,9 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setPublished(true);
         schedule.setVersion(1L);
         
-        Schedule2 retValue = service.createSchedule(schedule);
+        Study study = Study.create();
+        
+        Schedule2 retValue = service.createSchedule(study, schedule);
         assertEquals(retValue, schedule);
 
         verify(mockDao).createSchedule(scheduleCaptor.capture());
@@ -368,7 +389,9 @@ public class Schedule2ServiceTest extends Mockito {
         
         Schedule2 schedule = new Schedule2();
         
-        service.createSchedule(schedule);
+        Study study = Study.create();
+        
+        service.createSchedule(study, schedule);
     }
     
     @Test
@@ -391,7 +414,9 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setClientData(getClientData());
         schedule.setOwnerId("this-will-be-ignored");
         
-        service.createSchedule(schedule);        
+        Study study = Study.create();
+        
+        service.createSchedule(study, schedule);        
     }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
@@ -413,7 +438,9 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setDuration(Period.parse("P2W"));
         schedule.setClientData(getClientData());
         
-        service.createSchedule(schedule);        
+        Study study = Study.create();
+        
+        service.createSchedule(study, schedule);        
     }
 
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -435,7 +462,9 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setClientData(getClientData());
         schedule.setOwnerId(TEST_ORG_ID);
         
-        service.createSchedule(schedule);        
+        Study study = Study.create();
+        
+        service.createSchedule(study, schedule);        
     }
     
     @Test
@@ -468,10 +497,9 @@ public class Schedule2ServiceTest extends Mockito {
         
         when(mockDao.updateSchedule(any())).thenReturn(existing);
         
-        App app = App.create();
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        Study study = Study.create();
         
-        Schedule2 retValue = service.updateSchedule(existing, schedule);
+        Schedule2 retValue = service.updateSchedule(study, existing, schedule);
         assertEquals(retValue, existing);
         
         verify(mockDao).updateSchedule(scheduleCaptor.capture());
@@ -500,7 +528,9 @@ public class Schedule2ServiceTest extends Mockito {
         
         when(mockDao.updateSchedule(any())).thenReturn(existing);
         
-        service.updateSchedule(existing, schedule);
+        Study study = Study.create();
+        
+        service.updateSchedule(study, existing, schedule);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -508,13 +538,12 @@ public class Schedule2ServiceTest extends Mockito {
         Schedule2 existing = new Schedule2();
         existing.setAppId(TEST_APP_ID);
         
-        App app = App.create();
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        Study study = Study.create();
 
         Schedule2 schedule = new Schedule2();
         schedule.setAppId(TEST_APP_ID);
         schedule.setGuid(GUID);
-        service.updateSchedule(existing, schedule);
+        service.updateSchedule(study, existing, schedule);
     }
    
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -546,7 +575,9 @@ public class Schedule2ServiceTest extends Mockito {
         
         when(mockDao.updateSchedule(any())).thenReturn(existing);
         
-        service.updateSchedule(existing, schedule);
+        Study study = Study.create();
+        
+        service.updateSchedule(study, existing, schedule);
     }
     
     @Test
@@ -699,7 +730,9 @@ public class Schedule2ServiceTest extends Mockito {
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         
-        service.createSchedule(schedule);
+        Study study = Study.create();
+        
+        service.createSchedule(study, schedule);
         
         assertEquals(schedule.getGuid(), "otherGuid");
         schedule.getSessions().forEach(session -> {
@@ -746,7 +779,9 @@ public class Schedule2ServiceTest extends Mockito {
 
         doReturn("otherGuid").when(service).generateGuid();
         
-        service.updateSchedule(existing, schedule);
+        Study study = Study.create();
+        
+        service.updateSchedule(study, existing, schedule);
         
         assertEquals(schedule.getSessions().get(0).getGuid(), SESSION_GUID_1);
         assertEquals(schedule.getSessions().get(0).getTimeWindows().get(0).getGuid(), SESSION_WINDOW_GUID_1);
@@ -762,36 +797,94 @@ public class Schedule2ServiceTest extends Mockito {
                 .withCallerAppId(TEST_APP_ID)
                 .build());
 
-        App app = App.create();
-        app.setCustomEvents(ImmutableMap.of("event1", MUTABLE));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        Study study = Study.create();
+        study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("event1", MUTABLE)));
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
-        // This will fail validation unless the app declares it as a custom event
-        schedule.getSessions().get(0).setStartEventId("event1");
+        // This will fail validation unless the app declares it as a custom event (it does)
+        schedule.getSessions().get(0).setStartEventIds(ImmutableList.of("event1"));
         
-        service.createSchedule(schedule);
+        // This will fail validation unless it's included in the schedule (it is)
+        schedule.getSessions().get(0).setStudyBurstIds(ImmutableList.of("burst1"));
         
-        assertEquals(schedule.getSessions().get(0).getStartEventId(), "custom:event1");
+        service.createSchedule(study, schedule);
+        
+        assertEquals(schedule.getSessions().get(0).getStartEventIds().get(0), "custom:event1");
+    }
+    
+    @Test
+    public void cleanupEventIdsOnCreateFails() {
+        // We want to verify that clean up occurs that will trigger validation errors
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .withCallerAppId(TEST_APP_ID)
+                .build());
+
+        Study study = Study.create();
+        // no cutsom events, no study bursts
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        schedule.setStudyBursts(ImmutableList.of());
+        
+        // That makes the following two lines invalid
+        schedule.getSessions().get(0).setStartEventIds(ImmutableList.of("event1"));
+        schedule.getSessions().get(0).setStudyBurstIds(ImmutableList.of("burst1"));
+        
+        try {
+            service.createSchedule(study, schedule);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals(e.getErrors().get("sessions[0].studyBurstIds[0]").get(0), 
+                    "sessions[0].studyBurstIds[0] does not refer to a defined study burst ID");
+            assertEquals(e.getErrors().get("sessions[0].startEventIds[0]").get(0), 
+                    "sessions[0].startEventIds[0] is not a valid custom event ID");
+        }
     }
     
     @Test
     public void cleanupEventIdsOnUpdate() {
-        App app = App.create();
-        app.setCustomEvents(ImmutableMap.of("event1", MUTABLE));
-        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        Study study = Study.create();
+        study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("event1", MUTABLE)));
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         schedule.setDeleted(false);
         schedule.setPublished(false);
-        // This will fail validation unless the app declares it as a custom event
-        schedule.getSessions().get(0).setStartEventId("event1");
+        // This will fail validation unless the app declares it as a custom event (it does)
+        schedule.getSessions().get(0).setStartEventIds(ImmutableList.of("event1"));
+        
+        // This will fail validation unless it's included in the schedule (it is)
+        schedule.getSessions().get(0).setStudyBurstIds(ImmutableList.of("burst1"));
         
         Schedule2 existing = Schedule2Test.createValidSchedule();
         existing.setPublished(false);
-        service.updateSchedule(existing, schedule);
+        service.updateSchedule(study, existing, schedule);
         
-        assertEquals(schedule.getSessions().get(0).getStartEventId(), "custom:event1");
+        assertEquals(schedule.getSessions().get(0).getStartEventIds().get(0), "custom:event1");
+    }
+    
+    @Test
+    public void cleanupEventIdsOnUpdateFails() {
+        Study study = Study.create();
+        
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        schedule.setStudyBursts(ImmutableList.of());
+        schedule.setDeleted(false);
+        // These will fail
+        schedule.getSessions().get(0).setStartEventIds(ImmutableList.of("event1"));
+        schedule.getSessions().get(0).setStudyBurstIds(ImmutableList.of("burst1"));
+        
+        Schedule2 existing = Schedule2Test.createValidSchedule();
+        existing.setDeleted(false);
+        existing.setPublished(false);
+        
+        try {
+            service.updateSchedule(study, existing, schedule);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+            assertEquals(e.getErrors().get("sessions[0].studyBurstIds[0]").get(0), 
+                    "sessions[0].studyBurstIds[0] does not refer to a defined study burst ID");
+            assertEquals(e.getErrors().get("sessions[0].startEventIds[0]").get(0), 
+                    "sessions[0].startEventIds[0] is not a valid custom event ID");
+        }
     }
     
     @Test
@@ -916,5 +1009,11 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(schedule.getGuid(), SCHEDULE_GUID);
         
         verify(mockDao).updateSchedule(schedule);
+    }
+    
+    @Test
+    public void deleteAllSchedules() { 
+        service.deleteAllSchedules(TEST_APP_ID);
+        verify(mockDao).deleteAllSchedules(TEST_APP_ID);
     }
 }

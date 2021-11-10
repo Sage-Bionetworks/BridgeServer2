@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.services;
 
 import static com.amazonaws.services.s3.model.CannedAccessControlList.PublicRead;
+import static com.google.common.base.Charsets.UTF_8;
 import static org.sagebionetworks.bridge.services.StudyConsentService.SIGNATURE_BLOCK;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
@@ -245,7 +246,7 @@ public class StudyConsentServiceTest extends Mockito {
         PutObjectRequest request = requestCaptor.getAllValues().get(0);
         assertEquals(request.getBucketName(), PUBLICATION_BUCKET);
         assertEquals(request.getCannedAcl(), PublicRead);
-        assertEquals(IOUtils.toString(request.getInputStream()), transformedDoc);
+        assertEquals(IOUtils.toString(request.getInputStream(), UTF_8), transformedDoc);
         ObjectMetadata metadata = request.getMetadata();
         assertEquals(metadata.getContentType(), MimeType.HTML.toString());
         

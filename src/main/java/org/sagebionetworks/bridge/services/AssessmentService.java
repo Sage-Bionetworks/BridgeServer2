@@ -4,8 +4,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.jsoup.safety.Whitelist.none;
-import static org.jsoup.safety.Whitelist.simpleText;
+import static org.jsoup.safety.Safelist.none;
+import static org.jsoup.safety.Safelist.simpleText;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.OWNER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ASSESSMENTS;
@@ -380,6 +380,12 @@ public class AssessmentService {
             Assessment assessment = opt.get();
             dao.deleteAssessment(appId, assessment);
         }
+    }
+    
+    public void deleteAllAssessments(String appId) {
+        checkArgument(isNotBlank(appId));
+        
+        dao.deleteAllAssessments(appId);
     }
 
     private Assessment createAssessmentInternal(String appId, Assessment assessment) {

@@ -3,10 +3,17 @@ package org.sagebionetworks.bridge.models.schedules2.timelines;
 import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_JOINER;
 import static org.sagebionetworks.bridge.BridgeUtils.ENCODER;
+import static org.sagebionetworks.bridge.BridgeUtils.addUniqueItemsToList;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
 import com.google.common.collect.HashMultiset;
 import com.google.common.collect.Multiset;
 import com.google.common.hash.HashFunction;
@@ -15,11 +22,11 @@ import com.google.common.hash.Hashing;
 
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
-
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
+import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
 public class Scheduler {
@@ -37,8 +44,14 @@ public class Scheduler {
         builder.withSchedule(schedule);
         calculateLanguageKey(builder);
         
+        Map<String,Set<String>> studyBurstEventsMap = getStudyBurstEventIdsMap(schedule);
+
         for (Session session : schedule.getSessions()) {
             if (!session.getAssessments().isEmpty()) {
+                for (String studyBurstId : session.getStudyBurstIds()) {
+                    List<String> combinedSet = addUniqueItemsToList(session.getStartEventIds(), studyBurstEventsMap.get(studyBurstId));
+                    session.setStartEventIds(combinedSet);
+                }
                 for (TimeWindow window : session.getTimeWindows()) {
                     scheduleTimeWindowSequence(builder, schedule, session, window);
                 }
@@ -54,6 +67,25 @@ public class Scheduler {
             callerLangs = callerLangs.stream().map(s -> s.toLowerCase()).collect(toList());
             builder.withLang(COMMA_JOINER.join(callerLangs));
         }
+    }
+    
+    /**
+     * Expand study bursts into a set of events, returned in a map that is keyed
+     * to the original burst identifiers.
+     */
+    Map<String,Set<String>> getStudyBurstEventIdsMap(Schedule2 schedule) {
+        Map<String,Set<String>> studyBurstEventsMap = new HashMap<>();
+        for (StudyBurst burst : schedule.getStudyBursts()) {
+            int len =  burst.getOccurrences().intValue();
+            Set<String> burstEventIds = new HashSet<>();
+            for (int i=0; i < len; i++) {
+                String iteration = Strings.padStart(Integer.toString(i+1), 2, '0');
+                String eventId = STUDY_BURST.getEventId(burst.getIdentifier(), null, iteration);
+                burstEventIds.add(eventId);
+            }
+            studyBurstEventsMap.put(burst.getIdentifier(), burstEventIds);
+        }
+        return studyBurstEventsMap;
     }
     
     int calculateEndDay(int studyLengthInDays, LocalTime startTime, int startDay, Period expiration) {
@@ -127,31 +159,39 @@ public class Scheduler {
             if (startDay == 0 && delay != null && delay.toStandardDays().getDays() == 0) {
                 scheduledSession.withDelayTime(delay);
             }
+            // Add a scheduled session with a different GUID for each event, and one SessionInfo object for
+            // all of them.
             
-            // scheduleGuid:sessionGuid:startDay:windowGuid
-            String sessionInstanceGuid = generateSessionInstanceGuid(
-                    schedule.getGuid(), session.getGuid(), startDay, window.getGuid());
-            scheduledSession.withInstanceGuid(sessionInstanceGuid);
+            for (String oneEventId : session.getStartEventIds()) {
+                // Clear the assessments that are calculated in each iteration. Other fields calculated 
+                // in this loop will be reset.
+                scheduledSession = scheduledSession.copyWithoutAssessments();
 
-            // The position of an assessment in a session is used to differentiate repeated assessments
-            // in a single session. Assessments can be configured differently, but if they are exactly
-            // the same, we still generate a unique ID.
-            ids.clear();
-            for (AssessmentReference ref : session.getAssessments()) {
-                ids.add(ref.getGuid());
+                // The position of an assessment in a session is used to differentiate repeated assessments
+                // in a single session. Assessments can be configured differently, but if they are exactly
+                // the same, we still generate a unique ID.
+                ids.clear();
+                for (AssessmentReference ref : session.getAssessments()) {
+                    ids.add(ref.getGuid());
+                    
+                    // scheduleGuid:sessionGuid:startDay:windowGuid:assessmentGuid:asmtOccurrentCount
+                    String asmtInstanceGuid = generateAssessmentInstanceGuid(schedule.getGuid(), session.getGuid(),
+                            oneEventId, startDay, window.getGuid(), ref.getGuid(), ids.count(ref.getGuid()));
+                 
+                    AssessmentInfo asmtInfo = AssessmentInfo.create(ref);
+                    builder.withAssessmentInfo(asmtInfo);
+                    
+                    ScheduledAssessment schAsmt = new ScheduledAssessment(asmtInfo.getKey(), asmtInstanceGuid, ref);
+                    scheduledSession.withScheduledAssessment(schAsmt);
+                }
                 
-                // scheduleGuid:sessionGuid:startDay:windowGuid:assessmentGuid:asmtOccurrentCount
-                String asmtInstanceGuid = generateAssessmentInstanceGuid(schedule.getGuid(), session.getGuid(),
-                        startDay, window.getGuid(), ref.getGuid(), ids.count(ref.getGuid()));
-             
-                AssessmentInfo asmtInfo = AssessmentInfo.create(ref);
-                builder.withAssessmentInfo(asmtInfo);
-                
-                ScheduledAssessment schAsmt = new ScheduledAssessment(asmtInfo.getKey(), asmtInstanceGuid, ref);
-                scheduledSession.withScheduledAssessment(schAsmt);
+                // scheduleGuid:sessionGuid:eventId:startDay:windowGuid
+                String sessionInstanceGuid = generateSessionInstanceGuid(
+                        schedule.getGuid(), session.getGuid(), oneEventId, startDay, window.getGuid());
+                scheduledSession.withInstanceGuid(sessionInstanceGuid);
+                scheduledSession.withStartEventId(oneEventId);
+                builder.withScheduledSession(scheduledSession.build());
             }
-            builder.withScheduledSession(scheduledSession.build());
-      
             startDay += intervalInDays;
             occurrenceCount++;
             
@@ -163,11 +203,14 @@ public class Scheduler {
      * from a Schedule. It should look like a GUID and not a compound identifier, as client developers 
      * have (in the past) parsed compound identifiers, and we want to discourage this.
      */
-    String generateSessionInstanceGuid(String scheduleGuid, String sessionGuid, int startDay, String windowGuid) {
+    String generateSessionInstanceGuid(String scheduleGuid, String sessionGuid, String eventId, int startDay,
+            String windowGuid) {
         Hasher hc = HASHER.newHasher();
         hc.putString(scheduleGuid, Charsets.UTF_8);
         hc.putString(":", Charsets.UTF_8);
         hc.putString(sessionGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(eventId, Charsets.UTF_8);
         hc.putString(":", Charsets.UTF_8);
         hc.putInt(startDay);
         hc.putString(":", Charsets.UTF_8);
@@ -180,12 +223,14 @@ public class Scheduler {
      * from a Schedule. It should look like a GUID and not a compound identifier, as client developers 
      * have (in the past) parsed compound identifiers, and we want to discourage this.
      */
-    String generateAssessmentInstanceGuid(String scheduleGuid, String sessionGuid, 
+    String generateAssessmentInstanceGuid(String scheduleGuid, String sessionGuid, String eventId, 
             int startDay, String windowGuid, String assessmentGuid, int assessmentOccurrence) {
         Hasher hc = HASHER.newHasher();
         hc.putString(scheduleGuid, Charsets.UTF_8);
         hc.putString(":", Charsets.UTF_8);
         hc.putString(sessionGuid, Charsets.UTF_8);
+        hc.putString(":", Charsets.UTF_8);
+        hc.putString(eventId, Charsets.UTF_8);
         hc.putString(":", Charsets.UTF_8);
         hc.putInt(startDay);
         hc.putString(":", Charsets.UTF_8);

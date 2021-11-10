@@ -1,28 +1,20 @@
 package org.sagebionetworks.bridge.models.activities;
 
-import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
-import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
-import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SESSION;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.SURVEY;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNull;
 
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
-
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
+import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 
 public class StudyActivityEventRequestTest {
     
@@ -32,21 +24,6 @@ public class StudyActivityEventRequestTest {
         assertRequest(request);
     }
 
-    @Test
-    public void testActivityEventConstruction() {
-        StudyActivityEventRequest request = createRequest();
-        
-        StudyActivityEvent event = request.toStudyActivityEvent();
-        assertEquals(event.getAppId(), TEST_APP_ID);
-        assertEquals(event.getUserId(), TEST_USER_ID);
-        assertEquals(event.getStudyId(), TEST_STUDY_ID);
-        assertEquals(event.getTimestamp(), MODIFIED_ON);
-        assertEquals(event.getAnswerValue(), "my answer");
-        assertEquals(event.getClientTimeZone(), "America/Los_Angeles");
-        assertEquals(event.getCreatedOn(), CREATED_ON);
-        assertEquals(event.getEventId(), "survey:surveyGuid:finished");
-    }
-    
     @Test
     public void canDeserialize() throws Exception {
         // Try it with eventKey
@@ -59,7 +36,7 @@ public class StudyActivityEventRequestTest {
         assertEquals(request.getTimestamp(), MODIFIED_ON);
         assertEquals(request.getAnswerValue(), "my answer");
         assertEquals(request.getClientTimeZone(), "America/Los_Angeles");
-        assertEquals(request.getObjectId(), "event1");
+        assertEquals(request.getEventKey(), "event1");
         
         // Try it with eventId
         json = TestUtils.createJson("{'eventId':'event1',"+
@@ -71,101 +48,77 @@ public class StudyActivityEventRequestTest {
         assertEquals(request.getTimestamp(), MODIFIED_ON);
         assertEquals(request.getAnswerValue(), "my answer");
         assertEquals(request.getClientTimeZone(), "America/Los_Angeles");
-        assertEquals(request.getObjectId(), "event1");
+        assertEquals(request.getEventKey(), "event1");
     }
     
-    @Test
-    public void copy() {
-        StudyActivityEventRequest request = createRequest();
+    @DataProvider(name = "parseRequestParams")
+    public static Object[][] parseRequestParams() {
+        return new Object[][] {
+            {"", null, m(), m()},
+            {"activities_retrieved", "activities_retrieved", m("foo"), m()},
+            {"ACTIVITIES_RETRIEVED", "activities_retrieved", m("foo"), m()},
+            {"custom:foo", "custom:foo", m("foo"), m()},
+            {"custom:foo", null, m(), m("foo")},
+            {"custom:foo", null, m(), m()},
+            {"custom:timeline_retrieved", "custom:timeline_retrieved", m("timeline_retrieved"), m()},
+            {"custom:TIMELINE_RETRIEVED", null, m("timeline_retrieved"), m()},
+            {"custom:timeline_retrieved", null, m(), m()},
+            {"foo", "custom:foo", m("foo"), m()},
+            {"FOO", "custom:FOO", m("FOO"), m()},
+            {"foo", null, m(), m()},
+            {"question:foo:answer portion wrong", null, m(), m()},
+            {"question:foo:answer=4", null, m(), m()}, // also wrong
+            {"question:foo:answered=4", "question:foo:answered=4", m(), m()},
+            {"QUESTION:foo:ANSWERED=4", "question:foo:answered=4", m(), m()},
+            {"session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished", "session:_yfDuP0ZgHx8Kx6_oYRlv3-z:finished", m("foo"), m()},
+            {"study_burst:bar:01", null, m(), m("foo")},
+            {"study_burst:foo:01", "study_burst:foo:01", m(), m("foo")},
+            {"study_burst:foo:01", null, m("foo"), m()},
+            {"study_burst:foo:01", null, m(), m()},
+            {"timeline_retrieved", "timeline_retrieved", m("timeline_retrieved"), m()},
+            {null, null, m(), m()},
+        };
+    }
+    
+    private static Map<String, ActivityEventUpdateType> m(String... values) {
+        Map<String, ActivityEventUpdateType> map = new HashMap<>();
+        for (String eventId : values) {
+            map.put(eventId, MUTABLE);
+        }
+        return map;
+    }
+    
+    @Test(dataProvider = "parseRequestParams")
+    public void parseRequest(String input, String expectedOutput, 
+            Map<String, ActivityEventUpdateType> customEvents, 
+            Map<String, ActivityEventUpdateType> studyBursts) {
         
-        StudyActivityEventRequest copy = request.copy();
-        assertRequest(copy);
-    }
-    
-    @Test
-    public void defaults() {
-        StudyActivityEventRequest request = new StudyActivityEventRequest();
-        assertEquals(request.getObjectType(), CUSTOM);
-        assertEquals(request.getUpdateType(), IMMUTABLE);
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
         
-        StudyActivityEvent event = request.toStudyActivityEvent();
-        assertNull(event.getAppId());
-        assertNull(event.getUserId());
-        assertNull(event.getStudyId());
-        assertNull(event.getTimestamp());
-        assertNull(event.getAnswerValue());
-        assertNull(event.getClientTimeZone());
-        assertNull(event.getCreatedOn());
-        assertNull(event.getEventId());
-    }
-    
-    @Test
-    public void customStrippedFromObjectId() {
-        StudyActivityEventRequest request = new StudyActivityEventRequest();
-        request.objectId("CUSTOM:FOO");
-        assertEquals(request.getObjectId(), "FOO");
+        List<StudyCustomEvent> events = customEvents.entrySet().stream()
+                .map(entry -> new StudyCustomEvent(entry.getKey(), entry.getValue()))
+                .collect(toList());
+        eventMap.addCustomEvents(events);
+        
+        List<StudyBurst> bursts = studyBursts.entrySet().stream()
+                .map(entry -> new StudyBurst(entry.getKey(), entry.getValue()))
+                .collect(toList());
+        eventMap.addStudyBursts(bursts);
 
-        request.objectId("Custom:FOO");
-        assertEquals(request.getObjectId(), "FOO");
-
-        request.objectId("custom:FOO");
-        assertEquals(request.getObjectId(), "FOO");
-    }
-    
-    @Test
-    public void objectTypeSetsUpdateType() {
-        StudyActivityEventRequest request = new StudyActivityEventRequest()
-                .objectType(SESSION);
+        StudyActivityEventRequest request = new StudyActivityEventRequest(input, null, null, null); 
         
-        assertEquals(request.getUpdateType(), FUTURE_ONLY);
-    }
-    
-    @Test
-    public void customObjectTypeSetsUpdateTypeFromMapping() {
-        StudyActivityEventRequest request = createRequest()
-                .objectType(CUSTOM)
-                .objectId("event1");
-        
-        assertEquals(request.getUpdateType(), MUTABLE);
-    }
-    
-    @Test
-    public void customObjectStripOutInvalidCustomEvents() {
-        StudyActivityEventRequest request = createRequest()
-                .objectType(CUSTOM)
-                .objectId("event2");
-        
-        assertNull(request.getObjectId());
+        String retValue = request.parse(eventMap).build().getEventId();
+        assertEquals(retValue, expectedOutput);
     }
     
     private StudyActivityEventRequest createRequest() {
-        Map<String,ActivityEventUpdateType> customEvents = ImmutableMap.of("event1", MUTABLE);
-        return new StudyActivityEventRequest()
-                .appId(TEST_APP_ID)
-                .userId(TEST_USER_ID)
-                .studyId(TEST_STUDY_ID)
-                .timestamp(MODIFIED_ON)
-                .answerValue("my answer")
-                .clientTimeZone("America/Los_Angeles")
-                .createdOn(CREATED_ON)
-                .objectType(SURVEY)
-                .objectId("surveyGuid")
-                .eventType(FINISHED)
-                .updateType(FUTURE_ONLY)
-                .customEvents(customEvents);
+        return new StudyActivityEventRequest("survey:surveyGuid:finished", MODIFIED_ON, "my answer", "America/Los_Angeles");
     }
 
     private void assertRequest(StudyActivityEventRequest request) {
-        assertEquals(request.getAppId(), TEST_APP_ID);
-        assertEquals(request.getUserId(), TEST_USER_ID);
-        assertEquals(request.getStudyId(), TEST_STUDY_ID);
         assertEquals(request.getTimestamp(), MODIFIED_ON);
         assertEquals(request.getAnswerValue(), "my answer");
         assertEquals(request.getClientTimeZone(), "America/Los_Angeles");
-        assertEquals(request.getCreatedOn(), CREATED_ON);
-        assertEquals(request.getObjectType(), SURVEY);
-        assertEquals(request.getObjectId(), "surveyGuid");
-        assertEquals(request.getEventType(), FINISHED);
-        assertEquals(request.getUpdateType(), FUTURE_ONLY);
+        assertEquals(request.getEventKey(), "survey:surveyGuid:finished");
     }
 }

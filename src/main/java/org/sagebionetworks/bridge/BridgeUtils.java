@@ -4,14 +4,13 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
-import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
-import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_DELETE_PARTICIPANTS;
 import static org.sagebionetworks.bridge.BridgeConstants.CKEDITOR_WHITELIST;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.util.BridgeCollectors.toImmutableSet;
 import static org.springframework.util.StringUtils.commaDelimitedListToSet;
 
@@ -27,7 +26,9 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -44,8 +45,7 @@ import org.jsoup.nodes.Document.OutputSettings.Syntax;
 import org.jsoup.nodes.Element;
 import org.jsoup.nodes.Entities.EscapeMode;
 import org.jsoup.safety.Cleaner;
-import org.jsoup.safety.Whitelist;
-
+import org.jsoup.safety.Safelist;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -53,18 +53,20 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.HasLang;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
-import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.schedules.Activity;
 import org.sagebionetworks.bridge.models.schedules.ActivityType;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.templates.TemplateType;
-
+import org.sagebionetworks.bridge.services.RequestInfoService;
 import org.springframework.core.annotation.AnnotationUtils;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
@@ -151,40 +153,6 @@ public class BridgeUtils {
         return account.getActiveEnrollments().stream()
                 .map(Enrollment::getStudyId)
                 .collect(toImmutableSet());
-    }
-    
-    /**
-     * Return the account if the caller has access to it; false otherwise. Currently, 
-     * the account must be 1) the caller's account; 2) enrolled in a study that the 
-     * caller has access to; or 3) the caller is associated to no studies at all 
-     * (this last part is transitional as we migrate to a multi-study security model). 
-     * Do not call this method before updating the account; this method may remove
-     * enrollments from the account that are not visible to the caller so it can be
-     * displayed to the caller without leaking enrollment information.
-     */
-    public static Account filterForStudy(Account account) {
-        if (account != null) {
-            RequestContext context = RequestContext.get();
-            Set<String> callerStudies = context.getOrgSponsoredStudies();
-            
-            // If this is a call for one’s own record, or the caller is an admin or 
-            // worker, or the account is in the same organization as the caller who 
-            // is an org admin, return the account.
-            if (CAN_READ_PARTICIPANTS.check(ORG_ID, account.getOrgMembership(), USER_ID, account.getId())) {
-                return account;
-            }
-            // If after removing all enrollments that are not visible to the caller, 
-            // there are no remaining enrollments, then we do not return the 
-            // account to the caller.
-            Set<Enrollment> removals = account.getEnrollments().stream()
-                    .filter(en -> !callerStudies.contains(en.getStudyId()))
-                    .collect(toSet());
-            account.getEnrollments().removeAll(removals);
-            if (!account.getEnrollments().isEmpty()) {
-                return account;
-            }
-        }
-        return null;
     }
     
     /**
@@ -294,6 +262,25 @@ public class BridgeUtils {
     
     public static Map<String,String> appTemplateVariables(App app) {
         return appTemplateVariables(app, null);
+    }
+    
+    public static Map<String,String> participantTemplateVariables(StudyParticipant participant) {
+        Map<String,String> map = Maps.newHashMap();
+        if (participant == null) {
+            return map;
+        }
+        map.put("participantFirstName", participant.getFirstName());
+        map.put("participantLastName", participant.getLastName());
+        map.put("participantEmail", participant.getEmail());
+        if (participant.getPhone() != null) {
+            map.put("participantPhone", participant.getPhone().getNumber());
+            map.put("participantPhoneRegion", participant.getPhone().getRegionCode());
+            map.put("participantPhoneNationalFormat", participant.getPhone().getNationalFormat());
+        }
+        for (Entry<String,String> entry : participant.getAttributes().entrySet()) {
+            map.put("participant." + entry.getKey(), entry.getValue());
+        }
+        return map;
     }
     
     /**
@@ -415,12 +402,12 @@ public class BridgeUtils {
      */
     public @Nonnull static <T> ImmutableSet<T> nullSafeImmutableSet(Set<T> set) {
         return (set == null) ? ImmutableSet.of() : ImmutableSet.copyOf(set.stream()
-                .filter(element -> element != null).collect(Collectors.toSet()));
+                .filter(Objects::nonNull).collect(Collectors.toSet()));
     }
     
     public @Nonnull static <T> ImmutableList<T> nullSafeImmutableList(List<T> list) {
         return (list == null) ? ImmutableList.of() : ImmutableList.copyOf(list.stream()
-                .filter(element -> element != null).collect(Collectors.toList()));
+                .filter(Objects::nonNull).collect(Collectors.toList()));
     }
     
     public @Nonnull static <S,T> ImmutableMap<S,T> nullSafeImmutableMap(Map<S,T> map) {
@@ -629,8 +616,8 @@ public class BridgeUtils {
         return sanitizeHTML(CKEDITOR_WHITELIST, documentContent);
     }
     
-    public static String sanitizeHTML(Whitelist whitelist, String documentContent) {
-        checkNotNull(whitelist);
+    public static String sanitizeHTML(Safelist safelist, String documentContent) {
+        checkNotNull(safelist);
         
         if (isBlank(documentContent)) {
             return documentContent;
@@ -638,7 +625,7 @@ public class BridgeUtils {
         // the prior version of this still pretty printed the output... this uglier use of JSoup's
         // APIs does not pretty print the output.
         Document dirty = Jsoup.parseBodyFragment(documentContent);
-        Cleaner cleaner = new Cleaner(whitelist);
+        Cleaner cleaner = new Cleaner(safelist);
         Document clean = cleaner.clean(dirty);
         // All variants of the sanitizer remove this, so put it back. It's used in the consent document.
         // "brimg" is not a valid attribute, it marks our one template image.
@@ -718,30 +705,16 @@ public class BridgeUtils {
     }
     
     /**
-     * Verifies that the activity eventId is valid, and prepends "custom:" to a custom ID if 
-     * necessary. Returns the value property cased if valid, or null otherwise. This is 
-     * then handled by validation. If the event submitted is an overridden system event, 
-     * it will be treated as the system event so in that case, you *must* prepend "custom:" 
-     * to indicate that the custom event is being used (overridding system events is 
-     * confusing and discouraged).
+     * Verifies that the activity eventId is valid, and formats the casing correctly. Returns the 
+     * value if valid, or null otherwise. This is then validated as an invalid value. If the event 
+     * submitted is an overridden system event, it will be treated as the system event so in that 
+     * case, you *must* prepend "custom:" to indicate that the custom event is being used 
+     * (overriding system events is confusing and discouraged).
      */
-    public static String formatActivityEventId(Set<String> activityEventIds, String id) {
-        if (id != null) {
-            String lowerCased = id.toLowerCase();
-            if (lowerCased.startsWith("custom:")) {
-                id = id.substring(7);
-            }
-            if (activityEventIds.contains(id)) {
-                return "custom:" + id;
-            }
-            try {
-                String[] parts = id.split(":");
-                ActivityEventObjectType.valueOf(parts[0].toUpperCase());
-            } catch(IllegalArgumentException e) {
-                return null;
-            }
-        }
-        return (id == null) ? null : id;
+    public static String formatActivityEventId(StudyActivityEventIdsMap eventMap, String id) {
+        return new StudyActivityEventRequest(id, null, null, null)
+            .parse(eventMap)
+            .build().getEventId();
     }
     
     /**
@@ -767,5 +740,69 @@ public class BridgeUtils {
             }
         }
         return defaultValue;
+    }
+    
+    /**
+     * Return a new immutable set that includes the additional item..
+     */
+    public static <T> Set<T> addToSet(Set<T> set, T item) {
+        return new ImmutableSet.Builder<T>().addAll(set).add(item).build();
+    }
+    
+    public static boolean participantEligibleForDeletion(RequestInfoService requestInfoService, Account account) {
+        // Test accounts can always be deleted
+        boolean testAccount = account.getDataGroups().contains(TEST_USER_GROUP);
+        if (testAccount) {
+            return true;
+        }
+        // Must have rights to delete participant in all studies using this account.
+        for (Enrollment en : account.getEnrollments()) {
+            if (!CAN_DELETE_PARTICIPANTS.check(STUDY_ID, en.getStudyId())) {
+                return false;
+            }
+        }
+        return participantHasNeverSignedIn(requestInfoService, account.getId());
+    }
+    
+    private static boolean participantHasNeverSignedIn(RequestInfoService requestInfoService, String userId) {
+        RequestInfo info = requestInfoService.getRequestInfo(userId);
+        if (info == null) {
+            return true;
+        }
+        if (info.getSignedInOn() == null) {
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Maintaining the order of items in the list and the collection, return a new
+     * immutable list of both that contains no duplicate elements.
+     */
+    public static <T> List<T> addUniqueItemsToList(List<T> list, Collection<T> elements) {
+        Set<T> orderedSet = new LinkedHashSet<>();
+        orderedSet.addAll(list);
+        orderedSet.addAll(elements);
+        return ImmutableList.copyOf(orderedSet);
+    }
+    
+    /**
+     * Select one element from a collection or other iterable, using a method reference, e.g.
+     * getElement(account.getEnrollments(), Enrollment::getStudyId, "studyA"). We do this all
+     * over the place in our code.
+     */
+    public static <T, S> Optional<T> getElement(Iterable<T> iterable, Function<T, S> func, S value) {
+        if (iterable == null) {
+            return Optional.empty();
+        }
+        for (T item : iterable) {
+            S retValue = func.apply(item);
+            if (value == null && retValue == null) {
+                return Optional.of(item);   
+            } else if (retValue != null && retValue.equals(value)) {
+                return Optional.of(item);
+            }
+        }
+        return Optional.empty();
     }
 }

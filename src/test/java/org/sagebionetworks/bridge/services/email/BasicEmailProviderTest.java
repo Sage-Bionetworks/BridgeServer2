@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.services.email;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static javax.mail.Part.ATTACHMENT;
+import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.apps.MimeType.PDF;
 import static org.sagebionetworks.bridge.models.apps.MimeType.TEXT;
@@ -9,17 +11,22 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import javax.mail.internet.MimeBodyPart;
 
 import org.apache.commons.io.IOUtils;
 import org.testng.annotations.Test;
-
+import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.templates.TemplateRevision;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
+import com.newrelic.agent.deps.com.google.common.base.Joiner;
 
 public class BasicEmailProviderTest {
     @Test
@@ -33,17 +40,34 @@ public class BasicEmailProviderTest {
         app.setSupportEmail("support@email.com");
         app.setTechnicalEmail("tech@email.com");
         app.setConsentNotificationEmail("consent@email.com,consent2@email.com");
+        
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withFirstName("firstName")
+                .withLastName("lastName")
+                .withEmail("participant@email.com")
+                .withAttributes(ImmutableMap.of("prop_A", "A", "prop_B", "B"))
+                .withPhone(PHONE)
+                .build();
+
+        List<String> documentContentElements = Arrays.asList("studyName", "studyShortName", 
+                "studyId", "appName", "appShortName", "appId", "sponsorName", "supportEmail", 
+                "technicalEmail", "consentEmail", "url", "expirationPeriod", 
+                "participantFirstName", "participantLastName", "participantEmail", 
+                "participant.prop_A", "participant.prop_B", "participantPhone", 
+                "participantPhoneRegion", "participantPhoneNationalFormat");
+        
+        String documentContent = Joiner.on("~").join(documentContentElements.stream()
+                .map(s -> ("${" + s + "}")).collect(Collectors.toList()));
 
         TemplateRevision revision = TemplateRevision.create();
         revision.setSubject("Subject ${url}");
-        revision.setDocumentContent("${studyName} ${studyShortName} ${studyId} "+
-            "${appName} ${appShortName} ${appId} ${sponsorName} ${supportEmail} "+
-            "${technicalEmail} ${consentEmail} ${url} ${expirationPeriod}");
+        revision.setDocumentContent(documentContent);
         revision.setMimeType(HTML); 
         
         // Create
         BasicEmailProvider provider = new BasicEmailProvider.Builder()
             .withApp(app)
+            .withParticipant(participant)
             .withRecipientEmail("recipient@recipient.com")
             .withRecipientEmail("recipient2@recipient.com")
             .withTemplateRevision(revision)
@@ -66,8 +90,28 @@ public class BasicEmailProviderTest {
 
         MimeBodyPart body = email.getMessageParts().get(0);
         String bodyString = (String)body.getContent();
-        assertEquals(bodyString,
-                "Name ShortName id Name ShortName id SponsorName support@email.com tech@email.com consent@email.com some-url 1 hour");
+        
+        String[] elements = bodyString.split("~");
+        assertEquals(elements[0], "Name");
+        assertEquals(elements[1], "ShortName");
+        assertEquals(elements[2], "id");
+        assertEquals(elements[3], "Name");
+        assertEquals(elements[4], "ShortName");
+        assertEquals(elements[5], "id");
+        assertEquals(elements[6], "SponsorName");
+        assertEquals(elements[7], "support@email.com");
+        assertEquals(elements[8], "tech@email.com");
+        assertEquals(elements[9], "consent@email.com");
+        assertEquals(elements[10], "some-url");
+        assertEquals(elements[11], "1 hour");
+        assertEquals(elements[12], "firstName");
+        assertEquals(elements[13], "lastName");
+        assertEquals(elements[14], "participant@email.com");
+        assertEquals(elements[15], "A");
+        assertEquals(elements[16], "B");
+        assertEquals(elements[17], PHONE.getNumber());
+        assertEquals(elements[18], PHONE.getRegionCode());
+        assertEquals(elements[19], PHONE.getNationalFormat());
     }
 
     @Test
@@ -123,7 +167,7 @@ public class BasicEmailProviderTest {
         
         MimeBodyPart attachment = email.getMessageParts().get(1);
         
-        String bodyContent = IOUtils.toString((InputStream)attachment.getContent()); 
+        String bodyContent = IOUtils.toString((InputStream)attachment.getContent(), UTF_8); 
         assertEquals(attachment.getFileName(), "content.pdf");
         assertEquals(bodyContent, "some data");
         assertEquals(attachment.getDisposition(), ATTACHMENT);

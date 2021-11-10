@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.models.accounts;
 
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
@@ -11,11 +10,16 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
+import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+
+import java.util.Set;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.collect.ImmutableSet;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 
@@ -50,6 +54,16 @@ public class AccountSummaryTest {
         assertEquals(node.get("type").textValue(), "AccountSummary");
         assertEquals(node.get("note").textValue(), "note1");
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
+        Set<String> dataGroups = ImmutableSet.of(
+                node.get("dataGroups").get(0).textValue(),
+                node.get("dataGroups").get(1).textValue()
+            );
+        assertEquals(dataGroups, USER_DATA_GROUPS);
+        
+        Set<String> roles = ImmutableSet.of("developer", "study_coordinator");
+        assertTrue(roles.contains(node.get("roles").get(0).textValue()));
+        assertTrue(roles.contains(node.get("roles").get(1).textValue()));
+        assertEquals(node.get("roles").size(), 2);
         
         AccountSummary newSummary = BridgeObjectMapper.get().treeToValue(node, AccountSummary.class);
         assertEquals(newSummary, SUMMARY1);

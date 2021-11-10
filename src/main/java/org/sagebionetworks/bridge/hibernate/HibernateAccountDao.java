@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.hibernate;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.ResourceList.ADMIN_ONLY;
@@ -59,12 +60,13 @@ import org.sagebionetworks.bridge.models.apps.App;
 /** Hibernate implementation of Account Dao. */
 @Component
 public class HibernateAccountDao implements AccountDao {
-    
     private static final Logger LOG = LoggerFactory.getLogger(HibernateAccountDao.class);
 
     static final String ID_QUERY = "SELECT acct.id FROM HibernateAccount AS acct";
     static final String FULL_QUERY = "SELECT acct FROM HibernateAccount AS acct";
     static final String COUNT_QUERY = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct";
+    static final String DELETE_ALL_ACCOUNTS_QUERY = "DELETE FROM Accounts WHERE studyId = :appId";
+    static final String APP_IDS_FOR_USER_QUERY = "SELECT DISTINCT acct.appId FROM HibernateAccount AS acct WHERE synapseUserId = :synapseUserId";
     
     static final String EXTID_BASE_QUERY = "from HibernateEnrollment as en "
             + "WHERE en.appId = :appId AND en.studyId = :studyId "
@@ -91,9 +93,7 @@ public class HibernateAccountDao implements AccountDao {
             return ImmutableList.of();
         }
         QueryBuilder query = new QueryBuilder();
-        query.append(
-            "SELECT DISTINCT acct.appId FROM HibernateAccount AS acct WHERE synapseUserId = :synapseUserId",
-            "synapseUserId", synapseUserId);
+        query.append(APP_IDS_FOR_USER_QUERY, "synapseUserId", synapseUserId);
         return hibernateHelper.queryGet(query.getQuery(), query.getParameters(), null, null, String.class);
     }
     
@@ -193,7 +193,7 @@ public class HibernateAccountDao implements AccountDao {
                 String enrolledInStudy = search.getEnrolledInStudyId();
                 if (enrolledInStudy != null) {
                     where.appendRequired("enrollment.studyId = :studyId", "studyId", enrolledInStudy);
-                } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, RESEARCHER, WORKER)) {
+                } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, DEVELOPER, RESEARCHER, WORKER)) {
                     where.appendRequired("enrollment.studyId IN (:studies)", "studies", callerStudies);
                 }
             }
@@ -288,6 +288,8 @@ public class HibernateAccountDao implements AccountDao {
         builder.withOrgMembership(acct.getOrgMembership());
         builder.withNote(acct.getNote());
         builder.withClientTimeZone(acct.getClientTimeZone());
+        builder.withRoles(acct.getRoles());
+        builder.withDataGroups(acct.getDataGroups());
         
         StudyAssociations assoc = BridgeUtils.studyAssociationsVisibleToCaller(null);
         if (acct.getId() != null) {
@@ -323,5 +325,15 @@ public class HibernateAccountDao implements AccountDao {
         int count = hibernateHelper.queryCount("SELECT count(en) " + query.getQuery(), query.getParameters());
 
         return new PagedResourceList<>(infos, count, true);
+    }
+    
+    @Override
+    public void deleteAllAccounts(String appId) {
+        checkNotNull(appId);
+        
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(DELETE_ALL_ACCOUNTS_QUERY, "appId", appId);
+        
+        hibernateHelper.nativeQueryUpdate(builder.getQuery(), builder.getParameters());
     }
 }
