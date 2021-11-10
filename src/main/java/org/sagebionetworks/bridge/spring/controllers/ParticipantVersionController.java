@@ -31,7 +31,7 @@ public class ParticipantVersionController extends BaseController {
     }
 
     /** Delete all participant versions for the given user. This is called by integration tests. */
-    @DeleteMapping(path="/v1/apps/{appId}/participants/versions/{userIdToken}")
+    @DeleteMapping(path="/v1/apps/{appId}/participants/{userIdToken}/versions")
     public StatusMessage deleteParticipantVersionsForUser(@PathVariable String appId,
             @PathVariable String userIdToken) {
         getAuthenticatedSession(SUPERADMIN);
@@ -44,7 +44,7 @@ public class ParticipantVersionController extends BaseController {
     }
 
     /** Get all participant versions for health code. Returns an empty list if none exist. */
-    @GetMapping(path="/v1/apps/{appId}/participants/versions/{userIdToken}")
+    @GetMapping(path="/v1/apps/{appId}/participants/{userIdToken}/versions")
     public ResourceList<ParticipantVersion> getAllParticipantVersionsForUser(@PathVariable String appId,
             @PathVariable String userIdToken) {
         getAuthenticatedSession(WORKER);
@@ -57,7 +57,7 @@ public class ParticipantVersionController extends BaseController {
     }
 
     /** Retrieves the specified participant version. */
-    @GetMapping(path="/v1/apps/{appId}/participants/versions/{userIdToken}/version/{version}")
+    @GetMapping(path="/v1/apps/{appId}/participants/{userIdToken}/versions/{version}")
     public ParticipantVersion getParticipantVersion(@PathVariable String appId, @PathVariable String userIdToken,
             @PathVariable int version) {
         getAuthenticatedSession(WORKER);
