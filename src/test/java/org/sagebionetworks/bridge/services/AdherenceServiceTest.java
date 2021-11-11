@@ -625,8 +625,8 @@ public class AdherenceServiceTest extends Mockito {
                 .withCurrentTimestampsOnly(TRUE)
                 .withEventTimestamps(ImmutableMap.of("event1", CREATED_ON)).build();
         
-        StudyActivityEvent event1 = createEvent("custom:event1", MODIFIED_ON);
-        StudyActivityEvent event2 = createEvent("custom:event2", MODIFIED_ON);
+        StudyActivityEvent event1 = createEvent("custom:event1", MODIFIED_ON, null);
+        StudyActivityEvent event2 = createEvent("custom:event2", MODIFIED_ON, null);
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID))
             .thenReturn(new ResourceList<StudyActivityEvent>(ImmutableList.of(event1, event2)));
         

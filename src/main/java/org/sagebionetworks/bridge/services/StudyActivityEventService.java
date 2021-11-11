@@ -18,6 +18,7 @@ import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -172,7 +173,7 @@ public class StudyActivityEventService {
         // system.
         Map<String, DateTime> map = activityEventService.getActivityEventMap(appId, account.getHealthCode());
         for (String fieldName : GLOBAL_EVENTS_OF_INTEREST) {
-            addIfPresent(events, map, fieldName);    
+            addIfPresent(events, map, fieldName, true);    
         }
         return new ResourceList<>(events); 
     }
@@ -205,7 +206,7 @@ public class StudyActivityEventService {
             Map<String, DateTime> map = activityEventService.getActivityEventMap(
                     account.getAppId(), account.getHealthCode());
             List<StudyActivityEvent> events = new ArrayList<>();
-            addIfPresent(events, map, adjEventId);
+            addIfPresent(events, map, adjEventId, false);
             
             return new PagedResourceList<>(events, 1, true)
                     .withRequestParam(ResourceList.OFFSET_BY, offsetBy)
@@ -220,8 +221,7 @@ public class StudyActivityEventService {
             if (en != null) {
                 StudyActivityEvent event = new StudyActivityEvent.Builder()
                         .withEventId(ENROLLMENT_FIELD)
-                        .withTimestamp(en.getEnrolledOn())
-                        .withRecordCount(1).build();
+                        .withTimestamp(en.getEnrolledOn()).build();
                 results = new PagedResourceList<>(ImmutableList.of(event), 1, true);
             }
         }
@@ -229,16 +229,17 @@ public class StudyActivityEventService {
             .withRequestParam(ResourceList.PAGE_SIZE, pageSize);
     }
     
-    private void addIfPresent(List<StudyActivityEvent> events, Map<String, DateTime> map, String field) {
+    private void addIfPresent(List<StudyActivityEvent> events, Map<String, DateTime> map, String field, boolean addCount) {
         if (map.containsKey(field)) {
             DateTime ts = map.get(field);
-            StudyActivityEvent event = new StudyActivityEvent.Builder()
+            StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
                     .withEventId(field)
                     .withTimestamp(ts)
-                    // the app-scoped events did not have a createdOn date. Copy ts.
-                    .withCreatedOn(ts)
-                    .withRecordCount(1).build();
-            events.add(event);
+                    .withCreatedOn(ts);
+            if (addCount) {
+                builder.withRecordCount(Integer.valueOf(1));
+            }
+            events.add(builder.build());
         }
     }
     
@@ -298,18 +299,16 @@ public class StudyActivityEventService {
      * If events do not include enrollment, you can include it. This provides some migration support.
      */
     private void addEnrollmentIfMissing(Account account, List<StudyActivityEvent> events, String studyId) {
-        for (StudyActivityEvent oneEvent : events) {
-            if (oneEvent.getEventId().equals(ENROLLMENT_FIELD)) {
-                return;
-            }
+        Optional<StudyActivityEvent> oneEvent = getElement(events, StudyActivityEvent::getEventId, ENROLLMENT_FIELD);
+        if (oneEvent.isPresent()) {
+            return;
         }
         Enrollment en = getElement(account.getEnrollments(), Enrollment::getStudyId, studyId).orElse(null);
         if (en != null) {
             StudyActivityEvent event = new StudyActivityEvent.Builder()
                     .withEventId(ENROLLMENT_FIELD)
                     .withTimestamp(en.getEnrolledOn())
-                    .withRecordCount(1)
-                    .build();
+                    .withRecordCount(1).build();
             events.add(event);
         }
     }

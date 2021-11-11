@@ -89,7 +89,7 @@ public class StudyActivityEventTest {
         assertEquals(event.getOriginEventId(), "enrollment");
         assertEquals(event.getStudyBurstId(), "foo");
         assertEquals(event.getPeriodFromOrigin(), Period.parse("P2D"));
-        assertEquals(event.getRecordCount(), 0);
+        assertNull(event.getRecordCount());
         assertEquals(event.getUpdateType(), MUTABLE);
     }
     
@@ -192,6 +192,6 @@ public class StudyActivityEventTest {
         assertEquals(event.getStudyBurstId(), "foo");
         assertEquals(event.getOriginEventId(), "enrollment");
         assertEquals(event.getPeriodFromOrigin(), Period.parse("P2D"));
-        assertEquals(event.getRecordCount(), 7);
+        assertEquals(event.getRecordCount(), Integer.valueOf(7));
     }
 }

@@ -84,8 +84,8 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         }
         return builder.build();
     }
-    private static int toInt(Object obj) {
-        return (obj == null) ? -1 : ((BigInteger)obj).intValue();
+    private static Integer toInt(Object obj) {
+        return (obj == null) ? null : ((BigInteger)obj).intValue();
     }
     private static String toString(Object obj) {
         return (obj == null) ? null : (String)obj;
@@ -126,7 +126,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     @Convert(converter = PeriodToStringConverter.class)
     private Period periodFromOrigin;
     @Transient
-    private int recordCount;
+    private Integer recordCount;
     @Transient
     private ActivityEventUpdateType updateType;
     
@@ -185,7 +185,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     public Period getPeriodFromOrigin() {
         return periodFromOrigin;
     }
-    public int getRecordCount() {
+    public Integer getRecordCount() {
         return recordCount;
     }
     public ActivityEventUpdateType getUpdateType() {
@@ -207,7 +207,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         private String originEventId;
         private String studyBurstId;
         private Period periodFromOrigin;
-        private int recordCount;
+        private Integer recordCount;
         private String eventId;
         
         public Builder withAppId(String appId) {
@@ -266,7 +266,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
             this.eventType = eventType;
             return this;
         }
-        public Builder withRecordCount(int recordCount) {
+        public Builder withRecordCount(Integer recordCount) {
             this.recordCount = recordCount;
             return this;
         }
