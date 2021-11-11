@@ -132,6 +132,19 @@ public class ParticipantVersionServiceTest {
         verifyZeroInteractions(mockParticipantVersionDao);
     }
 
+    @Test
+    public void createParticipantVersionFromAccount_NoSharing() {
+        // Make account with no_sharing.
+        Account account = Account.create();
+        account.setSharingScope(SharingScope.NO_SHARING);
+
+        // Execute.
+        participantVersionService.createParticipantVersionFromAccount(account);
+
+        // We never call through to the dao.
+        verifyZeroInteractions(mockParticipantVersionDao);
+    }
+
     // branch coverage: initial version with no createdOn
     @Test
     public void createParticipantVersion_NoCreatedOn() {

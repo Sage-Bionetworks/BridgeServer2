@@ -15,6 +15,7 @@ import org.sagebionetworks.bridge.dao.ParticipantVersionDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
+import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.time.DateUtils;
 
@@ -31,6 +32,10 @@ public class ParticipantVersionService {
     public void createParticipantVersionFromAccount(Account account) {
         if (!account.getRoles().isEmpty()) {
             // Accounts that have roles aren't research participants. Don't export them to Synapse.
+            return;
+        }
+        if (account.getSharingScope() == SharingScope.NO_SHARING) {
+            // no_sharing means we don't export this to Synapse, which means we can skip making a Participant Version.
             return;
         }
 
