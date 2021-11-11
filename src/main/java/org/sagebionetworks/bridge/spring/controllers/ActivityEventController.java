@@ -122,9 +122,9 @@ public class ActivityEventController extends BaseController {
                 .withStudyId(studyId)
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
-                .withTimestamp(timelineRequestedOn).build(), false);
+                .withTimestamp(timelineRequestedOn).build(), false, true);
 
-        return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), session.getId(), studyId);
+        return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), studyId, session.getId());
     }
 
     @GetMapping("/v5/studies/{studyId}/participants/self/activityevents/{eventId}")
@@ -150,7 +150,8 @@ public class ActivityEventController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants/self/activityevents")
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage publishActivityEventForSelf(@PathVariable String studyId,
-            @RequestParam(required = false) String showError) {
+            @RequestParam(required = false) String showError, 
+            @RequestParam(required = false) String updateBursts) {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         if (!session.getParticipant().getStudyIds().contains(studyId)) {
@@ -160,12 +161,13 @@ public class ActivityEventController extends BaseController {
         StudyActivityEventRequest request = parseJson(StudyActivityEventRequest.class);
         StudyActivityEventIdsMap eventMap = studyService.getStudyActivityEventIdsMap(session.getAppId(), studyId);
         boolean showErrorBool = "true".equals(showError);
-
+        boolean updateBurstsBool = !"false".equals(updateBursts);
+        
         studyActivityEventService.publishEvent(request.parse(eventMap)
                 .withAppId(session.getAppId())
                 .withStudyId(studyId)
                 .withUserId(session.getId())
-                .build(), showErrorBool);
+                .build(), showErrorBool, updateBurstsBool);
         
         return EVENT_RECORDED_MSG;
     }   

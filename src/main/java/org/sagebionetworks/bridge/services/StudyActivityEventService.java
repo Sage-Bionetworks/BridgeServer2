@@ -47,15 +47,16 @@ import org.slf4j.LoggerFactory;
  * Activity events that are scoped to a person participating in a specific study. 
  * Unlike v1 of activity events, these events maintain a history of their changes 
  * (if they are mutable). They also include some metadata that the earlier event 
- * system could not maintain, including a client time zone. This API will replace 
- * the v1 API, so some events that span all studies (like the creation of an 
- * account) are also in the events returned by this system. 
+ * system could not maintain, including a client time zone and their relationship 
+ * to study bursts. This API will replace the v1 API, so some events that span 
+ * all studies (like the creation of an account) are also in the events returned 
+ * by this service. 
  * 
  * The code in this class to insert an enrollment event, when there is no enrollment
  * event in the tables, is backfill code for accounts that were created and enrolled 
- * in a study before the deployment of study-specific events. There is no apparent 
- * reason to actually save them in the table at this point since the records should
- * only be accessed through this service.
+ * in a study before the deployment of study-specific events. There is no reason to 
+ * save them in the table at this point since the records should only be accessed 
+ * through this service.
  */
 @Component
 public class StudyActivityEventService {
@@ -99,8 +100,14 @@ public class StudyActivityEventService {
     }
 
     /**
-     * Only custom events can be deleted (if they are mutable). Other requests 
-     * are silently ignored. 
+     * Delete an event if it is mutable (basically only custom events). If the event was the originating
+     * (triggering) event for a set of study burst events, those events will be deleted as well.
+     * 
+     * @param event
+     *      the event to be deleted 
+     * @param showError
+     *      if false (the default), this method returns quietly regardless of the outcome of publishing 
+     *      the event. If true, it will throw a BadRequestException if any event cannot be deleted.
      */
     public void deleteEvent(StudyActivityEvent event, boolean showError) {
         checkNotNull(event);
@@ -111,7 +118,12 @@ public class StudyActivityEventService {
                 event.getUserId(), event.getStudyId(), event.getEventId());
 
         if (event.getUpdateType().canDelete(mostRecent, event)) {
-            dao.deleteCustomEvent(event);
+            dao.deleteEvent(event);
+            Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
+            Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
+            if (schedule != null) {
+                deleteStudyBurstEvents(schedule, event);
+            }
         } else {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("User " + event.getUserId() + " failed to delete study event: " + event.getEventId());
@@ -122,7 +134,25 @@ public class StudyActivityEventService {
         }
     }
     
-    public void publishEvent(StudyActivityEvent event, boolean showError) {
+    /**
+     * Publish an event. If the event is being created for the first time and it is the originating (triggering)
+     * event for a study burst, the set of study burst events will be created. Editing of both the event
+     * and any study burst events is thereafter governed by the update type of the event and study bursts. If 
+     * both are mutable or future_only, then updating the originating event will update all the study burst 
+     * events, unless the <code>updateBursts</code> flag is set to false.
+     *  
+     * @param event
+     *      the event to publish
+     * @param showError
+     *      if false (the default), this method returns quietly regardless of the outcome of publishing the event.
+     *      If true, it will throw a BadRequestException if any event cannot be published.
+     * @param updateBursts
+     *      if true (the default), this method will update study burst events based on their update type. If false, 
+     *      study burst events will not be updated if the update would be an edit of existing events (if the origin 
+     *      event is being published for the first time, then this flag has to be ignored so the study bursts are 
+     *      published).
+     */
+    public void publishEvent(StudyActivityEvent event, boolean showError, boolean updateBursts) {
         checkNotNull(event);
 
         event.setCreatedOn(getCreatedOn());
@@ -132,6 +162,11 @@ public class StudyActivityEventService {
         StudyActivityEvent mostRecent = dao.getRecentStudyActivityEvent(
                 event.getUserId(), event.getStudyId(), event.getEventId());
         
+        // we will honor this, unless the origin event has never been published, then it *has* to
+        // trigger creating of the study bursts.
+        if (mostRecent == null) {
+            updateBursts = true;
+        }
         // Throwing exceptions will prevent study burst updates from happening if 
         // an error occurs in earlier order...so we collect errors and only show 
         // them at the end if we want to throw an exception.
@@ -141,10 +176,12 @@ public class StudyActivityEventService {
         } else {
             failedEventIds.add(event.getEventId());
         }
-        Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
-        Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
-        if (schedule != null) {
-            createStudyBurstEvents(schedule, event, failedEventIds);
+        if (updateBursts) {
+            Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
+            Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
+            if (schedule != null) {
+                createStudyBurstEvents(schedule, event, failedEventIds);
+            }
         }
         if (!failedEventIds.isEmpty()) {
             String eventNames = COMMA_SPACE_JOINER.join(failedEventIds);
@@ -157,7 +194,21 @@ public class StudyActivityEventService {
         }
     }
     
-    public ResourceList<StudyActivityEvent> getRecentStudyActivityEvents(String appId, String userId, String studyId) {
+    /**
+     * Get a complete set of all events for this user, where the timestamp of each entry is the most recent timestamp
+     * as determined by the <code>createdOn</code> value of the record (in other words, the time of creation as measured
+     * by the server, and not the client or the time of the event).
+     * 
+     * @param appId
+     *      the appId of the study
+     * @param studyId
+     *      the study in which these events have occurred
+     * @param userId
+     *      the ID of the participant account
+     * @return
+     *      a complete set of event records for this user, including the most recent record for each event     
+     */
+    public ResourceList<StudyActivityEvent> getRecentStudyActivityEvents(String appId, String studyId, String userId) {
         checkNotNull(userId);
         checkNotNull(studyId);
 
@@ -177,6 +228,12 @@ public class StudyActivityEventService {
         return new ResourceList<>(events); 
     }
     
+    /**
+     * Get a paginated list of all timestamp values for a specific event ID. This method should return a 
+     * value for any event that can be found in the map of recent events, including immutable and app-scoped
+     * events of interest to the study-scoped APIs (created_on, enrollment, and install_link_sent), though 
+     * these will only be one record.
+     */
     public PagedResourceList<StudyActivityEvent> getStudyActivityEventHistory(
             AccountId accountId, String studyId, String eventId, Integer offsetBy, Integer pageSize) {
         
@@ -289,6 +346,34 @@ public class StudyActivityEventService {
                     }  else {
                         failedEventIds.add(burstEvent.getEventId());
                     } 
+                }
+            }
+        }
+    }
+    
+    private void deleteStudyBurstEvents(Schedule2 schedule, StudyActivityEvent event) {
+        String eventId = event.getEventId();
+        
+        StudyActivityEvent.Builder builder = new StudyActivityEvent.Builder()
+            .withAppId(event.getAppId())
+            .withUserId(event.getUserId())
+            .withStudyId(event.getStudyId())
+            .withObjectType(STUDY_BURST);
+        
+        for(StudyBurst burst : schedule.getStudyBursts()) {
+            if (burst.getOriginEventId().equals(eventId)) {
+                int len =  burst.getOccurrences().intValue();
+                
+                for (int i=0; i < len; i++) {
+                    String iteration = Strings.padStart(Integer.toString(i+1), 2, '0');
+
+                    StudyActivityEvent burstEvent = builder
+                            .withEventId(null)
+                            .withObjectId(burst.getIdentifier())
+                            .withAnswerValue(iteration)
+                            .build();
+                    
+                    dao.deleteEvent(burstEvent);
                 }
             }
         }

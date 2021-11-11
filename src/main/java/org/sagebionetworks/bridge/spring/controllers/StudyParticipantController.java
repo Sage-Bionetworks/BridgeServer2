@@ -193,7 +193,7 @@ public class StudyParticipantController extends BaseController {
                 .withStudyId(studyId)
                 .withUserId(session.getId())
                 .withObjectType(TIMELINE_RETRIEVED)
-                .withTimestamp(timelineRequestedOn).build(), false);
+                .withTimestamp(timelineRequestedOn).build(), false, true);
         
         return new ResponseEntity<>(INSTANCE.calculateTimeline(schedule), OK);
     }
@@ -507,7 +507,7 @@ public class StudyParticipantController extends BaseController {
         
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
         
-        return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), account.getId(), studyId);
+        return studyActivityEventService.getRecentStudyActivityEvents(session.getAppId(), studyId, account.getId());
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/activityevents/{eventId}")
@@ -532,7 +532,7 @@ public class StudyParticipantController extends BaseController {
     @PostMapping("/v5/studies/{studyId}/participants/{userId}/activityevents")
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage publishActivityEvent(@PathVariable String studyId, @PathVariable String userId,
-            @RequestParam(required = false) String showError) {
+            @RequestParam(required = false) String showError, @RequestParam(required = false) String updateBursts) {
         UserSession session = getAdministrativeSession();
         
         Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
@@ -540,11 +540,12 @@ public class StudyParticipantController extends BaseController {
         StudyActivityEventRequest request = parseJson(StudyActivityEventRequest.class);
         StudyActivityEventIdsMap eventMap = studyService.getStudyActivityEventIdsMap(session.getAppId(), studyId);
         boolean showErrorBool = "true".equals(showError);
+        boolean updateBurstsBool = !"false".equals(updateBursts);
         
         studyActivityEventService.publishEvent(request.parse(eventMap)
                 .withAppId(session.getAppId())
                 .withStudyId(studyId)
-                .withUserId(account.getId()).build(), showErrorBool);
+                .withUserId(account.getId()).build(), showErrorBool, updateBurstsBool);
         
         return EVENT_RECORDED_MSG;
     }

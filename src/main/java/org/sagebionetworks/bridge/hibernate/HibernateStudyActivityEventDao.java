@@ -48,7 +48,7 @@ public class HibernateStudyActivityEventDao implements StudyActivityEventDao {
     }
 
     @Override
-    public void deleteCustomEvent(StudyActivityEvent event) {
+    public void deleteEvent(StudyActivityEvent event) {
         checkNotNull(event);
         
         QueryBuilder query = new QueryBuilder();

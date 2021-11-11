@@ -10,7 +10,7 @@ public interface StudyActivityEventDao {
      * Remove all timestamp records for a specific custom event. A timestamp value 
      * need not be supplied as part of this event (if it is supplied, it is ignored).
      */
-    void deleteCustomEvent(StudyActivityEvent event);
+    void deleteEvent(StudyActivityEvent event);
 
     /**
      * Publish an event into this user’s event stream. This event becomes available 
@@ -20,8 +20,8 @@ public interface StudyActivityEventDao {
     
     /**
      * Return the most recently persisted study event record (the record with the most 
-     * recent `createdOn` timestamp, not necessarily the recordwith the most recent 
-     * `eventTimestamp` field). Returns null if this event has not been persisted for 
+     * recent `createdOn` timestamp, not necessarily the record with the most recent 
+     * `timestamp` field). Returns null if this event has not been persisted for 
      * this user in this study. 
      */
     StudyActivityEvent getRecentStudyActivityEvent(String userId, String studyId, String eventId);
@@ -41,7 +41,7 @@ public interface StudyActivityEventDao {
      * for immutable events there should only ever be one timestamp. Returns an 
      * empty PagedResourceList if the event has not yet been recorded for this 
      * participant. “Synthetic” or calculated events (study_start_date and 
-     * created_on) are returned by this method.
+     * created_on) are not returned by this method and must be added by the service.
      */
     PagedResourceList<StudyActivityEvent> getStudyActivityEventHistory(
             String userId, String studyId, String eventId, Integer offsetBy, Integer pageSize);

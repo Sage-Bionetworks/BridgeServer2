@@ -161,12 +161,24 @@ public class StudyActivityEventTest {
         assertEquals(record[8], "foo");
         assertEquals(record[9], "enrollment");
         assertEquals(record[10], "P2D");
-        assertEquals(record[11], BigInteger.valueOf(7));
+        assertEquals(record[11], "MUTABLE");
+        assertEquals(record[12], BigInteger.valueOf(7));
+    }
+    
+    @Test
+    public void recordify_nullValues() {
+        StudyActivityEvent event = new StudyActivityEvent();
+        Object[] record = StudyActivityEvent.recordify(event);
+        assertEquals(record.length, 13);
+        for (int i=0; i < 12; i++) {
+            assertNull(record[i]);
+        }
+        assertEquals(record[12], BigInteger.valueOf(0)); // recordCount
     }
     
     @Test
     public void create() {
-        Object[] record = new Object[12];
+        Object[] record = new Object[13];
         record[0] = TEST_APP_ID;
         record[1] = TEST_USER_ID;
         record[2] = TEST_STUDY_ID;
@@ -178,7 +190,8 @@ public class StudyActivityEventTest {
         record[8] = "foo";
         record[9] = "enrollment";
         record[10] = "P2D";
-        record[11] = BigInteger.valueOf(7);
+        record[11] = "MUTABLE";
+        record[12] = BigInteger.valueOf(7);
         
         StudyActivityEvent event = StudyActivityEvent.create(record);
         assertEquals(event.getAppId(), TEST_APP_ID);
@@ -192,6 +205,28 @@ public class StudyActivityEventTest {
         assertEquals(event.getStudyBurstId(), "foo");
         assertEquals(event.getOriginEventId(), "enrollment");
         assertEquals(event.getPeriodFromOrigin(), Period.parse("P2D"));
+        assertEquals(event.getUpdateType(), MUTABLE);
         assertEquals(event.getRecordCount(), 7);
     }
+    
+    @Test
+    public void create_nullValues() {
+        Object[] record = new Object[13];
+        
+        StudyActivityEvent event = StudyActivityEvent.create(record);
+        assertNull(event.getAppId());
+        assertNull(event.getUserId());
+        assertNull(event.getStudyId());
+        assertNull(event.getEventId());
+        assertNull(event.getTimestamp());
+        assertNull(event.getAnswerValue());
+        assertNull(event.getClientTimeZone());
+        assertNull(event.getCreatedOn());
+        assertNull(event.getStudyBurstId());
+        assertNull(event.getOriginEventId());
+        assertNull(event.getPeriodFromOrigin());
+        assertNull(event.getUpdateType());
+        assertEquals(event.getRecordCount(), 0);
+    }
+
 }

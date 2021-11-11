@@ -186,7 +186,7 @@ public class AdherenceService {
                 builder.withObjectType(ASSESSMENT);
                 builder.withObjectId(meta.getAssessmentId());
             }
-            studyActivityEventService.publishEvent(builder.build(), false);
+            studyActivityEventService.publishEvent(builder.build(), false, true);
         }
     }
 
@@ -240,7 +240,7 @@ public class AdherenceService {
             if (TRUE.equals(search.getCurrentTimestampsOnly())) {
                 // This adds current server timestamps to the search filters
                 Map<String, DateTime> events = studyActivityEventService
-                        .getRecentStudyActivityEvents(appId, search.getUserId(), search.getStudyId())
+                        .getRecentStudyActivityEvents(appId, search.getStudyId(), search.getUserId())
                         .getItems().stream()
                         .collect(toMap(StudyActivityEvent::getEventId, StudyActivityEvent::getTimestamp));
                 addToMap(events, eventMap, fixedMap);

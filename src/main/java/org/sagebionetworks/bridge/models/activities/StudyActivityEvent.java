@@ -7,6 +7,8 @@ import java.math.BigInteger;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.Table;
@@ -38,7 +40,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
      * This method is only used to test the results of a SQL query. 
      */
     public static Object[] recordify(StudyActivityEvent event) {
-        Object[] array = new Object[12];
+        Object[] array = new Object[13];
         array[0] = event.getAppId();
         array[1] = event.getUserId();
         array[2] = event.getStudyId();
@@ -56,8 +58,11 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         if (event.getPeriodFromOrigin() != null) {
             array[10] = event.getPeriodFromOrigin().toString();    
         }
+        if (event.getUpdateType() != null) {
+            array[11] = event.getUpdateType().name();    
+        }
         // Not in table, this is retrieved from the query itself
-        array[11] = BigInteger.valueOf(event.getRecordCount());
+        array[12] = BigInteger.valueOf(event.getRecordCount());
         return array;
     }
     
@@ -79,13 +84,16 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         builder.withStudyBurstId(toString(record[8]));
         builder.withOriginEventId(toString(record[9]));
         builder.withPeriodFromOrigin(toPeriod(record[10]));
-        if (record.length > 11) {
-            builder.withRecordCount(toInt(record[11]));    
+        if (record[11] != null) {
+            builder.withUpdateType(ActivityEventUpdateType.valueOf((String)record[11]));
+        }
+        if (record.length > 12) {
+            builder.withRecordCount(toInt(record[12]));    
         }
         return builder.build();
     }
     private static int toInt(Object obj) {
-        return (obj == null) ? -1 : ((BigInteger)obj).intValue();
+        return (obj == null) ? 0 : ((BigInteger)obj).intValue();
     }
     private static String toString(Object obj) {
         return (obj == null) ? null : (String)obj;
@@ -127,7 +135,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     private Period periodFromOrigin;
     @Transient
     private int recordCount;
-    @Transient
+    @Enumerated(EnumType.STRING)
     private ActivityEventUpdateType updateType;
     
     public StudyActivityEvent() {} // for hibernate
