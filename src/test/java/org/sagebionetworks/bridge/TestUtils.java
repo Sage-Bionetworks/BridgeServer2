@@ -140,8 +140,9 @@ public class TestUtils {
         return String.format(json.replaceAll("'", "\""), args);
     }
     
-    public static StudyActivityEvent createEvent(String eventId, DateTime timestamp) {
-        return new StudyActivityEvent.Builder().withEventId(eventId).withTimestamp(timestamp).build();
+    public static StudyActivityEvent createEvent(String eventId, DateTime timestamp, Integer recordCount) {
+        return new StudyActivityEvent.Builder().withEventId(eventId).withTimestamp(timestamp)
+                .withRecordCount(recordCount).build();
     }
     
     /**
@@ -761,7 +762,7 @@ public class TestUtils {
     public static StudyActivityEvent findByEventId(List<StudyActivityEvent> events, ActivityEventObjectType type) {
         String eventId = type.name().toLowerCase();
         for (StudyActivityEvent oneEvent : events) {
-            if (oneEvent.getEventId().equals(eventId)) {
+            if (oneEvent.getEventId().contains(eventId)) {
                 return oneEvent;
             }
         }

@@ -97,8 +97,8 @@ public class TestUtilsTest {
 
     @Test
     public void findByEventType_eventMatches() {
-        StudyActivityEvent event1 = TestUtils.createEvent("enrollment", null);
-        StudyActivityEvent event2 = TestUtils.createEvent("timeline_retrieved", null);
+        StudyActivityEvent event1 = TestUtils.createEvent("enrollment", null, null);
+        StudyActivityEvent event2 = TestUtils.createEvent("timeline_retrieved", null, null);
         List<StudyActivityEvent> events = ImmutableList.of(event1, event2);
         
         assertEquals( TestUtils.findByEventId(events, TIMELINE_RETRIEVED), event2 );
