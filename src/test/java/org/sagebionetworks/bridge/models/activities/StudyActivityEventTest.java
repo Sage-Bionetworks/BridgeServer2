@@ -89,7 +89,7 @@ public class StudyActivityEventTest {
         assertEquals(event.getOriginEventId(), "enrollment");
         assertEquals(event.getStudyBurstId(), "foo");
         assertEquals(event.getPeriodFromOrigin(), Period.parse("P2D"));
-        assertEquals(event.getRecordCount(), 0);
+        assertNull(event.getRecordCount());
         assertEquals(event.getUpdateType(), MUTABLE);
     }
     
@@ -170,10 +170,9 @@ public class StudyActivityEventTest {
         StudyActivityEvent event = new StudyActivityEvent();
         Object[] record = StudyActivityEvent.recordify(event);
         assertEquals(record.length, 13);
-        for (int i=0; i < 12; i++) {
+        for (int i=0; i < 13; i++) {
             assertNull(record[i]);
         }
-        assertEquals(record[12], BigInteger.valueOf(0)); // recordCount
     }
     
     @Test
@@ -206,7 +205,7 @@ public class StudyActivityEventTest {
         assertEquals(event.getOriginEventId(), "enrollment");
         assertEquals(event.getPeriodFromOrigin(), Period.parse("P2D"));
         assertEquals(event.getUpdateType(), MUTABLE);
-        assertEquals(event.getRecordCount(), 7);
+        assertEquals(event.getRecordCount(), Integer.valueOf(7));
     }
     
     @Test
@@ -226,7 +225,7 @@ public class StudyActivityEventTest {
         assertNull(event.getOriginEventId());
         assertNull(event.getPeriodFromOrigin());
         assertNull(event.getUpdateType());
-        assertEquals(event.getRecordCount(), 0);
+        assertNull(event.getRecordCount());
     }
 
 }

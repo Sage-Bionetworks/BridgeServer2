@@ -115,7 +115,7 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
         assertEquals(retValue.getEventId(), "custom:event2");
         assertEquals(retValue.getTimestamp().withZone(UTC), CREATED_ON);
         assertEquals(retValue.getCreatedOn().withZone(UTC), MODIFIED_ON);
-        assertEquals(retValue.getRecordCount(), 2);
+        assertEquals(retValue.getRecordCount(), Integer.valueOf(2));
         assertEquals(retValue.getUpdateType(), IMMUTABLE);
         
         verify(mockHelper).nativeQuery(eq(GET_RECENT_SQL), paramsCaptor.capture());

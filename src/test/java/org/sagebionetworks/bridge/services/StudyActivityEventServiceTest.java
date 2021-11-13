@@ -616,15 +616,16 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Test
     public void getRecentStudyActivityEvents() {
-        StudyActivityEvent event1 = createEvent(ENROLLMENT_FIELD, ENROLLMENT_TS);
-        StudyActivityEvent event2 = createEvent("timeline_retrieved", TIMELINE_RETRIEVED_TS);
+        StudyActivityEvent event1 = createEvent(ENROLLMENT_FIELD, ENROLLMENT_TS, null);
+        StudyActivityEvent event2 = createEvent("timeline_retrieved", TIMELINE_RETRIEVED_TS, null);
+        StudyActivityEvent event3 = createEvent("custom:event1", CREATED_ON, 4);
         
-        List<StudyActivityEvent> list = Lists.newArrayList(event1, event2);
+        List<StudyActivityEvent> list = Lists.newArrayList(event1, event2, event3);
         when(mockDao.getRecentStudyActivityEvents(
                 TEST_USER_ID, TEST_STUDY_ID)).thenReturn(list);
         
         Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, CREATED_ON, 
-                INSTALL_LINK_SENT_FIELD, INSTALL_LINK_SENT_TS);
+                INSTALL_LINK_SENT_FIELD, INSTALL_LINK_SENT_TS, "custom:event1", CREATED_ON);
         when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
         
         Account account = Account.create();
@@ -633,15 +634,23 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         ResourceList<StudyActivityEvent> retValue = service
                 .getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-        assertEquals(retValue.getItems().size(), 4);
+        assertEquals(retValue.getItems().size(), 5);
         
         StudyActivityEvent createdOn = TestUtils.findByEventId(
                 retValue.getItems(), ActivityEventObjectType.CREATED_ON);
         assertEquals(createdOn.getTimestamp(), CREATED_ON);
+        assertEquals(createdOn.getRecordCount(), Integer.valueOf(1));
 
         StudyActivityEvent installLinkSentOn = TestUtils.findByEventId(
                 retValue.getItems(), INSTALL_LINK_SENT);
         assertEquals(installLinkSentOn.getTimestamp(), INSTALL_LINK_SENT_TS);
+        assertEquals(installLinkSentOn.getRecordCount(), Integer.valueOf(1));
+        
+        StudyActivityEvent event = TestUtils.findByEventId(
+                retValue.getItems(), CUSTOM);
+        assertEquals(event.getTimestamp(), CREATED_ON);
+        assertEquals(event.getRecordCount(), Integer.valueOf(4));
+        
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -691,7 +700,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(event.getTimestamp(), MODIFIED_ON);
         assertEquals(event.getCreatedOn(), MODIFIED_ON);
-        assertEquals(event.getRecordCount(), 1);
+        assertNull(event.getRecordCount());
         assertEquals(retValue.getRequestParams().get("offsetBy"), Integer.valueOf(10));
         assertEquals(retValue.getRequestParams().get("pageSize"), Integer.valueOf(100));
     }
@@ -730,7 +739,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyActivityEvent event = retValue.getItems().get(0);
         assertEquals(event.getTimestamp(), CREATED_ON);
         assertEquals(event.getCreatedOn(), CREATED_ON);
-        assertEquals(event.getRecordCount(), 1);
+        assertNull(event.getRecordCount());
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -766,7 +775,7 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Test
     public void getStudyActivityEventHistory_noPaging() {
-        StudyActivityEvent event = createEvent("custom:event1", MODIFIED_ON);
+        StudyActivityEvent event = createEvent("custom:event1", MODIFIED_ON, null);
 
         when(mockDao.getStudyActivityEventHistory(TEST_USER_ID, TEST_STUDY_ID, 
                 "custom:event1", null, null)).thenReturn(
@@ -809,7 +818,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(event.getTimestamp(), MODIFIED_ON);
         assertNull(event.getOriginEventId());
         assertNull(event.getStudyBurstId());
-        assertEquals(event.getRecordCount(), 1);
+        assertEquals(event.getRecordCount(), Integer.valueOf(1));
         assertEquals(event.getUpdateType(), IMMUTABLE);
         
         event = retValue.getItems().get(1);
@@ -826,7 +835,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         account.setEnrollments(ImmutableSet.of(en));
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
-        List<StudyActivityEvent> list = Lists.newArrayList(createEvent(ENROLLMENT_FIELD, CREATED_ON));
+        List<StudyActivityEvent> list = Lists.newArrayList(createEvent(ENROLLMENT_FIELD, CREATED_ON, null));
         when(mockDao.getRecentStudyActivityEvents(TEST_USER_ID, TEST_STUDY_ID))
             .thenReturn(list);
         
@@ -857,7 +866,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(event.getTimestamp(), MODIFIED_ON);
         assertNull(event.getOriginEventId());
         assertNull(event.getStudyBurstId());
-        assertEquals(event.getRecordCount(), 1);
+        assertNull(event.getRecordCount());
         assertEquals(event.getUpdateType(), IMMUTABLE);
     }
 
@@ -871,7 +880,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         PagedResourceList<StudyActivityEvent> results = new PagedResourceList<>(
-                ImmutableList.of(createEvent(ENROLLMENT_FIELD, CREATED_ON)), 1, true);
+                ImmutableList.of(createEvent(ENROLLMENT_FIELD, CREATED_ON, null)), 1, true);
         when(mockDao.getStudyActivityEventHistory(any(), any(), any(), any(), any())).thenReturn(results);
         
         PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(ACCOUNT_ID, TEST_STUDY_ID, ENROLLMENT_FIELD, null, null);
