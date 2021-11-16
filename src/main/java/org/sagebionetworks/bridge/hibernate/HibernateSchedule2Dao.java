@@ -182,6 +182,10 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
             LOG.info("Batch deleting timeline metadata records in " + 
                     deleteMetadataStopwatch.elapsed(MILLISECONDS) + " ms");
         }
+        
+        // This is necessary or the timeline records fail for lack of a session guid (hasn't been registered yet
+        // on creates).
+        session.flush();
 
         // Hibernate’s session.save() does an insert and then an update operation on each record, so 
         // switching to JDBC to do an insert only, halves the time it takes to do this operation
