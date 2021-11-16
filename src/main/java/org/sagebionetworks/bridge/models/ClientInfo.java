@@ -16,6 +16,8 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+
 /**
  * <p>
  * Parsed representation of the User-Agent header provided by the client, when it is in one of our prescribed formats:
@@ -259,7 +261,8 @@ public final class ClientInfo {
     }
     
     static ClientInfo parseUserAgentString(String userAgent) {
-        if (StringUtils.isBlank(userAgent) || 
+        if (StringUtils.isBlank(userAgent) ||
+            userAgent.length() > BridgeConstants.MAX_USER_AGENT_LENGTH ||
             MULTI_PARENS.matcher(userAgent).matches() ||
             SEMICOLON_IN_APP_STANZA.matcher(userAgent).matches()) {
             return UNKNOWN_CLIENT;
