@@ -836,3 +836,8 @@ ADD COLUMN `periodFromOrigin` varchar(60);
 
 ALTER TABLE `StudyActivityEvents`
 ADD COLUMN `updateType` enum('MUTABLE', 'IMMUTABLE', 'FUTURE_ONLY') DEFAULT 'IMMUTABLE';
+
+-- changeset bridge:54
+
+ALTER TABLE `ScheduleStudyBursts`
+ADD COLUMN `delayPeriod` varchar(60);

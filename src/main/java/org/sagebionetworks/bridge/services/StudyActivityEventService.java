@@ -63,6 +63,7 @@ import org.slf4j.LoggerFactory;
 public class StudyActivityEventService {
     private static Logger LOG = LoggerFactory.getLogger(StudyActivityEventService.class);
     
+    static final Period NO_DELAY = Period.parse("P0D");
     static final String CREATED_ON_FIELD = CREATED_ON.name().toLowerCase();
     static final String ENROLLMENT_FIELD = ENROLLMENT.name().toLowerCase();
     static final String INSTALL_LINK_SENT_FIELD = INSTALL_LINK_SENT.name().toLowerCase();
@@ -321,23 +322,25 @@ public class StudyActivityEventService {
                 builder.withUpdateType(burst.getUpdateType());
                 builder.withStudyBurstId(burst.getIdentifier());
                 builder.withOriginEventId(burst.getOriginEventId());
-                
-                Period period = burst.getInterval();
+
+                // can be null, we account for that
+                Period periodFromOrigin = burst.getDelay();
                 int len =  burst.getOccurrences().intValue();
                 for (int i=0; i < len; i++) {
                     String iteration = Strings.padStart(Integer.toString(i+1), 2, '0');
-                    DateTime eventTime = new DateTime(event.getTimestamp()).plus(period);
+                    DateTime eventTime = new DateTime(event.getTimestamp()).plus(periodFromOrigin);
 
-                    StudyActivityEvent burstEvent = builder
-                            .withEventId(null)
+                    StudyActivityEvent burstEvent = builder.withEventId(null)
                             .withObjectId(burst.getIdentifier())
                             .withAnswerValue(iteration)
                             .withTimestamp(eventTime)
-                            .withPeriodFromOrigin(period)
-                            .build();
+                            .withPeriodFromOrigin(periodFromOrigin).build();
                     
                     // now advance period for the next loop, if there is one.
-                    period = period.plus(burst.getInterval());
+                    if (periodFromOrigin == null) {
+                        periodFromOrigin = NO_DELAY;
+                    }
+                    periodFromOrigin = periodFromOrigin.plus(burst.getInterval());
                     
                     StudyActivityEvent mostRecent = dao.getRecentStudyActivityEvent(
                             burstEvent.getUserId(), burstEvent.getStudyId(), burstEvent.getEventId());
