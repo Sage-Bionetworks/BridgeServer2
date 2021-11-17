@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
@@ -15,6 +16,8 @@ import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
+@JsonPropertyOrder({ "instanceGuid", "refGuid", "timeWindowGuid", "startEventId", "startDay", "endDay", "startTime",
+        "delayTime", "expiration", "persistent", "studyBurstId", "studyBurstNum", "assessments", "type" })
 public class ScheduledSession {
 
     private String instanceGuid;
@@ -89,6 +92,19 @@ public class ScheduledSession {
     }
     public String getTimeWindowGuid() {
         return window.getGuid();
+    }
+    
+    public String getStudyBurstId() {
+        if (startEventId != null && startEventId.startsWith("study_burst:")) {
+            return startEventId.split(":")[1];
+        }
+        return null;
+    }
+    public Integer getStudyBurstNum() {
+        if (startEventId != null && startEventId.startsWith("study_burst:")) {
+            return Integer.parseInt(startEventId.split(":")[2]);
+        }
+        return null;
     }
     
     public static class Builder {
