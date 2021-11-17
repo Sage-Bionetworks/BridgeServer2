@@ -466,14 +466,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         StudyActivityEvent sb1 = eventCaptor.getAllValues().get(1);
         assertEquals(sb1.getEventId(), "study_burst:foo:01");
-        assertEquals(sb1.getAppId(), TEST_APP_ID);
-        assertEquals(sb1.getStudyId(), TEST_STUDY_ID);
-        assertEquals(sb1.getUserId(), TEST_USER_ID);
         assertEquals(sb1.getTimestamp(), ENROLLMENT_TS);
-        assertEquals(sb1.getClientTimeZone(), "America/Los_Angeles");
-        assertEquals(sb1.getUpdateType(), MUTABLE);
-        assertEquals(sb1.getStudyBurstId(), "foo");
-        assertEquals(sb1.getOriginEventId(), "enrollment");
         assertNull(sb1.getPeriodFromOrigin());
         
         StudyActivityEvent sb2 = eventCaptor.getAllValues().get(2);
