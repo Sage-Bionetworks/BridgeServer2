@@ -391,6 +391,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
+        burst.setDelay(Period.parse("P1W"));
         burst.setInterval(Period.parse("P1W"));
         burst.setOccurrences(3);
         burst.setUpdateType(MUTABLE);
@@ -429,6 +430,61 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(sb3.getEventId(), "study_burst:foo:03");
         assertEquals(sb3.getTimestamp(), ENROLLMENT_TS.plusWeeks(3));
         assertEquals(sb3.getPeriodFromOrigin(), Period.parse("P3W"));
+    }
+    
+    @Test
+    public void publishEvent_publishesStudyBurstsNoDelays() {
+        // Covers the case of immutable event, study bursts mutable, others tested below
+        StudyActivityEvent event = makeBuilder().withObjectId(ENROLLMENT_FIELD)
+                .withTimestamp(ENROLLMENT_TS).withObjectType(ENROLLMENT)
+                .withClientTimeZone("America/Los_Angeles")
+                .build();        
+        
+        Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyBurst burst = new StudyBurst();
+        burst.setOriginEventId(ENROLLMENT_FIELD);
+        burst.setIdentifier("foo");
+        burst.setInterval(Period.parse("P1W"));
+        burst.setOccurrences(3);
+        burst.setUpdateType(MUTABLE);
+
+        Schedule2 schedule = new Schedule2();
+        schedule.setStudyBursts(ImmutableList.of(burst));
+        
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+                .thenReturn(Optional.of(schedule));
+        
+        service.publishEvent(event, false, true);
+        
+        verify(mockDao, times(4)).publishEvent(eventCaptor.capture());
+        
+        StudyActivityEvent origin = eventCaptor.getAllValues().get(0);
+        assertEquals(origin.getEventId(), "enrollment");
+        
+        StudyActivityEvent sb1 = eventCaptor.getAllValues().get(1);
+        assertEquals(sb1.getEventId(), "study_burst:foo:01");
+        assertEquals(sb1.getAppId(), TEST_APP_ID);
+        assertEquals(sb1.getStudyId(), TEST_STUDY_ID);
+        assertEquals(sb1.getUserId(), TEST_USER_ID);
+        assertEquals(sb1.getTimestamp(), ENROLLMENT_TS);
+        assertEquals(sb1.getClientTimeZone(), "America/Los_Angeles");
+        assertEquals(sb1.getUpdateType(), MUTABLE);
+        assertEquals(sb1.getStudyBurstId(), "foo");
+        assertEquals(sb1.getOriginEventId(), "enrollment");
+        assertNull(sb1.getPeriodFromOrigin());
+        
+        StudyActivityEvent sb2 = eventCaptor.getAllValues().get(2);
+        assertEquals(sb2.getEventId(), "study_burst:foo:02");
+        assertEquals(sb2.getTimestamp(), ENROLLMENT_TS.plusWeeks(1));
+        assertEquals(sb2.getPeriodFromOrigin(), Period.parse("P1W"));
+        
+        StudyActivityEvent sb3 = eventCaptor.getAllValues().get(3);
+        assertEquals(sb3.getEventId(), "study_burst:foo:03");
+        assertEquals(sb3.getTimestamp(), ENROLLMENT_TS.plusWeeks(2));
+        assertEquals(sb3.getPeriodFromOrigin(), Period.parse("P2W"));
     }
     
     @Test
@@ -542,6 +598,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
+        burst.setDelay(Period.parse("P1W"));
         burst.setInterval(Period.parse("P1W"));
         burst.setOccurrences(3);
         burst.setUpdateType(MUTABLE);
@@ -586,6 +643,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
+        burst.setDelay(Period.parse("P1W"));
         burst.setInterval(Period.parse("P1W"));
         burst.setOccurrences(3);
         burst.setUpdateType(IMMUTABLE);
