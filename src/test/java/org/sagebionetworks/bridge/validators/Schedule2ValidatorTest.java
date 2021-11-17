@@ -216,7 +216,7 @@ public class Schedule2ValidatorTest extends Mockito {
     }
     
     @Test
-    public void studyBurstDelayCannotBeStrangPeriod() {
+    public void studyBurstDelayCannotBeInvalidPeriod() {
         Schedule2 schedule = createValidSchedule();
         schedule.getStudyBursts().get(0).setDelay(Period.parse("PT42H"));
         
@@ -232,7 +232,7 @@ public class Schedule2ValidatorTest extends Mockito {
     }
 
     @Test
-    public void studyBurstIntervalCannotBeStrangPeriod() {
+    public void studyBurstIntervalCannotBeInvalidPeriod() {
         Schedule2 schedule = createValidSchedule();
         schedule.getStudyBursts().get(0).setInterval(Period.parse("PT1000M"));
         
