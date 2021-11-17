@@ -39,7 +39,6 @@ public class TimelineTest extends Mockito {
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
-        System.out.println(node);
         assertNull(node.get("lang"));
         assertEquals(node.get("type").textValue(), "Timeline");
         
