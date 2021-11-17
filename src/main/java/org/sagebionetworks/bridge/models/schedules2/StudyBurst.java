@@ -39,6 +39,9 @@ public final class StudyBurst {
     @Convert(converter = PeriodToStringConverter.class)
     @Column(name = "intervalPeriod")
     private Period interval;
+    @Convert(converter = PeriodToStringConverter.class)
+    @Column(name = "delayPeriod")
+    private Period delay;
     private Integer occurrences;
     @Enumerated(EnumType.STRING)
     private ActivityEventUpdateType updateType;
@@ -69,6 +72,12 @@ public final class StudyBurst {
     public void setOccurrences(Integer occurrences) {
         this.occurrences = occurrences;
     }
+    public Period getDelay() {
+        return delay;
+    }
+    public void setDelay(Period delay) {
+        this.delay = delay;
+    }    
     public Period getInterval() {
         return interval;
     }
@@ -83,7 +92,7 @@ public final class StudyBurst {
     }
     @Override
     public int hashCode() {
-        return Objects.hash(identifier, interval, occurrences, originEventId, updateType);
+        return Objects.hash(identifier, interval, delay, occurrences, originEventId, updateType);
     }
     @Override
     public boolean equals(Object obj) {
@@ -94,6 +103,7 @@ public final class StudyBurst {
         StudyBurst other = (StudyBurst) obj;
         return Objects.equals(identifier, other.identifier) 
                 && Objects.equals(interval, other.interval)
+                && Objects.equals(delay, other.delay)
                 && Objects.equals(occurrences, other.occurrences) 
                 && Objects.equals(originEventId, other.originEventId)
                 && updateType == other.updateType;

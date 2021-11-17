@@ -96,8 +96,13 @@ public class Schedule2Validator implements Validator {
             if (isBlank(burst.getOriginEventId())) {
                 errors.rejectValue(ORIGIN_EVENT_ID_FIELD, CANNOT_BE_BLANK);
             }
+            if (burst.getDelay() != null) {
+                validateFixedLengthLongPeriod(errors, burst.getDelay(), DELAY_FIELD, false);
+            }
             if (burst.getInterval() == null) {
                 errors.rejectValue(INTERVAL_FIELD, CANNOT_BE_NULL);
+            } else {
+                validateFixedLengthLongPeriod(errors, burst.getInterval(), INTERVAL_FIELD, true);
             }
             if (burst.getOccurrences() == null) {
                 errors.rejectValue(OCCURRENCES_FIELD, CANNOT_BE_NULL);
