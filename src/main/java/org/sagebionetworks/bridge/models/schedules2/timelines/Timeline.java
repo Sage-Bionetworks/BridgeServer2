@@ -170,7 +170,10 @@ public class Timeline {
             Collections.sort(scheduledSessions, (sc1, sc2) -> {
                 int res = sc1.getStartDay() - sc2.getStartDay();
                 if (res == 0) {
-                    return sc1.getEndDay() - sc2.getEndDay();
+                    res = sc1.getEndDay() - sc2.getEndDay();
+                }
+                if (res == 0 && sc1.getStudyBurstId() != null && sc1.getStudyBurstId().equals(sc2.getStudyBurstId())) {
+                    res = sc1.getStudyBurstNum() - sc2.getStudyBurstNum();
                 }
                 return res;
             });

@@ -39,6 +39,7 @@ public class TimelineTest extends Mockito {
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
+        System.out.println(node);
         assertNull(node.get("lang"));
         assertEquals(node.get("type").textValue(), "Timeline");
         
@@ -52,6 +53,8 @@ public class TimelineTest extends Mockito {
         assertEquals(schNode.get("startTime").textValue(), "08:00");
         assertEquals(schNode.get("expiration").textValue(), "PT6H");
         assertTrue(schNode.get("persistent").booleanValue());
+        assertNull(schNode.get("studyBurstId"));
+        assertNull(schNode.get("studyBurstNum"));
         assertEquals(schNode.get("type").textValue(), "ScheduledSession");
         assertEquals(schNode.get("assessments")
                 .get(0).get("instanceGuid").textValue(), "5NzDH5Q4V2VkSBFQF2HntA");
@@ -59,7 +62,7 @@ public class TimelineTest extends Mockito {
                 .get(0).get("refKey").textValue(), "646f8c04646f8c04");
         assertEquals(schNode.get("assessments")
                 .get(0).get("type").textValue(), "ScheduledAssessment");
-        
+
         assertEquals(node.get("assessments").size(), 2);
         JsonNode asmtNode = node.get("assessments").get(0);
         assertEquals(asmtNode.get("guid").textValue(), ASSESSMENT_1_GUID);
@@ -84,6 +87,18 @@ public class TimelineTest extends Mockito {
         assertEquals(msgNode.get("type").textValue(), "NotificationMessage");
         
         assertEquals(sessNode.get("notifications").get(0).get("type").textValue(), "NotificationInfo");
+        
+        // This one is produced by a study burst
+        schNode =  node.get("schedule").get(2);
+        assertEquals(schNode.get("studyBurstId").textValue(), "burst1");
+        assertEquals(schNode.get("studyBurstNum").intValue(), 1);
+
+        // The timeline includes information about this studyburst
+        JsonNode burstNode = node.get("studyBursts").get(0);
+        assertEquals(burstNode.get("identifier").textValue(), "burst1");
+        assertEquals(burstNode.get("interval").textValue(), "P1W");
+        assertEquals(burstNode.get("occurrences").intValue(), 2);
+        assertEquals(burstNode.get("type").textValue(), "StudyBurstInfo");
     }
     
     @Test
@@ -157,10 +172,11 @@ public class TimelineTest extends Mockito {
         Timeline timeline = new Timeline.Builder().build();
         JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
         
-        assertEquals(node.size(), 6);
+        assertEquals(node.size(), 7);
         assertEquals(node.get("assessments").size(), 0);
         assertEquals(node.get("sessions").size(), 0);
         assertEquals(node.get("schedule").size(), 0);
+        assertEquals(node.get("studyBursts").size(), 0);
         assertEquals(node.get("totalMinutes").size(), 0);
         assertEquals(node.get("totalNotifications").size(), 0);
         assertEquals(node.get("type").textValue(), "Timeline");

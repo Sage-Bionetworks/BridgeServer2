@@ -30,6 +30,7 @@ import static org.testng.Assert.fail;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -41,6 +42,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
@@ -1112,11 +1114,29 @@ public class SchedulerTest extends Mockito {
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         assertEquals(timeline.getSchedule().size(), 5);
         
-        Set<String> triggerEventIds = timeline.getSchedule().stream()
+        // The study burst entries are in order by number of occurence, despite 
+        // having exactly the same day range after event
+        List<String> triggerEventIds = timeline.getSchedule().stream()
                 .map(ScheduledSession::getStartEventId)
-                .collect(toSet());
-        assertEquals(triggerEventIds, ImmutableSet.of("enrollment", "study_burst:burst1:01", "study_burst:burst1:02",
-                "study_burst:burst1:03", "study_burst:burst2:01"));
+                .collect(toList());
+        assertEquals(triggerEventIds, ImmutableList.of("enrollment", "study_burst:burst1:01", 
+                "study_burst:burst1:02", "study_burst:burst1:03", "study_burst:burst2:01"));
+
+        ScheduledSession schSession = timeline.getSchedule().get(1);
+        assertEquals(schSession.getStudyBurstId(), "burst1");
+        assertEquals(schSession.getStudyBurstNum(), Integer.valueOf(1));
+        
+        schSession = timeline.getSchedule().get(2);
+        assertEquals(schSession.getStudyBurstId(), "burst1");
+        assertEquals(schSession.getStudyBurstNum(), Integer.valueOf(2));
+        
+        schSession = timeline.getSchedule().get(3);
+        assertEquals(schSession.getStudyBurstId(), "burst1");
+        assertEquals(schSession.getStudyBurstNum(), Integer.valueOf(3));
+        
+        schSession = timeline.getSchedule().get(4);
+        assertEquals(schSession.getStudyBurstId(), "burst2");
+        assertEquals(schSession.getStudyBurstNum(), Integer.valueOf(1));
     }
     
     /* ============================================================ */
