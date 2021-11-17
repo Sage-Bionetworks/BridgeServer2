@@ -262,7 +262,7 @@ public class Schedule2Service {
 
         Validate.entityThrowingException(INSTANCE, schedule);
         
-        return dao.updateSchedule(schedule);        
+        return dao.updateSchedule(schedule);
     }
     
     /**

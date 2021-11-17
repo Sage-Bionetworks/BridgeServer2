@@ -1117,6 +1117,12 @@ public class SchedulerTest extends Mockito {
                 .collect(toSet());
         assertEquals(triggerEventIds, ImmutableSet.of("enrollment", "study_burst:burst1:01", "study_burst:burst1:02",
                 "study_burst:burst1:03", "study_burst:burst2:01"));
+        
+        // Let's verify that the original schedule does not contain alterations to its
+        // start event IDs or study burst IDs
+        Session updatedSession = schedule.getSessions().get(0);
+        assertEquals(updatedSession.getStartEventIds(), ImmutableList.of("enrollment"));
+        assertEquals(updatedSession.getStudyBurstIds(), ImmutableList.of("burst1", "burst2"));
     }
     
     /* ============================================================ */
