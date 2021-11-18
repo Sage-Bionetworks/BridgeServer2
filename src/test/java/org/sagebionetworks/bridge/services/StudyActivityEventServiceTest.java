@@ -71,7 +71,8 @@ public class StudyActivityEventServiceTest extends Mockito {
     private static final DateTime TIMELINE_RETRIEVED_TS = DateTime.parse("2019-03-05T01:34:53.395Z");
     private static final DateTime ENROLLMENT_TS = DateTime.parse("2019-10-14T01:34:53.395Z");
     private static final DateTime INSTALL_LINK_SENT_TS = DateTime.parse("2018-10-11T03:34:53.395Z");
-    private static final StudyActivityEvent PERSISTED_EVENT = new StudyActivityEvent.Builder().build();
+    private static final StudyActivityEvent PERSISTED_EVENT = new StudyActivityEvent.Builder()
+            .withUpdateType(IMMUTABLE).build();
 
     @Mock
     StudyActivityEventDao mockDao;
@@ -865,16 +866,16 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(retValue.getItems().size(), 2);
         
         StudyActivityEvent event = retValue.getItems().get(0);
+        assertEquals(event.getEventId(), CREATED_ON_FIELD);
+        assertEquals(event.getTimestamp(), CREATED_ON);
+        
+        event = retValue.getItems().get(1);
         assertEquals(event.getEventId(), "enrollment");
         assertEquals(event.getTimestamp(), MODIFIED_ON);
         assertNull(event.getOriginEventId());
         assertNull(event.getStudyBurstId());
         assertEquals(event.getRecordCount(), Integer.valueOf(1));
         assertEquals(event.getUpdateType(), IMMUTABLE);
-        
-        event = retValue.getItems().get(1);
-        assertEquals(event.getEventId(), CREATED_ON_FIELD);
-        assertEquals(event.getTimestamp(), CREATED_ON);
     }
 
     @Test
