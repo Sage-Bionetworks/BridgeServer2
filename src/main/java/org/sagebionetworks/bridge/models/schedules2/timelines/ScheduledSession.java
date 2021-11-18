@@ -8,6 +8,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
@@ -15,6 +16,8 @@ import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
+@JsonPropertyOrder({ "instanceGuid", "refGuid", "timeWindowGuid", "startEventId", "startDay", "endDay", "startTime",
+        "delayTime", "expiration", "persistent", "studyBurstId", "studyBurstNum", "assessments", "type" })
 public class ScheduledSession {
 
     private String instanceGuid;
@@ -26,6 +29,8 @@ public class ScheduledSession {
     private Period delayTime;
     private Period expiration;
     private Boolean persistent;
+    private final String studyBurstId;
+    private final Integer studyBurstNum;
     private List<ScheduledAssessment> assessments = new ArrayList<>();
     // This is carried over in order to make it faster and easer to construct
     // the TimelineMetadata object during construction of the Timeline. It is
@@ -43,6 +48,8 @@ public class ScheduledSession {
         this.expiration = builder.expiration;
         this.session = builder.session;
         this.window = builder.window;
+        this.studyBurstId = builder.studyBurstId;
+        this.studyBurstNum = builder.studyBurstNum;
         if (TRUE.equals(builder.persistent)) {
             this.persistent = TRUE;    
         }
@@ -90,6 +97,12 @@ public class ScheduledSession {
     public String getTimeWindowGuid() {
         return window.getGuid();
     }
+    public String getStudyBurstId() {
+        return studyBurstId;
+    }
+    public Integer getStudyBurstNum() {
+        return studyBurstNum;
+    }
     
     public static class Builder {
         private String instanceGuid;
@@ -103,6 +116,8 @@ public class ScheduledSession {
         private List<ScheduledAssessment> assessments = new ArrayList<>();
         private Session session;
         private TimeWindow window;
+        private String studyBurstId;
+        private Integer studyBurstNum;
         
         public Builder copyWithoutAssessments() { 
             ScheduledSession.Builder builder = new ScheduledSession.Builder();
@@ -167,6 +182,11 @@ public class ScheduledSession {
             checkNotNull(session);
             checkNotNull(window);
             
+            if (startEventId != null && startEventId.startsWith("study_burst:")) {
+                String[] els = startEventId.split(":");
+                this.studyBurstId = els[1];
+                this.studyBurstNum = Integer.parseInt(els[2]);
+            }
             return new ScheduledSession(this);
         }
     }
