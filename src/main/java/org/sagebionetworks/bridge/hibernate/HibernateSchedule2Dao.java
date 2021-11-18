@@ -48,8 +48,8 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     static final String AND_NOT_IN_GUIDS = "AND guid NOT IN (:guids)";
     static final String INSERT = "INSERT INTO TimelineMetadata (appId, assessmentGuid, assessmentId, assessmentInstanceGuid, "
             + "assessmentRevision, scheduleGuid, scheduleModifiedOn, schedulePublished, sessionGuid, sessionInstanceEndDay, "
-            + "sessionInstanceGuid, sessionInstanceStartDay, sessionStartEventId, timeWindowGuid, timeWindowPersistent, guid) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "sessionInstanceGuid, sessionInstanceStartDay, sessionStartEventId, timeWindowGuid, timeWindowPersistent, guid, "
+            + "studyBurstId, studyBurstNum) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     static final String DELETE_TIMELINE_RECORDS = "DELETE FROM TimelineMetadata WHERE scheduleGuid = :scheduleGuid";
     static final String SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE = "SELECT * FROM TimelineMetadata WHERE sessionInstanceGuid = :instanceGuid AND assessmentInstanceGuid IS NOT NULL";
     static final String DELETE_ALL_SCHEDULES = "DELETE FROM Schedules WHERE appId = :appId";
@@ -245,6 +245,14 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         ps.setString(14, meta.getTimeWindowGuid());
         ps.setBoolean(15, meta.isTimeWindowPersistent());
         ps.setString(16, meta.getGuid());
+        System.out.println(meta.getStudyBurstId());
+        ps.setString(17, meta.getStudyBurstId());
+        System.out.println(meta.getStudyBurstNum());
+        if (meta.getStudyBurstNum() == null) {
+            ps.setInt(18, Types.NULL);
+        } else {
+            ps.setInt(18, meta.getStudyBurstNum());    
+        }
         ps.addBatch();
     }
 
