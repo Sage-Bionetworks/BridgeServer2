@@ -17,6 +17,7 @@ public class StudyBurstInfoTest extends Mockito {
     public void canSerialize() throws Exception { 
         StudyBurst burst = new StudyBurst();
         burst.setIdentifier("foo");
+        burst.setDelay(Period.parse("P1W"));
         burst.setInterval(Period.parse("P23D"));
         burst.setOccurrences(3);
         burst.setOriginEventId("custom:event1");
@@ -25,8 +26,9 @@ public class StudyBurstInfoTest extends Mockito {
         StudyBurstInfo info = StudyBurstInfo.create(burst);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
-        assertEquals(node.size(), 4);
+        assertEquals(node.size(), 5);
         assertEquals(node.get("identifier").textValue(), "foo");
+        assertEquals(node.get("delay").textValue(), "P1W");
         assertEquals(node.get("interval").textValue(), "P23D");
         assertEquals(node.get("occurrences").intValue(), 3);
         assertEquals(node.get("type").textValue(), "StudyBurstInfo");

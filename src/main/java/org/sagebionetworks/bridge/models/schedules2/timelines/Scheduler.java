@@ -51,12 +51,12 @@ public class Scheduler {
 
         for (Session session : schedule.getSessions()) {
             if (!session.getAssessments().isEmpty()) {
+                List<String> startEventIds = session.getStartEventIds();
                 for (String studyBurstId : session.getStudyBurstIds()) {
-                    List<String> combinedSet = addUniqueItemsToList(session.getStartEventIds(), studyBurstEventsMap.get(studyBurstId));
-                    session.setStartEventIds(combinedSet);
+                    startEventIds = addUniqueItemsToList(startEventIds, studyBurstEventsMap.get(studyBurstId));
                 }
                 for (TimeWindow window : session.getTimeWindows()) {
-                    scheduleTimeWindowSequence(builder, schedule, session, window, studyBurstsById);
+                    scheduleTimeWindowSequence(builder, schedule, session, window, startEventIds, studyBurstsById);
                 }
             }
         }
@@ -109,8 +109,8 @@ public class Scheduler {
         return endDay;
     }
 
-    void scheduleTimeWindowSequence(Timeline.Builder builder, Schedule2 schedule, Session session, TimeWindow window,
-            Map<String, StudyBurst> studyBurstsById) {
+    void scheduleTimeWindowSequence(Timeline.Builder builder, Schedule2 schedule, Session session,
+            TimeWindow window, List<String> startEventIds, Map<String, StudyBurst> studyBurstsById) {
         // Can be in days or weeks. Note that this means no individual session time stream can be longer than the
         // duration of the study, *not* that the study will last the duration on the calendar, since events that 
         // trigger a session series can start at any time. Those sessions will *also* run for the duration. It’s up 
@@ -171,7 +171,7 @@ public class Scheduler {
             // Add a scheduled session with a different GUID for each event, and one SessionInfo object for
             // all of them.
             
-            for (String oneEventId : session.getStartEventIds()) {
+            for (String oneEventId : startEventIds) {
                 // Clear the assessments that are calculated in each iteration. Other fields calculated 
                 // in this loop will be reset.
                 scheduledSession = scheduledSession.copyWithoutAssessments();

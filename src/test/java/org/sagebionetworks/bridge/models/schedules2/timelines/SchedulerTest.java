@@ -30,10 +30,8 @@ import static org.testng.Assert.fail;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
@@ -42,7 +40,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.Label;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
@@ -1137,6 +1134,12 @@ public class SchedulerTest extends Mockito {
         schSession = timeline.getSchedule().get(4);
         assertEquals(schSession.getStudyBurstId(), "burst2");
         assertEquals(schSession.getStudyBurstNum(), Integer.valueOf(1));
+        
+        // Let's verify that the original schedule does not contain alterations to its
+        // start event IDs or study burst IDs
+        Session updatedSession = schedule.getSessions().get(0);
+        assertEquals(updatedSession.getStartEventIds(), ImmutableList.of("enrollment"));
+        assertEquals(updatedSession.getStudyBurstIds(), ImmutableList.of("burst1", "burst2"));
     }
     
     /* ============================================================ */
