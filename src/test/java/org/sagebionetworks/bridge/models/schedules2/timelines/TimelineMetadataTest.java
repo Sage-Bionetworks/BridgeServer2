@@ -14,7 +14,7 @@ import org.mockito.Mockito;
 import org.testng.annotations.Test;
 
 public class TimelineMetadataTest extends Mockito {
-    
+
     @Test
     public void test() {
         TimelineMetadata meta = createTimelineMetadata();
@@ -83,11 +83,13 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(map.get("scheduleGuid"), "scheduleGuid");
         assertEquals(map.get("scheduleModifiedOn"), MODIFIED_ON.toString());
         assertEquals(map.get("schedulePublished"), "true");
+        assertEquals(map.get("studyBurstId"), "studyBurstId");
+        assertEquals(map.get("studyBurstNum"), "4");
     }
     
     @Test
     public void asMap_nullValues() {
-        TimelineMetadata meta = new TimelineMetadata();;
+        TimelineMetadata meta = new TimelineMetadata();
         
         Map<String,String> map = meta.asMap();
         assertNull(map.get("appId"));
@@ -106,6 +108,8 @@ public class TimelineMetadataTest extends Mockito {
         assertNull(map.get("scheduleGuid"));
         assertNull(map.get("scheduleModifiedOn"));
         assertEquals(map.get("schedulePublished"), "false");
+        assertNull(map.get("studyBurstId"));
+        assertNull(map.get("studyBurstNum"));
     }
 
     private TimelineMetadata createTimelineMetadata() {

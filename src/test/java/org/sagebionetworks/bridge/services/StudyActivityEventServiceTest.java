@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
@@ -53,6 +54,7 @@ import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -572,6 +574,34 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         StudyActivityEvent origin = eventCaptor.getAllValues().get(0);
         assertEquals(origin.getEventId(), "enrollment");
+    }
+    
+    @Test
+    public void publishEvent_studyBurstUpdateMaintainsAllFields() throws Exception {
+        StudyActivityEvent persistedStudyBurst = new StudyActivityEvent.Builder()
+                .withTimestamp(ENROLLMENT_TS.minusHours(1))
+                .withStudyBurstId("burst1")
+                .withPeriodFromOrigin(Period.parse("P4W"))
+                .withOriginEventId("enrollment")
+                .withUpdateType(MUTABLE).build();
+        when(mockDao.getRecentStudyActivityEvent(any(), any(), eq("study_burst:burst1:01")))
+            .thenReturn(persistedStudyBurst);
+        
+        StudyActivityEvent event = makeBuilder().withEventId("study_burst:burst1:01")
+                .withTimestamp(ENROLLMENT_TS).build();
+        
+        service.publishEvent(event, false, false);
+        
+        verify(mockDao, times(1)).publishEvent(eventCaptor.capture());
+        
+        StudyActivityEvent captured = eventCaptor.getValue();
+        assertEquals(captured.getEventId(), "study_burst:burst1:01");
+        assertEquals(captured.getTimestamp(), ENROLLMENT_TS);
+        assertEquals(captured.getCreatedOn(), CREATED_ON);
+        assertEquals(captured.getUpdateType(), MUTABLE);
+        assertEquals(captured.getStudyBurstId(), "burst1");
+        assertEquals(captured.getPeriodFromOrigin(), Period.parse("P4W"));
+        assertEquals(captured.getOriginEventId(), "enrollment");
     }
     
     @Test
