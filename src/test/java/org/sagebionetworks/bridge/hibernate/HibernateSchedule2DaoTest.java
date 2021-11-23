@@ -319,7 +319,7 @@ public class HibernateSchedule2DaoTest extends Mockito {
         verify(mockStatement).setBoolean(15, meta.isTimeWindowPersistent());
         verify(mockStatement).setString(16, meta.getGuid());
         verify(mockStatement).setString(17, meta.getStudyBurstId());
-        verify(mockStatement).setInt(18, Types.NULL);
+        verify(mockStatement).setNull(18, Types.NULL);
         verify(mockStatement).addBatch();
 
         mockStatement = mock(PreparedStatement.class);
