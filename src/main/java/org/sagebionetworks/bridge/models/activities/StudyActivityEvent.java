@@ -189,17 +189,29 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     public String getOriginEventId() { 
         return originEventId;
     }
+    public void setOriginEventId(String originEventId) {
+        this.originEventId = originEventId;
+    }
     public String getStudyBurstId() {
         return studyBurstId;
+    }
+    public void setStudyBurstId(String studyBurstId) {
+        this.studyBurstId = studyBurstId;
     }
     public Period getPeriodFromOrigin() {
         return periodFromOrigin;
     }
-    public Integer getRecordCount() {
-        return recordCount;
+    public void setPeriodFromOrigin(Period periodFromOrigin) {
+        this.periodFromOrigin = periodFromOrigin;
     }
     public ActivityEventUpdateType getUpdateType() {
         return updateType;
+    }
+    public void setUpdateType(ActivityEventUpdateType updateType) {
+        this.updateType = updateType;
+    }
+    public Integer getRecordCount() {
+        return recordCount;
     }
     
     public static final class Builder {
@@ -292,7 +304,6 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
             this.eventId = eventId;
             return this;
         }
-        
         public StudyActivityEvent build() {
             // We’re constructing the event with a known (already validated) event ID
             if (eventId != null) {

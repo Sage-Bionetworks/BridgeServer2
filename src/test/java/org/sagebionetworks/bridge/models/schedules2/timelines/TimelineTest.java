@@ -101,34 +101,22 @@ public class TimelineTest extends Mockito {
     }
     
     @Test
-    public void generatesTimelineMetadataRecord() {
+    public void generatesTimelineMetadataRecord() throws Exception {
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         schedule.setDuration(Period.parse("P2W"));
         
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         List<TimelineMetadata> metadata = timeline.getMetadata();
         
-        // This is the session record
-        TimelineMetadata meta1 = metadata.get(0);
-        String sessionInstanceGuid = "faQS0dRjAt9xNFTfOd5XqA";
-        assertEquals(meta1.getGuid(), sessionInstanceGuid);
-        assertNull(meta1.getAssessmentInstanceGuid());
-        assertNull(meta1.getAssessmentGuid());
-        assertNull(meta1.getAssessmentId());
-        assertNull(meta1.getAssessmentRevision());
-        assertEquals(meta1.getSessionInstanceGuid(), sessionInstanceGuid);
-        assertEquals(meta1.getSessionGuid(), SESSION_GUID_1);
-        assertEquals(meta1.getSessionStartEventId(), "activities_retrieved");
-        assertEquals(meta1.getSessionInstanceStartDay(), Integer.valueOf(7));
-        assertEquals(meta1.getSessionInstanceEndDay(), Integer.valueOf(7));
-        assertEquals(meta1.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
-        assertEquals(meta1.getScheduleGuid(), SCHEDULE_GUID);
-        assertEquals(meta1.getScheduleModifiedOn(), MODIFIED_ON);
-        assertTrue(meta1.isSchedulePublished());
-        assertEquals(meta1.getAppId(), TEST_APP_ID);
+        // This is a metadata record for a burst
+        TimelineMetadata meta1 = metadata.get(6);
+        
+        assertEquals(meta1.getStudyBurstId(), "burst1");
+        assertEquals(meta1.getStudyBurstNum(), Integer.valueOf(2));
 
         // This is the assessment #1 record
         TimelineMetadata meta2 = metadata.get(1);
+        String sessionInstanceGuid = "faQS0dRjAt9xNFTfOd5XqA";
         String asmtInstanceGuid = "5NzDH5Q4V2VkSBFQF2HntA";
         assertEquals(meta2.getGuid(), asmtInstanceGuid);
         assertEquals(meta2.getAssessmentInstanceGuid(), asmtInstanceGuid);

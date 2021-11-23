@@ -318,13 +318,19 @@ public class HibernateSchedule2DaoTest extends Mockito {
         verify(mockStatement).setString(14, meta.getTimeWindowGuid());
         verify(mockStatement).setBoolean(15, meta.isTimeWindowPersistent());
         verify(mockStatement).setString(16, meta.getGuid());
+        verify(mockStatement).setString(17, meta.getStudyBurstId());
+        verify(mockStatement).setInt(18, Types.NULL);
         verify(mockStatement).addBatch();
 
-        reset(mockStatement);
-        meta = timeline.getMetadata().get(1);
-
+        mockStatement = mock(PreparedStatement.class);
+        meta = timeline.getMetadata().get(7);
         dao.updatePreparedStatement(mockStatement, meta);
-
+        verify(mockStatement).setString(17, "burst1");
+        verify(mockStatement).setInt(18, 2);
+        
+        mockStatement = mock(PreparedStatement.class);
+        meta = timeline.getMetadata().get(1);
+        dao.updatePreparedStatement(mockStatement, meta);
         // this also works
         verify(mockStatement).setInt(5, meta.getAssessmentRevision());
     }

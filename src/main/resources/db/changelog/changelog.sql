@@ -841,3 +841,9 @@ ADD COLUMN `updateType` enum('MUTABLE', 'IMMUTABLE', 'FUTURE_ONLY') DEFAULT 'IMM
 
 ALTER TABLE `ScheduleStudyBursts`
 ADD COLUMN `delayPeriod` varchar(60);
+
+-- changeset bridge:55
+
+ALTER TABLE `TimelineMetadata`
+ADD COLUMN `studyBurstId` varchar(255),
+ADD COLUMN `studyBurstNum` int(10) unsigned;

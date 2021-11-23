@@ -123,6 +123,8 @@ public class Timeline {
             sessionMeta.setSessionInstanceEndDay(schSession.getEndDay());
             sessionMeta.setTimeWindowGuid(schSession.getTimeWindow().getGuid());
             sessionMeta.setTimeWindowPersistent(schSession.getTimeWindow().isPersistent());
+            sessionMeta.setStudyBurstId(schSession.getStudyBurstId());
+            sessionMeta.setStudyBurstNum(schSession.getStudyBurstNum());
             metadata.add(sessionMeta);
             
             for (ScheduledAssessment schAsmt : schSession.getAssessments()) {

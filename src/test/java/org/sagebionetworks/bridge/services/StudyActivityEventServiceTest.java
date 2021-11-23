@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
@@ -53,6 +54,7 @@ import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -71,7 +73,8 @@ public class StudyActivityEventServiceTest extends Mockito {
     private static final DateTime TIMELINE_RETRIEVED_TS = DateTime.parse("2019-03-05T01:34:53.395Z");
     private static final DateTime ENROLLMENT_TS = DateTime.parse("2019-10-14T01:34:53.395Z");
     private static final DateTime INSTALL_LINK_SENT_TS = DateTime.parse("2018-10-11T03:34:53.395Z");
-    private static final StudyActivityEvent PERSISTED_EVENT = new StudyActivityEvent.Builder().build();
+    private static final StudyActivityEvent PERSISTED_EVENT = new StudyActivityEvent.Builder()
+            .withUpdateType(IMMUTABLE).build();
 
     @Mock
     StudyActivityEventDao mockDao;
@@ -574,6 +577,34 @@ public class StudyActivityEventServiceTest extends Mockito {
     }
     
     @Test
+    public void publishEvent_studyBurstUpdateMaintainsAllFields() throws Exception {
+        StudyActivityEvent persistedStudyBurst = new StudyActivityEvent.Builder()
+                .withTimestamp(ENROLLMENT_TS.minusHours(1))
+                .withStudyBurstId("burst1")
+                .withPeriodFromOrigin(Period.parse("P4W"))
+                .withOriginEventId("enrollment")
+                .withUpdateType(MUTABLE).build();
+        when(mockDao.getRecentStudyActivityEvent(any(), any(), eq("study_burst:burst1:01")))
+            .thenReturn(persistedStudyBurst);
+        
+        StudyActivityEvent event = makeBuilder().withEventId("study_burst:burst1:01")
+                .withTimestamp(ENROLLMENT_TS).build();
+        
+        service.publishEvent(event, false, false);
+        
+        verify(mockDao, times(1)).publishEvent(eventCaptor.capture());
+        
+        StudyActivityEvent captured = eventCaptor.getValue();
+        assertEquals(captured.getEventId(), "study_burst:burst1:01");
+        assertEquals(captured.getTimestamp(), ENROLLMENT_TS);
+        assertEquals(captured.getCreatedOn(), CREATED_ON);
+        assertEquals(captured.getUpdateType(), MUTABLE);
+        assertEquals(captured.getStudyBurstId(), "burst1");
+        assertEquals(captured.getPeriodFromOrigin(), Period.parse("P4W"));
+        assertEquals(captured.getOriginEventId(), "enrollment");
+    }
+    
+    @Test
     public void publishEvent_eventMutableStudyBurstsMutable() {
         // event immutable, study bursts mutable. Study bursts are updated, would update
         // even if they existed.
@@ -865,16 +896,16 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(retValue.getItems().size(), 2);
         
         StudyActivityEvent event = retValue.getItems().get(0);
+        assertEquals(event.getEventId(), CREATED_ON_FIELD);
+        assertEquals(event.getTimestamp(), CREATED_ON);
+        
+        event = retValue.getItems().get(1);
         assertEquals(event.getEventId(), "enrollment");
         assertEquals(event.getTimestamp(), MODIFIED_ON);
         assertNull(event.getOriginEventId());
         assertNull(event.getStudyBurstId());
         assertEquals(event.getRecordCount(), Integer.valueOf(1));
         assertEquals(event.getUpdateType(), IMMUTABLE);
-        
-        event = retValue.getItems().get(1);
-        assertEquals(event.getEventId(), CREATED_ON_FIELD);
-        assertEquals(event.getTimestamp(), CREATED_ON);
     }
 
     @Test
