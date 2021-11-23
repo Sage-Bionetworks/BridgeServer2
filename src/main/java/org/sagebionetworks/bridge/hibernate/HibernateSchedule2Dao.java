@@ -247,7 +247,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         ps.setString(16, meta.getGuid());
         ps.setString(17, meta.getStudyBurstId());
         if (meta.getStudyBurstNum() == null) {
-            ps.setInt(18, Types.NULL);
+            ps.setNull(18, Types.NULL);
         } else {
             ps.setInt(18, meta.getStudyBurstNum());    
         }
