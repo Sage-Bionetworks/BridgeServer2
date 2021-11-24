@@ -33,6 +33,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import com.amazonaws.services.sqs.AmazonSQSClient;
@@ -299,7 +300,7 @@ public class ParticipantService {
                 .build();
 
         // Participant must be consented.
-        StudyParticipant participant = getParticipant(app, account, true);
+        StudyParticipant participant = getParticipant(app, account, false);
         if (!TRUE.equals(participant.isConsented())) {
             throw new BadRequestException("Can't create SMS notification registration for user " + userId +
                     ": user is not consented");
@@ -356,19 +357,11 @@ public class ParticipantService {
         if (includeHistory) {
             copyHistoryToParticipant(builder, account, app.getIdentifier());
         }
-        // Without requestInfo, we cannot reliably determine if the user is consented
-        RequestInfo requestInfo = requestInfoService.getRequestInfo(account.getId());
-        if (requestInfo != null) {
-            CriteriaContext context = new CriteriaContext.Builder()
-                .withAppId(app.getIdentifier())
-                .withUserId(account.getId())
-                .withHealthCode(account.getHealthCode())
-                .withUserDataGroups(account.getDataGroups())
-                .withUserStudyIds(assoc.getStudyIdsVisibleToCaller())
-                .withClientInfo(requestInfo.getClientInfo())
-                .withLanguages(requestInfo.getLanguages()).build();
-            copyConsentStatusToParticipant(builder, account, context);
-        }
+
+        // Calculate consent status.
+        Optional<Boolean> isConsented = consentService.isConsented(account);
+        isConsented.ifPresent(builder::withConsented);
+
         return builder.build();
     }
     

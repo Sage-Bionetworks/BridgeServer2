@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertSame;
 
@@ -14,6 +15,8 @@ import java.util.List;
 import java.util.Optional;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
@@ -21,10 +24,14 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.AccountService;
@@ -62,8 +69,10 @@ public class ParticipantVersionControllerTest {
     @Test
     public void deleteForHealthCode() {
         // Mock dependencies.
-        when(mockAccountService.getAccountHealthCode(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID))
-                .thenReturn(Optional.of(TestConstants.HEALTH_CODE));
+        Account account = Account.create();
+        account.setHealthCode(TestConstants.HEALTH_CODE);
+        account.setDataGroups(ImmutableSet.of(BridgeConstants.TEST_USER_GROUP));
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
 
         // Execute and validate.
         StatusMessage response = controller.deleteParticipantVersionsForUser(TestConstants.TEST_APP_ID,
@@ -73,12 +82,29 @@ public class ParticipantVersionControllerTest {
         verify(mockParticipantVersionService).deleteParticipantVersionsForHealthCode(TestConstants.TEST_APP_ID,
                 TestConstants.HEALTH_CODE);
 
+        ArgumentCaptor<AccountId> accountIdCaptor = ArgumentCaptor.forClass(AccountId.class);
+        verify(mockAccountService).getAccount(accountIdCaptor.capture());
+
+        AccountId accountId = accountIdCaptor.getValue();
+        assertEquals(accountId.getAppId(), TestConstants.TEST_APP_ID);
+        assertEquals(accountId.getId(), TestConstants.TEST_USER_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteForHealthCode_AccountNotFound() {
-        when(mockAccountService.getAccountHealthCode(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID))
-                .thenReturn(Optional.empty());
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.empty());
+        controller.deleteParticipantVersionsForUser(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID);
+    }
+
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void deleteForHealthCode_NotTestUser() {
+        // Mock dependencies.
+        Account account = Account.create();
+        account.setHealthCode(TestConstants.HEALTH_CODE);
+        account.setDataGroups(ImmutableSet.of());
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        // Execute. This will throw.
         controller.deleteParticipantVersionsForUser(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID);
     }
 

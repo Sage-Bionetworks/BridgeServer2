@@ -21,7 +21,13 @@ import org.sagebionetworks.bridge.time.DateUtils;
 
 @Component
 public class ParticipantVersionService {
+    private ConsentService consentService;
     private ParticipantVersionDao participantVersionDao;
+
+    @Autowired
+    public final void setConsentService(ConsentService consentService) {
+        this.consentService = consentService;
+    }
 
     @Autowired
     public final void setParticipantVersionDao(ParticipantVersionDao participantVersionDao) {
@@ -36,6 +42,12 @@ public class ParticipantVersionService {
         }
         if (account.getSharingScope() == SharingScope.NO_SHARING) {
             // no_sharing means we don't export this to Synapse, which means we can skip making a Participant Version.
+            return;
+        }
+        Optional<Boolean> isConsented = consentService.isConsented(account);
+        if (!isConsented.isPresent() || !isConsented.get()) {
+            // If participant is not consented, don't create a participant version.
+            // If we're not sure whether they're consented, assume that they are not.
             return;
         }
 

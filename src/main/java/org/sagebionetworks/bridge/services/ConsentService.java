@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import javax.annotation.Resource;
@@ -22,6 +23,7 @@ import javax.annotation.Resource;
 import org.apache.commons.io.IOUtils;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -30,6 +32,7 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
+import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -72,6 +75,7 @@ public class ConsentService {
     protected static final String USERSIGNED_CONSENTS_BUCKET = BridgeConfigFactory.getConfig()
             .get("usersigned.consents.bucket");
     private AccountService accountService;
+    private RequestInfoService requestInfoService;
     private SendMailService sendMailService;
     private SmsService smsService;
     private NotificationsService notificationsService;
@@ -91,6 +95,12 @@ public class ConsentService {
     final void setAccountService(AccountService accountService) {
         this.accountService = accountService;
     }
+
+    @Autowired
+    final void setRequestInfoService(RequestInfoService requestInfoService) {
+        this.requestInfoService = requestInfoService;
+    }
+
     @Autowired
     final void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
@@ -130,7 +140,35 @@ public class ConsentService {
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
     }
-    
+
+    /**
+     * Determines if an account is consented. This handles CriteriaContext and filtering studies visible to caller
+     * (via BridgeUtils).
+     */
+    public Optional<Boolean> isConsented(Account account) {
+        // Without requestInfo, we cannot reliably determine if the user is consented
+        RequestInfo requestInfo = requestInfoService.getRequestInfo(account.getId());
+        if (requestInfo == null) {
+            return Optional.empty();
+        }
+
+        // Filter studyIds visible to the caller. BridgeUtils handles the permissions check.
+        Set<String> studyIds = BridgeUtils.studyAssociationsVisibleToCaller(account).getStudyIdsVisibleToCaller();
+
+        // Construct CriteriaContext and get the consent statuses.
+        CriteriaContext context = new CriteriaContext.Builder()
+                .withAppId(account.getAppId())
+                .withUserId(account.getId())
+                .withHealthCode(account.getHealthCode())
+                .withUserDataGroups(account.getDataGroups())
+                .withUserStudyIds(studyIds)
+                .withClientInfo(requestInfo.getClientInfo())
+                .withLanguages(requestInfo.getLanguages()).build();
+        Map<SubpopulationGuid, ConsentStatus> consentStatuses = getConsentStatuses(context, account);
+        boolean isConsented = ConsentStatus.isUserConsented(consentStatuses);
+        return Optional.of(isConsented);
+    }
+
     /**
      * Get the user's active consent signature (a signature that has not been withdrawn).
      * @throws EntityNotFoundException if no consent exists

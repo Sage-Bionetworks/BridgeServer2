@@ -53,6 +53,9 @@ public class ParticipantVersionServiceTest {
     private static final String TIME_ZONE = "America/Los_Angeles";
 
     @Mock
+    private ConsentService mockConsentService;
+
+    @Mock
     private ParticipantVersionDao mockParticipantVersionDao;
 
     @InjectMocks
@@ -77,6 +80,7 @@ public class ParticipantVersionServiceTest {
     public void createParticipantVersionFromAccount() {
         // Mock dependencies. DAO doesn't return anything to make create() logic simpler. We test more of this logic
         // in later tests.
+        when(mockConsentService.isConsented(any())).thenReturn(Optional.of(true));
         when(mockParticipantVersionDao.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
                 TestConstants.HEALTH_CODE)).thenReturn(Optional.empty());
 
@@ -142,6 +146,26 @@ public class ParticipantVersionServiceTest {
         participantVersionService.createParticipantVersionFromAccount(account);
 
         // We never call through to the dao.
+        verifyZeroInteractions(mockParticipantVersionDao);
+    }
+
+    @Test
+    public void createParticipantFromAccount_isConsentedFalse() {
+        Account account = Account.create();
+        account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+
+        when(mockConsentService.isConsented(any())).thenReturn(Optional.of(false));
+        participantVersionService.createParticipantVersionFromAccount(account);
+        verifyZeroInteractions(mockParticipantVersionDao);
+    }
+
+    @Test
+    public void createParticipantFromAccount_isConsentedNull() {
+        Account account = Account.create();
+        account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
+
+        when(mockConsentService.isConsented(any())).thenReturn(Optional.empty());
+        participantVersionService.createParticipantVersionFromAccount(account);
         verifyZeroInteractions(mockParticipantVersionDao);
     }
 

@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.List;
@@ -12,9 +12,13 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.services.ParticipantVersionService;
@@ -34,10 +38,15 @@ public class ParticipantVersionController extends BaseController {
     @DeleteMapping(path="/v1/apps/{appId}/participants/{userIdToken}/versions")
     public StatusMessage deleteParticipantVersionsForUser(@PathVariable String appId,
             @PathVariable String userIdToken) {
-        getAuthenticatedSession(SUPERADMIN);
+        getAuthenticatedSession(ADMIN);
 
-        String healthCode = accountService.getAccountHealthCode(appId, userIdToken).orElseThrow(
+        Account account = accountService.getAccount(BridgeUtils.parseAccountId(appId, userIdToken)).orElseThrow(
                 () -> new EntityNotFoundException(StudyParticipant.class));
+        String healthCode = account.getHealthCode();
+        if (!account.getDataGroups().contains(BridgeConstants.TEST_USER_GROUP)) {
+            throw new UnauthorizedException("Cannot delete participant version if account is not a test user");
+        }
+
         participantVersionService.deleteParticipantVersionsForHealthCode(appId, healthCode);
 
         return new StatusMessage("Participant versions have been deleted for participant");
