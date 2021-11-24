@@ -72,13 +72,13 @@ public class StudyActivityEventValidatorTest extends Mockito {
 
     @Test
     public void eventIdNull() {
-        StudyActivityEvent event = createEvent(null, MODIFIED_ON);
+        StudyActivityEvent event = createEvent(null, MODIFIED_ON, null);
         assertValidatorMessage(CREATE_INSTANCE, event, "eventId", INVALID_EVENT_ID);
     }
     
     @Test
     public void eventIdBlank() {
-        StudyActivityEvent event = createEvent("", MODIFIED_ON);
+        StudyActivityEvent event = createEvent("", MODIFIED_ON, null);
         assertValidatorMessage(CREATE_INSTANCE, event, "eventId", INVALID_EVENT_ID);
     }
     

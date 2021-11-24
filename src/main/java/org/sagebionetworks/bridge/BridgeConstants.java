@@ -12,6 +12,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
+    // Excessively long User-Agent strings break the database and generally aren't parseable anyway.
+    public static final int MAX_USER_AGENT_LENGTH = 255;
+
     // see https://owasp.org/www-community/OWASP_Validation_Regex_Repository
     public static final String OWASP_REGEXP_VALID_EMAIL = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
     

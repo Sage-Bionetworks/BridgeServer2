@@ -1007,7 +1007,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getMigrationVersion(), MIGRATION_VERSION);
         
         verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, never()).publishEvent(any(), anyBoolean());
+        verify(studyActivityEventService, never()).publishEvent(any(), anyBoolean(), anyBoolean());
     }
     
     @Test
@@ -1028,7 +1028,7 @@ public class AccountServiceTest extends Mockito {
 
         verify(mockAccountDao).createAccount(app, account);
         verify(activityEventService).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture(), eq(false));
+        verify(studyActivityEventService, times(2)).publishEvent(eventCaptor.capture(), eq(false), eq(true));
 
         StudyActivityEvent event1 = getElement(
                 eventCaptor.getAllValues(), StudyActivityEvent::getStudyId, STUDY_A).orElse(null);
@@ -1108,7 +1108,7 @@ public class AccountServiceTest extends Mockito {
         assertEquals(updatedAccount.getClientTimeZone(), OTHER_CLIENT_TIME_ZONE);
         
         verify(activityEventService, never()).publishEnrollmentEvent(any(), any(), any());
-        verify(studyActivityEventService, never()).publishEvent(any(), anyBoolean());
+        verify(studyActivityEventService, never()).publishEvent(any(), anyBoolean(), anyBoolean());
     }
 
     @Test
@@ -1143,7 +1143,7 @@ public class AccountServiceTest extends Mockito {
         
         verify(activityEventService).publishEnrollmentEvent(
                 eq(app), eq(HEALTH_CODE), any(DateTime.class));
-        verify(studyActivityEventService).publishEvent(eventCaptor.capture(), eq(false));
+        verify(studyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), STUDY_B);

@@ -24,14 +24,16 @@ public class StudyBurstTest {
         StudyBurst burst = new StudyBurst();
         burst.setIdentifier("foo");
         burst.setOriginEventId("enrollment");
+        burst.setDelay(Period.parse("P3W"));
         burst.setInterval(Period.parse("P1W"));
         burst.setOccurrences(3);
         burst.setUpdateType(FUTURE_ONLY);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(burst);
-        assertEquals(node.size(), 6);
+        assertEquals(node.size(), 7);
         assertEquals(node.get("identifier").textValue(), "foo");
         assertEquals(node.get("originEventId").textValue(), "enrollment");
+        assertEquals(node.get("delay").textValue(), "P3W");
         assertEquals(node.get("interval").textValue(), "P1W");
         assertEquals(node.get("occurrences").intValue(), 3);
         assertEquals(node.get("updateType").textValue(), "future_only");

@@ -52,6 +52,8 @@ public class TimelineTest extends Mockito {
         assertEquals(schNode.get("startTime").textValue(), "08:00");
         assertEquals(schNode.get("expiration").textValue(), "PT6H");
         assertTrue(schNode.get("persistent").booleanValue());
+        assertNull(schNode.get("studyBurstId"));
+        assertNull(schNode.get("studyBurstNum"));
         assertEquals(schNode.get("type").textValue(), "ScheduledSession");
         assertEquals(schNode.get("assessments")
                 .get(0).get("instanceGuid").textValue(), "5NzDH5Q4V2VkSBFQF2HntA");
@@ -59,7 +61,7 @@ public class TimelineTest extends Mockito {
                 .get(0).get("refKey").textValue(), "646f8c04646f8c04");
         assertEquals(schNode.get("assessments")
                 .get(0).get("type").textValue(), "ScheduledAssessment");
-        
+
         assertEquals(node.get("assessments").size(), 2);
         JsonNode asmtNode = node.get("assessments").get(0);
         assertEquals(asmtNode.get("guid").textValue(), ASSESSMENT_1_GUID);
@@ -84,37 +86,37 @@ public class TimelineTest extends Mockito {
         assertEquals(msgNode.get("type").textValue(), "NotificationMessage");
         
         assertEquals(sessNode.get("notifications").get(0).get("type").textValue(), "NotificationInfo");
+        
+        // This one is produced by a study burst
+        schNode =  node.get("schedule").get(2);
+        assertEquals(schNode.get("studyBurstId").textValue(), "burst1");
+        assertEquals(schNode.get("studyBurstNum").intValue(), 1);
+
+        // The timeline includes information about this studyburst
+        JsonNode burstNode = node.get("studyBursts").get(0);
+        assertEquals(burstNode.get("identifier").textValue(), "burst1");
+        assertEquals(burstNode.get("interval").textValue(), "P1W");
+        assertEquals(burstNode.get("occurrences").intValue(), 2);
+        assertEquals(burstNode.get("type").textValue(), "StudyBurstInfo");
     }
     
     @Test
-    public void generatesTimelineMetadataRecord() {
+    public void generatesTimelineMetadataRecord() throws Exception {
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         schedule.setDuration(Period.parse("P2W"));
         
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         List<TimelineMetadata> metadata = timeline.getMetadata();
         
-        // This is the session record
-        TimelineMetadata meta1 = metadata.get(0);
-        String sessionInstanceGuid = "faQS0dRjAt9xNFTfOd5XqA";
-        assertEquals(meta1.getGuid(), sessionInstanceGuid);
-        assertNull(meta1.getAssessmentInstanceGuid());
-        assertNull(meta1.getAssessmentGuid());
-        assertNull(meta1.getAssessmentId());
-        assertNull(meta1.getAssessmentRevision());
-        assertEquals(meta1.getSessionInstanceGuid(), sessionInstanceGuid);
-        assertEquals(meta1.getSessionGuid(), SESSION_GUID_1);
-        assertEquals(meta1.getSessionStartEventId(), "activities_retrieved");
-        assertEquals(meta1.getSessionInstanceStartDay(), Integer.valueOf(7));
-        assertEquals(meta1.getSessionInstanceEndDay(), Integer.valueOf(7));
-        assertEquals(meta1.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
-        assertEquals(meta1.getScheduleGuid(), SCHEDULE_GUID);
-        assertEquals(meta1.getScheduleModifiedOn(), MODIFIED_ON);
-        assertTrue(meta1.isSchedulePublished());
-        assertEquals(meta1.getAppId(), TEST_APP_ID);
+        // This is a metadata record for a burst
+        TimelineMetadata meta1 = metadata.get(6);
+        
+        assertEquals(meta1.getStudyBurstId(), "burst1");
+        assertEquals(meta1.getStudyBurstNum(), Integer.valueOf(2));
 
         // This is the assessment #1 record
         TimelineMetadata meta2 = metadata.get(1);
+        String sessionInstanceGuid = "faQS0dRjAt9xNFTfOd5XqA";
         String asmtInstanceGuid = "5NzDH5Q4V2VkSBFQF2HntA";
         assertEquals(meta2.getGuid(), asmtInstanceGuid);
         assertEquals(meta2.getAssessmentInstanceGuid(), asmtInstanceGuid);
@@ -157,10 +159,11 @@ public class TimelineTest extends Mockito {
         Timeline timeline = new Timeline.Builder().build();
         JsonNode node = BridgeObjectMapper.get().valueToTree(timeline);
         
-        assertEquals(node.size(), 6);
+        assertEquals(node.size(), 7);
         assertEquals(node.get("assessments").size(), 0);
         assertEquals(node.get("sessions").size(), 0);
         assertEquals(node.get("schedule").size(), 0);
+        assertEquals(node.get("studyBursts").size(), 0);
         assertEquals(node.get("totalMinutes").size(), 0);
         assertEquals(node.get("totalNotifications").size(), 0);
         assertEquals(node.get("type").textValue(), "Timeline");

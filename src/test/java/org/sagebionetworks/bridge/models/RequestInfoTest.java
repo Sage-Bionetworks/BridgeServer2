@@ -4,14 +4,17 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 
 import java.util.List;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -112,7 +115,17 @@ public class RequestInfoTest {
         assertEquals(copy.getUploadedOn(), UPLOADED_ON.withZone(copy.getTimeZone()));
         assertEquals(copy.getSignedInOn(), SIGNED_IN_ON.withZone(copy.getTimeZone()));
     }
-    
+
+    @Test
+    public void truncatesLongUserAgent() {
+        String aaaTooBig = StringUtils.repeat('A', 2*BridgeConstants.MAX_USER_AGENT_LENGTH);
+        String aaaJustRight = StringUtils.repeat('A', BridgeConstants.MAX_USER_AGENT_LENGTH);
+
+        RequestInfo requestInfo = new RequestInfo.Builder().withUserAgent(aaaTooBig).build();
+        assertNotEquals(requestInfo.getUserAgent(), aaaTooBig);
+        assertEquals(requestInfo.getUserAgent(), aaaJustRight);
+    }
+
     @Test
     public void deserializesSubstudyIdsCorrectly() throws Exception {
         String json = TestUtils.createJson("{'userSubstudyIds': ['A','B']}");

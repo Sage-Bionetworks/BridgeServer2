@@ -304,7 +304,7 @@ public class StudyParticipantControllerTest extends Mockito {
         List<StudyActivityEvent> list = ImmutableList.of(new StudyActivityEvent.Builder().build());
         ResourceList<StudyActivityEvent> page = new ResourceList<>(list);
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(
-                TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID)).thenReturn(page);
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(page);
         
         mockAccountInStudy();
         
@@ -350,10 +350,10 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountInStudy();
         
-        StatusMessage retValue = controller.publishActivityEvent(TEST_STUDY_ID, TEST_USER_ID, null);
+        StatusMessage retValue = controller.publishActivityEvent(TEST_STUDY_ID, TEST_USER_ID, null, null);
         assertEquals(retValue, StudyParticipantController.EVENT_RECORDED_MSG);
         
-        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false));
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
@@ -384,9 +384,63 @@ public class StudyParticipantControllerTest extends Mockito {
         
         mockAccountInStudy();
         
-        controller.publishActivityEvent(TEST_STUDY_ID, TEST_USER_ID, "true");
+        controller.publishActivityEvent(TEST_STUDY_ID, TEST_USER_ID, "true", null);
         
-        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(true));
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(true), eq(true));
+    }
+    
+    @Test
+    public void publishActivityEvent_updateBursts() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
+        eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        
+        doReturn(session).when(controller).getAdministrativeSession();
+
+        TestUtils.mockRequestBody(mockRequest, createJson(
+                "{'eventId':'eventKey','timestamp':'"+CREATED_ON+"'}"));
+        
+        mockAccountInStudy();
+        
+        controller.publishActivityEvent(TEST_STUDY_ID, TEST_USER_ID, "true", "true");
+        
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(true), eq(true));
+    }
+    
+    @Test
+    public void publishActivityEvent_doNotUpdateBursts() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID).build());
+        
+        App app = App.create();
+        when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        StudyActivityEventIdsMap eventMap = new StudyActivityEventIdsMap();
+        eventMap.addCustomEvents(ImmutableList.of(new StudyCustomEvent("eventKey", IMMUTABLE)));
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(eventMap);
+        
+        doReturn(session).when(controller).getAdministrativeSession();
+
+        TestUtils.mockRequestBody(mockRequest, createJson(
+                "{'eventId':'eventKey','timestamp':'"+CREATED_ON+"'}"));
+        
+        mockAccountInStudy();
+        
+        controller.publishActivityEvent(TEST_STUDY_ID, TEST_USER_ID, "true", "false");
+        
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(true), eq(false));
     }
     
     @Test
@@ -1435,7 +1489,7 @@ public class StudyParticipantControllerTest extends Mockito {
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
         verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
-        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false));
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);

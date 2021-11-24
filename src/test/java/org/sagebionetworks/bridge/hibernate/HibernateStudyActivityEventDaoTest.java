@@ -58,7 +58,7 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
             .withObjectType(CUSTOM)
             .withObjectId("event1").build();
         
-        dao.deleteCustomEvent(event);
+        dao.deleteEvent(event);
         
         verify(mockHelper).nativeQueryUpdate(eq(DELETE_SQL), paramsCaptor.capture());
         Map<String,Object> params = paramsCaptor.getValue();
@@ -78,7 +78,7 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
     
     @Test
     public void getRecentStudyActivityEvents() { 
-        List<Object[]> list = ImmutableList.of(new Object[11], new Object[11]);
+        List<Object[]> list = ImmutableList.of(new Object[12], new Object[12]);
         when(mockHelper.nativeQuery(any(), any())).thenReturn(list);
         
         List<StudyActivityEvent> retValue = dao.getRecentStudyActivityEvents(
@@ -115,7 +115,7 @@ public class HibernateStudyActivityEventDaoTest extends Mockito {
         assertEquals(retValue.getEventId(), "custom:event2");
         assertEquals(retValue.getTimestamp().withZone(UTC), CREATED_ON);
         assertEquals(retValue.getCreatedOn().withZone(UTC), MODIFIED_ON);
-        assertEquals(retValue.getRecordCount(), 2);
+        assertEquals(retValue.getRecordCount(), Integer.valueOf(2));
         assertEquals(retValue.getUpdateType(), IMMUTABLE);
         
         verify(mockHelper).nativeQuery(eq(GET_RECENT_SQL), paramsCaptor.capture());

@@ -6,9 +6,12 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
+import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Test;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
+
+import org.sagebionetworks.bridge.BridgeConstants;
 
 public class ClientInfoTest {
 
@@ -82,7 +85,11 @@ public class ClientInfoTest {
         assertClientInfo("(test) (tones)", null, null, null, null, null, null, null);
         assertClientInfo("foo/bar d/e (c; a/b)", null, null, null, null, null, null, null);
         assertClientInfo("(c/d; a/b)", null, null, null, null, null, null, null);
-        
+
+        // Excessively long strings are rejected.
+        String aaaTooBig = StringUtils.repeat('A', 2*BridgeConstants.MAX_USER_AGENT_LENGTH);
+        assertClientInfo(aaaTooBig, null, null, null, null, null, null, null);
+
         // All the original test strings pass
         assertClientInfo("Unknown Client/14", "Unknown Client", 14, null, null, null, null, null);
         assertClientInfo("App Name: Here/14", "App Name: Here", 14, null, null, null, null, null);

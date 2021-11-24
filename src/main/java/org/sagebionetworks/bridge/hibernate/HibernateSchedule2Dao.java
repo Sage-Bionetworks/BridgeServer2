@@ -48,8 +48,8 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     static final String AND_NOT_IN_GUIDS = "AND guid NOT IN (:guids)";
     static final String INSERT = "INSERT INTO TimelineMetadata (appId, assessmentGuid, assessmentId, assessmentInstanceGuid, "
             + "assessmentRevision, scheduleGuid, scheduleModifiedOn, schedulePublished, sessionGuid, sessionInstanceEndDay, "
-            + "sessionInstanceGuid, sessionInstanceStartDay, sessionStartEventId, timeWindowGuid, timeWindowPersistent, guid) "
-            + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "sessionInstanceGuid, sessionInstanceStartDay, sessionStartEventId, timeWindowGuid, timeWindowPersistent, guid, "
+            + "studyBurstId, studyBurstNum) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     static final String DELETE_TIMELINE_RECORDS = "DELETE FROM TimelineMetadata WHERE scheduleGuid = :scheduleGuid";
     static final String SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE = "SELECT * FROM TimelineMetadata WHERE sessionInstanceGuid = :instanceGuid AND assessmentInstanceGuid IS NOT NULL";
     static final String DELETE_ALL_SCHEDULES = "DELETE FROM Schedules WHERE appId = :appId";
@@ -131,9 +131,9 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
 
         hibernateHelper.executeWithExceptionHandling(schedule, (session) -> {
             session.save(schedule);
+            deleteAndRecreateTimelineMetadataRecords(session, schedule, false);
             return schedule;
         });
-        deleteAndRecreateTimelineMetadataRecords(schedule, false);
         return schedule;
     }
 
@@ -158,47 +158,45 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
                 query.setParameter(entry.getKey(), entry.getValue());
             }
             query.executeUpdate();
-
             session.update(schedule);
-
+            deleteAndRecreateTimelineMetadataRecords(session, schedule, true);
             return schedule;
         });
-        deleteAndRecreateTimelineMetadataRecords(schedule, true);
         return schedule;
     }
 
-    private void deleteAndRecreateTimelineMetadataRecords(Schedule2 schedule, boolean deleteFirst) {
+    private void deleteAndRecreateTimelineMetadataRecords(org.hibernate.Session session, Schedule2 schedule, boolean deleteFirst) {
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         List<TimelineMetadata> metadata = timeline.getMetadata();
 
-        hibernateHelper.executeWithExceptionHandling(schedule, (session) -> {
-            // batch these operations. Improves network performance
-            session.setJdbcBatchSize(batchSize);
+        // batch these operations. Improves network performance
+        session.setJdbcBatchSize(batchSize);
 
-            if (deleteFirst) {
-                Stopwatch deleteMetadataStopwatch = Stopwatch.createStarted();
-                NativeQuery<?> query = session.createNativeQuery(DELETE_TIMELINE_RECORDS);
-                query.setParameter(SCHEDULE_GUID, schedule.getGuid());
-                query.executeUpdate();
-                deleteMetadataStopwatch.stop();
+        if (deleteFirst) {
+            Stopwatch deleteMetadataStopwatch = Stopwatch.createStarted();
+            NativeQuery<?> query = session.createNativeQuery(DELETE_TIMELINE_RECORDS);
+            query.setParameter(SCHEDULE_GUID, schedule.getGuid());
+            query.executeUpdate();
+            deleteMetadataStopwatch.stop();
 
-                LOG.info("Batch deleting timeline metadata records in " + deleteMetadataStopwatch.elapsed(MILLISECONDS)
-                        + " ms");
-            }
+            LOG.info("Batch deleting timeline metadata records in " + 
+                    deleteMetadataStopwatch.elapsed(MILLISECONDS) + " ms");
+        }
+        
+        // This is necessary or the timeline records fail for lack of a session guid (hasn't been registered yet
+        // on creates).
+        session.flush();
 
-            // Hibernate’s session.save() does an insert and then an update operation on each record, so 
-            // switching to JDBC to do an insert only, halves the time it takes to do this operation
-            // even without further batch optimizations. I was not able to determine why Hibernate is doing 
-            // this (it’s not the most frequently cited culprit, an @Id generator, because we don’t use one).
-            Stopwatch createMetadataStopwatch = Stopwatch.createStarted();
-            session.doWork(persistRecordsInBatches(metadata));
-            createMetadataStopwatch.stop();
+        // Hibernate’s session.save() does an insert and then an update operation on each record, so 
+        // switching to JDBC to do an insert only, halves the time it takes to do this operation
+        // even without further batch optimizations. I was not able to determine why Hibernate is doing 
+        // this (it’s not the most frequently cited culprit, an @Id generator, because we don’t use one).
+        Stopwatch createMetadataStopwatch = Stopwatch.createStarted();
+        session.doWork(persistRecordsInBatches(metadata));
+        createMetadataStopwatch.stop();
 
-            LOG.info("Persisting " + metadata.size() + " timeline metadata records in "
-                    + createMetadataStopwatch.elapsed(MILLISECONDS) + " ms (batchSize = " + batchSize + ")");
-
-            return null;
-        });
+        LOG.info("Persisting " + metadata.size() + " timeline metadata records in "
+                + createMetadataStopwatch.elapsed(MILLISECONDS) + " ms (batchSize = " + batchSize + ")");
     }
 
     /**
@@ -247,6 +245,12 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         ps.setString(14, meta.getTimeWindowGuid());
         ps.setBoolean(15, meta.isTimeWindowPersistent());
         ps.setString(16, meta.getGuid());
+        ps.setString(17, meta.getStudyBurstId());
+        if (meta.getStudyBurstNum() == null) {
+            ps.setNull(18, Types.NULL);
+        } else {
+            ps.setInt(18, meta.getStudyBurstNum());    
+        }
         ps.addBatch();
     }
 

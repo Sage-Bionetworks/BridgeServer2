@@ -13,6 +13,7 @@ import javax.persistence.Table;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.hibernate.ClientInfoConverter;
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.DateTimeZoneAttributeConverter;
@@ -206,6 +207,9 @@ public final class RequestInfo {
         }
         public Builder withUserAgent(String userAgent) {
             if (userAgent != null) {
+                if (userAgent.length() > BridgeConstants.MAX_USER_AGENT_LENGTH) {
+                    userAgent = userAgent.substring(0, BridgeConstants.MAX_USER_AGENT_LENGTH);
+                }
                 this.userAgent = userAgent;
             }
             return this;

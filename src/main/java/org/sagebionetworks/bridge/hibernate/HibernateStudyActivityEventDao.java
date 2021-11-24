@@ -31,8 +31,8 @@ public class HibernateStudyActivityEventDao implements StudyActivityEventDao {
     static final String GET_RECENT_SQL = "SELECT *, (SELECT count(*) as total FROM " +
             "StudyActivityEvents WHERE eventId = sae.eventId AND studyId = :studyId " +
             "AND userId = :userId GROUP BY eventId) FROM StudyActivityEvents AS sae " +
-            "WHERE userId = :userId AND studyId = :studyId AND createdOn = (SELECT " +
-            "createdOn FROM StudyActivityEvents WHERE userId = :userId AND studyId = " +
+            "WHERE userId = :userId AND studyId = :studyId AND eventTimestamp = (SELECT " +
+            "eventTimestamp FROM StudyActivityEvents WHERE userId = :userId AND studyId = " +
             ":studyId AND eventId = sae.eventId ORDER BY createdOn DESC LIMIT 1) " +
             "ORDER BY eventId";
 
@@ -48,7 +48,7 @@ public class HibernateStudyActivityEventDao implements StudyActivityEventDao {
     }
 
     @Override
-    public void deleteCustomEvent(StudyActivityEvent event) {
+    public void deleteEvent(StudyActivityEvent event) {
         checkNotNull(event);
         
         QueryBuilder query = new QueryBuilder();

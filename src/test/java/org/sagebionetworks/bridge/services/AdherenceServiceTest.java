@@ -132,7 +132,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(recordCaptor.getAllValues().get(2).getInstanceGuid(), "sessionInstanceGuid");
         
         // Nothing is finished, nothing is published.
-        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false));
+        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false), eq(true));
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -172,7 +172,7 @@ public class AdherenceServiceTest extends Mockito {
         
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(0));
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(1));
-        verify(mockStudyActivityEventService, times(3)).publishEvent(eventCaptor.capture(), eq(false));
+        verify(mockStudyActivityEventService, times(3)).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         
         StudyActivityEvent event = eventCaptor.getAllValues().get(2);
         assertEquals(event.getAppId(), TEST_APP_ID);
@@ -197,7 +197,7 @@ public class AdherenceServiceTest extends Mockito {
         
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(0));
         verify(mockDao).updateAdherenceRecord(list.getRecords().get(1));
-        verify(mockStudyActivityEventService, times(1)).publishEvent(eventCaptor.capture(), eq(false));
+        verify(mockStudyActivityEventService, times(1)).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
@@ -220,7 +220,7 @@ public class AdherenceServiceTest extends Mockito {
         
         service.updateAdherenceRecords(TEST_APP_ID, list);
         
-        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false));
+        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false), eq(true));
     }
     
     private AdherenceRecord mockAssessmentRecord(String id) {
@@ -266,7 +266,7 @@ public class AdherenceServiceTest extends Mockito {
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
         
         verify(mockDao, never()).updateAdherenceRecord(any());
-        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false));
+        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false), eq(true));
     }
     
     @Test
@@ -433,7 +433,7 @@ public class AdherenceServiceTest extends Mockito {
         assertNull(captured.getFinishedOn());
         assertFalse(captured.isDeclined());
         
-        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false));
+        verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false), eq(true));
     }
     
     @Test
@@ -625,15 +625,15 @@ public class AdherenceServiceTest extends Mockito {
                 .withCurrentTimestampsOnly(TRUE)
                 .withEventTimestamps(ImmutableMap.of("event1", CREATED_ON)).build();
         
-        StudyActivityEvent event1 = createEvent("custom:event1", MODIFIED_ON);
-        StudyActivityEvent event2 = createEvent("custom:event2", MODIFIED_ON);
-        when(mockStudyActivityEventService.getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID))
+        StudyActivityEvent event1 = createEvent("custom:event1", MODIFIED_ON, null);
+        StudyActivityEvent event2 = createEvent("custom:event2", MODIFIED_ON, null);
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID))
             .thenReturn(new ResourceList<StudyActivityEvent>(ImmutableList.of(event1, event2)));
         
         AdherenceRecordsSearch retValue = service.cleanupSearch(TEST_APP_ID, search);
         
         verify(mockStudyActivityEventService)
-            .getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
+            .getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         
         // this first one is overridden by the values submitted by the client
         assertEquals(retValue.getEventTimestamps().get("custom:event1"), CREATED_ON);

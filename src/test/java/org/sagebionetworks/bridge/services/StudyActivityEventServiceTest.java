@@ -9,10 +9,13 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.createEvent;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ASSESSMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.CREATED_ON_FIELD;
@@ -51,6 +54,7 @@ import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -69,7 +73,8 @@ public class StudyActivityEventServiceTest extends Mockito {
     private static final DateTime TIMELINE_RETRIEVED_TS = DateTime.parse("2019-03-05T01:34:53.395Z");
     private static final DateTime ENROLLMENT_TS = DateTime.parse("2019-10-14T01:34:53.395Z");
     private static final DateTime INSTALL_LINK_SENT_TS = DateTime.parse("2018-10-11T03:34:53.395Z");
-    private static final StudyActivityEvent PERSISTED_EVENT = new StudyActivityEvent.Builder().build();
+    private static final StudyActivityEvent PERSISTED_EVENT = new StudyActivityEvent.Builder()
+            .withUpdateType(IMMUTABLE).build();
 
     @Mock
     StudyActivityEventDao mockDao;
@@ -124,7 +129,7 @@ public class StudyActivityEventServiceTest extends Mockito {
 
         service.deleteEvent(originEvent, false);
         
-        verify(mockDao).deleteCustomEvent(eventCaptor.capture());
+        verify(mockDao).deleteEvent(eventCaptor.capture());
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
@@ -140,7 +145,7 @@ public class StudyActivityEventServiceTest extends Mockito {
 
         service.deleteEvent(originEvent, false);
         
-        verify(mockDao, never()).deleteCustomEvent(any());
+        verify(mockDao, never()).deleteEvent(any());
     }
 
     @Test
@@ -151,7 +156,7 @@ public class StudyActivityEventServiceTest extends Mockito {
 
         service.deleteEvent(originEvent, false);
         
-        verify(mockDao, never()).deleteCustomEvent(any());
+        verify(mockDao, never()).deleteEvent(any());
     }
     
     @Test
@@ -185,13 +190,61 @@ public class StudyActivityEventServiceTest extends Mockito {
     }
     
     @Test
+    public void deleteEvent_deletesStudyBurstEvents() {
+        // Publish a deletable event. 
+        StudyActivityEvent event = makeBuilder().withObjectId("foo")
+                .withTimestamp(ENROLLMENT_TS).withObjectType(CUSTOM)
+                .withUpdateType(MUTABLE).build();        
+        
+        Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyBurst burst = new StudyBurst();
+        burst.setOriginEventId("custom:foo");
+        burst.setIdentifier("foo");
+        burst.setInterval(Period.parse("P1W"));
+        burst.setOccurrences(3);
+        burst.setUpdateType(MUTABLE);
+
+        Schedule2 schedule = new Schedule2();
+        schedule.setStudyBursts(ImmutableList.of(burst));
+        
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+                .thenReturn(Optional.of(schedule));
+        
+        StudyActivityEvent persistedEvent = new StudyActivityEvent();
+        when(mockDao.getRecentStudyActivityEvent(TEST_USER_ID, TEST_STUDY_ID, "custom:foo"))
+            .thenReturn(persistedEvent);
+        
+        service.deleteEvent(event, false);
+        
+        verify(mockDao, times(4)).deleteEvent(eventCaptor.capture());
+        
+        StudyActivityEvent origin = eventCaptor.getAllValues().get(0);
+        assertEquals(origin.getEventId(), "custom:foo");
+        
+        StudyActivityEvent sb1 = eventCaptor.getAllValues().get(1);
+        assertEquals(sb1.getEventId(), "study_burst:foo:01");
+        assertEquals(sb1.getAppId(), TEST_APP_ID);
+        assertEquals(sb1.getStudyId(), TEST_STUDY_ID);
+        assertEquals(sb1.getUserId(), TEST_USER_ID);
+        
+        StudyActivityEvent sb2 = eventCaptor.getAllValues().get(2);
+        assertEquals(sb2.getEventId(), "study_burst:foo:02");
+        
+        StudyActivityEvent sb3 = eventCaptor.getAllValues().get(3);
+        assertEquals(sb3.getEventId(), "study_burst:foo:03");
+    }
+    
+    @Test
     public void publishEvent_eventIsImmutable() {
         StudyActivityEvent originEvent = makeBuilder()
                 .withObjectType(CUSTOM).withObjectId("event2").withTimestamp(MODIFIED_ON).build();
         
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any())).thenReturn(PERSISTED_EVENT);
 
-        service.publishEvent(originEvent, false);
+        service.publishEvent(originEvent, false, true);
         
         verify(mockDao, never()).publishEvent(any());
     }
@@ -202,7 +255,7 @@ public class StudyActivityEventServiceTest extends Mockito {
                 .withObjectId("event1").withTimestamp(MODIFIED_ON)
                 .withClientTimeZone("America/Los_Angeles").build();
         
-        service.publishEvent(originEvent, false);
+        service.publishEvent(originEvent, false, true);
         
         verify(mockDao).publishEvent(eventCaptor.capture());
         StudyActivityEvent event = eventCaptor.getValue();
@@ -221,7 +274,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyActivityEvent event = makeBuilder().withObjectId("timeline_retrieved")
                 .withTimestamp(TIMELINE_RETRIEVED_TS).withObjectType(TIMELINE_RETRIEVED).build();
         
-        service.publishEvent(event, false);
+        service.publishEvent(event, false, true);
         
         verify(mockDao).publishEvent(any());
     }
@@ -235,7 +288,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any())).thenReturn(PERSISTED_EVENT);
 
-        service.publishEvent(event, false);
+        service.publishEvent(event, false, true);
         
         verify(mockDao, never()).publishEvent(any());
     }
@@ -244,7 +297,7 @@ public class StudyActivityEventServiceTest extends Mockito {
     public void publishEvent_eventInvalid() {
         StudyActivityEvent event = makeBuilder().build();
         
-        service.publishEvent(event, false);
+        service.publishEvent(event, false, true);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -256,7 +309,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any())).thenReturn(PERSISTED_EVENT);
 
-        service.publishEvent(event, true);
+        service.publishEvent(event, true, true);
     }
     
     @Test
@@ -284,7 +337,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
                 .thenReturn(Optional.of(schedule));
         try {
-            service.publishEvent(event, true);
+            service.publishEvent(event, true, true);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
             assertTrue(e.getMessage().contains("Study event(s) failed to publish: enrollment, study_burst:foo:01."));
@@ -319,7 +372,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockDao.getRecentStudyActivityEvent(any(), any(), eq("study_burst:foo:01"))).thenReturn(PERSISTED_EVENT);
         
         try {
-            service.publishEvent(event, true);
+            service.publishEvent(event, true, true);
             fail("Should have thrown exception");
         } catch(BadRequestException e) {
             assertEquals(e.getMessage(), "Study event(s) failed to publish: study_burst:foo:01.");
@@ -341,6 +394,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
+        burst.setDelay(Period.parse("P1W"));
         burst.setInterval(Period.parse("P1W"));
         burst.setOccurrences(3);
         burst.setUpdateType(MUTABLE);
@@ -351,7 +405,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
                 .thenReturn(Optional.of(schedule));
         
-        service.publishEvent(event, false);
+        service.publishEvent(event, false, true);
         
         verify(mockDao, times(4)).publishEvent(eventCaptor.capture());
         
@@ -382,6 +436,117 @@ public class StudyActivityEventServiceTest extends Mockito {
     }
     
     @Test
+    public void publishEvent_publishesStudyBurstsNoDelays() {
+        // Covers the case of immutable event, study bursts mutable, others tested below
+        StudyActivityEvent event = makeBuilder().withObjectId(ENROLLMENT_FIELD)
+                .withTimestamp(ENROLLMENT_TS).withObjectType(ENROLLMENT)
+                .withClientTimeZone("America/Los_Angeles")
+                .build();        
+        
+        Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyBurst burst = new StudyBurst();
+        burst.setOriginEventId(ENROLLMENT_FIELD);
+        burst.setIdentifier("foo");
+        burst.setInterval(Period.parse("P1W"));
+        burst.setOccurrences(3);
+        burst.setUpdateType(MUTABLE);
+
+        Schedule2 schedule = new Schedule2();
+        schedule.setStudyBursts(ImmutableList.of(burst));
+        
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+                .thenReturn(Optional.of(schedule));
+        
+        service.publishEvent(event, false, true);
+        
+        verify(mockDao, times(4)).publishEvent(eventCaptor.capture());
+        
+        StudyActivityEvent origin = eventCaptor.getAllValues().get(0);
+        assertEquals(origin.getEventId(), "enrollment");
+        
+        StudyActivityEvent sb1 = eventCaptor.getAllValues().get(1);
+        assertEquals(sb1.getEventId(), "study_burst:foo:01");
+        assertEquals(sb1.getTimestamp(), ENROLLMENT_TS);
+        assertNull(sb1.getPeriodFromOrigin());
+        
+        StudyActivityEvent sb2 = eventCaptor.getAllValues().get(2);
+        assertEquals(sb2.getEventId(), "study_burst:foo:02");
+        assertEquals(sb2.getTimestamp(), ENROLLMENT_TS.plusWeeks(1));
+        assertEquals(sb2.getPeriodFromOrigin(), Period.parse("P1W"));
+        
+        StudyActivityEvent sb3 = eventCaptor.getAllValues().get(3);
+        assertEquals(sb3.getEventId(), "study_burst:foo:03");
+        assertEquals(sb3.getTimestamp(), ENROLLMENT_TS.plusWeeks(2));
+        assertEquals(sb3.getPeriodFromOrigin(), Period.parse("P2W"));
+    }
+    
+    @Test
+    public void publishEvent_studyBurstsSuppressed() {
+        StudyActivityEvent persistedEvent = makeBuilder().withObjectType(ASSESSMENT).withObjectId("foo").withEventType(FINISHED)
+                .withTimestamp(ENROLLMENT_TS).build();
+
+        StudyActivityEvent event = makeBuilder().withObjectType(ASSESSMENT).withObjectId("foo").withEventType(FINISHED)
+                .withTimestamp(ENROLLMENT_TS.plusDays(1)).build();
+
+        Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyBurst burst = new StudyBurst();
+        burst.setOriginEventId("assessment:foo:finished");
+        burst.setIdentifier("foo");
+        burst.setInterval(Period.parse("P1W"));
+        burst.setOccurrences(3);
+        burst.setUpdateType(MUTABLE);
+
+        Schedule2 schedule = new Schedule2();
+        schedule.setStudyBursts(ImmutableList.of(burst));
+        
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+                .thenReturn(Optional.of(schedule));
+        
+        when(mockDao.getRecentStudyActivityEvent(TEST_USER_ID, TEST_STUDY_ID, "assessment:foo:finished"))
+            .thenReturn(persistedEvent);
+        
+        service.publishEvent(event, false, false);
+        
+        verify(mockDao, times(1)).publishEvent(eventCaptor.capture());
+        assertEquals(eventCaptor.getValue().getEventId(), "assessment:foo:finished");
+    }
+    
+    @Test
+    public void publishEvent_studyBurstsSuppressedButIgnored() {
+        // There is no existing assessment finished event, which means that despite the call setting study burst
+        // updates to false, it's still going to create the study bursts.
+        StudyActivityEvent event = makeBuilder().withObjectType(ASSESSMENT).withObjectId("foo").withEventType(FINISHED)
+                .withTimestamp(ENROLLMENT_TS.plusDays(1)).build();
+
+        Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        StudyBurst burst = new StudyBurst();
+        burst.setOriginEventId("assessment:foo:finished");
+        burst.setIdentifier("foo");
+        burst.setInterval(Period.parse("P1W"));
+        burst.setOccurrences(3);
+        burst.setUpdateType(MUTABLE);
+
+        Schedule2 schedule = new Schedule2();
+        schedule.setStudyBursts(ImmutableList.of(burst));
+        
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+                .thenReturn(Optional.of(schedule));
+        
+        service.publishEvent(event, false, false);
+        
+        verify(mockDao, times(4)).publishEvent(eventCaptor.capture());
+    }
+    
+    @Test
     public void publishEvent_doesNotPublishStudyBursts() { 
         // Study bursts are specified, but this is not the origin event, so nothing happens.
         // We can just count calls to the DAO for this.
@@ -403,12 +568,40 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
                 .thenReturn(Optional.of(schedule));
         
-        service.publishEvent(event, false);
+        service.publishEvent(event, false, true);
         
         verify(mockDao, times(1)).publishEvent(eventCaptor.capture());
         
         StudyActivityEvent origin = eventCaptor.getAllValues().get(0);
         assertEquals(origin.getEventId(), "enrollment");
+    }
+    
+    @Test
+    public void publishEvent_studyBurstUpdateMaintainsAllFields() throws Exception {
+        StudyActivityEvent persistedStudyBurst = new StudyActivityEvent.Builder()
+                .withTimestamp(ENROLLMENT_TS.minusHours(1))
+                .withStudyBurstId("burst1")
+                .withPeriodFromOrigin(Period.parse("P4W"))
+                .withOriginEventId("enrollment")
+                .withUpdateType(MUTABLE).build();
+        when(mockDao.getRecentStudyActivityEvent(any(), any(), eq("study_burst:burst1:01")))
+            .thenReturn(persistedStudyBurst);
+        
+        StudyActivityEvent event = makeBuilder().withEventId("study_burst:burst1:01")
+                .withTimestamp(ENROLLMENT_TS).build();
+        
+        service.publishEvent(event, false, false);
+        
+        verify(mockDao, times(1)).publishEvent(eventCaptor.capture());
+        
+        StudyActivityEvent captured = eventCaptor.getValue();
+        assertEquals(captured.getEventId(), "study_burst:burst1:01");
+        assertEquals(captured.getTimestamp(), ENROLLMENT_TS);
+        assertEquals(captured.getCreatedOn(), CREATED_ON);
+        assertEquals(captured.getUpdateType(), MUTABLE);
+        assertEquals(captured.getStudyBurstId(), "burst1");
+        assertEquals(captured.getPeriodFromOrigin(), Period.parse("P4W"));
+        assertEquals(captured.getOriginEventId(), "enrollment");
     }
     
     @Test
@@ -429,6 +622,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
+        burst.setDelay(Period.parse("P1W"));
         burst.setInterval(Period.parse("P1W"));
         burst.setOccurrences(3);
         burst.setUpdateType(MUTABLE);
@@ -439,7 +633,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
                 .thenReturn(Optional.of(schedule));
         
-        service.publishEvent(event, false);
+        service.publishEvent(event, false, true);
         
         verify(mockDao, times(3)).publishEvent(eventCaptor.capture());
         
@@ -473,6 +667,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyBurst burst = new StudyBurst();
         burst.setOriginEventId(ENROLLMENT_FIELD);
         burst.setIdentifier("foo");
+        burst.setDelay(Period.parse("P1W"));
         burst.setInterval(Period.parse("P1W"));
         burst.setOccurrences(3);
         burst.setUpdateType(IMMUTABLE);
@@ -488,7 +683,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockDao.getRecentStudyActivityEvent(any(), any(), eq("study_burst:foo:03")))
             .thenReturn(PERSISTED_EVENT);
         
-        service.publishEvent(event, false);
+        service.publishEvent(event, false, true);
         
         verify(mockDao, times(1)).publishEvent(eventCaptor.capture());
         
@@ -503,15 +698,16 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Test
     public void getRecentStudyActivityEvents() {
-        StudyActivityEvent event1 = createEvent(ENROLLMENT_FIELD, ENROLLMENT_TS);
-        StudyActivityEvent event2 = createEvent("timeline_retrieved", TIMELINE_RETRIEVED_TS);
+        StudyActivityEvent event1 = createEvent(ENROLLMENT_FIELD, ENROLLMENT_TS, null);
+        StudyActivityEvent event2 = createEvent("timeline_retrieved", TIMELINE_RETRIEVED_TS, null);
+        StudyActivityEvent event3 = createEvent("custom:event1", CREATED_ON, 4);
         
-        List<StudyActivityEvent> list = Lists.newArrayList(event1, event2);
+        List<StudyActivityEvent> list = Lists.newArrayList(event1, event2, event3);
         when(mockDao.getRecentStudyActivityEvents(
                 TEST_USER_ID, TEST_STUDY_ID)).thenReturn(list);
         
         Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, CREATED_ON, 
-                INSTALL_LINK_SENT_FIELD, INSTALL_LINK_SENT_TS);
+                INSTALL_LINK_SENT_FIELD, INSTALL_LINK_SENT_TS, "custom:event1", CREATED_ON);
         when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
         
         Account account = Account.create();
@@ -519,21 +715,29 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
         ResourceList<StudyActivityEvent> retValue = service
-                .getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
-        assertEquals(retValue.getItems().size(), 4);
+                .getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        assertEquals(retValue.getItems().size(), 5);
         
         StudyActivityEvent createdOn = TestUtils.findByEventId(
                 retValue.getItems(), ActivityEventObjectType.CREATED_ON);
         assertEquals(createdOn.getTimestamp(), CREATED_ON);
+        assertEquals(createdOn.getRecordCount(), Integer.valueOf(1));
 
         StudyActivityEvent installLinkSentOn = TestUtils.findByEventId(
                 retValue.getItems(), INSTALL_LINK_SENT);
         assertEquals(installLinkSentOn.getTimestamp(), INSTALL_LINK_SENT_TS);
+        assertEquals(installLinkSentOn.getRecordCount(), Integer.valueOf(1));
+        
+        StudyActivityEvent event = TestUtils.findByEventId(
+                retValue.getItems(), CUSTOM);
+        assertEquals(event.getTimestamp(), CREATED_ON);
+        assertEquals(event.getRecordCount(), Integer.valueOf(4));
+        
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getRecentStudyActivityEvents_noAccount() {
-        service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
+        service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
     }
     
     @Test
@@ -578,7 +782,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(retValue.getItems().size(), 1);
         assertEquals(event.getTimestamp(), MODIFIED_ON);
         assertEquals(event.getCreatedOn(), MODIFIED_ON);
-        assertEquals(event.getRecordCount(), 1);
+        assertNull(event.getRecordCount());
         assertEquals(retValue.getRequestParams().get("offsetBy"), Integer.valueOf(10));
         assertEquals(retValue.getRequestParams().get("pageSize"), Integer.valueOf(100));
     }
@@ -617,7 +821,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         StudyActivityEvent event = retValue.getItems().get(0);
         assertEquals(event.getTimestamp(), CREATED_ON);
         assertEquals(event.getCreatedOn(), CREATED_ON);
-        assertEquals(event.getRecordCount(), 1);
+        assertNull(event.getRecordCount());
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class,
@@ -653,7 +857,7 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Test
     public void getStudyActivityEventHistory_noPaging() {
-        StudyActivityEvent event = createEvent("custom:event1", MODIFIED_ON);
+        StudyActivityEvent event = createEvent("custom:event1", MODIFIED_ON, null);
 
         when(mockDao.getStudyActivityEventHistory(TEST_USER_ID, TEST_STUDY_ID, 
                 "custom:event1", null, null)).thenReturn(
@@ -688,20 +892,20 @@ public class StudyActivityEventServiceTest extends Mockito {
         Map<String, DateTime> map = ImmutableMap.of(CREATED_ON_FIELD, CREATED_ON);
         when(mockActivityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE)).thenReturn(map);
         
-        ResourceList<StudyActivityEvent> retValue = service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
+        ResourceList<StudyActivityEvent> retValue = service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getItems().size(), 2);
         
         StudyActivityEvent event = retValue.getItems().get(0);
+        assertEquals(event.getEventId(), CREATED_ON_FIELD);
+        assertEquals(event.getTimestamp(), CREATED_ON);
+        
+        event = retValue.getItems().get(1);
         assertEquals(event.getEventId(), "enrollment");
         assertEquals(event.getTimestamp(), MODIFIED_ON);
         assertNull(event.getOriginEventId());
         assertNull(event.getStudyBurstId());
-        assertEquals(event.getRecordCount(), 1);
+        assertEquals(event.getRecordCount(), Integer.valueOf(1));
         assertEquals(event.getUpdateType(), IMMUTABLE);
-        
-        event = retValue.getItems().get(1);
-        assertEquals(event.getEventId(), CREATED_ON_FIELD);
-        assertEquals(event.getTimestamp(), CREATED_ON);
     }
 
     @Test
@@ -713,11 +917,11 @@ public class StudyActivityEventServiceTest extends Mockito {
         account.setEnrollments(ImmutableSet.of(en));
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
         
-        List<StudyActivityEvent> list = Lists.newArrayList(createEvent(ENROLLMENT_FIELD, CREATED_ON));
+        List<StudyActivityEvent> list = Lists.newArrayList(createEvent(ENROLLMENT_FIELD, CREATED_ON, null));
         when(mockDao.getRecentStudyActivityEvents(TEST_USER_ID, TEST_STUDY_ID))
             .thenReturn(list);
         
-        ResourceList<StudyActivityEvent> retValue = service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_USER_ID, TEST_STUDY_ID);
+        ResourceList<StudyActivityEvent> retValue = service.getRecentStudyActivityEvents(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         assertEquals(retValue.getItems().get(0).getEventId(), ENROLLMENT_FIELD);
         assertEquals(retValue.getItems().get(0).getTimestamp(), CREATED_ON); // not modifiedOn
     }
@@ -744,7 +948,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(event.getTimestamp(), MODIFIED_ON);
         assertNull(event.getOriginEventId());
         assertNull(event.getStudyBurstId());
-        assertEquals(event.getRecordCount(), 1);
+        assertNull(event.getRecordCount());
         assertEquals(event.getUpdateType(), IMMUTABLE);
     }
 
@@ -758,7 +962,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
 
         PagedResourceList<StudyActivityEvent> results = new PagedResourceList<>(
-                ImmutableList.of(createEvent(ENROLLMENT_FIELD, CREATED_ON)), 1, true);
+                ImmutableList.of(createEvent(ENROLLMENT_FIELD, CREATED_ON, null)), 1, true);
         when(mockDao.getStudyActivityEventHistory(any(), any(), any(), any(), any())).thenReturn(results);
         
         PagedResourceList<StudyActivityEvent> retValue = service.getStudyActivityEventHistory(ACCOUNT_ID, TEST_STUDY_ID, ENROLLMENT_FIELD, null, null);

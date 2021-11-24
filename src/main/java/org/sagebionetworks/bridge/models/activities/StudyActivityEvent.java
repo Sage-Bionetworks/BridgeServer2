@@ -7,6 +7,8 @@ import java.math.BigInteger;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.Table;
@@ -38,7 +40,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
      * This method is only used to test the results of a SQL query. 
      */
     public static Object[] recordify(StudyActivityEvent event) {
-        Object[] array = new Object[12];
+        Object[] array = new Object[13];
         array[0] = event.getAppId();
         array[1] = event.getUserId();
         array[2] = event.getStudyId();
@@ -56,8 +58,13 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         if (event.getPeriodFromOrigin() != null) {
             array[10] = event.getPeriodFromOrigin().toString();    
         }
+        if (event.getUpdateType() != null) {
+            array[11] = event.getUpdateType().name();    
+        }
         // Not in table, this is retrieved from the query itself
-        array[11] = BigInteger.valueOf(event.getRecordCount());
+        if (event.getRecordCount() != null) {
+            array[12] = BigInteger.valueOf(event.getRecordCount());    
+        }
         return array;
     }
     
@@ -79,13 +86,16 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         builder.withStudyBurstId(toString(record[8]));
         builder.withOriginEventId(toString(record[9]));
         builder.withPeriodFromOrigin(toPeriod(record[10]));
-        if (record.length > 11) {
-            builder.withRecordCount(toInt(record[11]));    
+        if (record[11] != null) {
+            builder.withUpdateType(ActivityEventUpdateType.valueOf((String)record[11]));
+        }
+        if (record.length > 12) {
+            builder.withRecordCount(toInt(record[12]));    
         }
         return builder.build();
     }
-    private static int toInt(Object obj) {
-        return (obj == null) ? -1 : ((BigInteger)obj).intValue();
+    private static Integer toInt(Object obj) {
+        return (obj == null) ? null : ((BigInteger)obj).intValue();
     }
     private static String toString(Object obj) {
         return (obj == null) ? null : (String)obj;
@@ -126,8 +136,8 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     @Convert(converter = PeriodToStringConverter.class)
     private Period periodFromOrigin;
     @Transient
-    private int recordCount;
-    @Transient
+    private Integer recordCount;
+    @Enumerated(EnumType.STRING)
     private ActivityEventUpdateType updateType;
     
     public StudyActivityEvent() {} // for hibernate
@@ -179,17 +189,29 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
     public String getOriginEventId() { 
         return originEventId;
     }
+    public void setOriginEventId(String originEventId) {
+        this.originEventId = originEventId;
+    }
     public String getStudyBurstId() {
         return studyBurstId;
+    }
+    public void setStudyBurstId(String studyBurstId) {
+        this.studyBurstId = studyBurstId;
     }
     public Period getPeriodFromOrigin() {
         return periodFromOrigin;
     }
-    public int getRecordCount() {
-        return recordCount;
+    public void setPeriodFromOrigin(Period periodFromOrigin) {
+        this.periodFromOrigin = periodFromOrigin;
     }
     public ActivityEventUpdateType getUpdateType() {
         return updateType;
+    }
+    public void setUpdateType(ActivityEventUpdateType updateType) {
+        this.updateType = updateType;
+    }
+    public Integer getRecordCount() {
+        return recordCount;
     }
     
     public static final class Builder {
@@ -207,7 +229,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
         private String originEventId;
         private String studyBurstId;
         private Period periodFromOrigin;
-        private int recordCount;
+        private Integer recordCount;
         private String eventId;
         
         public Builder withAppId(String appId) {
@@ -266,7 +288,7 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
             this.eventType = eventType;
             return this;
         }
-        public Builder withRecordCount(int recordCount) {
+        public Builder withRecordCount(Integer recordCount) {
             this.recordCount = recordCount;
             return this;
         }
@@ -282,7 +304,6 @@ public class StudyActivityEvent implements HasTimestamp, BridgeEntity {
             this.eventId = eventId;
             return this;
         }
-        
         public StudyActivityEvent build() {
             // We’re constructing the event with a known (already validated) event ID
             if (eventId != null) {

@@ -831,3 +831,19 @@ ALTER TABLE `StudyActivityEvents`
 ADD COLUMN `studyBurstId` varchar(255),
 ADD COLUMN `originEventId` varchar(255),
 ADD COLUMN `periodFromOrigin` varchar(60);
+
+-- changeset bridge:53
+
+ALTER TABLE `StudyActivityEvents`
+ADD COLUMN `updateType` enum('MUTABLE', 'IMMUTABLE', 'FUTURE_ONLY') DEFAULT 'IMMUTABLE';
+
+-- changeset bridge:54
+
+ALTER TABLE `ScheduleStudyBursts`
+ADD COLUMN `delayPeriod` varchar(60);
+
+-- changeset bridge:55
+
+ALTER TABLE `TimelineMetadata`
+ADD COLUMN `studyBurstId` varchar(255),
+ADD COLUMN `studyBurstNum` int(10) unsigned;

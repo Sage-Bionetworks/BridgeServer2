@@ -252,7 +252,7 @@ public class AccountService {
                 .withObjectType(ENROLLMENT)
                 .withTimestamp(account.getCreatedOn());
         for (Enrollment en : account.getEnrollments()) {
-            studyActivityEventService.publishEvent(builder.withStudyId(en.getStudyId()).build(), false);
+            studyActivityEventService.publishEvent(builder.withStudyId(en.getStudyId()).build(), false, true);
         }
 
         // Create the corresponding Participant Version.
@@ -312,7 +312,7 @@ public class AccountService {
                     .withTimestamp(account.getModifiedOn());
                     
             for (String studyId : newStudies) {
-                studyActivityEventService.publishEvent(builder.withStudyId(studyId).build(), false);
+                studyActivityEventService.publishEvent(builder.withStudyId(studyId).build(), false, true);
             }
         }
 
