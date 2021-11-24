@@ -734,11 +734,6 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test
     public void addEnrollment_marksTestUserForDesignPhaseStudy() {
-        RequestContext.set(new RequestContext.Builder()
-                .withCallerUserId("123")
-                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
-                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
-                .build()); 
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         
