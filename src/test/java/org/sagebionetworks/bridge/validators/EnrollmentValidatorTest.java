@@ -9,11 +9,26 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
 
+import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.any;
+
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
+import org.mockito.Mock;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 public class EnrollmentValidatorTest {
+    
+    @Mock
+    ValidatorUtils mockValidatorUtils;
+    
+    @BeforeMethod
+    public void beforeMethod() {
+        MockitoAnnotations.initMocks(this);
+    }
     
     Enrollment getEnrollment() {
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
@@ -24,6 +39,7 @@ public class EnrollmentValidatorTest {
         enrollment.setEnrolledBy(TEST_USER_ID);
         enrollment.setWithdrawnBy("withdrawnBy");
         enrollment.setWithdrawalNote("withdrawal note");
+        enrollment.setNote("test note");
         return enrollment;
     }
     
@@ -86,5 +102,13 @@ public class EnrollmentValidatorTest {
         Enrollment enrollment = getEnrollment();
         enrollment.setExternalId(null);
         Validate.entityThrowingException(INSTANCE, getEnrollment());
+    }
+    
+    @Test
+    public void stringValidation_note() {
+        Enrollment enrollment = getEnrollment();
+        Validate.entityThrowingException(INSTANCE, getEnrollment());
+        // TODO: Figure out if there's a better way than mocking a static method
+//        verify(mockValidatorUtils).validateStringForPersistence(any(), any(), any(), any());
     }
 }

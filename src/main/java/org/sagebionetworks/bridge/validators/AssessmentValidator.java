@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringForPersistence;
 
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +46,7 @@ public class AssessmentValidator implements Validator {
         if (isBlank(assessment.getTitle())) {
             errors.rejectValue("title", CANNOT_BE_BLANK);   
         }
+        validateStringForPersistence(errors, 255, assessment.getTitle(), "title");
         String osName = assessment.getOsName();
         if (isBlank(assessment.getOsName())) {
             errors.rejectValue("osName", CANNOT_BE_BLANK);   
@@ -56,6 +58,7 @@ public class AssessmentValidator implements Validator {
         } else if (!assessment.getIdentifier().matches(BRIDGE_EVENT_ID_PATTERN)) {
             errors.rejectValue("identifier", BRIDGE_EVENT_ID_ERROR);
         }
+        validateStringForPersistence(errors, 255, assessment.getIdentifier(), "identifier");
         if (assessment.getRevision() < 0) {
             errors.rejectValue("revision", "cannot be negative");   
         }

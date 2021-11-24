@@ -55,6 +55,7 @@ public class AdherenceRecordListValidator extends AbstractValidator {
                     errors.rejectValue(CLIENT_TIME_ZONE_FIELD, TIME_ZONE_ERROR);
                 }
             }
+            // TODO: check clientData JsonNode string size
             errors.popNestedPath();
         }
     }

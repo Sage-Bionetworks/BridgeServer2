@@ -50,6 +50,7 @@ import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.MediaType;
+import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -767,5 +768,9 @@ public class TestUtils {
             }
         }
         return null;
+    }
+    
+    public static boolean expectedStringPersistenceErrors(Errors errors, String fieldName, boolean failOnLength, boolean failOnChar) {
+        return true;
     }
 }

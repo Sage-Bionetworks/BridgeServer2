@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_HEX_TRIPLET;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_LANG;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_STRING_LENGTH;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_LONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
@@ -645,4 +646,21 @@ public class ValidatorUtilsTest extends Mockito {
         verify(errors).rejectValue("inactivated", INVALID_HEX_TRIPLET);
     }
 
+    @Test
+    public void validateStringForPersistance_tooLong() {
+        String tooLong = "more than 10 characters";
+        
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateStringForPersistence(errors, 10, tooLong, "testFieldName");
+        verify(errors).rejectValue("testFieldName", INVALID_STRING_LENGTH);
+    }
+    
+    @Test
+    public void validateStringForPersistance_emoji() {
+        String tooLong = "emoji \uD83C\uDCB1";
+    
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateStringForPersistence(errors, 10, tooLong, "testFieldName");
+        verify(errors).rejectValue("testFieldName", "can not use emojis");
+    }
 }
