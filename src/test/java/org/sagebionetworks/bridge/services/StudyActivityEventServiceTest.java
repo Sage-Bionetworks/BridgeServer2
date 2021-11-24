@@ -13,7 +13,6 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.CUSTOM;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.INSTALL_LINK_SENT;
-import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.STUDY_BURST;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventType.FINISHED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
@@ -54,7 +53,6 @@ import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
