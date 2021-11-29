@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -18,6 +19,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT_FILTER;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 
 import java.util.List;
@@ -42,6 +44,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
 import org.sagebionetworks.bridge.models.studies.EnrollmentFilter;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
 
 @Component
@@ -170,7 +173,7 @@ public class EnrollmentService {
         
         Validate.entityThrowingException(INSTANCE, newEnrollment);
         
-        studyService.getStudy(newEnrollment.getAppId(), newEnrollment.getStudyId(), true);
+        Study study = studyService.getStudy(newEnrollment.getAppId(), newEnrollment.getStudyId(), true);
         
         CAN_EDIT_ENROLLMENTS.checkAndThrow(STUDY_ID, newEnrollment.getStudyId(), USER_ID, account.getId());
         
@@ -181,6 +184,12 @@ public class EnrollmentService {
         }
         Enrollment existingEnrollment = getElement(account.getEnrollments(), 
                 Enrollment::getStudyId, newEnrollment.getStudyId()).orElse(null);
+        
+        // If you enroll an account in a study that is in the design phase, that account
+        // can no longer be treated as a production account.
+        if (study.getPhase() == DESIGN) {
+            account.setDataGroups(addToSet(account.getDataGroups(), TEST_USER_GROUP));
+        }
         if (existingEnrollment != null) {
             editEnrollment(account, newEnrollment, existingEnrollment);
             return existingEnrollment;
@@ -277,10 +286,9 @@ public class EnrollmentService {
             if (accountEnrollment.getStudyId().equals(enrollment.getStudyId())) {
                 accountEnrollment.setNote(enrollment.getNote());
                 accountEnrollment.setWithdrawalNote(enrollment.getWithdrawalNote());
-                break;
+                accountService.updateAccount(account);
+                return;
             }
         }
-        
-        accountService.updateAccount(account);
     }
 }
