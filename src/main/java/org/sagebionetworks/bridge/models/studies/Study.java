@@ -120,6 +120,12 @@ public interface Study extends BridgeEntity {
     
     List<StudyCustomEvent> getCustomEvents();
     void setCustomEvents(List<StudyCustomEvent> customEvents);
+    
+    String getStudyTimeZone();
+    void setStudyTimeZone(String studyTimeZone);
+    
+    Integer getAdherenceThresholdPercentage();
+    void setAdherenceThresholdPercentage(Integer adherenceThresholdPercentage);
 
     Long getVersion();
     void setVersion(Long version);

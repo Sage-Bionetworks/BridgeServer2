@@ -93,7 +93,7 @@ public class HibernateStudyTest {
         Study study = createStudy();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(study);
-        assertEquals(node.size(), 26);
+        assertEquals(node.size(), 28);
         assertEquals(node.get("identifier").textValue(), "oneId");
         assertEquals(node.get("name").textValue(), "name");
         assertTrue(node.get("deleted").booleanValue());
@@ -124,6 +124,9 @@ public class HibernateStudyTest {
         assertEquals(node.get("signInTypes").get(0).textValue(), "email_message");
         assertEquals(node.get("signInTypes").get(1).textValue(), "email_password");
         assertEquals(node.get("keywords").textValue(), "keywords");
+        assertEquals(node.get("studyTimeZone").textValue(), "America/Los_Angeles");
+        assertEquals(node.get("adherenceThresholdPercentage").intValue(), 80);
+
         assertEquals(node.get("type").textValue(), "Study");
         assertNull(node.get("logoGuid"));
         assertNull(node.get("studyId"));
@@ -159,6 +162,8 @@ public class HibernateStudyTest {
         assertEquals(deser.getKeywords(), "keywords");
         assertEquals(deser.getSignInTypes(), TYPES);
         assertEquals(deser.getLogoGuid(), GUID);
+        assertEquals(deser.getStudyTimeZone(), "America/Los_Angeles");
+        assertEquals(deser.getAdherenceThresholdPercentage(), Integer.valueOf(80));
         assertEquals(deser.getVersion(), new Long(3));
         assertEquals(deser.getCustomEvents().get(0).getEventId(), "event1");
         assertEquals(deser.getCustomEvents().get(0).getUpdateType(), IMMUTABLE);
@@ -207,6 +212,8 @@ public class HibernateStudyTest {
         study.setLogoGuid(GUID);
         study.setStudyLogoUrl(TEST_LINK);
         study.setKeywords("keywords");
+        study.setStudyTimeZone("America/Los_Angeles");
+        study.setAdherenceThresholdPercentage(80);
         study.setVersion(3L);
         
         Contact c1 = new Contact();
