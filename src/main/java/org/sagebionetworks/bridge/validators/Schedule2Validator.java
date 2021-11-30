@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED__ID_PATTERN;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_PATTERN;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
@@ -88,7 +88,7 @@ public class Schedule2Validator implements Validator {
                 errors.rejectValue(IDENTIFIER_FIELD, CANNOT_BE_BLANK);
             } else if (studyBurstIds.contains(burst.getIdentifier())) {
                 errors.rejectValue(IDENTIFIER_FIELD, CANNOT_BE_DUPLICATE);
-            } else if (!burst.getIdentifier().matches(BRIDGE_RELAXED__ID_PATTERN)) {
+            } else if (!burst.getIdentifier().matches(BRIDGE_RELAXED_ID_PATTERN)) {
                 errors.rejectValue(IDENTIFIER_FIELD, BRIDGE_RELAXED_ID_ERROR);
             }
             studyBurstIds.add(burst.getIdentifier());

@@ -4,7 +4,7 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED__ID_PATTERN;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_PATTERN;
 import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAIL;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
@@ -107,7 +107,7 @@ public class StudyValidator implements Validator {
             }
             if (isBlank(customEvent.getEventId())) {
                 errors.rejectValue("eventId", CANNOT_BE_BLANK);
-            } else if (!customEvent.getEventId().matches(BRIDGE_RELAXED__ID_PATTERN)) {
+            } else if (!customEvent.getEventId().matches(BRIDGE_RELAXED_ID_PATTERN)) {
                 errors.rejectValue("eventId", BRIDGE_RELAXED_ID_ERROR);
             } else {
                 uniqueIds.add(customEvent.getEventId());    

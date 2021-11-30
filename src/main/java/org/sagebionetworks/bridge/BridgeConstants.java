@@ -64,8 +64,7 @@ public class BridgeConstants {
     /** An identifier field that can contain spaces, some punctuation (but not colons) where it's infeasible 
      * to include a separate label and unnecessary to restrict the string for external systems like Synapse. 
      */
-    // public static final String BRIDGE_RELAXED__ID_PATTERN = "^[\\sa-zA-Z0-9_-]+$";
-    public static final String BRIDGE_RELAXED__ID_PATTERN = "^[^:]+$";
+    public static final String BRIDGE_RELAXED_ID_PATTERN = "^[^:]+$";
     
     /** The pattern of a valid JavaScript variable/object property name. */
     public  static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";
