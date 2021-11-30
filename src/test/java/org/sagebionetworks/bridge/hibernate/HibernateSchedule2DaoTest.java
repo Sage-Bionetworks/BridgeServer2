@@ -19,8 +19,10 @@ import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.INSERT;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.INSTANCE_GUID;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.SELECT_COUNT;
+import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.SELECT_METADATA_FOR_SCHEDULE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.sql.Connection;
@@ -407,6 +409,20 @@ public class HibernateSchedule2DaoTest extends Mockito {
 
         assertEquals(queryCaptor.getValue(), SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE);
         assertEquals(paramsCaptor.getValue().get(INSTANCE_GUID), GUID);
+    }
+    
+    @Test
+    public void getScheduleMetadata() {
+        List<TimelineMetadata> results = ImmutableList.of();
+        when(mockHibernateHelper.nativeQueryGet(any(), any(), any(), any(), 
+                eq(TimelineMetadata.class))).thenReturn(results);
+
+        List<TimelineMetadata> retValue = dao.getScheduleMetadata(GUID);
+        assertSame(retValue, results);
+
+        verify(mockHibernateHelper).nativeQueryGet(eq(SELECT_METADATA_FOR_SCHEDULE),
+                paramsCaptor.capture(), eq(null), eq(null), eq(TimelineMetadata.class));
+        assertEquals(paramsCaptor.getValue().get(HibernateSchedule2Dao.SCHEDULE_GUID), GUID);
     }
     
     @Test
