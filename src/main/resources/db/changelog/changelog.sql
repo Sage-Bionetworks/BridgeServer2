@@ -848,6 +848,12 @@ ALTER TABLE `TimelineMetadata`
 ADD COLUMN `studyBurstId` varchar(255),
 ADD COLUMN `studyBurstNum` int(10) unsigned;
 
+-- changeset bridge:56
+
+ALTER TABLE `Substudies`
+ADD COLUMN `studyTimeZone` varchar(255),
+ADD COLUMN `adherenceThresholdPercentage` int(3) unsigned;
+
 -- changeset bridge:57
 
 ALTER TABLE `Sessions` 
