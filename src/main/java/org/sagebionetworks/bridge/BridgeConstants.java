@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
+    public static final String EXTERNAL_ID_NONE = "<none>";
+
     // Excessively long User-Agent strings break the database and generally aren't parseable anyway.
     public static final int MAX_USER_AGENT_LENGTH = 255;
 

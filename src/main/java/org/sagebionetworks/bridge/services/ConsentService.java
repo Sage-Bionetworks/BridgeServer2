@@ -91,6 +91,7 @@ public class ConsentService {
     final void setAccountService(AccountService accountService) {
         this.accountService = accountService;
     }
+
     @Autowired
     final void setSendMailService(SendMailService sendMailService) {
         this.sendMailService = sendMailService;
@@ -130,7 +131,7 @@ public class ConsentService {
     final void setEnrollmentService(EnrollmentService enrollmentService) {
         this.enrollmentService = enrollmentService;
     }
-    
+
     /**
      * Get the user's active consent signature (a signature that has not been withdrawn).
      * @throws EntityNotFoundException if no consent exists

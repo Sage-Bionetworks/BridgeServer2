@@ -752,12 +752,6 @@ public class ParticipantServiceTest extends Mockito {
         // Mock request info.
         when(requestInfoService.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
 
-        // Mock subpop service.
-        when(subpopulation.getGuid()).thenReturn(SUBPOP_GUID);
-        when(subpopulation.getGuidString()).thenReturn(SUBPOP_GUID.getGuid());
-        when(subpopService.getSubpopulations(TEST_APP_ID, false)).thenReturn(
-                ImmutableList.of(subpopulation));
-
         // Mock consent service
         ConsentStatus consentStatus = new ConsentStatus.Builder().withName("My Consent").withGuid(SUBPOP_GUID)
                 .withRequired(true).withConsented(false).withSignedMostRecentConsent(false).build();
@@ -785,12 +779,6 @@ public class ParticipantServiceTest extends Mockito {
 
         // Mock request info.
         when(requestInfoService.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
-
-        // Mock subpop service.
-        when(subpopulation.getGuid()).thenReturn(SUBPOP_GUID);
-        when(subpopulation.getGuidString()).thenReturn(SUBPOP_GUID.getGuid());
-        when(subpopService.getSubpopulations(TEST_APP_ID, false)).thenReturn(
-                ImmutableList.of(subpopulation));
 
         // Mock consent service
         ConsentStatus consentStatus = new ConsentStatus.Builder().withName("My Consent").withGuid(SUBPOP_GUID)
@@ -1106,7 +1094,7 @@ public class ParticipantServiceTest extends Mockito {
                 .withRequired(true).withConsented(true).withSignedMostRecentConsent(true).build();
         when(consentService.getConsentStatuses(any(), any())).thenReturn(
                 ImmutableMap.of(SUBPOP_GUID_1, consentStatus1));
-        
+
         // Get the fully initialized participant object (including histories)
         StudyParticipant participant = participantService.getParticipant(APP, ID, true);
 

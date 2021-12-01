@@ -299,7 +299,7 @@ public class ParticipantService {
                 .build();
 
         // Participant must be consented.
-        StudyParticipant participant = getParticipant(app, account, true);
+        StudyParticipant participant = getParticipant(app, account, false);
         if (!TRUE.equals(participant.isConsented())) {
             throw new BadRequestException("Can't create SMS notification registration for user " + userId +
                     ": user is not consented");
@@ -360,15 +360,16 @@ public class ParticipantService {
         RequestInfo requestInfo = requestInfoService.getRequestInfo(account.getId());
         if (requestInfo != null) {
             CriteriaContext context = new CriteriaContext.Builder()
-                .withAppId(app.getIdentifier())
-                .withUserId(account.getId())
-                .withHealthCode(account.getHealthCode())
-                .withUserDataGroups(account.getDataGroups())
-                .withUserStudyIds(assoc.getStudyIdsVisibleToCaller())
-                .withClientInfo(requestInfo.getClientInfo())
-                .withLanguages(requestInfo.getLanguages()).build();
+                    .withAppId(app.getIdentifier())
+                    .withUserId(account.getId())
+                    .withHealthCode(account.getHealthCode())
+                    .withUserDataGroups(account.getDataGroups())
+                    .withUserStudyIds(assoc.getStudyIdsVisibleToCaller())
+                    .withClientInfo(requestInfo.getClientInfo())
+                    .withLanguages(requestInfo.getLanguages()).build();
             copyConsentStatusToParticipant(builder, account, context);
         }
+
         return builder.build();
     }
     

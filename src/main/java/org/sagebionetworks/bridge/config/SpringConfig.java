@@ -86,6 +86,7 @@ import org.sagebionetworks.bridge.dynamodb.DynamoNotificationRegistration;
 import org.sagebionetworks.bridge.dynamodb.DynamoNotificationTopic;
 import org.sagebionetworks.bridge.dynamodb.DynamoOAuthAccessGrant;
 import org.sagebionetworks.bridge.dynamodb.DynamoParticipantData;
+import org.sagebionetworks.bridge.dynamodb.DynamoParticipantVersion;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportData;
 import org.sagebionetworks.bridge.dynamodb.DynamoReportIndex;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
@@ -333,6 +334,12 @@ public class SpringConfig {
     @Autowired
     public DynamoDBMapper compoundActivityDefinitionDdbMapper(DynamoUtils dynamoUtils) {
         return dynamoUtils.getMapper(DynamoCompoundActivityDefinition.class);
+    }
+
+    @Bean(name = "participantVersionDdbMapper")
+    @Autowired
+    public DynamoDBMapper participantVersionDdbMapper(DynamoUtils dynamoUtils) {
+        return dynamoUtils.getMapper(DynamoParticipantVersion.class);
     }
 
     @Bean(name = "smsMessageDdbMapper")
