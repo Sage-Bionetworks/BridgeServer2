@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringForPersistence;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_MEDIUMTEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
@@ -38,7 +39,7 @@ public class ConsentSignatureValidator implements Validator {
         if (Strings.isNullOrEmpty(sig.getName())) {
             errors.rejectValue("name", CANNOT_BE_BLANK);
         }
-        validateStringForPersistence(errors, 255, sig.getName(), "name");
+        validateStringLength(errors, 255, sig.getName(), "name");
         if (Strings.isNullOrEmpty(sig.getBirthdate())) {
             if (minAgeOfConsent > 0) {
                 errors.rejectValue("birthdate", CANNOT_BE_BLANK);
@@ -68,13 +69,11 @@ public class ConsentSignatureValidator implements Validator {
         if (imageData != null && imageData.isEmpty()) {
             errors.rejectValue("imageData", CANNOT_BE_EMPTY_STRING);
         }
-        if (imageData != null && !imageData.isEmpty()) {
-            // TODO: insert mediumText validation
-        }
+        validateStringLength(errors, MYSQL_MEDIUMTEXT_SIZE, imageData, "imageData");
         if (imageMimeType != null && imageMimeType.isEmpty()) {
             errors.rejectValue("imageMimeType", CANNOT_BE_EMPTY_STRING);
         }
-        validateStringForPersistence(errors, 255, imageMimeType, "imageMimeType");
+        validateStringLength(errors, 255, imageMimeType, "imageMimeType");
 
         // if one of them is not null, but not both
         if (imageData != null ^ imageMimeType != null) {

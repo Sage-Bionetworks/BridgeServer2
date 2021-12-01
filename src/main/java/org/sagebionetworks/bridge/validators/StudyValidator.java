@@ -9,7 +9,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringForPersistence;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -54,14 +54,14 @@ public class StudyValidator implements Validator {
             errors.rejectValue(IDENTIFIER_FIELD, BRIDGE_EVENT_ID_ERROR);
         }
         // TODO: is this the right field name? should it be id?
-        validateStringForPersistence(errors, 60, study.getIdentifier(), "studyId");
+        validateStringLength(errors, 60, study.getIdentifier(), "studyId");
         if (isBlank(study.getAppId())) {
             errors.rejectValue(APP_ID_FIELD, CANNOT_BE_BLANK);
         }
         if (isBlank(study.getName())) {
             errors.rejectValue(NAME_FIELD, CANNOT_BE_BLANK);
         }
-        validateStringForPersistence(errors, 255, study.getName(), NAME_FIELD);
+        validateStringLength(errors, 255, study.getName(), NAME_FIELD);
         if (study.getPhase() == null) {
             errors.rejectValue(PHASE_FIELD, CANNOT_BE_NULL);
         }
@@ -122,12 +122,12 @@ public class StudyValidator implements Validator {
             }
             errors.popNestedPath();
         }
-        validateStringForPersistence(errors, 510, study.getDetails(), "details");
-        validateStringForPersistence(errors, 255, study.getStudyLogoUrl(), "studyLogoUrl");
-        validateStringForPersistence(errors, 255, study.getInstitutionId(), "institutionId");
-        validateStringForPersistence(errors, 255, study.getIrbProtocolId(), "irbProtocolId");
-        validateStringForPersistence(errors, 512, study.getIrbProtocolName(), "irbProtocolName");
-        validateStringForPersistence(errors, 60, study.getIrbName(), "irbName");
-        validateStringForPersistence(errors, 255, study.getKeywords(), "keywords");
+        validateStringLength(errors, 510, study.getDetails(), "details");
+        validateStringLength(errors, 255, study.getStudyLogoUrl(), "studyLogoUrl");
+        validateStringLength(errors, 255, study.getInstitutionId(), "institutionId");
+        validateStringLength(errors, 255, study.getIrbProtocolId(), "irbProtocolId");
+        validateStringLength(errors, 512, study.getIrbProtocolName(), "irbProtocolName");
+        validateStringLength(errors, 60, study.getIrbName(), "irbName");
+        validateStringLength(errors, 255, study.getKeywords(), "keywords");
     }
 }

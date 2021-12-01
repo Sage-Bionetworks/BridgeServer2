@@ -1,7 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringForPersistence;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
@@ -51,7 +51,7 @@ public class AccountIdValidator implements Validator {
                 errors.rejectValue("email", "is required");
             } else {
                 // TODO: Check if this is necessary, seems like it is not validated locally, so probably not persisted?
-                validateStringForPersistence(errors, 255, identifier.getEmail(), "email");
+                validateStringLength(errors, 255, identifier.getEmail(), "email");
             }
         } else if (type == ChannelType.PHONE) {
             if (identifier.getPhone() == null) {

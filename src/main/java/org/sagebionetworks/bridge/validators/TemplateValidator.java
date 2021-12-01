@@ -9,6 +9,9 @@ import org.springframework.validation.Validator;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.templates.Template;
 
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
+
 public class TemplateValidator implements Validator {
 
     private final Set<String> dataGroups;
@@ -31,12 +34,14 @@ public class TemplateValidator implements Validator {
         if (StringUtils.isBlank(template.getName())) {
             errors.rejectValue("name", "is required");
         }
+        validateStringLength(errors, 255, template.getName(), "name");
         if (template.getTemplateType() == null) {
             errors.rejectValue("templateType", "is required");
         }
         if (template.getCriteria() != null) {
             CriteriaUtils.validate(template.getCriteria(), dataGroups, studyIds, errors);    
         }
+        validateStringLength(errors, MYSQL_TEXT_SIZE, template.getDescription(), "description");
     }
 
 }

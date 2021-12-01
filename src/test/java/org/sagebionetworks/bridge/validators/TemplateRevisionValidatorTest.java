@@ -4,6 +4,8 @@ import static org.apache.commons.lang3.RandomStringUtils.randomAlphanumeric;
 import static org.sagebionetworks.bridge.TestConstants.TIMESTAMP;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
+import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.models.apps.MimeType.HTML;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_ACCOUNT_EXISTS;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_SIGNED_CONSENT;
@@ -139,6 +141,20 @@ public class TemplateRevisionValidatorTest {
         TemplateRevisionValidator validator = new TemplateRevisionValidator(SMS_ACCOUNT_EXISTS);
         assertValidatorMessage(validator, revision, "documentContent",
                 "must contain one of these template variables: ${token}, ${resetPasswordUrl}");
+    }
+    
+    @Test
+    public void stringLengthValidation_createdBy() {
+        TemplateRevision revision = createValidTemplate();
+        revision.setCreatedBy(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, revision, "createdBy", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_storagePath() {
+        TemplateRevision revision = createValidTemplate();
+        revision.setStoragePath(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, revision, "storagePath", getInvalidStringLengthMessage(255));
     }
     
     private TemplateRevision createValidTemplate() {

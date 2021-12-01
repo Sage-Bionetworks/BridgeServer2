@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static org.sagebionetworks.bridge.services.SmsService.SMS_CHARACTER_LIMIT;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.util.Set;
 
@@ -37,9 +38,11 @@ public class TemplateRevisionValidator implements Validator {
         if (isBlank(revision.getCreatedBy())) {
             errors.rejectValue("createdBy", "cannot be blank");
         }
+        validateStringLength(errors, 255, revision.getCreatedBy(), "createdBy");
         if (isBlank(revision.getStoragePath())) {
             errors.rejectValue("storagePath", "cannot be blank");
         }
+        validateStringLength(errors, 255, revision.getStoragePath(), "storagePath");
         if (revision.getMimeType() == null) {
             errors.rejectValue("mimeType", "cannot be null");
         }

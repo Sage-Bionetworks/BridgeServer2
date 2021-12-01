@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_STRING_LENGTH;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
@@ -50,7 +51,6 @@ import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.MediaType;
-import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -770,7 +770,11 @@ public class TestUtils {
         return null;
     }
     
-    public static boolean expectedStringPersistenceErrors(Errors errors, String fieldName, boolean failOnLength, boolean failOnChar) {
-        return true;
+    public static String generateStringOfLength(int length) {
+        return RandomStringUtils.randomAlphabetic(length);
+    }
+    
+    public static String getInvalidStringLengthMessage(int maxLength) {
+        return String.format(INVALID_STRING_LENGTH, "%s", maxLength);
     }
 }

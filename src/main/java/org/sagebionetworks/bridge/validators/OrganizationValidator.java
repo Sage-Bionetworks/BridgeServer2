@@ -4,6 +4,8 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_IDENTIFIER_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_IDENTIFIER_PATTERN;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -29,5 +31,8 @@ public class OrganizationValidator extends AbstractValidator {
         if (isBlank(org.getName())) {
             errors.rejectValue("name", CANNOT_BE_BLANK);
         }
+        validateStringLength(errors, 255, org.getIdentifier(), "identifier");
+        validateStringLength(errors, 255, org.getName(), "name");
+        validateStringLength(errors, MYSQL_TEXT_SIZE, org.getDescription(), "description");
     }
 }

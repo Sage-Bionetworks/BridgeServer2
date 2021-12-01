@@ -9,7 +9,8 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringForPersistence;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.time.DateTimeException;
 import java.time.ZoneId;
@@ -72,7 +73,7 @@ public class StudyParticipantValidator implements Validator {
             if (email != null && !email.matches(OWASP_REGEXP_VALID_EMAIL)) {
                 errors.rejectValue("email", INVALID_EMAIL_ERROR);
             }
-            validateStringForPersistence(errors, 255, email, "email");
+            validateStringLength(errors, 255, email, "email");
             // External ID is required for non-administrative accounts when it is required on sign-up.
             if (participant.getRoles().isEmpty() && app.isExternalIdRequiredOnSignup() && participant.getExternalIds().isEmpty()) {
                 errors.rejectValue("externalId", "is required");
@@ -112,7 +113,7 @@ public class StudyParticipantValidator implements Validator {
                     if (isBlank(externalId)) {
                         errors.rejectValue("externalIds["+studyId+"].externalId", CANNOT_BE_BLANK);
                     }
-                    validateStringForPersistence(errors, 255, externalId, "externalIds["+studyId+"].externalId");
+                    validateStringLength(errors, 255, externalId, "externalIds["+studyId+"].externalId");
                 }
             }
         } else {
@@ -142,9 +143,9 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("clientTimeZone", TIME_ZONE_ERROR);
             }
         }
-        validateStringForPersistence(errors, 255, participant.getFirstName(), "firstName");
-        validateStringForPersistence(errors, 255, participant.getLastName(), "lastName");
-        // TODO: validate note for text size
+        validateStringLength(errors, 255, participant.getFirstName(), "firstName");
+        validateStringLength(errors, 255, participant.getLastName(), "lastName");
+        validateStringLength(errors, MYSQL_TEXT_SIZE, participant.getNote(), "note");
         // TODO: validate clientData JsonNode
     }
 

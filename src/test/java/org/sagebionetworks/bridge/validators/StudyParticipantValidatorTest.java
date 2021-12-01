@@ -7,10 +7,13 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
+import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
 import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.when;
 
@@ -434,6 +437,27 @@ public class StudyParticipantValidatorTest {
         Validate.entityThrowingException(validator, withClientTimeZone(TEST_CLIENT_TIME_ZONE));
     }
     
+    @Test
+    public void stringLengthValidation_email() {
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, withEmail(generateStringOfLength(256)), "email", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test void stringLengthValidation_firstName() {
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, withFirstName(generateStringOfLength(256)), "firstName", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test void stringLengthValidation_lastName() {
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, withLastName(generateStringOfLength(256)), "lastName", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test void stringLengthValidation_note() {
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, withNote(generateStringOfLength(MYSQL_TEXT_SIZE + 1)), "note", getInvalidStringLengthMessage(MYSQL_TEXT_SIZE));
+    }
+    
     private StudyParticipantValidator makeValidator(boolean isNew) {
         return new StudyParticipantValidator(studyService, mockOrganizationService, app, isNew);
     }
@@ -476,5 +500,20 @@ public class StudyParticipantValidatorTest {
     private StudyParticipant withClientTimeZone(String clientTimeZone) {
         return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
                 .withClientTimeZone(clientTimeZone).build();
+    }
+    
+    private StudyParticipant withFirstName(String firstName) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
+                .withFirstName(firstName).build();
+    }
+    
+    private StudyParticipant withLastName(String lastName) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
+                .withLastName(lastName).build();
+    }
+    
+    private StudyParticipant withNote(String note) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
+                .withNote(note).build();
     }
 }

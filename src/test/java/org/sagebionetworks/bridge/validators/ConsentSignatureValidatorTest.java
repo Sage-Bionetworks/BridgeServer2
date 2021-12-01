@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
+import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_MEDIUMTEXT_SIZE;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -245,5 +248,30 @@ public class ConsentSignatureValidatorTest {
     public void optionalBirthdateGarbled() {
         ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate("15 May 2018").build();
         assertValidatorMessage(validator, sig, "birthdate", "is invalid (required format: YYYY-MM-DD)");
+    }
+    
+    @Test
+    public void stringValidation_name() {
+        validator = new ConsentSignatureValidator(0);
+        ConsentSignature sig = new ConsentSignature.Builder().withName(generateStringOfLength(256)).build();
+        assertValidatorMessage(validator, sig, "name", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringValidation_imageData() {
+        validator = new ConsentSignatureValidator(0);
+        ConsentSignature sig = new ConsentSignature.Builder().withName("name")
+                .withImageData(generateStringOfLength(MYSQL_MEDIUMTEXT_SIZE + 1))
+                .withImageMimeType("place").build();
+        assertValidatorMessage(validator, sig, "imageData", getInvalidStringLengthMessage(MYSQL_MEDIUMTEXT_SIZE));
+    }
+    
+    @Test
+    public void stringValidation_imageMimeType() {
+        validator = new ConsentSignatureValidator(0);
+        ConsentSignature sig = new ConsentSignature.Builder().withName("name")
+                .withImageData("imageData")
+                .withImageMimeType(generateStringOfLength(256)).build();
+        assertValidatorMessage(validator, sig, "imageMimeType", getInvalidStringLengthMessage(255));
     }
 }

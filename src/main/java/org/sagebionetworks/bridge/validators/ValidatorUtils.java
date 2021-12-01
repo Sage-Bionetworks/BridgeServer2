@@ -40,7 +40,11 @@ public class ValidatorUtils {
     static final String INVALID_LANG = "%s is not a valid ISO 639 alpha-2 or alpha-3 language code";
     static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFFFF format)";
     static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{6}$";
-    static final String INVALID_STRING_LENGTH = "%s is longer than the allowed field length";
+    public static final String INVALID_STRING_LENGTH = "%s is longer than the allowed field length of %d characters";
+    
+    static final int MYSQL_TINYTEXT_SIZE = 255;
+    static final int MYSQL_TEXT_SIZE = 65535;
+    static final int MYSQL_MEDIUMTEXT_SIZE = 16777215;
 
     private static final Set<DurationFieldType> FIXED_LENGTH_DURATIONS = ImmutableSet.of(DurationFieldType.minutes(),
             DurationFieldType.hours(), DurationFieldType.days(), DurationFieldType.weeks());
@@ -240,16 +244,12 @@ public class ValidatorUtils {
         }
     }
 
-    public static final void validateStringForPersistence(Errors errors, int maxLength, String persistingText, String fieldName) {
+    public static final void validateStringLength(Errors errors, int maxLength, String persistingText, String fieldName) {
         // TODO: Move beyond draft on this. Only checking length initially.
         if (persistingText == null || persistingText.isEmpty()) return;
         if (persistingText.length() > maxLength) {
-            errors.rejectValue(fieldName, INVALID_STRING_LENGTH);
-        }
-        // TODO: Decide if this should be checking that it's utf8mb3
-        if (persistingText.length() != persistingText.codePointCount(0, persistingText.length())) {
-            // TODO: Fix error message phrasing
-            errors.rejectValue(fieldName, "can not use emojis");
+            String errorWithMaxLength = String.format(INVALID_STRING_LENGTH, "%s", maxLength);
+            errors.rejectValue(fieldName, errorWithMaxLength);
         }
     }
 }

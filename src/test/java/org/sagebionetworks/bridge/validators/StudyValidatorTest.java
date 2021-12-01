@@ -5,6 +5,8 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
+import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.studies.ContactRole.TECHNICAL_SUPPORT;
@@ -256,6 +258,62 @@ public class StudyValidatorTest {
         study.getCustomEvents().add(event);
         
         assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD, "cannot contain duplidate event IDs");
+    }
+    
+    @Test
+    public void stringLengthValidation_name() {
+        study = createStudy();
+        study.setName(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, study, NAME_FIELD, getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_details() {
+        study = createStudy();
+        study.setDetails(generateStringOfLength(511));
+        assertValidatorMessage(INSTANCE, study, "details", getInvalidStringLengthMessage(510));
+    }
+    
+    @Test
+    public void stringLengthValidation_studyLogoUrl() {
+        study = createStudy();
+        study.setStudyLogoUrl(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, study, "studyLogoUrl", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_institutionId() {
+        study = createStudy();
+        study.setInstitutionId(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, study, "institutionId", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_irbProtocolId() {
+        study = createStudy();
+        study.setIrbProtocolId(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, study, "irbProtocolId", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_irbName() {
+        study = createStudy();
+        study.setIrbName(generateStringOfLength(61));
+        assertValidatorMessage(INSTANCE, study, "irbName", getInvalidStringLengthMessage(60));
+    }
+    
+    @Test
+    public void stringLengthValidation_irbProtocolName() {
+        study = createStudy();
+        study.setIrbProtocolName(generateStringOfLength(513));
+        assertValidatorMessage(INSTANCE, study, "irbProtocolName", getInvalidStringLengthMessage(512));
+    }
+    
+    @Test
+    public void stringLengthValidation_keywords() {
+        study = createStudy();
+        study.setKeywords(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, study, "keywords", getInvalidStringLengthMessage(255));
     }
     
     private Study createStudy() {

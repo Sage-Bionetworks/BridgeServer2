@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -28,9 +30,11 @@ public class AssessmentResourceValidator implements Validator {
         if (isBlank(resource.getTitle())) {
             errors.rejectValue("title", CANNOT_BE_BLANK);
         }
+        validateStringLength(errors, 255, resource.getTitle(), "title");
         if (isBlank(resource.getUrl())) {
             errors.rejectValue("url", CANNOT_BE_BLANK);
         }
+        validateStringLength(errors, MYSQL_TEXT_SIZE, resource.getUrl(), "url");
         if (resource.getCategory() == null) {
             errors.rejectValue("category", CANNOT_BE_NULL);
         }
@@ -41,6 +45,7 @@ public class AssessmentResourceValidator implements Validator {
                     errors.rejectValue("creators["+i+"]", CANNOT_BE_BLANK);
                 }
             }
+            validateStringLength(errors, MYSQL_TEXT_SIZE, resource.getCreators().toString(), "creators");
         }
         if (resource.getContributors() != null) {
             for (int i=0; i < resource.getContributors().size(); i++) {
@@ -49,6 +54,7 @@ public class AssessmentResourceValidator implements Validator {
                     errors.rejectValue("contributors["+i+"]", CANNOT_BE_BLANK);
                 }
             }
+            validateStringLength(errors, MYSQL_TEXT_SIZE, resource.getContributors().toString(), "contributors");
         }
         if (resource.getPublishers() != null) {
             for (int i=0; i < resource.getPublishers().size(); i++) {
@@ -57,6 +63,7 @@ public class AssessmentResourceValidator implements Validator {
                     errors.rejectValue("publishers["+i+"]", CANNOT_BE_BLANK);
                 }
             }
+            validateStringLength(errors, MYSQL_TEXT_SIZE, resource.getPublishers().toString(), "publishers");
         }
         if (resource.getMinRevision() != null && resource.getMaxRevision() != null && 
                 resource.getMinRevision() > resource.getMaxRevision()) {
@@ -69,5 +76,9 @@ public class AssessmentResourceValidator implements Validator {
                 errors.rejectValue("category", RELEASE_NOTE_REVISION_ERROR);
             }
         }
+        validateStringLength(errors, MYSQL_TEXT_SIZE, resource.getDescription(), "description");
+        validateStringLength(errors, 255, resource.getLanguage(), "language");
+        validateStringLength(errors, 255, resource.getFormat(), "format");
+        validateStringLength(errors, 255, resource.getDate(), "date");
     }
 }

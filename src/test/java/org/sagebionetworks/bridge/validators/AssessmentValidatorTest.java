@@ -6,10 +6,13 @@ import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
+import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_HEX_TRIPLET;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -226,5 +229,23 @@ public class AssessmentValidatorTest extends Mockito {
     public void labelsValueNull() {
         assessment.setLabels(ImmutableList.of(new Label("en", null)));
         assertValidatorMessage(validator, assessment, "labels[0].value", CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void stringLengthValidation_title() {
+        assessment.setTitle(generateStringOfLength(256));
+        assertValidatorMessage(validator, assessment, "title", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_identifier() {
+        assessment.setIdentifier(generateStringOfLength(256));
+        assertValidatorMessage(validator, assessment, "identifier", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_summary() {
+        assessment.setSummary(generateStringOfLength(MYSQL_TEXT_SIZE + 1));
+        assertValidatorMessage(validator, assessment, "summary", getInvalidStringLengthMessage(MYSQL_TEXT_SIZE));
     }
 }
