@@ -104,12 +104,6 @@ public class ScheduledSession {
     public Integer getStudyBurstNum() {
         return studyBurstNum;
     }
-    public String getSymbol() {
-        return session.getSymbol();
-    }
-    public String getLabel() {
-        return session.getName();
-    }
         
     public static class Builder {
         private String instanceGuid;

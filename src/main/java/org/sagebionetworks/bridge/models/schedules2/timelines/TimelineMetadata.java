@@ -43,7 +43,7 @@ public class TimelineMetadata implements BridgeEntity {
         copy.setAppId(meta.getAppId());
         copy.setStudyBurstId(meta.getStudyBurstId());
         copy.setStudyBurstNum(meta.getStudyBurstNum());
-        copy.setSessionLabel(meta.getSessionLabel());
+        copy.setSessionName(meta.getSessionName());
         copy.setSessionSymbol(meta.getSessionSymbol());
         return copy;
     }
@@ -68,8 +68,7 @@ public class TimelineMetadata implements BridgeEntity {
         map.put("appId", appId);
         map.put("studyBurstId", studyBurstId);
         map.put("studyBurstNum", studyBurstNum == null ? null : studyBurstNum.toString());
-        map.put("sessionLabel", sessionLabel);
-        // we don't need to export session symbol...label is debatable
+        // we don't need to export session name or symbol, they are for editing tools
         return map;
     }
     
@@ -94,7 +93,7 @@ public class TimelineMetadata implements BridgeEntity {
     private Integer studyBurstNum;
     private String appId;
     private String sessionSymbol;
-    private String sessionLabel;
+    private String sessionName;
     
     public String getGuid() {
         return guid;
@@ -210,10 +209,10 @@ public class TimelineMetadata implements BridgeEntity {
     public void setSessionSymbol(String sessionSymbol) {
         this.sessionSymbol = sessionSymbol;
     }
-    public String getSessionLabel() {
-        return sessionLabel;
+    public String getSessionName() {
+        return sessionName;
     }
-    public void setSessionLabel(String sessionLabel) {
-        this.sessionLabel = sessionLabel;
+    public void setSessionName(String sessionName) {
+        this.sessionName = sessionName;
     }
 }

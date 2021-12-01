@@ -254,7 +254,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
             ps.setInt(18, meta.getStudyBurstNum());    
         }
         ps.setString(19, meta.getSessionSymbol());
-        ps.setString(20, meta.getSessionLabel());
+        ps.setString(20, meta.getSessionName());
         ps.addBatch();
     }
 

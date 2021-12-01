@@ -29,7 +29,7 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(meta.getSessionInstanceStartDay(), Integer.valueOf(5));
         assertEquals(meta.getSessionInstanceEndDay(), Integer.valueOf(15));
         assertEquals(meta.getSessionSymbol(), "●");
-        assertEquals(meta.getSessionLabel(), "Session #1");
+        assertEquals(meta.getSessionName(), "Session #1");
         assertEquals(meta.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(meta.getScheduleGuid(), "scheduleGuid");
         assertEquals(meta.getScheduleModifiedOn(), MODIFIED_ON);
@@ -55,7 +55,7 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(copy.getSessionInstanceStartDay(), Integer.valueOf(5));
         assertEquals(copy.getSessionInstanceEndDay(), Integer.valueOf(15));
         assertEquals(copy.getSessionSymbol(), "●");
-        assertEquals(copy.getSessionLabel(), "Session #1");
+        assertEquals(copy.getSessionName(), "Session #1");
         assertEquals(copy.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(copy.getScheduleGuid(), "scheduleGuid");
         assertEquals(copy.getScheduleModifiedOn(), MODIFIED_ON);
@@ -132,7 +132,7 @@ public class TimelineMetadataTest extends Mockito {
         meta.setSessionInstanceStartDay(5);
         meta.setSessionInstanceEndDay(15);
         meta.setSessionSymbol("●");
-        meta.setSessionLabel("Session #1");        
+        meta.setSessionName("Session #1");        
         meta.setTimeWindowGuid(SESSION_WINDOW_GUID_1);
         meta.setTimeWindowPersistent(true);
         meta.setScheduleGuid("scheduleGuid");

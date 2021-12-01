@@ -121,8 +121,8 @@ public class Timeline {
             sessionMeta.setSessionStartEventId(schSession.getStartEventId());
             sessionMeta.setSessionInstanceStartDay(schSession.getStartDay());
             sessionMeta.setSessionInstanceEndDay(schSession.getEndDay());
-            sessionMeta.setSessionSymbol(schSession.getSymbol());
-            sessionMeta.setSessionLabel(schSession.getLabel());
+            sessionMeta.setSessionSymbol(schSession.getSession().getSymbol());
+            sessionMeta.setSessionName(schSession.getSession().getName());
             sessionMeta.setTimeWindowGuid(schSession.getTimeWindow().getGuid());
             sessionMeta.setTimeWindowPersistent(schSession.getTimeWindow().isPersistent());
             sessionMeta.setStudyBurstId(schSession.getStudyBurstId());
