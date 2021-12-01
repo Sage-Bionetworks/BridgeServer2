@@ -24,8 +24,6 @@ public class ScheduledSessionTest extends Mockito {
     public void canSerialize() throws Exception {
         Session session = new Session();
         session.setGuid(SESSION_GUID_1);
-        session.setSymbol("*");
-        session.setName("Name");
         session.setStartEventIds(ImmutableList.of("enrollment"));
         
         TimeWindow window = new TimeWindow();

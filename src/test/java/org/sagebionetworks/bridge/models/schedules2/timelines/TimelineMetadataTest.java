@@ -71,6 +71,7 @@ public class TimelineMetadataTest extends Mockito {
         TimelineMetadata meta = createTimelineMetadata();
         
         Map<String,String> map = meta.asMap();
+        assertEquals(map.size(), 18);
         assertEquals(map.get("appId"), "appId");
         assertEquals(map.get("guid"), SESSION_GUID_1);
         assertEquals(map.get("assessmentInstanceGuid"), "assessmentInstanceGuid");
@@ -82,8 +83,6 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(map.get("sessionStartEventId"), "enrollment");
         assertEquals(map.get("sessionInstanceStartDay"), "5");
         assertEquals(map.get("sessionInstanceEndDay"), "15");
-        assertNull(map.get("sessionSymbol"));
-        assertEquals(map.get("sessionLabel"), "Session #1");        
         assertEquals(map.get("timeWindowGuid"), SESSION_WINDOW_GUID_1);
         assertEquals(map.get("timeWindowPersistent"), "true");
         assertEquals(map.get("scheduleGuid"), "scheduleGuid");

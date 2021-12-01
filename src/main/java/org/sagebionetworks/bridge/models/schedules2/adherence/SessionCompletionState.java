@@ -21,7 +21,9 @@ public enum SessionCompletionState {
     /** After becoming available but before expiring, the session was declined; it is not in compliance. */
     DECLINED;
 
-    public static final EnumSet<SessionCompletionState> NONCOMPLIANT = EnumSet.of(ABANDONED, EXPIRED);
+    // These include all sessions except sessions that are not yet available, and thus cannot be included
+    // in a calculation of adherence. 
+    public static final EnumSet<SessionCompletionState> NONCOMPLIANT = EnumSet.of(ABANDONED, EXPIRED, DECLINED);
     public static final EnumSet<SessionCompletionState> COMPLIANT = EnumSet.of(COMPLETED);
     public static final EnumSet<SessionCompletionState> UNKNOWN = EnumSet.of(UNSTARTED, STARTED);
 }
