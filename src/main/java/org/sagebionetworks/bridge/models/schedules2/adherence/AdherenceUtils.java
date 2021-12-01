@@ -19,10 +19,11 @@ public class AdherenceUtils {
     public static SessionCompletionState calculateSessionState(
             AdherenceRecord record, int startDay, int endDay, Integer daysSinceEvent) {
 
-        // Not at all clear that this means it's not applicable.
+        // The origin event has not occurred for this user, so the session is not considered applicable.
         if (daysSinceEvent == null) {
             return NOT_APPLICABLE;
         }
+        // The participant has not interacted with this session.
         if (record == null) {
             if (startDay > daysSinceEvent) {
                 return NOT_YET_AVAILABLE;
@@ -47,7 +48,11 @@ public class AdherenceUtils {
             }
             return EXPIRED;
         }
-        // This record falls on the day and so it is available to the participant.
+        // A record exists, so we will account for it, regardless of whether it is in the current time window,
+        // or in the future. That is because we don't want to hide cases where clients are allowing participants
+        // to do tasks before they are technically available according to the scheduler. We want administrators
+        // to see this is happening. NOTE: we are not detecting cases where where a session is finished or 
+        // even started outside of its availability window. We don't currently enforce this.
         if (record.getStartedOn() != null && record.getFinishedOn() != null) {
             return COMPLETED;
         }
