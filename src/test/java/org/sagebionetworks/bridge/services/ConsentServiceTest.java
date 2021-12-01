@@ -47,9 +47,7 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
-import org.sagebionetworks.bridge.models.ClientInfo;
 import org.sagebionetworks.bridge.models.CriteriaContext;
-import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.ConsentStatus;
@@ -81,8 +79,6 @@ import org.testng.annotations.Test;
 
 @SuppressWarnings("ConstantConditions")
 public class ConsentServiceTest extends Mockito {
-    private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(TestConstants.UA);
-    private static final List<String> LANGUAGES = ImmutableList.of("en-us");
     private static final String SHORT_URL = "https://ws.sagebridge.org/r/XXXXX";
     private static final String LONG_URL = "http://sagebionetworks.org/platforms/";
     private static final Withdrawal WITHDRAWAL = new Withdrawal("For reasons.");
@@ -122,8 +118,6 @@ public class ConsentServiceTest extends Mockito {
     private EnrollmentService mockEnrollmentService;
     @Mock
     private AccountService accountService;
-    @Mock
-    private RequestInfoService mockRequestInfoService;
     @Mock
     private SendMailService sendMailService;
     @Mock
@@ -194,55 +188,6 @@ public class ConsentServiceTest extends Mockito {
     @AfterMethod
     public void after() {
         RequestContext.set(NULL_INSTANCE);
-    }
-
-    @Test
-    public void isConsented() {
-        // Set up dependencies.
-        RequestInfo requestInfo = new RequestInfo.Builder().withClientInfo(CLIENT_INFO).withLanguages(LANGUAGES)
-                .build();
-        when(mockRequestInfoService.getRequestInfo(ID)).thenReturn(requestInfo);
-
-        RequestContext.set(new RequestContext.Builder().withCallerUserId(ID).build());
-
-        account.setAppId(TEST_APP_ID);
-        account.setConsentSignatureHistory(SUBPOP_GUID, ImmutableList.of(CONSENT_SIGNATURE));
-        account.setHealthCode(HEALTH_CODE);
-        account.setDataGroups(USER_DATA_GROUPS);
-
-        Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, ID, EXTERNAL_ID);
-        account.setEnrollments(ImmutableSet.of(enrollment));
-
-        when(subpopulation.getName()).thenReturn(SUBPOP_GUID.getGuid());
-        when(subpopulation.getGuid()).thenReturn(SUBPOP_GUID);
-        when(subpopulation.isRequired()).thenReturn(true);
-        when(subpopService.getSubpopulationsForUser(any())).thenReturn(ImmutableList.of(subpopulation));
-
-        // Execute and validate.
-        Optional<Boolean> result = consentService.isConsented(account);
-        assertTrue(result.isPresent());
-        assertTrue(result.get());
-
-        // Verify we create the CriteriaContext correctly.
-        ArgumentCaptor<CriteriaContext> criteriaContextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
-        verify(subpopService).getSubpopulationsForUser(criteriaContextCaptor.capture());
-
-        CriteriaContext criteriaContext = criteriaContextCaptor.getValue();
-        assertEquals(criteriaContext.getAppId(), TEST_APP_ID);
-        assertEquals(criteriaContext.getUserId(), ID);
-        assertEquals(criteriaContext.getHealthCode(), HEALTH_CODE);
-        assertEquals(criteriaContext.getUserDataGroups(), USER_DATA_GROUPS);
-        assertEquals(criteriaContext.getUserStudyIds(), ImmutableSet.of(TEST_STUDY_ID));
-        assertEquals(criteriaContext.getClientInfo(), CLIENT_INFO);
-        assertEquals(criteriaContext.getLanguages(), LANGUAGES);
-    }
-
-    @Test
-    public void isConsented_NoRequestInfo() {
-        when(mockRequestInfoService.getRequestInfo(ID)).thenReturn(null);
-
-        Optional<Boolean> result = consentService.isConsented(account);
-        assertFalse(result.isPresent());
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)

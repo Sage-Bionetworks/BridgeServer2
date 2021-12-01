@@ -26,6 +26,7 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -39,6 +40,7 @@ import org.sagebionetworks.bridge.services.ParticipantVersionService;
 
 public class ParticipantVersionControllerTest {
     private static final int PARTICIPANT_VERSION = 23;
+    private static final String PARTICIPANT_VERSION_STRING = "23";
 
     @Mock
     private AccountService mockAccountService;
@@ -55,6 +57,7 @@ public class ParticipantVersionControllerTest {
         MockitoAnnotations.initMocks(this);
 
         UserSession mockSession = new UserSession();
+        mockSession.setAppId(TestConstants.TEST_APP_ID);
         doReturn(mockSession).when(controller).getAuthenticatedSession(any());
     }
 
@@ -75,8 +78,7 @@ public class ParticipantVersionControllerTest {
         when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
 
         // Execute and validate.
-        StatusMessage response = controller.deleteParticipantVersionsForUser(TestConstants.TEST_APP_ID,
-                TestConstants.TEST_USER_ID);
+        StatusMessage response = controller.deleteParticipantVersionsForUser(TestConstants.TEST_USER_ID);
         assertNotNull(response);
 
         verify(mockParticipantVersionService).deleteParticipantVersionsForHealthCode(TestConstants.TEST_APP_ID,
@@ -93,7 +95,7 @@ public class ParticipantVersionControllerTest {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteForHealthCode_AccountNotFound() {
         when(mockAccountService.getAccount(any())).thenReturn(Optional.empty());
-        controller.deleteParticipantVersionsForUser(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID);
+        controller.deleteParticipantVersionsForUser(TestConstants.TEST_USER_ID);
     }
 
     @Test(expectedExceptions = UnauthorizedException.class)
@@ -105,7 +107,7 @@ public class ParticipantVersionControllerTest {
         when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
 
         // Execute. This will throw.
-        controller.deleteParticipantVersionsForUser(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID);
+        controller.deleteParticipantVersionsForUser(TestConstants.TEST_USER_ID);
     }
 
     @Test
@@ -146,7 +148,7 @@ public class ParticipantVersionControllerTest {
 
         // Execute and validate.
         ParticipantVersion result = controller.getParticipantVersion(TestConstants.TEST_APP_ID,
-                TestConstants.TEST_USER_ID, PARTICIPANT_VERSION);
+                TestConstants.TEST_USER_ID, PARTICIPANT_VERSION_STRING);
         assertSame(result, participantVersion);
 
         verify(mockParticipantVersionService).getParticipantVersion(TestConstants.TEST_APP_ID,
@@ -157,6 +159,14 @@ public class ParticipantVersionControllerTest {
     public void getParticipantVersion_AccountNotFound() {
         when(mockAccountService.getAccountHealthCode(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID))
                 .thenReturn(Optional.empty());
-        controller.getParticipantVersion(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID, PARTICIPANT_VERSION);
+        controller.getParticipantVersion(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID,
+                PARTICIPANT_VERSION_STRING);
+    }
+
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getParticipantVersion_InvalidVersion() {
+        when(mockAccountService.getAccountHealthCode(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID))
+                .thenReturn(Optional.of(TestConstants.HEALTH_CODE));
+        controller.getParticipantVersion(TestConstants.TEST_APP_ID, TestConstants.TEST_USER_ID, "not an int");
     }
 }

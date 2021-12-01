@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.ResourceList;
@@ -21,6 +22,7 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.ParticipantVersionService;
 
 /** Controller for Participant. */
@@ -35,10 +37,10 @@ public class ParticipantVersionController extends BaseController {
     }
 
     /** Delete all participant versions for the given user. This is called by integration tests. */
-    @DeleteMapping(path="/v1/apps/{appId}/participants/{userIdToken}/versions")
-    public StatusMessage deleteParticipantVersionsForUser(@PathVariable String appId,
-            @PathVariable String userIdToken) {
-        getAuthenticatedSession(ADMIN);
+    @DeleteMapping(path="/v3/participants/{userIdToken}/versions")
+    public StatusMessage deleteParticipantVersionsForUser(@PathVariable String userIdToken) {
+        UserSession session = getAuthenticatedSession(ADMIN);
+        String appId = session.getAppId();
 
         Account account = accountService.getAccount(BridgeUtils.parseAccountId(appId, userIdToken)).orElseThrow(
                 () -> new EntityNotFoundException(StudyParticipant.class));
@@ -68,11 +70,18 @@ public class ParticipantVersionController extends BaseController {
     /** Retrieves the specified participant version. */
     @GetMapping(path="/v1/apps/{appId}/participants/{userIdToken}/versions/{version}")
     public ParticipantVersion getParticipantVersion(@PathVariable String appId, @PathVariable String userIdToken,
-            @PathVariable int version) {
+            @PathVariable String version) {
         getAuthenticatedSession(WORKER);
 
         String healthCode = accountService.getAccountHealthCode(appId, userIdToken).orElseThrow(
                 () -> new EntityNotFoundException(StudyParticipant.class));
-        return participantVersionService.getParticipantVersion(appId, healthCode, version);
+
+        int versionInt;
+        try {
+            versionInt = Integer.parseInt(version);
+        } catch (NumberFormatException ex) {
+            throw new BadRequestException("Invalid version " + version);
+        }
+        return participantVersionService.getParticipantVersion(appId, healthCode, versionInt);
     }
 }

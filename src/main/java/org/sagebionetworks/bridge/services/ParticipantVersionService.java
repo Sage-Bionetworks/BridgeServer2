@@ -11,23 +11,17 @@ import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.ParticipantVersionDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
-import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 @Component
 public class ParticipantVersionService {
-    private ConsentService consentService;
     private ParticipantVersionDao participantVersionDao;
-
-    @Autowired
-    public final void setConsentService(ConsentService consentService) {
-        this.consentService = consentService;
-    }
 
     @Autowired
     public final void setParticipantVersionDao(ParticipantVersionDao participantVersionDao) {
@@ -44,10 +38,8 @@ public class ParticipantVersionService {
             // no_sharing means we don't export this to Synapse, which means we can skip making a Participant Version.
             return;
         }
-        Optional<Boolean> isConsented = consentService.isConsented(account);
-        if (!isConsented.isPresent() || !isConsented.get()) {
-            // If participant is not consented, don't create a participant version.
-            // If we're not sure whether they're consented, assume that they are not.
+        if (account.getActiveEnrollments().isEmpty()) {
+            // Participant has no active enrollments. Don't create a participant version.
             return;
         }
 
@@ -69,14 +61,8 @@ public class ParticipantVersionService {
         participantVersion.setDataGroups(account.getDataGroups());
         participantVersion.setLanguages(account.getLanguages());
         participantVersion.setSharingScope(account.getSharingScope());
+        participantVersion.setStudyMemberships(BridgeUtils.mapStudyMemberships(account));
         participantVersion.setTimeZone(account.getClientTimeZone());
-
-        // Convert study memberships into a map.
-        Map<String, String> studyMembershipMap = new HashMap<>();
-        for (Enrollment enrollment : account.getActiveEnrollments()) {
-            studyMembershipMap.put(enrollment.getStudyId(), enrollment.getExternalId());
-        }
-        participantVersion.setStudyMemberships(studyMembershipMap);
 
         return participantVersion;
     }
