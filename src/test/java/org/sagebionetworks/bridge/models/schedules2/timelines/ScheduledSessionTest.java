@@ -24,6 +24,8 @@ public class ScheduledSessionTest extends Mockito {
     public void canSerialize() throws Exception {
         Session session = new Session();
         session.setGuid(SESSION_GUID_1);
+        session.setSymbol("*");
+        session.setName("Name");
         session.setStartEventIds(ImmutableList.of("enrollment"));
         
         TimeWindow window = new TimeWindow();
@@ -54,6 +56,8 @@ public class ScheduledSessionTest extends Mockito {
         assertEquals(node.get("startTime").textValue(), "17:00");
         assertEquals(node.get("delayTime").textValue(), "PT3H");
         assertEquals(node.get("expiration").textValue(), "PT30M");
+        assertEquals(node.get("symbol").textValue(), "*");
+        assertEquals(node.get("label").textValue(), "Name");
         assertEquals(node.get("timeWindowGuid").textValue(), SESSION_WINDOW_GUID_1);
         assertTrue(node.get("persistent").booleanValue());
         assertEquals(node.get("type").textValue(), "ScheduledSession");

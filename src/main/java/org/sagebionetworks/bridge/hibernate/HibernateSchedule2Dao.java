@@ -49,7 +49,7 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     static final String INSERT = "INSERT INTO TimelineMetadata (appId, assessmentGuid, assessmentId, assessmentInstanceGuid, "
             + "assessmentRevision, scheduleGuid, scheduleModifiedOn, schedulePublished, sessionGuid, sessionInstanceEndDay, "
             + "sessionInstanceGuid, sessionInstanceStartDay, sessionStartEventId, timeWindowGuid, timeWindowPersistent, guid, "
-            + "studyBurstId, studyBurstNum) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "studyBurstId, studyBurstNum, sessionSymbol, sessionLabel) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     static final String DELETE_TIMELINE_RECORDS = "DELETE FROM TimelineMetadata WHERE scheduleGuid = :scheduleGuid";
     static final String SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE = "SELECT * FROM TimelineMetadata WHERE sessionInstanceGuid = :instanceGuid AND assessmentInstanceGuid IS NOT NULL";
     static final String DELETE_ALL_SCHEDULES = "DELETE FROM Schedules WHERE appId = :appId";
@@ -253,6 +253,8 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         } else {
             ps.setInt(18, meta.getStudyBurstNum());    
         }
+        ps.setString(19, meta.getSessionSymbol());
+        ps.setString(20, meta.getSessionLabel());
         ps.addBatch();
     }
 

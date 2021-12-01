@@ -16,8 +16,9 @@ import org.joda.time.Period;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
-@JsonPropertyOrder({ "instanceGuid", "refGuid", "timeWindowGuid", "startEventId", "startDay", "endDay", "startTime",
-        "delayTime", "expiration", "persistent", "studyBurstId", "studyBurstNum", "assessments", "type" })
+@JsonPropertyOrder({ "instanceGuid", "refGuid", "timeWindowGuid", "startEventId", "startDay", 
+    "endDay", "startTime", "delayTime", "expiration", "persistent", "symbol", "label", 
+    "studyBurstId", "studyBurstNum", "assessments", "type" })
 public class ScheduledSession {
 
     private String instanceGuid;
@@ -103,7 +104,13 @@ public class ScheduledSession {
     public Integer getStudyBurstNum() {
         return studyBurstNum;
     }
-    
+    public String getSymbol() {
+        return session.getSymbol();
+    }
+    public String getLabel() {
+        return session.getName();
+    }
+        
     public static class Builder {
         private String instanceGuid;
         private String startEventId;
