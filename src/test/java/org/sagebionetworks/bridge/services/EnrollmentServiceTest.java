@@ -21,6 +21,8 @@ import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT_FILTER;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
 import static org.sagebionetworks.bridge.models.ResourceList.PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -108,7 +110,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void getEnrollmentsForStudyWithDefaults() {
+    public void getEnrollmentsForStudy_withDefaults() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
@@ -122,7 +124,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
         
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void getEnrollmentsForStudyNotAuthorized() {
+    public void getEnrollmentsForStudy_notAuthorized() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerOrgMembership(TEST_ORG_ID).build());
@@ -132,7 +134,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
-    public void getEnrollmentsForStudyOffsetNegative() {
+    public void getEnrollmentsForStudy_offsetNegative() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
@@ -140,7 +142,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
 
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
-    public void getEnrollmentsForStudyUnderMin() {
+    public void getEnrollmentsForStudy_underMin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
@@ -148,7 +150,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = BadRequestException.class, expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
-    public void getEnrollmentsForStudyOverMax() {
+    public void getEnrollmentsForStudy_overMax() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
 
@@ -178,7 +180,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getEnrollmentsForUserNotFound() {
+    public void getEnrollmentsForUser_userNotFound() {
         AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
         when(mockAccountService.getAccount(accountId)).thenReturn(Optional.empty());
         
@@ -186,7 +188,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void enrollBySelf() {
+    public void enroll_bySelf() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
@@ -199,6 +201,10 @@ public class EnrollmentServiceTest extends Mockito {
         account.setEnrollments(Sets.newHashSet(otherStudy));
         TestUtils.mockEditAccount(mockAccountService, account);
         
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
         DateTime timestamp = DateTime.now();
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
@@ -223,7 +229,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void enrollByAdmin() {
+    public void enroll_byAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
@@ -231,6 +237,10 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         TestUtils.mockEditAccount(mockAccountService, account);
+        
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setNote(TEST_NOTE);
@@ -242,7 +252,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void enrollByResearcher() {
+    public void enroll_byResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
@@ -253,6 +263,10 @@ public class EnrollmentServiceTest extends Mockito {
         account.setId(TEST_USER_ID);
         TestUtils.mockEditAccount(mockAccountService, account);
         
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setNote(TEST_NOTE);
 
@@ -263,7 +277,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void enrollByStudyCoordinator() {
+    public void enroll_byStudyCoordinator() {
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
@@ -271,6 +285,10 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         TestUtils.mockEditAccount(mockAccountService, account);
+        
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setNote(TEST_NOTE);
@@ -280,9 +298,8 @@ public class EnrollmentServiceTest extends Mockito {
         assertEquals(retValue.getNote(), TEST_NOTE);
     }
     
-    // TODO: Should this throw an exception? I think during migration, it cannot
     @Test
-    public void enrollAlreadyExists() {
+    public void enroll_alreadyExists() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
@@ -291,6 +308,10 @@ public class EnrollmentServiceTest extends Mockito {
         account.setId(TEST_USER_ID);
         TestUtils.mockEditAccount(mockAccountService, account);
         
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
         Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         Enrollment otherStudy = Enrollment.create(TEST_APP_ID, "otherStudy", TEST_USER_ID);
         account.setEnrollments(ImmutableSet.of(existing, otherStudy));
@@ -304,7 +325,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
-    public void enrollAccountNotFound() {
+    public void enroll_accountNotFound() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
@@ -319,7 +340,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void enrollAlreadyExistsButIsWithdrawn() {
+    public void enroll_alreadyExistsButIsWithdrawn() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
@@ -328,6 +349,10 @@ public class EnrollmentServiceTest extends Mockito {
         account.setId(TEST_USER_ID);
         TestUtils.mockEditAccount(mockAccountService, account);
         
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
         Enrollment unrelatedEnrollment = Enrollment.create(TEST_APP_ID, "someOtherStudy", TEST_USER_ID);
         
         Enrollment existing = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
@@ -355,7 +380,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void enrollNotAuthorizedAsAdmin() {
+    public void enroll_notAuthorizedAsAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
@@ -370,7 +395,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void enrollNotAuthorizedAsStudyCoordinator() {
+    public void enroll_notAuthorizedAsStudyCoordinator() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withOrgSponsoredStudies(ImmutableSet.of("studyA", "studyB"))
@@ -388,7 +413,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void enrollInvalidEnrollment() {
+    public void enroll_invalidEnrollment() {
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setAccountId(null);
 
@@ -396,7 +421,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void unenrollBySelf() {
+    public void unenroll_bySelf() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID).build());
         
@@ -427,7 +452,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void unenrollBySelfDefaultsWithdrawnOn() {
+    public void unenroll_bySelfDefaultsWithdrawnOn() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId(TEST_USER_ID).build());
                 
@@ -450,7 +475,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void unenrollByThirdPartyAdmin() {
+    public void unenroll_byThirdPartyAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
@@ -479,7 +504,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void unenrollByThirdPartyResearcher() {
+    public void unenroll_byThirdPartyResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
@@ -511,7 +536,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void unenrollDoesNotExists() {
+    public void unenroll_doesNotExists() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
@@ -525,7 +550,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class, 
             expectedExceptionsMessageRegExp = "Account not found.")
-    public void unenrollAccountNotFound() {
+    public void unenroll_accountNotFound() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
@@ -537,7 +562,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void unenrollAlreadyExistsButIsWithdrawn() {
+    public void unenroll_alreadyExistsButIsWithdrawn() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerRoles(ImmutableSet.of(ADMIN)).build());
         
@@ -554,7 +579,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void unenrollNotAuthorizedAsAdmin() {
+    public void unenroll_notAuthorizedAsAdmin() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
@@ -568,7 +593,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class)
-    public void unenrollNotAuthorizedAsStudyResearcher() {
+    public void unenroll_notAuthorizedAsStudyResearcher() {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerUserId("adminUser")
                 .withCallerRoles(ImmutableSet.of(DEVELOPER)).build());
@@ -584,7 +609,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
-    public void unenrollInvalidEnrollment() {
+    public void unenroll_invalidEnrollment() {
         Enrollment enrollment = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         enrollment.setAccountId(null);
 
@@ -593,7 +618,7 @@ public class EnrollmentServiceTest extends Mockito {
     
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Study not found.")
-    public void getEnrollmentsForStudyStudyNotFound() {
+    public void getEnrollmentsForStudy_studyNotFound() {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
             .thenThrow(new EntityNotFoundException(Study.class));
         
@@ -602,7 +627,7 @@ public class EnrollmentServiceTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Study not found.")
-    public void getEnrollmentsForUserStudyNotFound() {
+    public void getEnrollmentsForUser_studyNotFound() {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
             .thenThrow(new EntityNotFoundException(Study.class));
     
@@ -610,7 +635,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
 
     @Test
-    public void getEnrollmentsForUserStudyNullable() {
+    public void getEnrollmentsForUser_studyNullable() {
         when(mockStudyService.getStudy(TEST_APP_ID, null, true))
             .thenThrow(new EntityNotFoundException(Study.class));
         
@@ -622,7 +647,7 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void getEnrollmentsForUserFilteringForStudies() {
+    public void getEnrollmentsForUser_filteringForStudies() {
         Set<String> callerStudies = ImmutableSet.of("studyA", "studyB");
         RequestContext.set(new RequestContext.Builder()
                 .withOrgSponsoredStudies(callerStudies)
@@ -644,7 +669,7 @@ public class EnrollmentServiceTest extends Mockito {
 
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Study not found.")
-    public void enrollStudyNotFound() {
+    public void enroll_studyNotFound() {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
             .thenThrow(new EntityNotFoundException(Study.class));
 
@@ -661,6 +686,10 @@ public class EnrollmentServiceTest extends Mockito {
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
         Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
         en.setExternalId("externalId");
         service.addEnrollment(account, en, true);
@@ -678,28 +707,50 @@ public class EnrollmentServiceTest extends Mockito {
     }
     
     @Test
-    public void addEnrollment_doesNotUpdateRequestContext() { 
+    public void addEnrollment_doesNotUpdateRequestContext() {
+        Study study = Study.create();
+        study.setPhase(RECRUITMENT);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
         Account account = Account.create();
         account.setId(TEST_USER_ID);
         Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
 
         service.addEnrollment(account, en, false);
         
+        // verify as well that the test_user tag is not added to this account (study in recruitment)
+        assertFalse(account.getDataGroups().contains(TEST_USER_GROUP));
         assertTrue(RequestContext.get().getCallerEnrolledStudies().isEmpty());
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Study not found.")
-    public void addEnrollmentStudyNotFound() {
+    public void addEnrollment_studyNotFound() {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
             .thenThrow(new EntityNotFoundException(Study.class));
         
         service.addEnrollment(Account.create(), Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID), false);
     }
+    
+    @Test
+    public void addEnrollment_marksTestUserForDesignPhaseStudy() {
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        
+        Study study = Study.create();
+        study.setPhase(DESIGN);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        Enrollment en = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        en.setExternalId("externalId");
+        service.addEnrollment(account, en, true);
+        
+        assertTrue(account.getDataGroups().contains(TEST_USER_GROUP));
+    }
 
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Study not found.")
-    public void unenrollAccountStudyNotFound() {
+    public void unenroll_accountStudyNotFound() {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true))
             .thenThrow(new EntityNotFoundException(Study.class));
         

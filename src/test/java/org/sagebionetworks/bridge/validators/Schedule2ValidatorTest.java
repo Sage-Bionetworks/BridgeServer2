@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
@@ -195,8 +195,8 @@ public class Schedule2ValidatorTest extends Mockito {
     @Test
     public void studyBurstIdentifierInvalid() {
         Schedule2 schedule = createValidSchedule();
-        schedule.getStudyBursts().get(0).setIdentifier("This Isn't Valid");
-        assertValidatorMessage(INSTANCE, schedule, STUDY_BURSTS_FIELD + "[0]." + IDENTIFIER_FIELD, BRIDGE_EVENT_ID_ERROR);
+        schedule.getStudyBursts().get(0).setIdentifier("This:Isn't:Valid");
+        assertValidatorMessage(INSTANCE, schedule, STUDY_BURSTS_FIELD + "[0]." + IDENTIFIER_FIELD, BRIDGE_RELAXED_ID_ERROR);
     }
     
     @Test
