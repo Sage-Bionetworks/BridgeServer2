@@ -853,3 +853,11 @@ ADD COLUMN `studyBurstNum` int(10) unsigned;
 ALTER TABLE `Substudies`
 ADD COLUMN `studyTimeZone` varchar(255),
 ADD COLUMN `adherenceThresholdPercentage` int(3) unsigned;
+
+-- changeset bridge:57
+
+ALTER TABLE `Sessions` 
+MODIFY `symbol` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+ALTER TABLE `TimelineMetadata`
+ADD COLUMN `sessionSymbol` varchar(32) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+ADD COLUMN `sessionName` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;

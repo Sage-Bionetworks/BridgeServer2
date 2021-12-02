@@ -121,6 +121,8 @@ public class Timeline {
             sessionMeta.setSessionStartEventId(schSession.getStartEventId());
             sessionMeta.setSessionInstanceStartDay(schSession.getStartDay());
             sessionMeta.setSessionInstanceEndDay(schSession.getEndDay());
+            sessionMeta.setSessionSymbol(schSession.getSession().getSymbol());
+            sessionMeta.setSessionName(schSession.getSession().getName());
             sessionMeta.setTimeWindowGuid(schSession.getTimeWindow().getGuid());
             sessionMeta.setTimeWindowPersistent(schSession.getTimeWindow().isPersistent());
             sessionMeta.setStudyBurstId(schSession.getStudyBurstId());
@@ -128,13 +130,13 @@ public class Timeline {
             metadata.add(sessionMeta);
             
             for (ScheduledAssessment schAsmt : schSession.getAssessments()) {
-                TimelineMetadata schMeta = TimelineMetadata.copy(sessionMeta);
-                schMeta.setGuid(schAsmt.getInstanceGuid());
-                schMeta.setAssessmentInstanceGuid(schAsmt.getInstanceGuid());
-                schMeta.setAssessmentGuid(schAsmt.getReference().getGuid());
-                schMeta.setAssessmentId(schAsmt.getReference().getIdentifier());
-                schMeta.setAssessmentRevision(schAsmt.getReference().getRevision());
-                metadata.add(schMeta);    
+                TimelineMetadata asmtMeta = TimelineMetadata.copy(sessionMeta);
+                asmtMeta.setGuid(schAsmt.getInstanceGuid());
+                asmtMeta.setAssessmentInstanceGuid(schAsmt.getInstanceGuid());
+                asmtMeta.setAssessmentGuid(schAsmt.getReference().getGuid());
+                asmtMeta.setAssessmentId(schAsmt.getReference().getIdentifier());
+                asmtMeta.setAssessmentRevision(schAsmt.getReference().getRevision());
+                metadata.add(asmtMeta);    
             }
             
             for (Notification notification : schSession.getSession().getNotifications()) {

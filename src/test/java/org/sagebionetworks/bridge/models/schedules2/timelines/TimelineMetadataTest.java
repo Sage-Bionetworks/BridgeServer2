@@ -28,6 +28,8 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(meta.getSessionStartEventId(), "enrollment");
         assertEquals(meta.getSessionInstanceStartDay(), Integer.valueOf(5));
         assertEquals(meta.getSessionInstanceEndDay(), Integer.valueOf(15));
+        assertEquals(meta.getSessionSymbol(), "●");
+        assertEquals(meta.getSessionName(), "Session #1");
         assertEquals(meta.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(meta.getScheduleGuid(), "scheduleGuid");
         assertEquals(meta.getScheduleModifiedOn(), MODIFIED_ON);
@@ -52,6 +54,8 @@ public class TimelineMetadataTest extends Mockito {
         assertEquals(copy.getSessionStartEventId(), "enrollment");
         assertEquals(copy.getSessionInstanceStartDay(), Integer.valueOf(5));
         assertEquals(copy.getSessionInstanceEndDay(), Integer.valueOf(15));
+        assertEquals(copy.getSessionSymbol(), "●");
+        assertEquals(copy.getSessionName(), "Session #1");
         assertEquals(copy.getTimeWindowGuid(), SESSION_WINDOW_GUID_1);
         assertEquals(copy.getScheduleGuid(), "scheduleGuid");
         assertEquals(copy.getScheduleModifiedOn(), MODIFIED_ON);
@@ -67,6 +71,7 @@ public class TimelineMetadataTest extends Mockito {
         TimelineMetadata meta = createTimelineMetadata();
         
         Map<String,String> map = meta.asMap();
+        assertEquals(map.size(), 18);
         assertEquals(map.get("appId"), "appId");
         assertEquals(map.get("guid"), SESSION_GUID_1);
         assertEquals(map.get("assessmentInstanceGuid"), "assessmentInstanceGuid");
@@ -103,6 +108,7 @@ public class TimelineMetadataTest extends Mockito {
         assertNull(map.get("sessionStartEventId"));
         assertNull(map.get("sessionInstanceStartDay"));
         assertNull(map.get("sessionInstanceEndDay"));
+        assertNull(map.get("sessionLabel"));
         assertNull(map.get("timeWindowGuid"));
         assertEquals(map.get("timeWindowPersistent"), "false");
         assertNull(map.get("scheduleGuid"));
@@ -124,6 +130,8 @@ public class TimelineMetadataTest extends Mockito {
         meta.setSessionStartEventId("enrollment");
         meta.setSessionInstanceStartDay(5);
         meta.setSessionInstanceEndDay(15);
+        meta.setSessionSymbol("●");
+        meta.setSessionName("Session #1");        
         meta.setTimeWindowGuid(SESSION_WINDOW_GUID_1);
         meta.setTimeWindowPersistent(true);
         meta.setScheduleGuid("scheduleGuid");

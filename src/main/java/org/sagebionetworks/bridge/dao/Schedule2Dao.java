@@ -29,5 +29,7 @@ public interface Schedule2Dao {
     
     List<TimelineMetadata> getAssessmentsForSessionInstance(String instanceGuid);
     
+    List<TimelineMetadata> getScheduleMetadata(String scheduleGuid);
+    
     void deleteAllSchedules(String appId);
 }
