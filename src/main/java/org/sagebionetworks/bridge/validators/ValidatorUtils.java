@@ -40,11 +40,10 @@ public class ValidatorUtils {
     static final String INVALID_LANG = "%s is not a valid ISO 639 alpha-2 or alpha-3 language code";
     static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFFFF format)";
     static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{6}$";
-    public static final String INVALID_STRING_LENGTH = "%s is longer than the allowed field length of %d characters";
+    public static final String INVALID_STRING_LENGTH = "is longer than the allowed field length of %d characters";
     
-    static final int MYSQL_TINYTEXT_SIZE = 255;
-    static final int MYSQL_TEXT_SIZE = 65535;
-    static final int MYSQL_MEDIUMTEXT_SIZE = 16777215;
+    public static final int TEXT_SIZE = 65535;
+    public static final int MEDIUMTEXT_SIZE = 16777215;
 
     private static final Set<DurationFieldType> FIXED_LENGTH_DURATIONS = ImmutableSet.of(DurationFieldType.minutes(),
             DurationFieldType.hours(), DurationFieldType.days(), DurationFieldType.weeks());
@@ -245,11 +244,11 @@ public class ValidatorUtils {
     }
 
     public static final void validateStringLength(Errors errors, int maxLength, String persistingText, String fieldName) {
-        // TODO: Move beyond draft on this. Only checking length initially.
-        if (persistingText == null || persistingText.isEmpty()) return;
+        if (persistingText == null || persistingText.isEmpty()) {
+            return;
+        }
         if (persistingText.length() > maxLength) {
-            String errorWithMaxLength = String.format(INVALID_STRING_LENGTH, "%s", maxLength);
-            errors.rejectValue(fieldName, errorWithMaxLength);
+            errors.rejectValue(fieldName, String.format(INVALID_STRING_LENGTH, maxLength));
         }
     }
 }

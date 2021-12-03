@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
 import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_VERIFY_EMAIL;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import org.mockito.Mockito;
 import org.testng.annotations.BeforeMethod;
@@ -85,7 +85,7 @@ public class TemplateValidatorTest extends Mockito {
         template.setName("Test template");
         template.setTemplateType(EMAIL_VERIFY_EMAIL);
         template.setCriteria(criteria);
-        template.setDescription(generateStringOfLength(MYSQL_TEXT_SIZE + 1));
-        assertValidatorMessage(validator, template, "description", getInvalidStringLengthMessage(MYSQL_TEXT_SIZE));
+        template.setDescription(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(validator, template, "description", getInvalidStringLengthMessage(TEXT_SIZE));
     }
 }

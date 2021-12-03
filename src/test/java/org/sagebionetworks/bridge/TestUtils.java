@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_STRING_LENGTH;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.springframework.http.HttpStatus.ACCEPTED;
 import static org.springframework.http.HttpStatus.CREATED;
 import static org.testng.Assert.assertEquals;
@@ -775,6 +776,12 @@ public class TestUtils {
     }
     
     public static String getInvalidStringLengthMessage(int maxLength) {
-        return String.format(INVALID_STRING_LENGTH, "%s", maxLength);
+        return String.format(INVALID_STRING_LENGTH, maxLength);
+    }
+    
+    public static JsonNode getExcessivelyLargeClientData() {
+        JsonNode clientData = TestUtils.getClientData();
+        ((ObjectNode)clientData).put("largeField", generateStringOfLength(TEXT_SIZE));
+        return clientData;
     }
 }

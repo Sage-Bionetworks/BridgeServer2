@@ -10,6 +10,8 @@ import static org.sagebionetworks.bridge.validators.Validate.STARTED_ON_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.STUDY_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.USER_ID_FIELD;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.time.ZoneId;
 
@@ -55,7 +57,9 @@ public class AdherenceRecordListValidator extends AbstractValidator {
                     errors.rejectValue(CLIENT_TIME_ZONE_FIELD, TIME_ZONE_ERROR);
                 }
             }
-            // TODO: check clientData JsonNode string size
+            if (record.getClientData() != null) {
+                validateStringLength(errors, TEXT_SIZE, record.getClientData().toString(), "clientData");
+            }
             errors.popNestedPath();
         }
     }

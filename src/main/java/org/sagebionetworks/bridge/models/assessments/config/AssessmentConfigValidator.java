@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.models.assessments.config;
 
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -31,6 +34,7 @@ public class AssessmentConfigValidator extends AbstractValidator {
         if (assessmentConfig.getConfig() == null) {
             errors.rejectValue("config", "is required");
         } else {
+            validateStringLength(errors, TEXT_SIZE, assessmentConfig.getConfig().toString(), "config");
             errors.pushNestedPath("config");
             ConfigVisitor visitor = new ConfigVisitor(validators, errors);
             BridgeUtils.walk(assessmentConfig.getConfig(), visitor);

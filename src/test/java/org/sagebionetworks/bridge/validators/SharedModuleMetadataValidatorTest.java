@@ -302,6 +302,15 @@ public class SharedModuleMetadataValidatorTest {
     public void zeroVersion() {
         nonPositiveVersion(0);
     }
+    
+    @Test
+    public void tagTooLong() {
+        String tag = RandomStringUtils.randomAlphanumeric(SharedModuleMetadataValidator.TAG_MAX_LENGTH + 1);
+        SharedModuleMetadata metadata = makeValidMetadataWithSurvey();
+        metadata.setTags(ImmutableSet.of(tag));
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "tag",
+                "can't be more than " + SharedModuleMetadataValidator.TAG_MAX_LENGTH + " characters");
+    }
 
     private static void nonPositiveVersion(int version) {
         SharedModuleMetadata metadata = makeValidMetadataWithSchema();

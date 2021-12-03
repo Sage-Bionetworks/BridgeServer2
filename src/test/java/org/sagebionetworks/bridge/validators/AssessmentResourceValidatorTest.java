@@ -9,7 +9,7 @@ import static org.sagebionetworks.bridge.validators.AssessmentResourceValidator.
 import static org.sagebionetworks.bridge.validators.AssessmentResourceValidator.RELEASE_NOTE_REVISION_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -139,14 +139,14 @@ public class AssessmentResourceValidatorTest {
     
     @Test
     public void stringLengthValidation_url() {
-        resource.setUrl(generateStringOfLength(MYSQL_TEXT_SIZE + 1));
-        assertValidatorMessage(INSTANCE, resource, "url", getInvalidStringLengthMessage(MYSQL_TEXT_SIZE));
+        resource.setUrl(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(INSTANCE, resource, "url", getInvalidStringLengthMessage(TEXT_SIZE));
     }
     
     @Test
     public void stringLengthValidation_description() {
-        resource.setDescription(generateStringOfLength(MYSQL_TEXT_SIZE + 1));
-        assertValidatorMessage(INSTANCE, resource, "description", getInvalidStringLengthMessage(MYSQL_TEXT_SIZE));
+        resource.setDescription(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(INSTANCE, resource, "description", getInvalidStringLengthMessage(TEXT_SIZE));
     }
     
     @Test
@@ -157,20 +157,20 @@ public class AssessmentResourceValidatorTest {
     
     @Test
     public void stringLengthValidation_contributors() {
-        resource.setContributors(ImmutableList.of(generateStringOfLength(MYSQL_TEXT_SIZE)));
-        assertValidatorMessage(INSTANCE, resource, "contributors", getInvalidStringLengthMessage(MYSQL_TEXT_SIZE));
+        resource.setContributors(ImmutableList.of(generateStringOfLength(TEXT_SIZE)));
+        assertValidatorMessage(INSTANCE, resource, "contributors", getInvalidStringLengthMessage(TEXT_SIZE));
     }
     
     @Test
     public void stringLengthValidation_creators() {
-        resource.setCreators(ImmutableList.of(generateStringOfLength(MYSQL_TEXT_SIZE)));
-        assertValidatorMessage(INSTANCE, resource, "creators", getInvalidStringLengthMessage(MYSQL_TEXT_SIZE));
+        resource.setCreators(ImmutableList.of(generateStringOfLength(TEXT_SIZE)));
+        assertValidatorMessage(INSTANCE, resource, "creators", getInvalidStringLengthMessage(TEXT_SIZE));
     }
     
     @Test
     public void stringLengthValidation_publishers() {
-        resource.setPublishers(ImmutableList.of(generateStringOfLength(MYSQL_TEXT_SIZE)));
-        assertValidatorMessage(INSTANCE, resource, "publishers", getInvalidStringLengthMessage(MYSQL_TEXT_SIZE));
+        resource.setPublishers(ImmutableList.of(generateStringOfLength(TEXT_SIZE)));
+        assertValidatorMessage(INSTANCE, resource, "publishers", getInvalidStringLengthMessage(TEXT_SIZE));
     }
     
     @Test

@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import org.apache.commons.lang3.StringUtils;
@@ -32,7 +32,7 @@ public class EnrollmentValidator extends AbstractValidator {
         validateStringLength(errors, 255, enrollment.getEnrolledBy(), "enrolledBy");
         validateStringLength(errors, 255, enrollment.getWithdrawnBy(), "withdrawnBy");
         validateStringLength(errors, 255, enrollment.getWithdrawalNote(), "withdrawalNote");
-        validateStringLength(errors, MYSQL_TEXT_SIZE, enrollment.getNote(), "note");
+        validateStringLength(errors, TEXT_SIZE, enrollment.getNote(), "note");
     }
 
 }

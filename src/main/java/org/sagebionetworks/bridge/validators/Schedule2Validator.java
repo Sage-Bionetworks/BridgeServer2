@@ -6,9 +6,11 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInDays;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -38,6 +40,7 @@ public class Schedule2Validator implements Validator {
     static final String SESSIONS_FIELD = "sessions";
     static final String STUDY_BURSTS_FIELD = "studyBursts";
     static final String UPDATE_TYPE_FIELD = "updateType";
+    static final String CLIENT_DATA_FIELD = "clientData";
 
     public static final long FIVE_YEARS_IN_DAYS = 5 * 365;
     public static final int OCCURRENCE_LIMIT = 12;
@@ -59,6 +62,7 @@ public class Schedule2Validator implements Validator {
         if (isBlank(schedule.getName())) {
             errors.rejectValue(NAME_FIELD, CANNOT_BE_BLANK);
         }
+        validateStringLength(errors, 255, schedule.getName(), NAME_FIELD);
         if (isBlank(schedule.getOwnerId())) {
             errors.rejectValue(OWNER_ID_FIELD, CANNOT_BE_BLANK);
         }
@@ -78,6 +82,9 @@ public class Schedule2Validator implements Validator {
         if (schedule.getModifiedOn() == null) {
             errors.rejectValue(MODIFIED_ON_FIELD, CANNOT_BE_NULL);
         }
+        if (schedule.getClientData() != null) {
+            validateStringLength(errors, TEXT_SIZE, schedule.getClientData().toString(), CLIENT_DATA_FIELD);
+        }
         Set<String> studyBurstIds = new HashSet<>();
 
         for (int i = 0; i < schedule.getStudyBursts().size(); i++) {
@@ -91,6 +98,7 @@ public class Schedule2Validator implements Validator {
             } else if (!burst.getIdentifier().matches(BRIDGE_EVENT_ID_PATTERN)) {
                 errors.rejectValue(IDENTIFIER_FIELD, BRIDGE_EVENT_ID_ERROR);
             }
+            validateStringLength(errors, 255, burst.getIdentifier(), IDENTIFIER_FIELD);
             studyBurstIds.add(burst.getIdentifier());
             
             if (isBlank(burst.getOriginEventId())) {

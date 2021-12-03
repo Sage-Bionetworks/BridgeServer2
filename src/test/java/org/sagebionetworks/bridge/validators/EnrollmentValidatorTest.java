@@ -10,7 +10,7 @@ import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
 import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import org.testng.annotations.Test;
 
@@ -116,7 +116,7 @@ public class EnrollmentValidatorTest {
     @Test
     public void stringLengthValidation_note() {
         Enrollment enrollment = getEnrollment();
-        enrollment.setNote(generateStringOfLength(MYSQL_TEXT_SIZE + 1));
-        assertValidatorMessage(INSTANCE, enrollment, "note", getInvalidStringLengthMessage(MYSQL_TEXT_SIZE));
+        enrollment.setNote(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(INSTANCE, enrollment, "note", getInvalidStringLengthMessage(TEXT_SIZE));
     }
 }

@@ -9,7 +9,8 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.MEDIUMTEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.time.DateTimeException;
@@ -19,6 +20,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -73,7 +76,6 @@ public class StudyParticipantValidator implements Validator {
             if (email != null && !email.matches(OWASP_REGEXP_VALID_EMAIL)) {
                 errors.rejectValue("email", INVALID_EMAIL_ERROR);
             }
-            validateStringLength(errors, 255, email, "email");
             // External ID is required for non-administrative accounts when it is required on sign-up.
             if (participant.getRoles().isEmpty() && app.isExternalIdRequiredOnSignup() && participant.getExternalIds().isEmpty()) {
                 errors.rejectValue("externalId", "is required");
@@ -134,6 +136,9 @@ public class StudyParticipantValidator implements Validator {
         for (String attributeName : participant.getAttributes().keySet()) {
             if (!app.getUserProfileAttributes().contains(attributeName)) {
                 errors.rejectValue("attributes", messageForSet(app.getUserProfileAttributes(), attributeName));
+            } else {
+                String attributeValue = participant.getAttributes().get(attributeName);
+                validateStringLength(errors, 255, attributeValue,"attributes["+attributeName+"]");
             }
         }
         if (participant.getClientTimeZone() != null) {
@@ -143,10 +148,13 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("clientTimeZone", TIME_ZONE_ERROR);
             }
         }
+        validateStringLength(errors, 255, participant.getEmail(), "email");
         validateStringLength(errors, 255, participant.getFirstName(), "firstName");
         validateStringLength(errors, 255, participant.getLastName(), "lastName");
-        validateStringLength(errors, MYSQL_TEXT_SIZE, participant.getNote(), "note");
-        // TODO: validate clientData JsonNode
+        validateStringLength(errors, TEXT_SIZE, participant.getNote(), "note");
+        if (participant.getClientData() != null) {
+            validateStringLength(errors, TEXT_SIZE, participant.getClientData().toString(), "clientData");
+        }
     }
 
     private String messageForSet(Set<String> set, String fieldName) {

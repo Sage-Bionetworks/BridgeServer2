@@ -12,7 +12,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_HEX_TRIPLET;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -245,7 +245,26 @@ public class AssessmentValidatorTest extends Mockito {
     
     @Test
     public void stringLengthValidation_summary() {
-        assessment.setSummary(generateStringOfLength(MYSQL_TEXT_SIZE + 1));
-        assertValidatorMessage(validator, assessment, "summary", getInvalidStringLengthMessage(MYSQL_TEXT_SIZE));
+        assessment.setSummary(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(validator, assessment, "summary", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void stringLengthValidation_validationStatus() {
+        assessment.setValidationStatus(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(validator, assessment, "validationStatus", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void stringLengthValidation_normingStatus() {
+        assessment.setNormingStatus(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(validator, assessment, "normingStatus", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void stringLengthValidation_tags() {
+        String tag = generateStringOfLength(256);
+        assessment.setTags(ImmutableSet.of(tag));
+        assertValidatorMessage(validator, assessment, "tag["+tag+"]", getInvalidStringLengthMessage(255));
     }
 }

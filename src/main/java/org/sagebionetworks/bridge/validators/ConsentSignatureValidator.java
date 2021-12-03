@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_MEDIUMTEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.MEDIUMTEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import org.springframework.stereotype.Component;
@@ -69,7 +69,7 @@ public class ConsentSignatureValidator implements Validator {
         if (imageData != null && imageData.isEmpty()) {
             errors.rejectValue("imageData", CANNOT_BE_EMPTY_STRING);
         }
-        validateStringLength(errors, MYSQL_MEDIUMTEXT_SIZE, imageData, "imageData");
+        validateStringLength(errors, MEDIUMTEXT_SIZE, imageData, "imageData");
         if (imageMimeType != null && imageMimeType.isEmpty()) {
             errors.rejectValue("imageMimeType", CANNOT_BE_EMPTY_STRING);
         }

@@ -9,7 +9,7 @@ import org.springframework.validation.Validator;
 import org.sagebionetworks.bridge.models.CriteriaUtils;
 import org.sagebionetworks.bridge.models.templates.Template;
 
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 public class TemplateValidator implements Validator {
@@ -41,7 +41,7 @@ public class TemplateValidator implements Validator {
         if (template.getCriteria() != null) {
             CriteriaUtils.validate(template.getCriteria(), dataGroups, studyIds, errors);    
         }
-        validateStringLength(errors, MYSQL_TEXT_SIZE, template.getDescription(), "description");
+        validateStringLength(errors, TEXT_SIZE, template.getDescription(), "description");
     }
 
 }

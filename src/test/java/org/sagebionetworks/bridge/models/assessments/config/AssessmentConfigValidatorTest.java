@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.models.assessments.config;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -113,5 +115,16 @@ public class AssessmentConfigValidatorTest {
                 .addValidator("SurveyRule", val).build();
         
         assertValidatorMessage(validator, config, "config.elements[0].beforeRules[0].foo", "is missing");
+    }
+    
+    @Test
+    public void stringLengthValidation_config() {
+        ObjectNode obj = (ObjectNode)TestUtils.getExcessivelyLargeClientData();
+        obj.put("identifier", "asdf");
+        obj.put("type", "SimpleType");
+    
+        AssessmentConfig config = new AssessmentConfig();
+        config.setConfig(obj);
+        assertValidatorMessage(validator, config, "config", getInvalidStringLengthMessage(TEXT_SIZE));
     }
 }

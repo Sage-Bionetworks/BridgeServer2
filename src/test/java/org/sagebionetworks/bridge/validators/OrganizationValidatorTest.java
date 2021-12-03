@@ -7,7 +7,7 @@ import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
 import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.OrganizationValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import org.testng.annotations.Test;
 
@@ -92,8 +92,8 @@ public class OrganizationValidatorTest {
     @Test
     public void stringLengthValidation_description() {
         Organization org = getOrganization();
-        org.setDescription(generateStringOfLength(MYSQL_TEXT_SIZE + 1));
-        assertValidatorMessage(INSTANCE, org, "description", getInvalidStringLengthMessage(MYSQL_TEXT_SIZE));
+        org.setDescription(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(INSTANCE, org, "description", getInvalidStringLengthMessage(TEXT_SIZE));
     }
     
     private Organization getOrganization() {

@@ -6,7 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.MYSQL_TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
@@ -109,6 +109,13 @@ public class AssessmentValidator implements Validator {
         if (assessment.getMinutesToComplete() != null && assessment.getMinutesToComplete() < 0) {
             errors.rejectValue("minutesToComplete", CANNOT_BE_NEGATIVE);
         }
-        validateStringLength(errors, MYSQL_TEXT_SIZE, assessment.getSummary(), "summary");
+        if (assessment.getTags() != null) {
+            for (String tag : assessment.getTags()) {
+                validateStringLength(errors, 255, tag, "tag["+tag+"]");
+            }
+        }
+        validateStringLength(errors, TEXT_SIZE, assessment.getSummary(), "summary");
+        validateStringLength(errors, TEXT_SIZE, assessment.getValidationStatus(), "validationStatus");
+        validateStringLength(errors, TEXT_SIZE, assessment.getNormingStatus(), "normingStatus");
     }
 }
