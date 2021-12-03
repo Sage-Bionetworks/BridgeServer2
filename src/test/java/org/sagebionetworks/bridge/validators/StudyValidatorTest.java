@@ -15,32 +15,7 @@ import static org.sagebionetworks.bridge.models.studies.ContactRole.TECHNICAL_SU
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.EXEMPT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
-import static org.sagebionetworks.bridge.validators.StudyValidator.ADDRESS_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.ADHERENCE_THRESHOLD_PERCENTAGE_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.AFFILIATION_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.APP_ID_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.CITY_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.CONTACTS_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.COUNTRY_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.CUSTOM_EVENTS_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.DIVISION_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.EMAIL_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.IDENTIFIER_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.INSTANCE;
-import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_DECISION_ON_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_DECISION_TYPE_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.IRB_EXPIRES_ON_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.JURISDICTION_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.MAIL_ROUTING_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.NAME_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.PHASE_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.PHONE_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.PLACE_NAME_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.POSITION_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.POSTAL_CODE_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.ROLE_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.STREET_FIELD;
-import static org.sagebionetworks.bridge.validators.StudyValidator.STUDY_TIME_ZONE_FIELD;
+import static org.sagebionetworks.bridge.validators.StudyValidator.*;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
@@ -325,6 +300,13 @@ public class StudyValidatorTest {
     }
     
     @Test
+    public void stringLengthValidation_identifier() {
+        study = createStudy();
+        study.setIdentifier(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, study, IDENTIFIER_FIELD, getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
     public void stringLengthValidation_name() {
         study = createStudy();
         study.setName(generateStringOfLength(256));
@@ -335,49 +317,49 @@ public class StudyValidatorTest {
     public void stringLengthValidation_details() {
         study = createStudy();
         study.setDetails(generateStringOfLength(511));
-        assertValidatorMessage(INSTANCE, study, "details", getInvalidStringLengthMessage(510));
+        assertValidatorMessage(INSTANCE, study, DETAILS_FIELD, getInvalidStringLengthMessage(510));
     }
     
     @Test
     public void stringLengthValidation_studyLogoUrl() {
         study = createStudy();
         study.setStudyLogoUrl(generateStringOfLength(256));
-        assertValidatorMessage(INSTANCE, study, "studyLogoUrl", getInvalidStringLengthMessage(255));
+        assertValidatorMessage(INSTANCE, study, STUDY_LOGO_URL_FIELD, getInvalidStringLengthMessage(255));
     }
     
     @Test
     public void stringLengthValidation_institutionId() {
         study = createStudy();
         study.setInstitutionId(generateStringOfLength(256));
-        assertValidatorMessage(INSTANCE, study, "institutionId", getInvalidStringLengthMessage(255));
+        assertValidatorMessage(INSTANCE, study, INSTITUTION_ID_FIELD, getInvalidStringLengthMessage(255));
     }
     
     @Test
     public void stringLengthValidation_irbProtocolId() {
         study = createStudy();
         study.setIrbProtocolId(generateStringOfLength(256));
-        assertValidatorMessage(INSTANCE, study, "irbProtocolId", getInvalidStringLengthMessage(255));
+        assertValidatorMessage(INSTANCE, study, IRB_PROTOCOL_ID_FIELD, getInvalidStringLengthMessage(255));
     }
     
     @Test
     public void stringLengthValidation_irbName() {
         study = createStudy();
         study.setIrbName(generateStringOfLength(61));
-        assertValidatorMessage(INSTANCE, study, "irbName", getInvalidStringLengthMessage(60));
+        assertValidatorMessage(INSTANCE, study, IRB_NAME_FIELD, getInvalidStringLengthMessage(60));
     }
     
     @Test
     public void stringLengthValidation_irbProtocolName() {
         study = createStudy();
         study.setIrbProtocolName(generateStringOfLength(513));
-        assertValidatorMessage(INSTANCE, study, "irbProtocolName", getInvalidStringLengthMessage(512));
+        assertValidatorMessage(INSTANCE, study, IRB_PROTOCOL_NAME_FIELD, getInvalidStringLengthMessage(512));
     }
     
     @Test
     public void stringLengthValidation_keywords() {
         study = createStudy();
         study.setKeywords(generateStringOfLength(256));
-        assertValidatorMessage(INSTANCE, study, "keywords", getInvalidStringLengthMessage(255));
+        assertValidatorMessage(INSTANCE, study, KEYWORDS_FIELD, getInvalidStringLengthMessage(255));
     }
     
     @Test

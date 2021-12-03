@@ -37,16 +37,23 @@ public class StudyValidator implements Validator {
     static final String AFFILIATION_FIELD = "affiliation";
     static final String APP_ID_FIELD = "appId";
     static final String CITY_FIELD = "city";
+    static final String CLIENT_DATA_FIELD = "clientData";
     static final String CONTACTS_FIELD = "contacts";
     static final String COUNTRY_FIELD = "country";
     static final String CUSTOM_EVENTS_FIELD = "customEvents";
+    static final String DETAILS_FIELD = "details";
     static final String DIVISION_FIELD = "division";
     static final String EMAIL_FIELD = "email";
     static final String IDENTIFIER_FIELD = "identifier";
+    static final String INSTITUTION_ID_FIELD = "institutionId";
     static final String IRB_DECISION_ON_FIELD = "irbDecisionOn";
     static final String IRB_DECISION_TYPE_FIELD = "irbDecisionType";
     static final String IRB_EXPIRES_ON_FIELD = "irbExpiresOn";
+    static final String IRB_NAME_FIELD = "irbName";
+    static final String IRB_PROTOCOL_ID_FIELD = "irbProtocolId";
+    static final String IRB_PROTOCOL_NAME_FIELD = "irbProtocolName";
     static final String JURISDICTION_FIELD = "jurisdiction";
+    static final String KEYWORDS_FIELD = "keywords";
     static final String NAME_FIELD = "name";
     static final String MAIL_ROUTING_FIELD = "mailRouting";
     static final String PHASE_FIELD = "phase";
@@ -57,6 +64,7 @@ public class StudyValidator implements Validator {
     static final String ROLE_FIELD = "role";
     static final String STATE_FIELD = "state";
     static final String STREET_FIELD = "street";
+    static final String STUDY_LOGO_URL_FIELD = "studyLogoUrl";
     static final String STUDY_TIME_ZONE_FIELD = "studyTimeZone";
     static final String ADHERENCE_THRESHOLD_PERCENTAGE_FIELD = "adherenceThresholdPercentage";
 
@@ -74,8 +82,7 @@ public class StudyValidator implements Validator {
         } else if (!study.getIdentifier().matches(BRIDGE_EVENT_ID_PATTERN)) {
             errors.rejectValue(IDENTIFIER_FIELD, BRIDGE_EVENT_ID_ERROR);
         }
-        // TODO: is this the right field name? should it be id?
-        validateStringLength(errors, 60, study.getIdentifier(), "studyId");
+        validateStringLength(errors, 255, study.getIdentifier(), IDENTIFIER_FIELD);
         if (isBlank(study.getAppId())) {
             errors.rejectValue(APP_ID_FIELD, CANNOT_BE_BLANK);
         }
@@ -186,14 +193,14 @@ public class StudyValidator implements Validator {
             }
         }
         if (study.getClientData() != null) {
-            validateStringLength(errors, TEXT_SIZE, study.getClientData().toString(), "clientData");
+            validateStringLength(errors, TEXT_SIZE, study.getClientData().toString(), CLIENT_DATA_FIELD);
         }
-        validateStringLength(errors, 510, study.getDetails(), "details");
-        validateStringLength(errors, 255, study.getStudyLogoUrl(), "studyLogoUrl");
-        validateStringLength(errors, 255, study.getInstitutionId(), "institutionId");
-        validateStringLength(errors, 255, study.getIrbProtocolId(), "irbProtocolId");
-        validateStringLength(errors, 512, study.getIrbProtocolName(), "irbProtocolName");
-        validateStringLength(errors, 60, study.getIrbName(), "irbName");
-        validateStringLength(errors, 255, study.getKeywords(), "keywords");
+        validateStringLength(errors, 510, study.getDetails(), DETAILS_FIELD);
+        validateStringLength(errors, 255, study.getStudyLogoUrl(), STUDY_LOGO_URL_FIELD);
+        validateStringLength(errors, 255, study.getInstitutionId(), INSTITUTION_ID_FIELD);
+        validateStringLength(errors, 255, study.getIrbProtocolId(), IRB_PROTOCOL_ID_FIELD);
+        validateStringLength(errors, 512, study.getIrbProtocolName(), IRB_PROTOCOL_NAME_FIELD);
+        validateStringLength(errors, 60, study.getIrbName(), IRB_NAME_FIELD);
+        validateStringLength(errors, 255, study.getKeywords(), KEYWORDS_FIELD);
     }
 }

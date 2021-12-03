@@ -645,9 +645,19 @@ public class ValidatorUtilsTest extends Mockito {
         verify(errors).pushNestedPath("colorScheme");
         verify(errors).rejectValue("inactivated", INVALID_HEX_TRIPLET);
     }
+    
+    @Test
+    public void validateStringLength_valid() {
+        String validString = "under 10";
+        
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateStringLength(errors, 10, validString, "testFieldName");
+    
+        verify(errors, never()).rejectValue(any(), any());
+    }
 
     @Test
-    public void validateStringForPersistence_tooLong() {
+    public void validateStringLength_tooLong() {
         String tooLong = "more than 10 characters";
         
         Errors errors = mock(Errors.class);
@@ -656,12 +666,11 @@ public class ValidatorUtilsTest extends Mockito {
         verify(errors).rejectValue("testFieldName", getInvalidStringLengthMessage(10));
     }
     
-//    @Test
-//    public void validateStringForPersistence_emoji() {
-//        String tooLong = "emoji \uD83C\uDCB1";
-//    
-//        Errors errors = mock(Errors.class);
-//        ValidatorUtils.validateStringLength(errors, 10, tooLong, "testFieldName");
-//        verify(errors).rejectValue("testFieldName", "can not use emojis");
-//    }
+    @Test
+    public void validateStringLength_nullSafe() {
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateStringLength(errors, 10, null, "testFieldName");
+        
+        verify(errors, never()).rejectValue(any(), any());
+    }
 }
