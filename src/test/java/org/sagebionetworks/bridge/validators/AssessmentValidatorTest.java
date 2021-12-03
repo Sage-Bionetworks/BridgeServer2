@@ -267,4 +267,21 @@ public class AssessmentValidatorTest extends Mockito {
         assessment.setTags(ImmutableSet.of(tag));
         assertValidatorMessage(validator, assessment, "tags["+tag+"]", getInvalidStringLengthMessage(255));
     }
+    
+    @Test
+    public void jsonLengthValidation_customizationFields() {
+        PropertyInfo info = new PropertyInfo.Builder().withDescription(generateStringOfLength(TEXT_SIZE)).build();
+        Map<String, Set<PropertyInfo>> customizationFields = new HashMap<>();
+        customizationFields.put("oneIdentifier", ImmutableSet.of(info));
+        
+        assessment.setCustomizationFields(customizationFields);
+        
+        assertValidatorMessage(validator, assessment, "customizationFields", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void jsonLengthValidation_labels() {
+        assessment.setLabels(ImmutableList.of(new Label("en", generateStringOfLength(TEXT_SIZE))));
+        assertValidatorMessage(validator, assessment, "labels", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
 }

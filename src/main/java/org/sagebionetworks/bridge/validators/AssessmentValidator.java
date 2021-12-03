@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
@@ -81,11 +82,12 @@ public class AssessmentValidator implements Validator {
                 }
             }
         }
+        validateJsonLength(errors, TEXT_SIZE, assessment.getCustomizationFields(), "customizationFields");
         validateColorScheme(errors, assessment.getColorScheme(), "colorScheme");
         if (!assessment.getLabels().isEmpty()) {
             validateLabels(errors, assessment.getLabels());
         }
-        
+        validateJsonLength(errors, TEXT_SIZE, assessment.getLabels(), "labels");
         // ownerId == studyId except in the shared assessments app, where it must include
         // the app as a namespace prefix, e.g. "appId:orgId". Assessments are always 
         // owned by some organization.

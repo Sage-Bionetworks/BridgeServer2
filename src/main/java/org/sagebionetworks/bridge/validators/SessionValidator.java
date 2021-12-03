@@ -6,10 +6,12 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthPeriod;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateMessages;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
@@ -41,6 +43,7 @@ public class SessionValidator implements Validator {
     static final String GUID_FIELD = "guid";
     static final String IDENTIFIER_FIELD = "identifier";
     static final String INTERVAL_FIELD = "interval";
+    static final String LABELS_FIELD = "labels";
     static final String MESSAGES_FIELD = "messages";
     static final String NAME_FIELD = "name";
     static final String NOTIFICATIONS_FIELD = "notifications";
@@ -160,6 +163,7 @@ public class SessionValidator implements Validator {
         if (!session.getLabels().isEmpty()) {
             validateLabels(errors, session.getLabels());
         }
+        validateJsonLength(errors, TEXT_SIZE, session.getLabels(), LABELS_FIELD);
         if (session.getTimeWindows().isEmpty()) {
             errors.rejectValue(TIME_WINDOWS_FIELD, CANNOT_BE_NULL_OR_EMPTY);
         } else {
@@ -209,6 +213,7 @@ public class SessionValidator implements Validator {
             }
             validateStringLength(errors, 255, asmt.getTitle(), TITLE_FIELD);
             validateLabels(errors, asmt.getLabels());
+            validateJsonLength(errors, TEXT_SIZE, asmt.getLabels(), LABELS_FIELD);
             validateColorScheme(errors, asmt.getColorScheme(), COLOR_SCHEME_FIELD);
             errors.popNestedPath();
         }
@@ -242,6 +247,7 @@ public class SessionValidator implements Validator {
                 errors.rejectValue(MESSAGES_FIELD, CANNOT_BE_NULL_OR_EMPTY);
             } else {
                 validateMessages(errors, notification.getMessages());
+                validateJsonLength(errors, TEXT_SIZE, notification.getMessages(), MESSAGES_FIELD);
             }
             errors.popNestedPath();
         }

@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.models.apps.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
@@ -37,6 +38,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.validation.Errors;
 import org.testng.annotations.Test;
 
@@ -690,6 +692,36 @@ public class ValidatorUtilsTest extends Mockito {
         Errors errors = mock(Errors.class);
         ValidatorUtils.validateStringLength(errors, 10, null, "testFieldName");
         
+        verify(errors, never()).rejectValue(any(), any());
+    }
+    
+    @Test
+    public void validateJsonLength_valid() {
+        Errors errors = mock(Errors.class);
+        Study study = Study.create();
+        study.setIdentifier("id");
+        study.setName("name");
+        ValidatorUtils.validateJsonLength(errors, TEXT_SIZE, study, "testFieldName");
+    
+        verify(errors, never()).rejectValue(any(), any());
+    }
+    
+    @Test
+    public void validateJsonLength_tooLong() {
+        Errors errors = mock(Errors.class);
+        Study study = Study.create();
+        study.setIdentifier("id");
+        study.setName(generateStringOfLength(TEXT_SIZE));
+        ValidatorUtils.validateJsonLength(errors, TEXT_SIZE, study, "testFieldName");
+        
+        verify(errors).rejectValue("testFieldName", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void validateJsonLength_nullSafe() {
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateJsonLength(errors, TEXT_SIZE, null, "testFieldName");
+    
         verify(errors, never()).rejectValue(any(), any());
     }
 }

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -20,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Duration;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Period;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -249,6 +251,18 @@ public class ValidatorUtils {
         }
         if (persistingText.length() > maxLength) {
             errors.rejectValue(fieldName, String.format(INVALID_STRING_LENGTH, maxLength));
+        }
+    }
+    
+    public static <T> void validateJsonLength(Errors errors, int maxLength, T persistingObject, String fieldName) {
+        if (persistingObject == null) {
+            return;
+        }
+        try {
+            String jsonString = BridgeObjectMapper.get().writeValueAsString(persistingObject);
+            validateStringLength(errors, maxLength, jsonString, fieldName);
+        } catch (JsonProcessingException ignored) {
+            // TODO: Decide what to do with an error converting the JSON
         }
     }
 }
