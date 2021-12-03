@@ -6,8 +6,8 @@ import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
-import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
@@ -265,6 +265,6 @@ public class AssessmentValidatorTest extends Mockito {
     public void stringLengthValidation_tags() {
         String tag = generateStringOfLength(256);
         assessment.setTags(ImmutableSet.of(tag));
-        assertValidatorMessage(validator, assessment, "tag["+tag+"]", getInvalidStringLengthMessage(255));
+        assertValidatorMessage(validator, assessment, "tags["+tag+"]", getInvalidStringLengthMessage(255));
     }
 }

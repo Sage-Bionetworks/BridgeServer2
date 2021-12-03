@@ -111,7 +111,7 @@ public class AssessmentValidator implements Validator {
         }
         if (assessment.getTags() != null) {
             for (String tag : assessment.getTags()) {
-                validateStringLength(errors, 255, tag, "tag["+tag+"]");
+                validateStringLength(errors, 255, tag, "tags["+tag+"]");
             }
         }
         validateStringLength(errors, TEXT_SIZE, assessment.getSummary(), "summary");

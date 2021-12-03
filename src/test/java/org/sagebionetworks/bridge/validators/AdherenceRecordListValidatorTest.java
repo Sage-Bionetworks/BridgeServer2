@@ -2,8 +2,8 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
-import static org.sagebionetworks.bridge.TestUtils.getExcessivelyLargeClientData;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getExcessivelyLargeClientData;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;

@@ -181,15 +181,14 @@ public class StudyValidator implements Validator {
             }
             errors.popNestedPath();
         }
-        // TODO: This looks like it is not nullable. Maybe add validation for that.
         if (study.getStudyDesignTypes() != null) {
             for (String designType : study.getStudyDesignTypes()) {
-                validateStringLength(errors, 255, designType, "studyDesignType");
+                validateStringLength(errors, 255, designType, "studyDesignTypes["+designType+"]");
             }
         }
         if (study.getDiseases() != null) {
             for (String disease : study.getDiseases()) {
-                validateStringLength(errors, 255, disease, "disease");
+                validateStringLength(errors, 255, disease, "diseases["+disease+"]");
             }
         }
         if (study.getClientData() != null) {

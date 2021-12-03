@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
-import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
 import static org.sagebionetworks.bridge.validators.FileMetadataValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;

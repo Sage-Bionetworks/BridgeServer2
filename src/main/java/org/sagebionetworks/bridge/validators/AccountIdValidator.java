@@ -49,9 +49,6 @@ public class AccountIdValidator implements Validator {
         if (type == ChannelType.EMAIL) {
             if (StringUtils.isBlank(identifier.getEmail())) {
                 errors.rejectValue("email", "is required");
-            } else {
-                // TODO: Check if this is necessary, seems like it is not validated locally, so probably not persisted?
-                validateStringLength(errors, 255, identifier.getEmail(), "email");
             }
         } else if (type == ChannelType.PHONE) {
             if (identifier.getPhone() == null) {

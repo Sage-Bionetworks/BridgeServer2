@@ -21,6 +21,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.mockito.Mockito;
+import org.sagebionetworks.bridge.validators.AssessmentConfigValidatorTest;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 

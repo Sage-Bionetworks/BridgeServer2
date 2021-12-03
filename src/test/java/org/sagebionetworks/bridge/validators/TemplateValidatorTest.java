@@ -3,8 +3,8 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
-import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_VERIFY_EMAIL;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 

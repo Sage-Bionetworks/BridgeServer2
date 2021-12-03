@@ -2,9 +2,9 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
-import static org.sagebionetworks.bridge.TestUtils.getExcessivelyLargeClientData;
-import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getExcessivelyLargeClientData;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.schedules2.Schedule2Test.createValidSchedule;

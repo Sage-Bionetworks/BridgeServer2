@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
-import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.MEDIUMTEXT_SIZE;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;

@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
-import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.RELEASE_NOTE;
 import static org.sagebionetworks.bridge.validators.AssessmentResourceValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.AssessmentResourceValidator.MIN_OVER_MAX_ERROR;
@@ -19,6 +19,8 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.assessments.AssessmentResource;
 import org.sagebionetworks.bridge.models.assessments.AssessmentResourceTest;
+
+import java.util.Arrays;
 
 public class AssessmentResourceValidatorTest {
 
@@ -75,6 +77,12 @@ public class AssessmentResourceValidatorTest {
         resource.setCreators(Lists.newArrayList("oneCreator", "  "));
         assertValidatorMessage(INSTANCE, resource, "creators[1]", CANNOT_BE_BLANK);
     }
+    
+    @Test
+    public void creatorTooMany() {
+        resource.setCreators(Arrays.asList(new String[201]));
+        assertValidatorMessage(INSTANCE, resource, "creators", "cannot have more than 50 list items");
+    }
 
     @Test
     public void contributorNull() {
@@ -87,6 +95,12 @@ public class AssessmentResourceValidatorTest {
         resource.setContributors(Lists.newArrayList("oneContributor", "  "));
         assertValidatorMessage(INSTANCE, resource, "contributors[1]", CANNOT_BE_BLANK);
     }
+    
+    @Test
+    public void contributorTooMany() {
+        resource.setContributors(Arrays.asList(new String[201]));
+        assertValidatorMessage(INSTANCE, resource, "contributors", "cannot have more than 50 list items");
+    }
 
     @Test
     public void publisherNull() {
@@ -98,6 +112,12 @@ public class AssessmentResourceValidatorTest {
     public void publisherBlank() {
         resource.setPublishers(Lists.newArrayList("onePublisher", "  "));
         assertValidatorMessage(INSTANCE, resource, "publishers[1]", CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void publisherTooMany() {
+        resource.setPublishers(Arrays.asList(new String[201]));
+        assertValidatorMessage(INSTANCE, resource, "publishers", "cannot have more than 50 list items");
     }
     
     @Test
@@ -156,24 +176,6 @@ public class AssessmentResourceValidatorTest {
     }
     
     @Test
-    public void stringLengthValidation_contributors() {
-        resource.setContributors(ImmutableList.of(generateStringOfLength(TEXT_SIZE)));
-        assertValidatorMessage(INSTANCE, resource, "contributors", getInvalidStringLengthMessage(TEXT_SIZE));
-    }
-    
-    @Test
-    public void stringLengthValidation_creators() {
-        resource.setCreators(ImmutableList.of(generateStringOfLength(TEXT_SIZE)));
-        assertValidatorMessage(INSTANCE, resource, "creators", getInvalidStringLengthMessage(TEXT_SIZE));
-    }
-    
-    @Test
-    public void stringLengthValidation_publishers() {
-        resource.setPublishers(ImmutableList.of(generateStringOfLength(TEXT_SIZE)));
-        assertValidatorMessage(INSTANCE, resource, "publishers", getInvalidStringLengthMessage(TEXT_SIZE));
-    }
-    
-    @Test
     public void stringLengthValidation_format() {
         resource.setFormat(generateStringOfLength(256));
         assertValidatorMessage(INSTANCE, resource, "format", getInvalidStringLengthMessage(255));
@@ -183,5 +185,23 @@ public class AssessmentResourceValidatorTest {
     public void stringLengthValidation_date() {
         resource.setDate(generateStringOfLength(256));
         assertValidatorMessage(INSTANCE, resource, "date", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_contributors() {
+        resource.setContributors(ImmutableList.of(generateStringOfLength(256)));
+        assertValidatorMessage(INSTANCE, resource, "contributors[0]", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_creators() {
+        resource.setCreators(ImmutableList.of(generateStringOfLength(256)));
+        assertValidatorMessage(INSTANCE, resource, "creators[0]", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_publishers() {
+        resource.setPublishers(ImmutableList.of(generateStringOfLength(256)));
+        assertValidatorMessage(INSTANCE, resource, "publishers[0]", getInvalidStringLengthMessage(255));
     }
 }

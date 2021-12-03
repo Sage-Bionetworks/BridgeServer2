@@ -48,7 +48,7 @@ import org.sagebionetworks.bridge.hibernate.HibernateAssessmentConfigDao;
 import org.sagebionetworks.bridge.models.assessments.Assessment;
 import org.sagebionetworks.bridge.models.assessments.AssessmentTest;
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
-import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfigValidator;
+import org.sagebionetworks.bridge.validators.AssessmentConfigValidator;
 import org.sagebionetworks.bridge.models.assessments.config.PropertyInfo;
 import org.sagebionetworks.bridge.validators.AbstractValidator;
 

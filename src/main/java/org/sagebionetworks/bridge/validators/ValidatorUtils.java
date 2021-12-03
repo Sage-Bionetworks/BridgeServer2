@@ -40,10 +40,10 @@ public class ValidatorUtils {
     static final String INVALID_LANG = "%s is not a valid ISO 639 alpha-2 or alpha-3 language code";
     static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFFFF format)";
     static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{6}$";
-    public static final String INVALID_STRING_LENGTH = "is longer than the allowed field length of %d characters";
+    static final String INVALID_STRING_LENGTH = "is longer than the allowed field length of %d characters";
     
-    public static final int TEXT_SIZE = 65535;
-    public static final int MEDIUMTEXT_SIZE = 16777215;
+    static final int TEXT_SIZE = 65535;
+    static final int MEDIUMTEXT_SIZE = 16777215;
 
     private static final Set<DurationFieldType> FIXED_LENGTH_DURATIONS = ImmutableSet.of(DurationFieldType.minutes(),
             DurationFieldType.hours(), DurationFieldType.days(), DurationFieldType.weeks());

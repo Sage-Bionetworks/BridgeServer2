@@ -6,9 +6,9 @@ import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.TestUtils.generateStringOfLength;
-import static org.sagebionetworks.bridge.TestUtils.getExcessivelyLargeClientData;
-import static org.sagebionetworks.bridge.TestUtils.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getExcessivelyLargeClientData;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.studies.ContactRole.TECHNICAL_SUPPORT;
@@ -513,15 +513,17 @@ public class StudyValidatorTest {
     @Test
     public void stringLengthValidation_studyDesignType() {
         study = createStudy();
-        study.setStudyDesignTypes(ImmutableSet.of(generateStringOfLength(256)));
-        assertValidatorMessage(INSTANCE, study, "studyDesignType", getInvalidStringLengthMessage(255));
+        String designType = generateStringOfLength(256);
+        study.setStudyDesignTypes(ImmutableSet.of(designType));
+        assertValidatorMessage(INSTANCE, study, "studyDesignTypes["+designType+"]", getInvalidStringLengthMessage(255));
     }
     
     @Test
-    public void stringLengthValidation_diseases() {
+    public void stringLengthValidation_disease() {
         study = createStudy();
-        study.setDiseases(ImmutableSet.of(generateStringOfLength(256)));
-        assertValidatorMessage(INSTANCE, study, "disease", getInvalidStringLengthMessage(255));
+        String disease = generateStringOfLength(256);
+        study.setDiseases(ImmutableSet.of(disease));
+        assertValidatorMessage(INSTANCE, study, "diseases["+disease+"]", getInvalidStringLengthMessage(255));
     }
     
     @Test

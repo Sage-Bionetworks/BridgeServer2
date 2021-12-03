@@ -44,8 +44,11 @@ public class AssessmentResourceValidator implements Validator {
                 if (isBlank(creator)) {
                     errors.rejectValue("creators["+i+"]", CANNOT_BE_BLANK);
                 }
+                validateStringLength(errors, 255, resource.getCreators().get(i), "creators["+i+"]");
             }
-            validateStringLength(errors, TEXT_SIZE, resource.getCreators().toString(), "creators");
+            if (resource.getCreators().size() > 50) {
+                errors.rejectValue("creators", "cannot have more than 50 list items");
+            }
         }
         if (resource.getContributors() != null) {
             for (int i=0; i < resource.getContributors().size(); i++) {
@@ -53,8 +56,11 @@ public class AssessmentResourceValidator implements Validator {
                 if (isBlank(contrib)) {
                     errors.rejectValue("contributors["+i+"]", CANNOT_BE_BLANK);
                 }
+                validateStringLength(errors, 255, resource.getContributors().get(i), "contributors["+i+"]");
             }
-            validateStringLength(errors, TEXT_SIZE, resource.getContributors().toString(), "contributors");
+            if (resource.getContributors().size() > 50) {
+                errors.rejectValue("contributors", "cannot have more than 50 list items");
+            }
         }
         if (resource.getPublishers() != null) {
             for (int i=0; i < resource.getPublishers().size(); i++) {
@@ -62,8 +68,11 @@ public class AssessmentResourceValidator implements Validator {
                 if (isBlank(pub)) {
                     errors.rejectValue("publishers["+i+"]", CANNOT_BE_BLANK);
                 }
+                validateStringLength(errors, 255, resource.getPublishers().get(i), "publishers["+i+"]");
             }
-            validateStringLength(errors, TEXT_SIZE, resource.getPublishers().toString(), "publishers");
+            if (resource.getPublishers().size() > 50) {
+                errors.rejectValue("publishers", "cannot have more than 50 list items");
+            }
         }
         if (resource.getMinRevision() != null && resource.getMaxRevision() != null && 
                 resource.getMinRevision() > resource.getMaxRevision()) {
