@@ -189,7 +189,7 @@ public class ConsentServiceTest extends Mockito {
     public void after() {
         RequestContext.set(NULL_INSTANCE);
     }
-    
+
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void userCannotGetConsentSignatureForSubpopulationToWhichTheyAreNotMapped() {
         when(subpopService.getSubpopulation(app.getIdentifier(), SUBPOP_GUID))

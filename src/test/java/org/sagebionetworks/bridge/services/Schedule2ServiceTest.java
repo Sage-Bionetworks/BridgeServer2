@@ -935,6 +935,15 @@ public class Schedule2ServiceTest extends Mockito {
     }
     
     @Test
+    public void getScheduleMetadata() { 
+        List<TimelineMetadata> list = ImmutableList.of();
+        when(mockDao.getScheduleMetadata(SCHEDULE_GUID)).thenReturn(list);
+        
+        List<TimelineMetadata> retValue = service.getScheduleMetadata(SCHEDULE_GUID);
+        assertSame(retValue, list);
+    }
+    
+    @Test
     public void getSessionAssessmentMetadata() {
         List<TimelineMetadata> results = ImmutableList.of();
         when(mockDao.getAssessmentsForSessionInstance(GUID)).thenReturn(results);

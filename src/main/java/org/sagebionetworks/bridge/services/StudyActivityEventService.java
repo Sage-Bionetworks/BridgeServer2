@@ -16,6 +16,7 @@ import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.CREATE_INSTANCE;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -165,9 +166,14 @@ public class StudyActivityEventService {
         StudyActivityEvent mostRecent = dao.getRecentStudyActivityEvent(
                 event.getUserId(), event.getStudyId(), event.getEventId());
         
-        // we will honor this, unless the origin event has never been published, then it *has* to
-        // trigger creating of the study bursts.
-        if (mostRecent == null) {
+        if (mostRecent != null) {
+            event.setOriginEventId(mostRecent.getOriginEventId());
+            event.setStudyBurstId(mostRecent.getStudyBurstId());
+            event.setPeriodFromOrigin(mostRecent.getPeriodFromOrigin());
+            event.setUpdateType(mostRecent.getUpdateType());
+        } else {
+            // we will honor this, unless the origin event has never been published, then it *has* to
+            // trigger creating of the study bursts.
             updateBursts = true;
         }
         // Throwing exceptions will prevent study burst updates from happening if 
@@ -228,6 +234,7 @@ public class StudyActivityEventService {
         for (String fieldName : GLOBAL_EVENTS_OF_INTEREST) {
             addIfPresent(events, map, fieldName, true);    
         }
+        events.sort(Comparator.comparing(StudyActivityEvent::getEventId));
         return new ResourceList<>(events); 
     }
     

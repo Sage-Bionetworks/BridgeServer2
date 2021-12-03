@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules2.timelines;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -116,5 +117,25 @@ public class ScheduledSessionTest extends Mockito {
         assertEquals(schSession.getTimeWindow(), window);
         assertTrue(schSession.isPersistent());
         assertTrue(schSession.getAssessments().isEmpty());
+        assertNull(schSession.getStudyBurstId());
+        assertNull(schSession.getStudyBurstNum());
+    }
+    
+    @Test
+    public void reportsStudyBurstInformation() {
+        Session session = new Session();
+        session.setGuid(SESSION_GUID_1);
+        
+        TimeWindow window = new TimeWindow();
+        window.setGuid(SESSION_WINDOW_GUID_1);
+        
+        ScheduledSession schSession = new ScheduledSession.Builder()
+                .withSession(session)
+                .withTimeWindow(window)
+                .withStartEventId("study_burst:foo:01")
+                .build();
+        
+        assertEquals(schSession.getStudyBurstId(), "foo");
+        assertEquals(schSession.getStudyBurstNum(), Integer.valueOf(1));
     }
 }

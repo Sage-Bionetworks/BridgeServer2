@@ -23,7 +23,8 @@ import org.sagebionetworks.bridge.models.schedules2.Schedule2;
  * are needed to track the performance of specific sessions and assessments, and 
  * the related information to display tasks in the UI.
  */
-@JsonPropertyOrder({"duration", "totalMinutes", "totalNotifications", "schedule", "sessions", "assessments", "type"})
+@JsonPropertyOrder({ "duration", "totalMinutes", "totalNotifications", "schedule", "sessions", "assessments",
+        "studyBursts", "type" })
 public class Timeline {
 
     private final String lang;
@@ -31,19 +32,21 @@ public class Timeline {
     private final List<ScheduledSession> scheduledSessions;
     private final List<AssessmentInfo> assessments;
     private final List<SessionInfo> sessions;
+    private final List<StudyBurstInfo> studyBursts;
     private final List<TimelineMetadata> metadata;
     private final int totalMinutes;
     private final int totalNotifications;
     
     private Timeline(Period duration, String lang, List<ScheduledSession> scheduledSessions,
             List<AssessmentInfo> assessments, List<SessionInfo> sessions, List<TimelineMetadata> metadata,
-            int totalMinutes, int totalNotifications) {
+            List<StudyBurstInfo> studyBursts, int totalMinutes, int totalNotifications) {
         this.duration = duration;
         this.lang = lang;
         this.scheduledSessions = scheduledSessions;
         this.assessments = assessments;
         this.sessions = sessions;
         this.metadata = metadata;
+        this.studyBursts = studyBursts;
         this.totalMinutes = totalMinutes;
         this.totalNotifications = totalNotifications;
     }
@@ -70,6 +73,9 @@ public class Timeline {
     public List<SessionInfo> getSessions() {
         return sessions;
     }
+    public List<StudyBurstInfo> getStudyBursts() {
+        return studyBursts;
+    }
     @JsonIgnore
     public List<TimelineMetadata> getMetadata() {
         return metadata;
@@ -84,6 +90,7 @@ public class Timeline {
         // maintain the order the sessions are inserted, which is the order they exist in 
         // the session.
         private Map<String, SessionInfo> sessions = new LinkedHashMap<>();
+        private Map<String, StudyBurstInfo> studyBursts = new LinkedHashMap<>();
         private List<TimelineMetadata> metadata = new ArrayList<>();
         private int totalMinutes;
         private int totalNotifications;
@@ -114,18 +121,22 @@ public class Timeline {
             sessionMeta.setSessionStartEventId(schSession.getStartEventId());
             sessionMeta.setSessionInstanceStartDay(schSession.getStartDay());
             sessionMeta.setSessionInstanceEndDay(schSession.getEndDay());
+            sessionMeta.setSessionSymbol(schSession.getSession().getSymbol());
+            sessionMeta.setSessionName(schSession.getSession().getName());
             sessionMeta.setTimeWindowGuid(schSession.getTimeWindow().getGuid());
             sessionMeta.setTimeWindowPersistent(schSession.getTimeWindow().isPersistent());
+            sessionMeta.setStudyBurstId(schSession.getStudyBurstId());
+            sessionMeta.setStudyBurstNum(schSession.getStudyBurstNum());
             metadata.add(sessionMeta);
             
             for (ScheduledAssessment schAsmt : schSession.getAssessments()) {
-                TimelineMetadata schMeta = TimelineMetadata.copy(sessionMeta);
-                schMeta.setGuid(schAsmt.getInstanceGuid());
-                schMeta.setAssessmentInstanceGuid(schAsmt.getInstanceGuid());
-                schMeta.setAssessmentGuid(schAsmt.getReference().getGuid());
-                schMeta.setAssessmentId(schAsmt.getReference().getIdentifier());
-                schMeta.setAssessmentRevision(schAsmt.getReference().getRevision());
-                metadata.add(schMeta);    
+                TimelineMetadata asmtMeta = TimelineMetadata.copy(sessionMeta);
+                asmtMeta.setGuid(schAsmt.getInstanceGuid());
+                asmtMeta.setAssessmentInstanceGuid(schAsmt.getInstanceGuid());
+                asmtMeta.setAssessmentGuid(schAsmt.getReference().getGuid());
+                asmtMeta.setAssessmentId(schAsmt.getReference().getIdentifier());
+                asmtMeta.setAssessmentRevision(schAsmt.getReference().getRevision());
+                metadata.add(asmtMeta);    
             }
             
             for (Notification notification : schSession.getSession().getNotifications()) {
@@ -155,16 +166,24 @@ public class Timeline {
             this.sessions.put(sessionInfo.getGuid(), sessionInfo);    
             return this;
         }
+        public Builder withStudyBurstInfo(StudyBurstInfo studyBurstInfo) {
+            this.studyBursts.put(studyBurstInfo.getIdentifier(), studyBurstInfo);
+            return this;
+        }
         public Timeline build() {
             Collections.sort(scheduledSessions, (sc1, sc2) -> {
                 int res = sc1.getStartDay() - sc2.getStartDay();
                 if (res == 0) {
-                    return sc1.getEndDay() - sc2.getEndDay();
+                    res = sc1.getEndDay() - sc2.getEndDay();
+                }
+                if (res == 0 && sc1.getStudyBurstId() != null && sc1.getStudyBurstId().equals(sc2.getStudyBurstId())) {
+                    res = sc1.getStudyBurstNum() - sc2.getStudyBurstNum();
                 }
                 return res;
             });
             return new Timeline(duration, lang, scheduledSessions, ImmutableList.copyOf(assessments.values()),
-                    ImmutableList.copyOf(sessions.values()), metadata, totalMinutes, totalNotifications);
+                    ImmutableList.copyOf(sessions.values()), metadata, ImmutableList.copyOf(studyBursts.values()),
+                    totalMinutes, totalNotifications);
         }
     }
 }

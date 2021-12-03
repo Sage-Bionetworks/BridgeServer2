@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -15,6 +16,7 @@ import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.EXEMPT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.validators.StudyValidator.ADDRESS_FIELD;
+import static org.sagebionetworks.bridge.validators.StudyValidator.ADHERENCE_THRESHOLD_PERCENTAGE_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.AFFILIATION_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.APP_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.CITY_FIELD;
@@ -38,10 +40,12 @@ import static org.sagebionetworks.bridge.validators.StudyValidator.POSITION_FIEL
 import static org.sagebionetworks.bridge.validators.StudyValidator.POSTAL_CODE_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.ROLE_FIELD;
 import static org.sagebionetworks.bridge.validators.StudyValidator.STREET_FIELD;
+import static org.sagebionetworks.bridge.validators.StudyValidator.STUDY_TIME_ZONE_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.entityThrowingException;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
@@ -52,7 +56,6 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.studies.Address;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
@@ -106,7 +109,42 @@ public class StudyValidatorTest {
         study.setAppId(null);
         assertValidatorMessage(INSTANCE, study, APP_ID_FIELD, CANNOT_BE_BLANK);
     }
+
+    @Test
+    public void studyTimeZoneNullOK() {
+        study = createStudy();
+        study.setStudyTimeZone(null);
+        entityThrowingException(INSTANCE, study);
+    }
+
+    @Test
+    public void studyTimeZoneInvalid() {
+        study = createStudy();
+        study.setStudyTimeZone("America/Aspen");
+        assertValidatorMessage(INSTANCE, study, STUDY_TIME_ZONE_FIELD, TIME_ZONE_ERROR);
+    }
     
+    @Test
+    public void adherenceThresholdPercentageNullOK() {
+        study = createStudy();
+        study.setAdherenceThresholdPercentage(null);
+        entityThrowingException(INSTANCE, study);
+    }
+    
+    @Test
+    public void adherenceThresholdPercentageLessThanZero() {
+        study = createStudy();
+        study.setAdherenceThresholdPercentage(-1);
+        assertValidatorMessage(INSTANCE, study, ADHERENCE_THRESHOLD_PERCENTAGE_FIELD, "must be from 0-100%");
+    }
+    
+    @Test
+    public void adherenceThresholdPercentageMoreThan100() {
+        study = createStudy();
+        study.setAdherenceThresholdPercentage(101);
+        assertValidatorMessage(INSTANCE, study, ADHERENCE_THRESHOLD_PERCENTAGE_FIELD, "must be from 0-100%");
+    }
+
     @Test
     public void contactNameNull() {
         study = createStudy();
@@ -241,11 +279,11 @@ public class StudyValidatorTest {
     
     @Test
     public void customEvents_eventIdInvalid() {
-        StudyCustomEvent event = new StudyCustomEvent("a b c", MUTABLE);
+        StudyCustomEvent event = new StudyCustomEvent("a:b:c", MUTABLE);
         study = createStudy();
         study.getCustomEvents().add(event);
         
-        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].eventId", BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(INSTANCE, study, CUSTOM_EVENTS_FIELD + "[0].eventId", BRIDGE_RELAXED_ID_ERROR);
     }
     
     @Test
@@ -517,6 +555,8 @@ public class StudyValidatorTest {
         study.setAppId(TEST_APP_ID);
         study.setName("name");
         study.setPhase(DESIGN);
+        study.setStudyTimeZone("America/Los_Angeles");
+        study.setAdherenceThresholdPercentage(80);
         return study;
     }
     

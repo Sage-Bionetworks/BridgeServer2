@@ -61,7 +61,7 @@ public class ScheduledActivityController extends BaseController {
     final void setScheduledActivityService(ScheduledActivityService scheduledActivityService) {
         this.scheduledActivityService = scheduledActivityService;
     }
-    
+
     @Deprecated
     @GetMapping("/v3/tasks")
     public JsonNode getTasks(@RequestParam(required = false) String until,

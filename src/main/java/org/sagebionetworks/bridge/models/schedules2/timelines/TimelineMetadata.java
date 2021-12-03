@@ -41,6 +41,10 @@ public class TimelineMetadata implements BridgeEntity {
         copy.setScheduleModifiedOn(meta.getScheduleModifiedOn());
         copy.setSchedulePublished(meta.isSchedulePublished());
         copy.setAppId(meta.getAppId());
+        copy.setStudyBurstId(meta.getStudyBurstId());
+        copy.setStudyBurstNum(meta.getStudyBurstNum());
+        copy.setSessionName(meta.getSessionName());
+        copy.setSessionSymbol(meta.getSessionSymbol());
         return copy;
     }
     
@@ -50,18 +54,21 @@ public class TimelineMetadata implements BridgeEntity {
         map.put("assessmentInstanceGuid", assessmentInstanceGuid);
         map.put("assessmentGuid", assessmentGuid);
         map.put("assessmentId", assessmentId);
-        map.put("assessmentRevision", Integer.toString(assessmentRevision));
+        map.put("assessmentRevision", assessmentRevision == null ? null : Integer.toString(assessmentRevision));
         map.put("sessionInstanceGuid", sessionInstanceGuid);
         map.put("sessionGuid", sessionGuid);
-        map.put("sessionInstanceStartDay", Integer.toString(sessionInstanceStartDay));
-        map.put("sessionInstanceEndDay", Integer.toString(sessionInstanceEndDay));
+        map.put("sessionInstanceStartDay", sessionInstanceStartDay == null ? null : Integer.toString(sessionInstanceStartDay));
+        map.put("sessionInstanceEndDay", sessionInstanceEndDay == null ? null : Integer.toString(sessionInstanceEndDay));
         map.put("sessionStartEventId", sessionStartEventId);
         map.put("timeWindowGuid", timeWindowGuid);
         map.put("timeWindowPersistent", Boolean.toString(timeWindowPersistent));
         map.put("scheduleGuid", scheduleGuid);
-        map.put("scheduleModifiedOn", scheduleModifiedOn.toString());
+        map.put("scheduleModifiedOn", scheduleModifiedOn == null ? null : scheduleModifiedOn.toString());
         map.put("schedulePublished", Boolean.toString(schedulePublished));
         map.put("appId", appId);
+        map.put("studyBurstId", studyBurstId);
+        map.put("studyBurstNum", studyBurstNum == null ? null : studyBurstNum.toString());
+        // we don't need to export session name or symbol, they are for editing tools
         return map;
     }
     
@@ -82,7 +89,11 @@ public class TimelineMetadata implements BridgeEntity {
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime scheduleModifiedOn;
     private boolean schedulePublished;
+    private String studyBurstId;
+    private Integer studyBurstNum;
     private String appId;
+    private String sessionSymbol;
+    private String sessionName;
     
     public String getGuid() {
         return guid;
@@ -179,5 +190,29 @@ public class TimelineMetadata implements BridgeEntity {
     }
     public void setAppId(String appId) {
         this.appId = appId;
+    }
+    public String getStudyBurstId() {
+        return studyBurstId;
+    }
+    public void setStudyBurstId(String studyBurstId) {
+        this.studyBurstId = studyBurstId;
+    }
+    public Integer getStudyBurstNum() {
+        return studyBurstNum;
+    }
+    public void setStudyBurstNum(Integer studyBurstNum) {
+        this.studyBurstNum = studyBurstNum;
+    }
+    public String getSessionSymbol() {
+        return sessionSymbol;
+    }
+    public void setSessionSymbol(String sessionSymbol) {
+        this.sessionSymbol = sessionSymbol;
+    }
+    public String getSessionName() {
+        return sessionName;
+    }
+    public void setSessionName(String sessionName) {
+        this.sessionName = sessionName;
     }
 }

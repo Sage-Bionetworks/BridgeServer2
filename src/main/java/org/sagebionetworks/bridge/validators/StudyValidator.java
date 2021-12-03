@@ -3,15 +3,20 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_PATTERN;
 import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAIL;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
+import java.time.DateTimeException;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -52,6 +57,8 @@ public class StudyValidator implements Validator {
     static final String ROLE_FIELD = "role";
     static final String STATE_FIELD = "state";
     static final String STREET_FIELD = "street";
+    static final String STUDY_TIME_ZONE_FIELD = "studyTimeZone";
+    static final String ADHERENCE_THRESHOLD_PERCENTAGE_FIELD = "adherenceThresholdPercentage";
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -79,6 +86,20 @@ public class StudyValidator implements Validator {
         if (study.getPhase() == null) {
             errors.rejectValue(PHASE_FIELD, CANNOT_BE_NULL);
         }
+        if (study.getAdherenceThresholdPercentage() != null) {
+            int value = study.getAdherenceThresholdPercentage().intValue();
+            if (value < 0 || value > 100) {
+                errors.rejectValue(ADHERENCE_THRESHOLD_PERCENTAGE_FIELD, "must be from 0-100%");
+            }
+        }
+        if (study.getStudyTimeZone() != null) {
+            try {
+                ZoneId.of(study.getStudyTimeZone());
+            } catch (DateTimeException e) {
+                errors.rejectValue(STUDY_TIME_ZONE_FIELD, TIME_ZONE_ERROR);
+            }
+        }
+        
         // If one of these is supplied, all three need to be supplied
         boolean validateIrb = study.getIrbDecisionType() != null ||
                 study.getIrbDecisionOn() != null ||
@@ -104,8 +125,8 @@ public class StudyValidator implements Validator {
             }
             if (isBlank(customEvent.getEventId())) {
                 errors.rejectValue("eventId", CANNOT_BE_BLANK);
-            } else if (!customEvent.getEventId().matches(BRIDGE_EVENT_ID_PATTERN)) {
-                errors.rejectValue("eventId", BRIDGE_EVENT_ID_ERROR);
+            } else if (!customEvent.getEventId().matches(BRIDGE_RELAXED_ID_PATTERN)) {
+                errors.rejectValue("eventId", BRIDGE_RELAXED_ID_ERROR);
             } else {
                 uniqueIds.add(customEvent.getEventId());    
             }

@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
+    public static final String EXTERNAL_ID_NONE = "<none>";
+
     // Excessively long User-Agent strings break the database and generally aren't parseable anyway.
     public static final int MAX_USER_AGENT_LENGTH = 255;
 
@@ -41,6 +43,7 @@ public class BridgeConstants {
     public static final String MAX_USERS_ERROR = "While app is in evaluation mode, it may not exceed %s accounts.";
     public static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
     public static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
+    public static final String BRIDGE_RELAXED_ID_ERROR = "cannot contain colons";
     public static final String CALLER_NOT_MEMBER_ERROR = "Assessment must be associated to the caller’s organization.";
     public static final String NEGATIVE_OFFSET_ERROR = "offsetBy cannot be negative";
     public static final String NONPOSITIVE_REVISION_ERROR = "revision cannot be less than 1";
@@ -59,6 +62,11 @@ public class BridgeConstants {
     
     /** The pattern used to validate activity event keys and automatic custom event keys. */
     public static final String BRIDGE_EVENT_ID_PATTERN = "^[a-zA-Z0-9_-]+$";
+    
+    /** An identifier field that can contain spaces, some punctuation (but not colons) where it's infeasible 
+     * to include a separate label and unnecessary to restrict the string for external systems like Synapse. 
+     */
+    public static final String BRIDGE_RELAXED_ID_PATTERN = "^[^:]+$";
     
     /** The pattern of a valid JavaScript variable/object property name. */
     public  static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";

@@ -262,7 +262,7 @@ public class Schedule2Service {
 
         Validate.entityThrowingException(INSTANCE, schedule);
         
-        return dao.updateSchedule(schedule);        
+        return dao.updateSchedule(schedule);
     }
     
     /**
@@ -327,6 +327,12 @@ public class Schedule2Service {
         
         // This is calculated so quickly it is not worth caching
         return Scheduler.INSTANCE.calculateTimeline(schedule);
+    }
+    
+    public List<TimelineMetadata> getScheduleMetadata(String guid) {
+        checkNotNull(guid);
+
+        return dao.getScheduleMetadata(guid);
     }
     
     public Optional<TimelineMetadata> getTimelineMetadata(String instanceGuid) {
