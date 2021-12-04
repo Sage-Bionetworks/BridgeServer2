@@ -469,7 +469,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void stringLengthValidation_attributeValue() {
         validator = makeValidator(true);
-        app.getUserProfileAttributes().add("testKey");
+        app.setUserProfileAttributes(ImmutableSet.of("testKey"));
         assertValidatorMessage(validator, withAttributes(ImmutableMap.of("testKey", generateStringOfLength(256))), "attributes[testKey]", getInvalidStringLengthMessage(255));
     }
     
