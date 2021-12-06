@@ -79,7 +79,7 @@ public class UploadSchemaController extends BaseController {
     @DeleteMapping("/v3/uploadschemas/{schemaId}")
     public StatusMessage deleteAllRevisionsOfUploadSchema(@PathVariable String schemaId,
             @RequestParam(defaultValue = "false") boolean physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         
         if (physical && session.isInRole(ADMIN)) {
             uploadSchemaService.deleteUploadSchemaByIdPermanently(session.getAppId(), schemaId);
@@ -92,7 +92,7 @@ public class UploadSchemaController extends BaseController {
     @DeleteMapping("/v3/uploadschemas/{schemaId}/revisions/{revision}")
     public StatusMessage deleteSchemaRevision(@PathVariable String schemaId, @PathVariable int revision,
             @RequestParam(defaultValue = "false") boolean physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         
         if (physical && session.isInRole(ADMIN)) {
             uploadSchemaService.deleteUploadSchemaByIdAndRevisionPermanently(session.getAppId(), schemaId, revision);

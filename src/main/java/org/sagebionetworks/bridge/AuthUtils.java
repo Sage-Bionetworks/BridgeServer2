@@ -253,19 +253,35 @@ public class AuthUtils {
             .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
     
     /**
-     * Is the caller in the provided role? Superadmins always pass this test.
+     * Is the caller in the provided role? Superadmins always pass this test, and admins
+     * always pass this test unless it requires a superadmin.
      */
     public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
-        return callerRoles != null && requiredRole != null && 
-                (callerRoles.contains(SUPERADMIN) || callerRoles.contains(requiredRole));
+        if (callerRoles == null || requiredRole == null) {
+            return false;
+        }
+        // User is a superadmin, or an admin for a call requiring any role other than superadmin,
+        // and therefore can access.
+        if (callerRoles.contains(SUPERADMIN) || (callerRoles.contains(ADMIN) && requiredRole != SUPERADMIN)) {
+            return true;
+        }
+        return callerRoles.contains(requiredRole);
     }
     
     /**
-     * Is the caller in any of the provided roles? Superadmins always pass this test.
+     * Is the caller in any of the provided roles? Superadmins always pass this test. Admins
+     * always pass this test unless it requires a superadmin.
      */
     public static boolean isInRole(Set<Roles> callerRoles, Set<Roles> requiredRoles) {
-        return callerRoles != null && requiredRoles != null && 
-                requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
+        if (callerRoles == null || requiredRoles == null || requiredRoles.isEmpty()) {
+            return false;
+        }
+        // User is a superadmin, or an admin for a call requiring any role other than superadmin,
+        // and therefore can access.
+        if (callerRoles.contains(SUPERADMIN) || (!requiredRoles.contains(SUPERADMIN) && callerRoles.contains(ADMIN))) {
+            return true;
+        }
+        return requiredRoles.stream().anyMatch(role -> callerRoles.contains(role));
     }
     
     

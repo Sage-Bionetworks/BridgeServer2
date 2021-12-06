@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -179,7 +180,7 @@ public class SharedModuleMetadataController extends BaseController {
     }
     
     private UserSession verifySharedDeveloperOrAdminAccess() {
-        UserSession session = getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         String appId = session.getAppId();
         if (!SHARED_APP_ID.equals(appId)) {
             throw new UnauthorizedException();

@@ -483,7 +483,7 @@ public class AssessmentControllerTest extends Mockito {
                 .withOrgMembership(TEST_ORG_ID)
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.deleteAssessment(GUID, "false");
         verify(mockService).deleteAssessment(TEST_APP_ID, null, GUID);
     }
@@ -494,7 +494,7 @@ public class AssessmentControllerTest extends Mockito {
                 .withOrgMembership(TEST_ORG_ID)
                 .withRoles(ImmutableSet.of(ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.deleteAssessment(GUID, "false");
         verify(mockService).deleteAssessment(TEST_APP_ID, null, GUID);
     }
@@ -505,7 +505,7 @@ public class AssessmentControllerTest extends Mockito {
                 .withOrgMembership(TEST_ORG_ID)
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.deleteAssessment(GUID, "true");
         verify(mockService).deleteAssessment(TEST_APP_ID, null, GUID);        
     }
@@ -516,7 +516,7 @@ public class AssessmentControllerTest extends Mockito {
                 .withOrgMembership(TEST_ORG_ID)
                 .withRoles(ImmutableSet.of(ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.deleteAssessment(GUID, "true");
         verify(mockService).deleteAssessmentPermanently(TEST_APP_ID, null, GUID);        
     }
@@ -525,7 +525,7 @@ public class AssessmentControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void deleteAssessmentRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.deleteAssessment(GUID, null);
     }

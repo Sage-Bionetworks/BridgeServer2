@@ -119,24 +119,24 @@ public class UserSessionTest {
     @Test
     public void userIsInRole() {
         UserSession session = new UserSession(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(ADMIN, DEVELOPER)).build());
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
 
         assertTrue(session.isInRole(DEVELOPER));
         assertFalse(session.isInRole(RESEARCHER));
         assertFalse(session.isInRole(WORKER));
-        assertTrue(session.isInRole(ADMIN));
+        assertFalse(session.isInRole(ADMIN));
         assertFalse(session.isInRole((Roles)null));
     }
     
     @Test
     public void userIsInRoleSet() {
         UserSession session = new UserSession(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(ADMIN, DEVELOPER)).build());
+                .withRoles(ImmutableSet.of(RESEARCHER, DEVELOPER)).build());
                 
         assertTrue(session.isInRole(ImmutableSet.of(DEVELOPER)));
-        assertFalse(session.isInRole(ImmutableSet.of(RESEARCHER)));
+        assertTrue(session.isInRole(ImmutableSet.of(RESEARCHER)));
         assertFalse(session.isInRole(ImmutableSet.of(WORKER)));
-        assertTrue(session.isInRole(ImmutableSet.of(ADMIN)));
+        assertFalse(session.isInRole(ImmutableSet.of(ADMIN)));
         assertFalse(session.isInRole((Set<Roles>)null));
     }
     

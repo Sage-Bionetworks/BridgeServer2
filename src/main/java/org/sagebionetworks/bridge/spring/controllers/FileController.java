@@ -85,7 +85,7 @@ public class FileController extends BaseController {
     @DeleteMapping("/v3/files/{guid}")
     public StatusMessage deleteFile(@PathVariable String guid,
             @RequestParam(defaultValue = "false") String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             fileService.deleteFilePermanently(session.getAppId(), guid);

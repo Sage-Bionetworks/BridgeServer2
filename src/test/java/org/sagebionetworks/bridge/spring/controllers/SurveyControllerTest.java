@@ -343,7 +343,7 @@ public class SurveyControllerTest extends Mockito {
     @Test
     public void developerCanLogicallyDelete() throws Exception {
         setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Survey survey = getSurvey(false);
         when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false)).thenReturn(survey);
         
@@ -358,7 +358,7 @@ public class SurveyControllerTest extends Mockito {
     @Test
     public void adminCanLogicallyDelete() throws Exception {
         setupContext(TEST_APP_ID, UNCONSENTED, ADMIN);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Survey survey = getSurvey(false);
         when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false)).thenReturn(survey);
         
@@ -380,7 +380,7 @@ public class SurveyControllerTest extends Mockito {
     @Test
     public void deleteSurveyAllowedForDeveloper() throws Exception {
         setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Survey survey = getSurvey(false);
         when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false))
                 .thenReturn(survey);
@@ -396,7 +396,7 @@ public class SurveyControllerTest extends Mockito {
     @Test
     public void physicalDeleteOfSurveyNotAllowedForDeveloper() throws Exception {
         setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Survey survey = getSurvey(false);
         when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false)).thenReturn(survey);
         
@@ -411,7 +411,7 @@ public class SurveyControllerTest extends Mockito {
     @Test
     public void physicalDeleteAllowedForAdmin() throws Exception {
         setupContext(TEST_APP_ID, UNCONSENTED, ADMIN);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         Survey survey = getSurvey(false);
         when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false)).thenReturn(survey);
         
@@ -426,7 +426,7 @@ public class SurveyControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void deleteSurveyThrowsGoodExceptionIfSurveyDoesntExist() throws Exception {
         setupContext(TEST_APP_ID, UNCONSENTED, DEVELOPER);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, false, false)).thenReturn(null);
         
         controller.deleteSurvey(SURVEY_GUID, CREATED_ON.toString(), false);
@@ -525,8 +525,8 @@ public class SurveyControllerTest extends Mockito {
     }
 
     @Test
-    public void adminRejectedAsUnauthorized() throws Exception {
-        setupContext(TEST_APP_ID, UNCONSENTED, ADMIN);
+    public void resercherRejectedAsUnauthorized() throws Exception {
+        setupContext(TEST_APP_ID, UNCONSENTED, RESEARCHER);
         doReturn(session).when(controller).getSessionIfItExists();
         Survey survey = getSurvey(false);
         when(mockSurveyService.getSurvey(TEST_APP_ID, KEYS, true, true)).thenReturn(survey);
@@ -557,7 +557,7 @@ public class SurveyControllerTest extends Mockito {
     @Test
     public void deleteSurveyInvalidatesCache() throws Exception {
         assertCacheIsCleared((guid, dateString) -> {
-            doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+            doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
             controller.deleteSurvey(guid, dateString, false);
         }, 2);
     }

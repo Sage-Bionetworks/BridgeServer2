@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.testng.Assert.assertSame;
@@ -13,7 +14,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
@@ -43,7 +43,7 @@ public class Exporter3ControllerTest {
         // Mock session.
         UserSession mockSession = new UserSession();
         mockSession.setAppId(TestConstants.TEST_APP_ID);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(Roles.ADMIN, Roles.DEVELOPER);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
 
         // Mock service.
         Exporter3Configuration ex3Config = new Exporter3Configuration();

@@ -264,7 +264,7 @@ public class SubpopulationControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void createSubpopulationRequiresDeveloper() throws Exception {
         session.setParticipant(
-                new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(ADMIN)).build());
+                new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER)).build());
 
         controller.createSubpopulation();
     }
@@ -272,7 +272,7 @@ public class SubpopulationControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void updateSubpopulationRequiresDeveloper() throws Exception {
         session.setParticipant(
-                new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(ADMIN)).build());
+                new StudyParticipant.Builder().copyOf(participant).withRoles(ImmutableSet.of(RESEARCHER)).build());
 
         controller.updateSubpopulation(TEST_APP_ID);
     }
