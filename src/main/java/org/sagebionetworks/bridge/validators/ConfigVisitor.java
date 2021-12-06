@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.assessments.config;
+package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.BridgeConstants.TYPE_FIELD_NAME;
 
@@ -20,7 +20,7 @@ public class ConfigVisitor implements BiConsumer<String, JsonNode> {
     private Errors errors;
     private Map<String, Validator> validators;
     
-    public ConfigVisitor(Map<String, Validator> validators, Errors errors) {
+    ConfigVisitor(Map<String, Validator> validators, Errors errors) {
         this.errors = errors;
         this.validators = (validators == null) ? ImmutableMap.of() : validators;
     }

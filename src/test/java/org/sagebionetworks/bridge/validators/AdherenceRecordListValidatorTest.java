@@ -120,7 +120,7 @@ public class AdherenceRecordListValidatorTest extends Mockito {
     }
     
     @Test
-    public void validateStringLength_clientData() {
+    public void jsonLengthValidation_clientData() {
         AdherenceRecord record = TestUtils.getAdherenceRecord(GUID);
         record.setClientData(getExcessivelyLargeClientData());
         assertValidatorMessage(INSTANCE, asList(record), "records[0].clientData", getInvalidStringLengthMessage(TEXT_SIZE));

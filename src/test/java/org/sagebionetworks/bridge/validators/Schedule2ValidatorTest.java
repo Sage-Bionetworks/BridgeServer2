@@ -306,7 +306,7 @@ public class Schedule2ValidatorTest extends Mockito {
     }
     
     @Test
-    public void stringLengthValidation_clientData() {
+    public void jsonLengthValidation_clientData() {
         Schedule2 schedule = createValidSchedule();
         schedule.setClientData(getExcessivelyLargeClientData());
         

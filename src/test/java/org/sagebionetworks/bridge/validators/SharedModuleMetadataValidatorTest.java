@@ -308,7 +308,7 @@ public class SharedModuleMetadataValidatorTest {
         String tag = RandomStringUtils.randomAlphanumeric(SharedModuleMetadataValidator.TAG_MAX_LENGTH + 1);
         SharedModuleMetadata metadata = makeValidMetadataWithSurvey();
         metadata.setTags(ImmutableSet.of(tag));
-        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "tag",
+        TestUtils.assertValidatorMessage(SharedModuleMetadataValidator.INSTANCE, metadata, "tags["+tag+"]",
                 "can't be more than " + SharedModuleMetadataValidator.TAG_MAX_LENGTH + " characters");
     }
 

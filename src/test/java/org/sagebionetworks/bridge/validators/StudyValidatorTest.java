@@ -527,7 +527,7 @@ public class StudyValidatorTest {
     }
     
     @Test
-    public void stringLengthValidation_clientData() {
+    public void jsonLengthValidation_clientData() {
         study = createStudy();
         study.setClientData(getExcessivelyLargeClientData());
         assertValidatorMessage(INSTANCE, study, "clientData", getInvalidStringLengthMessage(TEXT_SIZE));

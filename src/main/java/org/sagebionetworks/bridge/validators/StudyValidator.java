@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.time.DateTimeException;
@@ -191,9 +192,7 @@ public class StudyValidator implements Validator {
                 validateStringLength(errors, 255, disease, "diseases["+disease+"]");
             }
         }
-        if (study.getClientData() != null) {
-            validateStringLength(errors, TEXT_SIZE, study.getClientData().toString(), CLIENT_DATA_FIELD);
-        }
+        validateJsonLength(errors, TEXT_SIZE, study.getClientData(), CLIENT_DATA_FIELD);
         validateStringLength(errors, 510, study.getDetails(), DETAILS_FIELD);
         validateStringLength(errors, 255, study.getStudyLogoUrl(), STUDY_LOGO_URL_FIELD);
         validateStringLength(errors, 255, study.getInstitutionId(), INSTITUTION_ID_FIELD);

@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.time.DateTimeException;
@@ -149,9 +150,7 @@ public class StudyParticipantValidator implements Validator {
         validateStringLength(errors, 255, participant.getFirstName(), "firstName");
         validateStringLength(errors, 255, participant.getLastName(), "lastName");
         validateStringLength(errors, TEXT_SIZE, participant.getNote(), "note");
-        if (participant.getClientData() != null) {
-            validateStringLength(errors, TEXT_SIZE, participant.getClientData().toString(), "clientData");
-        }
+        validateJsonLength(errors, TEXT_SIZE, participant.getClientData(), "clientData");
     }
 
     private String messageForSet(Set<String> set, String fieldName) {

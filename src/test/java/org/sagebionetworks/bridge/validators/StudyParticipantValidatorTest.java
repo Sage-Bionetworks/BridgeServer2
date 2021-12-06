@@ -461,7 +461,7 @@ public class StudyParticipantValidatorTest {
     }
     
     @Test
-    public void stringLengthValidation_clientData() {
+    public void jsonLengthValidation_clientData() {
         validator = makeValidator(true);
         assertValidatorMessage(validator, withClientData(getExcessivelyLargeClientData()), "clientData", getInvalidStringLengthMessage(TEXT_SIZE));
     }

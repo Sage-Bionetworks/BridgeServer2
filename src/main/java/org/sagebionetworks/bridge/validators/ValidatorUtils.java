@@ -21,6 +21,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Duration;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Period;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.springframework.validation.Errors;
 
@@ -261,8 +262,9 @@ public class ValidatorUtils {
         try {
             String jsonString = BridgeObjectMapper.get().writeValueAsString(persistingObject);
             validateStringLength(errors, maxLength, jsonString, fieldName);
-        } catch (JsonProcessingException ignored) {
-            // TODO: Decide what to do with an error converting the JSON
+        } catch (JsonProcessingException e) {
+            // This should never happen since the object was previously deserialized
+            throw new BridgeServiceException(e);
         }
     }
 }

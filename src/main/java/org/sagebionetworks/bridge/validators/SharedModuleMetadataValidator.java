@@ -144,7 +144,7 @@ public class SharedModuleMetadataValidator implements Validator {
             if (metadata.getTags() != null) {
                 for (String tag : metadata.getTags()) {
                     if (tag.length() > TAG_MAX_LENGTH) {
-                        errors.rejectValue("tag", "can't be more than " + TAG_MAX_LENGTH + " characters");
+                        errors.rejectValue("tags["+tag+"]", "can't be more than " + TAG_MAX_LENGTH + " characters");
                     }
                 }
             }

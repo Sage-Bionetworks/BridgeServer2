@@ -7,7 +7,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
-import org.sagebionetworks.bridge.models.assessments.config.ConfigVisitor;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 

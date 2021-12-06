@@ -10,6 +10,7 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInDays;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.util.HashSet;
@@ -82,9 +83,7 @@ public class Schedule2Validator implements Validator {
         if (schedule.getModifiedOn() == null) {
             errors.rejectValue(MODIFIED_ON_FIELD, CANNOT_BE_NULL);
         }
-        if (schedule.getClientData() != null) {
-            validateStringLength(errors, TEXT_SIZE, schedule.getClientData().toString(), CLIENT_DATA_FIELD);
-        }
+        validateJsonLength(errors, TEXT_SIZE, schedule.getClientData(), CLIENT_DATA_FIELD);
         Set<String> studyBurstIds = new HashSet<>();
 
         for (int i = 0; i < schedule.getStudyBursts().size(); i++) {
