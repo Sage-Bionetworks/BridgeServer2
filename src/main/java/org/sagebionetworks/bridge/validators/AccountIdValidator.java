@@ -1,7 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
