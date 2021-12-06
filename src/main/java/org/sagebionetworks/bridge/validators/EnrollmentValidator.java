@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.validation.Errors;
@@ -26,7 +28,11 @@ public class EnrollmentValidator extends AbstractValidator {
         }
         if (enrollment.getExternalId() != null && isBlank(enrollment.getExternalId())) {
             errors.rejectValue("externalId", "cannot be blank");
-        }        
+        }
+        validateStringLength(errors, 255, enrollment.getEnrolledBy(), "enrolledBy");
+        validateStringLength(errors, 255, enrollment.getWithdrawnBy(), "withdrawnBy");
+        validateStringLength(errors, 255, enrollment.getWithdrawalNote(), "withdrawalNote");
+        validateStringLength(errors, TEXT_SIZE, enrollment.getNote(), "note");
     }
 
 }

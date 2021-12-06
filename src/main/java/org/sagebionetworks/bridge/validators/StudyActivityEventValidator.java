@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CLIENT_TIME_ZONE_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.time.ZoneId;
 
@@ -41,6 +42,7 @@ public class StudyActivityEventValidator extends AbstractValidator implements Va
         if (StringUtils.isBlank(event.getEventId())) {
             errors.rejectValue("eventId", INVALID_EVENT_ID);
         }
+        validateStringLength(errors, 255, event.getAnswerValue(), "answerValue");
         if (createOnly) {
             if (event.getTimestamp() == null) {
                 errors.rejectValue("timestamp", CANNOT_BE_NULL);

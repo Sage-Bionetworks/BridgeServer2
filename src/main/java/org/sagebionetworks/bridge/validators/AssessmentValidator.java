@@ -6,8 +6,11 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateLabels;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.util.Map;
 import java.util.Set;
@@ -45,6 +48,7 @@ public class AssessmentValidator implements Validator {
         if (isBlank(assessment.getTitle())) {
             errors.rejectValue("title", CANNOT_BE_BLANK);   
         }
+        validateStringLength(errors, 255, assessment.getTitle(), "title");
         String osName = assessment.getOsName();
         if (isBlank(assessment.getOsName())) {
             errors.rejectValue("osName", CANNOT_BE_BLANK);   
@@ -56,6 +60,7 @@ public class AssessmentValidator implements Validator {
         } else if (!assessment.getIdentifier().matches(BRIDGE_EVENT_ID_PATTERN)) {
             errors.rejectValue("identifier", BRIDGE_EVENT_ID_ERROR);
         }
+        validateStringLength(errors, 255, assessment.getIdentifier(), "identifier");
         if (assessment.getRevision() < 0) {
             errors.rejectValue("revision", "cannot be negative");   
         }
@@ -77,11 +82,12 @@ public class AssessmentValidator implements Validator {
                 }
             }
         }
+        validateJsonLength(errors, TEXT_SIZE, assessment.getCustomizationFields(), "customizationFields");
         validateColorScheme(errors, assessment.getColorScheme(), "colorScheme");
         if (!assessment.getLabels().isEmpty()) {
             validateLabels(errors, assessment.getLabels());
         }
-        
+        validateJsonLength(errors, TEXT_SIZE, assessment.getLabels(), "labels");
         // ownerId == studyId except in the shared assessments app, where it must include
         // the app as a namespace prefix, e.g. "appId:orgId". Assessments are always 
         // owned by some organization.
@@ -105,5 +111,13 @@ public class AssessmentValidator implements Validator {
         if (assessment.getMinutesToComplete() != null && assessment.getMinutesToComplete() < 0) {
             errors.rejectValue("minutesToComplete", CANNOT_BE_NEGATIVE);
         }
+        if (assessment.getTags() != null) {
+            for (String tag : assessment.getTags()) {
+                validateStringLength(errors, 255, tag, "tags["+tag+"]");
+            }
+        }
+        validateStringLength(errors, TEXT_SIZE, assessment.getSummary(), "summary");
+        validateStringLength(errors, TEXT_SIZE, assessment.getValidationStatus(), "validationStatus");
+        validateStringLength(errors, TEXT_SIZE, assessment.getNormingStatus(), "normingStatus");
     }
 }

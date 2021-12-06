@@ -6,6 +6,8 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.TestUtils.createEvent;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.CREATE_INSTANCE;
 import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.DELETE_INSTANCE;
@@ -117,6 +119,13 @@ public class StudyActivityEventValidatorTest extends Mockito {
         builder.withCreatedOn(null);
         builder.withClientTimeZone("America/Europe"); // we just ignore this
         Validate.entityThrowingException(DELETE_INSTANCE, builder.build());
+    }
+    
+    @Test
+    public void stringLengthValidation_answerValue() {
+        StudyActivityEvent.Builder builder = createBuilder();
+        builder.withAnswerValue(generateStringOfLength(256));
+        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "answerValue", getInvalidStringLengthMessage(255));
     }
     
     private StudyActivityEvent.Builder createBuilder() { 

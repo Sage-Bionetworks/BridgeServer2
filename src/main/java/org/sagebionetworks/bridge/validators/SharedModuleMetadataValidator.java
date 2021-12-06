@@ -15,6 +15,7 @@ public class SharedModuleMetadataValidator implements Validator {
     static final int NOTES_MAX_LENGTH = 65535;
     static final int OS_MAX_LENGTH = 60;
     static final int SCHEMA_ID_MAX_LENGTH = 60;
+    static final int TAG_MAX_LENGTH = 255;
 
     /** Singleton instance of this validator. */
     public static final SharedModuleMetadataValidator INSTANCE = new SharedModuleMetadataValidator();
@@ -129,7 +130,7 @@ public class SharedModuleMetadataValidator implements Validator {
                 errors.rejectValue("sharedModuleMetadata", "must contain either schemaId or surveyGuid");
             }
 
-            // can't have both shcema and survey
+            // can't have both schema and survey
             if (hasSchemaId && hasSurveyGuid) {
                 errors.rejectValue("sharedModuleMetadata", "can't contain both schemaId and surveyGuid");
             }
@@ -137,6 +138,15 @@ public class SharedModuleMetadataValidator implements Validator {
             // version
             if (metadata.getVersion() <= 0) {
                 errors.rejectValue("version", "can't be zero or negative");
+            }
+            
+            // tags
+            if (metadata.getTags() != null) {
+                for (String tag : metadata.getTags()) {
+                    if (tag.length() > TAG_MAX_LENGTH) {
+                        errors.rejectValue("tags["+tag+"]", "can't be more than " + TAG_MAX_LENGTH + " characters");
+                    }
+                }
             }
         }
     }

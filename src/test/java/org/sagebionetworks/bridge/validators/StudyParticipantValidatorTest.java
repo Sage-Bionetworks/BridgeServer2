@@ -7,10 +7,14 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getExcessivelyLargeClientData;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.when;
 
@@ -18,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterMethod;
@@ -434,6 +439,40 @@ public class StudyParticipantValidatorTest {
         Validate.entityThrowingException(validator, withClientTimeZone(TEST_CLIENT_TIME_ZONE));
     }
     
+    @Test
+    public void stringLengthValidation_email() {
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, withEmail(generateStringOfLength(256)), "email", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test void stringLengthValidation_firstName() {
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, withFirstName(generateStringOfLength(256)), "firstName", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test void stringLengthValidation_lastName() {
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, withLastName(generateStringOfLength(256)), "lastName", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test void stringLengthValidation_note() {
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, withNote(generateStringOfLength(TEXT_SIZE + 1)), "note", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void jsonLengthValidation_clientData() {
+        validator = makeValidator(true);
+        assertValidatorMessage(validator, withClientData(getExcessivelyLargeClientData()), "clientData", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void stringLengthValidation_attributeValue() {
+        validator = makeValidator(true);
+        app.setUserProfileAttributes(ImmutableSet.of("testKey"));
+        assertValidatorMessage(validator, withAttributes(ImmutableMap.of("testKey", generateStringOfLength(256))), "attributes[testKey]", getInvalidStringLengthMessage(255));
+    }
+    
     private StudyParticipantValidator makeValidator(boolean isNew) {
         return new StudyParticipantValidator(studyService, mockOrganizationService, app, isNew);
     }
@@ -476,5 +515,30 @@ public class StudyParticipantValidatorTest {
     private StudyParticipant withClientTimeZone(String clientTimeZone) {
         return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
                 .withClientTimeZone(clientTimeZone).build();
+    }
+    
+    private StudyParticipant withFirstName(String firstName) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
+                .withFirstName(firstName).build();
+    }
+    
+    private StudyParticipant withLastName(String lastName) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
+                .withLastName(lastName).build();
+    }
+    
+    private StudyParticipant withNote(String note) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
+                .withNote(note).build();
+    }
+    
+    private StudyParticipant withClientData(JsonNode clientData) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
+                .withClientData(clientData).build();
+    }
+    
+    private StudyParticipant withAttributes(Map<String, String> attributes) {
+        return new StudyParticipant.Builder().withEmail("email@email.com").withPassword("aAz1%_aAz1%")
+                .withAttributes(attributes).build();
     }
 }

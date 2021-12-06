@@ -3,8 +3,11 @@ package org.sagebionetworks.bridge.validators;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_IDENTIFIER_ERROR;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.OrganizationValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import org.testng.annotations.Test;
 
@@ -70,6 +73,27 @@ public class OrganizationValidatorTest {
         Organization org = getOrganization();
         org.setName(" ");
         assertValidatorMessage(INSTANCE, org, "name", CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void stringLengthValidation_identifier() {
+        Organization org = getOrganization();
+        org.setIdentifier(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, org, "identifier", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_name() {
+        Organization org = getOrganization();
+        org.setName(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, org, "name", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_description() {
+        Organization org = getOrganization();
+        org.setDescription(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(INSTANCE, org, "description", getInvalidStringLengthMessage(TEXT_SIZE));
     }
     
     private Organization getOrganization() {

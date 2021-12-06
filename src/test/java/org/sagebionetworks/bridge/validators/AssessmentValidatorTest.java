@@ -6,10 +6,13 @@ import static org.sagebionetworks.bridge.TestConstants.IDENTIFIER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_OWNER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_HEX_TRIPLET;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -226,5 +229,59 @@ public class AssessmentValidatorTest extends Mockito {
     public void labelsValueNull() {
         assessment.setLabels(ImmutableList.of(new Label("en", null)));
         assertValidatorMessage(validator, assessment, "labels[0].value", CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void stringLengthValidation_title() {
+        assessment.setTitle(generateStringOfLength(256));
+        assertValidatorMessage(validator, assessment, "title", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_identifier() {
+        assessment.setIdentifier(generateStringOfLength(256));
+        assertValidatorMessage(validator, assessment, "identifier", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_summary() {
+        assessment.setSummary(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(validator, assessment, "summary", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void stringLengthValidation_validationStatus() {
+        assessment.setValidationStatus(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(validator, assessment, "validationStatus", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void stringLengthValidation_normingStatus() {
+        assessment.setNormingStatus(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(validator, assessment, "normingStatus", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void stringLengthValidation_tags() {
+        String tag = generateStringOfLength(256);
+        assessment.setTags(ImmutableSet.of(tag));
+        assertValidatorMessage(validator, assessment, "tags["+tag+"]", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void jsonLengthValidation_customizationFields() {
+        PropertyInfo info = new PropertyInfo.Builder().withDescription(generateStringOfLength(TEXT_SIZE)).build();
+        Map<String, Set<PropertyInfo>> customizationFields = new HashMap<>();
+        customizationFields.put("oneIdentifier", ImmutableSet.of(info));
+        
+        assessment.setCustomizationFields(customizationFields);
+        
+        assertValidatorMessage(validator, assessment, "customizationFields", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void jsonLengthValidation_labels() {
+        assessment.setLabels(ImmutableList.of(new Label("en", generateStringOfLength(TEXT_SIZE))));
+        assertValidatorMessage(validator, assessment, "labels", getInvalidStringLengthMessage(TEXT_SIZE));
     }
 }

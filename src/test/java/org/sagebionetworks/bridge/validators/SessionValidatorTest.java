@@ -4,6 +4,10 @@ import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_2;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_3;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.SessionValidator.LABELS_FIELD;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.models.schedules2.SessionTest.createValidSession;
 import static org.sagebionetworks.bridge.validators.SessionValidator.ASSESSMENTS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.DELAY_FIELD;
@@ -19,6 +23,7 @@ import static org.sagebionetworks.bridge.validators.SessionValidator.NOTIFICATIO
 import static org.sagebionetworks.bridge.validators.SessionValidator.OCCURRENCES_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.PERFORMANCE_ORDER_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.START_EVENT_IDS_FIELD;
+import static org.sagebionetworks.bridge.validators.SessionValidator.SYMBOL_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.TIME_WINDOWS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.UNDEFINED_STUDY_BURST;
 import static org.sagebionetworks.bridge.validators.SessionValidator.START_TIME_COMPARATOR;
@@ -45,6 +50,7 @@ import com.google.common.collect.Lists;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.mockito.Mockito;
+import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.models.Label;
@@ -519,6 +525,58 @@ public class SessionValidatorTest extends Mockito {
         assertEquals(SessionValidator.localTimeInMinutes(LocalTime.parse("00:23")), 23L);
         assertEquals(SessionValidator.localTimeInMinutes(LocalTime.parse("13:23")), (13L*60L) + 23L);
         assertEquals(SessionValidator.localTimeInMinutes(LocalTime.parse("13:00")), 13L*60L);
+    }
+    
+    @Test
+    public void stringLengthValidation_name() {
+        Session session = createValidSession();
+        session.setName(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, session, NAME_FIELD, getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_symbol() {
+        Session session = createValidSession();
+        session.setSymbol(generateStringOfLength(33));
+        assertValidatorMessage(INSTANCE, session, SYMBOL_FIELD, getInvalidStringLengthMessage(32));
+    }
+    
+    @Test
+    public void stringLengthValidation_assessmentIdentifier() {
+        Session session = createValidSession();
+        session.getAssessments().get(0).setIdentifier(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, session, ASSESSMENTS_FIELD+"[0].identifier", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_assessmentTitle() {
+        Session session = createValidSession();
+        session.getAssessments().get(0).setTitle(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, session, ASSESSMENTS_FIELD+"[0].title", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void jsonLengthValidation_labels() {
+        Session session = createValidSession();
+        session.setLabels(ImmutableList.of(new Label("en", generateStringOfLength(TEXT_SIZE))));
+        assertValidatorMessage(INSTANCE, session, LABELS_FIELD, getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void jsonLengthValidation_notificationMessages() {
+        Session session = SessionTest.createValidSession();
+        NotificationMessage notificationMessage = new NotificationMessage.Builder()
+                .withMessage(generateStringOfLength(TEXT_SIZE)).build();
+        session.getNotifications().get(0).setMessages(ImmutableList.of(notificationMessage));
+    
+        assertValidatorMessage(INSTANCE, session, NOTIFICATIONS_FIELD+"[0].messages", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void jsonLengthValidation_assessmentLabels() {
+        Session session = createValidSession();
+        session.getAssessments().get(0).setLabels(ImmutableList.of(new Label("en", generateStringOfLength(TEXT_SIZE))));
+        assertValidatorMessage(INSTANCE, session, ASSESSMENTS_FIELD+"[0]."+LABELS_FIELD, getInvalidStringLengthMessage(TEXT_SIZE));
     }
     
     private Session makeWindows(String time1, String exp1, String time2, String exp2, 

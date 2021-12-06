@@ -1,10 +1,13 @@
-package org.sagebionetworks.bridge.models.assessments.config;
+package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 import org.testng.annotations.BeforeMethod;
@@ -12,8 +15,6 @@ import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.validators.AbstractValidator;
-import org.sagebionetworks.bridge.validators.Validate;
 
 public class AssessmentConfigValidatorTest {
     
@@ -113,5 +114,16 @@ public class AssessmentConfigValidatorTest {
                 .addValidator("SurveyRule", val).build();
         
         assertValidatorMessage(validator, config, "config.elements[0].beforeRules[0].foo", "is missing");
+    }
+    
+    @Test
+    public void stringLengthValidation_config() {
+        ObjectNode obj = (ObjectNode) ValidatorUtilsTest.getExcessivelyLargeClientData();
+        obj.put("identifier", "asdf");
+        obj.put("type", "SimpleType");
+    
+        AssessmentConfig config = new AssessmentConfig();
+        config.setConfig(obj);
+        assertValidatorMessage(validator, config, "config", getInvalidStringLengthMessage(TEXT_SIZE));
     }
 }

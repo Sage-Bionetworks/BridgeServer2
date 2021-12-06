@@ -9,6 +9,9 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.time.DateTimeException;
 import java.time.ZoneId;
@@ -110,6 +113,7 @@ public class StudyParticipantValidator implements Validator {
                     if (isBlank(externalId)) {
                         errors.rejectValue("externalIds["+studyId+"].externalId", CANNOT_BE_BLANK);
                     }
+                    validateStringLength(errors, 255, externalId, "externalIds["+studyId+"].externalId");
                 }
             }
         } else {
@@ -130,6 +134,9 @@ public class StudyParticipantValidator implements Validator {
         for (String attributeName : participant.getAttributes().keySet()) {
             if (!app.getUserProfileAttributes().contains(attributeName)) {
                 errors.rejectValue("attributes", messageForSet(app.getUserProfileAttributes(), attributeName));
+            } else {
+                String attributeValue = participant.getAttributes().get(attributeName);
+                validateStringLength(errors, 255, attributeValue,"attributes["+attributeName+"]");
             }
         }
         if (participant.getClientTimeZone() != null) {
@@ -139,6 +146,11 @@ public class StudyParticipantValidator implements Validator {
                 errors.rejectValue("clientTimeZone", TIME_ZONE_ERROR);
             }
         }
+        validateStringLength(errors, 255, participant.getEmail(), "email");
+        validateStringLength(errors, 255, participant.getFirstName(), "firstName");
+        validateStringLength(errors, 255, participant.getLastName(), "lastName");
+        validateStringLength(errors, TEXT_SIZE, participant.getNote(), "note");
+        validateJsonLength(errors, TEXT_SIZE, participant.getClientData(), "clientData");
     }
 
     private String messageForSet(Set<String> set, String fieldName) {
