@@ -177,12 +177,12 @@ public class RequestContextTest extends Mockito {
         assertTrue(context.isInRole(DEVELOPER));
         assertTrue(context.isInRole(RESEARCHER));
         assertTrue(context.isInRole(ADMIN));
-        assertTrue(context.isInRole(WORKER));
         assertTrue(context.isInRole(ImmutableSet.of(DEVELOPER)));
         assertTrue(context.isInRole(ImmutableSet.of(RESEARCHER)));
         assertTrue(context.isInRole(ImmutableSet.of(ADMIN)));
-        assertTrue(context.isInRole(ImmutableSet.of(WORKER)));
         assertTrue(context.isInRole(ImmutableSet.of(DEVELOPER, ADMIN)));
+        assertFalse(context.isInRole(ImmutableSet.of(WORKER)));  // except worker!
+        assertFalse(context.isInRole(WORKER));
     }
     
     @Test

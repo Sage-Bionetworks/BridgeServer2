@@ -7,16 +7,18 @@ import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
+import static org.sagebionetworks.bridge.Roles.PASSES_AS_ROLE;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+
+import com.google.common.collect.ImmutableSet;
 
 /**
  * Utility methods to check caller authorization in service methods. Given the way the code and the 
@@ -253,37 +255,28 @@ public class AuthUtils {
             .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
     
     /**
-     * Is the caller in the provided role? Superadmins always pass this test, and admins
-     * always pass this test unless it requires a superadmin.
+     * Does the caller have the required role? Note that a few roles pass for other roles.
      */
     public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
         if (callerRoles == null || requiredRole == null) {
             return false;
         }
-        // User is a superadmin, or an admin for a call requiring any role other than superadmin,
-        // and therefore can access.
-        if (callerRoles.contains(SUPERADMIN) || (callerRoles.contains(ADMIN) && requiredRole != SUPERADMIN)) {
-            return true;
-        }
-        return callerRoles.contains(requiredRole);
+        return callerRoles.stream()
+                .flatMap(role -> PASSES_AS_ROLE.get(role).stream())
+                .anyMatch(role -> role == requiredRole);
     }
     
     /**
-     * Is the caller in any of the provided roles? Superadmins always pass this test. Admins
-     * always pass this test unless it requires a superadmin.
+     * Does the caller have any of the required roles? Note that a few roles pass for other roles.
      */
     public static boolean isInRole(Set<Roles> callerRoles, Set<Roles> requiredRoles) {
         if (callerRoles == null || requiredRoles == null || requiredRoles.isEmpty()) {
             return false;
         }
-        // User is a superadmin, or an admin for a call requiring any role other than superadmin,
-        // and therefore can access.
-        if (callerRoles.contains(SUPERADMIN) || (!requiredRoles.contains(SUPERADMIN) && callerRoles.contains(ADMIN))) {
-            return true;
-        }
-        return requiredRoles.stream().anyMatch(role -> callerRoles.contains(role));
+        return callerRoles.stream()
+                .flatMap(role -> PASSES_AS_ROLE.get(role).stream())
+                .anyMatch(role -> requiredRoles.contains(role));
     }
-    
     
     /**
      * To access an individual account, one of these conditions must hold true:

@@ -147,8 +147,8 @@ public class UserSessionTest {
         
         assertTrue(session.isInRole(DEVELOPER));
         assertTrue(session.isInRole(RESEARCHER));
-        assertTrue(session.isInRole(WORKER));
         assertTrue(session.isInRole(ADMIN));
+        assertFalse(session.isInRole(WORKER));
     }
     
     @Test
@@ -158,9 +158,9 @@ public class UserSessionTest {
         
         assertTrue(session.isInRole(ImmutableSet.of(DEVELOPER)));
         assertTrue(session.isInRole(ImmutableSet.of(RESEARCHER)));
-        assertTrue(session.isInRole(ImmutableSet.of(WORKER)));
         assertTrue(session.isInRole(ImmutableSet.of(ADMIN)));
         assertTrue(session.isInRole(ImmutableSet.of(RESEARCHER, ADMIN)));
+        assertFalse(session.isInRole(ImmutableSet.of(WORKER)));
     }
     
     @Test

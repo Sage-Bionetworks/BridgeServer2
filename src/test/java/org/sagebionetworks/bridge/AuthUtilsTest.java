@@ -286,14 +286,14 @@ public class AuthUtilsTest extends Mockito {
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), DEVELOPER));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), RESEARCHER));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), ADMIN));
-        assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), WORKER));
+        assertFalse(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), WORKER));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), ADMIN));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), SUPERADMIN));
         
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(DEVELOPER)));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(RESEARCHER)));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(ADMIN)));
-        assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(WORKER)));
+        assertFalse(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(WORKER)));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(DEVELOPER, ADMIN)));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(SUPERADMIN), ImmutableSet.of(SUPERADMIN)));
     }
@@ -303,15 +303,15 @@ public class AuthUtilsTest extends Mockito {
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(ADMIN), DEVELOPER));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(ADMIN), RESEARCHER));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ADMIN));
-        assertTrue(AuthUtils.isInRole(ImmutableSet.of(ADMIN), WORKER));
+        assertFalse(AuthUtils.isInRole(ImmutableSet.of(ADMIN), WORKER));
         assertFalse(AuthUtils.isInRole(ImmutableSet.of(ADMIN), SUPERADMIN));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER)));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(RESEARCHER)));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(ADMIN)));
-        assertTrue(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(WORKER)));
+        assertFalse(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(WORKER)));
         assertTrue(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, ADMIN)));
         assertFalse(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(SUPERADMIN)));
-        assertFalse(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, SUPERADMIN)));
+        assertTrue(AuthUtils.isInRole(ImmutableSet.of(ADMIN), ImmutableSet.of(DEVELOPER, WORKER)));
     }
  
     @Test
