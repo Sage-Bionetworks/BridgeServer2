@@ -18,8 +18,6 @@ import java.util.Set;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 
-import com.google.common.collect.ImmutableSet;
-
 /**
  * Utility methods to check caller authorization in service methods. Given the way the code and the 
  * authorization rules are written, ADMIN and SUPERADMIN roles will currently always pass. They
