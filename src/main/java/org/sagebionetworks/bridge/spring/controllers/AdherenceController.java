@@ -1,15 +1,20 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 
+import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -17,10 +22,12 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.services.AdherenceService;
 
 @CrossOrigin
@@ -35,6 +42,31 @@ public class AdherenceController extends BaseController {
     @Autowired
     final void setAdherenceService(AdherenceService service) {
         this.service = service;
+    }
+    
+    protected DateTime getDateTime() {
+        return DateTime.now();
+    }
+    
+    @GetMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence/eventstream")
+    public EventStreamAdherenceReport getEventStreamAdherenceReport(@PathVariable String studyId, 
+            @PathVariable String userIdToken, @RequestParam(required = false) String datetime, 
+            @RequestParam(required = false) String activeOnly) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        // The time zone will be the time zone supplied. If not supplied then it will be the user’s time
+        // zone, and if that isn’t supplied, it will be in the server’s time zone.
+        DateTime now = getDateTimeOrDefault(datetime, getDateTime());
+        if (account.getClientTimeZone() != null) {
+            now = now.withZone(DateTimeZone.forID(account.getClientTimeZone()));
+        }
+        Boolean showActive = "true".equalsIgnoreCase(activeOnly);
+
+        return service.getEventStreamAdherenceReport(session.getAppId(), studyId, account.getId(), now, showActive);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence")

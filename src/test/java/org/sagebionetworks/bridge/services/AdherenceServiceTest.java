@@ -69,8 +69,10 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 
 public class AdherenceServiceTest extends Mockito {
@@ -759,6 +761,15 @@ public class AdherenceServiceTest extends Mockito {
         record.setStartedOn(null);
 
         service.deleteAdherenceRecord(record);
+    }
+    
+    @Test
+    public void getEventStreamAdherenceReport() { 
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, STUDY_ID, true)).thenReturn(study);
+        
+        EventStreamAdherenceReport report = service.getEventStreamAdherenceReport(TEST_APP_ID, STUDY_ID, TEST_USER_ID, EVENT_TS, true);
+        System.out.println(report);
     }
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {
