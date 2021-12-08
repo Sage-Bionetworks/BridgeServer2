@@ -4,6 +4,7 @@ import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -68,6 +69,7 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
@@ -764,12 +766,51 @@ public class AdherenceServiceTest extends Mockito {
     }
     
     @Test
-    public void getEventStreamAdherenceReport() { 
+    public void getEventStreamAdherenceReport_studyHasNoSchedule() { 
         Study study = Study.create();
-        when(mockStudyService.getStudy(TEST_APP_ID, STUDY_ID, true)).thenReturn(study);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
-        EventStreamAdherenceReport report = service.getEventStreamAdherenceReport(TEST_APP_ID, STUDY_ID, TEST_USER_ID, EVENT_TS, true);
-        System.out.println(report);
+        EventStreamAdherenceReport report = service.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, EVENT_TS, true);
+        assertTrue(report.getStreams().isEmpty());
+        assertEquals(report.getTimestamp(), EVENT_TS);
+        assertEquals(report.getAdherencePercent(), 100);
+        assertTrue(report.isActiveOnly());
+    }
+    
+    @Test
+    public void getEventStreamAdherenceReport() { 
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        List<TimelineMetadata> metadata = ImmutableList.of();
+        when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID)).thenReturn(metadata);
+        
+        ResourceList<StudyActivityEvent> events = new ResourceList<>(ImmutableList.of(), true);
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(events);
+        
+        PagedResourceList<AdherenceRecord> adherencePage = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockDao.getAdherenceRecords(any())).thenReturn(adherencePage);
+        
+        EventStreamAdherenceReport report = service.getEventStreamAdherenceReport(
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, EVENT_TS, true);
+        assertTrue(report.getStreams().isEmpty());
+        assertEquals(report.getTimestamp(), EVENT_TS);
+        assertEquals(report.getAdherencePercent(), 100);
+        assertTrue(report.isActiveOnly());
+        
+        verify(mockDao).getAdherenceRecords(searchCaptor.capture());
+        AdherenceRecordsSearch search = searchCaptor.getValue();
+        assertTrue(search.getCurrentTimestampsOnly());
+        assertFalse(search.getIncludeRepeats());
+        assertEquals(search.getAdherenceRecordType(), AdherenceRecordType.SESSION);
+        assertEquals(search.getStudyId(), TEST_STUDY_ID);
+        assertEquals(search.getUserId(), TEST_USER_ID);
     }
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {

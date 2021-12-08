@@ -69,6 +69,22 @@ public class AdherenceController extends BaseController {
         return service.getEventStreamAdherenceReport(session.getAppId(), studyId, account.getId(), now, showActive);
     }
     
+    @GetMapping("/v5/studies/{studyId}/participants/self/adherence/eventstream")
+    public EventStreamAdherenceReport getEventStreamAdherenceReportForSelf(@PathVariable String studyId,
+            @RequestParam(required = false) String datetime, @RequestParam(required = false) String activeOnly) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+
+        // The time zone will be the time zone supplied. If not supplied then it will be the user’s time
+        // zone, and if that isn’t supplied, it will be in the server’s time zone.
+        DateTime now = getDateTimeOrDefault(datetime, getDateTime());
+        if (session.getParticipant().getClientTimeZone() != null) {
+            now = now.withZone(DateTimeZone.forID(session.getParticipant().getClientTimeZone()));
+        }
+        Boolean showActive = "true".equalsIgnoreCase(activeOnly);
+
+        return service.getEventStreamAdherenceReport(session.getAppId(), studyId, session.getId(), now, showActive);
+    }
+    
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence")
     public StatusMessage updateAdherenceRecordsForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();

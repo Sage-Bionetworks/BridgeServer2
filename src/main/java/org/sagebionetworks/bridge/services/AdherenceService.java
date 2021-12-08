@@ -324,10 +324,15 @@ public class AdherenceService {
         checkNotNull(now);
 
         Stopwatch watch = Stopwatch.createStarted();
+        
+        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        builder.withShowActive(showActiveOnly);
+        builder.withNow(now);
+        
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {
             watch.stop();
-            return new EventStreamAdherenceReport();
+            return builder.build().generate();
         }
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
 
@@ -342,14 +347,11 @@ public class AdherenceService {
                 .withUserId(userId)
                 .build()).getItems();
 
-        EventStreamAdherenceReportGenerator generator = new EventStreamAdherenceReportGenerator.Builder()
-                .withShowActive(showActiveOnly)
-                .withMetadata(metadata)
-                .withEvents(events)
-                .withAdherenceRecords(adherenceRecords)
-                .withNow(now).build();
+        builder.withMetadata(metadata);
+        builder.withEvents(events);
+        builder.withAdherenceRecords(adherenceRecords);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = builder.build().generate();
         LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return report;
     }

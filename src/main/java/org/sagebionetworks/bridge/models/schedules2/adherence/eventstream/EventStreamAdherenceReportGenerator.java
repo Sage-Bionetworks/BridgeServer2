@@ -19,6 +19,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 public class EventStreamAdherenceReportGenerator {
@@ -62,7 +63,8 @@ public class EventStreamAdherenceReportGenerator {
             
             // My concern here is that the event timestamp isn't localized, and so these dates
             // aren't localized, and could be confusing or wrong. We do want this in the user's
-            // local timestamp, if we can figure that out.
+            // local timestamp, if we can figure that out. (The now timestamp is supposed to be
+            // in their time zone...do we need to do more and pass that to the generator?
             DateTime timestamp = eventTimestampMap.get(eventId);
             LocalDate localDate = (timestamp == null) ? null : timestamp.toLocalDate();
             LocalDate startDate = (localDate == null) ? null : localDate.plusDays(startDay);
@@ -137,7 +139,6 @@ public class EventStreamAdherenceReportGenerator {
         for (String key : keysSorted) {
             report.getStreams().add(reportsByEventId.get(key));
         }
-        // report.setStreams(ImmutableList.copyOf(reportsByEventId.values()));
         return report;
     }
     
@@ -169,6 +170,15 @@ public class EventStreamAdherenceReportGenerator {
             return this;
         }
         public EventStreamAdherenceReportGenerator build() {
+            if (metadata == null) {
+                metadata = ImmutableList.of();
+            }
+            if (events == null) {
+                events = ImmutableList.of();
+            }
+            if (adherenceRecords == null) {
+                adherenceRecords = ImmutableList.of();
+            }
             return new EventStreamAdherenceReportGenerator(this);
         }
     }
