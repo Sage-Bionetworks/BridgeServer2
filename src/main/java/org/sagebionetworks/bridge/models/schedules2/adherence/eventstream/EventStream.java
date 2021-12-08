@@ -20,14 +20,9 @@ public class EventStream {
     private String studyBurstId;
     private Integer studyBurstNum;
     private Map<Integer, List<EventStreamDay>> byDayEntries;
-    // Within that report, each unique day entry is defined by the combination of session, event ID, and start day.
-    // We create a key for this map of the required values.
-    @JsonIgnore
-    private Map<String, EventStreamDay> streamsByStreamKey;
     
     public EventStream() {
         byDayEntries = new TreeMap<>();
-        streamsByStreamKey = new HashMap<>();
     }
     public String getStartEventId() {
         return startEventId;
@@ -70,33 +65,9 @@ public class EventStream {
     public void setStudyBurstNum(Integer studyBurstNum) {
         this.studyBurstNum = studyBurstNum;
     }
-    public EventStreamDay retrieveDay(TimelineMetadata meta) {
-        checkNotNull(meta.getSessionGuid());
-        
-        String eventId = checkNotNull(meta.getSessionStartEventId());
-        int startDay = checkNotNull(meta.getSessionInstanceStartDay());
-        
-        String streamKey = String.format("%s:%s:%s", meta.getSessionGuid(), eventId, startDay);
-        EventStreamDay eventStream = streamsByStreamKey.get(streamKey);
-        if (eventStream == null) {
-            eventStream = new EventStreamDay();
-            eventStream.setSessionGuid(meta.getSessionGuid());
-            eventStream.setSessionName(meta.getSessionName());
-            eventStream.setSessionSymbol(meta.getSessionSymbol());
-            // Don't set these fields here because in the event stream report, this information 
-            // is reported once for each stream, and doesn't need to be repeated here.
-            // TODO: So why are these here again?
-            // eventStream.setStudyBurstId(meta.getStudyBurstId());
-            // eventStream.setStudyBurstNum(meta.getStudyBurstNum());
-            streamsByStreamKey.put(streamKey, eventStream);
-            addEntry(startDay, eventStream);
-        }
-        return eventStream;
-    }
     @Override
     public String toString() {
-        return "EventStream [startEventId=" + startEventId + ", eventTimestamp=" + eventTimestamp + ", daysSinceEvent="
-                + daysSinceEvent + ", studyBurstId=" + studyBurstId + ", studyBurstNum=" + studyBurstNum
-                + ", byDayEntries=" + byDayEntries + ", streamsByStreamKey=" + streamsByStreamKey + "]";
+        return "EventStream [startEventId=" + startEventId + ", daysSinceEvent=" + daysSinceEvent + ", studyBurstId="
+                + studyBurstId + ", studyBurstNum=" + studyBurstNum + ", byDayEntries=" + byDayEntries + "]";
     }
 }

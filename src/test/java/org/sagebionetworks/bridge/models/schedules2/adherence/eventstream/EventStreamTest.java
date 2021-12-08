@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.eventstream;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertSame;
 
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -38,7 +37,6 @@ public class EventStreamTest {
         
         EventStream deser = BridgeObjectMapper.get().readValue(node.toString(), EventStream.class);
         assertEquals(deser.getStartEventId(), "startEventId");
-        assertEquals(deser.getEventTimestamp(), CREATED_ON);
         assertEquals(deser.getDaysSinceEvent(), Integer.valueOf(5));
         assertEquals(deser.getStudyBurstId(), "studyBurstId");
         assertEquals(deser.getStudyBurstNum(), Integer.valueOf(2));
@@ -62,7 +60,6 @@ public class EventStreamTest {
         
         EventStream stream = new EventStream();
         stream.setStartEventId("startEventId");
-        stream.setEventTimestamp(CREATED_ON);
         stream.setDaysSinceEvent(5);
         stream.setStudyBurstId("studyBurstId");
         stream.setStudyBurstNum(2);
@@ -86,15 +83,6 @@ public class EventStreamTest {
         meta.setStudyBurstNum(2);
         meta.setSessionName("sessionName");
         meta.setSessionSymbol("sessionSymbol");
-        
-        EventStreamDay retrieved = stream.retrieveDay(meta);
-        assertEquals(retrieved.getSessionGuid(), "sessionGuid");
-        assertEquals(retrieved.getSessionName(), "sessionName");
-        assertEquals(retrieved.getSessionSymbol(), "sessionSymbol");
-        
-        // It's cached, we're not recreating it each time.
-        EventStreamDay again = stream.retrieveDay(meta);
-        assertSame(again, retrieved);
     }
     
     @Test

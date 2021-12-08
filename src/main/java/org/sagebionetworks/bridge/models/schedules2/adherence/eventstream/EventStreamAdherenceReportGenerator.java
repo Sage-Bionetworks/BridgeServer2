@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.eventstream;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.toMap;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils.calculateSessionState;
@@ -26,29 +27,30 @@ public class EventStreamAdherenceReportGenerator {
 
     private final boolean showActive;
     private final DateTime now;
-    protected final List<TimelineMetadata> metadata;
-    private final Map<String, EventStream> reportsByEventId;
-    protected final Map<String, Integer> daysSinceEventMap;
-    protected final Map<String, DateTime> eventTimestampMap;
-    protected final Map<String, AdherenceRecord> adherenceMap;
+    private final List<TimelineMetadata> metadata;
+    private final Map<String, EventStream> streamsByEventId;
+    private final Map<String, EventStreamDay> streamsByStreamKey;
+    private final Map<String, AdherenceRecord> adherenceMap;
+    private final Map<String, Integer> daysSinceEventMap;
+    private final Map<String, DateTime> eventTimestampMap;
 
     public EventStreamAdherenceReportGenerator(EventStreamAdherenceReportGenerator.Builder builder) {
-        this.showActive = builder.showActiveOnly;
-        this.metadata = builder.metadata;
-        this.daysSinceEventMap = new HashMap<>();
-        this.eventTimestampMap = new HashMap<>();
-        this.now = builder.now;
+        showActive = builder.showActiveOnly;
+        now = builder.now;
+        metadata = builder.metadata;
+        streamsByEventId = new HashMap<>();
+        daysSinceEventMap = new HashMap<>();
+        eventTimestampMap = new HashMap<>();
+        streamsByStreamKey = new HashMap<>();
+        adherenceMap = builder.adherenceRecords.stream().collect(toMap(AdherenceRecord::getInstanceGuid, (a) -> a));
         for (StudyActivityEvent event : builder.events) {
             int daysSince = Days.daysBetween(
                     event.getTimestamp().withZone(builder.now.getZone()).toLocalDate(), 
                     builder.now.toLocalDate()).getDays();
+            
             daysSinceEventMap.put(event.getEventId(), daysSince);
             eventTimestampMap.put(event.getEventId(), event.getTimestamp());
         }
-        adherenceMap = builder.adherenceRecords.stream()
-                .collect(toMap(AdherenceRecord::getInstanceGuid, (a) -> a));
-        
-        this.reportsByEventId = new HashMap<>();
     }
     
     public EventStreamAdherenceReport generate() {
@@ -61,10 +63,7 @@ public class EventStreamAdherenceReportGenerator {
             String eventId = meta.getSessionStartEventId();
             Integer daysSinceEvent = daysSinceEventMap.get(eventId);
             
-            // My concern here is that the event timestamp isn't localized, and so these dates
-            // aren't localized, and could be confusing or wrong. We do want this in the user's
-            // local timestamp, if we can figure that out. (The now timestamp is supposed to be
-            // in their time zone...do we need to do more and pass that to the generator?
+            // NOTE: are these times in the right time zone?
             DateTime timestamp = eventTimestampMap.get(eventId);
             LocalDate localDate = (timestamp == null) ? null : timestamp.toLocalDate();
             LocalDate startDate = (localDate == null) ? null : localDate.plusDays(startDay);
@@ -74,17 +73,15 @@ public class EventStreamAdherenceReportGenerator {
             if (showActive && (startDay > daysSinceEvent || endDay < daysSinceEvent)) {
                 continue;
             }
+
             // We produce one report for each event ID. Create them lazily as we find them.
-            EventStream report = reportsByEventId.get(eventId);
-            if (report == null) {
-                report = new EventStream();
-                report.setStartEventId(eventId);
-                report.setDaysSinceEvent(daysSinceEvent);
-                report.setEventTimestamp(timestamp);
-                report.setStudyBurstId(meta.getStudyBurstId());
-                report.setStudyBurstNum(meta.getStudyBurstNum());
-                reportsByEventId.put(eventId, report);
-            }
+            EventStream stream = retrieveStream(eventId);
+            // These should be same every time you add a day to the stream
+            stream.setEventTimestamp(timestamp);
+            stream.setDaysSinceEvent(daysSinceEvent);
+            stream.setStudyBurstId(meta.getStudyBurstId());
+            stream.setStudyBurstNum(meta.getStudyBurstNum());
+            
             // Get the adherence information for this session instance, and from that, the state of the session
             AdherenceRecord record = adherenceMap.get(meta.getSessionInstanceGuid());
             SessionCompletionState state = calculateSessionState(record, startDay, endDay, daysSinceEvent);
@@ -97,25 +94,25 @@ public class EventStreamAdherenceReportGenerator {
             windowEntry.setEndDate(endDate);
             windowEntry.setState(state);
             
-            EventStreamDay eventStream = report.retrieveDay(meta);
+            EventStreamDay eventStream = retrieveDay(stream, meta);
             eventStream.setStartDay(startDay);
             eventStream.setStartDate(startDate);
             eventStream.addTimeWindow(windowEntry);
         }
         
-        long compliantSessions = reportsByEventId.values().stream()
+        long compliantSessions = streamsByEventId.values().stream()
                 .flatMap(es -> es.getByDayEntries().values().stream())
                 .flatMap(list -> list.stream())
                 .flatMap(esd -> esd.getTimeWindows().stream())
                 .filter(tw -> COMPLIANT.contains(tw.getState()))
                 .collect(counting());
-        long noncompliantSessions = reportsByEventId.values().stream()
+        long noncompliantSessions = streamsByEventId.values().stream()
                 .flatMap(es -> es.getByDayEntries().values().stream())
                 .flatMap(list -> list.stream())
                 .flatMap(esd -> esd.getTimeWindows().stream())
                 .filter(tw -> NONCOMPLIANT.contains(tw.getState()))
                 .collect(counting());
-        long unkSessions = reportsByEventId.values().stream()
+        long unkSessions = streamsByEventId.values().stream()
                 .flatMap(es -> es.getByDayEntries().values().stream())
                 .flatMap(list -> list.stream())
                 .flatMap(esd -> esd.getTimeWindows().stream())
@@ -129,7 +126,7 @@ public class EventStreamAdherenceReportGenerator {
             percentage = ((float)compliantSessions / (float)totalSessions);    
         }
         
-        List<String> keysSorted = Lists.newArrayList(reportsByEventId.keySet());
+        List<String> keysSorted = Lists.newArrayList(streamsByEventId.keySet());
         keysSorted.sort(String::compareToIgnoreCase);
         
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
@@ -137,9 +134,42 @@ public class EventStreamAdherenceReportGenerator {
         report.setTimestamp(now);
         report.setAdherencePercent((int)(percentage*100));
         for (String key : keysSorted) {
-            report.getStreams().add(reportsByEventId.get(key));
+            report.getStreams().add(streamsByEventId.get(key));
         }
         return report;
+    }
+    
+    private EventStream retrieveStream(String eventId) {
+        EventStream stream = streamsByEventId.get(eventId);
+        if (stream == null) {
+            stream = new EventStream();
+            stream.setStartEventId(eventId);
+            streamsByEventId.put(eventId, stream);
+        }
+        return stream;
+    }
+    
+    
+    private EventStreamDay retrieveDay(EventStream stream, TimelineMetadata meta) {
+        checkNotNull(meta.getSessionGuid());
+        
+        String eventId = checkNotNull(meta.getSessionStartEventId());
+        int startDay = checkNotNull(meta.getSessionInstanceStartDay());
+        
+        String streamKey = String.format("%s:%s:%s", meta.getSessionGuid(), eventId, startDay);
+        EventStreamDay eventStreamDay = streamsByStreamKey.get(streamKey);
+        if (eventStreamDay == null) {
+            eventStreamDay = new EventStreamDay();
+            eventStreamDay.setSessionGuid(meta.getSessionGuid());
+            eventStreamDay.setSessionName(meta.getSessionName());
+            eventStreamDay.setSessionSymbol(meta.getSessionSymbol());
+            eventStreamDay.setWeek(startDay/7);    
+            eventStreamDay.setStudyBurstId(meta.getStudyBurstId());
+            eventStreamDay.setStudyBurstNum(meta.getStudyBurstNum());
+            streamsByStreamKey.put(streamKey, eventStreamDay);
+            stream.addEntry(startDay, eventStreamDay);
+        }
+        return eventStreamDay;
     }
     
     public static class Builder {
