@@ -24,8 +24,10 @@ import static org.sagebionetworks.bridge.models.studies.StudyPhase.IN_FLIGHT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.WITHDRAWN;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 
@@ -158,7 +160,7 @@ public class StudyService {
         study.setAppId(appId);
         study.setPhase(DESIGN);
         
-        StudyValidator validator = new StudyValidator(scheduleService);
+        StudyValidator validator = new StudyValidator(getCustomEventIdsFromSchedule(appId, study.getScheduleGuid()));
         Validate.entityThrowingException(validator, study);
         
         study.setVersion(null);
@@ -206,7 +208,7 @@ public class StudyService {
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
     
-        StudyValidator validator = new StudyValidator(scheduleService);
+        StudyValidator validator = new StudyValidator(getCustomEventIdsFromSchedule(appId, study.getScheduleGuid()));
         Validate.entityThrowingException(validator, study);
         
         VersionHolder keys = studyDao.updateStudy(study);
@@ -352,5 +354,16 @@ public class StudyService {
         cacheProvider.removeObject(cacheKey);
         
         return study;
+    }
+    
+    private Set<String> getCustomEventIdsFromSchedule(String appId, String scheduleGuid) {
+        Schedule2 schedule = scheduleService.getSchedule(appId, scheduleGuid);
+        Set<String> existingEventIds = new HashSet<>();
+        if (schedule != null) {
+            existingEventIds = schedule.getSessions().stream()
+                    .flatMap(session -> session.getStartEventIds().stream())
+                    .filter(s -> s.startsWith("custom")).collect(Collectors.toSet());
+        }
+        return existingEventIds;
     }
 }

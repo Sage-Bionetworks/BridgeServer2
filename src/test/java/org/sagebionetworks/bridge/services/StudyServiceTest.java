@@ -31,6 +31,7 @@ import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 import java.util.List;
 import java.util.Set;
@@ -41,6 +42,7 @@ import org.mockito.Captor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -95,11 +97,6 @@ public class StudyServiceTest {
     public void before() {
         MockitoAnnotations.initMocks(this);
     }
-    
-//    @AfterMethod
-//    public void afterEmthod() {
-//        RequestContext.set(NULL_INSTANCE);
-//    }
     
     @AfterMethod
     public void afterMethod( ) {
@@ -511,6 +508,38 @@ public class StudyServiceTest {
         verify(mockStudyDao).updateStudy(studyCaptor.capture());
         assertEquals(studyCaptor.getValue().getScheduleGuid(), SCHEDULE_GUID);
         assertEquals(studyCaptor.getValue().getCustomEvents(), events);
+    }
+    
+    @Test
+    public void updateStudy_cannotRemoveCustomEventsTiedToSchedules() {
+        Study existing = Study.create();
+        existing.setIdentifier(TEST_STUDY_ID);
+        existing.setName("oldName");
+        existing.setPhase(DESIGN);
+        existing.setCreatedOn(DateTime.now());
+        existing.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
+    
+        Schedule2 schedule = new Schedule2();
+        Session session1 = new Session();
+        session1.setStartEventIds(ImmutableList.of("aaa","bbb","custom-ccc"));
+        Session session2 = new Session();
+        session2.setStartEventIds(ImmutableList.of("ddd","eee"));
+        schedule.setSessions(ImmutableList.of(session1, session2));
+        when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
+    
+        Study study = Study.create();
+        study.setAppId("wrongAppId");
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setName("newName");
+        study.setPhase(DESIGN);
+    
+        try {
+            service.updateStudy(TEST_APP_ID, study);
+            fail("should have thrown exception");
+        } catch (InvalidEntityException e) {
+            assertTrue(e.getMessage().contains("customEvents cannot remove custom events currently used in a schedule: [custom-ccc]"));
+        }
     }
     
     @Test

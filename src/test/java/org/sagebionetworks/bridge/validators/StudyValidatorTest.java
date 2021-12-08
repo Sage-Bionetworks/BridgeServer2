@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
@@ -29,14 +28,10 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import com.google.common.collect.ImmutableList;
 
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.sagebionetworks.bridge.models.schedules2.Schedule2;
-import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.studies.Address;
-import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.models.accounts.Phone;
@@ -53,14 +48,9 @@ public class StudyValidatorTest {
     
     private StudyValidator validator;
     
-    @Mock
-    private Schedule2Service schedule2Service;
-    
     @BeforeMethod
     public void before() {
-        MockitoAnnotations.initMocks(this);
-        
-        validator = new StudyValidator(schedule2Service);
+        validator = new StudyValidator(Sets.newHashSet());
     }
     
     @Test
@@ -312,20 +302,15 @@ public class StudyValidatorTest {
     public void customEvents_missingEventIdInSchedule() {
         study = createStudy();
         study.setScheduleGuid(SCHEDULE_GUID);
-    
-        Schedule2 schedule = new Schedule2();
-        Session session = new Session();
-        session.setStartEventIds(ImmutableList.of("custom-aaa","bbb","custom-ccc"));
-        schedule.setSessions(ImmutableList.of(session));
         
+        validator = new StudyValidator(Sets.newHashSet("custom-aaa", "custom-ccc"));
+    
         StudyCustomEvent studyCustomEvent = new StudyCustomEvent();
         studyCustomEvent.setEventId("custom-aaa");
         
         study.setCustomEvents(ImmutableList.of(studyCustomEvent));
         
-        when(schedule2Service.getSchedule(study.getAppId(), SCHEDULE_GUID)).thenReturn(schedule);
-        
-        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD, "cannot remove custom events currently used in a schedule");
+        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD, "cannot remove custom events currently used in a schedule: [custom-ccc]");
     }
     
     @Test
