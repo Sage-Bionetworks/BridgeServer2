@@ -96,10 +96,10 @@ public class StudyServiceTest {
         MockitoAnnotations.initMocks(this);
     }
     
-    @AfterMethod
-    public void afterEmthod() {
-        RequestContext.set(NULL_INSTANCE);
-    }
+//    @AfterMethod
+//    public void afterEmthod() {
+//        RequestContext.set(NULL_INSTANCE);
+//    }
     
     @AfterMethod
     public void afterMethod( ) {

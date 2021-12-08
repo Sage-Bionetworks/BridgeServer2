@@ -157,7 +157,9 @@ public class StudyService {
         
         study.setAppId(appId);
         study.setPhase(DESIGN);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        
+        StudyValidator validator = new StudyValidator(scheduleService);
+        Validate.entityThrowingException(validator, study);
         
         study.setVersion(null);
         study.setDeleted(false);
@@ -203,8 +205,9 @@ public class StudyService {
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
-
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    
+        StudyValidator validator = new StudyValidator(scheduleService);
+        Validate.entityThrowingException(validator, study);
         
         VersionHolder keys = studyDao.updateStudy(study);
         

@@ -20,19 +20,21 @@ import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.studies.Address;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 
+import org.sagebionetworks.bridge.services.Schedule2Service;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class StudyValidator implements Validator {
-    
-    public static final StudyValidator INSTANCE = new StudyValidator();
     
     static final String ADDRESS_FIELD = "address";
     static final String AFFILIATION_FIELD = "affiliation";
@@ -68,6 +70,12 @@ public class StudyValidator implements Validator {
     static final String STUDY_LOGO_URL_FIELD = "studyLogoUrl";
     static final String STUDY_TIME_ZONE_FIELD = "studyTimeZone";
     static final String ADHERENCE_THRESHOLD_PERCENTAGE_FIELD = "adherenceThresholdPercentage";
+    
+    private final Schedule2Service schedule2Service;
+    
+    public StudyValidator(Schedule2Service schedule2Service) {
+        this.schedule2Service = schedule2Service;
+    }
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -122,6 +130,20 @@ public class StudyValidator implements Validator {
                 errors.rejectValue(IRB_DECISION_ON_FIELD, CANNOT_BE_NULL);
             }
         }
+    
+        /* TODO: collect all event IDs existing in the schedule into a set.
+        *   Remove the event IDs as they are found in the new study.
+        *   It's ok for an event ID to be in the new study and be missing from the schedule.
+        *   Any event IDs remaining in the set are in the schedule but not in the new study.*/
+    
+        Schedule2 schedule = schedule2Service.getSchedule(study.getAppId(), study.getScheduleGuid());
+        Set<String> existingEventIds = new HashSet<>();
+        if (schedule != null) {
+            existingEventIds = schedule.getSessions().stream()
+                    .flatMap(session -> session.getStartEventIds().stream())
+                    .filter(s -> s.startsWith("custom")).collect(Collectors.toSet());
+        }
+        
         Set<String> uniqueIds = new HashSet<>();
         for (int i=0; i < study.getCustomEvents().size(); i++) {
             StudyCustomEvent customEvent = study.getCustomEvents().get(i);
@@ -141,10 +163,15 @@ public class StudyValidator implements Validator {
             if (customEvent.getUpdateType() == null) {
                 errors.rejectValue("updateType", CANNOT_BE_NULL);
             }
+            existingEventIds.remove(customEvent.getEventId());
             errors.popNestedPath();
         }
         if (uniqueIds.size() > 0 && (uniqueIds.size() != study.getCustomEvents().size())) {
-            errors.rejectValue(CUSTOM_EVENTS_FIELD, "cannot contain duplidate event IDs");
+            errors.rejectValue(CUSTOM_EVENTS_FIELD, "cannot contain duplicate event IDs");
+        }
+        if (!existingEventIds.isEmpty()) {
+            // TODO: add the remaining custom event IDs to the error message
+            errors.rejectValue(CUSTOM_EVENTS_FIELD, "cannot remove custom events currently used in a schedule");
         }
         for (int i=0; i < study.getContacts().size(); i++) {
             Contact contact = study.getContacts().get(i);
