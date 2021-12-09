@@ -83,11 +83,4 @@ public class EventStreamDay {
     public void addTimeWindow(EventStreamWindow timeWindowEntry) {
         this.timeWindows.put(timeWindowEntry.getTimeWindowGuid(), timeWindowEntry);
     }
-    @Override
-    public String toString() {
-        return "EventStreamDay [sessionGuid=" + sessionGuid + ", sessionName=" + sessionName + ", sessionSymbol="
-                + sessionSymbol + ", week=" + week + ", studyBurstId=" + studyBurstId + ", studyBurstNum="
-                + studyBurstNum + ", startDay=" + startDay + ", startDate=" + startDate + ", timeWindows=" + timeWindows
-                + "]";
-    }
 }

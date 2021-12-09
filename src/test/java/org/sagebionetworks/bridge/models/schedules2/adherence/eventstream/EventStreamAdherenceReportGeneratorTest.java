@@ -381,48 +381,6 @@ public class EventStreamAdherenceReportGeneratorTest {
         return meta;
     }
 
-//    private List<TimelineMetadata> getMetadata() {
-//        List<TimelineMetadata> meta = new ArrayList<>();
-//        meta.add(createMeta("2G-B57I2kgwlxePcfp9kyA","2G-B57I2kgwlxePcfp9kyA","tA4NqFZxRFhrD6mOX2252ixQ","Rg5d3MCyDR6O-i8XEeUo0_PT",13,13,"study_burst:Secondary Sequence:01","Secondary Sequence",1,null,"Session #2", false));
-//        meta.add(createMeta("4ahNsBcGxSs34xZVacXXQg","4ahNsBcGxSs34xZVacXXQg","u90_okqrmPgKptcc9E8lORwC","yMujDPxJ_WO0XT412s4uB7W8",4,4,"study_burst:Main Sequence:02","Main Sequence",2,"*","Session #1", false));
-//        meta.add(createMeta("5dg79dBgLTIX2MN5VhXEwA","5dg79dBgLTIX2MN5VhXEwA","u90_okqrmPgKptcc9E8lORwC","ksuWqp17x3i9zjQBh0FHSDS2",0,0,"study_burst:Main Sequence:01","Main Sequence",1,"*","Session #1", false));
-//        meta.add(createMeta("6I8fHOj6DPMbr-CtISJiLg","6I8fHOj6DPMbr-CtISJiLg","u90_okqrmPgKptcc9E8lORwC","ksuWqp17x3i9zjQBh0FHSDS2",4,4,"study_burst:Main Sequence:03","Main Sequence",3,"*","Session #1", false));
-//        meta.add(createMeta("AT1TuKMsZhQX5EW8C5r-7g","AT1TuKMsZhQX5EW8C5r-7g","tA4NqFZxRFhrD6mOX2252ixQ","Rg5d3MCyDR6O-i8XEeUo0_PT",7,7,"study_burst:Secondary Sequence:01","Secondary Sequence",1,null,"Session #2", false));
-//        meta.add(createMeta("bsUZ3oIgmXSAbiIOIs1QWg","bsUZ3oIgmXSAbiIOIs1QWg","u90_okqrmPgKptcc9E8lORwC","yMujDPxJ_WO0XT412s4uB7W8",4,4,"study_burst:Main Sequence:01","Main Sequence",1,"*","Session #1", false));
-//        meta.add(createMeta("D-GERcPdJofqgIQGpqt4fA","D-GERcPdJofqgIQGpqt4fA","u90_okqrmPgKptcc9E8lORwC","ksuWqp17x3i9zjQBh0FHSDS2",2,2,"study_burst:Main Sequence:03","Main Sequence",3,"*","Session #1", false));
-//        meta.add(createMeta("Dl4HCj5YcS4ry9XJ_LgZdg","Dl4HCj5YcS4ry9XJ_LgZdg","tA4NqFZxRFhrD6mOX2252ixQ","Rg5d3MCyDR6O-i8XEeUo0_PT",19,19,"study_burst:Secondary Sequence:01","Secondary Sequence",1,null,"Session #2", false));
-//        meta.add(createMeta("e-9lNQC2y3lE5n-aqJ6AKQ","e-9lNQC2y3lE5n-aqJ6AKQ","u90_okqrmPgKptcc9E8lORwC","yMujDPxJ_WO0XT412s4uB7W8",0,0,"study_burst:Main Sequence:03","Main Sequence",3,"*","Session #1", false));
-//        meta.add(createMeta("EkIF2rZmKor9Bqrt-6X7OQ","EkIF2rZmKor9Bqrt-6X7OQ","tA4NqFZxRFhrD6mOX2252ixQ","Rg5d3MCyDR6O-i8XEeUo0_PT",4,4,"study_burst:Secondary Sequence:01","Secondary Sequence",1,null,"Session #2", false));
-//        meta.add(createMeta("fTnAnasmcs-UndPt60iX8w","fTnAnasmcs-UndPt60iX8w","u90_okqrmPgKptcc9E8lORwC","ksuWqp17x3i9zjQBh0FHSDS2",4,4,"study_burst:Main Sequence:01","Main Sequence",1,"*","Session #1", false));
-//        meta.add(createMeta("gnescr0HRz5T2JEjc0Ad6Q","gnescr0HRz5T2JEjc0Ad6Q","u90_okqrmPgKptcc9E8lORwC","ksuWqp17x3i9zjQBh0FHSDS2",2,2,"study_burst:Main Sequence:01","Main Sequence",1,"*","Session #1", false));
-//        meta.add(createMeta("gV8vn0AtRkiWzzpHlqpHQw","gV8vn0AtRkiWzzpHlqpHQw","u90_okqrmPgKptcc9E8lORwC","yMujDPxJ_WO0XT412s4uB7W8",2,2,"study_burst:Main Sequence:02","Main Sequence",2,"*","Session #1", false));
-//        meta.add(createMeta("JOQg4yz0lrif7V3HYYzACw","JOQg4yz0lrif7V3HYYzACw","Bw7z_QMiGeuQDVSk_Ndo-Gp-","yxSek2gkA5tHFQRTXafsqrzX",0,0,"created_on", null, null, null,"Session #3 - window is persistent", true));
-//        meta.add(createMeta("jUSgc2bo9bgrfA_fdQ5s6Q","jUSgc2bo9bgrfA_fdQ5s6Q","tA4NqFZxRFhrD6mOX2252ixQ","Rg5d3MCyDR6O-i8XEeUo0_PT",1,1,"study_burst:Secondary Sequence:01","Secondary Sequence",1,null,"Session #2", false));
-//        meta.add(createMeta("KkpuXNUdtapDvmCwbfaV1A","KkpuXNUdtapDvmCwbfaV1A","u90_okqrmPgKptcc9E8lORwC","yMujDPxJ_WO0XT412s4uB7W8",2,2,"study_burst:Main Sequence:01","Main Sequence",1,"*","Session #1", false));
-//        meta.add(createMeta("LRCQgu855OC0W6sroFk17Q","LRCQgu855OC0W6sroFk17Q","u90_okqrmPgKptcc9E8lORwC","ksuWqp17x3i9zjQBh0FHSDS2",2,2,"study_burst:Main Sequence:02","Main Sequence",2,"*","Session #1", false));
-//        meta.add(createMeta("MhG2IVYTO8RpqhcaXrlfzA","MhG2IVYTO8RpqhcaXrlfzA","u90_okqrmPgKptcc9E8lORwC","yMujDPxJ_WO0XT412s4uB7W8",4,4,"study_burst:Main Sequence:03","Main Sequence",3,"*","Session #1", false));
-//        meta.add(createMeta("misJxNwbXcYJ70OLLgMBgg","misJxNwbXcYJ70OLLgMBgg","u90_okqrmPgKptcc9E8lORwC","ksuWqp17x3i9zjQBh0FHSDS2",4,4,"study_burst:Main Sequence:02","Main Sequence",2,"*","Session #1", false));
-//        meta.add(createMeta("njdPhdjaOog1NIf99H66hA","njdPhdjaOog1NIf99H66hA","tA4NqFZxRFhrD6mOX2252ixQ","Rg5d3MCyDR6O-i8XEeUo0_PT",10,10,"study_burst:Secondary Sequence:01","Secondary Sequence",1,null,"Session #2", false));
-//        meta.add(createMeta("PtrE61GIfb7TLxX-lQ6Y0A","PtrE61GIfb7TLxX-lQ6Y0A","u90_okqrmPgKptcc9E8lORwC","ksuWqp17x3i9zjQBh0FHSDS2",0,0,"study_burst:Main Sequence:02","Main Sequence",2,"*","Session #1", false));
-//        meta.add(createMeta("q-oBOyB2f5mZSY_Ah873SA","q-oBOyB2f5mZSY_Ah873SA","u90_okqrmPgKptcc9E8lORwC","yMujDPxJ_WO0XT412s4uB7W8",2,2,"study_burst:Main Sequence:03","Main Sequence",3,"*","Session #1", false));
-//        meta.add(createMeta("QHkvVRI1KV7u1UNLLEKQrQ","QHkvVRI1KV7u1UNLLEKQrQ","u90_okqrmPgKptcc9E8lORwC","ksuWqp17x3i9zjQBh0FHSDS2",0,0,"study_burst:Main Sequence:03","Main Sequence",3,"*","Session #1", false));
-//        meta.add(createMeta("u6q6QsakhsAvlHPOpf43dg","u6q6QsakhsAvlHPOpf43dg","tA4NqFZxRFhrD6mOX2252ixQ","Rg5d3MCyDR6O-i8XEeUo0_PT",16,16,"study_burst:Secondary Sequence:01","Secondary Sequence",1,null,"Session #2", false));
-//        meta.add(createMeta("whIGEWQGeEKHy2LfXN5X6w","whIGEWQGeEKHy2LfXN5X6w","u90_okqrmPgKptcc9E8lORwC","yMujDPxJ_WO0XT412s4uB7W8",0,0,"study_burst:Main Sequence:01","Main Sequence",1,"*","Session #1", false));
-//        meta.add(createMeta("yp-DPmxuNu-Hi2mpiGPTTQ","yp-DPmxuNu-Hi2mpiGPTTQ","u90_okqrmPgKptcc9E8lORwC","yMujDPxJ_WO0XT412s4uB7W8",0,0,"study_burst:Main Sequence:02","Main Sequence",2,"*","Session #1", false));
-//        return meta;
-//    }
-    
-//    private List<StudyActivityEvent> getEvents() {
-//        List<StudyActivityEvent> events = new ArrayList<>();
-//        events.add(createEvent("created_on", "2021-10-10T16:54:59.688Z"));
-//        events.add(createEvent("enrollment", "2021-10-10T16:55:29.653Z"));
-//        events.add(createEvent("custom:Clinic Visit", "2021-12-07T23:56:25.179Z"));
-//        events.add(createEvent("study_burst:Main Sequence:01", "2021-12-07T23:56:25.179Z"));
-//        events.add(createEvent("study_burst:Main Sequence:02", "2021-12-14T23:56:25.179Z"));
-//        events.add(createEvent("study_burst:Main Sequence:03", "2021-12-21T23:56:25.179Z"));
-//        return events;
-//    }
-
     private StudyActivityEvent createEvent(String eventId, DateTime timestamp) {
         return new StudyActivityEvent.Builder().withEventId(eventId).withTimestamp(timestamp).build();
     }

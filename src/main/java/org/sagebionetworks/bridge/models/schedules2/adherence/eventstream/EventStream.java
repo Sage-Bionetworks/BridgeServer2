@@ -1,17 +1,11 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.eventstream;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
-
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class EventStream {
     private String startEventId;
@@ -19,6 +13,8 @@ public class EventStream {
     private Integer daysSinceEvent;
     private String studyBurstId;
     private Integer studyBurstNum;
+    // These are session event streams keyed by day. Each day in the list is a different session triggered by the same event. 
+    // Naming issue?
     private Map<Integer, List<EventStreamDay>> byDayEntries;
     
     public EventStream() {
@@ -64,10 +60,5 @@ public class EventStream {
     }
     public void setStudyBurstNum(Integer studyBurstNum) {
         this.studyBurstNum = studyBurstNum;
-    }
-    @Override
-    public String toString() {
-        return "EventStream [startEventId=" + startEventId + ", daysSinceEvent=" + daysSinceEvent + ", studyBurstId="
-                + studyBurstId + ", studyBurstNum=" + studyBurstNum + ", byDayEntries=" + byDayEntries + "]";
     }
 }

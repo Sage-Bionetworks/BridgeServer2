@@ -35,9 +35,4 @@ public class EventStreamAdherenceReport {
     public void setStreams(List<EventStream> streams) {
         this.streams = streams;
     }
-    @Override
-    public String toString() {
-        return "EventStreamAdherenceReport [activeOnly=" + activeOnly + ", timestamp=" + timestamp
-                + ", adherencePercent=" + adherencePercent + ", streams=" + streams + "]";
-    }
 }
