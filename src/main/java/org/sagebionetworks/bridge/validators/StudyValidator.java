@@ -67,10 +67,10 @@ public class StudyValidator implements Validator {
     static final String STUDY_TIME_ZONE_FIELD = "studyTimeZone";
     static final String ADHERENCE_THRESHOLD_PERCENTAGE_FIELD = "adherenceThresholdPercentage";
     
-    private final Set<String> scheduledCustomEventIds;
+    private final Set<String> protectedCustomEventIds;
     
-    public StudyValidator(Set<String> scheduledCustomEventIds) {
-        this.scheduledCustomEventIds = scheduledCustomEventIds;
+    public StudyValidator(Set<String> protectedCustomEventIds) {
+        this.protectedCustomEventIds = protectedCustomEventIds;
     }
 
     @Override
@@ -146,15 +146,16 @@ public class StudyValidator implements Validator {
             if (customEvent.getUpdateType() == null) {
                 errors.rejectValue("updateType", CANNOT_BE_NULL);
             }
-            scheduledCustomEventIds.remove(customEvent.getEventId());
+            protectedCustomEventIds.remove(customEvent.getEventId());
             errors.popNestedPath();
         }
         if (uniqueIds.size() > 0 && (uniqueIds.size() != study.getCustomEvents().size())) {
             errors.rejectValue(CUSTOM_EVENTS_FIELD, "cannot contain duplicate event IDs");
         }
-        if (!scheduledCustomEventIds.isEmpty()) {
+        // Any EventIds not removed from the set are on a schedule but missing from the validated study
+        if (!protectedCustomEventIds.isEmpty()) {
             errors.rejectValue(CUSTOM_EVENTS_FIELD, 
-                    String.format("cannot remove custom events currently used in a schedule: %s", scheduledCustomEventIds.toString()));
+                    String.format("cannot remove custom events currently used in a schedule: %s", protectedCustomEventIds.toString()));
         }
         for (int i=0; i < study.getContacts().size(); i++) {
             Contact contact = study.getContacts().get(i);

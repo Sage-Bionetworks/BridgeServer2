@@ -357,12 +357,14 @@ public class StudyService {
     }
     
     private Set<String> getCustomEventIdsFromSchedule(String appId, String scheduleGuid) {
-        Schedule2 schedule = scheduleService.getSchedule(appId, scheduleGuid);
         Set<String> existingEventIds = new HashSet<>();
-        if (schedule != null) {
-            existingEventIds = schedule.getSessions().stream()
-                    .flatMap(session -> session.getStartEventIds().stream())
-                    .filter(s -> s.startsWith("custom")).collect(Collectors.toSet());
+        if (scheduleGuid != null) {
+            Schedule2 schedule = scheduleService.getSchedule(appId, scheduleGuid);
+            if (schedule != null) {
+                existingEventIds = schedule.getSessions().stream()
+                        .flatMap(session -> session.getStartEventIds().stream())
+                        .filter(s -> s.startsWith("custom:")).collect(Collectors.toSet());
+            }
         }
         return existingEventIds;
     }

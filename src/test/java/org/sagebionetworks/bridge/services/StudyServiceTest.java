@@ -522,7 +522,7 @@ public class StudyServiceTest {
     
         Schedule2 schedule = new Schedule2();
         Session session1 = new Session();
-        session1.setStartEventIds(ImmutableList.of("aaa","bbb","custom-ccc"));
+        session1.setStartEventIds(ImmutableList.of("aaa","bbb","custom:ccc"));
         Session session2 = new Session();
         session2.setStartEventIds(ImmutableList.of("ddd","eee"));
         schedule.setSessions(ImmutableList.of(session1, session2));
@@ -538,8 +538,36 @@ public class StudyServiceTest {
             service.updateStudy(TEST_APP_ID, study);
             fail("should have thrown exception");
         } catch (InvalidEntityException e) {
-            assertTrue(e.getMessage().contains("customEvents cannot remove custom events currently used in a schedule: [custom-ccc]"));
+            assertTrue(e.getMessage().contains("customEvents cannot remove custom events currently used in a schedule: [custom:ccc]"));
         }
+    }
+    
+    @Test
+    public void updateStudy_canUpdateWithNullScheduleGuid() {
+        Study existing = Study.create();
+        existing.setIdentifier(TEST_STUDY_ID);
+        existing.setName("oldName");
+        existing.setPhase(DESIGN);
+        existing.setCreatedOn(DateTime.now());
+        existing.setScheduleGuid(null);
+        when(mockStudyDao.getStudy(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(existing);
+        
+        Study study = Study.create();
+        study.setAppId("wrongAppId");
+        study.setIdentifier(TEST_STUDY_ID);
+        study.setName("newName");
+        study.setPhase(DESIGN);
+        study.setScheduleGuid(null);
+        
+        service.updateStudy(TEST_APP_ID, study);
+    
+        verify(mockStudyDao).updateStudy(studyCaptor.capture());
+    
+        Study returnedValue = studyCaptor.getValue();
+        assertEquals(returnedValue.getAppId(), TEST_APP_ID);
+        assertEquals(returnedValue.getIdentifier(), TEST_STUDY_ID);
+        assertEquals(returnedValue.getName(), "newName");
+        assertNull(returnedValue.getScheduleGuid());
     }
     
     @Test

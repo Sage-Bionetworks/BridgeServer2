@@ -303,14 +303,14 @@ public class StudyValidatorTest {
         study = createStudy();
         study.setScheduleGuid(SCHEDULE_GUID);
         
-        validator = new StudyValidator(Sets.newHashSet("custom-aaa", "custom-ccc"));
+        validator = new StudyValidator(Sets.newHashSet("custom:aaa", "custom:ccc"));
     
         StudyCustomEvent studyCustomEvent = new StudyCustomEvent();
-        studyCustomEvent.setEventId("custom-aaa");
+        studyCustomEvent.setEventId("custom:aaa");
         
         study.setCustomEvents(ImmutableList.of(studyCustomEvent));
         
-        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD, "cannot remove custom events currently used in a schedule: [custom-ccc]");
+        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD, "cannot remove custom events currently used in a schedule: [custom:ccc]");
     }
     
     @Test
