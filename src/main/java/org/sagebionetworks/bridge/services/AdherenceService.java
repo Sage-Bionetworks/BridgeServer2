@@ -317,7 +317,8 @@ public class AdherenceService {
         }
     }
     
-    public EventStreamAdherenceReport getEventStreamAdherenceReport(String appId, String studyId, String userId, DateTime now, boolean showActiveOnly) {
+    public EventStreamAdherenceReport getEventStreamAdherenceReport(String appId, String studyId, String userId,
+            DateTime now, String clientTimeZone, boolean showActiveOnly) {
         checkNotNull(appId);
         checkNotNull(studyId);
         checkNotNull(userId);
@@ -328,6 +329,7 @@ public class AdherenceService {
         EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
         builder.withShowActive(showActiveOnly);
         builder.withNow(now);
+        builder.withClientTimeZone(clientTimeZone);
         
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {

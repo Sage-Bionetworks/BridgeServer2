@@ -4,10 +4,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-@JsonPropertyOrder({ "activeOnly", "timestamp", "adherencePercentage", "dayRangeOfAllStreams", "streams", "type" })
+@JsonPropertyOrder({ "activeOnly", "timestamp", "clientTimeZone", "adherencePercentage", "dayRangeOfAllStreams",
+        "streams", "type" })
 public class EventStreamAdherenceReport {
     
     public static final class DayRange {
@@ -23,6 +26,7 @@ public class EventStreamAdherenceReport {
     
     private boolean activeOnly;
     private DateTime timestamp;
+    private String clientTimeZone;
     private int adherencePercent = 100;
     private List<EventStream> streams = new ArrayList<>();
     
@@ -51,11 +55,18 @@ public class EventStreamAdherenceReport {
     public void setActiveOnly(boolean activeOnly) {
         this.activeOnly = activeOnly;
     }
+    @JsonSerialize(using = DateTimeSerializer.class) // preserve time zone offset
     public DateTime getTimestamp() {
         return timestamp;
     }
     public void setTimestamp(DateTime timestamp) {
         this.timestamp = timestamp;
+    }
+    public String getClientTimeZone() {
+        return clientTimeZone;
+    }
+    public void setClientTimeZone(String clientTimeZone) {
+        this.clientTimeZone = clientTimeZone;
     }
     public int getAdherencePercent() {
         return adherencePercent;

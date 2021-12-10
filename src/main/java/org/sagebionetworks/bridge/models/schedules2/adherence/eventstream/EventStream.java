@@ -9,8 +9,10 @@ import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonPropertyOrder({ "startEventId", "eventTimestamp", "daysSinceEvent", "sessionGuids", 
     "studyBurstId", "studyBurstNum", "byDayEntries", "type" })
@@ -20,12 +22,13 @@ public class EventStream {
     private Integer daysSinceEvent;
     private String studyBurstId;
     private Integer studyBurstNum;
-    // These are session event streams keyed by day. Each day in the list is a different session triggered by the same event. 
-    // Naming issue?
+    // Each key in the map is a day after the event ID occurred when one or more session
+    // has one or more scheduled time windows (these are all listed together in the list
+    // of EventStreamDay records).
     private Map<Integer, List<EventStreamDay>> byDayEntries;
     
     public EventStream() {
-        byDayEntries = new TreeMap<>();
+        byDayEntries = new TreeMap<>(); // maintain the order of the days
     }
     public Set<String> getSessionGuids() {
         return byDayEntries.values().stream()
@@ -39,6 +42,7 @@ public class EventStream {
     public void setStartEventId(String startEventId) {
         this.startEventId = startEventId;
     }
+    @JsonSerialize(using = DateTimeSerializer.class) // preserve time zone offset
     public DateTime getEventTimestamp() {
         return eventTimestamp;
     }

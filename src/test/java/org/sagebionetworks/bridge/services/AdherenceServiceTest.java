@@ -770,7 +770,7 @@ public class AdherenceServiceTest extends Mockito {
         Study study = Study.create();
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
-        EventStreamAdherenceReport report = service.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, EVENT_TS, true);
+        EventStreamAdherenceReport report = service.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, EVENT_TS, null, true);
         assertTrue(report.getStreams().isEmpty());
         assertEquals(report.getTimestamp(), EVENT_TS);
         assertEquals(report.getAdherencePercent(), 100);
@@ -798,7 +798,7 @@ public class AdherenceServiceTest extends Mockito {
         when(mockDao.getAdherenceRecords(any())).thenReturn(adherencePage);
         
         EventStreamAdherenceReport report = service.getEventStreamAdherenceReport(
-                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, EVENT_TS, true);
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, EVENT_TS, null, true);
         assertTrue(report.getStreams().isEmpty());
         assertEquals(report.getTimestamp(), EVENT_TS);
         assertEquals(report.getAdherencePercent(), 100);

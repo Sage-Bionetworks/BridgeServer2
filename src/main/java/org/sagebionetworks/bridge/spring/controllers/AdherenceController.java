@@ -64,9 +64,10 @@ public class AdherenceController extends BaseController {
         if (account.getClientTimeZone() != null) {
             now = now.withZone(DateTimeZone.forID(account.getClientTimeZone()));
         }
-        Boolean showActive = "true".equalsIgnoreCase(activeOnly);
+        Boolean showActiveOnly = "true".equalsIgnoreCase(activeOnly);
 
-        return service.getEventStreamAdherenceReport(session.getAppId(), studyId, account.getId(), now, showActive);
+        return service.getEventStreamAdherenceReport(session.getAppId(), studyId, account.getId(), now,
+                account.getClientTimeZone(), showActiveOnly);
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/self/adherence/eventstream")
@@ -80,9 +81,10 @@ public class AdherenceController extends BaseController {
         if (session.getParticipant().getClientTimeZone() != null) {
             now = now.withZone(DateTimeZone.forID(session.getParticipant().getClientTimeZone()));
         }
-        Boolean showActive = "true".equalsIgnoreCase(activeOnly);
+        Boolean showActiveOnly = "true".equalsIgnoreCase(activeOnly);
 
-        return service.getEventStreamAdherenceReport(session.getAppId(), studyId, session.getId(), now, showActive);
+        return service.getEventStreamAdherenceReport(session.getAppId(), studyId, session.getId(), now,
+                session.getParticipant().getClientTimeZone(), showActiveOnly);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence")

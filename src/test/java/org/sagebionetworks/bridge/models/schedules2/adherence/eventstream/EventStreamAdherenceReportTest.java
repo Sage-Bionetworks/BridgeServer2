@@ -18,17 +18,19 @@ public class EventStreamAdherenceReportTest {
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         report.setActiveOnly(true);
         report.setTimestamp(CREATED_ON);
+        report.setClientTimeZone("America/Los_Angeles");
         report.setAdherencePercent(56);
         report.setStreams(ImmutableList.of(createEventStream(14), createEventStream(2)));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
-        assertEquals(node.size(), 6);
+        assertEquals(node.size(), 7);
         assertEquals(node.get("dayRangeOfAllStreams").size(), 3);
         assertEquals(node.get("dayRangeOfAllStreams").get("min").intValue(), 2);
         assertEquals(node.get("dayRangeOfAllStreams").get("max").intValue(), 14);
         assertEquals(node.get("dayRangeOfAllStreams").get("type").textValue(), "DayRange");
         assertTrue(node.get("activeOnly").booleanValue());
         assertEquals(node.get("timestamp").textValue(), CREATED_ON.toString());
+        assertEquals(node.get("clientTimeZone").textValue(), "America/Los_Angeles");
         assertEquals(node.get("adherencePercent").intValue(), 56);
         assertEquals(node.get("streams").size(), 2);
         assertEquals(node.get("type").textValue(), "EventStreamAdherenceReport");

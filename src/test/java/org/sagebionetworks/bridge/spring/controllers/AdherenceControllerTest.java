@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
 
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -51,6 +52,11 @@ import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AdherenceService;
 
 public class AdherenceControllerTest extends Mockito {
+    
+    private static final String CLIENT_TIME_ZONE = "America/Chicago";
+    private static final DateTime SYSTEM_NOW = MODIFIED_ON;
+    private static final DateTime NOW = CREATED_ON;
+    private static final DateTime NOW_IN_CHICAGO = CREATED_ON.withZone(DateTimeZone.forID(CLIENT_TIME_ZONE));
 
     @Mock
     AdherenceService mockService;
@@ -88,7 +94,7 @@ public class AdherenceControllerTest extends Mockito {
                 .build());
         session.setAppId(TEST_APP_ID);
         
-        doReturn(MODIFIED_ON).when(controller).getDateTime();
+        doReturn(SYSTEM_NOW).when(controller).getDateTime();
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
     }
@@ -111,16 +117,16 @@ public class AdherenceControllerTest extends Mockito {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setId(TEST_USER_ID);
-        account.setClientTimeZone("America/Chicago");
+        account.setClientTimeZone(CLIENT_TIME_ZONE);
         when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
             .thenReturn(Optional.of(account));
         
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                CREATED_ON.withZone(DateTimeZone.forID("America/Chicago")), true)).thenReturn(report);
+                NOW_IN_CHICAGO, CLIENT_TIME_ZONE, true)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReport(TEST_STUDY_ID, TEST_USER_ID,
-                CREATED_ON.toString(), "true");
+                NOW.toString(), "true");
         assertSame(retValue, report);
     }
     
@@ -136,10 +142,30 @@ public class AdherenceControllerTest extends Mockito {
         
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                CREATED_ON, true)).thenReturn(report);
+                NOW, null, true)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReport(TEST_STUDY_ID, TEST_USER_ID,
-                CREATED_ON.toString(), "true");
+                NOW.toString(), "true");
+        assertSame(retValue, report);
+    }
+    
+    @Test
+    public void getEventStreamAdherenceReport_withTimeZone() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+    
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setClientTimeZone(CLIENT_TIME_ZONE);
+        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+            .thenReturn(Optional.of(account));
+        
+        EventStreamAdherenceReport report = new EventStreamAdherenceReport();
+        when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
+                NOW_IN_CHICAGO, CLIENT_TIME_ZONE, true)).thenReturn(report);
+        
+        EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReport(TEST_STUDY_ID, TEST_USER_ID,
+                NOW.toString(), "true");
         assertSame(retValue, report);
     }
     
@@ -161,13 +187,13 @@ public class AdherenceControllerTest extends Mockito {
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
         account.setId(TEST_USER_ID);
-        account.setClientTimeZone("America/Chicago");
+        account.setClientTimeZone(CLIENT_TIME_ZONE);
         when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
             .thenReturn(Optional.of(account));
         
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                MODIFIED_ON.withZone(DateTimeZone.forID("America/Chicago")), false)).thenReturn(report);
+                SYSTEM_NOW.withZone(DateTimeZone.forID(CLIENT_TIME_ZONE)), CLIENT_TIME_ZONE, false)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReport(TEST_STUDY_ID, TEST_USER_ID, null, null);
         assertSame(retValue, report);
@@ -176,12 +202,12 @@ public class AdherenceControllerTest extends Mockito {
     @Test
     public void getEventStreamAdherenceReportForSelf() {
         session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID)
-                .withClientTimeZone("America/Chicago").build());
+                .withClientTimeZone(CLIENT_TIME_ZONE).build());
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
         
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                CREATED_ON.withZone(DateTimeZone.forID("America/Chicago")), true)).thenReturn(report);
+                NOW_IN_CHICAGO, CLIENT_TIME_ZONE, true)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReportForSelf(TEST_STUDY_ID, CREATED_ON.toString(), "true");
         assertSame(retValue, report);
@@ -193,22 +219,37 @@ public class AdherenceControllerTest extends Mockito {
         
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                CREATED_ON, true)).thenReturn(report);
+                NOW, null, true)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReportForSelf(TEST_STUDY_ID, 
-                CREATED_ON.toString(), "true");
+                NOW.toString(), "true");
+        assertSame(retValue, report);
+    }
+    
+    @Test
+    public void getEventStreamAdherenceReportForSelf_withTimeZone() {
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID)
+                .withClientTimeZone(CLIENT_TIME_ZONE).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        
+        EventStreamAdherenceReport report = new EventStreamAdherenceReport();
+        when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
+                NOW_IN_CHICAGO, CLIENT_TIME_ZONE, true)).thenReturn(report);
+        
+        EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReportForSelf(TEST_STUDY_ID, 
+                NOW.toString(), "true");
         assertSame(retValue, report);
     }
     
     @Test
     public void getEventStreamAdherenceReportForSelf_defaults() {
         session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID)
-                .withClientTimeZone("America/Chicago").build());
+                .withClientTimeZone(CLIENT_TIME_ZONE).build());
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
     
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                MODIFIED_ON.withZone(DateTimeZone.forID("America/Chicago")), false)).thenReturn(report);
+                SYSTEM_NOW.withZone(DateTimeZone.forID(CLIENT_TIME_ZONE)), CLIENT_TIME_ZONE, false)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReportForSelf(TEST_STUDY_ID, null, null);
         assertSame(retValue, report);
