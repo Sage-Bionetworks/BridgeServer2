@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_PATTERN;
 import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAIL;
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
@@ -140,22 +141,21 @@ public class StudyValidator implements Validator {
                 errors.rejectValue("eventId", CANNOT_BE_BLANK);
             } else if (!customEvent.getEventId().matches(BRIDGE_RELAXED_ID_PATTERN)) {
                 errors.rejectValue("eventId", BRIDGE_RELAXED_ID_ERROR);
-            } else {
-                uniqueIds.add(customEvent.getEventId());    
             }
+            uniqueIds.add(customEvent.getEventId());    
             if (customEvent.getUpdateType() == null) {
                 errors.rejectValue("updateType", CANNOT_BE_NULL);
             }
-            protectedCustomEventIds.remove(customEvent.getEventId());
             errors.popNestedPath();
         }
         if (uniqueIds.size() > 0 && (uniqueIds.size() != study.getCustomEvents().size())) {
             errors.rejectValue(CUSTOM_EVENTS_FIELD, "cannot contain duplicate event IDs");
         }
-        // Any EventIds not removed from the set are on a schedule but missing from the validated study
-        if (!protectedCustomEventIds.isEmpty()) {
+        if (protectedCustomEventIds != null && !uniqueIds.containsAll(protectedCustomEventIds)) {
+            protectedCustomEventIds.removeAll(uniqueIds);
             errors.rejectValue(CUSTOM_EVENTS_FIELD, 
-                    String.format("cannot remove custom events currently used in a schedule: %s", protectedCustomEventIds.toString()));
+                    String.format("cannot remove custom events currently used in a schedule: [%s]",
+                            COMMA_SPACE_JOINER.join(protectedCustomEventIds)));
         }
         for (int i=0; i < study.getContacts().size(); i++) {
             Contact contact = study.getContacts().get(i);

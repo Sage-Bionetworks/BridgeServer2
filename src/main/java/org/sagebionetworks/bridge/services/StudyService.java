@@ -356,15 +356,20 @@ public class StudyService {
         return study;
     }
     
-    private Set<String> getCustomEventIdsFromSchedule(String appId, String scheduleGuid) {
+    /**
+     * Retrieves the custom event IDs from a schedule. The returned event IDs will 
+     * have the "custom:" prefix removed. If scheduleGuid is null, will return
+     * an empty set.
+     */
+    protected Set<String> getCustomEventIdsFromSchedule(String appId, String scheduleGuid) {
         Set<String> existingEventIds = new HashSet<>();
         if (scheduleGuid != null) {
             Schedule2 schedule = scheduleService.getSchedule(appId, scheduleGuid);
-            if (schedule != null) {
-                existingEventIds = schedule.getSessions().stream()
-                        .flatMap(session -> session.getStartEventIds().stream())
-                        .filter(s -> s.startsWith("custom:")).collect(Collectors.toSet());
-            }
+            existingEventIds = schedule.getSessions().stream()
+                    .flatMap(session -> session.getStartEventIds().stream())
+                    .filter(s -> s.startsWith("custom:"))
+                    .map(s -> s.substring(7))
+                    .collect(Collectors.toSet());
         }
         return existingEventIds;
     }

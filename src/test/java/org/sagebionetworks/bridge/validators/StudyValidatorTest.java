@@ -299,18 +299,50 @@ public class StudyValidatorTest {
     }
     
     @Test
-    public void customEvents_missingEventIdInSchedule() {
+    public void customEvents_missingEventIdInExistingSchedule() {
         study = createStudy();
         study.setScheduleGuid(SCHEDULE_GUID);
         
-        validator = new StudyValidator(Sets.newHashSet("custom:aaa", "custom:ccc"));
+        validator = new StudyValidator(Sets.newHashSet("aaa", "ccc"));
     
         StudyCustomEvent studyCustomEvent = new StudyCustomEvent();
-        studyCustomEvent.setEventId("custom:aaa");
+        studyCustomEvent.setEventId("aaa");
         
         study.setCustomEvents(ImmutableList.of(studyCustomEvent));
         
-        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD, "cannot remove custom events currently used in a schedule: [custom:ccc]");
+        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD, "cannot remove custom events currently used in a schedule: [ccc]");
+    }
+    
+    @Test
+    public void customEvents_emptySetOk() {
+        study = createStudy();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        
+        validator = new StudyValidator(Sets.newHashSet());
+        
+        StudyCustomEvent studyCustomEvent = new StudyCustomEvent();
+        studyCustomEvent.setEventId("aaa");
+        studyCustomEvent.setUpdateType(MUTABLE);
+        
+        study.setCustomEvents(ImmutableList.of(studyCustomEvent));
+        
+        Validate.entityThrowingException(validator, study);
+    }
+    
+    @Test
+    public void customEvents_nullSetOk() {
+        study = createStudy();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        
+        validator = new StudyValidator(null);
+        
+        StudyCustomEvent studyCustomEvent = new StudyCustomEvent();
+        studyCustomEvent.setEventId("aaa");
+        studyCustomEvent.setUpdateType(MUTABLE);
+        
+        study.setCustomEvents(ImmutableList.of(studyCustomEvent));
+        
+        Validate.entityThrowingException(validator, study);
     }
     
     @Test
