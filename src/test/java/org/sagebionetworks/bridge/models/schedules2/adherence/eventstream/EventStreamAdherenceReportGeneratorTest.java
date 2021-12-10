@@ -270,6 +270,14 @@ public class EventStreamAdherenceReportGeneratorTest {
     }
 
     @Test
+    public void showActiveFiltersNotApplicable() throws Exception { 
+        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.minusDays(10), META1, null, null, true);
+
+        EventStreamAdherenceReport report = generator.generate();
+        assertTrue(report.getStreams().isEmpty());        
+    }
+    
+    @Test
     public void showActiveFiltersExpired() throws Exception { 
         AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));

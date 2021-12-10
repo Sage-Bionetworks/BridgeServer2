@@ -70,7 +70,7 @@ public class EventStreamAdherenceReportGenerator {
             LocalDate endDate = (localDate == null) ? null : localDate.plusDays(endDay);
             
             // Skip entries that are not currently active, according to the server.
-            if (showActive && (startDay > daysSinceEvent || endDay < daysSinceEvent)) {
+            if (showActive && (daysSinceEvent == null || (startDay > daysSinceEvent || endDay < daysSinceEvent))) {
                 continue;
             }
 

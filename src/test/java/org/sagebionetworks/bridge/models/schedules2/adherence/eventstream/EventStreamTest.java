@@ -21,16 +21,20 @@ public class EventStreamTest {
         stream.setDaysSinceEvent(5);
         stream.setStudyBurstId("studyBurstId");
         stream.setStudyBurstNum(2);
-        stream.addEntry(6, new EventStreamDay());
-        stream.addEntry(6, new EventStreamDay());
-        stream.addEntry(8, new EventStreamDay());
+        stream.addEntry(6, makeDay("aaa"));
+        stream.addEntry(6, makeDay("bbb"));
+        stream.addEntry(8, makeDay("aaa"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(stream);
+        assertEquals(node.size(), 8);
         assertEquals(node.get("startEventId").textValue(), "startEventId");
         assertEquals(node.get("eventTimestamp").textValue(), CREATED_ON.toString());
         assertEquals(node.get("daysSinceEvent").intValue(), 5);
         assertEquals(node.get("studyBurstId").textValue(), "studyBurstId");
         assertEquals(node.get("studyBurstNum").intValue(), 2);
+        assertEquals(node.get("sessionGuids").size(), 2);
+        assertEquals(node.get("sessionGuids").get(0).textValue(), "aaa");
+        assertEquals(node.get("sessionGuids").get(1).textValue(), "bbb");
         assertEquals(node.get("byDayEntries").get("6").get(0).get("type").textValue(), "EventStreamDay");
         assertEquals(node.get("byDayEntries").get("6").get(1).get("type").textValue(), "EventStreamDay");
         assertEquals(node.get("byDayEntries").get("8").get(0).get("type").textValue(), "EventStreamDay");
@@ -96,5 +100,11 @@ public class EventStreamTest {
         EventStream stream = new EventStream();
         stream.setDaysSinceEvent(-1);
         assertNull(stream.getDaysSinceEvent());
+    }
+    
+    private EventStreamDay makeDay(String guid) {
+        EventStreamDay day = new EventStreamDay();
+        day.setSessionGuid(guid);
+        return day;
     }
 }

@@ -807,7 +807,7 @@ public class AdherenceServiceTest extends Mockito {
         verify(mockDao).getAdherenceRecords(searchCaptor.capture());
         AdherenceRecordsSearch search = searchCaptor.getValue();
         assertTrue(search.getCurrentTimestampsOnly());
-        assertFalse(search.getIncludeRepeats());
+        assertTrue(search.getIncludeRepeats());
         assertEquals(search.getAdherenceRecordType(), AdherenceRecordType.SESSION);
         assertEquals(search.getStudyId(), TEST_STUDY_ID);
         assertEquals(search.getUserId(), TEST_USER_ID);

@@ -9,12 +9,27 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 @JsonPropertyOrder({ "activeOnly", "timestamp", "adherencePercentage", "dayRangeOfAllStreams", "streams", "type" })
 public class EventStreamAdherenceReport {
+    
+    public static final class DayRange {
+        private final int min;
+        private final int max;
+        public DayRange(int min, int max) {
+            this.min = min;
+            this.max = max;
+        }
+        public int getMin() { return min; }
+        public int getMax() { return max; }
+    }
+    
     private boolean activeOnly;
     private DateTime timestamp;
-    private int adherencePercent;
+    private int adherencePercent = 100;
     private List<EventStream> streams = new ArrayList<>();
     
-    public int[] getDayRangeOfAllStreams() {
+    public DayRange getDayRangeOfAllStreams() {
+        if (streams.isEmpty()) {
+            return null;
+        }
         // This can be done with streams, but I'm not convinced it's as fast. 
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
@@ -28,7 +43,7 @@ public class EventStreamAdherenceReport {
                 }
             }
         }
-        return new int[] { min, max };
+        return new DayRange(min, max);
     }
     public boolean isActiveOnly() {
         return activeOnly;

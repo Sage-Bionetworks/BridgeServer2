@@ -124,11 +124,4 @@ public class AdherenceRecord implements BridgeEntity {
     public void setDeclined(boolean declined) {
         this.declined = declined;
     }
-    @Override
-    public String toString() {
-        return "AdherenceRecord [appId=" + appId + ", userId=" + userId + ", studyId=" + studyId + ", instanceGuid="
-                + instanceGuid + ", eventTimestamp=" + eventTimestamp + ", instanceTimestamp=" + instanceTimestamp
-                + ", startedOn=" + startedOn + ", finishedOn=" + finishedOn + ", uploadedOn=" + uploadedOn
-                + ", clientData=" + clientData + ", clientTimeZone=" + clientTimeZone + ", declined=" + declined + "]";
-    }
 }

@@ -92,11 +92,10 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
                     "timeWindowGuids", search.getTimeWindowGuids());
         }
         if (FALSE.equals(search.getIncludeRepeats())) {
+            // This only works on records that have startedOn values...declined records can have a null
+            // startedOn and will not appear in a search with includeRepeats=false.
+            
             // userId has already been set above
-            // This doesn’t match records that don’t have startedOn values (like records that are declined),
-            // leading to incorrect search results. This is an edge case of declined that comes up in the
-            // search for adherence charts, but we don't need to fix it because that search is only for 
-            // non-persistent sessions, and these cannot be repeated.
             where.append("ar.startedOn = (SELECT startedOn FROM "
                     + "AdherenceRecords WHERE userId = :userId AND "
                     + "instanceGuid = ar.instanceGuid ORDER BY startedOn "

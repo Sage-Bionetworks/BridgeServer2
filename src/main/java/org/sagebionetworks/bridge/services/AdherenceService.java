@@ -341,7 +341,9 @@ public class AdherenceService {
 
         List<AdherenceRecord> adherenceRecords = getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
                 .withCurrentTimestampsOnly(true)
-                .withIncludeRepeats(true) // BUG: if you turn this on you will not get purely declined sesssions with no startedOn value.
+                // if you turn this on you will not get declined sessions with no startedOn value,
+                // but it's not needed because persistent time windows are excluded from adherence.
+                .withIncludeRepeats(true) 
                 .withAdherenceRecordType(AdherenceRecordType.SESSION)
                 .withStudyId(studyId)
                 .withUserId(userId)
