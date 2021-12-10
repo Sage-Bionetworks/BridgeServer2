@@ -310,7 +310,7 @@ public class StudyValidatorTest {
         
         study.setCustomEvents(ImmutableList.of(studyCustomEvent));
         
-        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD, "cannot remove custom events currently used in a schedule: [ccc]");
+        assertValidatorMessage(validator, study, CUSTOM_EVENTS_FIELD, "cannot remove custom events currently used in a schedule: ccc");
     }
     
     @Test
