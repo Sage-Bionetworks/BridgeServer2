@@ -63,7 +63,6 @@ public class StudyValidator implements Validator {
     static final String POSITION_FIELD = "position";
     static final String POSTAL_CODE_FIELD = "postalCode";
     static final String ROLE_FIELD = "role";
-    static final String STATE_FIELD = "state";
     static final String STREET_FIELD = "street";
     static final String STUDY_LOGO_URL_FIELD = "studyLogoUrl";
     static final String STUDY_TIME_ZONE_FIELD = "studyTimeZone";
