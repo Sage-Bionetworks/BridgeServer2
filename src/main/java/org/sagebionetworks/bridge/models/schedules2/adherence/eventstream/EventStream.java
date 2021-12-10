@@ -1,12 +1,19 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.eventstream;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 
+import com.fasterxml.jackson.annotation.JsonPropertyOrder;
+
+@JsonPropertyOrder({ "startEventId", "eventTimestamp", "daysSinceEvent", "sessionGuids", 
+    "studyBurstId", "studyBurstNum", "byDayEntries", "type" })
 public class EventStream {
     private String startEventId;
     private DateTime eventTimestamp;
@@ -19,6 +26,12 @@ public class EventStream {
     
     public EventStream() {
         byDayEntries = new TreeMap<>();
+    }
+    public Set<String> getSessionGuids() {
+        return byDayEntries.values().stream()
+                .flatMap(list -> list.stream())
+                .map(EventStreamDay::getSessionGuid)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
     }
     public String getStartEventId() {
         return startEventId;

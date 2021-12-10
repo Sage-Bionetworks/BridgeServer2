@@ -341,7 +341,7 @@ public class AdherenceService {
 
         List<AdherenceRecord> adherenceRecords = getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
                 .withCurrentTimestampsOnly(true)
-                .withIncludeRepeats(false)
+                .withIncludeRepeats(true) // BUG: if you turn this on you will not get purely declined sesssions with no startedOn value.
                 .withAdherenceRecordType(AdherenceRecordType.SESSION)
                 .withStudyId(studyId)
                 .withUserId(userId)
