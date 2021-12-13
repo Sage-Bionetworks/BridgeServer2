@@ -1264,7 +1264,7 @@ public class AuthenticationControllerTest extends Mockito {
     
     @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = NOT_SYNAPSE_AUTHENTICATED)
-    public void changeAppDidNotAuthenticateWithSynapse() throws Exception {
+    public void changeAppNotAuthenticateWithSynapse() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withAppId("my-new-study").build());
         userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
                 .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(DEVELOPER, ADMIN)).build());
