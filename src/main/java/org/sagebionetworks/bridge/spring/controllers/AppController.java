@@ -177,10 +177,12 @@ public class AppController extends BaseController {
             throw new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG);
         }
         Stream<App> stream = null;
-        if (session.isInRole(SUPERADMIN)) {
+        if (!session.isSynapseAuthenticated()) {
+            // If they have not signed in via Synapse, they cannot switch apps, so don't return any
+            stream = ImmutableList.<App>of().stream();
+        } else if (session.isInRole(SUPERADMIN)) {
             // Superadmins can see all apps and can switch between all apps.
-            stream = appService.getApps().stream()
-                .filter(s -> s.isActive());
+            stream = appService.getApps().stream().filter(s -> s.isActive());
         } else {
             // Otherwise, apps are linked by Synapse user ID.
             List<String> appIds = accountService

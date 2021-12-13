@@ -73,6 +73,7 @@ public class UserSessionTest {
         session.setSessionToken("ABC");
         session.setInternalSessionToken("BBB");
         session.setAuthenticated(true);
+        session.setSynapseAuthenticated(true);
         session.setEnvironment(PROD);
         session.setIpAddress("ip address");
         session.setAppId(TEST_APP_ID);
@@ -83,6 +84,7 @@ public class UserSessionTest {
         UserSession newSession = BridgeObjectMapper.get().readValue(json, UserSession.class);
 
         assertTrue(newSession.isAuthenticated());
+        assertTrue(newSession.isSynapseAuthenticated());
         assertNull(newSession.getReauthToken());
         assertEquals(newSession.getSessionToken(), session.getSessionToken());
         assertEquals(newSession.getInternalSessionToken(), session.getInternalSessionToken());

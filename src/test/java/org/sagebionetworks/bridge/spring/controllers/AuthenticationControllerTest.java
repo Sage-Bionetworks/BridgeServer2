@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static com.google.common.net.HttpHeaders.USER_AGENT;
 import static org.sagebionetworks.bridge.BridgeConstants.APP_ACCESS_EXCEPTION_MSG;
+import static org.sagebionetworks.bridge.BridgeConstants.NOT_SYNAPSE_AUTHENTICATED;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
@@ -1233,6 +1234,7 @@ public class AuthenticationControllerTest extends Mockito {
         mockRequestBody(mockRequest, new SignIn.Builder().withAppId("my-new-study").build());
         userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
                 .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(DEVELOPER, ADMIN)).build());
+        userSession.setSynapseAuthenticated(true);
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
         AccountId accountId = AccountId.forId("my-new-study", TEST_ACCOUNT_ID);
@@ -1261,9 +1263,22 @@ public class AuthenticationControllerTest extends Mockito {
     }
     
     @Test(expectedExceptions = UnauthorizedException.class, 
+            expectedExceptionsMessageRegExp = NOT_SYNAPSE_AUTHENTICATED)
+    public void changeAppDidNotAuthenticateWithSynapse() throws Exception {
+        mockRequestBody(mockRequest, new SignIn.Builder().withAppId("my-new-study").build());
+        userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
+                .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(DEVELOPER, ADMIN)).build());
+        userSession.setSynapseAuthenticated(false);
+        doReturn(userSession).when(controller).getAuthenticatedSession();
+        
+        controller.changeApp();
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class, 
             expectedExceptionsMessageRegExp = ".*" + APP_ACCESS_EXCEPTION_MSG + ".*")
     public void changeAppNotAuthorized() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withAppId("my-new-study").build());
+        userSession.setSynapseAuthenticated(true);
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
         controller.changeApp();
@@ -1274,6 +1289,7 @@ public class AuthenticationControllerTest extends Mockito {
     public void changeAppNotAssignedSynapseId() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withAppId("my-new-study").build());
         userSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
+        userSession.setSynapseAuthenticated(true);
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
         controller.changeApp();
@@ -1285,6 +1301,7 @@ public class AuthenticationControllerTest extends Mockito {
         // Note that the cross-app administrator does not have a synapse user ID
         userSession.setParticipant(new StudyParticipant.Builder()
                 .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(SUPERADMIN)).build());
+        userSession.setSynapseAuthenticated(true);
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
         AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_ACCOUNT_ID);
@@ -1312,6 +1329,7 @@ public class AuthenticationControllerTest extends Mockito {
         mockRequestBody(mockRequest, new SignIn.Builder().withAppId("my-new-study").build());
         userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
+        userSession.setSynapseAuthenticated(true);
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
         when(mockAccountService.getAppIdsForUser(SYNAPSE_USER_ID))
@@ -1332,6 +1350,7 @@ public class AuthenticationControllerTest extends Mockito {
         mockRequestBody(mockRequest, new SignIn.Builder().withAppId("my-new-study").build());
         userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
                 .withRoles(ImmutableSet.of(DEVELOPER)).build());
+        userSession.setSynapseAuthenticated(true);
         doReturn(userSession).when(controller).getAuthenticatedSession();
         
         App newApp = App.create();

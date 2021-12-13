@@ -32,7 +32,7 @@ public class BridgeConstants {
     public static final String TYPE_FIELD_NAME = "type";
     
     public static final String SHARED_ASSESSMENTS_ERROR = "Only shared assessment APIs are enabled for the shared assessment library.";
-
+    public static final String NOT_SYNAPSE_AUTHENTICATED = "Account has not authenticated through Synapse.";
     public static final String APP_ACCESS_EXCEPTION_MSG = "Account does not have access to that app.";
     
     public static final String SYNAPSE_OAUTH_CLIENT_SECRET = "synapse.oauth.client.secret";
