@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
+import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -512,7 +513,7 @@ public class ParticipantReportControllerTest extends Mockito {
     @Test(expectedExceptions = UnauthorizedException.class)
     public void deleteParticipantRecordDataRecordDeveloper() {
         StudyParticipant regularUser = new StudyParticipant.Builder().copyOf(session.getParticipant())
-            .withRoles(Sets.newHashSet(ADMIN)).build();
+            .withRoles(Sets.newHashSet(ORG_ADMIN)).build();
         session.setParticipant(regularUser);
         
         controller.deleteParticipantReportRecord(REPORT_ID, "bar", "2014-05-10");

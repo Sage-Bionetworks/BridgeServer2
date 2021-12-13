@@ -240,7 +240,7 @@ public class BaseControllerTest extends Mockito {
         session.setAuthenticated(true);
         session.setAppId(TEST_APP_ID);
         session.setConsentStatuses(CONSENTED_STATUS_MAP);
-        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.ADMIN))
+        session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(Roles.RESEARCHER))
                 .withHealthCode(HEALTH_CODE).build());
         when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(SESSION_TOKEN);
         when(mockRequest.getHeader(X_REQUEST_ID_HEADER)).thenReturn(REQUEST_ID);

@@ -113,31 +113,31 @@ public class SharedModuleMetadataControllerTest extends Mockito {
     @Test
     public void deleteMetadataByIdAllVersionsOK() throws Exception {
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         StatusMessage result = controller.deleteMetadataByIdAllVersions(MODULE_ID, false);
         assertEquals(result, DELETED_MSG);
 
         verify(mockSvc).deleteMetadataByIdAllVersions(MODULE_ID);
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        verify(controller).getAuthenticatedSession(DEVELOPER);
     }
     
     @Test
     public void deleteMetadataByIdAllVersionsDevDefaultsToLogical() throws Exception {
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         StatusMessage result = controller.deleteMetadataByIdAllVersions(MODULE_ID, true);
         assertEquals(result, DELETED_MSG);
 
         verify(mockSvc).deleteMetadataByIdAllVersions(MODULE_ID);
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        verify(controller).getAuthenticatedSession(DEVELOPER);
     }
     
     @Test
     public void deleteMetadataByIdAllVersionsAdminPhysical() throws Exception {
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         // setup, execute, and validate
         StatusMessage result = controller.deleteMetadataByIdAllVersions(MODULE_ID, true);
@@ -147,39 +147,39 @@ public class SharedModuleMetadataControllerTest extends Mockito {
         verify(mockSvc).deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
 
         // validate permissions
-        verify(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        verify(controller).getAuthenticatedSession(DEVELOPER);
     }
     
     @Test
     public void deleteMetadataByIdAndVersionOK() throws Exception {
-        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         // setup, execute, and validate
         StatusMessage result = controller.deleteMetadataByIdAndVersion(MODULE_ID, 3, false);
         assertEquals(result, DELETED_MSG);
 
         verify(mockSvc).deleteMetadataByIdAndVersion(MODULE_ID, 3);
-        verify(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        verify(controller).getAuthenticatedSession(DEVELOPER);
     }
     
     @Test
     public void deleteMetadataByIdAndVersionDevDefaultsToLogical() throws Exception {
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(DEVELOPER)).build());
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         // setup, execute, and validate
         StatusMessage result = controller.deleteMetadataByIdAndVersion(MODULE_ID, 3, true);
         assertEquals(result, DELETED_MSG);
 
         verify(mockSvc).deleteMetadataByIdAndVersion(MODULE_ID, 3);
-        verify(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        verify(controller).getAuthenticatedSession(DEVELOPER);
     }
     
     @Test
     public void deleteMetadataByIdAndVersionAdminPhysical() throws Exception {
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         // setup, execute, and validate
         StatusMessage result = controller.deleteMetadataByIdAndVersion(MODULE_ID, 3, true);
@@ -187,13 +187,13 @@ public class SharedModuleMetadataControllerTest extends Mockito {
 
         // verify backend
         verify(mockSvc).deleteMetadataByIdAndVersionPermanently(MODULE_ID, 3);
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        verify(controller).getAuthenticatedSession(DEVELOPER);
     }
     
     @Test
     public void deleteByIdAllVersionsPermanently() throws Exception {
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         // setup, execute, and validate
         StatusMessage result = controller.deleteMetadataByIdAllVersions(MODULE_ID, true);
@@ -203,13 +203,13 @@ public class SharedModuleMetadataControllerTest extends Mockito {
         verify(mockSvc).deleteMetadataByIdAllVersionsPermanently(MODULE_ID);
 
         // validate permissions
-        verify(controller).getAuthenticatedSession(Roles.DEVELOPER, Roles.ADMIN);
+        verify(controller).getAuthenticatedSession(DEVELOPER);
     }
     
     @Test
     public void deleteByIdAndVersionPermanently() throws Exception {
         mockSession.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         // setup, execute, and validate
         StatusMessage result = controller.deleteMetadataByIdAndVersion(MODULE_ID, MODULE_VERSION, true);
@@ -219,7 +219,7 @@ public class SharedModuleMetadataControllerTest extends Mockito {
         verify(mockSvc).deleteMetadataByIdAndVersionPermanently(MODULE_ID, MODULE_VERSION);
 
         // validate permissions
-        verify(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        verify(controller).getAuthenticatedSession(DEVELOPER);
     }
 
     @Test

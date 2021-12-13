@@ -173,7 +173,7 @@ public class NotificationTopicControllerTest extends Mockito {
     
     @Test
     public void deleteTopic() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);        
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);        
         StatusMessage result = controller.deleteTopic(GUID, false);
         assertEquals(result, NotificationTopicController.DELETE_STATUS_MSG);
 
@@ -182,7 +182,7 @@ public class NotificationTopicControllerTest extends Mockito {
     
     @Test
     public void deleteTopicPermanently() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);        
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);        
         when(mockUserSession.isInRole(ADMIN)).thenReturn(true);
         
         StatusMessage result = controller.deleteTopic(GUID, true);
@@ -194,7 +194,7 @@ public class NotificationTopicControllerTest extends Mockito {
 
     @Test
     public void deleteTopicPermanentlyForDeveloper() throws Exception {
-        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(mockUserSession).when(controller).getAuthenticatedSession(DEVELOPER);
         StatusMessage result = controller.deleteTopic(GUID, true);
         assertEquals(result, NotificationTopicController.DELETE_STATUS_MSG);
 

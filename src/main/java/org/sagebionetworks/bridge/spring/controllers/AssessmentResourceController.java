@@ -48,7 +48,7 @@ public class AssessmentResourceController extends BaseController {
     }
     
     private String getOwnerId(UserSession session) {
-        if (session.isInRole(ImmutableSet.of(DEVELOPER, ADMIN))) {
+        if (session.isInRole(ImmutableSet.of(DEVELOPER))) {
             return null;
         }
         return session.getParticipant().getOrgMembership();
@@ -130,7 +130,7 @@ public class AssessmentResourceController extends BaseController {
     @DeleteMapping("/v1/assessments/identifier:{assessmentId}/resources/{guid}")
     public StatusMessage deleteAssessmentResource(@PathVariable String assessmentId, @PathVariable String guid,
             @RequestParam(required = false) String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         String appId = session.getAppId();
         String ownerId = session.getParticipant().getOrgMembership();
         

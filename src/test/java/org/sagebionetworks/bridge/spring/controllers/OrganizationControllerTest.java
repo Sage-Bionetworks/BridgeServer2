@@ -136,7 +136,7 @@ public class OrganizationControllerTest extends Mockito {
     public void updateOrganization() throws Exception {
         RequestContext.set(RequestContext.get().toBuilder()
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         Organization org = Organization.create();
         org.setName("This is my organization");

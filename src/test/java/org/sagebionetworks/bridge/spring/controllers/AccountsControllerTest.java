@@ -186,7 +186,7 @@ public class AccountsControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(ID);
         
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
@@ -212,7 +212,7 @@ public class AccountsControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID).build());
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         when(mockParticipantService.createParticipant(any(), any(), anyBoolean())).thenReturn(ID);
         
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
@@ -238,7 +238,7 @@ public class AccountsControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
@@ -252,7 +252,7 @@ public class AccountsControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         session.setParticipant(new StudyParticipant.Builder().withOrgMembership(TEST_ORG_ID).build());
         
@@ -282,7 +282,7 @@ public class AccountsControllerTest extends Mockito {
         RequestContext.set(new RequestContext.Builder()
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
@@ -304,7 +304,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
@@ -322,7 +322,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
@@ -340,7 +340,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
@@ -357,7 +357,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
@@ -373,7 +373,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
@@ -389,7 +389,7 @@ public class AccountsControllerTest extends Mockito {
                 .withCallerOrgMembership(TEST_ORG_ID)
                 .withCallerRoles(ImmutableSet.of(ORG_ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         account.setOrgMembership(TEST_ORG_ID);
         when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(account));
