@@ -43,7 +43,7 @@ public enum Roles {
         .build();
 
     public static final Map<Roles,EnumSet<Roles>> PASSES_AS_ROLE = new ImmutableMap.Builder<Roles, EnumSet<Roles>>()
-            .put(SUPERADMIN, EnumSet.of(SUPERADMIN, ADMIN, RESEARCHER, DEVELOPER, ORG_ADMIN, STUDY_COORDINATOR, STUDY_DESIGNER))
+            .put(SUPERADMIN, EnumSet.of(SUPERADMIN, ADMIN, WORKER, RESEARCHER, DEVELOPER, ORG_ADMIN, STUDY_COORDINATOR, STUDY_DESIGNER))
             .put(ADMIN, EnumSet.of(ADMIN, RESEARCHER, DEVELOPER, ORG_ADMIN, STUDY_COORDINATOR, STUDY_DESIGNER))
             .put(RESEARCHER, EnumSet.of(RESEARCHER))
             .put(DEVELOPER, EnumSet.of(DEVELOPER))
