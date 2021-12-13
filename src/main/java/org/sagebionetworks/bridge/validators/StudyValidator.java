@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_PATTERN;
 import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAIL;
+import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
@@ -31,8 +32,6 @@ import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class StudyValidator implements Validator {
-    
-    public static final StudyValidator INSTANCE = new StudyValidator();
     
     static final String ADDRESS_FIELD = "address";
     static final String AFFILIATION_FIELD = "affiliation";
@@ -68,6 +67,12 @@ public class StudyValidator implements Validator {
     static final String STUDY_LOGO_URL_FIELD = "studyLogoUrl";
     static final String STUDY_TIME_ZONE_FIELD = "studyTimeZone";
     static final String ADHERENCE_THRESHOLD_PERCENTAGE_FIELD = "adherenceThresholdPercentage";
+    
+    private final Set<String> protectedCustomEventIds;
+    
+    public StudyValidator(Set<String> protectedCustomEventIds) {
+        this.protectedCustomEventIds = protectedCustomEventIds;
+    }
 
     @Override
     public boolean supports(Class<?> clazz) {
@@ -122,6 +127,7 @@ public class StudyValidator implements Validator {
                 errors.rejectValue(IRB_DECISION_ON_FIELD, CANNOT_BE_NULL);
             }
         }
+    
         Set<String> uniqueIds = new HashSet<>();
         for (int i=0; i < study.getCustomEvents().size(); i++) {
             StudyCustomEvent customEvent = study.getCustomEvents().get(i);
@@ -135,16 +141,21 @@ public class StudyValidator implements Validator {
                 errors.rejectValue("eventId", CANNOT_BE_BLANK);
             } else if (!customEvent.getEventId().matches(BRIDGE_RELAXED_ID_PATTERN)) {
                 errors.rejectValue("eventId", BRIDGE_RELAXED_ID_ERROR);
-            } else {
-                uniqueIds.add(customEvent.getEventId());    
             }
+            uniqueIds.add(customEvent.getEventId());    
             if (customEvent.getUpdateType() == null) {
                 errors.rejectValue("updateType", CANNOT_BE_NULL);
             }
             errors.popNestedPath();
         }
         if (uniqueIds.size() > 0 && (uniqueIds.size() != study.getCustomEvents().size())) {
-            errors.rejectValue(CUSTOM_EVENTS_FIELD, "cannot contain duplidate event IDs");
+            errors.rejectValue(CUSTOM_EVENTS_FIELD, "cannot contain duplicate event IDs");
+        }
+        if (protectedCustomEventIds != null && !uniqueIds.containsAll(protectedCustomEventIds)) {
+            protectedCustomEventIds.removeAll(uniqueIds);
+            errors.rejectValue(CUSTOM_EVENTS_FIELD, 
+                    String.format("cannot remove custom events currently used in a schedule: %s",
+                            COMMA_SPACE_JOINER.join(protectedCustomEventIds)));
         }
         for (int i=0; i < study.getContacts().size(); i++) {
             Contact contact = study.getContacts().get(i);

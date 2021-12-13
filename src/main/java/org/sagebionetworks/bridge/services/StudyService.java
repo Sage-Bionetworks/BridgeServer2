@@ -24,8 +24,10 @@ import static org.sagebionetworks.bridge.models.studies.StudyPhase.IN_FLIGHT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.WITHDRAWN;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import org.joda.time.DateTime;
 
@@ -157,7 +159,9 @@ public class StudyService {
         
         study.setAppId(appId);
         study.setPhase(DESIGN);
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+        
+        StudyValidator validator = new StudyValidator(getCustomEventIdsFromSchedule(appId, study.getScheduleGuid()));
+        Validate.entityThrowingException(validator, study);
         
         study.setVersion(null);
         study.setDeleted(false);
@@ -203,8 +207,9 @@ public class StudyService {
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
-
-        Validate.entityThrowingException(StudyValidator.INSTANCE, study);
+    
+        StudyValidator validator = new StudyValidator(getCustomEventIdsFromSchedule(appId, study.getScheduleGuid()));
+        Validate.entityThrowingException(validator, study);
         
         VersionHolder keys = studyDao.updateStudy(study);
         
@@ -349,5 +354,23 @@ public class StudyService {
         cacheProvider.removeObject(cacheKey);
         
         return study;
+    }
+    
+    /**
+     * Retrieves the custom event IDs from a schedule. The returned event IDs will 
+     * have the "custom:" prefix removed. If scheduleGuid is null, will return
+     * an empty set.
+     */
+    protected Set<String> getCustomEventIdsFromSchedule(String appId, String scheduleGuid) {
+        Set<String> existingEventIds = new HashSet<>();
+        if (scheduleGuid != null) {
+            Schedule2 schedule = scheduleService.getSchedule(appId, scheduleGuid);
+            existingEventIds = schedule.getSessions().stream()
+                    .flatMap(session -> session.getStartEventIds().stream())
+                    .filter(s -> s.startsWith("custom:"))
+                    .map(s -> s.substring(7))
+                    .collect(Collectors.toSet());
+        }
+        return existingEventIds;
     }
 }

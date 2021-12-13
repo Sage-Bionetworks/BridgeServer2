@@ -121,9 +121,9 @@ public class StudyControllerTest extends Mockito {
 
         controller.setStudyService(mockStudyService);
 
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
-        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
         doReturn(session).when(controller).getAdministrativeSession();
         
         doReturn(mockRequest).when(controller).request();

@@ -926,7 +926,7 @@ public class AppControllerTest extends Mockito {
     
     @Test
     public void updateAppForDeveloperOrAdmin() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         App app = App.create();
         app.setName("My new app");

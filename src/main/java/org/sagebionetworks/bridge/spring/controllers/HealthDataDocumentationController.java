@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 @CrossOrigin
 @RestController
@@ -65,7 +66,7 @@ public class HealthDataDocumentationController extends BaseController {
     /** Delete a health data documentation with the given identifier. */
     @DeleteMapping(path="v3/healthdatadocumentation/{identifier}")
     public StatusMessage deleteHealthDataDocumentationForIdentifier(@PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(Roles.ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
 
         String parentId = session.getAppId(); // placeholder
         healthDataDocumentationService.deleteHealthDataDocumentation(parentId, identifier);
@@ -76,7 +77,7 @@ public class HealthDataDocumentationController extends BaseController {
     /** Delete all health data documentation with the given parentId. */
     @DeleteMapping(path="/v3/healthdatadocumentation")
     public StatusMessage deleteAllHealthDataDocumentationForParentId() {
-        UserSession session = getAuthenticatedSession(Roles.ADMIN);
+        UserSession session = getAuthenticatedSession(ADMIN);
 
         healthDataDocumentationService.deleteAllHealthDataDocumentation(session.getAppId());
         return new StatusMessage("Health data documentation has been deleted.");

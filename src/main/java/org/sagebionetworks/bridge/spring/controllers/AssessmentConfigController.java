@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.UPDATES_TYPEREF;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 
@@ -36,7 +35,7 @@ public class AssessmentConfigController extends BaseController {
     }
     
     private String getOwnerId(UserSession session) {
-        if (session.isInRole(ImmutableSet.of(DEVELOPER, ADMIN))) {
+        if (session.isInRole(ImmutableSet.of(DEVELOPER))) {
             return null;
         }
         return session.getParticipant().getOrgMembership();

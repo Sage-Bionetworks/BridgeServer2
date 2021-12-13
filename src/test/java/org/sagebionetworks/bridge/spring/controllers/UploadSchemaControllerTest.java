@@ -16,11 +16,14 @@ import static org.sagebionetworks.bridge.spring.controllers.UploadSchemaControll
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
+import java.util.Set;
+
 import javax.servlet.http.HttpServletRequest;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
 import org.mockito.ArgumentCaptor;
@@ -102,7 +105,7 @@ public class UploadSchemaControllerTest extends Mockito {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER);
         
         StatusMessage result = controller.deleteAllRevisionsOfUploadSchema("delete-schema", false);
         assertEquals(result, DELETED_MSG);
@@ -114,7 +117,7 @@ public class UploadSchemaControllerTest extends Mockito {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, ImmutableSet.of(ADMIN));
         
         StatusMessage result = controller.deleteAllRevisionsOfUploadSchema("delete-schema", true);
         assertEquals(result, DELETED_MSG);
@@ -126,7 +129,7 @@ public class UploadSchemaControllerTest extends Mockito {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithServiceWithoutSecondRole(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithServiceWithoutSecondRole(mockSvc, DEVELOPER);
         
         StatusMessage result = controller.deleteAllRevisionsOfUploadSchema("delete-schema", true);
         assertEquals(result, DELETED_MSG);
@@ -138,7 +141,7 @@ public class UploadSchemaControllerTest extends Mockito {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER);
         
         StatusMessage result = controller.deleteSchemaRevision("delete-schema", 4, false);
         assertEquals(result, DELETED_REVISION_MSG);
@@ -150,7 +153,7 @@ public class UploadSchemaControllerTest extends Mockito {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithService(mockSvc, DEVELOPER, ImmutableSet.of(ADMIN));
         
         StatusMessage result = controller.deleteSchemaRevision("delete-schema", 4, true);
         assertEquals(result, DELETED_REVISION_MSG);
@@ -162,7 +165,7 @@ public class UploadSchemaControllerTest extends Mockito {
         UploadSchemaService mockSvc = mock(UploadSchemaService.class);
 
         // setup, execute, and validate
-        UploadSchemaController controller = setupControllerWithServiceWithoutSecondRole(mockSvc, DEVELOPER, ADMIN);
+        UploadSchemaController controller = setupControllerWithServiceWithoutSecondRole(mockSvc, DEVELOPER);
         
         StatusMessage result = controller.deleteSchemaRevision("delete-schema", 4, true);
         assertEquals(result, DELETED_REVISION_MSG);
@@ -321,7 +324,7 @@ public class UploadSchemaControllerTest extends Mockito {
         assertSchemaInArgCaptor(updatedSchemaCaptor);
     }
 
-    private static UploadSchemaController setupControllerWithServiceWithoutSecondRole(UploadSchemaService svc, Roles role1, Roles role2) throws Exception {
+    private static UploadSchemaController setupControllerWithServiceWithoutSecondRole(UploadSchemaService svc, Roles role1) throws Exception {
         // mock session
         UserSession mockSession = new UserSession();
         mockSession.setAppId(TEST_APP_ID);
@@ -330,7 +333,7 @@ public class UploadSchemaControllerTest extends Mockito {
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(svc);
-        doReturn(mockSession).when(controller).getAuthenticatedSession(role1, role2);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(role1);
 
         // mock request JSON
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
@@ -359,17 +362,17 @@ public class UploadSchemaControllerTest extends Mockito {
         return controller;
     }
     
-    private static UploadSchemaController setupControllerWithService(UploadSchemaService svc, Roles role1) throws Exception {
+    private static UploadSchemaController setupControllerWithService(UploadSchemaService svc, Roles role, Set<Roles> callerRoles) throws Exception {
         // mock session
         UserSession mockSession = new UserSession();
         mockSession.setAppId(TEST_APP_ID);
-        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(Sets.newHashSet(role1)).build());
+        mockSession.setParticipant(new StudyParticipant.Builder().withRoles(callerRoles).build());
 
         // spy controller
         UploadSchemaController controller = spy(new UploadSchemaController());
         controller.setUploadSchemaService(svc);
         controller.setBridgeConfig(mock(BridgeConfig.class));
-        doReturn(mockSession).when(controller).getAuthenticatedSession(role1);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(role);
 
         // mock request JSON
         HttpServletRequest mockRequest = mock(HttpServletRequest.class);
@@ -377,6 +380,10 @@ public class UploadSchemaControllerTest extends Mockito {
         doReturn(mockRequest).when(controller).request();
         
         return controller;
+    }
+    
+    private static UploadSchemaController setupControllerWithService(UploadSchemaService svc, Roles role) throws Exception {
+        return setupControllerWithService(svc, role, ImmutableSet.of(role));
     }
 
     private static UploadSchema makeUploadSchemaForOutput() throws Exception {

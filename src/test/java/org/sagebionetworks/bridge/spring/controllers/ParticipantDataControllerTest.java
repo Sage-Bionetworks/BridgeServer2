@@ -120,7 +120,7 @@ public class ParticipantDataControllerTest extends Mockito {
         doReturn(app).when(mockAppService).getApp(TEST_APP_ID);
         doReturn(TEST_USER_ID).when(mockAccount).getId();
         doReturn(session).when(controller).getSessionIfItExists();
-        doReturn(session).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
 
         doReturn(mockRequest).when(controller).request();
@@ -236,7 +236,7 @@ public class ParticipantDataControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp=".*Account not found.*")
     public void testGetAllDataForAdminWorkerEntityNotFound() {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
         doReturn(true).when(mockSession).isInRole(ADMIN);
         doReturn("notSameAppId").when(mockSession).getAppId();
 
@@ -256,7 +256,7 @@ public class ParticipantDataControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp=".*Account not found.*")
     public void testGetDataByIdentifierForAdminWorkerEntityNotFound() {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
         doReturn(true).when(mockSession).isInRole(ADMIN);
         doReturn("notSameAppId").when(mockSession).getAppId();
 
@@ -266,7 +266,7 @@ public class ParticipantDataControllerTest extends Mockito {
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp=".*Account not found.*")
     public void testSaveDataForAdminWorkerEntityNotFound() {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(ADMIN, WORKER);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(WORKER);
         doReturn(true).when(mockSession).isInRole(ADMIN);
         doReturn("notSameAppId").when(mockSession).getAppId();
 

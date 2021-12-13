@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_MEMBERS;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.springframework.http.HttpStatus.CREATED;
 
@@ -46,7 +45,7 @@ public class MembershipController extends BaseController {
     @PostMapping("/v1/organizations/{orgId}/members/{userId}")
     @ResponseStatus(code = CREATED)
     public StatusMessage addMember(@PathVariable String orgId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN);
         
         CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, orgId);
         
@@ -57,7 +56,7 @@ public class MembershipController extends BaseController {
 
     @DeleteMapping("/v1/organizations/{orgId}/members/{userId}")
     public StatusMessage removeMember(@PathVariable String orgId, @PathVariable String userId) {
-        UserSession session = getAuthenticatedSession(ORG_ADMIN, ADMIN);
+        UserSession session = getAuthenticatedSession(ORG_ADMIN);
 
         CAN_EDIT_MEMBERS.checkAndThrow(ORG_ID, orgId);
         

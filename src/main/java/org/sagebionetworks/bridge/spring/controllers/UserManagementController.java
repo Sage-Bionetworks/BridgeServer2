@@ -68,28 +68,6 @@ public class UserManagementController extends BaseController {
         return UserSessionInfo.toJSON(session);
     }
     
-    /**
-     * This turned out to be useful... so useful we're opening it up to all administrative
-     * users.
-     * 
-     * @see org.sagebionetworks.bridge.spring.controllers.AuthenticationController#changeStudy 
-     */
-    @Deprecated
-    @PostMapping(path = {"/v3/auth/admin/app", "/v3/auth/admin/study"})
-    public JsonNode changeAppForAdmin() {
-        UserSession session = getAuthenticatedSession(SUPERADMIN);
-
-        // The only part of this payload we care about is the app property
-        SignIn signIn = parseJson(SignIn.class);
-        String appId = signIn.getAppId();
-
-        // Verify it's correct
-        App app = appService.getApp(appId);
-        sessionUpdateService.updateApp(session, app.getIdentifier());
-        
-        return UserSessionInfo.toJSON(session);
-    }
-    
     @PostMapping("/v3/users")
     @ResponseStatus(HttpStatus.CREATED)
     public JsonNode createUser() {
@@ -104,28 +82,6 @@ public class UserManagementController extends BaseController {
         UserSession userSession = userAdminService.createUser(app, participant, null, false, consent);
 
         return UserSessionInfo.toJSON(userSession);
-    }
-
-    /**
-     * Admin api used to create consent/not-consent user for given app
-     * nearly identical to createUser() one
-     * @param appId
-     * @return
-     */
-    @PostMapping(path = {"/v1/apps/{appId}/users", "/v3/studies/{appId}/users"})
-    @ResponseStatus(HttpStatus.CREATED)
-    public StatusMessage createUserWithAppId(@PathVariable String appId) {
-        getAuthenticatedSession(SUPERADMIN);
-        App app = appService.getApp(appId);
-        
-        JsonNode node = parseJson(JsonNode.class);
-        StudyParticipant participant = parseJson(node, StudyParticipant.class);
-
-        boolean consent = JsonUtils.asBoolean(node, CONSENT_FIELD);
-
-        userAdminService.createUser(app, participant, null, false, consent);
-
-        return CREATED_MSG;
     }
 
     @DeleteMapping("/v3/users/{userId}")
