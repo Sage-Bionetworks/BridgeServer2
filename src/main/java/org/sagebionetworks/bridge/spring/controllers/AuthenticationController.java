@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_HEADER;
 import static org.sagebionetworks.bridge.BridgeConstants.CLEAR_SITE_DATA_VALUE;
+import static org.sagebionetworks.bridge.BridgeConstants.NOT_SYNAPSE_AUTHENTICATED;
 import static org.sagebionetworks.bridge.BridgeConstants.APP_ACCESS_EXCEPTION_MSG;
 import static org.sagebionetworks.bridge.BridgeConstants.APP_ID_PROPERTY;
 import static org.sagebionetworks.bridge.BridgeConstants.STUDY_PROPERTY;
@@ -20,7 +21,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.ConsentRequiredException;
@@ -320,6 +320,11 @@ public class AuthenticationController extends BaseController {
     public JsonNode changeApp() {
         UserSession session = getAuthenticatedSession();
         
+        // If you haven't authenticated through Synapse, you haven't proven you control the ID
+        // that is being used to give you access to other apps, so this switch is not allowed.
+        if (!session.isSynapseAuthenticated()) {
+            throw new UnauthorizedException(NOT_SYNAPSE_AUTHENTICATED);
+        }
         // To switch apps, the account must be an administrative account with a Synapse User ID
         StudyParticipant participant = session.getParticipant(); 
         if (participant.getRoles().isEmpty()) {

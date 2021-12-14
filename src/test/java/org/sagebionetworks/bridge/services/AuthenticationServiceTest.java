@@ -253,6 +253,7 @@ public class AuthenticationServiceTest {
         
         assertEquals(session.getConsentStatuses(), CONSENTED_STATUS_MAP);
         assertTrue(session.isAuthenticated());
+        assertFalse(session.isSynapseAuthenticated());
         assertEquals(session.getIpAddress(), IP_ADDRESS);
         assertEquals(session.getSessionToken(), SESSION_TOKEN);
         assertEquals(session.getInternalSessionToken(), SESSION_TOKEN);
@@ -482,6 +483,7 @@ public class AuthenticationServiceTest {
 
         assertNotNull(retSession);
         assertEquals(retSession.getReauthToken(), REAUTH_TOKEN);
+        assertFalse(retSession.isSynapseAuthenticated());
 
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
         inOrder.verify(accountService).getAccount(SIGN_IN_WITH_EMAIL.getAccountId());
@@ -841,6 +843,7 @@ public class AuthenticationServiceTest {
         assertEquals(session.getParticipant().getEmail(), RECIPIENT_EMAIL);
         assertEquals(session.getParticipant().getFirstName(), "Test");
         assertEquals(session.getParticipant().getLastName(), "Tester");
+        assertFalse(session.isSynapseAuthenticated());
 
         // this doesn't pass if our mock calls above aren't executed, but verify these:
         InOrder inOrder = Mockito.inOrder(cacheProvider, accountService);
@@ -1476,6 +1479,7 @@ public class AuthenticationServiceTest {
        UserSession session = service.oauthSignIn(CONTEXT, token);
        
        assertEquals(session.getParticipant().getSynapseUserId(), "12345");
+       assertTrue(session.isSynapseAuthenticated());
        verify(accountService).deleteReauthToken(account);
        verify(cacheProvider).removeSessionByUserId(TEST_USER_ID);
        verify(cacheProvider).setUserSession(session);

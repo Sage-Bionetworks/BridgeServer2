@@ -87,6 +87,7 @@ public class UserSessionInfoTest {
         assertFalse(node.get("notifyByEmail").booleanValue());
         assertNull(node.get("healthCode"));
         assertNull(node.get("encryptedHealthCode"));
+        assertNull(node.get("synapseAuthenticated"));
         assertEquals(node.get("externalIds").get("studyA").textValue(), "externalIdA");
         assertEquals(node.get("orgMembership").textValue(), TEST_ORG_ID);
         assertEquals(node.get("type").asText(), "UserSessionInfo");
