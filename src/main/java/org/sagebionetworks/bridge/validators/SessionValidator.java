@@ -114,6 +114,9 @@ public class SessionValidator implements Validator {
             errors.rejectValue("", MUST_DEFINE_TRIGGER_ERROR);
         }
         validateStringLength(errors, 32, session.getSymbol(), SYMBOL_FIELD);
+        if (session.getSymbol() != null && isBlank(session.getSymbol())) {
+            errors.rejectValue(SYMBOL_FIELD, CANNOT_BE_BLANK);
+        }
         // Not catching duplicates, here and in study bursts
         Set<String> uniqueStartEventIds = new HashSet<>();
         for (int i=0; i < session.getStartEventIds().size(); i++) {
