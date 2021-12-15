@@ -35,7 +35,8 @@ public class EventStreamAdherenceReportGenerator {
     private final Map<String, AdherenceRecord> adherenceByEventId;
     private final Map<String, Integer> daysSinceEventByEventId;
     private final Map<String, DateTime> eventTimestampByEventId;
-
+    private DateTimeZone zone;
+    
     public EventStreamAdherenceReportGenerator(EventStreamAdherenceReportGenerator.Builder builder) {
         showActive = builder.showActiveOnly;
         clientTimeZone = builder.clientTimeZone;
@@ -52,14 +53,21 @@ public class EventStreamAdherenceReportGenerator {
         for (StudyActivityEvent event : builder.events) {
             DateTime eventTimestamp = event.getTimestamp();
             if (event.getClientTimeZone() != null) {
-                eventTimestamp = eventTimestamp.withZone(DateTimeZone.forID(event.getClientTimeZone()));
+                zone = DateTimeZone.forID(event.getClientTimeZone());
+            } else if (clientTimeZone != null) {
+                zone = DateTimeZone.forID(clientTimeZone);
             } else {
-                eventTimestamp = eventTimestamp.withZone(builder.now.getZone());
+                zone = builder.now.getZone();
             }
+            eventTimestamp = event.getTimestamp().withZone(zone);
             int daysSince = Days.daysBetween(eventTimestamp.toLocalDate(), localNow).getDays();
             daysSinceEventByEventId.put(event.getEventId(), daysSince);
             eventTimestampByEventId.put(event.getEventId(), eventTimestamp);
         }
+    }
+    
+    public DateTimeZone getTimeZone() {
+        return zone;
     }
 
     public EventStreamAdherenceReport generate() {

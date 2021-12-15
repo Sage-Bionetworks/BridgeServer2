@@ -77,6 +77,56 @@ public class EventStreamAdherenceReportGeneratorTest {
     }
     
     @Test
+    public void constructorUsesEventTimeZone() {
+        StudyActivityEvent event = new StudyActivityEvent.Builder()
+                .withEventId("enrollment")
+                .withTimestamp(MODIFIED_ON)
+                .withClientTimeZone("America/Chicago").build();
+        
+        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        builder.withMetadata(ImmutableList.of());
+        builder.withEvents(ImmutableList.of(event));
+        builder.withAdherenceRecords(ImmutableList.of());
+        builder.withNow(NOW);
+        
+        EventStreamAdherenceReportGenerator generator = builder.build();
+        assertEquals(generator.getTimeZone().toString(), "America/Chicago");
+    }
+    
+    @Test
+    public void constructorUsesParticipantTimeZone() { 
+        StudyActivityEvent event = new StudyActivityEvent.Builder()
+                .withEventId("enrollment")
+                .withTimestamp(MODIFIED_ON).build();
+        
+        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        builder.withClientTimeZone("America/Denver");
+        builder.withMetadata(ImmutableList.of());
+        builder.withEvents(ImmutableList.of(event));
+        builder.withAdherenceRecords(ImmutableList.of());
+        builder.withNow(NOW);
+        
+        EventStreamAdherenceReportGenerator generator = builder.build();
+        assertEquals(generator.getTimeZone().toString(), "America/Denver");
+    }
+    
+    @Test
+    public void constructorUsesNowTimestampTimeZone() { 
+        StudyActivityEvent event = new StudyActivityEvent.Builder()
+                .withEventId("enrollment")
+                .withTimestamp(MODIFIED_ON).build();
+        
+        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        builder.withMetadata(ImmutableList.of());
+        builder.withEvents(ImmutableList.of(event));
+        builder.withAdherenceRecords(ImmutableList.of());
+        builder.withNow(NOW);
+        
+        EventStreamAdherenceReportGenerator generator = builder.build();
+        assertEquals(generator.getTimeZone().toString(), "-07:00");
+    }
+    
+    @Test
     public void stateCalculation_notApplicable() throws Exception {
         // We will focus on calculation of the completion states in the report, but here let's 
         // verify the metadata is being copied over into the report.

@@ -9,7 +9,7 @@ import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-@JsonPropertyOrder({ "activeOnly", "timestamp", "clientTimeZone", "adherencePercentage", "dayRangeOfAllStreams",
+@JsonPropertyOrder({ "activeOnly", "timestamp", "clientTimeZone", "adherencePercent", "dayRangeOfAllStreams",
         "streams", "type" })
 public class EventStreamAdherenceReport {
     
