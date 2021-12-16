@@ -1230,7 +1230,7 @@ public class AuthenticationControllerTest extends Mockito {
     }
     
     @Test
-    public void changeApp() throws Exception {
+    public void changeAppAsAdmin() throws Exception {
         mockRequestBody(mockRequest, new SignIn.Builder().withAppId("my-new-study").build());
         userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
                 .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(DEVELOPER, ADMIN)).build());
@@ -1260,6 +1260,24 @@ public class AuthenticationControllerTest extends Mockito {
         inOrder.verify(mockAuthService).signOut(userSession);
         inOrder.verify(mockAuthService).getSessionFromAccount(eq(newApp), any(), eq(account));
         inOrder.verify(mockCacheProvider).setUserSession(session);
+        assertTrue(session.isSynapseAuthenticated());
+    }
+    
+    @Test
+    public void changeAppAsSuperadmin() throws Exception {
+        mockRequestBody(mockRequest, new SignIn.Builder().withAppId("my-new-study").build());
+        userSession.setParticipant(new StudyParticipant.Builder().withSynapseUserId(SYNAPSE_USER_ID)
+                .withId(TEST_ACCOUNT_ID).withRoles(ImmutableSet.of(SUPERADMIN)).build());
+        userSession.setSynapseAuthenticated(true);
+        doReturn(userSession).when(controller).getAuthenticatedSession();
+        
+        App newApp = App.create();
+        newApp.setIdentifier("my-new-study");
+        when(mockAppService.getApp("my-new-study")).thenReturn(newApp);
+        
+        JsonNode node = controller.changeApp();
+        assertEquals(node.get("sessionToken").textValue(), "session-token");
+        assertTrue(userSession.isSynapseAuthenticated());
     }
     
     @Test(expectedExceptions = UnauthorizedException.class, 
