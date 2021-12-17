@@ -16,15 +16,15 @@ public class AdherenceUtils {
      * applicable" which will probably be counted as out-of-compliance, I’m not sure. We’re 
      * not looking at the declined flag...user can decline but we consider it to be out of compliance.
      */
-    public static SessionCompletionState calculateSessionState(
-            AdherenceRecord record, int startDay, int endDay, Integer daysSinceEvent) {
-
-        // The origin event has not occurred for this user, so the session is not considered applicable.
+    public static SessionCompletionState calculateSessionState(AdherenceRecord record, 
+            int startDay, int endDay, Integer daysSinceEvent) {
         if (daysSinceEvent == null) {
             return NOT_APPLICABLE;
         }
-        // The participant has not interacted with this session.
-        if (record == null) {
+        if (record != null && record.isDeclined()) {
+            return DECLINED;
+        }
+        if (record == null || (record.getStartedOn() == null && record.getFinishedOn() == null)) {
             if (startDay > daysSinceEvent) {
                 return NOT_YET_AVAILABLE;
             }
@@ -33,32 +33,12 @@ public class AdherenceUtils {
             }
             return UNSTARTED;
         }
-        // If the record is declined, we report it as declined and out of compliance. Note though that
-        // we trust the client not to set this and then also finish the session or submit data. We have
-        // no way to “prove” the session was truly declined.
-        if (record.isDeclined()) {
-            return DECLINED;
+        if (record.getFinishedOn() != null) {
+            return COMPLETED;   
         }
         if (endDay < daysSinceEvent) {
-            if (record.getStartedOn() != null && record.getFinishedOn() != null) {
-                return COMPLETED;
-            }
-            if (record.getStartedOn() != null) {
-                return ABANDONED;
-            }
-            return EXPIRED;
+            return ABANDONED;
         }
-        // A record exists, so we will account for it, regardless of whether it is in the current time window,
-        // or in the future. That is because we don't want to hide cases where clients are allowing participants
-        // to do tasks before they are technically available according to the scheduler. We want administrators
-        // to see this is happening. NOTE: we are not detecting cases where where a session is finished or 
-        // even started outside of its availability window. We don't currently enforce this.
-        if (record.getStartedOn() != null && record.getFinishedOn() != null) {
-            return COMPLETED;
-        }
-        if (record.getStartedOn() != null) {
-            return STARTED;
-        }
-        return UNSTARTED;
+        return STARTED;
     }
 }

@@ -92,6 +92,9 @@ public class HibernateAdherenceRecordDao implements AdherenceRecordDao {
                     "timeWindowGuids", search.getTimeWindowGuids());
         }
         if (FALSE.equals(search.getIncludeRepeats())) {
+            // This only works on records that have startedOn values...declined records can have a null
+            // startedOn and will not appear in a search with includeRepeats=false.
+            
             // userId has already been set above
             where.append("ar.startedOn = (SELECT startedOn FROM "
                     + "AdherenceRecords WHERE userId = :userId AND "

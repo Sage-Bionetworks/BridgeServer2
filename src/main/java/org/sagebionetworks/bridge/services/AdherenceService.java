@@ -32,8 +32,10 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.Optional;
 
+import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
@@ -49,16 +51,23 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.SessionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Component
 public class AdherenceService {
-    
+    private static final Logger LOG = LoggerFactory.getLogger(AdherenceService.class);
+
     private AdherenceRecordDao dao;
     
     private StudyService studyService;
@@ -190,7 +199,6 @@ public class AdherenceService {
         }
     }
 
-
     public PagedResourceList<AdherenceRecord> getAdherenceRecords(String appId, AdherenceRecordsSearch search) {
         
         Set<String> originalInstanceGuids = ImmutableSet.copyOf(search.getInstanceGuids());
@@ -307,5 +315,48 @@ public class AdherenceService {
 
             dao.deleteAdherenceRecordPermanently(record);
         }
+    }
+    
+    public EventStreamAdherenceReport getEventStreamAdherenceReport(String appId, String studyId, String userId,
+            DateTime now, String clientTimeZone, boolean showActiveOnly) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(userId);
+        checkNotNull(now);
+
+        Stopwatch watch = Stopwatch.createStarted();
+        
+        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        builder.withShowActive(showActiveOnly);
+        builder.withNow(now);
+        builder.withClientTimeZone(clientTimeZone);
+        
+        Study study = studyService.getStudy(appId, studyId, true);
+        if (study.getScheduleGuid() == null) {
+            watch.stop();
+            return builder.build().generate();
+        }
+        List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
+
+        List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
+                appId, studyId, userId).getItems();
+
+        List<AdherenceRecord> adherenceRecords = getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
+                .withCurrentTimestampsOnly(true)
+                // if you turn this on you will not get declined sessions with no startedOn value,
+                // but it's not needed because persistent time windows are excluded from adherence.
+                .withIncludeRepeats(true) 
+                .withAdherenceRecordType(AdherenceRecordType.SESSION)
+                .withStudyId(studyId)
+                .withUserId(userId)
+                .build()).getItems();
+
+        builder.withMetadata(metadata);
+        builder.withEvents(events);
+        builder.withAdherenceRecords(adherenceRecords);
+
+        EventStreamAdherenceReport report = builder.build().generate();
+        LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
+        return report;
     }
 }
