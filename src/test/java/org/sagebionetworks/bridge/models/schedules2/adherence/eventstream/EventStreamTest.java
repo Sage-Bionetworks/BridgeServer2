@@ -4,9 +4,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
-import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
-import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -47,46 +45,6 @@ public class EventStreamTest {
         assertEquals(deser.getByDayEntries().size(), 2);
         assertEquals(deser.getByDayEntries().get(6).size(), 2);
         assertEquals(deser.getByDayEntries().get(8).size(), 1);
-    }
-    
-    @Test
-    public void retrieveEventStream() {
-        EventStreamDay day = new EventStreamDay();
-        day.setSessionGuid("sessionGuid");
-        day.setSessionName("sessionName");
-        day.setSessionSymbol("sessionSymbol");
-        day.setStartDay(3);
-        day.setStartDate(LocalDate.parse("2021-10-01"));
-        day.setWeek(5);
-        day.setStudyBurstId("studyBurstId");
-        day.setStudyBurstNum(2);
-        day.addTimeWindow(new EventStreamWindow());
-        
-        EventStream stream = new EventStream();
-        stream.setStartEventId("startEventId");
-        stream.setDaysSinceEvent(5);
-        stream.setStudyBurstId("studyBurstId");
-        stream.setStudyBurstNum(2);
-        stream.addEntry(6, day);
-        
-        TimelineMetadata meta = new TimelineMetadata();
-        meta.setGuid("sessionInstanceGuid");
-        meta.setAssessmentInstanceGuid("assessmentInstanceGuid");
-        meta.setAssessmentGuid("assessmentGuid");
-        meta.setAssessmentId("assessmentId");
-        meta.setAssessmentRevision(10);
-        meta.setSessionInstanceGuid("sessionInstanceGuid");
-        meta.setSessionGuid("sessionGuid");
-        meta.setSessionInstanceStartDay(3);
-        meta.setSessionInstanceEndDay(4);
-        meta.setScheduleGuid("scheduleGuid");
-        meta.setSessionStartEventId("sessionStartEventId");
-        meta.setTimeWindowGuid("timeWindowGuid");
-        meta.setAppId("appId");
-        meta.setStudyBurstId("studyBurstId");
-        meta.setStudyBurstNum(2);
-        meta.setSessionName("sessionName");
-        meta.setSessionSymbol("sessionSymbol");
     }
     
     @Test
