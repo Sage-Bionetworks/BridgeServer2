@@ -26,8 +26,9 @@ public class StudyBurstInfoTest extends Mockito {
         StudyBurstInfo info = StudyBurstInfo.create(burst);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
-        assertEquals(node.size(), 5);
+        assertEquals(node.size(), 6);
         assertEquals(node.get("identifier").textValue(), "foo");
+        assertEquals(node.get("originEventId").textValue(), "custom:event1");
         assertEquals(node.get("delay").textValue(), "P1W");
         assertEquals(node.get("interval").textValue(), "P23D");
         assertEquals(node.get("occurrences").intValue(), 3);

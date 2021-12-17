@@ -178,7 +178,7 @@ public class FileControllerTest extends Mockito {
     
     @Test
     public void deleteFileDefault() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         StatusMessage message = controller.deleteFile(GUID, null);
         assertEquals(message.getMessage(), DELETE_MSG.getMessage());
@@ -188,7 +188,7 @@ public class FileControllerTest extends Mockito {
 
     @Test
     public void deleteTemplate() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         StatusMessage message = controller.deleteFile(GUID, "false");
         assertEquals(message.getMessage(), DELETE_MSG.getMessage());
@@ -198,7 +198,7 @@ public class FileControllerTest extends Mockito {
 
     @Test
     public void developerCannotPermanentlyDelete() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         StatusMessage message = controller.deleteFile(GUID, "true");
         assertEquals(message.getMessage(), DELETE_MSG.getMessage());
@@ -208,7 +208,7 @@ public class FileControllerTest extends Mockito {
     
     @Test
     public void adminCanPermanentlyDelete() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         session.setParticipant(new StudyParticipant.Builder().withRoles(ImmutableSet.of(ADMIN)).build());
         StatusMessage message = controller.deleteFile(GUID, "true");

@@ -811,6 +811,7 @@ public class AppControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(DEVELOPER))
                 .withSynapseUserId(SYNAPSE_USER_ID).build();
         when(mockSession.getParticipant()).thenReturn(participant);
+        when(mockSession.isSynapseAuthenticated()).thenReturn(true);
         doReturn(mockSession).when(controller).getAuthenticatedSession();
 
         mockApp("App D", "appD", true);
@@ -832,11 +833,30 @@ public class AppControllerTest extends Mockito {
     }
     
     @Test
+    public void getAppMembershipsNotSynapseAuthenticated() throws Exception {
+        StudyParticipant participant = new StudyParticipant.Builder()
+                .withEmail(EMAIL)
+                .withEmailVerified(true)
+                .withRoles(ImmutableSet.of(DEVELOPER))
+                .withSynapseUserId(SYNAPSE_USER_ID).build();
+        when(mockSession.getParticipant()).thenReturn(participant);
+        when(mockSession.isSynapseAuthenticated()).thenReturn(false);
+        doReturn(mockSession).when(controller).getAuthenticatedSession();
+
+        String jsonString = controller.getAppMemberships();
+        JsonNode node = BridgeObjectMapper.get().readTree(jsonString).get("items");
+        
+        assertEquals(node.size(), 0);
+        verify(mockAccountService, never()).getAppIdsForUser(SYNAPSE_USER_ID);
+    }
+    
+    @Test
     public void getAppMembershipsForCrossAppAdmin() throws Exception {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL)
                 .withRoles(ImmutableSet.of(ADMIN)).withEmailVerified(true)
                 .withSynapseUserId(SYNAPSE_USER_ID).build();
         when(mockSession.getParticipant()).thenReturn(participant);
+        when(mockSession.isSynapseAuthenticated()).thenReturn(true);
         when(mockSession.isInRole(SUPERADMIN)).thenReturn(true);
         
         doReturn(mockSession).when(controller).getAuthenticatedSession();
@@ -882,6 +902,7 @@ public class AppControllerTest extends Mockito {
                 .withRoles(ImmutableSet.of(SUPERADMIN)).build();
         when(mockSession.getParticipant()).thenReturn(participant);
         when(mockSession.isInRole(SUPERADMIN)).thenReturn(true);
+        when(mockSession.isSynapseAuthenticated()).thenReturn(true);
         doReturn(mockSession).when(controller).getAuthenticatedSession();
         
         App app1 = App.create();
@@ -905,7 +926,7 @@ public class AppControllerTest extends Mockito {
     
     @Test
     public void updateAppForDeveloperOrAdmin() throws Exception {
-        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
         
         App app = App.create();
         app.setName("My new app");

@@ -565,12 +565,17 @@ public class AuthenticationService {
         }
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
         if (account.getRoles().isEmpty()) {
             throw new UnauthorizedException("Only administrative accounts can sign in via OAuth.");
         }
         clearSession(authToken.getAppId(), account);
         App app = appService.getApp(authToken.getAppId());
         UserSession session = getSessionFromAccount(app, context, account);
+        
+        if (accountId.getUnguardedAccountId().getSynapseUserId() != null) {
+            session.setSynapseAuthenticated(true);    
+        }
         cacheProvider.setUserSession(session);
         
         return session;        

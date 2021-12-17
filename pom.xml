@@ -15,6 +15,7 @@
         <jackson.version>2.10.0</jackson.version>
         <java.version>1.8</java.version>
         <logback.version>1.2.3</logback.version>
+        <log4j.version>2.16.0</log4j.version>
         <!-- NOTE: this is not the version of Spring Boot, declared below -->
         <spring.version>5.1.8.RELEASE</spring.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
@@ -225,6 +226,24 @@
             <artifactId>hapi-fhir-structures-dstu3</artifactId>
             <version>4.2.0</version>
         </dependency>
+        <!-- Forcing dependencies to reference a more secure version of log4j (our code uses 
+          Logback and only Synapse Java Client references log4j...Spring Boot appears to have 
+          adapters to Commons Logging). See: https://www.randori.com/blog/cve-2021-44228/ -->
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-to-slf4j</artifactId>
+            <version>${log4j.version}</version>
+        </dependency>        
         
         <dependency>
             <groupId>org.mockito</groupId>
@@ -281,6 +300,7 @@
             <version>${logback.version}</version>
             <scope>runtime</scope>
         </dependency>
+
         <dependency>
             <groupId>com.newrelic.agent.java</groupId>
             <artifactId>newrelic-agent</artifactId>

@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_ASSESSMENTS_ERROR;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.TestConstants.ASSESSMENT_ID;
@@ -178,14 +177,14 @@ public class AssessmentResourceControllerTest extends Mockito {
 
     @Test
     public void deleteAssessmentResourceDefaultsToLogical() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, null);
         verify(mockService).deleteResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, GUID);
     }
 
     @Test
     public void deleteAssessmentResourceDeveloperMustBeLogical() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, "true");
         verify(mockService).deleteResource(TEST_APP_ID, TEST_ORG_ID, ASSESSMENT_ID, GUID);
     }
@@ -195,7 +194,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder()
                 .withRoles(ImmutableSet.of(Roles.ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, "true");
         verify(mockService).deleteResourcePermanently(TEST_APP_ID, ASSESSMENT_ID, GUID);
     }
@@ -205,7 +204,7 @@ public class AssessmentResourceControllerTest extends Mockito {
         session.setParticipant(new StudyParticipant.Builder()
                 .withRoles(ImmutableSet.of(Roles.ADMIN)).build());
         
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, "false");
         verify(mockService).deleteResource(TEST_APP_ID, null, ASSESSMENT_ID, GUID);
     }
@@ -250,7 +249,7 @@ public class AssessmentResourceControllerTest extends Mockito {
             expectedExceptionsMessageRegExp = SHARED_ASSESSMENTS_ERROR)
     public void deleteAssessmentResourceRejectsSharedAppContext() {
         session.setAppId(SHARED_APP_ID);
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, STUDY_DESIGNER);
         
         controller.deleteAssessmentResource(ASSESSMENT_ID, GUID, null);
     }
