@@ -30,6 +30,7 @@ import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Notification;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
@@ -66,12 +67,15 @@ public class SessionValidator implements Validator {
     static final String START_TIME_SECONDS_INVALID_ERROR = "cannot specify seconds";
     static final String WINDOW_OVERLAPS_ERROR = "overlaps another time window";
     static final String WINDOW_SHORTER_THAN_DAY_ERROR = "cannot be set when the shortest window is less than a day";
+    static final String WINDOW_EXPIRATION_AFTER_SCHEDULE_DURATION = "cannot expire after schedule duration";
     static final String LESS_THAN_ONE_ERROR = "cannot be less than one";
     static final String UNDEFINED_STUDY_BURST = "does not refer to a defined study burst ID";
     
+    private final Schedule2 schedule;
     private final Set<String> studyBurstIds;
     
-    public SessionValidator(Set<String> studyBurstIds) {
+    public SessionValidator(Schedule2 schedule, Set<String> studyBurstIds) {
+        this.schedule = schedule;
         this.studyBurstIds = studyBurstIds;
     }
     
@@ -190,6 +194,17 @@ public class SessionValidator implements Validator {
                         long expMin = periodInMinutes(window.getExpiration());
                         if (expMin > intervalMin) {
                             errors.rejectValue(EXPIRATION_FIELD, EXPIRATION_LONGER_THAN_INTERVAL_ERROR);
+                        }
+                    }
+                }
+                if (window.getExpiration() != null) {
+                    long windowExpiration = periodInMinutes(window.getExpiration());
+                    if (session.getDelay() != null) {
+                        windowExpiration += periodInMinutes(session.getDelay());
+                    }
+                    if (schedule.getDuration() != null) {
+                        if (windowExpiration > periodInMinutes(schedule.getDuration())) {
+                            errors.rejectValue(EXPIRATION_FIELD, WINDOW_EXPIRATION_AFTER_SCHEDULE_DURATION);
                         }
                     }
                 }
