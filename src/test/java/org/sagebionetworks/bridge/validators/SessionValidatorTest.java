@@ -97,7 +97,21 @@ public class SessionValidatorTest extends Mockito {
         session.setGuid(null);
         assertValidatorMessage(INSTANCE, session, GUID_FIELD, CANNOT_BE_BLANK);
     }
+    
+    @Test
+    public void symbolNullOK() {
+        Session session = createValidSession();
+        session.setSymbol(null);
+        Validate.entityThrowingException(INSTANCE, session);
+    }
 
+    @Test
+    public void symbolBlank() {
+        Session session = createValidSession();
+        session.setSymbol("");
+        assertValidatorMessage(INSTANCE, session, SYMBOL_FIELD, CANNOT_BE_BLANK);
+    }
+    
     @Test
     public void startEventIdsAndStudyBurstIdsNull() {
         Session session = createValidSession();

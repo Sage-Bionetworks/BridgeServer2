@@ -367,6 +367,9 @@ public class AuthenticationController extends BaseController {
               .orElseThrow(() -> new UnauthorizedException(APP_ACCESS_EXCEPTION_MSG));
         
         UserSession newSession = authenticationService.getSessionFromAccount(targetApp, context, account);
+        // This must be maintained for non superadmin users, as it is lost when the full session
+        // is recreated.
+        newSession.setSynapseAuthenticated(true);
         cacheProvider.setUserSession(newSession);
         
         return UserSessionInfo.toJSON(newSession);

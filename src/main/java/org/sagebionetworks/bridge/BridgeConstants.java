@@ -56,6 +56,8 @@ public class BridgeConstants {
 
     // App ID used for the Shared Module Library
     public static final String SHARED_APP_ID = "shared";
+    
+    public static final String API_2_APP_ID = "api-2";
 
     /** A common string constraint Synapse places on model identifiers. */
     public static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";

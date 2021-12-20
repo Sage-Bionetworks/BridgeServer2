@@ -32,14 +32,39 @@ public class AdherenceUtilsTest {
         assertEquals(AdherenceUtils.calculateSessionState(record, 0, 0, null), NOT_APPLICABLE);
     }
 
+    // Not sure about this, as we won't show it was done in adherence reports, but we also
+    // can't tell if it was abandoned, done outside the window entirely, etc.
+    @Test
+    public void calculateSessionState_notApplicableButStartedAnyway() {
+        AdherenceRecord record = createAdherenceRecord(STARTED_ON, null, false);
+        
+        assertEquals(AdherenceUtils.calculateSessionState(record, 0, 0, null), NOT_APPLICABLE);
+    }
+    
+    // Not sure about this, as we won't show it was done in adherence reports, but we also
+    // can't tell if it was abandoned, done outside the window entirely, etc.
+    @Test
+    public void calculateSessionState_notApplicableButFinishedAnyway() {
+        AdherenceRecord record = createAdherenceRecord(STARTED_ON, FINISHED_ON, false);
+        
+        assertEquals(AdherenceUtils.calculateSessionState(record, 0, 0, null), NOT_APPLICABLE);
+    }
+    
     @Test
     public void calculateSessionState_notYetAvailable() { 
         assertEquals(AdherenceUtils.calculateSessionState(null, 2, 3, 0), NOT_YET_AVAILABLE);
     }
 
     @Test
-    public void calculateSession_expiredNoRecord() { 
+    public void calculateSession_expiredNoRecord() {
         assertEquals(AdherenceUtils.calculateSessionState(null, 1, 2, 3), EXPIRED);
+    }
+    
+    @Test
+    public void calculateSession_expiredEmptyRecord() {
+        AdherenceRecord record = createAdherenceRecord(null, null, false);
+        
+        assertEquals(AdherenceUtils.calculateSessionState(record, 1, 2, 3), EXPIRED);
     }
     
     @Test
@@ -48,9 +73,22 @@ public class AdherenceUtilsTest {
     }
 
     @Test
+    public void calculateSession_unstartedEmptyRecord() { 
+        AdherenceRecord record = createAdherenceRecord(null, null, false);
+        
+        assertEquals(AdherenceUtils.calculateSessionState(record, 1, 3, 2), UNSTARTED);
+    }
+    
+    @Test
     public void calculateSession_declined() { 
-        AdherenceRecord record = createAdherenceRecord(STARTED_ON, FINISHED_ON, false);
-        record.setDeclined(true);
+        AdherenceRecord record = createAdherenceRecord(STARTED_ON, FINISHED_ON, true);
+
+        assertEquals(AdherenceUtils.calculateSessionState(record, 1, 3, 2), DECLINED);
+    }
+    
+    @Test
+    public void calculateSession_declinedWithoutDates() { 
+        AdherenceRecord record = createAdherenceRecord(null, null, true);
 
         assertEquals(AdherenceUtils.calculateSessionState(record, 1, 3, 2), DECLINED);
     }
@@ -70,7 +108,12 @@ public class AdherenceUtilsTest {
     }
     
     @Test
-    public void calculateSession_expiredAfterWindow() {
+    public void calculateSession_expiredAfterWindowNoRecord() {
+        assertEquals(AdherenceUtils.calculateSessionState(null, 1, 2, 3), EXPIRED);
+    }
+    
+    @Test
+    public void calculateSession_expiredAfterWindowEmptyRecord() {
         AdherenceRecord record = createAdherenceRecord(null, null, false);
 
         assertEquals(AdherenceUtils.calculateSessionState(record, 1, 2, 3), EXPIRED);
@@ -95,6 +138,13 @@ public class AdherenceUtilsTest {
         AdherenceRecord record = createAdherenceRecord(null, null, false);
 
         assertEquals(AdherenceUtils.calculateSessionState(record, 1, 3, 3), UNSTARTED);
+    }
+    
+    @Test
+    public void calculateSession_finishedOnlyTreatedAsComplete() { 
+        AdherenceRecord record = createAdherenceRecord(null, FINISHED_ON, false);
+
+        assertEquals(AdherenceUtils.calculateSessionState(record, 1, 3, 3), COMPLETED);
     }
     
     private AdherenceRecord createAdherenceRecord(DateTime startedOn, DateTime finishedOn, boolean declined) {
