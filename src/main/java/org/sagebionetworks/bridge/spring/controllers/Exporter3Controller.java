@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import org.sagebionetworks.bridge.exceptions.BridgeSynapseException;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.services.Exporter3Service;
@@ -31,7 +32,7 @@ public class Exporter3Controller extends BaseController {
     /** Initializes configs and Synapse resources for Exporter 3.0. */
     @PostMapping(path = "/v1/apps/self/exporter3")
     @ResponseStatus(HttpStatus.CREATED)
-    public Exporter3Configuration initExporter3() throws IOException, SynapseException {
+    public Exporter3Configuration initExporter3() throws BridgeSynapseException, IOException, SynapseException {
         UserSession session = getAuthenticatedSession(ADMIN, DEVELOPER);
         return exporter3Service.initExporter3(session.getAppId());
     }

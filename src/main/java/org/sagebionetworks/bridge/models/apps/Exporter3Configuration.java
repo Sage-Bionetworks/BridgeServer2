@@ -5,13 +5,15 @@ import java.util.Objects;
 /** This class holds Exporter 3.0 configuration for a given app. */
 public final class Exporter3Configuration {
     private Long dataAccessTeamId;
+    private String participantVersionTableId;
     private String projectId;
     private String rawDataFolderId;
     private Long storageLocationId;
 
     /** Helper method that returns true if all configuration attributes are specified. */
     public boolean isConfigured() {
-        return dataAccessTeamId != null && projectId != null && rawDataFolderId != null && storageLocationId != null;
+        return dataAccessTeamId != null && participantVersionTableId != null && projectId != null &&
+                rawDataFolderId != null && storageLocationId != null;
     }
 
     /**
@@ -24,6 +26,15 @@ public final class Exporter3Configuration {
 
     public void setDataAccessTeamId(Long dataAccessTeamId) {
         this.dataAccessTeamId = dataAccessTeamId;
+    }
+
+    /** The Synapse table to where we export Participant Versions. */
+    public String getParticipantVersionTableId() {
+        return participantVersionTableId;
+    }
+
+    public void setParticipantVersionTableId(String participantVersionTableId) {
+        this.participantVersionTableId = participantVersionTableId;
     }
 
     /**
@@ -67,20 +78,24 @@ public final class Exporter3Configuration {
             return false;
         }
         Exporter3Configuration that = (Exporter3Configuration) o;
-        return Objects.equals(dataAccessTeamId, that.dataAccessTeamId) && Objects.equals(projectId,
-                that.projectId) && Objects.equals(rawDataFolderId, that.rawDataFolderId) &&
+        return Objects.equals(dataAccessTeamId, that.dataAccessTeamId) &&
+                Objects.equals(participantVersionTableId, that.participantVersionTableId) &&
+                Objects.equals(projectId, that.projectId) &&
+                Objects.equals(rawDataFolderId, that.rawDataFolderId) &&
                 Objects.equals(storageLocationId, that.storageLocationId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(dataAccessTeamId, projectId, rawDataFolderId, storageLocationId);
+        return Objects.hash(dataAccessTeamId, participantVersionTableId, projectId, rawDataFolderId,
+                storageLocationId);
     }
 
     @Override
     public String toString() {
         return String.format(
-                "Exporter3Configuration [dataAccessTeamId=%s, projectId=%s, rawDataFolderId=%s, storageLocationId=%s]",
-                dataAccessTeamId, projectId, rawDataFolderId, storageLocationId);
+                "Exporter3Configuration [dataAccessTeamId=%s, participantVersionTableId=%s, projectId=%s, " +
+                        "rawDataFolderId=%s, storageLocationId=%s]",
+                dataAccessTeamId, projectId, participantVersionTableId, rawDataFolderId, storageLocationId);
     }
 }

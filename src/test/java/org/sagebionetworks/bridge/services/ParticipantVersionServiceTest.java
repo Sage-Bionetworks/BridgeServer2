@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -16,6 +19,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -30,14 +35,19 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantVersionDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
+import org.sagebionetworks.bridge.models.worker.Ex3ParticipantVersionRequest;
+import org.sagebionetworks.bridge.models.worker.WorkerRequest;
 
 public class ParticipantVersionServiceTest {
     private static final String ACCOUNT_ID = "test-account-id";
@@ -51,12 +61,16 @@ public class ParticipantVersionServiceTest {
     private static final String STUDY_ID_2 = "study2";
     private static final Map<String, String> STUDY_MEMBERSHIPS = ImmutableMap.of(STUDY_ID_1, EXTERNAL_ID_1);
     private static final String TIME_ZONE = "America/Los_Angeles";
+    private static final String WORKER_QUEUE_URL = "http://example.com/dummy-sqs-url";
 
     @Mock
     private ConsentService mockConsentService;
 
     @Mock
     private ParticipantVersionDao mockParticipantVersionDao;
+
+    @Mock
+    private AmazonSQSClient mockSqsClient;
 
     @InjectMocks
     private ParticipantVersionService participantVersionService;
@@ -69,6 +83,11 @@ public class ParticipantVersionServiceTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
+
+        // Mock config. This is done separately because we need to set mock config params.
+        BridgeConfig mockConfig = mock(BridgeConfig.class);
+        when(mockConfig.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL)).thenReturn(WORKER_QUEUE_URL);
+        participantVersionService.setConfig(mockConfig);
     }
 
     @AfterClass
@@ -83,6 +102,7 @@ public class ParticipantVersionServiceTest {
         when(mockConsentService.isConsented(any())).thenReturn(Optional.of(true));
         when(mockParticipantVersionDao.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
                 TestConstants.HEALTH_CODE)).thenReturn(Optional.empty());
+        when(mockSqsClient.sendMessage(anyString(), anyString())).thenReturn(new SendMessageResult());
 
         // Make Account. Populate it with attributes we care about for Participant Versions.
         Account account = Account.create();
@@ -171,10 +191,11 @@ public class ParticipantVersionServiceTest {
 
     // branch coverage: initial version with no createdOn
     @Test
-    public void createParticipantVersion_NoCreatedOn() {
+    public void createParticipantVersion_NoCreatedOn() throws Exception {
         // Mock dependencies.
         when(mockParticipantVersionDao.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
                 TestConstants.HEALTH_CODE)).thenReturn(Optional.empty());
+        when(mockSqsClient.sendMessage(anyString(), anyString())).thenReturn(new SendMessageResult());
 
         // Make input.
         ParticipantVersion toCreate = ParticipantVersion.create();
@@ -191,6 +212,22 @@ public class ParticipantVersionServiceTest {
         assertEquals(created.getCreatedOn(), MOCK_NOW_MILLIS);
         assertEquals(created.getModifiedOn(), MOCK_NOW_MILLIS);
         assertEquals(created.getParticipantVersion(), 1);
+
+        // Verify call to SQS.
+        ArgumentCaptor<String> requestJsonTextCaptor = ArgumentCaptor.forClass(String.class);
+        verify(mockSqsClient).sendMessage(eq(WORKER_QUEUE_URL), requestJsonTextCaptor.capture());
+
+        String requestJsonText = requestJsonTextCaptor.getValue();
+        WorkerRequest workerRequest = BridgeObjectMapper.get().readValue(requestJsonText, WorkerRequest.class);
+        assertEquals(workerRequest.getService(), ParticipantVersionService.WORKER_NAME_EX_3_PARTICIPANT_VERSION);
+
+        // Need to convert WorkerRequest.body again, because it doesn't carry inherent typing information. This is
+        // fine, since outside of unit tests, we never actually need to deserialize it.
+        Ex3ParticipantVersionRequest participantVersionRequest = BridgeObjectMapper.get().convertValue(workerRequest.getBody(),
+                Ex3ParticipantVersionRequest.class);
+        assertEquals(participantVersionRequest.getAppId(), TestConstants.TEST_APP_ID);
+        assertEquals(participantVersionRequest.getHealthCode(), TestConstants.HEALTH_CODE);
+        assertEquals(participantVersionRequest.getParticipantVersion(), 1);
     }
 
     @Test
@@ -204,6 +241,7 @@ public class ParticipantVersionServiceTest {
 
         when(mockParticipantVersionDao.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
                 TestConstants.HEALTH_CODE)).thenReturn(Optional.of(existing));
+        when(mockSqsClient.sendMessage(anyString(), anyString())).thenReturn(new SendMessageResult());
 
         // Make input.
         // Set createdOn to make sure we can't overwrite existing.
@@ -352,6 +390,20 @@ public class ParticipantVersionServiceTest {
                 TestConstants.TEST_APP_ID, TestConstants.HEALTH_CODE);
         assertEquals(resultList.size(), 1);
         assertSame(resultList.get(0), participantVersion);
+    }
+
+    @Test
+    public void getLatestParticipantVersionForHealthCode() {
+        // Mock dependencies.
+        ParticipantVersion participantVersion = ParticipantVersion.create();
+        when(mockParticipantVersionDao.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
+                TestConstants.HEALTH_CODE)).thenReturn(Optional.of(participantVersion));
+
+        // Execute and validate.
+        Optional<ParticipantVersion> result = participantVersionService.getLatestParticipantVersionForHealthCode(
+                TestConstants.TEST_APP_ID, TestConstants.HEALTH_CODE);
+        assertTrue(result.isPresent());
+        assertSame(result.get(), participantVersion);
     }
 
     @Test

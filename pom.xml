@@ -208,7 +208,7 @@
         <dependency>
             <groupId>org.sagebionetworks</groupId>
             <artifactId>synapseJavaClient</artifactId>
-            <version>322.0</version>
+            <version>386.0</version>
         </dependency>
         <dependency>
             <groupId>org.xhtmlrenderer</groupId>

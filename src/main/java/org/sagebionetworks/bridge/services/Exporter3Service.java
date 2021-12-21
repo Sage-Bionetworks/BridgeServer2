@@ -1,6 +1,9 @@
 package org.sagebionetworks.bridge.services;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 import javax.annotation.Resource;
 
 import com.amazonaws.services.sqs.AmazonSQSClient;
@@ -15,20 +18,25 @@ import org.sagebionetworks.repo.model.Folder;
 import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
+import org.sagebionetworks.repo.model.table.ColumnModel;
+import org.sagebionetworks.repo.model.table.ColumnType;
 import org.sagebionetworks.repo.model.table.EntityView;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.SecureTokenGenerator;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.exceptions.BridgeSynapseException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
@@ -61,9 +69,81 @@ public class Exporter3Service {
     static final String CONFIG_KEY_SYNAPSE_TRACKING_VIEW = "synapse.tracking.view";
     static final String CONFIG_KEY_TEAM_BRIDGE_ADMIN = "team.bridge.admin";
     static final String CONFIG_KEY_TEAM_BRIDGE_STAFF = "team.bridge.staff";
-    static final String CONFIG_KEY_WORKER_SQS_URL = "workerPlatform.request.sqs.queue.url";
     static final String FOLDER_NAME_BRIDGE_RAW_DATA = "Bridge Raw Data";
+    static final String TABLE_NAME_PARTICIPANT_VERSIONS = "Participant Versions";
     static final String WORKER_NAME_EXPORTER_3 = "Exporter3Worker";
+
+    static final List<ColumnModel> PARTICIPANT_VERSION_COLUMN_MODELS;
+    static {
+        ImmutableList.Builder<ColumnModel> listBuilder = ImmutableList.builder();
+
+        // Original healthcodes are GUIDs. These are 36 characters long.
+        ColumnModel healthCodeColumn = new ColumnModel();
+        healthCodeColumn.setName("healthCode");
+        healthCodeColumn.setColumnType(ColumnType.STRING);
+        healthCodeColumn.setMaximumSize(36L);
+        listBuilder.add(healthCodeColumn);
+
+        ColumnModel participantVersionColumn = new ColumnModel();
+        participantVersionColumn.setName("participantVersion");
+        participantVersionColumn.setColumnType(ColumnType.INTEGER);
+        listBuilder.add(participantVersionColumn);
+
+        ColumnModel createdOnColumn = new ColumnModel();
+        createdOnColumn.setName("createdOn");
+        createdOnColumn.setColumnType(ColumnType.DATE);
+        listBuilder.add(createdOnColumn);
+
+        ColumnModel modifiedOnColumn = new ColumnModel();
+        modifiedOnColumn.setName("modifiedOn");
+        modifiedOnColumn.setColumnType(ColumnType.DATE);
+        listBuilder.add(modifiedOnColumn);
+
+        // We have pre-existing validation that checks that the total length of all data groups is less than
+        // 250 characters. This validation predates the use of string lists in Synapse. Additionally, some apps have
+        // 30+ data groups, and some apps have data groups with 20+ characters. Synapse table row width is valuable, so
+        // instead of reserving potentially 600+ characters that will be sparsely used, we will keep to the
+        // 250 character limit.
+        ColumnModel dataGroupsColumn = new ColumnModel();
+        dataGroupsColumn.setName("dataGroups");
+        dataGroupsColumn.setColumnType(ColumnType.STRING);
+        dataGroupsColumn.setMaximumSize(250L);
+        listBuilder.add(dataGroupsColumn);
+
+        // These are 2-character language codes (eg "en", "es"). Let's generously allow participants to export up to
+        // 10 languages, which is 20 characters at most, and should be more than enough for nearly all participants.
+        ColumnModel languagesColumn = new ColumnModel();
+        languagesColumn.setName("languages");
+        languagesColumn.setColumnType(ColumnType.STRING_LIST);
+        languagesColumn.setMaximumSize(2L);
+        languagesColumn.setMaximumListLength(10L);
+        listBuilder.add(languagesColumn);
+
+        // The longest sharing scope is ALL_QUALIFIED_RESEARCHERS, which is 25 characters long.
+        ColumnModel sharingScopeColumn = new ColumnModel();
+        sharingScopeColumn.setName("sharingScope");
+        sharingScopeColumn.setColumnType(ColumnType.STRING);
+        sharingScopeColumn.setMaximumSize(25L);
+        listBuilder.add(sharingScopeColumn);
+
+        // Synapse doesn't have maps as a type in their Table model. For now, we serialize it as a string. In 2.0, we
+        // set a max string length of 250 characters, and that seems to be fine.
+        ColumnModel studyMembershipsColumn = new ColumnModel();
+        studyMembershipsColumn.setName("studyMemberships");
+        studyMembershipsColumn.setColumnType(ColumnType.STRING);
+        studyMembershipsColumn.setMaximumSize(250L);
+        listBuilder.add(studyMembershipsColumn);
+
+        // The longest time zone I could find was 28 characters long. Let's add a bit of a buffer and say 40
+        // characters. As long as Llanfair PG, Wales doesn't have its own time zone, this should be fine.
+        ColumnModel timeZoneColumn = new ColumnModel();
+        timeZoneColumn.setName("timeZone");
+        timeZoneColumn.setColumnType(ColumnType.STRING);
+        timeZoneColumn.setMaximumSize(40L);
+        listBuilder.add(timeZoneColumn);
+
+        PARTICIPANT_VERSION_COLUMN_MODELS = listBuilder.build();
+    }
 
     // Config attributes.
     private Long bridgeAdminTeamId;
@@ -77,6 +157,7 @@ public class Exporter3Service {
     private AccountService accountService;
     private AppService appService;
     private HealthDataEx3Service healthDataEx3Service;
+    private ParticipantVersionService participantVersionService;
     private S3Helper s3Helper;
     private AmazonSQSClient sqsClient;
     private SynapseHelper synapseHelper;
@@ -89,7 +170,7 @@ public class Exporter3Service {
         exporterSynapseUser = config.getProperty(CONFIG_KEY_EXPORTER_SYNAPSE_USER);
         rawHealthDataBucket = config.getProperty(CONFIG_KEY_RAW_HEALTH_DATA_BUCKET);
         synapseTrackingViewId = config.getProperty(CONFIG_KEY_SYNAPSE_TRACKING_VIEW);
-        workerQueueUrl = config.getProperty(CONFIG_KEY_WORKER_SQS_URL);
+        workerQueueUrl = config.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL);
     }
 
     @Autowired
@@ -105,6 +186,11 @@ public class Exporter3Service {
     @Autowired
     public final void setHealthDataEx3Service(HealthDataEx3Service healthDataEx3Service) {
         this.healthDataEx3Service = healthDataEx3Service;
+    }
+
+    @Autowired
+    public final void setParticipantVersionService(ParticipantVersionService participantVersionService) {
+        this.participantVersionService = participantVersionService;
     }
 
     @Resource(name = "s3Helper")
@@ -129,7 +215,8 @@ public class Exporter3Service {
      * (b) If in the future, we add something new (like a notification queue, or a default view), we can re-run this
      * API to create the new stuff without affecting the old stuff.
      */
-    public Exporter3Configuration initExporter3(String appId) throws IOException, SynapseException {
+    public Exporter3Configuration initExporter3(String appId) throws BridgeSynapseException, IOException,
+            SynapseException {
         boolean isAppModified = false;
         App app = appService.getApp(appId);
 
@@ -159,6 +246,8 @@ public class Exporter3Service {
             ex3Config.setDataAccessTeamId(dataAccessTeamId);
             isAppModified = true;
         }
+        Set<Long> adminPrincipalIds = ImmutableSet.of(exporterSynapseId, bridgeAdminTeamId);
+        Set<Long> readOnlyPrincipalIds = ImmutableSet.of(bridgeStaffTeamId, dataAccessTeamId);
 
         // Create project.
         String projectId = ex3Config.getProjectId();
@@ -170,8 +259,7 @@ public class Exporter3Service {
             LOG.info("Created Synapse project " + projectId);
 
             // Create ACLs for project.
-            synapseHelper.createAclWithRetry(projectId, ImmutableSet.of(exporterSynapseId, bridgeAdminTeamId),
-                    ImmutableSet.of(bridgeStaffTeamId, dataAccessTeamId));
+            synapseHelper.createAclWithRetry(projectId, adminPrincipalIds, readOnlyPrincipalIds);
 
             ex3Config.setProjectId(projectId);
             isAppModified = true;
@@ -192,6 +280,17 @@ public class Exporter3Service {
             }
         }
 
+        // Create Participant Version Table.
+        String participantVersionTableId = ex3Config.getParticipantVersionTableId();
+        if (participantVersionTableId == null) {
+            participantVersionTableId = synapseHelper.createTableWithColumnsAndAcls(PARTICIPANT_VERSION_COLUMN_MODELS,
+                    readOnlyPrincipalIds, adminPrincipalIds, projectId, TABLE_NAME_PARTICIPANT_VERSIONS);
+            LOG.info("Created Synapse table " + participantVersionTableId);
+
+            ex3Config.setParticipantVersionTableId(participantVersionTableId);
+            isAppModified = true;
+        }
+
         // Create Folder for raw data.
         String rawDataFolderId = ex3Config.getRawDataFolderId();
         if (rawDataFolderId == null) {
@@ -204,8 +303,7 @@ public class Exporter3Service {
 
             // Create ACLs for folder. This is a separate ACL because we don't want to allow people to modify the
             // raw data.
-            synapseHelper.createAclWithRetry(rawDataFolderId, ImmutableSet.of(exporterSynapseId, bridgeAdminTeamId),
-                    ImmutableSet.of(bridgeStaffTeamId, dataAccessTeamId));
+            synapseHelper.createAclWithRetry(rawDataFolderId, adminPrincipalIds, readOnlyPrincipalIds);
 
             ex3Config.setRawDataFolderId(rawDataFolderId);
             isAppModified = true;
@@ -253,25 +351,35 @@ public class Exporter3Service {
 
     /** Complete an upload for Exporter 3.0, and also export that upload. */
     public void completeUpload(App app, Upload upload) {
+        String appId = app.getIdentifier();
+        String healthCode = upload.getHealthCode();
+
         // Create record.
         HealthDataRecordEx3 record = HealthDataRecordEx3.createFromUpload(upload);
 
         // Mark record with sharing scope.
-        Account account = accountService.getAccount(AccountId.forHealthCode(app.getIdentifier(),
-                upload.getHealthCode())).orElseThrow(() -> {
+        Account account = accountService.getAccount(AccountId.forHealthCode(appId,
+                healthCode)).orElseThrow(() -> {
             // This should never happen. If it does, log a warning and throw.
-            LOG.warn("Account disappeared in the middle of upload, healthCode=" + upload.getHealthCode() + ", appId="
-                    + app.getIdentifier() + ", uploadId=" + upload.getUploadId());
+            LOG.warn("Account disappeared in the middle of upload, healthCode=" + healthCode + ", appId="
+                    + appId + ", uploadId=" + upload.getUploadId());
             return new EntityNotFoundException(StudyParticipant.class);
         });
         SharingScope sharingScope = account.getSharingScope();
         record.setSharingScope(sharingScope);
 
+        // Also mark with the latest participant version.
+        Optional<ParticipantVersion> participantVersion = participantVersionService
+                .getLatestParticipantVersionForHealthCode(appId, healthCode);
+        if (participantVersion.isPresent()) {
+            record.setParticipantVersion(participantVersion.get().getParticipantVersion());
+        }
+
         // Save record.
         record = healthDataEx3Service.createOrUpdateRecord(record);
 
         if (sharingScope != SharingScope.NO_SHARING) {
-            exportUpload(app.getIdentifier(), record.getId());
+            exportUpload(appId, record.getId());
         }
     }
 

@@ -79,6 +79,13 @@ public interface HealthDataRecordEx3 extends BridgeEntity {
     String getHealthCode();
     void setHealthCode(String healthCode);
 
+    /**
+     * Participant version of the participant at the time the upload was submitted. May be null if the participant
+     * version doesn't exist.
+     */
+    Integer getParticipantVersion();
+    void setParticipantVersion(Integer participantVersion);
+
     /** Timestamp (epoch milliseconds) of when this record was submitted to Bridge. */
     Long getCreatedOn();
     void setCreatedOn(Long createdOn);

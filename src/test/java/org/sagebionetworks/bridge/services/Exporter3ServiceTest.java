@@ -2,6 +2,9 @@ package org.sagebionetworks.bridge.services;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anySet;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -11,12 +14,14 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.SendMessageResult;
@@ -34,9 +39,11 @@ import org.sagebionetworks.repo.model.Project;
 import org.sagebionetworks.repo.model.Team;
 import org.sagebionetworks.repo.model.project.ExternalS3StorageLocationSetting;
 import org.sagebionetworks.repo.model.table.EntityView;
+import org.sagebionetworks.repo.model.table.TableEntity;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
@@ -44,6 +51,7 @@ import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
@@ -61,8 +69,9 @@ public class Exporter3ServiceTest {
     private static final long DATA_ACCESS_TEAM_ID = 3333L;
     private static final long EXPORTER_SYNAPSE_ID = 4444L;
     private static final String EXPORTER_SYNAPSE_USER = "unit-test-user";
-    private static final String HEALTH_CODE = "test-health-code";
     private static final String NAME_SCOPING_TOKEN = "dummy-token";
+    private static final int PARTICIPANT_VERSION = 42;
+    private static final String PARTICIPANT_VERSION_TABLE_ID = "syn4999";
     private static final String PROJECT_ID = "syn5555";
     private static final String PROJECT_ID_WITHOUT_PREFIX = "5555";
     private static final String RAW_FOLDER_ID = "syn6666";
@@ -74,6 +83,9 @@ public class Exporter3ServiceTest {
 
     private static final String EXPECTED_PROJECT_NAME = APP_NAME + " Project " + NAME_SCOPING_TOKEN;
     private static final String EXPECTED_TEAM_NAME = APP_NAME + " Access Team " + NAME_SCOPING_TOKEN;
+    private static final Set<Long> ADMIN_PRINCIPAL_ID_SET = ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID);
+    private static final Set<Long> READ_ONLY_PRINCIPAL_ID_SET = ImmutableSet.of(BRIDGE_STAFF_TEAM_ID,
+            DATA_ACCESS_TEAM_ID);
 
     private App app;
 
@@ -85,6 +97,9 @@ public class Exporter3ServiceTest {
 
     @Mock
     private HealthDataEx3Service mockHealthDataEx3Service;
+
+    @Mock
+    private ParticipantVersionService mockParticipantVersionService;
 
     @Mock
     private S3Helper mockS3Helper;
@@ -114,7 +129,7 @@ public class Exporter3ServiceTest {
                 .thenReturn(RAW_HEALTH_DATA_BUCKET);
         when(mockConfig.getProperty(Exporter3Service.CONFIG_KEY_SYNAPSE_TRACKING_VIEW))
                 .thenReturn(SYNAPSE_TRACKING_VIEW_ID);
-        when(mockConfig.getProperty(Exporter3Service.CONFIG_KEY_WORKER_SQS_URL)).thenReturn(WORKER_QUEUE_URL);
+        when(mockConfig.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL)).thenReturn(WORKER_QUEUE_URL);
         exporter3Service.setConfig(mockConfig);
 
         // Spy getNameScopingToken to make it easier to test.
@@ -147,6 +162,11 @@ public class Exporter3ServiceTest {
         when(mockSynapseHelper.getEntityWithRetry(SYNAPSE_TRACKING_VIEW_ID, EntityView.class))
                 .thenReturn(trackingView);
 
+        TableEntity createdTable = new TableEntity();
+        createdTable.setId(PARTICIPANT_VERSION_TABLE_ID);
+        when(mockSynapseHelper.createTableWithColumnsAndAcls(anyList(), anySet(), anySet(), anyString(), anyString()))
+                .thenReturn(PARTICIPANT_VERSION_TABLE_ID);
+
         Folder createdFolder = new Folder();
         createdFolder.setId(RAW_FOLDER_ID);
         when(mockSynapseHelper.createEntityWithRetry(any(Folder.class))).thenReturn(createdFolder);
@@ -159,6 +179,7 @@ public class Exporter3ServiceTest {
         // Execute and verify output.
         Exporter3Configuration returnedEx3Config = exporter3Service.initExporter3(TestConstants.TEST_APP_ID);
         assertEquals(returnedEx3Config.getDataAccessTeamId().longValue(), DATA_ACCESS_TEAM_ID);
+        assertEquals(returnedEx3Config.getParticipantVersionTableId(), PARTICIPANT_VERSION_TABLE_ID);
         assertEquals(returnedEx3Config.getProjectId(), PROJECT_ID);
         assertEquals(returnedEx3Config.getRawDataFolderId(), RAW_FOLDER_ID);
         assertEquals(returnedEx3Config.getStorageLocationId().longValue(), STORAGE_LOCATION_ID);
@@ -180,9 +201,7 @@ public class Exporter3ServiceTest {
         assertEquals(projectToCreate.getName(), EXPECTED_PROJECT_NAME);
 
         // Verify project ACLs.
-        verify(mockSynapseHelper).createAclWithRetry(PROJECT_ID,
-                ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID),
-                ImmutableSet.of(BRIDGE_STAFF_TEAM_ID, DATA_ACCESS_TEAM_ID));
+        verify(mockSynapseHelper).createAclWithRetry(PROJECT_ID, ADMIN_PRINCIPAL_ID_SET, READ_ONLY_PRINCIPAL_ID_SET);
 
         // Verify project added to tracking view. For whatever reason, view scope IDs don't include the "syn" prefix.
         ArgumentCaptor<EntityView> viewToUpdateCaptor = ArgumentCaptor.forClass(EntityView.class);
@@ -191,15 +210,19 @@ public class Exporter3ServiceTest {
         EntityView viewToUpdate = viewToUpdateCaptor.getValue();
         assertTrue(viewToUpdate.getScopeIds().contains(PROJECT_ID_WITHOUT_PREFIX));
 
+        // Verify created participant version table.
+        verify(mockSynapseHelper).createTableWithColumnsAndAcls(Exporter3Service.PARTICIPANT_VERSION_COLUMN_MODELS,
+                READ_ONLY_PRINCIPAL_ID_SET, ADMIN_PRINCIPAL_ID_SET, PROJECT_ID,
+                Exporter3Service.TABLE_NAME_PARTICIPANT_VERSIONS);
+
         // Verify created folder.
         Folder folderToCreate = (Folder) entitiesToCreateList.get(1);
         assertEquals(folderToCreate.getName(), Exporter3Service.FOLDER_NAME_BRIDGE_RAW_DATA);
         assertEquals(folderToCreate.getParentId(), PROJECT_ID);
 
         // Verify folder ACLs.
-        verify(mockSynapseHelper).createAclWithRetry(RAW_FOLDER_ID,
-                ImmutableSet.of(EXPORTER_SYNAPSE_ID, BRIDGE_ADMIN_TEAM_ID),
-                ImmutableSet.of(BRIDGE_STAFF_TEAM_ID, DATA_ACCESS_TEAM_ID));
+        verify(mockSynapseHelper).createAclWithRetry(RAW_FOLDER_ID, ADMIN_PRINCIPAL_ID_SET,
+                READ_ONLY_PRINCIPAL_ID_SET);
 
         // Verify we write to S3 for the storage location.
         verify(mockS3Helper).writeLinesToS3(RAW_HEALTH_DATA_BUCKET, TestConstants.TEST_APP_ID + "/owner.txt",
@@ -232,6 +255,7 @@ public class Exporter3ServiceTest {
         // App is already configured for Exporter 3.0.
         Exporter3Configuration ex3Config = new Exporter3Configuration();
         ex3Config.setDataAccessTeamId(DATA_ACCESS_TEAM_ID);
+        ex3Config.setParticipantVersionTableId(PARTICIPANT_VERSION_TABLE_ID);
         ex3Config.setProjectId(PROJECT_ID);
         ex3Config.setRawDataFolderId(RAW_FOLDER_ID);
         ex3Config.setStorageLocationId(STORAGE_LOCATION_ID);
@@ -254,6 +278,7 @@ public class Exporter3ServiceTest {
         // App EX 3 Config doesn't have project, so we can verify the tracking view stuff.
         Exporter3Configuration ex3Config = new Exporter3Configuration();
         ex3Config.setDataAccessTeamId(DATA_ACCESS_TEAM_ID);
+        ex3Config.setParticipantVersionTableId(PARTICIPANT_VERSION_TABLE_ID);
         ex3Config.setProjectId(null);
         ex3Config.setRawDataFolderId(RAW_FOLDER_ID);
         ex3Config.setStorageLocationId(STORAGE_LOCATION_ID);
@@ -288,6 +313,7 @@ public class Exporter3ServiceTest {
         // App EX 3 Config doesn't have project, so we can verify the tracking view stuff.
         Exporter3Configuration ex3Config = new Exporter3Configuration();
         ex3Config.setDataAccessTeamId(DATA_ACCESS_TEAM_ID);
+        ex3Config.setParticipantVersionTableId(PARTICIPANT_VERSION_TABLE_ID);
         ex3Config.setProjectId(null);
         ex3Config.setRawDataFolderId(RAW_FOLDER_ID);
         ex3Config.setStorageLocationId(STORAGE_LOCATION_ID);
@@ -323,7 +349,7 @@ public class Exporter3ServiceTest {
     public void completeUpload() throws Exception {
         // Set up inputs.
         Upload upload = Upload.create();
-        upload.setHealthCode(HEALTH_CODE);
+        upload.setHealthCode(TestConstants.HEALTH_CODE);
         upload.setUploadId(RECORD_ID);
 
         // Mock AccountService.
@@ -336,6 +362,14 @@ public class Exporter3ServiceTest {
         createdRecord.setId(RECORD_ID);
         when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
 
+        // Mock ParticipantVersionService.
+        ParticipantVersion participantVersion = ParticipantVersion.create();
+        participantVersion.setAppId(TestConstants.TEST_APP_ID);
+        participantVersion.setHealthCode(TestConstants.HEALTH_CODE);
+        participantVersion.setParticipantVersion(PARTICIPANT_VERSION);
+        when(mockParticipantVersionService.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
+                TestConstants.HEALTH_CODE)).thenReturn(Optional.of(participantVersion));
+
         // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
         when(mockSqsClient.sendMessage(any(), any())).thenReturn(new SendMessageResult());
 
@@ -347,15 +381,16 @@ public class Exporter3ServiceTest {
         verify(mockAccountService).getAccount(accountIdCaptor.capture());
         AccountId accountId = accountIdCaptor.getValue();
         assertEquals(accountId.getAppId(), TestConstants.TEST_APP_ID);
-        assertEquals(accountId.getHealthCode(), HEALTH_CODE);
+        assertEquals(accountId.getHealthCode(), TestConstants.HEALTH_CODE);
 
         // Verify call to HealthDataEx3Service. Just verify that the record ID was pass in through the upload is
-        // propagated.
+        // propagated. (And the attributes we set directly.)
         ArgumentCaptor<HealthDataRecordEx3> recordToCreateCaptor = ArgumentCaptor.forClass(HealthDataRecordEx3.class);
         verify(mockHealthDataEx3Service).createOrUpdateRecord(recordToCreateCaptor.capture());
 
         HealthDataRecordEx3 recordToCreate = recordToCreateCaptor.getValue();
         assertEquals(recordToCreate.getId(), RECORD_ID);
+        assertEquals(recordToCreate.getParticipantVersion().intValue(), PARTICIPANT_VERSION);
         assertEquals(recordToCreate.getSharingScope(), SharingScope.SPONSORS_AND_PARTNERS);
 
         // Verify call to SQS.
@@ -375,10 +410,43 @@ public class Exporter3ServiceTest {
     }
 
     @Test
+    public void completeUpload_NoParticipantVersion() {
+        // Set up inputs.
+        Upload upload = Upload.create();
+        upload.setHealthCode(TestConstants.HEALTH_CODE);
+        upload.setUploadId(RECORD_ID);
+
+        // Mock AccountService.
+        Account account = Account.create();
+        account.setSharingScope(SharingScope.SPONSORS_AND_PARTNERS);
+        when(mockAccountService.getAccount(any())).thenReturn(Optional.of(account));
+
+        // Mock HealthDataEx3Service.
+        HealthDataRecordEx3 createdRecord = HealthDataRecordEx3.create();
+        createdRecord.setId(RECORD_ID);
+        when(mockHealthDataEx3Service.createOrUpdateRecord(any())).thenReturn(createdRecord);
+
+        // Mock ParticipantVersionService.
+        when(mockParticipantVersionService.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
+                TestConstants.HEALTH_CODE)).thenReturn(Optional.empty());
+
+        // Mock SQS. Return type doesn't actually matter except for logs, but we don't want it to be null.
+        when(mockSqsClient.sendMessage(any(), any())).thenReturn(new SendMessageResult());
+
+        // Execute.
+        exporter3Service.completeUpload(app, upload);
+
+        // Just verify that the saved record doesn't have a participant version.
+        ArgumentCaptor<HealthDataRecordEx3> recordToCreateCaptor = ArgumentCaptor.forClass(HealthDataRecordEx3.class);
+        verify(mockHealthDataEx3Service).createOrUpdateRecord(recordToCreateCaptor.capture());
+        assertNull(recordToCreateCaptor.getValue().getParticipantVersion());
+    }
+
+    @Test
     public void completeUpload_NoSharing() {
         // Set up inputs.
         Upload upload = Upload.create();
-        upload.setHealthCode(HEALTH_CODE);
+        upload.setHealthCode(TestConstants.HEALTH_CODE);
         upload.setUploadId(RECORD_ID);
 
         // Mock AccountService.
@@ -402,7 +470,7 @@ public class Exporter3ServiceTest {
     public void completeUpload_NoAccount() {
         // Set up inputs.
         Upload upload = Upload.create();
-        upload.setHealthCode(HEALTH_CODE);
+        upload.setHealthCode(TestConstants.HEALTH_CODE);
         upload.setUploadId(RECORD_ID);
 
         // Mock AccountService.
