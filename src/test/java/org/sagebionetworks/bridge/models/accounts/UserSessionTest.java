@@ -73,6 +73,7 @@ public class UserSessionTest {
         session.setSessionToken("ABC");
         session.setInternalSessionToken("BBB");
         session.setAuthenticated(true);
+        session.setSynapseAuthenticated(true);
         session.setEnvironment(PROD);
         session.setIpAddress("ip address");
         session.setAppId(TEST_APP_ID);
@@ -83,6 +84,7 @@ public class UserSessionTest {
         UserSession newSession = BridgeObjectMapper.get().readValue(json, UserSession.class);
 
         assertTrue(newSession.isAuthenticated());
+        assertTrue(newSession.isSynapseAuthenticated());
         assertNull(newSession.getReauthToken());
         assertEquals(newSession.getSessionToken(), session.getSessionToken());
         assertEquals(newSession.getInternalSessionToken(), session.getInternalSessionToken());
@@ -119,24 +121,24 @@ public class UserSessionTest {
     @Test
     public void userIsInRole() {
         UserSession session = new UserSession(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(ADMIN, DEVELOPER)).build());
+                .withRoles(ImmutableSet.of(DEVELOPER)).build());
 
         assertTrue(session.isInRole(DEVELOPER));
         assertFalse(session.isInRole(RESEARCHER));
         assertFalse(session.isInRole(WORKER));
-        assertTrue(session.isInRole(ADMIN));
+        assertFalse(session.isInRole(ADMIN));
         assertFalse(session.isInRole((Roles)null));
     }
     
     @Test
     public void userIsInRoleSet() {
         UserSession session = new UserSession(new StudyParticipant.Builder()
-                .withRoles(ImmutableSet.of(ADMIN, DEVELOPER)).build());
+                .withRoles(ImmutableSet.of(RESEARCHER, DEVELOPER)).build());
                 
         assertTrue(session.isInRole(ImmutableSet.of(DEVELOPER)));
-        assertFalse(session.isInRole(ImmutableSet.of(RESEARCHER)));
+        assertTrue(session.isInRole(ImmutableSet.of(RESEARCHER)));
         assertFalse(session.isInRole(ImmutableSet.of(WORKER)));
-        assertTrue(session.isInRole(ImmutableSet.of(ADMIN)));
+        assertFalse(session.isInRole(ImmutableSet.of(ADMIN)));
         assertFalse(session.isInRole((Set<Roles>)null));
     }
     
@@ -147,8 +149,8 @@ public class UserSessionTest {
         
         assertTrue(session.isInRole(DEVELOPER));
         assertTrue(session.isInRole(RESEARCHER));
-        assertTrue(session.isInRole(WORKER));
         assertTrue(session.isInRole(ADMIN));
+        assertTrue(session.isInRole(WORKER));
     }
     
     @Test
@@ -158,9 +160,9 @@ public class UserSessionTest {
         
         assertTrue(session.isInRole(ImmutableSet.of(DEVELOPER)));
         assertTrue(session.isInRole(ImmutableSet.of(RESEARCHER)));
-        assertTrue(session.isInRole(ImmutableSet.of(WORKER)));
         assertTrue(session.isInRole(ImmutableSet.of(ADMIN)));
         assertTrue(session.isInRole(ImmutableSet.of(RESEARCHER, ADMIN)));
+        assertTrue(session.isInRole(ImmutableSet.of(WORKER)));
     }
     
     @Test

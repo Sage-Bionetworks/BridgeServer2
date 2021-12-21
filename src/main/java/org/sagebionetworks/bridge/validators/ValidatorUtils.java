@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -20,6 +21,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Duration;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Period;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -40,6 +43,10 @@ public class ValidatorUtils {
     static final String INVALID_LANG = "%s is not a valid ISO 639 alpha-2 or alpha-3 language code";
     static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFFFF format)";
     static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{6}$";
+    static final String INVALID_STRING_LENGTH = "is longer than the allowed field length of %d characters";
+    
+    static final int TEXT_SIZE = 65535;
+    static final int MEDIUMTEXT_SIZE = 16777215;
 
     private static final Set<DurationFieldType> FIXED_LENGTH_DURATIONS = ImmutableSet.of(DurationFieldType.minutes(),
             DurationFieldType.hours(), DurationFieldType.days(), DurationFieldType.weeks());
@@ -239,4 +246,25 @@ public class ValidatorUtils {
         }
     }
 
+    public static final void validateStringLength(Errors errors, int maxLength, String persistingText, String fieldName) {
+        if (persistingText == null || persistingText.isEmpty()) {
+            return;
+        }
+        if (persistingText.length() > maxLength) {
+            errors.rejectValue(fieldName, String.format(INVALID_STRING_LENGTH, maxLength));
+        }
+    }
+    
+    public static <T> void validateJsonLength(Errors errors, int maxLength, T persistingObject, String fieldName) {
+        if (persistingObject == null) {
+            return;
+        }
+        try {
+            String jsonString = BridgeObjectMapper.get().writeValueAsString(persistingObject);
+            validateStringLength(errors, maxLength, jsonString, fieldName);
+        } catch (JsonProcessingException e) {
+            // This should never happen since the object was previously deserialized
+            throw new BridgeServiceException(e);
+        }
+    }
 }

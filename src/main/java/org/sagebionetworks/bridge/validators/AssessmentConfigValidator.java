@@ -1,13 +1,16 @@
-package org.sagebionetworks.bridge.models.assessments.config;
+package org.sagebionetworks.bridge.validators;
+
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.util.HashMap;
 import java.util.Map;
 
+import org.sagebionetworks.bridge.models.assessments.config.AssessmentConfig;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 import org.sagebionetworks.bridge.BridgeUtils;
-import org.sagebionetworks.bridge.validators.AbstractValidator;
 
 /**
  * This validator can be constructed with additional validators that will validate JsonNodes of a
@@ -31,6 +34,7 @@ public class AssessmentConfigValidator extends AbstractValidator {
         if (assessmentConfig.getConfig() == null) {
             errors.rejectValue("config", "is required");
         } else {
+            validateStringLength(errors, TEXT_SIZE, assessmentConfig.getConfig().toString(), "config");
             errors.pushNestedPath("config");
             ConfigVisitor visitor = new ConfigVisitor(validators, errors);
             BridgeUtils.walk(assessmentConfig.getConfig(), visitor);

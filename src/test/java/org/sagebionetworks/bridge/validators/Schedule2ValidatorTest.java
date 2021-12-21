@@ -1,13 +1,17 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getExcessivelyLargeClientData;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.schedules2.Schedule2Test.createValidSchedule;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.APP_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.CANNOT_BE_LONGER_THAN_FIVE_YEARS;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.CANNOT_BE_LONGER_THAN_SCHEDULE;
+import static org.sagebionetworks.bridge.validators.Schedule2Validator.CLIENT_DATA_FIELD;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.CREATED_ON_FIELD;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.DELAY_FIELD;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.DURATION_FIELD;
@@ -27,6 +31,7 @@ import static org.sagebionetworks.bridge.validators.Schedule2Validator.UPDATE_TY
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_LONG_PERIOD;
 
 import com.google.common.collect.ImmutableList;
@@ -158,8 +163,8 @@ public class Schedule2ValidatorTest extends Mockito {
         Validate.entityThrowingException(INSTANCE, schedule);
 
         // Actual tests of session validation occur in SessionValidatorTest.
-        verify(session1).getName();
-        verify(session2).getName();
+        verify(session1, times(2)).getName();
+        verify(session2, times(2)).getName();
     }
 
     @Test
@@ -195,8 +200,8 @@ public class Schedule2ValidatorTest extends Mockito {
     @Test
     public void studyBurstIdentifierInvalid() {
         Schedule2 schedule = createValidSchedule();
-        schedule.getStudyBursts().get(0).setIdentifier("This Isn't Valid");
-        assertValidatorMessage(INSTANCE, schedule, STUDY_BURSTS_FIELD + "[0]." + IDENTIFIER_FIELD, BRIDGE_EVENT_ID_ERROR);
+        schedule.getStudyBursts().get(0).setIdentifier("This:Isn't:Valid");
+        assertValidatorMessage(INSTANCE, schedule, STUDY_BURSTS_FIELD + "[0]." + IDENTIFIER_FIELD, BRIDGE_RELAXED_ID_ERROR);
     }
     
     @Test
@@ -290,5 +295,21 @@ public class Schedule2ValidatorTest extends Mockito {
         
         schedule.getStudyBursts().get(0).setUpdateType(null);
         assertValidatorMessage(INSTANCE, schedule, STUDY_BURSTS_FIELD + "[1]." + IDENTIFIER_FIELD, CANNOT_BE_DUPLICATE);
+    }
+    
+    @Test
+    public void stringLengthValidation_burstIds() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.getStudyBursts().get(0).setIdentifier(generateStringOfLength(256));
+        
+        assertValidatorMessage(INSTANCE, schedule, STUDY_BURSTS_FIELD + "[0]." + IDENTIFIER_FIELD, getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void jsonLengthValidation_clientData() {
+        Schedule2 schedule = createValidSchedule();
+        schedule.setClientData(getExcessivelyLargeClientData());
+        
+        assertValidatorMessage(INSTANCE, schedule, CLIENT_DATA_FIELD, getInvalidStringLengthMessage(TEXT_SIZE));
     }
 }

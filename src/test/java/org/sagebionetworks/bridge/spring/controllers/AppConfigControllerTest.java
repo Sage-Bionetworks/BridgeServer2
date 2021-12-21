@@ -210,7 +210,7 @@ public class AppConfigControllerTest extends Mockito {
     
     @Test
     public void deleteAppConfigDefault() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
 
         StatusMessage message = controller.deleteAppConfig(GUID, null);
         assertEquals(message.getMessage(), "App config deleted.");
@@ -220,7 +220,7 @@ public class AppConfigControllerTest extends Mockito {
 
     @Test
     public void deleteAppConfig() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         StatusMessage message = controller.deleteAppConfig(GUID, "false");
         assertEquals(message.getMessage(), "App config deleted.");
@@ -230,7 +230,7 @@ public class AppConfigControllerTest extends Mockito {
 
     @Test
     public void developerCannotPermanentlyDelete() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         StatusMessage message = controller.deleteAppConfig(GUID, "true");
         assertEquals(message.getMessage(), "App config deleted.");
@@ -244,7 +244,7 @@ public class AppConfigControllerTest extends Mockito {
                 .copyOf(session.getParticipant())
                 .withRoles(ImmutableSet.of(DEVELOPER, ADMIN))
                 .build());
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         StatusMessage message = controller.deleteAppConfig(GUID, "true");
         assertEquals(message.getMessage(), "App config deleted.");
@@ -290,7 +290,7 @@ public class AppConfigControllerTest extends Mockito {
 
     @Test
     public void deleteAppConfigDeletesCache() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, ADMIN);
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER);
         
         controller.deleteAppConfig("guid", null);
         

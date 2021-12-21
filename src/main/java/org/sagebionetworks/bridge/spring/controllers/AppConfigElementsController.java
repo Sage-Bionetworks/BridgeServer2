@@ -113,7 +113,7 @@ public class AppConfigElementsController extends BaseController {
 
     @DeleteMapping("/v3/appconfigs/elements/{id}")
     public StatusMessage deleteElementAllRevisions(@PathVariable String id, @RequestParam String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
             service.deleteElementAllRevisionsPermanently(session.getAppId(), id);
@@ -128,7 +128,7 @@ public class AppConfigElementsController extends BaseController {
     @DeleteMapping("/v3/appconfigs/elements/{id}/revisions/{revision}")
     public StatusMessage deleteElementRevision(@PathVariable String id, @PathVariable String revision,
             @RequestParam String physical) {
-        UserSession session = getAuthenticatedSession(DEVELOPER, ADMIN);
+        UserSession session = getAuthenticatedSession(DEVELOPER);
         
         Long revisionLong = BridgeUtils.getLongOrDefault(revision, null);
         if (revisionLong == null) {

@@ -108,11 +108,12 @@ public class TimelineTest extends Mockito {
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
         List<TimelineMetadata> metadata = timeline.getMetadata();
         
-        // This is a metadata record for a burst
+        // This is a metadata record for a session record in a burst
         TimelineMetadata meta1 = metadata.get(6);
-        
         assertEquals(meta1.getStudyBurstId(), "burst1");
         assertEquals(meta1.getStudyBurstNum(), Integer.valueOf(2));
+        assertEquals(meta1.getSessionSymbol(), "✯");
+        assertEquals(meta1.getSessionName(), "Do weekly survey");
 
         // This is the assessment #1 record
         TimelineMetadata meta2 = metadata.get(1);

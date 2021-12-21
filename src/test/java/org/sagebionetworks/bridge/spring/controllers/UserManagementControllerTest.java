@@ -2,10 +2,8 @@ package org.sagebionetworks.bridge.spring.controllers;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
@@ -19,8 +17,6 @@ import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.config.Environment.LOCAL;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
-
-import java.util.Optional;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -45,8 +41,6 @@ import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.CriteriaContext;
 import org.sagebionetworks.bridge.models.StatusMessage;
-import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.SignIn;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -134,9 +128,7 @@ public class UserManagementControllerTest extends Mockito {
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(UserManagementController.class);
         assertPost(UserManagementController.class, "signInForSuperAdmin");
-        assertPost(UserManagementController.class, "changeAppForAdmin");
         assertCreate(UserManagementController.class, "createUser");
-        assertCreate(UserManagementController.class, "createUserWithAppId");
         assertDelete(UserManagementController.class, "deleteUser");
     }
 
@@ -186,39 +178,6 @@ public class UserManagementControllerTest extends Mockito {
         verify(mockAuthService).signOut(session);
     }
 
-    @SuppressWarnings("deprecation")
-    @Test
-    public void changeStudyForAdmin() throws Exception {
-        doReturn(session).when(controller).getAuthenticatedSession(SUPERADMIN);
-        
-        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
-        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(Account.create()));
-
-        SignIn signIn = new SignIn.Builder().withAppId("nextStudy").build();
-        mockRequestBody(mockRequest, signIn);
-
-        App nextApp = App.create();
-        nextApp.setIdentifier("nextStudy");
-        when(mockAppService.getApp("nextStudy")).thenReturn(nextApp);
-
-        controller.changeAppForAdmin();
-        assertEquals(session.getAppId(), "nextStudy");
-        verify(mockCacheProvider).setUserSession(session);
-    }
-    
-    @SuppressWarnings("deprecation")
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void changeStudyRejectsStudyAdmin() throws Exception {
-        doReturn(session).when(controller).getSessionIfItExists();
-        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(ImmutableSet.of(ADMIN)).build());
-        
-        SignIn signIn = new SignIn.Builder().withAppId("nextStudy").build();
-        mockRequestBody(mockRequest, signIn);
-        
-        controller.changeAppForAdmin();
-    }
-
     @Test
     public void createdResponseReturnsJSONPayload() throws Exception {
         mockRequestBody(mockRequest, "{}");
@@ -228,27 +187,6 @@ public class UserManagementControllerTest extends Mockito {
         assertEquals(result.get("type").textValue(), "UserSessionInfo");
         assertEquals(result.get("email").textValue(), EMAIL);
     }
-
-    @Test
-    public void createdResponseReturnsJSONPayloadWithAppId() throws Exception {
-        mockRequestBody(mockRequest, "{}");
-        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("AAA");
-
-        when(mockAccountService.getAccount(ACCOUNT_ID)).thenReturn(Optional.of(Account.create()));
-        
-        // same app id as above test
-        StatusMessage result = controller.createUserWithAppId(TEST_APP_ID);
-        assertEquals(result, UserManagementController.CREATED_MSG);
-    }
-    
-    @Test(expectedExceptions = UnauthorizedException.class)
-    public void createUserWithAppIdRejectsStudyAdmin() throws Exception {
-        doReturn(session).when(controller).getSessionIfItExists();
-        session.setParticipant(new StudyParticipant.Builder().copyOf(session.getParticipant())
-                .withRoles(ImmutableSet.of(ADMIN)).build());
-        
-        controller.createUserWithAppId(TEST_APP_ID);
-    }
     
     @Test(expectedExceptions = InvalidEntityException.class, 
             expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body, fields: phone.*")
@@ -257,15 +195,6 @@ public class UserManagementControllerTest extends Mockito {
         mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
         
         controller.createUser();
-    }
-
-    @Test(expectedExceptions = InvalidEntityException.class, 
-            expectedExceptionsMessageRegExp = ".*Error parsing JSON in request body, fields: phone.*")
-    public void createUserWithAppIdBadJson() throws Exception {
-        doReturn(session).when(controller).getSessionIfItExists();
-        mockRequestBody(mockRequest, "{\"phone\": \"+1234567890\"}");
-        
-        controller.createUserWithAppId(TEST_APP_ID);
     }
     
     @Test

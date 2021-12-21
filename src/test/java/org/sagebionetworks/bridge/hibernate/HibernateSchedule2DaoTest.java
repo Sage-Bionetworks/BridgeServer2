@@ -19,8 +19,10 @@ import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.INSERT;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.INSTANCE_GUID;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE;
 import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.SELECT_COUNT;
+import static org.sagebionetworks.bridge.hibernate.HibernateSchedule2Dao.SELECT_SESSION_METADATA_FOR_SCHEDULE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.sql.Connection;
@@ -298,30 +300,33 @@ public class HibernateSchedule2DaoTest extends Mockito {
 
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
-        TimelineMetadata meta = timeline.getMetadata().get(0);
+        TimelineMetadata meta = timeline.getMetadata().get(1);
 
         dao.updatePreparedStatement(mockStatement, meta);
 
-        verify(mockStatement).setString(1, meta.getAppId());
-        verify(mockStatement).setString(2, meta.getAssessmentGuid());
-        verify(mockStatement).setString(3, meta.getAssessmentId());
-        verify(mockStatement).setString(4, meta.getAssessmentInstanceGuid());
-        verify(mockStatement).setNull(5, Types.NULL);
-        verify(mockStatement).setString(6, meta.getScheduleGuid());
-        verify(mockStatement).setLong(7, meta.getScheduleModifiedOn().getMillis());
-        verify(mockStatement).setBoolean(8, meta.isSchedulePublished());
-        verify(mockStatement).setString(9, meta.getSessionGuid());
-        verify(mockStatement).setInt(10, meta.getSessionInstanceEndDay());
-        verify(mockStatement).setString(11, meta.getSessionInstanceGuid());
-        verify(mockStatement).setInt(12, meta.getSessionInstanceStartDay());
-        verify(mockStatement).setString(13, meta.getSessionStartEventId());
-        verify(mockStatement).setString(14, meta.getTimeWindowGuid());
-        verify(mockStatement).setBoolean(15, meta.isTimeWindowPersistent());
-        verify(mockStatement).setString(16, meta.getGuid());
-        verify(mockStatement).setString(17, meta.getStudyBurstId());
-        verify(mockStatement).setNull(18, Types.NULL);
+        verify(mockStatement).setString(1, TEST_APP_ID); // appId
+        verify(mockStatement).setString(2, "111111111111111111111111"); // assessmentGuid
+        verify(mockStatement).setString(3, "Local Assessment 1"); // assessmentId
+        verify(mockStatement).setString(4, "5NzDH5Q4V2VkSBFQF2HntA"); // assessmentInstanceGuid
+        verify(mockStatement).setInt(5, 100); // assessmentRevision
+        verify(mockStatement).setString(6, "AAAAAAAAAAAAAAAAAAAAAAAA"); // scheduleGuid
+        verify(mockStatement).setLong(7, 1422322712486L); // scheduleModifiedOn
+        verify(mockStatement).setBoolean(8, true); // schedulePublished
+        verify(mockStatement).setString(9, "BBBBBBBBBBBBBBBBBBBBBBBB"); // sessionGuid
+        verify(mockStatement).setInt(10, 7); // sessionInstanceEndDay
+        verify(mockStatement).setString(11, "faQS0dRjAt9xNFTfOd5XqA"); // sessionInstanceGuid
+        verify(mockStatement).setInt(12, 7); // sessionInstanceStartDay
+        verify(mockStatement).setString(13, "activities_retrieved"); // sessionStartEventId
+        verify(mockStatement).setString(14, "FFFFFFFFFFFFFFFFFFFFFFFF"); // timeWindowGuid
+        verify(mockStatement).setBoolean(15, true); // timeWindowPersistent
+        verify(mockStatement).setString(16, "5NzDH5Q4V2VkSBFQF2HntA"); // guid
+        verify(mockStatement).setString(17, null); // studyBurstId
+        verify(mockStatement).setNull(18, Types.NULL); // studyBurstNum
+        verify(mockStatement).setString(19, "✯"); // sessionSymbol
+        verify(mockStatement).setString(20, "Do weekly survey"); // sessionLabel
         verify(mockStatement).addBatch();
-
+        verifyNoMoreInteractions(mockStatement);
+        
         mockStatement = mock(PreparedStatement.class);
         meta = timeline.getMetadata().get(7);
         dao.updatePreparedStatement(mockStatement, meta);
@@ -407,6 +412,20 @@ public class HibernateSchedule2DaoTest extends Mockito {
 
         assertEquals(queryCaptor.getValue(), SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE);
         assertEquals(paramsCaptor.getValue().get(INSTANCE_GUID), GUID);
+    }
+    
+    @Test
+    public void getScheduleMetadata() {
+        List<TimelineMetadata> results = ImmutableList.of();
+        when(mockHibernateHelper.nativeQueryGet(any(), any(), any(), any(), 
+                eq(TimelineMetadata.class))).thenReturn(results);
+
+        List<TimelineMetadata> retValue = dao.getScheduleMetadata(GUID);
+        assertSame(retValue, results);
+
+        verify(mockHibernateHelper).nativeQueryGet(eq(SELECT_SESSION_METADATA_FOR_SCHEDULE),
+                paramsCaptor.capture(), eq(null), eq(null), eq(TimelineMetadata.class));
+        assertEquals(paramsCaptor.getValue().get(HibernateSchedule2Dao.SCHEDULE_GUID), GUID);
     }
     
     @Test

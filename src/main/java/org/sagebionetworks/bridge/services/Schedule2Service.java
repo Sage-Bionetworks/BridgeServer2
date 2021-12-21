@@ -329,6 +329,12 @@ public class Schedule2Service {
         return Scheduler.INSTANCE.calculateTimeline(schedule);
     }
     
+    public List<TimelineMetadata> getScheduleMetadata(String guid) {
+        checkNotNull(guid);
+
+        return dao.getScheduleMetadata(guid);
+    }
+    
     public Optional<TimelineMetadata> getTimelineMetadata(String instanceGuid) {
         checkNotNull(instanceGuid);
         return dao.getTimelineMetadata(instanceGuid);

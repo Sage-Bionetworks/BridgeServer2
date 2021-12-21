@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
     public static final String CONFIG_KEY_WORKER_SQS_URL = "workerPlatform.request.sqs.queue.url";
+    public static final String EXTERNAL_ID_NONE = "<none>";
 
     // Excessively long User-Agent strings break the database and generally aren't parseable anyway.
     public static final int MAX_USER_AGENT_LENGTH = 255;
@@ -32,7 +33,7 @@ public class BridgeConstants {
     public static final String TYPE_FIELD_NAME = "type";
     
     public static final String SHARED_ASSESSMENTS_ERROR = "Only shared assessment APIs are enabled for the shared assessment library.";
-
+    public static final String NOT_SYNAPSE_AUTHENTICATED = "Account has not authenticated through Synapse.";
     public static final String APP_ACCESS_EXCEPTION_MSG = "Account does not have access to that app.";
     
     public static final String SYNAPSE_OAUTH_CLIENT_SECRET = "synapse.oauth.client.secret";
@@ -43,6 +44,7 @@ public class BridgeConstants {
     public static final String MAX_USERS_ERROR = "While app is in evaluation mode, it may not exceed %s accounts.";
     public static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
     public static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
+    public static final String BRIDGE_RELAXED_ID_ERROR = "cannot contain colons";
     public static final String CALLER_NOT_MEMBER_ERROR = "Assessment must be associated to the caller’s organization.";
     public static final String NEGATIVE_OFFSET_ERROR = "offsetBy cannot be negative";
     public static final String NONPOSITIVE_REVISION_ERROR = "revision cannot be less than 1";
@@ -55,12 +57,19 @@ public class BridgeConstants {
 
     // App ID used for the Shared Module Library
     public static final String SHARED_APP_ID = "shared";
+    
+    public static final String API_2_APP_ID = "api-2";
 
     /** A common string constraint Synapse places on model identifiers. */
     public static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
     
     /** The pattern used to validate activity event keys and automatic custom event keys. */
     public static final String BRIDGE_EVENT_ID_PATTERN = "^[a-zA-Z0-9_-]+$";
+    
+    /** An identifier field that can contain spaces, some punctuation (but not colons) where it's infeasible 
+     * to include a separate label and unnecessary to restrict the string for external systems like Synapse. 
+     */
+    public static final String BRIDGE_RELAXED_ID_PATTERN = "^[^:]+$";
     
     /** The pattern of a valid JavaScript variable/object property name. */
     public  static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";

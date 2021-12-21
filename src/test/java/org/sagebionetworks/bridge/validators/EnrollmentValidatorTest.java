@@ -6,8 +6,11 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.EnrollmentValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import org.testng.annotations.Test;
 
@@ -24,6 +27,7 @@ public class EnrollmentValidatorTest {
         enrollment.setEnrolledBy(TEST_USER_ID);
         enrollment.setWithdrawnBy("withdrawnBy");
         enrollment.setWithdrawalNote("withdrawal note");
+        enrollment.setNote("test note");
         return enrollment;
     }
     
@@ -85,6 +89,34 @@ public class EnrollmentValidatorTest {
     public void externalIdNullOK() {
         Enrollment enrollment = getEnrollment();
         enrollment.setExternalId(null);
-        Validate.entityThrowingException(INSTANCE, getEnrollment());
+        Validate.entityThrowingException(INSTANCE, enrollment);
+    }
+    
+    @Test
+    public void stringLengthValidation_enrolledBy() {
+        Enrollment enrollment = getEnrollment();
+        enrollment.setEnrolledBy(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, enrollment, "enrolledBy", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_withdrawnBy() {
+        Enrollment enrollment = getEnrollment();
+        enrollment.setWithdrawnBy(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, enrollment, "withdrawnBy", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_withdrawalNote() {
+        Enrollment enrollment = getEnrollment();
+        enrollment.setWithdrawalNote(generateStringOfLength(256));
+        assertValidatorMessage(INSTANCE, enrollment, "withdrawalNote", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidation_note() {
+        Enrollment enrollment = getEnrollment();
+        enrollment.setNote(generateStringOfLength(TEXT_SIZE + 1));
+        assertValidatorMessage(INSTANCE, enrollment, "note", getInvalidStringLengthMessage(TEXT_SIZE));
     }
 }

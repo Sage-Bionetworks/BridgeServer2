@@ -7,10 +7,10 @@ import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
+import static org.sagebionetworks.bridge.Roles.PASSES_AS_ROLE;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
-import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import java.util.Set;
@@ -253,21 +253,28 @@ public class AuthUtils {
             .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
     
     /**
-     * Is the caller in the provided role? Superadmins always pass this test.
+     * Does the caller have the required role? Note that a few roles pass for other roles.
      */
     public static boolean isInRole(Set<Roles> callerRoles, Roles requiredRole) {
-        return callerRoles != null && requiredRole != null && 
-                (callerRoles.contains(SUPERADMIN) || callerRoles.contains(requiredRole));
+        if (callerRoles == null || requiredRole == null) {
+            return false;
+        }
+        return callerRoles.stream()
+                .flatMap(role -> PASSES_AS_ROLE.get(role).stream())
+                .anyMatch(role -> role == requiredRole);
     }
     
     /**
-     * Is the caller in any of the provided roles? Superadmins always pass this test.
+     * Does the caller have any of the required roles? Note that a few roles pass for other roles.
      */
     public static boolean isInRole(Set<Roles> callerRoles, Set<Roles> requiredRoles) {
-        return callerRoles != null && requiredRoles != null && 
-                requiredRoles.stream().anyMatch(role -> isInRole(callerRoles, role));
+        if (callerRoles == null || requiredRoles == null || requiredRoles.isEmpty()) {
+            return false;
+        }
+        return callerRoles.stream()
+                .flatMap(role -> PASSES_AS_ROLE.get(role).stream())
+                .anyMatch(role -> requiredRoles.contains(role));
     }
-    
     
     /**
      * To access an individual account, one of these conditions must hold true:

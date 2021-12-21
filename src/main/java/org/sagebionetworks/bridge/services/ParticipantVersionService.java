@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantVersionDao;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
@@ -26,7 +27,6 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
-import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.worker.Ex3ParticipantVersionRequest;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -37,7 +37,6 @@ public class ParticipantVersionService {
 
     static final String WORKER_NAME_EX_3_PARTICIPANT_VERSION = "Ex3ParticipantVersionWorker";
 
-    private ConsentService consentService;
     private ParticipantVersionDao participantVersionDao;
     private AmazonSQSClient sqsClient;
     private String workerQueueUrl;
@@ -45,11 +44,6 @@ public class ParticipantVersionService {
     @Autowired
     public final void setConfig(BridgeConfig config) {
         workerQueueUrl = config.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL);
-    }
-
-    @Autowired
-    public final void setConsentService(ConsentService consentService) {
-        this.consentService = consentService;
     }
 
     @Autowired
@@ -72,10 +66,8 @@ public class ParticipantVersionService {
             // no_sharing means we don't export this to Synapse, which means we can skip making a Participant Version.
             return;
         }
-        Optional<Boolean> isConsented = consentService.isConsented(account);
-        if (!isConsented.isPresent() || !isConsented.get()) {
-            // If participant is not consented, don't create a participant version.
-            // If we're not sure whether they're consented, assume that they are not.
+        if (account.getActiveEnrollments().isEmpty()) {
+            // Participant has no active enrollments. Don't create a participant version.
             return;
         }
 
@@ -97,14 +89,8 @@ public class ParticipantVersionService {
         participantVersion.setDataGroups(account.getDataGroups());
         participantVersion.setLanguages(account.getLanguages());
         participantVersion.setSharingScope(account.getSharingScope());
+        participantVersion.setStudyMemberships(BridgeUtils.mapStudyMemberships(account));
         participantVersion.setTimeZone(account.getClientTimeZone());
-
-        // Convert study memberships into a map.
-        Map<String, String> studyMembershipMap = new HashMap<>();
-        for (Enrollment enrollment : account.getActiveEnrollments()) {
-            studyMembershipMap.put(enrollment.getStudyId(), enrollment.getExternalId());
-        }
-        participantVersion.setStudyMemberships(studyMembershipMap);
 
         return participantVersion;
     }

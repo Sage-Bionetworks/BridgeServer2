@@ -6,11 +6,13 @@ import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.models.apps.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_HEX_TRIPLET;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_LANG;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.INVALID_STRING_LENGTH;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_LONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
@@ -24,13 +26,18 @@ import static org.testng.Assert.assertTrue;
 
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.Period;
 import org.mockito.Mockito;
+import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.springframework.validation.Errors;
 import org.testng.annotations.Test;
 
@@ -43,7 +50,21 @@ import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 public class ValidatorUtilsTest extends Mockito {
-
+    
+    static String generateStringOfLength(int length) {
+        return RandomStringUtils.randomAlphabetic(length);
+    }
+    
+    static String getInvalidStringLengthMessage(int maxLength) {
+        return String.format(INVALID_STRING_LENGTH, maxLength);
+    }
+    
+    static JsonNode getExcessivelyLargeClientData() {
+        JsonNode clientData = TestUtils.getClientData();
+        ((ObjectNode)clientData).put("largeField", generateStringOfLength(TEXT_SIZE));
+        return clientData;
+    }
+    
     @Test
     public void participantHasValidIdentifierValidEmail() {
         StudyParticipant participant = new StudyParticipant.Builder().withEmail(EMAIL).build();
@@ -644,5 +665,62 @@ public class ValidatorUtilsTest extends Mockito {
         verify(errors).pushNestedPath("colorScheme");
         verify(errors).rejectValue("inactivated", INVALID_HEX_TRIPLET);
     }
+    
+    @Test
+    public void validateStringLength_valid() {
+        String validString = "under 10";
+        
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateStringLength(errors, 10, validString, "testFieldName");
+    
+        verify(errors, never()).rejectValue(any(), any());
+    }
 
+    @Test
+    public void validateStringLength_tooLong() {
+        String tooLong = "more than 10 characters";
+        
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateStringLength(errors, 10, tooLong, "testFieldName");
+        
+        verify(errors).rejectValue("testFieldName", getInvalidStringLengthMessage(10));
+    }
+    
+    @Test
+    public void validateStringLength_nullSafe() {
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateStringLength(errors, 10, null, "testFieldName");
+        
+        verify(errors, never()).rejectValue(any(), any());
+    }
+    
+    @Test
+    public void validateJsonLength_valid() {
+        Errors errors = mock(Errors.class);
+        Study study = Study.create();
+        study.setIdentifier("id");
+        study.setName("name");
+        ValidatorUtils.validateJsonLength(errors, TEXT_SIZE, study, "testFieldName");
+    
+        verify(errors, never()).rejectValue(any(), any());
+    }
+    
+    @Test
+    public void validateJsonLength_tooLong() {
+        Errors errors = mock(Errors.class);
+        Study study = Study.create();
+        study.setIdentifier("id");
+        study.setName(generateStringOfLength(TEXT_SIZE));
+        ValidatorUtils.validateJsonLength(errors, TEXT_SIZE, study, "testFieldName");
+        
+        verify(errors).rejectValue("testFieldName", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void validateJsonLength_nullSafe() {
+        Errors errors = mock(Errors.class);
+        ValidatorUtils.validateJsonLength(errors, TEXT_SIZE, null, "testFieldName");
+    
+        verify(errors, never()).rejectValue(any(), any());
+    }
 }

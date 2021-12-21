@@ -6,7 +6,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 
 public class PasswordGenerator {
     public static final PasswordGenerator INSTANCE = new PasswordGenerator();

@@ -97,7 +97,7 @@ public class ParticipantDataController extends BaseController {
     @GetMapping("/v1/apps/{appId}/participants/{userId}/data")
     public ForwardCursorPagedResourceList<String> getAllDataForAdminWorker(@PathVariable String appId, @PathVariable String userId,
                                                                            String offsetKey, String pageSize) {
-        UserSession session = getAuthenticatedSession(ADMIN, WORKER);
+        UserSession session = getAuthenticatedSession(WORKER);
 
         checkAccountExists(appId, userId);
         checkAdminSessionAppId(session, appId);
@@ -131,7 +131,7 @@ public class ParticipantDataController extends BaseController {
     @GetMapping("/v1/apps/{appId}/participants/{userId}/data/{identifier}")
     public ParticipantData getDataByIdentifierForAdminWorker(@PathVariable String appId, @PathVariable String userId,
                                                              @PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(ADMIN, WORKER);
+        UserSession session = getAuthenticatedSession(WORKER);
 
         checkAccountExists(appId, userId);
         checkAdminSessionAppId(session, userId);
@@ -145,7 +145,7 @@ public class ParticipantDataController extends BaseController {
     @PostMapping("/v1/apps/{appId}/participants/{userId}/data/{identifier}")
     @ResponseStatus(HttpStatus.CREATED)
     public StatusMessage saveDataForAdminWorker(@PathVariable String appId, @PathVariable String userId, @PathVariable String identifier) {
-        UserSession session = getAuthenticatedSession(ADMIN, WORKER);
+        UserSession session = getAuthenticatedSession(WORKER);
 
         checkAccountExists(appId, userId);
         checkAdminSessionAppId(session, appId);

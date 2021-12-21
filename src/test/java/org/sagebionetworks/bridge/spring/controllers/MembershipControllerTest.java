@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertSame;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
@@ -32,7 +31,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AccountSummarySearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -141,8 +139,8 @@ public class MembershipControllerTest extends Mockito {
     @Test
     public void addMember() {
         setContext(b -> b.withCallerOrgMembership(TEST_ORG_ID)
-                .withCallerRoles(ImmutableSet.of(Roles.ORG_ADMIN)));
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)));
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         controller.addMember(TEST_ORG_ID, TEST_USER_ID);
         
@@ -152,8 +150,8 @@ public class MembershipControllerTest extends Mockito {
     @Test
     public void removeMember() {
         setContext(b -> b.withCallerOrgMembership(TEST_ORG_ID)
-                .withCallerRoles(ImmutableSet.of(Roles.ORG_ADMIN)));
-        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN, ADMIN);
+                .withCallerRoles(ImmutableSet.of(ORG_ADMIN)));
+        doReturn(session).when(controller).getAuthenticatedSession(ORG_ADMIN);
         
         controller.removeMember(TEST_ORG_ID, TEST_USER_ID);
         

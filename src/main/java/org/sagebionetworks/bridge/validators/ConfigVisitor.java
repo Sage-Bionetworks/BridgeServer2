@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.assessments.config;
+package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.BridgeConstants.TYPE_FIELD_NAME;
 

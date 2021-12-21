@@ -2,6 +2,8 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getExcessivelyLargeClientData;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
@@ -12,6 +14,7 @@ import static org.sagebionetworks.bridge.validators.Validate.STARTED_ON_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.STUDY_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.USER_ID_FIELD;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import com.google.common.collect.ImmutableList;
 
@@ -114,6 +117,13 @@ public class AdherenceRecordListValidatorTest extends Mockito {
                 asField(EVENT_TIMESTAMP_FIELD), CANNOT_BE_NULL);
         assertValidatorMessage(INSTANCE, list, 
                 "records[1]."+STUDY_ID_FIELD, CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void jsonLengthValidation_clientData() {
+        AdherenceRecord record = TestUtils.getAdherenceRecord(GUID);
+        record.setClientData(getExcessivelyLargeClientData());
+        assertValidatorMessage(INSTANCE, asList(record), "records[0].clientData", getInvalidStringLengthMessage(TEXT_SIZE));
     }
     
     private AdherenceRecordList asList(AdherenceRecord... records) {

@@ -119,7 +119,7 @@ public class BridgeUtils {
         ImmutableMap.Builder<String, String> builder = new ImmutableMap.Builder<>();
         for (Enrollment enrollment : account.getActiveEnrollments()) {
             String value = (enrollment.getExternalId() == null) ? 
-                    "<none>" : enrollment.getExternalId();
+                    BridgeConstants.EXTERNAL_ID_NONE : enrollment.getExternalId();
             builder.put(enrollment.getStudyId(), value);
         }
         return builder.build();

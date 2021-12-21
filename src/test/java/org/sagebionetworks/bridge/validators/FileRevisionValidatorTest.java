@@ -2,7 +2,10 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.FileRevisionValidator.INSTANCE;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import org.testng.annotations.Test;
 
@@ -39,5 +42,37 @@ public class FileRevisionValidatorTest {
         FileRevision revision = new FileRevision();
         
         assertValidatorMessage(INSTANCE, revision, "mimeType", "is required");
+    }
+    
+    @Test
+    public void stringLengthValidator_name() {
+        FileRevision revision = new FileRevision();
+        revision.setName(generateStringOfLength(256));
+    
+        assertValidatorMessage(INSTANCE, revision, "name", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidator_description() {
+        FileRevision revision = new FileRevision();
+        revision.setDescription(generateStringOfLength(TEXT_SIZE + 1));
+        
+        assertValidatorMessage(INSTANCE, revision, "description", getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void stringLengthValidator_mimeType() {
+        FileRevision revision = new FileRevision();
+        revision.setMimeType(generateStringOfLength(256));
+        
+        assertValidatorMessage(INSTANCE, revision, "mimeType", getInvalidStringLengthMessage(255));
+    }
+    
+    @Test
+    public void stringLengthValidator_uploadUrl() {
+        FileRevision revision = new FileRevision();
+        revision.setUploadURL(generateStringOfLength(1025));
+        
+        assertValidatorMessage(INSTANCE, revision, "uploadUrl", getInvalidStringLengthMessage(1024));
     }
 }

@@ -118,7 +118,9 @@ public class HibernateStudy implements Study {
             @JoinColumn(name="appId"), @JoinColumn(name="studyId")
     })
     private List<StudyCustomEvent> customEvents;
-    
+    private String studyTimeZone;
+    private Integer adherenceThresholdPercentage;
+
     /**
      * For full construction of object by Hibernate.
      */
@@ -425,5 +427,21 @@ public class HibernateStudy implements Study {
     @Override
     public void setCustomEvents(List<StudyCustomEvent> customEvents) {
         this.customEvents = customEvents;
+    }
+
+    public String getStudyTimeZone() {
+        return studyTimeZone;
+    }
+
+    public void setStudyTimeZone(String studyTimeZone) {
+        this.studyTimeZone = studyTimeZone;
+    }
+
+    public Integer getAdherenceThresholdPercentage() {
+        return adherenceThresholdPercentage;
+    }
+
+    public void setAdherenceThresholdPercentage(Integer adherenceThresholdPercentage) {
+        this.adherenceThresholdPercentage = adherenceThresholdPercentage;
     }
 }

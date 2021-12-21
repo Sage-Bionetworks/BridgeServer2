@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.assessments.config;
+package org.sagebionetworks.bridge.validators;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,7 +15,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.validators.AbstractValidator;
 
 public class ConfigVisitorTest extends Mockito {
 

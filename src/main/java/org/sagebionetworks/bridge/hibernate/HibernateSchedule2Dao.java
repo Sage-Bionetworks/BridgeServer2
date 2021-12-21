@@ -49,12 +49,14 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
     static final String INSERT = "INSERT INTO TimelineMetadata (appId, assessmentGuid, assessmentId, assessmentInstanceGuid, "
             + "assessmentRevision, scheduleGuid, scheduleModifiedOn, schedulePublished, sessionGuid, sessionInstanceEndDay, "
             + "sessionInstanceGuid, sessionInstanceStartDay, sessionStartEventId, timeWindowGuid, timeWindowPersistent, guid, "
-            + "studyBurstId, studyBurstNum) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+            + "studyBurstId, studyBurstNum, sessionSymbol, sessionName) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
     static final String DELETE_TIMELINE_RECORDS = "DELETE FROM TimelineMetadata WHERE scheduleGuid = :scheduleGuid";
     static final String SELECT_ASSESSMENTS_FOR_SESSION_INSTANCE = "SELECT * FROM TimelineMetadata WHERE sessionInstanceGuid = :instanceGuid AND assessmentInstanceGuid IS NOT NULL";
     static final String DELETE_ALL_SCHEDULES = "DELETE FROM Schedules WHERE appId = :appId";
     static final String BATCH_SIZE_PROPERTY = "schedule.batch.size";
-
+    static final String SELECT_SESSION_METADATA_FOR_SCHEDULE = "SELECT * from TimelineMetadata where scheduleGuid = :scheduleGuid "
+            + "AND assessmentInstanceGuid IS NULL";
+    
     static final String APP_ID = "appId";
     static final String INSTANCE_GUID = "instanceGuid";
     static final String OWNER_ID = "ownerId";
@@ -251,6 +253,8 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         } else {
             ps.setInt(18, meta.getStudyBurstNum());    
         }
+        ps.setString(19, meta.getSessionSymbol());
+        ps.setString(20, meta.getSessionName());
         ps.addBatch();
     }
 
@@ -287,6 +291,17 @@ public class HibernateSchedule2Dao implements Schedule2Dao {
         return Optional.ofNullable(tm);
     }
 
+    @Override
+    public List<TimelineMetadata> getScheduleMetadata(String scheduleGuid) {
+        checkNotNull(scheduleGuid);
+
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(SELECT_SESSION_METADATA_FOR_SCHEDULE, SCHEDULE_GUID, scheduleGuid);
+
+        return hibernateHelper.nativeQueryGet(
+                builder.getQuery(), builder.getParameters(), null, null, TimelineMetadata.class);
+    }
+    
     @Override
     public List<TimelineMetadata> getAssessmentsForSessionInstance(String instanceGuid) {
         checkNotNull(instanceGuid);

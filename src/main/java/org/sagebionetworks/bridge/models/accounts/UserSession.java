@@ -18,6 +18,7 @@ public class UserSession {
     private static final StudyParticipant EMPTY_PARTICIPANT = new StudyParticipant.Builder().build();
     
     private boolean authenticated;
+    private boolean synapseAuthenticated;
     private Environment environment;
     private String ipAddress;
     private String sessionToken;
@@ -35,17 +36,14 @@ public class UserSession {
         checkNotNull(participant);
         this.participant = participant;
     }
-
     /** The user's IP Address, as reported by Amazon. */
     public String getIpAddress() {
         return ipAddress;
     }
-
     /** @see #getIpAddress */
     public void setIpAddress(String ipAddress) {
         this.ipAddress = ipAddress;
     }
-
     public StudyParticipant getParticipant() {
         return participant;
     }
@@ -73,6 +71,12 @@ public class UserSession {
     }
     public boolean isAuthenticated() {
         return authenticated;
+    }
+    public boolean isSynapseAuthenticated() {
+        return synapseAuthenticated;
+    }
+    public void setSynapseAuthenticated(boolean synapseAuthenticated) {
+        this.synapseAuthenticated = synapseAuthenticated;
     }
     public void setAuthenticated(boolean authenticated) {
         this.authenticated = authenticated;

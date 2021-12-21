@@ -27,6 +27,7 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -63,6 +64,7 @@ import org.sagebionetworks.bridge.s3.S3Helper;
 import org.sagebionetworks.bridge.synapse.SynapseHelper;
 
 public class Exporter3ServiceTest {
+
     private static final String APP_NAME = "Test App";
     private static final long BRIDGE_ADMIN_TEAM_ID = 1111L;
     private static final long BRIDGE_STAFF_TEAM_ID = 2222L;

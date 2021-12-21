@@ -753,7 +753,9 @@ public class ParticipantServiceTest extends Mockito {
         when(requestInfoService.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
 
         // Mock consent service
-        when(consentService.isConsented(account)).thenReturn(Optional.of(false));
+        ConsentStatus consentStatus = new ConsentStatus.Builder().withName("My Consent").withGuid(SUBPOP_GUID)
+                .withRequired(true).withConsented(false).withSignedMostRecentConsent(false).build();
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(ImmutableMap.of(SUBPOP_GUID, consentStatus));
 
         // Execute.
         try {
@@ -779,7 +781,9 @@ public class ParticipantServiceTest extends Mockito {
         when(requestInfoService.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
 
         // Mock consent service
-        when(consentService.isConsented(account)).thenReturn(Optional.of(true));
+        ConsentStatus consentStatus = new ConsentStatus.Builder().withName("My Consent").withGuid(SUBPOP_GUID)
+                .withRequired(true).withConsented(true).withSignedMostRecentConsent(false).build();
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(ImmutableMap.of(SUBPOP_GUID, consentStatus));
 
         // Execute.
         participantService.createSmsRegistration(APP, ID);
@@ -1082,7 +1086,14 @@ public class ParticipantServiceTest extends Mockito {
 
         when(subpopService.getSubpopulation(TEST_APP_ID, SUBPOP_GUID_1)).thenReturn(subpop1);
 
-        when(consentService.isConsented(account)).thenReturn(Optional.of(true));
+        // Mock CacheProvider to return request info.
+        when(requestInfoService.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
+
+        // Mock ConsentService to return consent statuses for criteria.
+        ConsentStatus consentStatus1 = new ConsentStatus.Builder().withName("consent1").withGuid(SUBPOP_GUID_1)
+                .withRequired(true).withConsented(true).withSignedMostRecentConsent(true).build();
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(
+                ImmutableMap.of(SUBPOP_GUID_1, consentStatus1));
 
         // Get the fully initialized participant object (including histories)
         StudyParticipant participant = participantService.getParticipant(APP, ID, true);
@@ -1131,6 +1142,19 @@ public class ParticipantServiceTest extends Mockito {
         
         List<UserConsentHistory> retrievedHistory2 = participant.getConsentHistories().get(subpop2.getGuidString());
         assertTrue(retrievedHistory2.isEmpty());
+
+        // Verify context passed to consent service.
+        ArgumentCaptor<CriteriaContext> criteriaContextCaptor = ArgumentCaptor.forClass(CriteriaContext.class);
+        verify(consentService).getConsentStatuses(criteriaContextCaptor.capture(), same(account));
+
+        CriteriaContext criteriaContext = criteriaContextCaptor.getValue();
+        assertEquals(criteriaContext.getAppId(), TEST_APP_ID);
+        assertEquals(criteriaContext.getUserId(), ID);
+        assertEquals(criteriaContext.getHealthCode(), HEALTH_CODE);
+        assertEquals(criteriaContext.getClientInfo(), CLIENT_INFO);
+        assertEquals(criteriaContext.getLanguages(), TestConstants.LANGUAGES);
+        assertEquals(criteriaContext.getUserDataGroups(), TestConstants.USER_DATA_GROUPS);
+        assertEquals(criteriaContext.getUserStudyIds(), ImmutableSet.of("studyA", "studyB", "studyC"));
     }
     
     @Test
@@ -1619,18 +1643,38 @@ public class ParticipantServiceTest extends Mockito {
     }
 
     @Test
-    public void getParticipantIsConsented_NoValue() {
+    public void getParticipantIsConsentedWithoutRequestInfo() {
         // Set up mocks.
         mockHealthCodeAndAccountRetrieval();
 
         doReturn(APP.getIdentifier()).when(subpopulation).getGuidString();
         doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
         doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(TEST_APP_ID, false);
-        when(consentService.isConsented(account)).thenReturn(Optional.empty());
 
         // Execute and validate
         StudyParticipant participant = participantService.getParticipant(APP, ID, true);
         assertNull(participant.isConsented());
+    }
+
+    @Test
+    public void getParticipantIsConsentedFalse() {
+        // Set up mocks.
+        mockHealthCodeAndAccountRetrieval();
+
+        doReturn(APP.getIdentifier()).when(subpopulation).getGuidString();
+        doReturn(SUBPOP_GUID).when(subpopulation).getGuid();
+        doReturn(Lists.newArrayList(subpopulation)).when(subpopService).getSubpopulations(TEST_APP_ID, false);
+
+        when(requestInfoService.getRequestInfo(ID)).thenReturn(REQUEST_INFO);
+
+        ConsentStatus consentStatus1 = new ConsentStatus.Builder().withName("consent1").withGuid(SUBPOP_GUID)
+                .withRequired(true).withConsented(false).withSignedMostRecentConsent(false).build();
+        when(consentService.getConsentStatuses(any(), any())).thenReturn(
+                ImmutableMap.of(SUBPOP_GUID_1, consentStatus1));
+
+        // Execute and validate
+        StudyParticipant participant = participantService.getParticipant(APP, ID, true);
+        assertFalse(participant.isConsented());
     }
 
     @Test

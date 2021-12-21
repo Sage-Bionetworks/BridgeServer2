@@ -10,7 +10,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
@@ -64,9 +63,6 @@ public class ParticipantVersionServiceTest {
     private static final String WORKER_QUEUE_URL = "http://example.com/dummy-sqs-url";
 
     @Mock
-    private ConsentService mockConsentService;
-
-    @Mock
     private ParticipantVersionDao mockParticipantVersionDao;
 
     @Mock
@@ -99,7 +95,6 @@ public class ParticipantVersionServiceTest {
     public void createParticipantVersionFromAccount() {
         // Mock dependencies. DAO doesn't return anything to make create() logic simpler. We test more of this logic
         // in later tests.
-        when(mockConsentService.isConsented(any())).thenReturn(Optional.of(true));
         when(mockParticipantVersionDao.getLatestParticipantVersionForHealthCode(TestConstants.TEST_APP_ID,
                 TestConstants.HEALTH_CODE)).thenReturn(Optional.empty());
         when(mockSqsClient.sendMessage(anyString(), anyString())).thenReturn(new SendMessageResult());
@@ -139,8 +134,7 @@ public class ParticipantVersionServiceTest {
         Map<String, String> studyMembershipMap = participantVersion.getStudyMemberships();
         assertEquals(studyMembershipMap.size(), 2);
         assertEquals(studyMembershipMap.get(STUDY_ID_1), EXTERNAL_ID_1);
-        assertTrue(studyMembershipMap.containsKey(STUDY_ID_2));
-        assertNull(studyMembershipMap.get(STUDY_ID_2));
+        assertEquals(studyMembershipMap.get(STUDY_ID_2), BridgeConstants.EXTERNAL_ID_NONE);
     }
 
     @Test
@@ -170,21 +164,14 @@ public class ParticipantVersionServiceTest {
     }
 
     @Test
-    public void createParticipantFromAccount_isConsentedFalse() {
+    public void createParticipantFromAccount_noEnrollments() {
         Account account = Account.create();
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
 
-        when(mockConsentService.isConsented(any())).thenReturn(Optional.of(false));
-        participantVersionService.createParticipantVersionFromAccount(account);
-        verifyZeroInteractions(mockParticipantVersionDao);
-    }
+        // Add a withdrawn enrollment for good measure.
+        Enrollment enrollment = Enrollment.create(TestConstants.TEST_APP_ID, STUDY_ID_1, ACCOUNT_ID);
+        enrollment.setWithdrawnOn(CREATED_ON.plusDays(7));
 
-    @Test
-    public void createParticipantFromAccount_isConsentedNull() {
-        Account account = Account.create();
-        account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
-
-        when(mockConsentService.isConsented(any())).thenReturn(Optional.empty());
         participantVersionService.createParticipantVersionFromAccount(account);
         verifyZeroInteractions(mockParticipantVersionDao);
     }
