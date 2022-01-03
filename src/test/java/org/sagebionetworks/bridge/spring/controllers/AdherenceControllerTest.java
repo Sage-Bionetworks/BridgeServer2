@@ -26,7 +26,6 @@ import javax.servlet.http.HttpServletResponse;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -48,6 +47,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AdherenceService;
 
@@ -56,7 +56,6 @@ public class AdherenceControllerTest extends Mockito {
     private static final String CLIENT_TIME_ZONE = "America/Chicago";
     private static final DateTime SYSTEM_NOW = MODIFIED_ON;
     private static final DateTime NOW = CREATED_ON;
-    private static final DateTime NOW_IN_CHICAGO = CREATED_ON.withZone(DateTimeZone.forID(CLIENT_TIME_ZONE));
 
     @Mock
     AdherenceService mockService;
@@ -123,7 +122,7 @@ public class AdherenceControllerTest extends Mockito {
         
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                NOW_IN_CHICAGO, CLIENT_TIME_ZONE, true)).thenReturn(report);
+                NOW, CLIENT_TIME_ZONE, true)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReport(TEST_STUDY_ID, TEST_USER_ID,
                 NOW.toString(), "true");
@@ -162,7 +161,7 @@ public class AdherenceControllerTest extends Mockito {
         
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                NOW_IN_CHICAGO, CLIENT_TIME_ZONE, true)).thenReturn(report);
+                NOW, CLIENT_TIME_ZONE, true)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReport(TEST_STUDY_ID, TEST_USER_ID,
                 NOW.toString(), "true");
@@ -193,7 +192,7 @@ public class AdherenceControllerTest extends Mockito {
         
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                SYSTEM_NOW.withZone(DateTimeZone.forID(CLIENT_TIME_ZONE)), CLIENT_TIME_ZONE, false)).thenReturn(report);
+                SYSTEM_NOW, CLIENT_TIME_ZONE, false)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReport(TEST_STUDY_ID, TEST_USER_ID, null, null);
         assertSame(retValue, report);
@@ -207,7 +206,7 @@ public class AdherenceControllerTest extends Mockito {
         
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                NOW_IN_CHICAGO, CLIENT_TIME_ZONE, true)).thenReturn(report);
+                NOW, CLIENT_TIME_ZONE, true)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReportForSelf(TEST_STUDY_ID, CREATED_ON.toString(), "true");
         assertSame(retValue, report);
@@ -234,7 +233,7 @@ public class AdherenceControllerTest extends Mockito {
         
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                NOW_IN_CHICAGO, CLIENT_TIME_ZONE, true)).thenReturn(report);
+                NOW, CLIENT_TIME_ZONE, true)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReportForSelf(TEST_STUDY_ID, 
                 NOW.toString(), "true");
@@ -249,9 +248,51 @@ public class AdherenceControllerTest extends Mockito {
     
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         when(mockService.getEventStreamAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
-                SYSTEM_NOW.withZone(DateTimeZone.forID(CLIENT_TIME_ZONE)), CLIENT_TIME_ZONE, false)).thenReturn(report);
+                SYSTEM_NOW, CLIENT_TIME_ZONE, false)).thenReturn(report);
         
         EventStreamAdherenceReport retValue = controller.getEventStreamAdherenceReportForSelf(TEST_STUDY_ID, null, null);
+        assertSame(retValue, report);
+    }
+    
+    @Test
+    public void getWeeklyAdherenceReport() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);    
+        
+        Account account = Account.create();
+        account.setId(TEST_USER_ID);
+        account.setClientTimeZone(CLIENT_TIME_ZONE);
+        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+            .thenReturn(Optional.of(account));
+        
+        WeeklyAdherenceReport report = new WeeklyAdherenceReport();
+        when(mockService.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
+                SYSTEM_NOW, CLIENT_TIME_ZONE)).thenReturn(report);
+        
+        WeeklyAdherenceReport retValue = controller.getWeeklyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
+        assertSame(retValue, report);
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getWeeklyAdherenceReport_accountNotFound() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);    
+        
+        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+            .thenReturn(Optional.empty());
+        
+        controller.getWeeklyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
+    }
+    
+    @Test
+    public void getWeeklyAdherenceReportForSelf() { 
+        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID)
+                .withClientTimeZone(CLIENT_TIME_ZONE).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();    
+        
+        WeeklyAdherenceReport report = new WeeklyAdherenceReport();
+        when(mockService.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, 
+                SYSTEM_NOW, CLIENT_TIME_ZONE)).thenReturn(report);
+        
+        WeeklyAdherenceReport retValue = controller.getWeeklyAdherenceReportForSelf(TEST_STUDY_ID);
         assertSame(retValue, report);
     }
     
@@ -278,6 +319,22 @@ public class AdherenceControllerTest extends Mockito {
             assertEquals(record.getUserId(), TEST_USER_ID);
         }
     }    
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void updateAdherenceRecords_accountNotFound() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        when(mockAccountService.getAccountId(TEST_APP_ID, TEST_USER_ID))
+            .thenReturn(Optional.empty());
+        
+        AdherenceRecord rec1 = TestUtils.getAdherenceRecord("AAA");
+        AdherenceRecord rec2 = TestUtils.getAdherenceRecord("BBB");
+        AdherenceRecordList list = new AdherenceRecordList(ImmutableList.of(rec1, rec2));
+        
+        mockRequestBody(mockRequest, list);
+        
+        controller.updateAdherenceRecords(TEST_STUDY_ID, TEST_USER_ID);
+    }
     
     @Test
     public void updateAdherenceRecordsForSelf() throws Exception {
@@ -356,6 +413,19 @@ public class AdherenceControllerTest extends Mockito {
         assertEquals(captured.getPageSize(), Integer.valueOf(50));        
     }
 
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void searchForAdherenceRecords_accountNotFound() throws Exception {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        when(mockAccountService.getAccountId(any(), any())).thenReturn(Optional.empty());
+
+        AdherenceRecordsSearch search = new AdherenceRecordsSearch.Builder()
+                .withOffsetBy(10).withPageSize(50).build();
+        mockRequestBody(mockRequest, search);
+        
+        controller.searchForAdherenceRecords(TEST_STUDY_ID, "some-other-id");
+    }
+    
     @Test
     public void deleteAdherenceRecord() {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);

@@ -3,6 +3,9 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.eventstream;
 import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.ABANDONED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLETED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.DECLINED;
@@ -14,13 +17,13 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
@@ -77,29 +80,16 @@ public class EventStreamAdherenceReportGeneratorTest {
     }
     
     @Test
-    public void constructorUsesEventTimeZone() {
-        StudyActivityEvent event = new StudyActivityEvent.Builder()
-                .withEventId("enrollment")
-                .withTimestamp(MODIFIED_ON)
-                .withClientTimeZone("America/Chicago").build();
-        
-        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
-        builder.withMetadata(ImmutableList.of());
-        builder.withEvents(ImmutableList.of(event));
-        builder.withAdherenceRecords(ImmutableList.of());
-        builder.withNow(NOW);
-        
-        EventStreamAdherenceReportGenerator generator = builder.build();
-        assertEquals(generator.getTimeZone().toString(), "America/Chicago");
-    }
-    
-    @Test
     public void constructorUsesParticipantTimeZone() { 
         StudyActivityEvent event = new StudyActivityEvent.Builder()
                 .withEventId("enrollment")
                 .withTimestamp(MODIFIED_ON).build();
         
         EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        builder.withAppId(TEST_APP_ID);
+        builder.withStudyId(TEST_STUDY_ID);
+        builder.withUserId(TEST_USER_ID);
+        builder.withCreatedOn(CREATED_ON);
         builder.withClientTimeZone("America/Denver");
         builder.withMetadata(ImmutableList.of());
         builder.withEvents(ImmutableList.of(event));
@@ -117,6 +107,10 @@ public class EventStreamAdherenceReportGeneratorTest {
                 .withTimestamp(MODIFIED_ON).build();
         
         EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        builder.withAppId(TEST_APP_ID);
+        builder.withStudyId(TEST_STUDY_ID);
+        builder.withUserId(TEST_USER_ID);
+        builder.withCreatedOn(CREATED_ON);
         builder.withMetadata(ImmutableList.of());
         builder.withEvents(ImmutableList.of(event));
         builder.withAdherenceRecords(ImmutableList.of());
@@ -379,11 +373,17 @@ public class EventStreamAdherenceReportGeneratorTest {
     
     @Test
     public void handleNulls() {
-        EventStreamAdherenceReportGenerator generator = new EventStreamAdherenceReportGenerator.Builder().build();
+        EventStreamAdherenceReportGenerator generator = new EventStreamAdherenceReportGenerator.Builder()
+                .withAppId(TEST_APP_ID)
+                .withStudyId(TEST_STUDY_ID)
+                .withUserId(TEST_USER_ID)
+                .withCreatedOn(CREATED_ON)
+                .withNow(NOW)
+                .build();
         
         EventStreamAdherenceReport report = generator.generate();
         assertEquals(100, report.getAdherencePercent());
-        assertNull(report.getTimestamp());
+        assertEquals(report.getTimestamp(), NOW);
         assertTrue(report.getStreams().isEmpty());
     }
     
@@ -400,6 +400,10 @@ public class EventStreamAdherenceReportGeneratorTest {
     private EventStreamAdherenceReportGenerator makeGenerator(DateTime now, TimelineMetadata meta1,
             TimelineMetadata meta2, StudyActivityEvent event, AdherenceRecord adherenceRecord, boolean showActive) {
         EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        builder.withAppId(TEST_APP_ID);
+        builder.withStudyId(TEST_STUDY_ID);
+        builder.withUserId(TEST_USER_ID);
+        builder.withCreatedOn(CREATED_ON);
         List<TimelineMetadata> metas = new ArrayList<>();
         if (meta1 != null) {
             metas.add(meta1);       

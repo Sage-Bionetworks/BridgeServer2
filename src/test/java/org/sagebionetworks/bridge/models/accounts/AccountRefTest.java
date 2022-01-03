@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.LANGUAGES;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_EXTERNAL_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_DATA_GROUPS;
@@ -15,6 +16,7 @@ import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.PasswordAlgorithm.BCRYPT;
 import static org.sagebionetworks.bridge.models.accounts.SharingScope.ALL_QUALIFIED_RESEARCHERS;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableMap;
@@ -22,7 +24,6 @@ import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTimeZone;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
@@ -60,7 +61,7 @@ public class AccountRefTest {
         account.setPasswordHash("passwordHash");
         account.setPasswordModifiedOn(MODIFIED_ON);
         account.setPasswordAlgorithm(BCRYPT);
-        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)));
+        account.setEnrollments(ImmutableSet.of(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID)));
         
         AccountRef ref = new AccountRef(account);
         
@@ -74,6 +75,18 @@ public class AccountRefTest {
         assertEquals(node.get("orgMembership").textValue(), TEST_ORG_ID);
         assertEquals(node.get("identifier").textValue(), TEST_USER_ID);
         assertEquals(node.get("type").textValue(), "AccountRef");
+        
+        ref = new AccountRef(account, TEST_STUDY_ID);
+        
+        node = BridgeObjectMapper.get().valueToTree(ref);
+        assertEquals(node.size(), 9);
+        assertEquals(node.get("externalId").textValue(), TEST_EXTERNAL_ID);
+        
+        ref = new AccountRef(account, "something-else");
+        
+        node = BridgeObjectMapper.get().valueToTree(ref);
+        assertEquals(node.size(), 8);
+        assertNull(node.get("externalId"));
         
         // This reference object is never deserialized on the server.
     }

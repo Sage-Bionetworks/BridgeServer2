@@ -1,13 +1,11 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
-import static org.sagebionetworks.bridge.BridgeUtils.getDateTimeOrDefault;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,6 +26,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.services.AdherenceService;
 
 @CrossOrigin
@@ -58,12 +57,7 @@ public class AdherenceController extends BaseController {
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        // The time zone will be the time zone supplied. If not supplied then it will be the user’s time
-        // zone, and if that isn’t supplied, it will be in the server’s time zone.
-        DateTime now = getDateTimeOrDefault(datetime, getDateTime());
-        if (account.getClientTimeZone() != null) {
-            now = now.withZone(DateTimeZone.forID(account.getClientTimeZone()));
-        }
+        DateTime now = BridgeUtils.getDateTimeOrDefault(datetime, getDateTime());
         Boolean showActiveOnly = "true".equalsIgnoreCase(activeOnly);
 
         return service.getEventStreamAdherenceReport(session.getAppId(), studyId, account.getId(), now,
@@ -75,16 +69,36 @@ public class AdherenceController extends BaseController {
             @RequestParam(required = false) String datetime, @RequestParam(required = false) String activeOnly) {
         UserSession session = getAuthenticatedAndConsentedSession();
 
-        // The time zone will be the time zone supplied. If not supplied then it will be the user’s time
-        // zone, and if that isn’t supplied, it will be in the server’s time zone.
-        DateTime now = getDateTimeOrDefault(datetime, getDateTime());
-        if (session.getParticipant().getClientTimeZone() != null) {
-            now = now.withZone(DateTimeZone.forID(session.getParticipant().getClientTimeZone()));
-        }
+        DateTime now = BridgeUtils.getDateTimeOrDefault(datetime, getDateTime());
         Boolean showActiveOnly = "true".equalsIgnoreCase(activeOnly);
 
         return service.getEventStreamAdherenceReport(session.getAppId(), studyId, session.getId(), now,
                 session.getParticipant().getClientTimeZone(), showActiveOnly);
+    }
+    
+    @GetMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence/weekly")
+    public WeeklyAdherenceReport getWeeklyAdherenceReport(@PathVariable String studyId,
+            @PathVariable String userIdToken) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        DateTime now = getDateTime();
+
+        return service.getWeeklyAdherenceReport(session.getAppId(), studyId, account.getId(), now,
+                account.getClientTimeZone());
+    }
+    
+    @GetMapping("/v5/studies/{studyId}/participants/self/adherence/weekly")
+    public WeeklyAdherenceReport getWeeklyAdherenceReportForSelf(@PathVariable String studyId) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+
+        DateTime now = getDateTime();
+
+        return service.getWeeklyAdherenceReport(session.getAppId(), studyId, session.getId(), now,
+                session.getParticipant().getClientTimeZone());
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence")

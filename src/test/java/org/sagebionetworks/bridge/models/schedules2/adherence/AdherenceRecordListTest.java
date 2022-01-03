@@ -32,4 +32,10 @@ public class AdherenceRecordListTest {
         assertEquals(deser.getRecords().get(1).getClientTimeZone(), "America/Los_Angeles");
     }
     
+    @Test
+    public void nullList() {
+        AdherenceRecordList list = new AdherenceRecordList(null);
+        assertEquals(list.getRecords(), ImmutableList.of());
+    }
+    
 }

@@ -46,7 +46,11 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -55,6 +59,8 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordTyp
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
+import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportGenerator;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.SessionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
@@ -76,6 +82,8 @@ public class AdherenceService {
     
     private Schedule2Service scheduleService;
     
+    private AccountService accountService;
+    
     @Autowired
     final void setAdherenceRecordDao(AdherenceRecordDao dao) {
         this.dao = dao;
@@ -94,6 +102,15 @@ public class AdherenceService {
     @Autowired
     final void setSchedule2Service(Schedule2Service scheduleService) {
         this.scheduleService = scheduleService;
+    }
+    
+    @Autowired
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
+    }
+    
+    protected DateTime getDateTime() {
+        return DateTime.now();
     }
     
     public void updateAdherenceRecords(String appId, AdherenceRecordList recordList) {
@@ -304,7 +321,6 @@ public class AdherenceService {
             throw new BadRequestException("startedOn can not be null");
         }
 
-
         Optional<TimelineMetadata> timelineMetadata = scheduleService.getTimelineMetadata(record.getInstanceGuid());
         if (timelineMetadata.isPresent()) {
             if (timelineMetadata.get().isTimeWindowPersistent()) {
@@ -319,21 +335,20 @@ public class AdherenceService {
     
     public EventStreamAdherenceReport getEventStreamAdherenceReport(String appId, String studyId, String userId,
             DateTime now, String clientTimeZone, boolean showActiveOnly) {
-        checkNotNull(appId);
-        checkNotNull(studyId);
-        checkNotNull(userId);
-        checkNotNull(now);
 
         Stopwatch watch = Stopwatch.createStarted();
         
         EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        builder.withAppId(appId);
+        builder.withStudyId(studyId);
+        builder.withUserId(userId);
+        builder.withCreatedOn(getDateTime());
         builder.withShowActive(showActiveOnly);
         builder.withNow(now);
         builder.withClientTimeZone(clientTimeZone);
-        
+
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {
-            watch.stop();
             return builder.build().generate();
         }
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
@@ -350,13 +365,62 @@ public class AdherenceService {
                 .withStudyId(studyId)
                 .withUserId(userId)
                 .build()).getItems();
-
+        
         builder.withMetadata(metadata);
         builder.withEvents(events);
         builder.withAdherenceRecords(adherenceRecords);
-
+        
         EventStreamAdherenceReport report = builder.build().generate();
+        
+        watch.stop();
         LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
+        return report;
+    }
+    
+    public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, String userId,
+            DateTime now, String clientTimeZone) {
+
+        Stopwatch watch = Stopwatch.createStarted();
+        
+        WeeklyAdherenceReportGenerator.Builder builder = new WeeklyAdherenceReportGenerator.Builder();
+        builder.withAppId(appId);
+        builder.withStudyId(studyId);
+        builder.withUserId(userId);
+        builder.withCreatedOn(getDateTime());
+        builder.withNow(now);
+        builder.withClientTimeZone(clientTimeZone);
+        
+        Account account = accountService.getAccount(AccountId.forId(appId, userId))
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        builder.withAccount(new AccountRef(account, studyId));
+
+        Study study = studyService.getStudy(appId, studyId, true);
+        if (study.getScheduleGuid() == null) {
+            return builder.build().generate();
+        }
+        List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
+
+        List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
+                appId, studyId, userId).getItems();
+
+        List<AdherenceRecord> adherenceRecords = getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
+                .withCurrentTimestampsOnly(true)
+                // if you turn this on you will not get declined sessions with no startedOn value,
+                // but it's not needed because persistent time windows are excluded from adherence.
+                .withIncludeRepeats(true) 
+                .withAdherenceRecordType(AdherenceRecordType.SESSION)
+                .withStudyId(studyId)
+                .withUserId(userId)
+                .build()).getItems();
+        
+        builder.withMetadata(metadata);
+        builder.withEvents(events);
+        builder.withAdherenceRecords(adherenceRecords);
+        
+        WeeklyAdherenceReport report = builder.build().generate();
+        
+        watch.stop();
+        LOG.info("Weekly adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return report;
     }
 }

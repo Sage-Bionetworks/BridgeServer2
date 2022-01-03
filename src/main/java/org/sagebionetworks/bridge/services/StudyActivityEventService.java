@@ -235,7 +235,7 @@ public class StudyActivityEventService {
             addIfPresent(events, map, fieldName, true);    
         }
         events.sort(Comparator.comparing(StudyActivityEvent::getEventId));
-        return new ResourceList<>(events); 
+        return new ResourceList<>(events, true); 
     }
     
     /**
