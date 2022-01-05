@@ -11,6 +11,7 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_YET_AVAILABLE;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.STARTED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNSTARTED;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator.INSTANCE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -23,6 +24,7 @@ import java.util.List;
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.testng.annotations.Test;
@@ -51,9 +53,9 @@ public class EventStreamAdherenceReportGeneratorTest {
     public void generate_metadataCopiedToReport() throws Exception {
         // We will focus on calculation of the completion states in the report, but here let's 
         // verify the metadata is being copied over into the report.
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META1, null, null);
+        AdherenceState state = createState(NOW, META1, null, null);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(report.getTimestamp(), NOW);
         assertEquals(report.getAdherencePercent(), 100);
         assertFalse(report.isActiveOnly());
@@ -77,37 +79,20 @@ public class EventStreamAdherenceReportGeneratorTest {
     }
     
     @Test
-    public void constructorUsesEventTimeZone() {
-        StudyActivityEvent event = new StudyActivityEvent.Builder()
-                .withEventId("enrollment")
-                .withTimestamp(MODIFIED_ON)
-                .withClientTimeZone("America/Chicago").build();
-        
-        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
-        builder.withMetadata(ImmutableList.of());
-        builder.withEvents(ImmutableList.of(event));
-        builder.withAdherenceRecords(ImmutableList.of());
-        builder.withNow(NOW);
-        
-        EventStreamAdherenceReportGenerator generator = builder.build();
-        assertEquals(generator.getTimeZone().toString(), "America/Chicago");
-    }
-    
-    @Test
     public void constructorUsesParticipantTimeZone() { 
         StudyActivityEvent event = new StudyActivityEvent.Builder()
                 .withEventId("enrollment")
                 .withTimestamp(MODIFIED_ON).build();
         
-        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withClientTimeZone("America/Denver");
         builder.withMetadata(ImmutableList.of());
         builder.withEvents(ImmutableList.of(event));
         builder.withAdherenceRecords(ImmutableList.of());
         builder.withNow(NOW);
         
-        EventStreamAdherenceReportGenerator generator = builder.build();
-        assertEquals(generator.getTimeZone().toString(), "America/Denver");
+        AdherenceState state = builder.build();
+        assertEquals(state.getTimeZone().toString(), "America/Denver");
     }
     
     @Test
@@ -116,23 +101,23 @@ public class EventStreamAdherenceReportGeneratorTest {
                 .withEventId("enrollment")
                 .withTimestamp(MODIFIED_ON).build();
         
-        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withMetadata(ImmutableList.of());
         builder.withEvents(ImmutableList.of(event));
         builder.withAdherenceRecords(ImmutableList.of());
         builder.withNow(NOW);
         
-        EventStreamAdherenceReportGenerator generator = builder.build();
-        assertEquals(generator.getTimeZone().toString(), "-07:00");
+        AdherenceState state = builder.build();
+        assertEquals(state.getTimeZone().toString(), "-07:00");
     }
     
     @Test
     public void stateCalculation_notApplicable() throws Exception {
         // We will focus on calculation of the completion states in the report, but here let's 
         // verify the metadata is being copied over into the report.
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META1, null, null);
+        AdherenceState state = createState(NOW, META1, null, null);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_APPLICABLE));
     }
     
@@ -142,9 +127,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         // for an assessment that the participant shouldn't do. 
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
         
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META1, null, adherenceRecord);
+        AdherenceState state = createState(NOW, META1, null, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_APPLICABLE));
     }
     
@@ -152,9 +137,9 @@ public class EventStreamAdherenceReportGeneratorTest {
     public void stateCalculation_notYetAvailable() throws Exception {
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.minusDays(10), META1, event, null);
+        AdherenceState state = createState(NOW.minusDays(10), META1, event, null);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_YET_AVAILABLE));
     }
     
@@ -163,9 +148,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.minusDays(10), META1, event, adherenceRecord);
+        AdherenceState state = createState(NOW.minusDays(10), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_YET_AVAILABLE));
     }
     
@@ -174,9 +159,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META1, event, adherenceRecord);
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(UNSTARTED));
     }
     
@@ -185,9 +170,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, null, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META1, event, adherenceRecord);
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(STARTED));
     }
     
@@ -196,9 +181,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
         
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META1, event, adherenceRecord);
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(COMPLETED));
     }
     
@@ -207,9 +192,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, null, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.plusDays(2), META1, event, adherenceRecord);
+        AdherenceState state = createState(NOW.plusDays(2), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(ABANDONED));
     }
     
@@ -218,9 +203,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.plusDays(2), META1, event, adherenceRecord);
+        AdherenceState state = createState(NOW.plusDays(2), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(EXPIRED));
     }
 
@@ -228,9 +213,9 @@ public class EventStreamAdherenceReportGeneratorTest {
     public void stateCalculation_expiredNoRecord() throws Exception {
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.plusDays(2), META1, event, null);
+        AdherenceState state = createState(NOW.plusDays(2), META1, event, null);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(EXPIRED));
     }
     
@@ -239,9 +224,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", true);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.plusDays(2), META1, event, adherenceRecord);
+        AdherenceState state = createState(NOW.plusDays(2), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(DECLINED));
     }
     
@@ -250,9 +235,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "otherSessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META1, event, adherenceRecord);
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(UNSTARTED));
     }
     
@@ -261,9 +246,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("otherStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META1, event, adherenceRecord);
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_APPLICABLE));
     }
     
@@ -272,9 +257,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW);
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.minusDays(21), META1, event, adherenceRecord);
+        AdherenceState state = createState(NOW.minusDays(21), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(NOT_YET_AVAILABLE));
     }
 
@@ -283,9 +268,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW);
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.plusDays(28), META1, event, adherenceRecord);
+        AdherenceState state = createState(NOW.plusDays(28), META1, event, adherenceRecord);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(EXPIRED));
     }
     
@@ -294,8 +279,8 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "JOQg4yz0lrif7V3HYYzACw", false);
         StudyActivityEvent event = createEvent("created_on", NOW);
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META_PERSISTENT, event, adherenceRecord);
-        assertTrue(generator.generate().getStreams().isEmpty());
+        AdherenceState state = createState(NOW, META_PERSISTENT, event, adherenceRecord);
+        assertTrue(INSTANCE.generate(state).getStreams().isEmpty());
     }
     
     @Test
@@ -303,9 +288,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META1, event, adherenceRecord, true);
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(UNSTARTED));
     }
 
@@ -313,17 +298,17 @@ public class EventStreamAdherenceReportGeneratorTest {
     public void showActiveFiltersNotYetAvailable() throws Exception { 
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.minusDays(10), META1, event, null, true);
+        AdherenceState state = createState(NOW.minusDays(10), META1, event, null, true);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertTrue(report.getStreams().isEmpty());        
     }
 
     @Test
     public void showActiveFiltersNotApplicable() throws Exception { 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.minusDays(10), META1, null, null, true);
+        AdherenceState state = createState(NOW.minusDays(10), META1, null, null, true);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertTrue(report.getStreams().isEmpty());        
     }
     
@@ -332,9 +317,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW.plusDays(2), META1, event, adherenceRecord, true);
+        AdherenceState state = createState(NOW.plusDays(2), META1, event, adherenceRecord, true);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertTrue(report.getStreams().isEmpty());
     }
     
@@ -345,9 +330,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(17));
         
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META1, event, adherenceRecord, true);
-
-        EventStreamAdherenceReport report = generator.generate();
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
+        
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertTrue(report.getStreams().isEmpty());
     }
     
@@ -358,9 +343,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
         StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
         
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META1, event, adherenceRecord, true);
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
 
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(getReportStates(report), ImmutableList.of(COMPLETED));
     }
     
@@ -369,9 +354,9 @@ public class EventStreamAdherenceReportGeneratorTest {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "gnescr0HRz5T2JEjc0Ad6Q", false);        
         StudyActivityEvent event = createEvent("study_burst:Main Sequence:01", NOW.minusDays(3));
 
-        EventStreamAdherenceReportGenerator generator = makeGenerator(NOW, META2_A, META2_B, event, adherenceRecord, false);
-        
-        EventStreamAdherenceReport report = generator.generate();
+        AdherenceState state = createState(NOW, META2_A, META2_B, event, adherenceRecord, false);
+
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertNotNull(report.getStreams().get(0).getByDayEntries().get(2));
         assertNotNull(report.getStreams().get(0).getByDayEntries().get(4));
         assertEquals(getReportStates(report), ImmutableList.of(COMPLETED, NOT_YET_AVAILABLE));
@@ -379,27 +364,27 @@ public class EventStreamAdherenceReportGeneratorTest {
     
     @Test
     public void handleNulls() {
-        EventStreamAdherenceReportGenerator generator = new EventStreamAdherenceReportGenerator.Builder().build();
+        AdherenceState state = new AdherenceState.Builder().build();
         
-        EventStreamAdherenceReport report = generator.generate();
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(100, report.getAdherencePercent());
         assertNull(report.getTimestamp());
         assertTrue(report.getStreams().isEmpty());
     }
     
-    private EventStreamAdherenceReportGenerator makeGenerator(DateTime now, TimelineMetadata meta,
+    private AdherenceState createState(DateTime now, TimelineMetadata meta,
             StudyActivityEvent event, AdherenceRecord adherenceRecord) {
-        return makeGenerator(now, meta, event, adherenceRecord, false);
+        return createState(now, meta, event, adherenceRecord, false);
     }
     
-    private EventStreamAdherenceReportGenerator makeGenerator(DateTime now, TimelineMetadata meta,
+    private AdherenceState createState(DateTime now, TimelineMetadata meta,
             StudyActivityEvent event, AdherenceRecord adherenceRecord, boolean showActive) {
-        return makeGenerator(now, meta, null, event, adherenceRecord, showActive);
+        return createState(now, meta, null, event, adherenceRecord, showActive);
     }
     
-    private EventStreamAdherenceReportGenerator makeGenerator(DateTime now, TimelineMetadata meta1,
+    private AdherenceState createState(DateTime now, TimelineMetadata meta1,
             TimelineMetadata meta2, StudyActivityEvent event, AdherenceRecord adherenceRecord, boolean showActive) {
-        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        AdherenceState.Builder builder = new AdherenceState.Builder();
         List<TimelineMetadata> metas = new ArrayList<>();
         if (meta1 != null) {
             metas.add(meta1);       
@@ -452,7 +437,7 @@ public class EventStreamAdherenceReportGeneratorTest {
         return rec;
     }
     
-    private List<SessionCompletionState> getReportStates(EventStreamAdherenceReport report) { 
+    private List<SessionCompletionState> getReportStates(EventStreamAdherenceReport report) {
         return report.getStreams().stream()
             .flatMap(stream -> stream.getByDayEntries().values().stream())
             .flatMap(days -> days.stream())
