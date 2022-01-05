@@ -14,7 +14,6 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.joda.time.LocalDate;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
@@ -24,7 +23,7 @@ import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import com.newrelic.agent.deps.com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList;
 
 public class AdherenceStateTest extends Mockito {
     
