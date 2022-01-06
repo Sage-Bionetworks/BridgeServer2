@@ -53,6 +53,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
@@ -326,7 +327,7 @@ public class AdherenceService {
 
         Stopwatch watch = Stopwatch.createStarted();
         
-        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
+        AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withShowActive(showActiveOnly);
         builder.withNow(now);
         builder.withClientTimeZone(clientTimeZone);
@@ -334,7 +335,7 @@ public class AdherenceService {
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {
             watch.stop();
-            return builder.build().generate();
+            return EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
         }
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
 
@@ -355,7 +356,7 @@ public class AdherenceService {
         builder.withEvents(events);
         builder.withAdherenceRecords(adherenceRecords);
 
-        EventStreamAdherenceReport report = builder.build().generate();
+        EventStreamAdherenceReport report = EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
         LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return report;
     }
