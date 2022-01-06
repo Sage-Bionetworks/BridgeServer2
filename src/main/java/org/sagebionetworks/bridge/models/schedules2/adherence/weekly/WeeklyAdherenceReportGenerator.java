@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.LocalDate;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AbstractAdherenceReportGenerator;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
@@ -17,31 +17,19 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventS
 
 import com.google.common.collect.ImmutableList;
 
-public class WeeklyAdherenceReportGenerator extends AbstractAdherenceReportGenerator {
+public class WeeklyAdherenceReportGenerator {
     
-    private WeeklyAdherenceReportGenerator(AbstractAdherenceReportGenerator.Builder builder) {
-        super(builder);
-    }
-    
-    public WeeklyAdherenceReport generate() {
+    public static final WeeklyAdherenceReportGenerator INSTANCE = new WeeklyAdherenceReportGenerator();
+
+    public WeeklyAdherenceReport generate(AdherenceState state) {
+        EventStreamAdherenceReport reports = EventStreamAdherenceReportGenerator.INSTANCE.generate(state);
+                
         EventStream finalReport = new EventStream();
         
-        EventStreamAdherenceReportGenerator generator = new EventStreamAdherenceReportGenerator.Builder()
-                .withAppId(appId)
-                .withStudyId(studyId)
-                .withUserId(userId)
-                .withCreatedOn(createdOn)
-                .withNow(now)
-                .withClientTimeZone(clientTimeZone)
-                .withMetadata(metadata)
-                .withEvents(events)
-                .withAdherenceRecords(adherenceRecords).build();
-                
-        EventStreamAdherenceReport reports = generator.generate();
         for (EventStream report : reports.getStreams()) {
             int highestEndDay = highestEndDay(report.getByDayEntries());
             
-            Integer currentDay = daysSinceEventByEventId.get(report.getStartEventId());
+            Integer currentDay = state.getDaysSinceEventById(report.getStartEventId());
             if (currentDay == null || currentDay < 0) {
                 // Participant has not yet begun the activities scheduled by this event
                 continue;
@@ -73,13 +61,19 @@ public class WeeklyAdherenceReportGenerator extends AbstractAdherenceReportGener
             }
             for (EventStreamDay oneDay : selectedDays) {
                 int dayOfWeek = oneDay.getStartDay() - startDayOfWeek;
+                // if dayOfWeek is negative, the session started prior to this week and it
+                // is still active, so it should still be in the list. Given visual designs,
+                // this starts at day 0 (because it started before that).
+                if (dayOfWeek < 0) {
+                    dayOfWeek = 0;
+                }
                 finalReport.addEntry(dayOfWeek, oneDay);   
             }
         }
         
         // If the report is empty, then we are asked to seek ahead and store some when
         // the next activity will be required.
-        LocalDate nextActivity = now.plusYears(100).toLocalDate();
+        LocalDate nextActivity = state.getNow().plusYears(100).toLocalDate();
         EventStreamDay nextDay = null;
         if (finalReport.getByDayEntries().isEmpty()) {
             for (EventStream report : reports.getStreams()) {
@@ -89,7 +83,7 @@ public class WeeklyAdherenceReportGenerator extends AbstractAdherenceReportGener
                         if (startDate == null) {
                             continue;
                         }
-                        if (startDate.isBefore(nextActivity) && startDate.isAfter(now.toLocalDate())) {
+                        if (startDate.isBefore(nextActivity) && startDate.isAfter(state.getNow().toLocalDate())) {
                             nextActivity = startDate;
                             nextDay = day;
                             day.setStartDay(null);
@@ -98,7 +92,7 @@ public class WeeklyAdherenceReportGenerator extends AbstractAdherenceReportGener
                             for (EventStreamWindow win : day.getTimeWindows()) {
                                 win.setEndDay(null);
                             }
-                            Integer currentDay = daysSinceEventByEventId.get(report.getStartEventId());
+                            Integer currentDay = state.getDaysSinceEventById(report.getStartEventId());
                             int maxDays = highestEndDay(report.getByDayEntries());
                             if (currentDay != null && currentDay >= 0 && currentDay <= maxDays) {
                                 int currentWeek = currentDay / 7;
@@ -124,14 +118,9 @@ public class WeeklyAdherenceReportGenerator extends AbstractAdherenceReportGener
         }
 
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
-        report.setAppId(appId);
-        report.setStudyId(studyId);
-        report.setUserId(userId);
-        report.setCreatedOn(createdOn);
         report.setByDayEntries(finalReport.getByDayEntries());
-        report.setParticipant(account);
-        report.setTimestamp(now);
-        report.setClientTimeZone(clientTimeZone);
+        report.setTimestamp(state.getNow());
+        report.setClientTimeZone(state.getClientTimeZone());
         report.setWeeklyAdherencePercent(percentage);
         report.setNextActivity(NextActivity.create(nextDay));
         report.setLabels(labels);
@@ -150,12 +139,5 @@ public class WeeklyAdherenceReportGenerator extends AbstractAdherenceReportGener
             }
         }
         return max;
-    }
-    
-    public static class Builder extends AbstractAdherenceReportGenerator.Builder {
-        @SuppressWarnings("unchecked")
-        public WeeklyAdherenceReportGenerator build() {
-            return new WeeklyAdherenceReportGenerator(this);
-        }
     }
 }

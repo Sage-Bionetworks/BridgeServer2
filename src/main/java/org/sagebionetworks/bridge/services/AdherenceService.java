@@ -57,6 +57,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
@@ -338,18 +339,15 @@ public class AdherenceService {
 
         Stopwatch watch = Stopwatch.createStarted();
         
-        EventStreamAdherenceReportGenerator.Builder builder = new EventStreamAdherenceReportGenerator.Builder();
-        builder.withAppId(appId);
-        builder.withStudyId(studyId);
-        builder.withUserId(userId);
-        builder.withCreatedOn(getDateTime());
+        AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withShowActive(showActiveOnly);
         builder.withNow(now);
         builder.withClientTimeZone(clientTimeZone);
 
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {
-            return builder.build().generate();
+            watch.stop();
+            return EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
         }
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
 
@@ -369,34 +367,43 @@ public class AdherenceService {
         builder.withMetadata(metadata);
         builder.withEvents(events);
         builder.withAdherenceRecords(adherenceRecords);
-        
-        EventStreamAdherenceReport report = builder.build().generate();
-        
-        watch.stop();
+
+        EventStreamAdherenceReport report = EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
         LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return report;
     }
+    
     
     public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, String userId,
             DateTime now, String clientTimeZone) {
 
         Stopwatch watch = Stopwatch.createStarted();
+
+        Account account = accountService.getAccount(AccountId.forId(appId, userId))
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        WeeklyAdherenceReport report = getWeeklyAdherenceReportInternal(appId, studyId, userId, now, clientTimeZone);
+        report.setAppId(appId);
+        report.setStudyId(studyId);
+        report.setUserId(userId);
+        report.setCreatedOn(getDateTime());
+        report.setParticipant(new AccountRef(account, studyId));
         
-        WeeklyAdherenceReportGenerator.Builder builder = new WeeklyAdherenceReportGenerator.Builder();
-        builder.withAppId(appId);
-        builder.withStudyId(studyId);
-        builder.withUserId(userId);
-        builder.withCreatedOn(getDateTime());
+        watch.stop();
+        LOG.info("Weekly adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
+        return report;
+    }
+    
+    private WeeklyAdherenceReport getWeeklyAdherenceReportInternal(String appId, String studyId, String userId,
+            DateTime now, String clientTimeZone) {
+        
+        AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withNow(now);
         builder.withClientTimeZone(clientTimeZone);
         
-        Account account = accountService.getAccount(AccountId.forId(appId, userId))
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
-        builder.withAccount(new AccountRef(account, studyId));
-
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {
-            return builder.build().generate();
+            return WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
         }
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
 
@@ -416,11 +423,6 @@ public class AdherenceService {
         builder.withMetadata(metadata);
         builder.withEvents(events);
         builder.withAdherenceRecords(adherenceRecords);
-        
-        WeeklyAdherenceReport report = builder.build().generate();
-        
-        watch.stop();
-        LOG.info("Weekly adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
-        return report;
+        return WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
     }
 }
