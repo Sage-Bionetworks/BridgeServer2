@@ -6,14 +6,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState.Builder;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 
 import com.google.common.collect.ImmutableList;
 
@@ -22,10 +28,12 @@ public class WeeklyAdherenceReportGenerator {
     public static final WeeklyAdherenceReportGenerator INSTANCE = new WeeklyAdherenceReportGenerator();
 
     public WeeklyAdherenceReport generate(AdherenceState state) {
-        EventStreamAdherenceReport reports = EventStreamAdherenceReportGenerator.INSTANCE.generate(state);
-                
-        EventStream finalReport = new EventStream();
         
+        AdherenceState stateCopy = state.copy();
+        EventStreamAdherenceReport reports = EventStreamAdherenceReportGenerator.INSTANCE.generate(stateCopy);
+        TestUtils.print(reports);
+        EventStream finalReport = new EventStream();
+
         for (EventStream report : reports.getStreams()) {
             int highestEndDay = highestEndDay(report.getByDayEntries());
             
@@ -44,7 +52,7 @@ public class WeeklyAdherenceReportGenerator {
             
             // Object instance identity is used to prevent duplication of entries
             Set<EventStreamDay> selectedDays = new LinkedHashSet<>();
-            for (Integer dayInReport : report.getByDayEntries().keySet()) { 
+            for (Integer dayInReport : report.getByDayEntries().keySet()) {
                 List<EventStreamDay> days = report.getByDayEntries().get(dayInReport);
                 for (EventStreamDay oneDay : days) {
                     int startDay = oneDay.getStartDay();

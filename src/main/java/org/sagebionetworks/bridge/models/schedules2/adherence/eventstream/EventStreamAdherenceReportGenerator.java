@@ -18,7 +18,9 @@ public class EventStreamAdherenceReportGenerator {
 
     public EventStreamAdherenceReport generate(AdherenceState state) {
         for (TimelineMetadata meta : state.getMetadata()) {
+            System.out.println("----");
             if (meta.isTimeWindowPersistent()) {
+                System.out.println("1");
                 continue;
             }
             int startDay = meta.getSessionInstanceStartDay();
@@ -33,6 +35,7 @@ public class EventStreamAdherenceReportGenerator {
 
             // Skip entries that are not currently active, according to the server.
             if (state.showActive() && (daysSinceEvent == null || (startDay > daysSinceEvent || endDay < daysSinceEvent))) {
+                System.out.println("2");
                 continue;
             }
 

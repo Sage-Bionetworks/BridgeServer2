@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence;
 
+import static com.newrelic.agent.deps.com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.counting;
 import static java.util.stream.Collectors.toMap;
 
@@ -19,6 +20,7 @@ import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.newrelic.agent.deps.com.google.common.base.Preconditions;
 
 public final class AdherenceState {
 
@@ -26,6 +28,9 @@ public final class AdherenceState {
     private final DateTime now;
     private final String clientTimeZone;
     private final List<TimelineMetadata> metadata;
+    private final List<StudyActivityEvent> events;
+    private final List<AdherenceRecord> adherenceRecords;
+    
     private final Map<String, EventStream> streamsByEventId;
     private final Map<String, EventStreamDay> streamsByStreamKey;
     private final Map<String, AdherenceRecord> adherenceByGuid;
@@ -40,6 +45,8 @@ public final class AdherenceState {
         clientTimeZone = builder.clientTimeZone;
         now = (builder.now == null) ? null : builder.now.withZone(zone);
         metadata = builder.metadata;
+        events = builder.events;
+        adherenceRecords = builder.adherenceRecords;
         streamsByEventId = new HashMap<>();
         daysSinceEventByEventId = new HashMap<>();
         eventTimestampByEventId = new HashMap<>();
@@ -55,6 +62,18 @@ public final class AdherenceState {
             daysSinceEventByEventId.put(event.getEventId(), daysSince);
             eventTimestampByEventId.put(event.getEventId(), eventTimestamp);
         }
+    }
+
+    // Make a clean copy, resetting all the caches.
+    public AdherenceState copy() {
+        return new AdherenceState.Builder()
+                .withMetadata(metadata)
+                .withEvents(events)
+                .withAdherenceRecords(adherenceRecords)
+                .withNow(now)
+                .withShowActive(showActive)
+                .withClientTimeZone(clientTimeZone)
+                .build();
     }
     
     public List<TimelineMetadata> getMetadata() {
@@ -165,6 +184,8 @@ public final class AdherenceState {
             return this;
         }
         public AdherenceState build() {
+            checkNotNull(now);
+            
             if (metadata == null) {
                 metadata = ImmutableList.of();
             }

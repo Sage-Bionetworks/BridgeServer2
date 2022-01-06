@@ -95,7 +95,7 @@ public class AdherenceStateTest extends Mockito {
     
     @Test
     public void testConstruction_nulls() {
-        AdherenceState emptyState = new AdherenceState.Builder().build();
+        AdherenceState emptyState = new AdherenceState.Builder().withNow(NOW).build();
         assertEquals(emptyState.getMetadata(), ImmutableList.of());
         assertNull(emptyState.getAdherenceRecordByGuid("event1"));
         assertNull(emptyState.getDaysSinceEventById("event1"));    

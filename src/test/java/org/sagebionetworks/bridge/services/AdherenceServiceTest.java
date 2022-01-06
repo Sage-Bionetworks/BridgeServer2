@@ -72,7 +72,6 @@ import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -104,9 +103,6 @@ public class AdherenceServiceTest extends Mockito {
     
     @Mock
     Schedule2Service mockScheduleService;
-    
-    @Mock
-    AccountService mockAccountService;
     
     @Captor
     ArgumentCaptor<AdherenceRecordsSearch> searchCaptor;
@@ -833,7 +829,6 @@ public class AdherenceServiceTest extends Mockito {
     @Test
     public void getWeeklyAdherenceReport() throws Exception {
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
         
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -842,8 +837,8 @@ public class AdherenceServiceTest extends Mockito {
         account.setLastName("lastName");
         account.setEmail(TestConstants.EMAIL);
         account.setPhone(TestConstants.PHONE);
+        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID));
-        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         Study study = Study.create();
         study.setScheduleGuid(SCHEDULE_GUID);
@@ -857,8 +852,8 @@ public class AdherenceServiceTest extends Mockito {
         PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
         when(mockDao.getAdherenceRecords(any())).thenReturn(page2);
         
-        WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID,
-                EVENT_TS, TEST_CLIENT_TIME_ZONE);
+        WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
+                TEST_APP_ID, TEST_STUDY_ID, account, EVENT_TS);
         assertEquals(retValue.getAppId(), TEST_APP_ID);
         assertEquals(retValue.getStudyId(), TEST_STUDY_ID);
         assertEquals(retValue.getUserId(), TEST_USER_ID);
@@ -879,7 +874,6 @@ public class AdherenceServiceTest extends Mockito {
     @Test
     public void getWeeklyAdherenceReport_studyHasNoSchedule() { 
         RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
-        AccountId accountId = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
         
         Account account = Account.create();
         account.setAppId(TEST_APP_ID);
@@ -888,8 +882,8 @@ public class AdherenceServiceTest extends Mockito {
         account.setLastName("lastName");
         account.setEmail(TestConstants.EMAIL);
         account.setPhone(TestConstants.PHONE);
+        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         account.getEnrollments().add(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID));
-        when(mockAccountService.getAccount(accountId)).thenReturn(Optional.of(account));
         
         Study study = Study.create();
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
@@ -902,8 +896,8 @@ public class AdherenceServiceTest extends Mockito {
         PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
         when(mockDao.getAdherenceRecords(any())).thenReturn(page2);
         
-        WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID,
-                EVENT_TS, TEST_CLIENT_TIME_ZONE);
+        WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
+                TEST_APP_ID, TEST_STUDY_ID, account, EVENT_TS);
         assertEquals(retValue.getAppId(), TEST_APP_ID);
         assertEquals(retValue.getStudyId(), TEST_STUDY_ID);
         assertEquals(retValue.getUserId(), TEST_USER_ID);

@@ -87,18 +87,20 @@ public class AdherenceController extends BaseController {
 
         DateTime now = getDateTime();
 
-        return service.getWeeklyAdherenceReport(session.getAppId(), studyId, account.getId(), now,
-                account.getClientTimeZone());
+        return service.getWeeklyAdherenceReport(session.getAppId(), studyId, account, now);
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/self/adherence/weekly")
     public WeeklyAdherenceReport getWeeklyAdherenceReportForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();
 
+        AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
         DateTime now = getDateTime();
 
-        return service.getWeeklyAdherenceReport(session.getAppId(), studyId, session.getId(), now,
-                session.getParticipant().getClientTimeZone());
+        return service.getWeeklyAdherenceReport(session.getAppId(), studyId, account, now);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence")

@@ -46,10 +46,8 @@ import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
-import org.sagebionetworks.bridge.models.accounts.AccountId;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
@@ -83,8 +81,6 @@ public class AdherenceService {
     
     private Schedule2Service scheduleService;
     
-    private AccountService accountService;
-    
     @Autowired
     final void setAdherenceRecordDao(AdherenceRecordDao dao) {
         this.dao = dao;
@@ -103,11 +99,6 @@ public class AdherenceService {
     @Autowired
     final void setSchedule2Service(Schedule2Service scheduleService) {
         this.scheduleService = scheduleService;
-    }
-    
-    @Autowired
-    final void setAccountService(AccountService accountService) {
-        this.accountService = accountService;
     }
     
     protected DateTime getDateTime() {
@@ -374,18 +365,15 @@ public class AdherenceService {
     }
     
     
-    public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, String userId,
-            DateTime now, String clientTimeZone) {
+    public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, Account account, DateTime now) {
 
         Stopwatch watch = Stopwatch.createStarted();
 
-        Account account = accountService.getAccount(AccountId.forId(appId, userId))
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
-
-        WeeklyAdherenceReport report = getWeeklyAdherenceReportInternal(appId, studyId, userId, now, clientTimeZone);
+        WeeklyAdherenceReport report = getWeeklyAdherenceReportInternal(
+                appId, studyId, account.getId(), now, account.getClientTimeZone());
         report.setAppId(appId);
         report.setStudyId(studyId);
-        report.setUserId(userId);
+        report.setUserId(account.getId());
         report.setCreatedOn(getDateTime());
         report.setParticipant(new AccountRef(account, studyId));
         
