@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NONCOMPLIANT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNKNOWN;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -97,22 +98,10 @@ public class AdherenceStateTest extends Mockito {
         AdherenceState emptyState = new AdherenceState.Builder().build();
         assertEquals(emptyState.getMetadata(), ImmutableList.of());
         assertNull(emptyState.getAdherenceRecordByGuid("event1"));
-        try {
-            emptyState.getEventStreamById("event1");    
-        } catch(IllegalArgumentException e) {
-        }
-        try {
-            emptyState.getEventStreamDayByKey(meta1);    
-        } catch(IllegalArgumentException e) {
-        }
-        try {
-            emptyState.getDaysSinceEventById("event1");    
-        } catch(IllegalArgumentException e) {
-        }
-        try {
-            emptyState.getEventTimestampById("event1");    
-        } catch(IllegalArgumentException e) {
-        }
+        assertNull(emptyState.getDaysSinceEventById("event1"));    
+        assertNull(emptyState.getEventTimestampById("event1"));    
+        assertNotNull(emptyState.getEventStreamById("event1"));
+        assertNotNull(emptyState.getEventStreamDayByKey(meta1));    
     }
     
     @Test
