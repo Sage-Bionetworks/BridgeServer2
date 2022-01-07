@@ -25,6 +25,7 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import org.joda.time.LocalTime;
+import org.joda.time.Period;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
@@ -58,6 +59,7 @@ public class SessionValidator implements Validator {
     static final String TIME_WINDOWS_FIELD = "timeWindows";
     static final String TITLE_FIELD = "title";
     
+    static final String DELAY_LONGER_THAN_SCHEDULE_DURATION_ERROR = "cannot be longer than the schedule duration";
     static final String EXPIRATION_LONGER_THAN_INTERVAL_ERROR = "cannot be longer than the session interval";
     static final String EXPIRATION_REQUIRED_ERROR = "is required when a session has an interval";
     static final String LONGER_THAN_WINDOW_EXPIRATION_ERROR = "cannot be longer than the shortest window expiration";
@@ -66,12 +68,15 @@ public class SessionValidator implements Validator {
     static final String START_TIME_SECONDS_INVALID_ERROR = "cannot specify seconds";
     static final String WINDOW_OVERLAPS_ERROR = "overlaps another time window";
     static final String WINDOW_SHORTER_THAN_DAY_ERROR = "cannot be set when the shortest window is less than a day";
+    static final String WINDOW_EXPIRATION_AFTER_SCHEDULE_DURATION = "cannot expire after schedule duration";
     static final String LESS_THAN_ONE_ERROR = "cannot be less than one";
     static final String UNDEFINED_STUDY_BURST = "does not refer to a defined study burst ID";
     
+    private final Period scheduleDuration;
     private final Set<String> studyBurstIds;
     
-    public SessionValidator(Set<String> studyBurstIds) {
+    public SessionValidator(Period scheduleDuration, Set<String> studyBurstIds) {
+        this.scheduleDuration = scheduleDuration;
         this.studyBurstIds = studyBurstIds;
     }
     
@@ -159,6 +164,11 @@ public class SessionValidator implements Validator {
             errors.rejectValue(OCCURRENCES_FIELD, LESS_THAN_ONE_ERROR);
         }
         validateFixedLengthPeriod(errors, session.getDelay(), DELAY_FIELD, false);
+        if (scheduleDuration != null && session.getDelay() != null) {
+            if (periodInMinutes(session.getDelay()) > periodInMinutes(scheduleDuration)) {
+                errors.rejectValue(DELAY_FIELD, DELAY_LONGER_THAN_SCHEDULE_DURATION_ERROR);
+            }
+        }
         validateFixedLengthLongPeriod(errors, session.getInterval(), INTERVAL_FIELD, false);
         if (session.getPerformanceOrder() == null) {
             errors.rejectValue(PERFORMANCE_ORDER_FIELD, CANNOT_BE_NULL);
@@ -193,6 +203,17 @@ public class SessionValidator implements Validator {
                         long expMin = periodInMinutes(window.getExpiration());
                         if (expMin > intervalMin) {
                             errors.rejectValue(EXPIRATION_FIELD, EXPIRATION_LONGER_THAN_INTERVAL_ERROR);
+                        }
+                    }
+                }
+                if (window.getExpiration() != null) {
+                    long windowExpiration = periodInMinutes(window.getExpiration());
+                    if (session.getDelay() != null) {
+                        windowExpiration += periodInMinutes(session.getDelay());
+                    }
+                    if (scheduleDuration != null) {
+                        if (windowExpiration > periodInMinutes(scheduleDuration)) {
+                            errors.rejectValue(EXPIRATION_FIELD, WINDOW_EXPIRATION_AFTER_SCHEDULE_DURATION);
                         }
                     }
                 }
