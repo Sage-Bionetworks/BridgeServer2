@@ -1,13 +1,11 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence;
 
-import static com.newrelic.agent.deps.com.google.common.base.Preconditions.checkNotNull;
-import static java.util.stream.Collectors.counting;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -20,7 +18,6 @@ import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.newrelic.agent.deps.com.google.common.base.Preconditions;
 
 public final class AdherenceState {
 
@@ -65,15 +62,14 @@ public final class AdherenceState {
     }
 
     // Make a clean copy, resetting all the caches.
-    public AdherenceState copy() {
+    public AdherenceState.Builder toBuilder() {
         return new AdherenceState.Builder()
                 .withMetadata(metadata)
                 .withEvents(events)
                 .withAdherenceRecords(adherenceRecords)
                 .withNow(now)
                 .withShowActive(showActive)
-                .withClientTimeZone(clientTimeZone)
-                .build();
+                .withClientTimeZone(clientTimeZone);
     }
     
     public List<TimelineMetadata> getMetadata() {
@@ -131,14 +127,10 @@ public final class AdherenceState {
     public DateTimeZone getTimeZone() {
         return zone;
     }
-    public long getSessionStateCount(Set<SessionCompletionState> states) {
-        return streamsByEventId.values().stream()
-                .flatMap(es -> es.getByDayEntries().values().stream())
-                .flatMap(list -> list.stream())
-                .flatMap(esd -> esd.getTimeWindows().stream())
-                .filter(win -> states.contains(win.getState()))
-                .collect(counting());
+    public int calculateAdherencePercentage() {
+        return AdherenceUtils.calculateAdherencePercentage(streamsByEventId.values());
     }
+    
     /**
      * This only returns the event IDs that are actually being used by streams (so 
      * if a stream is not included, even if there are metadata or adherence records

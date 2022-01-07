@@ -364,7 +364,6 @@ public class AdherenceService {
         return report;
     }
     
-    
     public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, Account account, DateTime now) {
 
         Stopwatch watch = Stopwatch.createStarted();

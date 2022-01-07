@@ -14,6 +14,8 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNSTARTED;
 
 import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 
@@ -51,19 +53,9 @@ public class AdherenceUtils {
     }
     
     public static int calculateAdherencePercentage(Collection<EventStream> streams) {
-        long compliantSessions = streams.stream()
-                .flatMap(es -> es.getByDayEntries().values().stream()).flatMap(list -> list.stream())
-                .flatMap(esd -> esd.getTimeWindows().stream()).filter(tw -> COMPLIANT.contains(tw.getState()))
-                .collect(counting());
-        long noncompliantSessions = streams.stream()
-                .flatMap(es -> es.getByDayEntries().values().stream()).flatMap(list -> list.stream())
-                .flatMap(esd -> esd.getTimeWindows().stream()).filter(tw -> NONCOMPLIANT.contains(tw.getState()))
-                .collect(counting());
-        long unkSessions = streams.stream()
-                .flatMap(es -> es.getByDayEntries().values().stream())
-                .flatMap(list -> list.stream()).flatMap(esd -> esd.getTimeWindows().stream())
-                .filter(tw -> UNKNOWN.contains(tw.getState())).collect(counting());
-
+        long compliantSessions = counting(streams, COMPLIANT);
+        long noncompliantSessions = counting(streams, NONCOMPLIANT);
+        long unkSessions = counting(streams, UNKNOWN);
         long totalSessions = compliantSessions + noncompliantSessions + unkSessions;
 
         float percentage = 1.0f;
@@ -71,5 +63,14 @@ public class AdherenceUtils {
             percentage = ((float) compliantSessions / (float) totalSessions);
         }
         return (int) (percentage * 100);
+    }
+    
+    private static long counting(Collection<EventStream> streams, Set<SessionCompletionState> states) {
+      return streams.stream()
+          .flatMap(es -> es.getByDayEntries().values().stream())
+          .flatMap(list -> list.stream())
+          .flatMap(esd -> esd.getTimeWindows().stream())
+          .filter(win -> states.contains(win.getState()))
+          .collect(Collectors.counting());
     }
 }

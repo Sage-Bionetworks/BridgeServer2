@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge;
 
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.DISABLED;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.assessments.ResourceCategory.LICENSE;
@@ -228,4 +229,9 @@ public class TestConstants {
     public static final String ASSESSMENT_2_GUID = "222222222222222222222222";
     public static final String ASSESSMENT_3_GUID = "333333333333333333333333";
     public static final String ASSESSMENT_4_GUID = "444444444444444444444444";
+    
+    public static final DateTime ADHERENCE_STATE_NOW = CREATED_ON.plusDays(10).withZone(DateTimeZone.forID("America/Chicago"));
+    public static final DateTime ADHERENCE_STATE_EVENT_TS1 = CREATED_ON;
+    public static final DateTime ADHERENCE_STATE_EVENT_TS2 = CREATED_ON.plusDays(5);
+
 }

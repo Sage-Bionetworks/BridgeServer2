@@ -3,6 +3,9 @@ package org.sagebionetworks.bridge;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_EVENT_TS1;
+import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_EVENT_TS2;
+import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_NOW;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -48,7 +51,6 @@ import com.google.common.collect.Maps;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import org.joda.time.Period;
 import org.springframework.core.annotation.AnnotationUtils;
 import org.springframework.http.MediaType;
@@ -108,9 +110,6 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 public class TestUtils {
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
-    private static final DateTime ADHERENCE_STATE_NOW = CREATED_ON.plusDays(10).withZone(DateTimeZone.forID("America/Chicago"));
-    private static final DateTime ADHERENCE_STATE_EVENT_TS1 = CREATED_ON;
-    private static final DateTime ADHERENCE_STATE_EVENT_TS2 = CREATED_ON.plusDays(5);
 
     public static class CustomServletInputStream extends ServletInputStream {
         private ByteArrayInputStream buffer;
@@ -777,6 +776,7 @@ public class TestUtils {
 
     public static AdherenceState.Builder getAdherenceStateBuilder() { 
         TimelineMetadata meta1 = new TimelineMetadata();
+        meta1.setSessionInstanceGuid("instanceGuid1");
         meta1.setSessionStartEventId("event1");
         meta1.setSessionGuid("guid1");
         meta1.setSessionInstanceStartDay(1);
@@ -785,15 +785,25 @@ public class TestUtils {
         meta1.setSessionSymbol("1");
         
         TimelineMetadata meta2 = new TimelineMetadata();
+        meta2.setSessionInstanceGuid("instanceGuid2");
         meta2.setSessionStartEventId("event2");
         meta2.setSessionGuid("guid2");
         meta2.setSessionInstanceStartDay(2);
         meta2.setSessionInstanceEndDay(16);
         meta2.setSessionName("session2");
         meta2.setSessionSymbol("2");
-        meta2.setStudyBurstId("burst2");
+        meta2.setStudyBurstId("burst");
         meta2.setStudyBurstNum(2);
-        List<TimelineMetadata> metadata = ImmutableList.of(meta1, meta2);
+        
+        TimelineMetadata meta3 = new TimelineMetadata();
+        meta3.setSessionInstanceGuid("instanceGuid3");
+        meta3.setSessionStartEventId("event2");
+        meta3.setSessionGuid("guid3");
+        meta3.setSessionInstanceStartDay(3);
+        meta3.setSessionInstanceEndDay(4);
+        meta3.setSessionName("session3");
+        meta3.setSessionSymbol("3");
+        List<TimelineMetadata> metadata = ImmutableList.of(meta1, meta2, meta3);
         
         StudyActivityEvent e1 = new StudyActivityEvent.Builder()
                 .withEventId("event1")
@@ -808,11 +818,13 @@ public class TestUtils {
         List<StudyActivityEvent> events = ImmutableList.of(e1, e2);
         
         AdherenceRecord rec1 = new AdherenceRecord();
-        rec1.setInstanceGuid("ar1");
+        rec1.setInstanceGuid("instanceGuid1");
+        rec1.setStartedOn(CREATED_ON);
+        rec1.setFinishedOn(MODIFIED_ON);
         rec1.setEventTimestamp(ADHERENCE_STATE_EVENT_TS1);
         
         AdherenceRecord rec2 = new AdherenceRecord();
-        rec2.setInstanceGuid("ar2");
+        rec2.setInstanceGuid("instanceGuid2");
         rec2.setEventTimestamp(ADHERENCE_STATE_EVENT_TS2);
         
         List<AdherenceRecord> adherenceRecords = ImmutableList.of(rec1, rec2);
@@ -826,9 +838,9 @@ public class TestUtils {
             .withClientTimeZone(TEST_CLIENT_TIME_ZONE);
     }
     
-    public static void print(Object obj) {
+    public static void print(String tag, Object obj) {
         try {
-            System.out.println(BridgeObjectMapper.get().writeValueAsString(obj));
+            System.out.println(tag + ": " + BridgeObjectMapper.get().writeValueAsString(obj));
         } catch(Exception e) {
             e.printStackTrace();
         }

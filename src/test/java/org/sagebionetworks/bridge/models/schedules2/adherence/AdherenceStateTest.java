@@ -2,9 +2,6 @@ package org.sagebionetworks.bridge.models.schedules2.adherence;
 
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLIANT;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NONCOMPLIANT;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNKNOWN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -150,11 +147,8 @@ public class AdherenceStateTest extends Mockito {
         assertEquals(state.getEventTimestampById("event1"), EVENT_TS1.withZone(TEST_TIME_ZONE));
         assertEquals(state.getEventTimestampById("event2"), EVENT_TS2.withZone(TEST_TIME_ZONE));
         
-        // These are always going to return zero after construction because state calculation happens
-        // in the report generators. We can manually set and and test this in a separate test.
-        assertEquals(state.getSessionStateCount(COMPLIANT), 0L);
-        assertEquals(state.getSessionStateCount(NONCOMPLIANT), 0L);
-        assertEquals(state.getSessionStateCount(UNKNOWN), 0L);
+        // Nothing to do == in compliance, ignore this person this week
+        assertEquals(state.calculateAdherencePercentage(), 100);
         
         assertEquals(state.getStreamEventIds(), ImmutableList.of("event1", "event2"));
     }
@@ -189,9 +183,7 @@ public class AdherenceStateTest extends Mockito {
         win2b.setState(SessionCompletionState.COMPLETED);
         day2.addTimeWindow(win2b);
 
-        assertEquals(state.getSessionStateCount(COMPLIANT), 1L); // completed
-        assertEquals(state.getSessionStateCount(NONCOMPLIANT), 2L); // abandoned, expired
-        assertEquals(state.getSessionStateCount(UNKNOWN), 1L); // unstarted
+        assertEquals(state.calculateAdherencePercentage(), 25);
     }
     
     @Test

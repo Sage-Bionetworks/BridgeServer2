@@ -6,20 +6,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
-import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState.Builder;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
-import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 
 import com.google.common.collect.ImmutableList;
 
@@ -29,26 +23,22 @@ public class WeeklyAdherenceReportGenerator {
 
     public WeeklyAdherenceReport generate(AdherenceState state) {
         
-        AdherenceState stateCopy = state.copy();
+        // This isn't necessary from the service, because state never has showActive=true, but for tests,
+        // it's helpful to force showActive=false.
+        AdherenceState stateCopy = state.toBuilder().withShowActive(false).build();
         EventStreamAdherenceReport reports = EventStreamAdherenceReportGenerator.INSTANCE.generate(stateCopy);
-        TestUtils.print(reports);
+        
         EventStream finalReport = new EventStream();
 
         for (EventStream report : reports.getStreams()) {
-            int highestEndDay = highestEndDay(report.getByDayEntries());
-            
             Integer currentDay = state.getDaysSinceEventById(report.getStartEventId());
             if (currentDay == null || currentDay < 0) {
                 // Participant has not yet begun the activities scheduled by this event
                 continue;
             }
-            if (currentDay > highestEndDay) {
-                // Participant has completed the activities scheduled by this event
-                continue;
-            }
             int currentWeek = currentDay / 7;    
             int startDayOfWeek = (currentWeek*7);
-            int endDayOfWeek = startDayOfWeek+7;
+            int endDayOfWeek = startDayOfWeek+6;
             
             // Object instance identity is used to prevent duplication of entries
             Set<EventStreamDay> selectedDays = new LinkedHashSet<>();
@@ -60,8 +50,6 @@ public class WeeklyAdherenceReportGenerator {
                         int endDay = window.getEndDay();
                         if (startDay <= endDayOfWeek && endDay >= startDayOfWeek) {
                             oneDay.setWeek(currentWeek+1);
-                            oneDay.setStudyBurstId(report.getStudyBurstId());
-                            oneDay.setStudyBurstNum(report.getStudyBurstNum());
                             selectedDays.add(oneDay);
                         }
                     }
@@ -81,36 +69,7 @@ public class WeeklyAdherenceReportGenerator {
         
         // If the report is empty, then we are asked to seek ahead and store some when
         // the next activity will be required.
-        LocalDate nextActivity = state.getNow().plusYears(100).toLocalDate();
-        EventStreamDay nextDay = null;
-        if (finalReport.getByDayEntries().isEmpty()) {
-            for (EventStream report : reports.getStreams()) {
-                for (List<EventStreamDay> list :report.getByDayEntries().values()) {
-                    for (EventStreamDay day : list) {
-                        LocalDate startDate = day.getStartDate();
-                        if (startDate == null) {
-                            continue;
-                        }
-                        if (startDate.isBefore(nextActivity) && startDate.isAfter(state.getNow().toLocalDate())) {
-                            nextActivity = startDate;
-                            nextDay = day;
-                            day.setStartDay(null);
-                            day.setStudyBurstId(report.getStudyBurstId());
-                            day.setStudyBurstNum(report.getStudyBurstNum());
-                            for (EventStreamWindow win : day.getTimeWindows()) {
-                                win.setEndDay(null);
-                            }
-                            Integer currentDay = state.getDaysSinceEventById(report.getStartEventId());
-                            int maxDays = highestEndDay(report.getByDayEntries());
-                            if (currentDay != null && currentDay >= 0 && currentDay <= maxDays) {
-                                int currentWeek = currentDay / 7;
-                                day.setWeek(currentWeek+1);    
-                            }
-                        }
-                    }
-                }
-            }
-        }
+        EventStreamDay nextDay = getNextActivity(state, finalReport, reports);
 
         int percentage = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(finalReport));
 
@@ -135,12 +94,48 @@ public class WeeklyAdherenceReportGenerator {
         return report;
     }
     
+    private EventStreamDay getNextActivity(AdherenceState state, EventStream finalReport, EventStreamAdherenceReport reports) {
+        if (finalReport.getByDayEntries().isEmpty()) {
+            for (EventStream report : reports.getStreams()) {
+                for (List<EventStreamDay> list :report.getByDayEntries().values()) {
+                    for (EventStreamDay day : list) {
+                        LocalDate startDate = day.getStartDate();
+                        if (startDate == null) {
+                            continue;
+                        }
+                        if (startDate.isAfter(state.getNow().toLocalDate())) {
+                            day.setStartDay(null);
+                            day.setStudyBurstId(report.getStudyBurstId());
+                            day.setStudyBurstNum(report.getStudyBurstNum());
+                            for (EventStreamWindow win : day.getTimeWindows()) {
+                                win.setEndDay(null);
+                            }
+                            Integer currentDay = state.getDaysSinceEventById(report.getStartEventId());
+                            int maxDays = highestEndDay(report.getByDayEntries());
+                            // TODO: test true && true && true
+                            // TODO: test true && true && false
+                            // TODO: test true && false && true
+                            // TODO: test false && true && true
+                            // TODO: test false && false && false
+                            if (currentDay != null && currentDay >= 0 && currentDay <= maxDays) {
+                                int currentWeek = currentDay / 7;
+                                day.setWeek(currentWeek+1);    
+                            }
+                            return day;
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
     private int highestEndDay(Map<Integer, List<EventStreamDay>> map) {
         int max = 0;
         for (List<EventStreamDay> oneList : map.values()) {
             for (EventStreamDay day : oneList) {
                 for (EventStreamWindow window : day.getTimeWindows()) {
-                    if (window.getEndDay().intValue() > max) {
+                    if (window.getEndDay() != null && window.getEndDay().intValue() > max) {
                         max = window.getEndDay().intValue();
                     }
                 }
