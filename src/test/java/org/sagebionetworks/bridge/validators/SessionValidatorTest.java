@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.models.schedules2.Schedule2Test.createValidSchedule;
 import static org.sagebionetworks.bridge.models.schedules2.SessionTest.createValidSession;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_2;
@@ -8,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_3;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.SessionValidator.ASSESSMENTS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.DELAY_FIELD;
+import static org.sagebionetworks.bridge.validators.SessionValidator.DELAY_LONGER_THAN_SCHEDULE_DURATION_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.EXPIRATION_LONGER_THAN_INTERVAL_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.EXPIRATION_REQUIRED_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.GUID_FIELD;
@@ -62,7 +62,7 @@ import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
 public class SessionValidatorTest extends Mockito {
     
-    private static final SessionValidator INSTANCE = new SessionValidator(createValidSchedule(), ImmutableSet.of("burst1"));
+    private static final SessionValidator INSTANCE = new SessionValidator(Period.parse("P8W"), ImmutableSet.of("burst1"));
     
     @Test
     public void valid() {
@@ -599,7 +599,7 @@ public class SessionValidatorTest extends Mockito {
     public void timeWindows_expirationExceedsScheduleDuration() {
         // Schedule duration is 8 weeks.
         Session session = createValidSession();
-        
+    
         TimeWindow timeWindow = new TimeWindow();
         timeWindow.setGuid(SESSION_GUID_1);
         timeWindow.setStartTime(LocalTime.parse("08:00"));
@@ -627,6 +627,33 @@ public class SessionValidatorTest extends Mockito {
         session.setDelay(Period.parse("P4WT1H"));
     
         assertValidatorMessage(INSTANCE, session, TIME_WINDOWS_FIELD+"[0].expiration", WINDOW_EXPIRATION_AFTER_SCHEDULE_DURATION);
+    }
+    
+    @Test
+    public void timeWindows_nullScheduleDurationPasses() {
+        Session session = createValidSession();
+    
+        TimeWindow timeWindow = new TimeWindow();
+        timeWindow.setGuid(SESSION_GUID_1);
+        timeWindow.setStartTime(LocalTime.parse("08:00"));
+        timeWindow.setExpiration(Period.parse("P4W"));
+        session.setTimeWindows(ImmutableList.of(timeWindow));
+    
+        session.setInterval(Period.parse("P4W"));
+        session.setDelay(Period.parse("P4WT1H"));
+    
+        SessionValidator validator = new SessionValidator(null, ImmutableSet.of("burst1"));
+    
+        Validate.entityThrowingException(validator, session);
+    }
+    
+    @Test
+    public void delay_exceedsScheduleDuration() {
+        // Schedule duration is 8 weeks.
+        Session session = createValidSession();
+        session.setDelay(Period.parse("P8WT1H"));
+        
+        assertValidatorMessage(INSTANCE, session, DELAY_FIELD, DELAY_LONGER_THAN_SCHEDULE_DURATION_ERROR);
     }
     
     private Session makeWindows(String time1, String exp1, String time2, String exp2, 

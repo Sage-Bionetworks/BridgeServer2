@@ -125,7 +125,7 @@ public class Schedule2Validator implements Validator {
             errors.popNestedPath();
         }
         
-        SessionValidator sessionValidator = new SessionValidator(schedule, studyBurstIds);
+        SessionValidator sessionValidator = new SessionValidator(schedule.getDuration(), studyBurstIds);
         
         for (int i = 0; i < schedule.getSessions().size(); i++) {
             errors.pushNestedPath(SESSIONS_FIELD+"[" + i + "]");
