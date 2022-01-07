@@ -356,9 +356,8 @@ public class AdherenceService {
 
         List<AdherenceRecord> adherenceRecords = getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
                 .withCurrentTimestampsOnly(true)
-                // if you turn this on you will not get declined sessions with no startedOn value,
-                // but it's not needed because persistent time windows are excluded from adherence.
-                // TODO: So why is this true and not false?
+                // If includeRepeats=false (which is counter-intuitive) you will not get declined sessions with no 
+                // startedOn value, but it's not needed because persistent time windows are excluded from adherence.
                 .withIncludeRepeats(true) 
                 .withAdherenceRecordType(AdherenceRecordType.SESSION)
                 .withStudyId(studyId)
@@ -407,9 +406,8 @@ public class AdherenceService {
 
         List<AdherenceRecord> adherenceRecords = getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
                 .withCurrentTimestampsOnly(true)
-                // if you turn this on you will not get declined sessions with no startedOn value,
-                // but it's not needed because persistent time windows are excluded from adherence.
-                // TODO: So why is this true and not false...?
+                // If includeRepeats=false (which is counter-intuitive) you will not get declined sessions with no 
+                // startedOn value, but it's not needed because persistent time windows are excluded from adherence.
                 .withIncludeRepeats(true)
                 .withAdherenceRecordType(AdherenceRecordType.SESSION)
                 .withStudyId(studyId)

@@ -40,9 +40,4 @@ public class EventStreamWindow {
     public void setEndDate(LocalDate endDate) {
         this.endDate = endDate;
     }
-    @Override
-    public String toString() {
-        return "EventStreamWindow [sessionInstanceGuid=" + sessionInstanceGuid + ", timeWindowGuid=" + timeWindowGuid
-                + ", state=" + state + ", endDay=" + endDay + ", endDate=" + endDate + "]";
-    }
 }
