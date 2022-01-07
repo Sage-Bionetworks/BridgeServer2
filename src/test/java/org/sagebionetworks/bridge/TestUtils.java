@@ -837,12 +837,4 @@ public class TestUtils {
             .withShowActive(true)
             .withClientTimeZone(TEST_CLIENT_TIME_ZONE);
     }
-    
-    public static void print(String tag, Object obj) {
-        try {
-            System.out.println(tag + ": " + BridgeObjectMapper.get().writeValueAsString(obj));
-        } catch(Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

@@ -364,11 +364,11 @@ public class EventStreamAdherenceReportGeneratorTest {
     
     @Test
     public void handleNulls() {
-        AdherenceState state = new AdherenceState.Builder().build();
+        AdherenceState state = new AdherenceState.Builder().withNow(NOW).build();
         
         EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(100, report.getAdherencePercent());
-        assertNull(report.getTimestamp());
+        assertEquals(report.getTimestamp(), NOW); // no time zone adjustment
         assertTrue(report.getStreams().isEmpty());
     }
     

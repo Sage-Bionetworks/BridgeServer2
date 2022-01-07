@@ -23,8 +23,7 @@ public class WeeklyAdherenceReportGenerator {
 
     public WeeklyAdherenceReport generate(AdherenceState state) {
         
-        // This isn't necessary from the service, because state never has showActive=true, but for tests,
-        // it's helpful to force showActive=false.
+        // The service always sets showActive=false, but for tests it is useful to force this
         AdherenceState stateCopy = state.toBuilder().withShowActive(false).build();
         EventStreamAdherenceReport reports = EventStreamAdherenceReportGenerator.INSTANCE.generate(stateCopy);
         
@@ -48,6 +47,7 @@ public class WeeklyAdherenceReportGenerator {
                     int startDay = oneDay.getStartDay();
                     for (EventStreamWindow window : oneDay.getTimeWindows()) {
                         int endDay = window.getEndDay();
+                        // The time window of this day falls within the current week for this event stream
                         if (startDay <= endDayOfWeek && endDay >= startDayOfWeek) {
                             oneDay.setWeek(currentWeek+1);
                             selectedDays.add(oneDay);
@@ -58,21 +58,17 @@ public class WeeklyAdherenceReportGenerator {
             for (EventStreamDay oneDay : selectedDays) {
                 int dayOfWeek = oneDay.getStartDay() - startDayOfWeek;
                 // if dayOfWeek is negative, the session started prior to this week and it
-                // is still active, so it should still be in the list. Given visual designs,
-                // this starts at day 0 (because it started before that).
+                // is still active, so it should still be in the list. Currently given the vision designs
+                // we have, we are positioning these sessions on day 0.
                 if (dayOfWeek < 0) {
                     dayOfWeek = 0;
                 }
                 finalReport.addEntry(dayOfWeek, oneDay);   
             }
         }
-        
-        // If the report is empty, then we are asked to seek ahead and store some when
-        // the next activity will be required.
-        EventStreamDay nextDay = getNextActivity(state, finalReport, reports);
 
-        int percentage = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(finalReport));
-
+        // Add labels. These are also added to the labels collection so we can persist them as a model 
+        // collection and search on them.
         Set<String> labels = new HashSet<>();
         for (List<EventStreamDay> days : finalReport.getByDayEntries().values()) {
             for (EventStreamDay oneDay : days) {
@@ -83,6 +79,10 @@ public class WeeklyAdherenceReportGenerator {
                 oneDay.setLabel(label);
             }
         }
+
+        // If the report is empty, then we seek ahead and store information on the next activity
+        EventStreamDay nextDay = getNextActivity(state, finalReport, reports);
+        int percentage = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(finalReport));
 
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
         report.setByDayEntries(finalReport.getByDayEntries());
@@ -97,19 +97,16 @@ public class WeeklyAdherenceReportGenerator {
     private EventStreamDay getNextActivity(AdherenceState state, EventStream finalReport, EventStreamAdherenceReport reports) {
         if (finalReport.getByDayEntries().isEmpty()) {
             for (EventStream report : reports.getStreams()) {
-                for (List<EventStreamDay> list :report.getByDayEntries().values()) {
-                    for (EventStreamDay day : list) {
-                        LocalDate startDate = day.getStartDate();
-                        if (startDate == null) {
-                            continue;
-                        }
+                for (List<EventStreamDay> days :report.getByDayEntries().values()) {
+                    for (EventStreamDay oneDay : days) {
+                        LocalDate startDate = oneDay.getStartDate();
                         if (startDate.isAfter(state.getNow().toLocalDate())) {
-                            day.setStartDay(null);
-                            day.setStudyBurstId(report.getStudyBurstId());
-                            day.setStudyBurstNum(report.getStudyBurstNum());
-                            for (EventStreamWindow win : day.getTimeWindows()) {
-                                win.setEndDay(null);
-                            }
+                            oneDay.setStartDay(null);
+                            oneDay.setStudyBurstId(report.getStudyBurstId());
+                            oneDay.setStudyBurstNum(report.getStudyBurstNum());
+//                            for (EventStreamWindow win : oneDay.getTimeWindows()) {
+//                                win.setEndDay(null);
+//                            }
                             Integer currentDay = state.getDaysSinceEventById(report.getStartEventId());
                             int maxDays = highestEndDay(report.getByDayEntries());
                             // TODO: test true && true && true
@@ -119,9 +116,9 @@ public class WeeklyAdherenceReportGenerator {
                             // TODO: test false && false && false
                             if (currentDay != null && currentDay >= 0 && currentDay <= maxDays) {
                                 int currentWeek = currentDay / 7;
-                                day.setWeek(currentWeek+1);    
+                                oneDay.setWeek(currentWeek+1);    
                             }
-                            return day;
+                            return oneDay;
                         }
                     }
                 }
@@ -132,10 +129,10 @@ public class WeeklyAdherenceReportGenerator {
     
     private int highestEndDay(Map<Integer, List<EventStreamDay>> map) {
         int max = 0;
-        for (List<EventStreamDay> oneList : map.values()) {
-            for (EventStreamDay day : oneList) {
-                for (EventStreamWindow window : day.getTimeWindows()) {
-                    if (window.getEndDay() != null && window.getEndDay().intValue() > max) {
+        for (List<EventStreamDay> days : map.values()) {
+            for (EventStreamDay oneDay : days) {
+                for (EventStreamWindow window : oneDay.getTimeWindows()) {
+                    if (window.getEndDay().intValue() > max) {
                         max = window.getEndDay().intValue();
                     }
                 }

@@ -330,6 +330,16 @@ public class AdherenceService {
 
         Stopwatch watch = Stopwatch.createStarted();
         
+        EventStreamAdherenceReport report = getEventStreamAdherenceReportInternal(
+                appId, studyId, userId, now, clientTimeZone, showActiveOnly);
+        
+        watch.stop();
+        LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
+        return report;
+    }
+    
+    private EventStreamAdherenceReport getEventStreamAdherenceReportInternal(String appId, String studyId, String userId,
+            DateTime now, String clientTimeZone, boolean showActiveOnly) {
         AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withShowActive(showActiveOnly);
         builder.withNow(now);
@@ -337,7 +347,6 @@ public class AdherenceService {
 
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {
-            watch.stop();
             return EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
         }
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
@@ -349,6 +358,7 @@ public class AdherenceService {
                 .withCurrentTimestampsOnly(true)
                 // if you turn this on you will not get declined sessions with no startedOn value,
                 // but it's not needed because persistent time windows are excluded from adherence.
+                // TODO: So why is this true and not false?
                 .withIncludeRepeats(true) 
                 .withAdherenceRecordType(AdherenceRecordType.SESSION)
                 .withStudyId(studyId)
@@ -359,9 +369,7 @@ public class AdherenceService {
         builder.withEvents(events);
         builder.withAdherenceRecords(adherenceRecords);
 
-        EventStreamAdherenceReport report = EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
-        LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
-        return report;
+        return EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
     }
     
     public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, Account account, DateTime now) {
@@ -401,7 +409,8 @@ public class AdherenceService {
                 .withCurrentTimestampsOnly(true)
                 // if you turn this on you will not get declined sessions with no startedOn value,
                 // but it's not needed because persistent time windows are excluded from adherence.
-                .withIncludeRepeats(true) 
+                // TODO: So why is this true and not false...?
+                .withIncludeRepeats(true)
                 .withAdherenceRecordType(AdherenceRecordType.SESSION)
                 .withStudyId(studyId)
                 .withUserId(userId)

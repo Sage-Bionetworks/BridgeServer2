@@ -202,4 +202,16 @@ public class AdherenceStateTest extends Mockito {
     public void timeZone_fromClientTimeZone() {
         assertEquals(state.getTimeZone(), TEST_TIME_ZONE);    
     }
+    
+    @Test
+    public void toBuilder () {
+        AdherenceState copy = state.toBuilder().build();
+        
+        assertSame(copy.getMetadata(), state.getMetadata());
+        assertSame(copy.getNow(), state.getNow());
+        assertSame(copy.getClientTimeZone(), state.getClientTimeZone());
+        assertSame(copy.getEvents(), state.getEvents());
+        assertSame(copy.getAdherenceRecords(), state.getAdherenceRecords());
+        assertEquals(copy.showActive(), state.showActive());
+    }
 }

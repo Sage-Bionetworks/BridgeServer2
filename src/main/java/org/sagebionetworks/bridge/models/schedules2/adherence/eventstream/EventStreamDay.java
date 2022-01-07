@@ -9,9 +9,6 @@ import org.joda.time.LocalDate;
 import com.google.common.collect.ImmutableList;
 
 public class EventStreamDay {
-    
-    private String label;
-    
     private String sessionGuid;
     private String sessionName;
     private String sessionSymbol;
@@ -21,6 +18,7 @@ public class EventStreamDay {
     private Integer startDay;
     private LocalDate startDate;
     private Map<String,EventStreamWindow> timeWindows;
+    private String label;
     
     public EventStreamDay() { 
         timeWindows = new HashMap<>();

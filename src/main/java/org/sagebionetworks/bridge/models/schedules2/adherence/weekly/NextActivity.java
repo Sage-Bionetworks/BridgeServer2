@@ -19,6 +19,9 @@ public class NextActivity {
         activity.startDate = day.getStartDate();
         return activity;
     }
+    
+    private NextActivity() {
+    }
 
     private String sessionGuid;
     private String sessionName;

@@ -162,28 +162,7 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         assertTrue(report.getByDayEntries().isEmpty());
     }
     
-    // This edge case isn't covered as part of the other tests
     @Test
-    public void dayInReportBeforeWeekWindow() {
-        AdherenceState.Builder builder = TestUtils.getAdherenceStateBuilder();
-        
-        StudyActivityEvent event = new StudyActivityEvent.Builder()
-                .withEventId("event1")
-                .withTimestamp(ADHERENCE_STATE_EVENT_TS1.plusDays(2))
-                .build();
-        builder.withEvents(ImmutableList.of(event));
-        
-        TimelineMetadata meta4 = new TimelineMetadata();
-        meta4.setSessionInstanceGuid("instanceGuid4");
-        meta4.setSessionStartEventId("event1");
-        meta4.setSessionGuid("guid4");
-        meta4.setSessionInstanceStartDay(0);
-        meta4.setSessionInstanceEndDay(0);
-        meta4.setSessionName("session4");
-        meta4.setSessionSymbol("4");
-        builder.withMetadata(ImmutableList.of(meta4));
-        
-        WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
-        fail("Incomplete");
+    public void impactOfHighestEndDay() {
     }
 }

@@ -36,11 +36,11 @@ public final class AdherenceState {
     private final DateTimeZone zone;
     
     public AdherenceState(AdherenceState.Builder builder) {
-        LocalDate localNow = (builder.now == null) ? null : builder.now.toLocalDate(); 
+        LocalDate localNow = builder.now.toLocalDate(); 
         zone = builder.zone;
         showActive = builder.showActiveOnly;
         clientTimeZone = builder.clientTimeZone;
-        now = (builder.now == null) ? null : builder.now.withZone(zone);
+        now = builder.now.withZone(zone);
         metadata = builder.metadata;
         events = builder.events;
         adherenceRecords = builder.adherenceRecords;
@@ -74,6 +74,14 @@ public final class AdherenceState {
     
     public List<TimelineMetadata> getMetadata() {
         return metadata;
+    }
+    // for tests, and not visible from generators
+    List<StudyActivityEvent> getEvents() {
+        return events;
+    }
+    // for tests, and not visible from generators
+    List<AdherenceRecord> getAdherenceRecords() {
+        return adherenceRecords;
     }
     public boolean showActive() {
         return showActive;
@@ -187,9 +195,7 @@ public final class AdherenceState {
             if (adherenceRecords == null) {
                 adherenceRecords = ImmutableList.of();
             }
-            if (now != null) {
-                this.zone = now.getZone();    
-            }
+            this.zone = now.getZone();    
             // however, use the subject’s preferred time zone if available
             if (clientTimeZone != null) {
                 this.zone = DateTimeZone.forID(clientTimeZone);

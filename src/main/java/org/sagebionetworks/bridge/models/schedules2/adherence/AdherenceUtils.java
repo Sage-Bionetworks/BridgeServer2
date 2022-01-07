@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence;
 
-import static java.util.stream.Collectors.counting;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.ABANDONED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLETED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLIANT;
