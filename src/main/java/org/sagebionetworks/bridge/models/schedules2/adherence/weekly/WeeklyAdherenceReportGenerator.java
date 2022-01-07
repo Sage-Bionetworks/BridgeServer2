@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.joda.time.LocalDate;
@@ -58,7 +57,7 @@ public class WeeklyAdherenceReportGenerator {
             for (EventStreamDay oneDay : selectedDays) {
                 int dayOfWeek = oneDay.getStartDay() - startDayOfWeek;
                 // if dayOfWeek is negative, the session started prior to this week and it
-                // is still active, so it should still be in the list. Currently given the vision designs
+                // is still active, so it should still be in the list. Currently given the visual designs
                 // we have, we are positioning these sessions on day 0.
                 if (dayOfWeek < 0) {
                     dayOfWeek = 0;
@@ -100,21 +99,18 @@ public class WeeklyAdherenceReportGenerator {
                 for (List<EventStreamDay> days :report.getByDayEntries().values()) {
                     for (EventStreamDay oneDay : days) {
                         LocalDate startDate = oneDay.getStartDate();
+                        // If an activity is "not applicable," then the startDate cannot be determined and
+                        // it will be null...and it's not the next activity for this user, so skip it.
+                        if (startDate == null) {
+                            continue;
+                        }
                         if (startDate.isAfter(state.getNow().toLocalDate())) {
                             oneDay.setStartDay(null);
                             oneDay.setStudyBurstId(report.getStudyBurstId());
                             oneDay.setStudyBurstNum(report.getStudyBurstNum());
-//                            for (EventStreamWindow win : oneDay.getTimeWindows()) {
-//                                win.setEndDay(null);
-//                            }
                             Integer currentDay = state.getDaysSinceEventById(report.getStartEventId());
-                            int maxDays = highestEndDay(report.getByDayEntries());
-                            // TODO: test true && true && true
-                            // TODO: test true && true && false
-                            // TODO: test true && false && true
-                            // TODO: test false && true && true
-                            // TODO: test false && false && false
-                            if (currentDay != null && currentDay >= 0 && currentDay <= maxDays) {
+                            // currentDay cannot be null (if it were, there would have been no startDate)
+                            if (currentDay >= 0) {
                                 int currentWeek = currentDay / 7;
                                 oneDay.setWeek(currentWeek+1);    
                             }
@@ -125,19 +121,5 @@ public class WeeklyAdherenceReportGenerator {
             }
         }
         return null;
-    }
-    
-    private int highestEndDay(Map<Integer, List<EventStreamDay>> map) {
-        int max = 0;
-        for (List<EventStreamDay> days : map.values()) {
-            for (EventStreamDay oneDay : days) {
-                for (EventStreamWindow window : oneDay.getTimeWindows()) {
-                    if (window.getEndDay().intValue() > max) {
-                        max = window.getEndDay().intValue();
-                    }
-                }
-            }
-        }
-        return max;
     }
 }

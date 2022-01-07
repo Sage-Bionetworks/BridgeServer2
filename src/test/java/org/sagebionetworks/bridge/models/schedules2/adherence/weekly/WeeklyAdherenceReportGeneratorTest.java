@@ -1,12 +1,12 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 
 import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_EVENT_TS1;
+import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_EVENT_TS2;
 import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_NOW;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
-import static org.testng.Assert.fail;
 
 import org.joda.time.DateTimeZone;
 import org.mockito.Mockito;
@@ -126,6 +126,35 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         assertEquals(na.getSessionSymbol(), "4");
         assertEquals(na.getWeek(), Integer.valueOf(2));
         assertEquals(na.getStartDate().toString(), "2015-02-15");
+    }
+    
+    // These are items in the event stream that don't apply to this user because the origin
+    // events are missing from the user’s events. This should not generate an NPE and it 
+    // should find the next activity that *does* apply to this user.
+    @Test
+    public void nextActivity_nullStartDates() throws Exception { 
+        AdherenceState.Builder builder = TestUtils.getAdherenceStateBuilder();
+        
+        StudyActivityEvent e1 = new StudyActivityEvent.Builder()
+                .withEventId("event1")
+                .withTimestamp(ADHERENCE_STATE_EVENT_TS1.plusDays(100))
+                .build();
+        StudyActivityEvent e2 = new StudyActivityEvent.Builder()
+                .withEventId("event2")
+                .withTimestamp(ADHERENCE_STATE_EVENT_TS2.plusDays(100))
+                .build();
+        builder.withEvents(ImmutableList.of(e1, e2));
+        
+        WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
+        assertTrue(report.getByDayEntries().isEmpty());
+        // The next is from session 1
+        assertEquals(report.getNextActivity().getSessionName(), "session1");
+        
+        builder.withEvents(ImmutableList.of(e2));
+        report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
+        assertTrue(report.getByDayEntries().isEmpty());
+        // Now it's from session 2
+        assertEquals(report.getNextActivity().getSessionName(), "session2");
     }
     
     @Test

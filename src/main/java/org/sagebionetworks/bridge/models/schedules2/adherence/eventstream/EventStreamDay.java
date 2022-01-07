@@ -90,4 +90,11 @@ public class EventStreamDay {
     public void setLabel(String label) {
         this.label = label;
     }
+    @Override
+    public String toString() {
+        return "EventStreamDay [sessionGuid=" + sessionGuid + ", sessionName=" + sessionName + ", sessionSymbol="
+                + sessionSymbol + ", week=" + week + ", studyBurstId=" + studyBurstId + ", studyBurstNum="
+                + studyBurstNum + ", startDay=" + startDay + ", startDate=" + startDate + ", timeWindows=" + timeWindows
+                + ", label=" + label + "]";
+    }
 }
