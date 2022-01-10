@@ -85,7 +85,7 @@ public class WeeklyAdherenceReportGenerator {
 
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
         report.setByDayEntries(finalReport.getByDayEntries());
-        report.setTimestamp(state.getNow());
+        report.setCreatedOn(state.getNow());
         report.setClientTimeZone(state.getClientTimeZone());
         report.setWeeklyAdherencePercent(percentage);
         report.setNextActivity(NextActivity.create(nextDay));

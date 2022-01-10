@@ -29,7 +29,7 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(state);
 
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
-        assertEquals(node.get("timestamp").textValue(), 
+        assertEquals(node.get("createdOn").textValue(), 
                 ADHERENCE_STATE_NOW.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)).toString());
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
         assertEquals(node.get("weeklyAdherencePercent").intValue(), 33);
@@ -96,7 +96,7 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
                 .build();
         WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(state);
         
-        assertEquals(report.getTimestamp(), CREATED_ON);
+        assertEquals(report.getCreatedOn(), CREATED_ON);
         assertEquals(report.getWeeklyAdherencePercent(), 100);
         assertTrue(report.getByDayEntries().isEmpty());
     }
@@ -185,7 +185,7 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         builder.withNow(ADHERENCE_STATE_NOW.plusDays(100));
         
         WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
-        assertEquals(report.getTimestamp(), ADHERENCE_STATE_NOW.plusDays(100)
+        assertEquals(report.getCreatedOn(), ADHERENCE_STATE_NOW.plusDays(100)
                 .withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
         assertEquals(report.getWeeklyAdherencePercent(), 100);
         assertTrue(report.getByDayEntries().isEmpty());

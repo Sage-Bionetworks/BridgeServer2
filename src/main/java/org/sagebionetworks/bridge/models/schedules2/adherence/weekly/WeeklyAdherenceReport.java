@@ -25,7 +25,6 @@ public class WeeklyAdherenceReport {
     private String studyId;
     @Transient
     private AccountRef participant;
-    private DateTime timestamp;
     private String clientTimeZone;
     private int weeklyAdherencePercent;
     private DateTime createdOn;
@@ -69,19 +68,13 @@ public class WeeklyAdherenceReport {
     public void setWeeklyAdherencePercent(int weeklyAdherencePercent) {
         this.weeklyAdherencePercent = weeklyAdherencePercent;
     }
-    @JsonSerialize(using = DateTimeSerializer.class) // preserve time zone offset
-    public DateTime getTimestamp() {
-        return timestamp;
-    }
-    public void setTimestamp(DateTime timestamp) {
-        this.timestamp = timestamp;
-    }
     public String getClientTimeZone() {
         return clientTimeZone;
     }
     public void setClientTimeZone(String clientTimeZone) {
         this.clientTimeZone = clientTimeZone;
     }
+    @JsonSerialize(using = DateTimeSerializer.class) // preserve time zone offset
     public DateTime getCreatedOn() {
         return createdOn;
     }

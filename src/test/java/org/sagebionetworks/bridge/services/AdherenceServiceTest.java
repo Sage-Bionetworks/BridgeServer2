@@ -853,13 +853,12 @@ public class AdherenceServiceTest extends Mockito {
         when(mockDao.getAdherenceRecords(any())).thenReturn(page2);
         
         WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
-                TEST_APP_ID, TEST_STUDY_ID, account, EVENT_TS);
+                TEST_APP_ID, TEST_STUDY_ID, account);
         assertEquals(retValue.getAppId(), TEST_APP_ID);
         assertEquals(retValue.getStudyId(), TEST_STUDY_ID);
         assertEquals(retValue.getUserId(), TEST_USER_ID);
         assertEquals(retValue.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
-        assertEquals(retValue.getTimestamp(), EVENT_TS.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
-        assertEquals(retValue.getCreatedOn(), MODIFIED_ON);
+        assertEquals(retValue.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
         assertEquals(retValue.getWeeklyAdherencePercent(), 100);
         assertEquals(retValue.getParticipant().getIdentifier(), TEST_USER_ID);
         assertEquals(retValue.getParticipant().getFirstName(), "firstName");
@@ -897,13 +896,12 @@ public class AdherenceServiceTest extends Mockito {
         when(mockDao.getAdherenceRecords(any())).thenReturn(page2);
         
         WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
-                TEST_APP_ID, TEST_STUDY_ID, account, EVENT_TS);
+                TEST_APP_ID, TEST_STUDY_ID, account);
         assertEquals(retValue.getAppId(), TEST_APP_ID);
         assertEquals(retValue.getStudyId(), TEST_STUDY_ID);
         assertEquals(retValue.getUserId(), TEST_USER_ID);
         assertEquals(retValue.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
-        assertEquals(retValue.getTimestamp(), EVENT_TS.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
-        assertEquals(retValue.getCreatedOn(), MODIFIED_ON);
+        assertEquals(retValue.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
         assertEquals(retValue.getWeeklyAdherencePercent(), 100);
         assertEquals(retValue.getParticipant().getIdentifier(), TEST_USER_ID);
         

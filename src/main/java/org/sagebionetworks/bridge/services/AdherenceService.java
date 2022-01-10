@@ -371,16 +371,17 @@ public class AdherenceService {
         return EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
     }
     
-    public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, Account account, DateTime now) {
+    public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, Account account) {
 
         Stopwatch watch = Stopwatch.createStarted();
+        
+        DateTime createdOn = getDateTime();
 
         WeeklyAdherenceReport report = getWeeklyAdherenceReportInternal(
-                appId, studyId, account.getId(), now, account.getClientTimeZone());
+                appId, studyId, account.getId(), createdOn, account.getClientTimeZone());
         report.setAppId(appId);
         report.setStudyId(studyId);
         report.setUserId(account.getId());
-        report.setCreatedOn(getDateTime());
         report.setParticipant(new AccountRef(account, studyId));
         
         watch.stop();
@@ -389,10 +390,10 @@ public class AdherenceService {
     }
     
     private WeeklyAdherenceReport getWeeklyAdherenceReportInternal(String appId, String studyId, String userId,
-            DateTime now, String clientTimeZone) {
+            DateTime createdOn, String clientTimeZone) {
         
         AdherenceState.Builder builder = new AdherenceState.Builder();
-        builder.withNow(now);
+        builder.withNow(createdOn);
         builder.withClientTimeZone(clientTimeZone);
         
         Study study = studyService.getStudy(appId, studyId, true);

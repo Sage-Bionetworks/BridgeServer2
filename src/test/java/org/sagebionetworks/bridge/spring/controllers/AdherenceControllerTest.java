@@ -265,7 +265,7 @@ public class AdherenceControllerTest extends Mockito {
             .thenReturn(Optional.of(account));
         
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
-        when(mockService.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account, SYSTEM_NOW))
+        when(mockService.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account))
             .thenReturn(report);
         
         WeeklyAdherenceReport retValue = controller.getWeeklyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
@@ -295,7 +295,7 @@ public class AdherenceControllerTest extends Mockito {
             .thenReturn(Optional.of(account));
         
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
-        when(mockService.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account, SYSTEM_NOW))
+        when(mockService.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account))
             .thenReturn(report);
         
         WeeklyAdherenceReport retValue = controller.getWeeklyAdherenceReportForSelf(TEST_STUDY_ID);
