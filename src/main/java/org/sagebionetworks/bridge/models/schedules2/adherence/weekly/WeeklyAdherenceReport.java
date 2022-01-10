@@ -17,8 +17,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
-@JsonPropertyOrder({ "participant", "timestamp", "clientTimeZone", "weeklyAdherencePercent", "labels", "createdOn",
-        "byDayEntries", "nextActivity", "type" })
+@JsonPropertyOrder({ "participant", "rowLabels", "weeklyAdherencePercent", "clientTimeZone", "createdOn",
+        "byDayEntries", "type" })
 public class WeeklyAdherenceReport {
     
     private String appId;
@@ -28,10 +28,10 @@ public class WeeklyAdherenceReport {
     private AccountRef participant;
     private String clientTimeZone;
     private int weeklyAdherencePercent;
+    private Set<String> labels;
     private DateTime createdOn;
     private NextActivity nextActivity;
     private Map<Integer, List<EventStreamDay>> byDayEntries;
-    private Set<String> labels;
     
     public WeeklyAdherenceReport() {
         byDayEntries = new HashMap<>();    
