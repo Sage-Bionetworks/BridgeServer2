@@ -23,14 +23,15 @@ import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @Entity
 @Table(name = "WeeklyAdherenceReports")
 @IdClass(WeeklyAdherenceReportId.class)
-@JsonPropertyOrder({ "participant", "timestamp", "clientTimeZone", "weeklyAdherencePercent", "labels", "createdOn",
-        "byDayEntries", "nextActivity", "type" })
+@JsonPropertyOrder({ "participant", "rowLabels", "weeklyAdherencePercent", "clientTimeZone", "createdOn",
+        "byDayEntries", "type" })
 public class WeeklyAdherenceReport {
     
     @Id
@@ -41,7 +42,6 @@ public class WeeklyAdherenceReport {
     private String studyId;
     @Transient
     private AccountRef participant;
-    private DateTime timestamp;
     private String clientTimeZone;
     private int weeklyAdherencePercent;
     private DateTime createdOn;
@@ -90,19 +90,13 @@ public class WeeklyAdherenceReport {
     public void setWeeklyAdherencePercent(int weeklyAdherencePercent) {
         this.weeklyAdherencePercent = weeklyAdherencePercent;
     }
-    @JsonSerialize(using = DateTimeSerializer.class) // preserve time zone offset
-    public DateTime getTimestamp() {
-        return timestamp;
-    }
-    public void setTimestamp(DateTime timestamp) {
-        this.timestamp = timestamp;
-    }
     public String getClientTimeZone() {
         return clientTimeZone;
     }
     public void setClientTimeZone(String clientTimeZone) {
         this.clientTimeZone = clientTimeZone;
     }
+    @JsonSerialize(using = DateTimeSerializer.class) // preserve time zone offset
     public DateTime getCreatedOn() {
         return createdOn;
     }
@@ -121,9 +115,7 @@ public class WeeklyAdherenceReport {
     public void setNextActivity(NextActivity nextActivity) {
         this.nextActivity = nextActivity;
     }
-    // we want these in Hibernate to facilitate searching by labels, as the rest of the report will be in JSON,
-    // but in the report they are associated directly to the individual sessions.
-    @JsonIgnore 
+    @JsonProperty("rowLabels")
     public Set<String> getLabels() {
         return labels;
     }
