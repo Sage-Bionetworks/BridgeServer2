@@ -28,7 +28,8 @@ public class NextActivityTest {
         NextActivity next = NextActivity.create(day);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(next);
-        assertEquals(node.size(), 8);
+        assertEquals(node.size(), 9);
+        assertEquals(node.get("label").textValue(), "label");
         assertEquals(node.get("sessionGuid").textValue(), "sessionGuid");
         assertEquals(node.get("sessionName").textValue(), "sessionName");
         assertEquals(node.get("sessionSymbol").textValue(), "sessionSymbol");

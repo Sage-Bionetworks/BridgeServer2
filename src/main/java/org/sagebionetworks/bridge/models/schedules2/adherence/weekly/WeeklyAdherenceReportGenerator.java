@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
@@ -68,12 +68,13 @@ public class WeeklyAdherenceReportGenerator {
 
         // Add labels. These are also added to the labels collection so we can persist them as a model 
         // collection and search on them.
-        Set<String> labels = new HashSet<>();
+        Set<String> labels = new TreeSet<>();
         for (List<EventStreamDay> days : finalReport.getByDayEntries().values()) {
             for (EventStreamDay oneDay : days) {
-                String label = (oneDay.getStudyBurstId() == null) ?
-                        String.format("%s / Week %s", oneDay.getSessionName(), oneDay.getWeek()) :
-                        String.format("%s %s / Week %s", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneDay.getWeek());
+                String label = String.format("Week %s : %s", oneDay.getWeek(), oneDay.getSessionName());
+                if (oneDay.getStudyBurstId() != null) {
+                    label = String.format("%s %s : %s", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), label);
+                }
                 labels.add(label);
                 oneDay.setLabel(label);
             }

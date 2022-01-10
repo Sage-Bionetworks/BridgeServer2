@@ -49,17 +49,19 @@ public class WeeklyAdherenceReportTest {
         assertEquals(report.getLabels(), ImmutableSet.of("label1", "label2"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
+        assertEquals(node.size(), 8);
         assertNull(node.get("appId"));
         assertNull(node.get("studyId"));
         assertNull(node.get("userId"));
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
         assertEquals(node.get("createdOn").textValue(), MODIFIED_ON.toString());
-        assertNull(node.get("labels"));
+        assertEquals(node.get("rowLabels").get(0).textValue(), "label1");
+        assertEquals(node.get("rowLabels").get(1).textValue(), "label2");
         assertEquals(node.get("weeklyAdherencePercent").intValue(), 79);
-        assertEquals(node.get("type").textValue(), "WeeklyAdherenceReport");
         assertEquals(node.get("participant").get("identifier").textValue(), TEST_USER_ID);
         assertEquals(node.get("nextActivity").get("type").textValue(), "NextActivity");
         assertEquals(node.get("byDayEntries").get("6").get(0).get("type").textValue(), "EventStreamDay");
+        assertEquals(node.get("type").textValue(), "WeeklyAdherenceReport");
         
         report.setParticipant(new AccountRef(account, "study1"));
         report.setByDayEntries(ImmutableMap.of(new Integer(6), ImmutableList.of()));

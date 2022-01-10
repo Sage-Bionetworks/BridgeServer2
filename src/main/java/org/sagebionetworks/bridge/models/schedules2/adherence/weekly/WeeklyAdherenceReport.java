@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -93,9 +94,7 @@ public class WeeklyAdherenceReport {
     public void setNextActivity(NextActivity nextActivity) {
         this.nextActivity = nextActivity;
     }
-    // we want these in Hibernate to facilitate searching by labels, as the rest of the report will be in JSON,
-    // but in the report they are associated directly to the individual sessions.
-    @JsonIgnore 
+    @JsonProperty("rowLabels")
     public Set<String> getLabels() {
         return labels;
     }

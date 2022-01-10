@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.validators;
 
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_2;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_3;
@@ -80,6 +81,13 @@ public class SessionValidatorTest extends Mockito {
         Session session = createValidSession();
         session.setName(null);
         assertValidatorMessage(INSTANCE, session, NAME_FIELD, CANNOT_BE_BLANK);
+    }
+    
+    @Test
+    public void nameHasColon() {
+        Session session = createValidSession();
+        session.setName("A: B");
+        assertValidatorMessage(INSTANCE, session, NAME_FIELD, BRIDGE_RELAXED_ID_ERROR);
     }
     
     @Test

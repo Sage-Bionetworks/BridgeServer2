@@ -10,6 +10,7 @@ public class NextActivity {
             return null;
         }
         NextActivity activity = new NextActivity();
+        activity.label = day.getLabel();
         activity.sessionGuid = day.getSessionGuid();
         activity.sessionName = day.getSessionName();
         activity.sessionSymbol = day.getSessionSymbol();
@@ -23,6 +24,7 @@ public class NextActivity {
     private NextActivity() {
     }
 
+    private String label;
     private String sessionGuid;
     private String sessionName;
     private String sessionSymbol;
@@ -31,6 +33,9 @@ public class NextActivity {
     private Integer studyBurstNum;
     private LocalDate startDate;
 
+    public String getLabel() {
+        return label;
+    }
     public String getSessionGuid() {
         return sessionGuid;
     }
