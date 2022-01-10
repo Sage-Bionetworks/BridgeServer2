@@ -371,7 +371,7 @@ public class AdherenceService {
         return EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
     }
     
-    public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, Account account, DateTime now) {
+    public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, Account account) {
 
         Stopwatch watch = Stopwatch.createStarted();
 

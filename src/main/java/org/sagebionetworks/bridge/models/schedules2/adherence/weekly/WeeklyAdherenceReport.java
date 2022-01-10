@@ -1,10 +1,20 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.persistence.CollectionTable;
+import javax.persistence.Column;
+import javax.persistence.ElementCollection;
+import javax.persistence.Entity;
+import javax.persistence.FetchType;
+import javax.persistence.Id;
+import javax.persistence.IdClass;
+import javax.persistence.JoinColumn;
+import javax.persistence.Table;
 import javax.persistence.Transient;
 
 import org.joda.time.DateTime;
@@ -16,12 +26,18 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+@Entity
+@Table(name = "WeeklyAdherenceReports")
+@IdClass(WeeklyAdherenceReportId.class)
 @JsonPropertyOrder({ "participant", "timestamp", "clientTimeZone", "weeklyAdherencePercent", "labels", "createdOn",
         "byDayEntries", "nextActivity", "type" })
 public class WeeklyAdherenceReport {
     
+    @Id
     private String appId;
+    @Id
     private String userId;
+    @Id
     private String studyId;
     @Transient
     private AccountRef participant;
@@ -31,6 +47,11 @@ public class WeeklyAdherenceReport {
     private DateTime createdOn;
     private NextActivity nextActivity;
     private Map<Integer, List<EventStreamDay>> byDayEntries;
+    
+    @CollectionTable(name = "WeekyAdherenceReportLabels", 
+            joinColumns = @JoinColumn(name = "accountId", referencedColumnName = "userId"))
+    @Column(name = "label")
+    @ElementCollection(fetch = FetchType.EAGER)
     private Set<String> labels;
     
     public WeeklyAdherenceReport() {
