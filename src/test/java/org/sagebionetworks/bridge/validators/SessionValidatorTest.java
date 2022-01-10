@@ -1,21 +1,19 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
+import static org.sagebionetworks.bridge.models.schedules2.SessionTest.createValidSession;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_2;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_3;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
-import static org.sagebionetworks.bridge.validators.SessionValidator.LABELS_FIELD;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
-import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
-import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
-import static org.sagebionetworks.bridge.models.schedules2.SessionTest.createValidSession;
 import static org.sagebionetworks.bridge.validators.SessionValidator.ASSESSMENTS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.DELAY_FIELD;
+import static org.sagebionetworks.bridge.validators.SessionValidator.DELAY_LONGER_THAN_SCHEDULE_DURATION_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.EXPIRATION_LONGER_THAN_INTERVAL_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.EXPIRATION_REQUIRED_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.GUID_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.INTERVAL_FIELD;
+import static org.sagebionetworks.bridge.validators.SessionValidator.LABELS_FIELD;
 import static org.sagebionetworks.bridge.validators.SessionValidator.LESS_THAN_ONE_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.LONGER_THAN_WINDOW_EXPIRATION_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.MUST_DEFINE_TRIGGER_ERROR;
@@ -29,6 +27,7 @@ import static org.sagebionetworks.bridge.validators.SessionValidator.TIME_WINDOW
 import static org.sagebionetworks.bridge.validators.SessionValidator.UNDEFINED_STUDY_BURST;
 import static org.sagebionetworks.bridge.validators.SessionValidator.START_TIME_COMPARATOR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.STUDY_BURST_IDS_FIELD;
+import static org.sagebionetworks.bridge.validators.SessionValidator.WINDOW_EXPIRATION_AFTER_SCHEDULE_DURATION;
 import static org.sagebionetworks.bridge.validators.SessionValidator.WINDOW_OVERLAPS_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.WINDOW_SHORTER_THAN_DAY_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
@@ -37,8 +36,11 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.DUPLICATE_LANG;
+import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_LONG_PERIOD;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.WRONG_PERIOD;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
+import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
@@ -61,7 +63,7 @@ import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
 
 public class SessionValidatorTest extends Mockito {
     
-    private static final SessionValidator INSTANCE = new SessionValidator(ImmutableSet.of("burst1"));
+    private static final SessionValidator INSTANCE = new SessionValidator(Period.parse("P8W"), ImmutableSet.of("burst1"));
     
     @Test
     public void valid() {
@@ -425,7 +427,7 @@ public class SessionValidatorTest extends Mockito {
     }
     
     @Test
-    public void assessmentRefIdnetifierEmpty() {
+    public void assessmentRefIdentifierEmpty() {
         Session session = createValidSession();
         session.getAssessments().get(0).setIdentifier("");
         assertValidatorMessage(INSTANCE, session, ASSESSMENTS_FIELD+"[0].identifier", CANNOT_BE_BLANK);
@@ -599,6 +601,67 @@ public class SessionValidatorTest extends Mockito {
         Session session = createValidSession();
         session.getAssessments().get(0).setLabels(ImmutableList.of(new Label("en", generateStringOfLength(TEXT_SIZE))));
         assertValidatorMessage(INSTANCE, session, ASSESSMENTS_FIELD+"[0]."+LABELS_FIELD, getInvalidStringLengthMessage(TEXT_SIZE));
+    }
+    
+    @Test
+    public void timeWindows_expirationExceedsScheduleDuration() {
+        // Schedule duration is 8 weeks.
+        Session session = createValidSession();
+    
+        TimeWindow timeWindow = new TimeWindow();
+        timeWindow.setGuid(SESSION_GUID_1);
+        timeWindow.setStartTime(LocalTime.parse("08:00"));
+        timeWindow.setExpiration(Period.parse("P8WT1H"));
+        session.setTimeWindows(ImmutableList.of(timeWindow));
+        
+        session.setInterval(Period.parse("P8W"));
+        session.setDelay(null);
+        
+        assertValidatorMessage(INSTANCE, session, TIME_WINDOWS_FIELD+"[0].expiration", WINDOW_EXPIRATION_AFTER_SCHEDULE_DURATION);
+    }
+    
+    @Test
+    public void timeWindows_expirationPlusDelayExceedsScheduleDuration() {
+        // Schedule duration is 8 weeks.
+        Session session = createValidSession();
+        
+        TimeWindow timeWindow = new TimeWindow();
+        timeWindow.setGuid(SESSION_GUID_1);
+        timeWindow.setStartTime(LocalTime.parse("08:00"));
+        timeWindow.setExpiration(Period.parse("P4W"));
+        session.setTimeWindows(ImmutableList.of(timeWindow));
+        
+        session.setInterval(Period.parse("P4W"));
+        session.setDelay(Period.parse("P4WT1H"));
+    
+        assertValidatorMessage(INSTANCE, session, TIME_WINDOWS_FIELD+"[0].expiration", WINDOW_EXPIRATION_AFTER_SCHEDULE_DURATION);
+    }
+    
+    @Test
+    public void timeWindows_nullScheduleDurationPasses() {
+        Session session = createValidSession();
+    
+        TimeWindow timeWindow = new TimeWindow();
+        timeWindow.setGuid(SESSION_GUID_1);
+        timeWindow.setStartTime(LocalTime.parse("08:00"));
+        timeWindow.setExpiration(Period.parse("P4W"));
+        session.setTimeWindows(ImmutableList.of(timeWindow));
+    
+        session.setInterval(Period.parse("P4W"));
+        session.setDelay(Period.parse("P4WT1H"));
+    
+        SessionValidator validator = new SessionValidator(null, ImmutableSet.of("burst1"));
+    
+        Validate.entityThrowingException(validator, session);
+    }
+    
+    @Test
+    public void delay_exceedsScheduleDuration() {
+        // Schedule duration is 8 weeks.
+        Session session = createValidSession();
+        session.setDelay(Period.parse("P8WT1H"));
+        
+        assertValidatorMessage(INSTANCE, session, DELAY_FIELD, DELAY_LONGER_THAN_SCHEDULE_DURATION_ERROR);
     }
     
     private Session makeWindows(String time1, String exp1, String time2, String exp2, 
