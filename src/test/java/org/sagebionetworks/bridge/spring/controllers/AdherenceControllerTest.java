@@ -283,38 +283,6 @@ public class AdherenceControllerTest extends Mockito {
     }
     
     @Test
-    public void getWeeklyAdherenceReportForSelf() { 
-        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID)
-                .withClientTimeZone(CLIENT_TIME_ZONE).build());
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        account.setClientTimeZone(CLIENT_TIME_ZONE);
-        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
-            .thenReturn(Optional.of(account));
-        
-        WeeklyAdherenceReport report = new WeeklyAdherenceReport();
-        when(mockService.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account))
-            .thenReturn(report);
-        
-        WeeklyAdherenceReport retValue = controller.getWeeklyAdherenceReportForSelf(TEST_STUDY_ID);
-        assertSame(retValue, report);
-    }
-    
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getWeeklyAdherenceReportForSelf_accountNotFound() { 
-        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID)
-                .withClientTimeZone(CLIENT_TIME_ZONE).build());
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        
-        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
-            .thenReturn(Optional.empty());
-        
-        controller.getWeeklyAdherenceReportForSelf(TEST_STUDY_ID);
-    }
-    
-    @Test
     public void updateAdherenceRecords() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
         
