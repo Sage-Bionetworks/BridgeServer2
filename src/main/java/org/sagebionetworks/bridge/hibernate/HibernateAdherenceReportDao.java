@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 
 import java.util.List;
@@ -15,6 +16,11 @@ import org.springframework.stereotype.Component;
 @Component
 public class HibernateAdherenceReportDao implements AdherenceReportDao {
 
+    static final String COMPLIANCE_UNDER_FIELD = "complianceUnder";
+    static final String LABEL_FILTER_FIELD = "labelFilter";
+    static final String STUDY_ID_FIELD = "studyId";
+    static final String APP_ID_FIELD = "appId";
+    
     private HibernateHelper hibernateHelper;
 
     @Resource(name = "mysqlHibernateHelper")
@@ -24,6 +30,8 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
 
     @Override
     public void saveWeeklyAdherenceReport(WeeklyAdherenceReport report) {
+        checkNotNull(report);
+        
         hibernateHelper.saveOrUpdate(report);
     }
 
@@ -37,13 +45,13 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
             builder.append("JOIN h.labels label");    
         }
         WhereClauseBuilder where = builder.startWhere(AND);
-        where.append("h.appId = :appId", "appId", appId);
-        where.append("h.studyId = :studyId", "studyId", studyId);
+        where.append("h.appId = :appId", APP_ID_FIELD, appId);
+        where.append("h.studyId = :studyId", STUDY_ID_FIELD, studyId);
         if (complianceUnder != null) {
-            where.append("weeklyAdherencePercent < :complianceUnder", "complianceUnder", complianceUnder);
+            where.append("weeklyAdherencePercent < :complianceUnder", COMPLIANCE_UNDER_FIELD, complianceUnder);
         }
         if (labelFilter != null) {
-            where.append("label LIKE :labelFilter", "labelFilter", "%" + labelFilter + "%");
+            where.append("label LIKE :labelFilter", LABEL_FILTER_FIELD, "%" + labelFilter + "%");
         }
         builder.append("ORDER BY weeklyAdherencePercent");
         

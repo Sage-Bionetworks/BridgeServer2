@@ -7,9 +7,9 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventS
 
 import com.fasterxml.jackson.core.type.TypeReference;
 
-public class EventStreamConverter extends BaseJsonAttributeConverter<Map<Integer, List<EventStreamDay>>> {
+public class EventStreamDayMapConverter extends BaseJsonAttributeConverter<Map<Integer, List<EventStreamDay>>> {
 
-    private static final TypeReference<Map<Integer, List<EventStreamDay>>> CONVERTER = 
+    static final TypeReference<Map<Integer, List<EventStreamDay>>> TYPE_REF = 
             new TypeReference<Map<Integer, List<EventStreamDay>>>() {};
 
     @Override
@@ -19,6 +19,6 @@ public class EventStreamConverter extends BaseJsonAttributeConverter<Map<Integer
 
     @Override
     public Map<Integer, List<EventStreamDay>> convertToEntityAttribute(String json) {
-        return super.deserialize(json, CONVERTER);
+        return super.deserialize(json, TYPE_REF);
     }
 }

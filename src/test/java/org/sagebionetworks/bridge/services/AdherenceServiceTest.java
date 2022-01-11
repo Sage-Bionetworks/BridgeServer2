@@ -914,6 +914,13 @@ public class AdherenceServiceTest extends Mockito {
         // The contents of the weekly report are tested separately by testing the generator
     }
     
+    @Test
+    public void getWeeklyAdherenceReports() {
+        
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 75, 100, 50);
+        
+    }
+    
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {
         AdherenceRecord sess = new AdherenceRecord();
         sess.setAppId(TEST_APP_ID);

@@ -5,6 +5,10 @@ import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.ASSESSMENT_IDS;
@@ -401,8 +405,21 @@ public class AdherenceService {
     
     public PagedResourceList<WeeklyAdherenceReport> getWeeklyAdherenceReports(String appId, String studyId,
             String labelFilter, Integer complianceUnder, Integer offsetBy, Integer pageSize) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
         
-        
+        if (offsetBy != null && offsetBy < 0) {
+            throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
+        }
+        if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
+            throw new BadRequestException(PAGE_SIZE_ERROR);
+        }
+        if (labelFilter != null && labelFilter.length() > 100) {
+            throw new BadRequestException("labelFilter cannot be over 100 characters");
+        }
+        if (complianceUnder != null && (complianceUnder < 1 ||  complianceUnder > 100)) {
+            throw new BadRequestException("complianceUnder must be from 1-100 (percent)");
+        }
         return reportDao.getWeeklyAdherenceReports(appId, studyId, labelFilter, complianceUnder, offsetBy, pageSize)
                 .withRequestParam(PagedResourceList.LABEL_FILTER, labelFilter)
                 .withRequestParam(PagedResourceList.COMPLIANCE_UNDER, complianceUnder)

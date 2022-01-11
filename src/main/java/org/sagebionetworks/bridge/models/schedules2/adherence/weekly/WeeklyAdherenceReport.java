@@ -20,7 +20,7 @@ import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.hibernate.AccountRefConverter;
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
-import org.sagebionetworks.bridge.hibernate.EventStreamConverter;
+import org.sagebionetworks.bridge.hibernate.EventStreamDayMapConverter;
 import org.sagebionetworks.bridge.hibernate.NextActivityConverter;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
@@ -52,7 +52,7 @@ public class WeeklyAdherenceReport {
     private DateTime createdOn;
     @Convert(converter = NextActivityConverter.class)
     private NextActivity nextActivity;
-    @Convert(converter = EventStreamConverter.class)
+    @Convert(converter = EventStreamDayMapConverter.class)
     private Map<Integer, List<EventStreamDay>> byDayEntries;
     
     @CollectionTable(name = "WeeklyAdherenceReportLabels", joinColumns = {
