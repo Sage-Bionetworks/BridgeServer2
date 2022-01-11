@@ -31,6 +31,7 @@ public class ResourceList<T> {
     public static final String ATTRIBUTE_KEY = "attributeKey";
     public static final String ATTRIBUTE_VALUE_FILTER = "attributeValueFilter";
     public static final String CATEGORIES = "categories"; // should be a set or list
+    public static final String COMPLIANCE_UNDER = "complianceUnder";
     public static final String CURRENT_TIMESTAMPS_ONLY = "currentTimestampsOnly";
     public static final String EMAIL_FILTER = "emailFilter";
     public static final String END_DATE = "endDate";
@@ -46,6 +47,7 @@ public class ResourceList<T> {
     public static final String INCLUDE_DELETED = "includeDeleted";
     public static final String INCLUDE_REPEATS = "includeRepeats";
     public static final String INSTANCE_GUIDS = "instanceGuids";
+    public static final String LABEL_FILTER = "labelFilter";
     public static final String LANGUAGE = "language";
     public static final String MAX_REVISION = "maxRevision";
     public static final String MIN_REVISION = "minRevision";

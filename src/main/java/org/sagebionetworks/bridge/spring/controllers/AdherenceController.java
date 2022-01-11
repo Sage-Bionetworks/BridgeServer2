@@ -88,6 +88,22 @@ public class AdherenceController extends BaseController {
         return service.getWeeklyAdherenceReport(session.getAppId(), studyId, account);
     }
     
+    @GetMapping("/v5/studies/{studyId}/adherence/weekly")    
+    public PagedResourceList<WeeklyAdherenceReport> getWeeklyAdherenceReports(@PathVariable String studyId,
+            @RequestParam(required = false) String labelFilter, 
+            @RequestParam(required = false) String complianceUnder, 
+            @RequestParam(required = false) String offsetBy, 
+            @RequestParam(required = false) String pageSize) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        Integer offsetByInt = BridgeUtils.getIntegerOrDefault(offsetBy, null);
+        Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
+        Integer complianceUnderInt = BridgeUtils.getIntegerOrDefault(complianceUnder, null);
+        
+        return service.getWeeklyAdherenceReports(session.getAppId(), studyId, labelFilter, complianceUnderInt,
+                offsetByInt, pageSizeInt);
+    }
+    
     @GetMapping("/v5/studies/{studyId}/participants/self/adherence/weekly")
     public WeeklyAdherenceReport getWeeklyAdherenceReportForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();

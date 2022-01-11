@@ -11,25 +11,25 @@ public class WeeklyAdherenceReportId implements Serializable {
 
     private String appId;
     
-    private String userId;
-    
     private String studyId;
+    
+    private String userId;
     
     public WeeklyAdherenceReportId() {
     }
-    public WeeklyAdherenceReportId(String appId, String userId, String studyId) {
+    public WeeklyAdherenceReportId(String appId, String studyId, String userId) {
         this.appId = appId;
-        this.userId = userId;
         this.studyId = studyId;
+        this.userId = userId;
     }
     public String getAppId() {
         return appId;
     }
-    public String getUserId() {
-        return userId;
-    }
     public String getStudyId() {
         return studyId;
+    }
+    public String getUserId() {
+        return userId;
     }
     @Override
     public int hashCode() {

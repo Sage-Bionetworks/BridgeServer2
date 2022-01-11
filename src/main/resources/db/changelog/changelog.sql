@@ -870,25 +870,28 @@ DROP COLUMN state;
 -- changeset bridge:59
 
 CREATE TABLE IF NOT EXISTS `WeeklyAdherenceReports` (
-  `appId` varchar(255) NOT NULL,
+  `appId` varchar(60) NOT NULL,
   `studyId` varchar(60) NOT NULL,
   `userId` varchar(255) NOT NULL,
-  `timestamp` bigint(20) NOT NULL,
+  `participant` text NOT NULL,
   `clientTimeZone` varchar(255),
   `createdOn` bigint(20) NOT NULL,
   `weeklyAdherencePercent` int(3) signed,
-  `nextActivity`text COLLATE utf8mb4_unicode_ci,
-  `byDayEntries` mediumtext COLLATE utf8mb4_unicode_ci,
-  CONSTRAINT `WeekyAdherenceReports-UserId-Constraint` FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `WeekyAdherenceReports-StudyId-Constraint` FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8mb4_unicode_ci;
+  `nextActivity` text,
+  `byDayEntries` mediumtext,
+  PRIMARY KEY (`appId`, `studyId`, `userId`),
+  FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS `WeeklyAdherenceReportLabels` (
-  `appId` varchar(255) NOT NULL,
+  `appId` varchar(60) NOT NULL,
   `studyId` varchar(60) NOT NULL,
   `userId` varchar(255) NOT NULL,
-  `label` varchar(512) NOT NULL,
-  PRIMARY KEY (`accountId`,`label`),
-  KEY `WeekyAdherenceReportLabels-Index` (`appId`, `studyId`, `userId`, `label`),
-  CONSTRAINT `WeekyAdherenceReportLabels-Report-Constraint` FOREIGN KEY (`appId`, `studyId`, `userId`) REFERENCES `WeeklyAdherenceReports` (`appId`, `studyId`, `userId`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8mb4_unicode_ci;
+  `label` varchar(2048) NOT NULL,
+  PRIMARY KEY (`appId`, `studyId`, `userId`, `label`(255)),
+  KEY `WeeklyAdherenceReportLabels-Index` (`appId`, `studyId`, `userId`),
+  FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+

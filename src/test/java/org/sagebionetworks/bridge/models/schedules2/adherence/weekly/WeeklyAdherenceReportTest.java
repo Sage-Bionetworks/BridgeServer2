@@ -9,6 +9,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
@@ -54,7 +55,7 @@ public class WeeklyAdherenceReportTest {
         assertNull(node.get("studyId"));
         assertNull(node.get("userId"));
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
-        assertEquals(node.get("createdOn").textValue(), MODIFIED_ON.toString());
+        assertEquals(node.get("createdOn").textValue(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)).toString());
         assertEquals(node.get("rowLabels").get(0).textValue(), "label1");
         assertEquals(node.get("rowLabels").get(1).textValue(), "label2");
         assertEquals(node.get("weeklyAdherencePercent").intValue(), 79);

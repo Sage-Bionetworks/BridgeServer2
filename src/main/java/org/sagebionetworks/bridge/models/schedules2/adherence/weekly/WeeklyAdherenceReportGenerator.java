@@ -91,6 +91,7 @@ public class WeeklyAdherenceReportGenerator {
         report.setWeeklyAdherencePercent(percentage);
         report.setNextActivity(NextActivity.create(nextDay));
         report.setLabels(labels);
+        
         return report;
     }
     
