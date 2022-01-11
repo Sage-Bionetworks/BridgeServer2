@@ -1,9 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.eventstream;
 
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils.calculateSessionState;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLIANT;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NONCOMPLIANT;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNKNOWN;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -62,21 +59,12 @@ public class EventStreamAdherenceReportGenerator {
             eventStreamDay.addTimeWindow(windowEntry);
         }
 
-        long compliantSessions = state.getSessionStateCount(COMPLIANT);
-        long noncompliantSessions = state.getSessionStateCount(NONCOMPLIANT);
-        long unkSessions = state.getSessionStateCount(UNKNOWN);
-        long totalSessions = compliantSessions + noncompliantSessions + unkSessions;
-
-        float percentage = 1.0f;
-        if (totalSessions > 0) {
-            percentage = ((float) compliantSessions / (float) totalSessions);
-        }
-
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
+
         report.setActiveOnly(state.showActive());
         report.setTimestamp(state.getNow());
         report.setClientTimeZone(state.getClientTimeZone());
-        report.setAdherencePercent((int) (percentage * 100));
+        report.setAdherencePercent(state.calculateAdherencePercentage());
         for (String eventId : state.getStreamEventIds()) {
             report.getStreams().add(state.getEventStreamById(eventId));
         }

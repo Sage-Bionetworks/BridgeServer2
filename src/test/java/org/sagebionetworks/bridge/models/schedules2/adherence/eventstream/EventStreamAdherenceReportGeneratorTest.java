@@ -15,7 +15,6 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.eventstream
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.ArrayList;
@@ -364,11 +363,11 @@ public class EventStreamAdherenceReportGeneratorTest {
     
     @Test
     public void handleNulls() {
-        AdherenceState state = new AdherenceState.Builder().build();
+        AdherenceState state = new AdherenceState.Builder().withNow(NOW).build();
         
         EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(100, report.getAdherencePercent());
-        assertNull(report.getTimestamp());
+        assertEquals(report.getTimestamp(), NOW); // no time zone adjustment
         assertTrue(report.getStreams().isEmpty());
     }
     

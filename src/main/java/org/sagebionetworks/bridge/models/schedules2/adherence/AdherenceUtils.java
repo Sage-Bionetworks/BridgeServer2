@@ -2,12 +2,21 @@ package org.sagebionetworks.bridge.models.schedules2.adherence;
 
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.ABANDONED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLETED;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLIANT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.DECLINED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.EXPIRED;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NONCOMPLIANT;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_APPLICABLE;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_YET_AVAILABLE;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.STARTED;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNKNOWN;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNSTARTED;
+
+import java.util.Collection;
+import java.util.Set;
+import java.util.stream.Collectors;
+
+import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 
 public class AdherenceUtils {
 
@@ -40,5 +49,27 @@ public class AdherenceUtils {
             return ABANDONED;
         }
         return STARTED;
+    }
+    
+    public static int calculateAdherencePercentage(Collection<EventStream> streams) {
+        long compliantSessions = counting(streams, COMPLIANT);
+        long noncompliantSessions = counting(streams, NONCOMPLIANT);
+        long unkSessions = counting(streams, UNKNOWN);
+        long totalSessions = compliantSessions + noncompliantSessions + unkSessions;
+
+        float percentage = 1.0f;
+        if (totalSessions > 0) {
+            percentage = ((float) compliantSessions / (float) totalSessions);
+        }
+        return (int) (percentage * 100);
+    }
+    
+    private static long counting(Collection<EventStream> streams, Set<SessionCompletionState> states) {
+      return streams.stream()
+          .flatMap(es -> es.getByDayEntries().values().stream())
+          .flatMap(list -> list.stream())
+          .flatMap(esd -> esd.getTimeWindows().stream())
+          .filter(win -> states.contains(win.getState()))
+          .collect(Collectors.counting());
     }
 }

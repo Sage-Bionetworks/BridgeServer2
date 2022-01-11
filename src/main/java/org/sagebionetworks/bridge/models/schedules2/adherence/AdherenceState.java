@@ -1,12 +1,11 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence;
 
-import static java.util.stream.Collectors.counting;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -26,35 +25,31 @@ public final class AdherenceState {
     private final DateTime now;
     private final String clientTimeZone;
     private final List<TimelineMetadata> metadata;
+    private final List<StudyActivityEvent> events;
+    private final List<AdherenceRecord> adherenceRecords;
+    
     private final Map<String, EventStream> streamsByEventId;
     private final Map<String, EventStreamDay> streamsByStreamKey;
     private final Map<String, AdherenceRecord> adherenceByGuid;
     private final Map<String, Integer> daysSinceEventByEventId;
     private final Map<String, DateTime> eventTimestampByEventId;
-    private DateTimeZone zone;
+    private final DateTimeZone zone;
     
     public AdherenceState(AdherenceState.Builder builder) {
+        LocalDate localNow = builder.now.toLocalDate(); 
+        zone = builder.zone;
         showActive = builder.showActiveOnly;
         clientTimeZone = builder.clientTimeZone;
-        now = builder.now;
+        now = builder.now.withZone(zone);
         metadata = builder.metadata;
+        events = builder.events;
+        adherenceRecords = builder.adherenceRecords;
         streamsByEventId = new HashMap<>();
         daysSinceEventByEventId = new HashMap<>();
         eventTimestampByEventId = new HashMap<>();
         streamsByStreamKey = new HashMap<>();
         adherenceByGuid = builder.adherenceRecords.stream()
                 .collect(toMap(AdherenceRecord::getInstanceGuid, (a) -> a));
-        
-        LocalDate localNow = null;
-        zone = null;
-        if (builder.now != null) {
-            localNow = builder.now.toLocalDate();
-            zone = builder.now.getZone();    
-        }
-        // however, use the subject’s preferred time zone if available
-        if (clientTimeZone != null) {
-            zone = DateTimeZone.forID(clientTimeZone);
-        }
         
         // LocalDate localNow = (builder.now != null) ? builder.now.toLocalDate() : null;
         for (StudyActivityEvent event : builder.events) {
@@ -65,9 +60,28 @@ public final class AdherenceState {
             eventTimestampByEventId.put(event.getEventId(), eventTimestamp);
         }
     }
+
+    // Make a clean copy, resetting all the caches.
+    public AdherenceState.Builder toBuilder() {
+        return new AdherenceState.Builder()
+                .withMetadata(metadata)
+                .withEvents(events)
+                .withAdherenceRecords(adherenceRecords)
+                .withNow(now)
+                .withShowActive(showActive)
+                .withClientTimeZone(clientTimeZone);
+    }
     
     public List<TimelineMetadata> getMetadata() {
         return metadata;
+    }
+    // for tests, and not visible from generators
+    List<StudyActivityEvent> getEvents() {
+        return events;
+    }
+    // for tests, and not visible from generators
+    List<AdherenceRecord> getAdherenceRecords() {
+        return adherenceRecords;
     }
     public boolean showActive() {
         return showActive;
@@ -121,14 +135,10 @@ public final class AdherenceState {
     public DateTimeZone getTimeZone() {
         return zone;
     }
-    public long getSessionStateCount(Set<SessionCompletionState> states) {
-        return streamsByEventId.values().stream()
-                .flatMap(es -> es.getByDayEntries().values().stream())
-                .flatMap(list -> list.stream())
-                .flatMap(esd -> esd.getTimeWindows().stream())
-                .filter(win -> states.contains(win.getState()))
-                .collect(counting());
+    public int calculateAdherencePercentage() {
+        return AdherenceUtils.calculateAdherencePercentage(streamsByEventId.values());
     }
+    
     /**
      * This only returns the event IDs that are actually being used by streams (so 
      * if a stream is not included, even if there are metadata or adherence records
@@ -147,6 +157,7 @@ public final class AdherenceState {
         private List<AdherenceRecord> adherenceRecords;
         private DateTime now;
         private String clientTimeZone;
+        private DateTimeZone zone;
 
         public Builder withMetadata(List<TimelineMetadata> metadata) {
             this.metadata = metadata;
@@ -173,6 +184,8 @@ public final class AdherenceState {
             return this;
         }
         public AdherenceState build() {
+            checkNotNull(now);
+            
             if (metadata == null) {
                 metadata = ImmutableList.of();
             }
@@ -181,6 +194,11 @@ public final class AdherenceState {
             }
             if (adherenceRecords == null) {
                 adherenceRecords = ImmutableList.of();
+            }
+            this.zone = now.getZone();    
+            // however, use the subject’s preferred time zone if available
+            if (clientTimeZone != null) {
+                this.zone = DateTimeZone.forID(clientTimeZone);
             }
             return new AdherenceState(this);
         }

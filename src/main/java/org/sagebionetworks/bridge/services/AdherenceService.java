@@ -47,6 +47,8 @@ import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
@@ -56,6 +58,8 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSe
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
+import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportGenerator;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.SessionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
@@ -95,6 +99,10 @@ public class AdherenceService {
     @Autowired
     final void setSchedule2Service(Schedule2Service scheduleService) {
         this.scheduleService = scheduleService;
+    }
+    
+    protected DateTime getDateTime() {
+        return DateTime.now();
     }
     
     public void updateAdherenceRecords(String appId, AdherenceRecordList recordList) {
@@ -305,7 +313,6 @@ public class AdherenceService {
             throw new BadRequestException("startedOn can not be null");
         }
 
-
         Optional<TimelineMetadata> timelineMetadata = scheduleService.getTimelineMetadata(record.getInstanceGuid());
         if (timelineMetadata.isPresent()) {
             if (timelineMetadata.get().isTimeWindowPersistent()) {
@@ -320,21 +327,26 @@ public class AdherenceService {
     
     public EventStreamAdherenceReport getEventStreamAdherenceReport(String appId, String studyId, String userId,
             DateTime now, String clientTimeZone, boolean showActiveOnly) {
-        checkNotNull(appId);
-        checkNotNull(studyId);
-        checkNotNull(userId);
-        checkNotNull(now);
 
         Stopwatch watch = Stopwatch.createStarted();
         
+        EventStreamAdherenceReport report = getEventStreamAdherenceReportInternal(
+                appId, studyId, userId, now, clientTimeZone, showActiveOnly);
+        
+        watch.stop();
+        LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
+        return report;
+    }
+    
+    private EventStreamAdherenceReport getEventStreamAdherenceReportInternal(String appId, String studyId, String userId,
+            DateTime now, String clientTimeZone, boolean showActiveOnly) {
         AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withShowActive(showActiveOnly);
         builder.withNow(now);
         builder.withClientTimeZone(clientTimeZone);
-        
+
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {
-            watch.stop();
             return EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
         }
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
@@ -344,20 +356,68 @@ public class AdherenceService {
 
         List<AdherenceRecord> adherenceRecords = getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
                 .withCurrentTimestampsOnly(true)
-                // if you turn this on you will not get declined sessions with no startedOn value,
-                // but it's not needed because persistent time windows are excluded from adherence.
+                // If includeRepeats=false (which is counter-intuitive) you will not get declined sessions with no 
+                // startedOn value, but it's not needed because persistent time windows are excluded from adherence.
                 .withIncludeRepeats(true) 
                 .withAdherenceRecordType(AdherenceRecordType.SESSION)
                 .withStudyId(studyId)
                 .withUserId(userId)
                 .build()).getItems();
-
+        
         builder.withMetadata(metadata);
         builder.withEvents(events);
         builder.withAdherenceRecords(adherenceRecords);
 
-        EventStreamAdherenceReport report = EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
-        LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
+        return EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
+    }
+    
+    public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, Account account) {
+
+        Stopwatch watch = Stopwatch.createStarted();
+        
+        DateTime createdOn = getDateTime();
+
+        WeeklyAdherenceReport report = getWeeklyAdherenceReportInternal(
+                appId, studyId, account.getId(), createdOn, account.getClientTimeZone());
+        report.setAppId(appId);
+        report.setStudyId(studyId);
+        report.setUserId(account.getId());
+        report.setParticipant(new AccountRef(account, studyId));
+        
+        watch.stop();
+        LOG.info("Weekly adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return report;
+    }
+    
+    private WeeklyAdherenceReport getWeeklyAdherenceReportInternal(String appId, String studyId, String userId,
+            DateTime createdOn, String clientTimeZone) {
+        
+        AdherenceState.Builder builder = new AdherenceState.Builder();
+        builder.withNow(createdOn);
+        builder.withClientTimeZone(clientTimeZone);
+        
+        Study study = studyService.getStudy(appId, studyId, true);
+        if (study.getScheduleGuid() == null) {
+            return WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
+        }
+        List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
+
+        List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
+                appId, studyId, userId).getItems();
+
+        List<AdherenceRecord> adherenceRecords = getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
+                .withCurrentTimestampsOnly(true)
+                // If includeRepeats=false (which is counter-intuitive) you will not get declined sessions with no 
+                // startedOn value, but it's not needed because persistent time windows are excluded from adherence.
+                .withIncludeRepeats(true)
+                .withAdherenceRecordType(AdherenceRecordType.SESSION)
+                .withStudyId(studyId)
+                .withUserId(userId)
+                .build()).getItems();
+        
+        builder.withMetadata(metadata);
+        builder.withEvents(events);
+        builder.withAdherenceRecords(adherenceRecords);
+        return WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
     }
 }

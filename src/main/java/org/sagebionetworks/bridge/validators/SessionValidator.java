@@ -1,6 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_PATTERN;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
@@ -113,6 +115,8 @@ public class SessionValidator implements Validator {
         }
         if (isBlank(session.getName())) {
             errors.rejectValue(NAME_FIELD, CANNOT_BE_BLANK);
+        } else if (!session.getName().matches(BRIDGE_RELAXED_ID_PATTERN)) {
+            errors.rejectValue(NAME_FIELD, BRIDGE_RELAXED_ID_ERROR);
         }
         validateStringLength(errors, 255, session.getName(), NAME_FIELD);
         if (session.getStartEventIds().isEmpty() && session.getStudyBurstIds().isEmpty()) {

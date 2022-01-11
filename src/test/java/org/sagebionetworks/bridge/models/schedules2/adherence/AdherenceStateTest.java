@@ -2,9 +2,6 @@ package org.sagebionetworks.bridge.models.schedules2.adherence;
 
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.COMPLIANT;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NONCOMPLIANT;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNKNOWN;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -95,7 +92,7 @@ public class AdherenceStateTest extends Mockito {
     
     @Test
     public void testConstruction_nulls() {
-        AdherenceState emptyState = new AdherenceState.Builder().build();
+        AdherenceState emptyState = new AdherenceState.Builder().withNow(NOW).build();
         assertEquals(emptyState.getMetadata(), ImmutableList.of());
         assertNull(emptyState.getAdherenceRecordByGuid("event1"));
         assertNull(emptyState.getDaysSinceEventById("event1"));    
@@ -108,7 +105,7 @@ public class AdherenceStateTest extends Mockito {
     public void testConstruction() {
         assertSame(state.getMetadata(), metadata);
         assertTrue(state.showActive());
-        assertEquals(state.getNow(), NOW);
+        assertEquals(state.getNow(), NOW.withZone(TEST_TIME_ZONE));
         assertEquals(state.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         assertEquals(state.getTimeZone(), TEST_TIME_ZONE);
         
@@ -150,11 +147,8 @@ public class AdherenceStateTest extends Mockito {
         assertEquals(state.getEventTimestampById("event1"), EVENT_TS1.withZone(TEST_TIME_ZONE));
         assertEquals(state.getEventTimestampById("event2"), EVENT_TS2.withZone(TEST_TIME_ZONE));
         
-        // These are always going to return zero after construction because state calculation happens
-        // in the report generators. We can manually set and and test this in a separate test.
-        assertEquals(state.getSessionStateCount(COMPLIANT), 0L);
-        assertEquals(state.getSessionStateCount(NONCOMPLIANT), 0L);
-        assertEquals(state.getSessionStateCount(UNKNOWN), 0L);
+        // Nothing to do == in compliance, ignore this person this week
+        assertEquals(state.calculateAdherencePercentage(), 100);
         
         assertEquals(state.getStreamEventIds(), ImmutableList.of("event1", "event2"));
     }
@@ -189,9 +183,7 @@ public class AdherenceStateTest extends Mockito {
         win2b.setState(SessionCompletionState.COMPLETED);
         day2.addTimeWindow(win2b);
 
-        assertEquals(state.getSessionStateCount(COMPLIANT), 1L); // completed
-        assertEquals(state.getSessionStateCount(NONCOMPLIANT), 2L); // abandoned, expired
-        assertEquals(state.getSessionStateCount(UNKNOWN), 1L); // unstarted
+        assertEquals(state.calculateAdherencePercentage(), 25);
     }
     
     @Test
@@ -209,5 +201,17 @@ public class AdherenceStateTest extends Mockito {
     @Test
     public void timeZone_fromClientTimeZone() {
         assertEquals(state.getTimeZone(), TEST_TIME_ZONE);    
+    }
+    
+    @Test
+    public void toBuilder () {
+        AdherenceState copy = state.toBuilder().build();
+        
+        assertSame(copy.getMetadata(), state.getMetadata());
+        assertSame(copy.getNow(), state.getNow());
+        assertSame(copy.getClientTimeZone(), state.getClientTimeZone());
+        assertSame(copy.getEvents(), state.getEvents());
+        assertSame(copy.getAdherenceRecords(), state.getAdherenceRecords());
+        assertEquals(copy.showActive(), state.showActive());
     }
 }
