@@ -7,8 +7,11 @@ import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.COMPLIANCE_UNDER_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.ASSESSMENT_IDS;
@@ -48,6 +51,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.AuthEvaluatorField;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -395,6 +399,7 @@ public class AdherenceService {
         report.setStudyId(studyId);
         report.setUserId(account.getId());
         report.setParticipant(new AccountRef(account, studyId));
+        report.setTestAccount(account.getDataGroups().contains(TEST_USER_GROUP));
         
         reportDao.saveWeeklyAdherenceReport(report);
         
@@ -415,10 +420,10 @@ public class AdherenceService {
             throw new BadRequestException(PAGE_SIZE_ERROR);
         }
         if (labelFilter != null && labelFilter.length() > 100) {
-            throw new BadRequestException("labelFilter cannot be over 100 characters");
+            throw new BadRequestException(LABEL_FILTER_SIZE_ERROR);
         }
         if (complianceUnder != null && (complianceUnder < 1 ||  complianceUnder > 100)) {
-            throw new BadRequestException("complianceUnder must be from 1-100 (percent)");
+            throw new BadRequestException(COMPLIANCE_UNDER_ERROR);
         }
         return reportDao.getWeeklyAdherenceReports(appId, studyId, labelFilter, complianceUnder, offsetBy, pageSize)
                 .withRequestParam(PagedResourceList.LABEL_FILTER, labelFilter)

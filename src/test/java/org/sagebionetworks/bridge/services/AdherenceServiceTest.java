@@ -1,6 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.BridgeConstants.COMPLIANCE_UNDER_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
@@ -62,7 +66,7 @@ import org.mockito.Spy;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
+import org.thymeleaf.util.StringUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
@@ -916,9 +920,61 @@ public class AdherenceServiceTest extends Mockito {
     
     @Test
     public void getWeeklyAdherenceReports() {
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 2);
+        when(mockReportDao.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, "label", 75, 100, 50)).thenReturn(page);
         
-        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 75, 100, 50);
+        PagedResourceList<WeeklyAdherenceReport> retValue = service.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, "label", 75, 100, 50);
+        assertSame(retValue, page);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
+    public void getWeeklyAdherenceReports_offsetNegative() {
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 75, -1, 50);
+    }    
+
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
+    public void getWeeklyAdherenceReports_pageSizeTooSmall() {
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 75, 100, 1);
+    }    
+
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
+    public void getWeeklyAdherenceReports_pageSizeTooLarge() {
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 75, 100, 300);
+    }    
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = LABEL_FILTER_SIZE_ERROR)
+    public void getWeeklyAdherenceReports_labelFilterTooLong() {
+        String tooLongString = StringUtils.randomAlphanumeric(101);
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, tooLongString, 75, 50, 100);
+    }    
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = COMPLIANCE_UNDER_ERROR)
+    public void getWeeklyAdherenceReports_complianceTooSmall() {
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 0, 50, 100);
+    }    
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = COMPLIANCE_UNDER_ERROR)
+    public void getWeeklyAdherenceReports_complianceTooLarge() {
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 101, 50, 100);
+    }
+
+    @Test
+    public void getWeeklyAdherenceReports_defaults() {
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 2);
+        when(mockReportDao.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, null, null, null, null)).thenReturn(page);
         
+        PagedResourceList<WeeklyAdherenceReport> retValue = service.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, null, null, null, null);
+        assertSame(retValue, page);
     }
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {

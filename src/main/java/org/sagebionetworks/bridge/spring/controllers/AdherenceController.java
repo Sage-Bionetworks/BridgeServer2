@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
+import static org.sagebionetworks.bridge.AuthUtils.CANNOT_ACCESS_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
@@ -14,7 +18,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-
+import org.sagebionetworks.bridge.AuthEvaluatorField;
+import org.sagebionetworks.bridge.AuthUtils;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -95,24 +101,22 @@ public class AdherenceController extends BaseController {
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        CAN_READ_PARTICIPANT_REPORTS.checkAndThrow(STUDY_ID, studyId);
+        
+        boolean testAccounts = CANNOT_ACCESS_PARTICIPANTS.check();
+        System.out.println("testAccounts = " + testAccounts);
 
-        Integer offsetByInt = BridgeUtils.getIntegerOrDefault(offsetBy, null);
-        Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, null);
+        // Security issues:
+        // do need to secure these methods to people who are connected to the study
+        // in this case, we need to record and to query in relation to whether or not it's a test user
+        
+        Integer offsetByInt = BridgeUtils.getIntegerOrDefault(offsetBy, 0);
+        Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
         Integer complianceUnderInt = BridgeUtils.getIntegerOrDefault(complianceUnder, null);
         
         return service.getWeeklyAdherenceReports(session.getAppId(), studyId, labelFilter, complianceUnderInt,
                 offsetByInt, pageSizeInt);
-    }
-    
-    @GetMapping("/v5/studies/{studyId}/participants/self/adherence/weekly")
-    public WeeklyAdherenceReport getWeeklyAdherenceReportForSelf(@PathVariable String studyId) {
-        UserSession session = getAuthenticatedAndConsentedSession();
-
-        AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
-        Account account = accountService.getAccount(accountId)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));
-
-        return service.getWeeklyAdherenceReport(session.getAppId(), studyId, account);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence")

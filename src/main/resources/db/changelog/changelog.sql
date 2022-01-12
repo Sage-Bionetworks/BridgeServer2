@@ -874,6 +874,7 @@ CREATE TABLE IF NOT EXISTS `WeeklyAdherenceReports` (
   `studyId` varchar(60) NOT NULL,
   `userId` varchar(255) NOT NULL,
   `participant` text NOT NULL,
+  `testAccount` tinyint(1) DEFAULT 0,
   `clientTimeZone` varchar(255),
   `createdOn` bigint(20) NOT NULL,
   `weeklyAdherencePercent` int(3) signed,

@@ -46,6 +46,7 @@ public class WeeklyAdherenceReport {
     private String userId;
     @Convert(converter = AccountRefConverter.class)
     private AccountRef participant;
+    private boolean testAccount;
     private String clientTimeZone;
     private int weeklyAdherencePercent;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
@@ -91,6 +92,13 @@ public class WeeklyAdherenceReport {
     }
     public void setParticipant(AccountRef participant) {
         this.participant = participant;
+    }
+    @JsonIgnore
+    public boolean isTestAccount() {
+        return testAccount;
+    }
+    public void setTestAccount(boolean testAccount) {
+        this.testAccount = testAccount;
     }
     public int getWeeklyAdherencePercent() {
         return weeklyAdherencePercent;

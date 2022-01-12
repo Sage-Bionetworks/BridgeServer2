@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
@@ -283,38 +284,6 @@ public class AdherenceControllerTest extends Mockito {
     }
     
     @Test
-    public void getWeeklyAdherenceReportForSelf() { 
-        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID)
-                .withClientTimeZone(CLIENT_TIME_ZONE).build());
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        
-        Account account = Account.create();
-        account.setId(TEST_USER_ID);
-        account.setClientTimeZone(CLIENT_TIME_ZONE);
-        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
-            .thenReturn(Optional.of(account));
-        
-        WeeklyAdherenceReport report = new WeeklyAdherenceReport();
-        when(mockService.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account))
-            .thenReturn(report);
-        
-        WeeklyAdherenceReport retValue = controller.getWeeklyAdherenceReportForSelf(TEST_STUDY_ID);
-        assertSame(retValue, report);
-    }
-    
-    @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getWeeklyAdherenceReportForSelf_accountNotFound() { 
-        session.setParticipant(new StudyParticipant.Builder().withId(TEST_USER_ID)
-                .withClientTimeZone(CLIENT_TIME_ZONE).build());
-        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
-        
-        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
-            .thenReturn(Optional.empty());
-        
-        controller.getWeeklyAdherenceReportForSelf(TEST_STUDY_ID);
-    }
-    
-    @Test
     public void updateAdherenceRecords() throws Exception {
         doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
         
@@ -483,5 +452,37 @@ public class AdherenceControllerTest extends Mockito {
                 "2021-07-06T18:03:23.009Z",
                 "2021-07-06T18:03:23.009Z"
         );
+    }
+
+    @Test
+    public void getWeeklyAdherenceReports() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER,
+                STUDY_COORDINATOR);
+
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockService.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 75, 50, 100))
+                .thenReturn(page);
+
+        PagedResourceList<WeeklyAdherenceReport> retValue = controller.getWeeklyAdherenceReports(TEST_STUDY_ID, "label",
+                "75", "50", "100");
+        assertSame(retValue, page);
+
+        verify(mockService).getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 75, 50, 100);
+    }
+
+    @Test
+    public void getWeeklyAdherenceReports_defaults() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER,
+                STUDY_COORDINATOR);
+
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockService.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, null, null, 0, API_DEFAULT_PAGE_SIZE))
+                .thenReturn(page);
+
+        PagedResourceList<WeeklyAdherenceReport> retValue = controller.getWeeklyAdherenceReports(TEST_STUDY_ID, null,
+                null, null, null);
+        assertSame(retValue, page);
+
+        verify(mockService).getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, null, null, 0, API_DEFAULT_PAGE_SIZE);
     }
 }
