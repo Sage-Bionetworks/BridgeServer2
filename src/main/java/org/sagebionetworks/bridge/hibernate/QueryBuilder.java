@@ -143,6 +143,14 @@ class QueryBuilder {
                 whereParams.put(key, searchString);
             }
         }
+        public void labels(List<String> labelFilter) {
+            List<String> phrases = new ArrayList<>();
+            for (int i=0; i < labelFilter.size(); i++) {
+                phrases.add("label LIKE :labelFilter"+i);
+                whereParams.put("labelFilter"+i,  "%:" + labelFilter.get(i) + ":%");
+            }
+            predicated.add("(" + Joiner.on(" OR ").join(phrases) + ")");
+        }
         // HQL
         public void phone(StringSearchPosition pos, String phoneFilter) {
             if (isNotBlank(phoneFilter)) {

@@ -7,16 +7,20 @@ import javax.persistence.Embeddable;
 
 @SuppressWarnings("serial")
 @Embeddable
-public class WeeklyAdherenceReportId implements Serializable {
+public final class WeeklyAdherenceReportId implements Serializable {
 
-    private String appId;
+    private final String appId;
     
-    private String studyId;
+    private final String studyId;
     
-    private String userId;
-    
-    public WeeklyAdherenceReportId() {
+    private final String userId;
+
+    // This makes Hibernate happy, and also passes EqualsVerifier tests.
+    @SuppressWarnings("unused")
+    private WeeklyAdherenceReportId() {
+        this(null, null, null);
     }
+    
     public WeeklyAdherenceReportId(String appId, String studyId, String userId) {
         this.appId = appId;
         this.studyId = studyId;

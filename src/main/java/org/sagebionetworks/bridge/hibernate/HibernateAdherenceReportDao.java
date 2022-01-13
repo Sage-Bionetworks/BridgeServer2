@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.hibernate;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -14,8 +13,6 @@ import org.sagebionetworks.bridge.models.AccountTestFilter;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.springframework.stereotype.Component;
-
-import com.google.common.base.Joiner;
 
 @Component
 public class HibernateAdherenceReportDao implements AdherenceReportDao {
@@ -47,9 +44,11 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         checkNotNull(studyId);
         checkNotNull(testFilter);
         
+        boolean hasLabels = (labelFilter != null && !labelFilter.isEmpty());
+        
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM WeeklyAdherenceReport h");
-        if (labelFilter != null) {
+        if (hasLabels) {
             builder.append("JOIN h.labels label");    
         }
         WhereClauseBuilder where = builder.startWhere(AND);
@@ -58,13 +57,8 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         if (complianceUnder != null) {
             where.append("weeklyAdherencePercent < :complianceUnder", COMPLIANCE_UNDER_FIELD, complianceUnder);
         }
-        if (labelFilter != null && !labelFilter.isEmpty()) {
-            List<String> phrases = new ArrayList<>();
-            for (int i=0; i < labelFilter.size(); i++) {
-                phrases.add("label LIKE :labelFilter"+i);
-                where.getParameters().put("labelFilter"+i,  "%" + labelFilter.get(i) + "%");
-            }
-            where.append("(" + Joiner.on(" OR ").join(phrases) + ")");
+        if (hasLabels) {
+            where.labels(labelFilter);
         }
         if (testFilter == AccountTestFilter.TEST) {
             where.append("testAccount = 1");
@@ -74,6 +68,8 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         builder.append("ORDER BY weeklyAdherencePercent");
         
         int total = hibernateHelper.queryCount("SELECT COUNT(*) " + builder.getQuery(), builder.getParameters());
+        
+        System.out.println("SELECT h " + builder.getQuery());
         
         List<WeeklyAdherenceReport> reports = hibernateHelper.queryGet("SELECT h " + builder.getQuery(),
                 builder.getParameters(), offsetBy, pageSize, WeeklyAdherenceReport.class);

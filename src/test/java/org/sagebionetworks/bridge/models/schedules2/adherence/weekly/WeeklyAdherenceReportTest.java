@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -38,10 +39,14 @@ public class WeeklyAdherenceReportTest {
         report.setCreatedOn(MODIFIED_ON);
         report.setLabels(ImmutableSet.of("label1", "label2"));
         report.setParticipant(new AccountRef(account, "study1"));
+        report.setTestAccount(true);
         report.setWeeklyAdherencePercent(79);
         report.setByDayEntries(ImmutableMap.of(
                 new Integer(6), ImmutableList.of(new EventStreamDay())));
         report.setNextActivity(nextActivity);
+        
+        // It's there, it works, it's persisted, but it's not part of JSON output
+        assertTrue(report.isTestAccount());
         
         // These are not in the JSON
         assertEquals(report.getAppId(), TEST_APP_ID);
@@ -60,6 +65,7 @@ public class WeeklyAdherenceReportTest {
         assertEquals(node.get("rowLabels").get(1).textValue(), "label2");
         assertEquals(node.get("weeklyAdherencePercent").intValue(), 79);
         assertEquals(node.get("participant").get("identifier").textValue(), TEST_USER_ID);
+        assertNull(node.get("accountTest"));
         assertEquals(node.get("nextActivity").get("type").textValue(), "NextActivity");
         assertEquals(node.get("byDayEntries").get("6").get(0).get("type").textValue(), "EventStreamDay");
         assertEquals(node.get("type").textValue(), "WeeklyAdherenceReport");
@@ -67,6 +73,17 @@ public class WeeklyAdherenceReportTest {
         report.setParticipant(new AccountRef(account, "study1"));
         report.setByDayEntries(ImmutableMap.of(new Integer(6), ImmutableList.of()));
         report.setNextActivity(nextActivity);
+    }
+    
+    @Test
+    public void clientTimeZoneUsed() {
+        WeeklyAdherenceReport report = new WeeklyAdherenceReport();
+        report.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
+        report.setCreatedOn(MODIFIED_ON);
+        assertEquals(report.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
+        
+        report.setClientTimeZone(null);
+        assertEquals(report.getCreatedOn(), MODIFIED_ON);
     }
     
     @Test
