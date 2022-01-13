@@ -13,5 +13,5 @@
     <logger name="org.sagebionetworks.bridge" level="INFO" />
 
     <!-- Hibernate logs are noisy and they also leak email addresses. Disable this logging completely. -->
-    <logger name="org.hibernate" level="DEBUG" />
+    <logger name="org.hibernate" level="OFF" />
 </configuration>

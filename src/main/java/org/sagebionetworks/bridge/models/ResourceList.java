@@ -71,6 +71,7 @@ public class ResourceList<T> {
     public static final String STUDY_ID = "studyId";
     public static final String TAGS = "tags";
     public static final String TEMPLATE_TYPE = "templateType";
+    public static final String TEST_FILTER = "testFilter";
     public static final String TIME_WINDOW_GUIDS = "timeWindowGuids";
     public static final String TOTAL = "total";
     public static final String TYPE = "type";

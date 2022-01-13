@@ -145,7 +145,9 @@ public class BridgeConstants {
     
     public static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
     
-    public static final String LABEL_FILTER_SIZE_ERROR = "labelFilter cannot be over 100 characters";
+    public static final String LABEL_FILTER_COUNT_ERROR = "labelFilter cannot have over 50 entries";
+    
+    public static final String LABEL_FILTER_LENGTH_ERROR = "labelFilter cannot be over 100 characters";
     
     public static final String COMPLIANCE_UNDER_ERROR = "complianceUnder percentage must be from 1-100";
     

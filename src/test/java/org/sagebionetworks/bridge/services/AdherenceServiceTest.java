@@ -2,7 +2,8 @@ package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.BridgeConstants.COMPLIANCE_UNDER_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_COUNT_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_LENGTH_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
@@ -16,6 +17,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_EXTERNAL_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.createEvent;
+import static org.sagebionetworks.bridge.models.AccountTestFilter.PRODUCTION;
 import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.ASSESSMENT_IDS;
 import static org.sagebionetworks.bridge.models.ResourceList.CURRENT_TIMESTAMPS_ONLY;
@@ -922,58 +924,68 @@ public class AdherenceServiceTest extends Mockito {
     public void getWeeklyAdherenceReports() {
         PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 2);
         when(mockReportDao.getWeeklyAdherenceReports(
-                TEST_APP_ID, TEST_STUDY_ID, "label", 75, 100, 50)).thenReturn(page);
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 75, 100, 50)).thenReturn(page);
         
         PagedResourceList<WeeklyAdherenceReport> retValue = service.getWeeklyAdherenceReports(
-                TEST_APP_ID, TEST_STUDY_ID, "label", 75, 100, 50);
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 75, 100, 50);
         assertSame(retValue, page);
     }
     
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
     public void getWeeklyAdherenceReports_offsetNegative() {
-        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 75, -1, 50);
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 75, -1, 50);
     }    
 
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
     public void getWeeklyAdherenceReports_pageSizeTooSmall() {
-        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 75, 100, 1);
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 75, 100, 1);
     }    
 
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
     public void getWeeklyAdherenceReports_pageSizeTooLarge() {
-        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 75, 100, 300);
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 75, 100, 300);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = LABEL_FILTER_COUNT_ERROR)
+    public void getWeeklyAdherenceReports_labelFilterTooManyEntries() {
+        List<String> labelFilter = new ArrayList<>();
+        for (int i=0; i < 52; i++) {
+            labelFilter.add("label");
+        }
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, labelFilter, 75, 50, 100);
     }    
 
     @Test(expectedExceptions = BadRequestException.class,
-            expectedExceptionsMessageRegExp = LABEL_FILTER_SIZE_ERROR)
+            expectedExceptionsMessageRegExp = LABEL_FILTER_LENGTH_ERROR)
     public void getWeeklyAdherenceReports_labelFilterTooLong() {
         String tooLongString = StringUtils.randomAlphanumeric(101);
-        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, tooLongString, 75, 50, 100);
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of(tooLongString), 75, 50, 100);
     }    
 
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp = COMPLIANCE_UNDER_ERROR)
     public void getWeeklyAdherenceReports_complianceTooSmall() {
-        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 0, 50, 100);
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 0, 50, 100);
     }    
 
     @Test(expectedExceptions = BadRequestException.class,
             expectedExceptionsMessageRegExp = COMPLIANCE_UNDER_ERROR)
     public void getWeeklyAdherenceReports_complianceTooLarge() {
-        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, "label", 101, 50, 100);
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 101, 50, 100);
     }
 
     @Test
     public void getWeeklyAdherenceReports_defaults() {
         PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 2);
         when(mockReportDao.getWeeklyAdherenceReports(
-                TEST_APP_ID, TEST_STUDY_ID, null, null, null, null)).thenReturn(page);
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, null, null, null, null)).thenReturn(page);
         
         PagedResourceList<WeeklyAdherenceReport> retValue = service.getWeeklyAdherenceReports(
-                TEST_APP_ID, TEST_STUDY_ID, null, null, null, null);
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, null, null, null, null);
         assertSame(retValue, page);
     }
     
