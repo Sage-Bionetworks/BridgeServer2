@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -594,5 +595,23 @@ public class AdherenceControllerTest extends Mockito {
 
         verify(mockService).getWeeklyAdherenceReports(
                 TEST_APP_ID, TEST_STUDY_ID, BOTH, null, null, 0, API_DEFAULT_PAGE_SIZE);
-   }
+    }
+    
+    @Test
+    public void getWeeklyAdherenceReportForWorker() {
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+
+        Account account = Account.create();
+        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+            .thenReturn(Optional.of(account));
+
+        WeeklyAdherenceReport report = new WeeklyAdherenceReport();
+        when(mockService.getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account))
+            .thenReturn(report);
+
+        WeeklyAdherenceReport retValue = controller.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        assertSame(retValue, report);
+        
+        verify(mockService).getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
+    }
 }
