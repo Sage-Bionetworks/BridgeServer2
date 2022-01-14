@@ -16,6 +16,7 @@ public class EventStreamDayTest {
     @Test
     public void canSerialize() throws Exception {
         EventStreamDay day = new EventStreamDay();
+        day.setLabel("Label");
         day.setSessionGuid("sessionGuid");
         day.setSessionName("sessionName");
         day.setSessionSymbol("sessionSymbol");
@@ -28,6 +29,7 @@ public class EventStreamDayTest {
         day.setTimeWindows(ImmutableList.of(createWindow("guid2"), createWindow("guid1")));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(day);
+        assertEquals(node.get("label").textValue(), "Label");
         assertEquals(node.get("sessionGuid").textValue(), "sessionGuid");
         assertEquals(node.get("sessionName").textValue(), "sessionName");
         assertEquals(node.get("sessionSymbol").textValue(), "sessionSymbol");

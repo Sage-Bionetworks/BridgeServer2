@@ -163,8 +163,8 @@ public class Schedule2ValidatorTest extends Mockito {
         Validate.entityThrowingException(INSTANCE, schedule);
 
         // Actual tests of session validation occur in SessionValidatorTest.
-        verify(session1, times(2)).getName();
-        verify(session2, times(2)).getName();
+        verify(session1, times(3)).getName();
+        verify(session2, times(3)).getName();
     }
 
     @Test

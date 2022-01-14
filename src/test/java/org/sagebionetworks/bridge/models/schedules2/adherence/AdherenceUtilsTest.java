@@ -15,9 +15,17 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNSTARTED;
 import static org.testng.Assert.assertEquals;
 
+import java.util.List;
+
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
+import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
+import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
+import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
+
+import com.newrelic.agent.deps.com.google.common.collect.ImmutableList;
 
 public class AdherenceUtilsTest {
 
@@ -145,6 +153,100 @@ public class AdherenceUtilsTest {
         AdherenceRecord record = createAdherenceRecord(null, FINISHED_ON, false);
 
         assertEquals(AdherenceUtils.calculateSessionState(record, 1, 3, 3), COMPLETED);
+    }
+    
+    @Test
+    public void calculateAdherencePercentage_noStreams() {
+        int retValue = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of());
+        assertEquals(retValue, 100);
+    }
+    
+    @Test
+    public void calculateAdherencePercentage_noDays() {
+        EventStream stream = new EventStream();
+        int retValue = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(stream));
+        assertEquals(retValue, 100);
+    }
+    
+    @Test
+    public void calculateAdherencePercentage_noWindows() {
+        EventStream stream = new EventStream();
+        stream.addEntry(0, new EventStreamDay());
+        stream.addEntry(2, new EventStreamDay());
+        stream.addEntry(4, new EventStreamDay());
+        int retValue = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(stream));
+        assertEquals(retValue, 100);
+    }
+    
+    @Test(dataProvider = "eventStreams")
+    public void calculateAdherencePercentage(int expectedPercent, List<EventStream> streams) {
+        int retValue = AdherenceUtils.calculateAdherencePercentage(streams);
+        assertEquals(retValue, expectedPercent);
+    }
+    
+    @DataProvider(name = "eventStreams")
+    public static Object[] eventStreams() {
+        // This is admittedly a random selection of cases, I don't have anything systematic
+        // in mind here.
+        return new Object[][] {
+            dataRow(100,createEventStream(0, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
+            dataRow(100,createEventStream(0, COMPLETED, COMPLETED),
+                        createEventStream(1, COMPLETED, COMPLETED)),
+            dataRow(0,  createEventStream(0, EXPIRED, NOT_YET_AVAILABLE)),
+            dataRow(100,createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE),
+                        createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),
+            dataRow(100,createEventStream(0, COMPLETED, NOT_APPLICABLE),
+                        createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),
+            dataRow(0,  createEventStream(0, ABANDONED, NOT_APPLICABLE),
+                        createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),
+            dataRow(50, createEventStream(0, COMPLETED, null),
+                        createEventStream(2, EXPIRED, null)),
+            dataRow(20, createEventStream(0, EXPIRED, null),
+                        createEventStream(1, EXPIRED, COMPLETED),
+                        createEventStream(2, UNSTARTED, UNSTARTED),
+                        createEventStream(3, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
+            dataRow(25, createEventStream(0, EXPIRED, null),
+                        createEventStream(1, EXPIRED, COMPLETED),
+                        createEventStream(2, UNSTARTED, null)),
+            dataRow(33, createEventStream(0, COMPLETED, COMPLETED),
+                        createEventStream(1, STARTED, STARTED),
+                        createEventStream(2, UNSTARTED, UNSTARTED)),
+            dataRow(66, createEventStream(0, COMPLETED, COMPLETED),
+                        createEventStream(1, COMPLETED, COMPLETED),
+                        createEventStream(2, UNSTARTED, UNSTARTED)),
+            dataRow(33, createEventStream(0, COMPLETED, DECLINED),
+                        createEventStream(1, COMPLETED, DECLINED),
+                        createEventStream(2, STARTED, UNSTARTED)),
+            dataRow(33, createEventStream(0, ABANDONED, COMPLETED),
+                        createEventStream(1, COMPLETED, EXPIRED),
+                        createEventStream(2, STARTED, UNSTARTED),
+                        createEventStream(3, NOT_YET_AVAILABLE, null),
+                        createEventStream(4, NOT_APPLICABLE, null))
+        };
+    }
+    
+    private static Object[] dataRow(int expectedPercentage, EventStream... streams) {
+        return new Object[] { expectedPercentage, ImmutableList.copyOf(streams) };
+    }
+    
+    private static EventStream createEventStream(int dayNum, SessionCompletionState state, SessionCompletionState state2) {
+        EventStreamDay day = new EventStreamDay();
+
+        EventStreamWindow window = new EventStreamWindow();
+        window.setTimeWindowGuid("guid1" + dayNum);
+        window.setState(state);
+        day.addTimeWindow(window);
+        
+        if (state2 !=  null) {
+            window = new EventStreamWindow();
+            window.setTimeWindowGuid("guid2" + dayNum);
+            window.setState(state2);
+            day.addTimeWindow(window);
+        }
+        EventStream stream = new EventStream();
+        stream.addEntry(dayNum, day);
+        
+        return stream;
     }
     
     private AdherenceRecord createAdherenceRecord(DateTime startedOn, DateTime finishedOn, boolean declined) {

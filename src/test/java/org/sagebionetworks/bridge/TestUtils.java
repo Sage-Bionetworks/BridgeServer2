@@ -3,9 +3,13 @@ package org.sagebionetworks.bridge;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
+import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_EVENT_TS1;
+import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_EVENT_TS2;
+import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_NOW;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_NOTE;
@@ -57,7 +61,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
-
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.config.Environment;
@@ -88,6 +91,8 @@ import org.sagebionetworks.bridge.models.schedules.SchedulePlan;
 import org.sagebionetworks.bridge.models.schedules.ScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules.SimpleScheduleStrategy;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.studies.Address;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
@@ -105,7 +110,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 public class TestUtils {
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
-    
+
     public static class CustomServletInputStream extends ServletInputStream {
         private ByteArrayInputStream buffer;
         public CustomServletInputStream(String content) {
@@ -769,5 +774,68 @@ public class TestUtils {
         }
         return null;
     }
-    
+
+    public static AdherenceState.Builder getAdherenceStateBuilder() { 
+        TimelineMetadata meta1 = new TimelineMetadata();
+        meta1.setSessionInstanceGuid("instanceGuid1");
+        meta1.setSessionStartEventId("event1");
+        meta1.setSessionGuid("guid1");
+        meta1.setSessionInstanceStartDay(1);
+        meta1.setSessionInstanceEndDay(15);
+        meta1.setSessionName("session1");
+        meta1.setSessionSymbol("1");
+        
+        TimelineMetadata meta2 = new TimelineMetadata();
+        meta2.setSessionInstanceGuid("instanceGuid2");
+        meta2.setSessionStartEventId("event2");
+        meta2.setSessionGuid("guid2");
+        meta2.setSessionInstanceStartDay(2);
+        meta2.setSessionInstanceEndDay(16);
+        meta2.setSessionName("session2");
+        meta2.setSessionSymbol("2");
+        meta2.setStudyBurstId("burst");
+        meta2.setStudyBurstNum(2);
+        
+        TimelineMetadata meta3 = new TimelineMetadata();
+        meta3.setSessionInstanceGuid("instanceGuid3");
+        meta3.setSessionStartEventId("event2");
+        meta3.setSessionGuid("guid3");
+        meta3.setSessionInstanceStartDay(3);
+        meta3.setSessionInstanceEndDay(4);
+        meta3.setSessionName("session3");
+        meta3.setSessionSymbol("3");
+        List<TimelineMetadata> metadata = ImmutableList.of(meta1, meta2, meta3);
+        
+        StudyActivityEvent e1 = new StudyActivityEvent.Builder()
+                .withEventId("event1")
+                .withTimestamp(ADHERENCE_STATE_EVENT_TS1)
+                .build();
+        
+        StudyActivityEvent e2 = new StudyActivityEvent.Builder()
+                .withEventId("event2")
+                .withTimestamp(ADHERENCE_STATE_EVENT_TS2)
+                .build();
+        
+        List<StudyActivityEvent> events = ImmutableList.of(e1, e2);
+        
+        AdherenceRecord rec1 = new AdherenceRecord();
+        rec1.setInstanceGuid("instanceGuid1");
+        rec1.setStartedOn(CREATED_ON);
+        rec1.setFinishedOn(MODIFIED_ON);
+        rec1.setEventTimestamp(ADHERENCE_STATE_EVENT_TS1);
+        
+        AdherenceRecord rec2 = new AdherenceRecord();
+        rec2.setInstanceGuid("instanceGuid2");
+        rec2.setEventTimestamp(ADHERENCE_STATE_EVENT_TS2);
+        
+        List<AdherenceRecord> adherenceRecords = ImmutableList.of(rec1, rec2);
+        
+        return new AdherenceState.Builder()
+            .withMetadata(metadata)
+            .withEvents(events)
+            .withAdherenceRecords(adherenceRecords)
+            .withNow(ADHERENCE_STATE_NOW)
+            .withShowActive(true)
+            .withClientTimeZone(TEST_CLIENT_TIME_ZONE);
+    }
 }
