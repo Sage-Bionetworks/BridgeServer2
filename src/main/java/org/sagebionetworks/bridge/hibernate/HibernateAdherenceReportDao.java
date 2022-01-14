@@ -33,6 +33,8 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
     public void saveWeeklyAdherenceReport(WeeklyAdherenceReport report) {
         checkNotNull(report);
         
+        report.setClientTimeZone("v1_apps_appId_studies_studyId_participants_searchv1_apps_appId_studies_studyId_participants_searchv1_apps_appId_studies_studyId_participants_searchv1_apps_appId_studies_studyId_participants_searchv1_apps_appId_studies_studyId_participants_searchv1_apps_appId_studies_studyId_participants_search");
+        
         hibernateHelper.saveOrUpdate(report);
     }
 
@@ -68,8 +70,6 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         builder.append("ORDER BY weeklyAdherencePercent");
         
         int total = hibernateHelper.queryCount("SELECT COUNT(*) " + builder.getQuery(), builder.getParameters());
-        
-        System.out.println("SELECT h " + builder.getQuery());
         
         List<WeeklyAdherenceReport> reports = hibernateHelper.queryGet("SELECT h " + builder.getQuery(),
                 builder.getParameters(), offsetBy, pageSize, WeeklyAdherenceReport.class);
