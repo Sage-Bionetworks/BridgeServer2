@@ -110,12 +110,12 @@ public class Exporter3Service {
         dataGroupsColumn.setMaximumSize(250L);
         listBuilder.add(dataGroupsColumn);
 
-        // These are 2-character language codes (eg "en", "es"). Let's generously allow participants to export up to
-        // 10 languages, which is 20 characters at most, and should be more than enough for nearly all participants.
+        // These are 5-character language codes (eg "en-US", "es-ES"). Let's generously allow participants to export up to
+        // 10 languages, which is 50 characters at most, and should be more than enough for nearly all participants.
         ColumnModel languagesColumn = new ColumnModel();
         languagesColumn.setName("languages");
         languagesColumn.setColumnType(ColumnType.STRING_LIST);
-        languagesColumn.setMaximumSize(2L);
+        languagesColumn.setMaximumSize(5L);
         languagesColumn.setMaximumListLength(10L);
         listBuilder.add(languagesColumn);
 
@@ -137,7 +137,7 @@ public class Exporter3Service {
         // The longest time zone I could find was 28 characters long. Let's add a bit of a buffer and say 40
         // characters. As long as Llanfair PG, Wales doesn't have its own time zone, this should be fine.
         ColumnModel timeZoneColumn = new ColumnModel();
-        timeZoneColumn.setName("timeZone");
+        timeZoneColumn.setName("clientTimeZone");
         timeZoneColumn.setColumnType(ColumnType.STRING);
         timeZoneColumn.setMaximumSize(40L);
         listBuilder.add(timeZoneColumn);
