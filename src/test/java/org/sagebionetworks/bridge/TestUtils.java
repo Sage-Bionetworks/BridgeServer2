@@ -580,6 +580,7 @@ public class TestUtils {
 
         Exporter3Configuration exporter3Config = new Exporter3Configuration();
         exporter3Config.setDataAccessTeamId(1234L);
+        exporter3Config.setParticipantVersionTableId("participant-version-synapse-table-id");
         exporter3Config.setProjectId("synapse-project-id");
         exporter3Config.setRawDataFolderId("synapse-folder-id");
         exporter3Config.setStorageLocationId(5678L);

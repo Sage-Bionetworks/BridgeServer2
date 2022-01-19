@@ -23,6 +23,7 @@ public class DynamoHealthDataRecordEx3Test {
     private static final ClientInfo CLIENT_INFO = ClientInfo.fromUserAgentCache(TestConstants.UA);
     private static final String CLIENT_INFO_STRING = CLIENT_INFO.toString();
     private static final Map<String, String> METADATA_MAP = ImmutableMap.of("foo", "bar");
+    private static final int PARTICIPANT_VERSION = 42;
     private static final String RECORD_ID = "test-record";
     private static final String STUDY_ID = "test-study";
     private static final long VERSION = 3L;
@@ -153,6 +154,7 @@ public class DynamoHealthDataRecordEx3Test {
         record.setAppId(TestConstants.TEST_APP_ID);
         record.setStudyId(STUDY_ID);
         record.setHealthCode(TestConstants.HEALTH_CODE);
+        record.setParticipantVersion(PARTICIPANT_VERSION);
         record.setCreatedOn(TestConstants.CREATED_ON.getMillis());
         record.setClientInfo(CLIENT_INFO_STRING);
         record.setExported(true);
@@ -163,11 +165,12 @@ public class DynamoHealthDataRecordEx3Test {
 
         // Convert to JsonNode.
         JsonNode jsonNode = BridgeObjectMapper.get().convertValue(record, JsonNode.class);
-        assertEquals(jsonNode.size(), 12);
+        assertEquals(jsonNode.size(), 13);
         assertEquals(jsonNode.get("id").textValue(), RECORD_ID);
         assertEquals(jsonNode.get("appId").textValue(), TestConstants.TEST_APP_ID);
         assertEquals(jsonNode.get("studyId").textValue(), STUDY_ID);
         assertEquals(jsonNode.get("healthCode").textValue(), TestConstants.HEALTH_CODE);
+        assertEquals(jsonNode.get("participantVersion").intValue(), PARTICIPANT_VERSION);
         assertEquals(jsonNode.get("createdOn").textValue(), TestConstants.CREATED_ON.toString());
         assertEquals(jsonNode.get("clientInfo").textValue(), CLIENT_INFO_STRING);
         assertTrue(jsonNode.get("exported").booleanValue());
@@ -186,6 +189,7 @@ public class DynamoHealthDataRecordEx3Test {
         assertEquals(record.getAppId(), TestConstants.TEST_APP_ID);
         assertEquals(record.getStudyId(), STUDY_ID);
         assertEquals(record.getHealthCode(), TestConstants.HEALTH_CODE);
+        assertEquals(record.getParticipantVersion().intValue(), PARTICIPANT_VERSION);
         assertEquals(record.getCreatedOn().longValue(), TestConstants.CREATED_ON.getMillis());
         assertEquals(record.getClientInfo(), CLIENT_INFO_STRING);
         assertTrue(record.isExported());
