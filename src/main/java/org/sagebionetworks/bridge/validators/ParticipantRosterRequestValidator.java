@@ -27,13 +27,14 @@ public class ParticipantRosterRequestValidator implements Validator {
             ParticipantRosterRequest request = (ParticipantRosterRequest) target;
 
             // password
-            if (request.getPassword() == null) {
-                errors.rejectValue("password", Validate.CANNOT_BE_NULL);
-            } else if (isBlank(request.getPassword())) {
+            if (isBlank(request.getPassword())) {
                 errors.rejectValue("password", Validate.CANNOT_BE_BLANK);
             } else {
                 PasswordPolicy passwordPolicy = new PasswordPolicy(8, true, false, true, true);
                 ValidatorUtils.validatePassword(errors, passwordPolicy, request.getPassword());
+            }
+            if (isBlank(request.getStudyId())) {
+                errors.rejectValue("studyId", Validate.CANNOT_BE_BLANK);
             }
         }
     }
