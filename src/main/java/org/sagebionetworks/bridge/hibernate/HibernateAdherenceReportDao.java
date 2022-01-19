@@ -32,9 +32,6 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
     @Override
     public void saveWeeklyAdherenceReport(WeeklyAdherenceReport report) {
         checkNotNull(report);
-        
-        report.setClientTimeZone("v1_apps_appId_studies_studyId_participants_searchv1_apps_appId_studies_studyId_participants_searchv1_apps_appId_studies_studyId_participants_searchv1_apps_appId_studies_studyId_participants_searchv1_apps_appId_studies_studyId_participants_searchv1_apps_appId_studies_studyId_participants_search");
-        
         hibernateHelper.saveOrUpdate(report);
     }
 
