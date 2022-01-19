@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
@@ -14,6 +16,9 @@ import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
+import static org.sagebionetworks.bridge.models.AccountTestFilter.BOTH;
+import static org.sagebionetworks.bridge.models.AccountTestFilter.PRODUCTION;
+import static org.sagebionetworks.bridge.models.AccountTestFilter.TEST;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -24,6 +29,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
 import org.mockito.ArgumentCaptor;
@@ -34,8 +40,11 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -96,6 +105,11 @@ public class AdherenceControllerTest extends Mockito {
         doReturn(SYSTEM_NOW).when(controller).getDateTime();
         doReturn(mockRequest).when(controller).request();
         doReturn(mockResponse).when(controller).response();
+    }
+    
+    @AfterMethod
+    public void afterMethod() {
+        RequestContext.set(NULL_INSTANCE);
     }
     
     @Test
@@ -452,4 +466,133 @@ public class AdherenceControllerTest extends Mockito {
                 "2021-07-06T18:03:23.009Z"
         );
     }
+
+    @Test
+    public void getWeeklyAdherenceReports() {
+        doReturn(session).when(controller)
+            .getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        List<String> labelsFilter = ImmutableList.of("label1", "label2");
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockService.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, labelsFilter, 75, 50, 100)).thenReturn(page);
+
+        PagedResourceList<WeeklyAdherenceReport> retValue = controller.getWeeklyAdherenceReports(
+                TEST_STUDY_ID, "production", labelsFilter, "75", "50", "100");
+        assertSame(retValue, page);
+
+        verify(mockService).getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, labelsFilter, 75, 50, 100);
+    }
+
+    @Test
+    public void getWeeklyAdherenceReports_defaults() {
+        doReturn(session).when(controller)
+            .getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockService.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, null, null, 0, API_DEFAULT_PAGE_SIZE)).thenReturn(page);
+
+        PagedResourceList<WeeklyAdherenceReport> retValue = controller.getWeeklyAdherenceReports(
+                TEST_STUDY_ID, null, null, null, null, null);
+        assertSame(retValue, page);
+
+        verify(mockService).getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, null, null, 0, API_DEFAULT_PAGE_SIZE);
+    }
+    
+    @Test
+    public void getWeeklyAdherenceReports_forcesTestForDevelopers() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller)
+            .getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockService.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, TEST, null, null, 0, API_DEFAULT_PAGE_SIZE)).thenReturn(page);
+
+        PagedResourceList<WeeklyAdherenceReport> retValue = controller.getWeeklyAdherenceReports(
+                TEST_STUDY_ID, "production", null, null, null, null);
+        assertSame(retValue, page);
+
+        verify(mockService).getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, TEST, null, null, 0, API_DEFAULT_PAGE_SIZE);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getWeeklyAdherenceReports_authRequiredDevelopers() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR)).build());
+        doReturn(session).when(controller)
+            .getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        controller.getWeeklyAdherenceReports(TEST_STUDY_ID, null, null, null, null, null);
+    }
+
+    @Test
+    public void getWeeklyAdherenceReports_allowsTestOrProdForResearchers() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller)
+            .getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockService.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, null, null, 0, API_DEFAULT_PAGE_SIZE)).thenReturn(page);
+
+        PagedResourceList<WeeklyAdherenceReport> retValue = controller.getWeeklyAdherenceReports(
+                TEST_STUDY_ID, "production", null, null, null, null);
+        assertSame(retValue, page);
+
+        verify(mockService).getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, null, null, 0, API_DEFAULT_PAGE_SIZE);
+    }
+
+    @Test
+    public void getWeeklyAdherenceReports_allowsProdForResearchers() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller)
+            .getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockService.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, TEST, null, null, 0, API_DEFAULT_PAGE_SIZE)).thenReturn(page);
+
+        PagedResourceList<WeeklyAdherenceReport> retValue = controller.getWeeklyAdherenceReports(
+                TEST_STUDY_ID, "test", null, null, null, null);
+        assertSame(retValue, page);
+
+        verify(mockService).getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, TEST, null, null, 0, API_DEFAULT_PAGE_SIZE);
+   }
+
+    @Test
+    public void getWeeklyAdherenceReports_allowsTestForResearchers() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(RESEARCHER)).build());
+        doReturn(session).when(controller)
+            .getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockService.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, BOTH, null, null, 0, API_DEFAULT_PAGE_SIZE)).thenReturn(page);
+
+        PagedResourceList<WeeklyAdherenceReport> retValue = controller.getWeeklyAdherenceReports(
+                TEST_STUDY_ID, "both", null, null, null, null);
+        assertSame(retValue, page);
+
+        verify(mockService).getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, BOTH, null, null, 0, API_DEFAULT_PAGE_SIZE);
+   }
 }

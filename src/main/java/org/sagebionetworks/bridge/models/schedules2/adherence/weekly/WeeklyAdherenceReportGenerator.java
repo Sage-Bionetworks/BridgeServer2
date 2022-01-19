@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -66,17 +67,18 @@ public class WeeklyAdherenceReportGenerator {
             }
         }
 
-        // Add labels. These are also added to the labels collection so we can persist them as a model 
-        // collection and search on them.
+        // Add labels. The labels are colon-separated here to facilitate string searches on the labels.
         Set<String> labels = new TreeSet<>();
         for (List<EventStreamDay> days : finalReport.getByDayEntries().values()) {
             for (EventStreamDay oneDay : days) {
-                String label = String.format("Week %s : %s", oneDay.getWeek(), oneDay.getSessionName());
-                if (oneDay.getStudyBurstId() != null) {
-                    label = String.format("%s %s : %s", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), label);
-                }
-                labels.add(label);
-                oneDay.setLabel(label);
+                String searchableLabel = (oneDay.getStudyBurstId() != null) ?
+                    String.format(":%s %s:Week %s:%s:", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneDay.getWeek(), oneDay.getSessionName()) :
+                    String.format(":Week %s:%s:", oneDay.getWeek(), oneDay.getSessionName());
+                String displayLabel = (oneDay.getStudyBurstId() != null) ?
+                        String.format("%s %s / Week %s / %s", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneDay.getWeek(), oneDay.getSessionName()) :
+                        String.format("Week %s / %s", oneDay.getWeek(), oneDay.getSessionName());
+                labels.add(searchableLabel);
+                oneDay.setLabel(displayLabel);
             }
         }
 
@@ -91,6 +93,7 @@ public class WeeklyAdherenceReportGenerator {
         report.setWeeklyAdherencePercent(percentage);
         report.setNextActivity(NextActivity.create(nextDay));
         report.setLabels(labels);
+        
         return report;
     }
     
