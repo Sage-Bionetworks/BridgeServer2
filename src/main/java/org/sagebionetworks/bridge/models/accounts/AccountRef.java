@@ -6,6 +6,8 @@ import java.util.Optional;
 
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
 /**
@@ -18,44 +20,68 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
         "orgMembership", "type" })
 public final class AccountRef {
     
-    private final Account account;
-    private final String studyId;
+    private String firstName;
+    private String lastName;
+    private String email;
+    private Phone phone;
+    private String synapseUserId;
+    private String orgMembership;
+    private String identifier;
+    private String externalId;
     
     public AccountRef(Account account) {
-        this.account = account;
-        this.studyId = null;
+        this.firstName = account.getFirstName();
+        this.lastName = account.getLastName();
+        this.email = account.getEmail();
+        this.phone = account.getPhone();
+        this.synapseUserId = account.getSynapseUserId();
+        this.orgMembership = account.getOrgMembership();
+        this.identifier = account.getId();
     }
+
     public AccountRef(Account account, String studyId) {
-        this.account = account;
-        this.studyId = studyId;
+        this(account);
+        Optional<Enrollment> optional = getElement(account.getActiveEnrollments(), Enrollment::getStudyId, studyId);
+        this.externalId = (optional.isPresent()) ? optional.get().getExternalId() : null;
+    }
+    
+    @JsonCreator
+    public AccountRef(@JsonProperty("firstName") String firstName, @JsonProperty("lastName") String lastName,
+            @JsonProperty("email") String email, @JsonProperty("phone") Phone phone,
+            @JsonProperty("synapseUserId") String synapseUserId, @JsonProperty("orgMembership") String orgMembership,
+            @JsonProperty("identifier") String identifier, @JsonProperty("externalId") String externalId) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.phone = phone;
+        this.synapseUserId = synapseUserId;
+        this.orgMembership = orgMembership;
+        this.identifier = identifier;
+        this.externalId = externalId;
     }
     
     public String getFirstName() {
-        return account.getFirstName();
+        return firstName;
     }
     public String getLastName() {
-        return account.getLastName();
+        return lastName;
     };
     public String getEmail() {
-        return account.getEmail();
+        return email;
     }
     public Phone getPhone() {
-        return account.getPhone();
+        return phone;
     }
     public String getSynapseUserId() {
-        return account.getSynapseUserId();
+        return synapseUserId;
     };
     public String getOrgMembership() {
-        return account.getOrgMembership();
+        return orgMembership;
     }
     public String getIdentifier() {
-        return account.getId();
+        return identifier;
     }
     public String getExternalId() {
-        if (studyId == null) {
-            return null;
-        }
-        Optional<Enrollment> optional = getElement(account.getActiveEnrollments(), Enrollment::getStudyId, studyId);
-        return (optional.isPresent()) ? optional.get().getExternalId() : null;
+        return externalId;
     }
 }

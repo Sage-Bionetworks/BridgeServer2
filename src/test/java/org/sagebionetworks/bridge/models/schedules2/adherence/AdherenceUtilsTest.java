@@ -15,7 +15,7 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNSTARTED;
 import static org.testng.Assert.assertEquals;
 
-import java.util.List;
+import java.util.Collection;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.TestConstants;
@@ -25,7 +25,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventS
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import com.newrelic.agent.deps.com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableList;
 
 public class AdherenceUtilsTest {
 
@@ -179,7 +179,7 @@ public class AdherenceUtilsTest {
     }
     
     @Test(dataProvider = "eventStreams")
-    public void calculateAdherencePercentage(int expectedPercent, List<EventStream> streams) {
+    public void calculateAdherencePercentage(int expectedPercent, Collection<EventStream> streams) {
         int retValue = AdherenceUtils.calculateAdherencePercentage(streams);
         assertEquals(retValue, expectedPercent);
     }

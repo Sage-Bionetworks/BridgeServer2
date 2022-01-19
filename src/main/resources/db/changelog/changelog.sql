@@ -866,3 +866,33 @@ ADD COLUMN `sessionName` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unic
 
 ALTER TABLE StudyContacts
 DROP COLUMN state;
+
+-- changeset bridge:59
+
+CREATE TABLE IF NOT EXISTS `WeeklyAdherenceReports` (
+  `appId` varchar(60) NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `userId` varchar(255) NOT NULL,
+  `participant` text NOT NULL,
+  `testAccount` tinyint(1) DEFAULT 0,
+  `clientTimeZone` varchar(255),
+  `createdOn` bigint(20) NOT NULL,
+  `weeklyAdherencePercent` int(3) signed,
+  `nextActivity` text,
+  `byDayEntries` mediumtext,
+  PRIMARY KEY (`appId`, `studyId`, `userId`),
+  FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `WeeklyAdherenceReportLabels` (
+  `appId` varchar(60) NOT NULL,
+  `studyId` varchar(60) NOT NULL,
+  `userId` varchar(255) NOT NULL,
+  `label` varchar(2048) NOT NULL,
+  PRIMARY KEY (`appId`, `studyId`, `userId`, `label`(255)),
+  KEY `WeeklyAdherenceReportLabels-Index` (`appId`, `studyId`, `userId`),
+  FOREIGN KEY (`userId`) REFERENCES `Accounts` (`id`) ON DELETE CASCADE,
+  FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
+

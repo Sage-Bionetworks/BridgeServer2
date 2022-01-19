@@ -1,6 +1,11 @@
 package org.sagebionetworks.bridge.services;
 
 import static java.lang.Boolean.TRUE;
+import static org.sagebionetworks.bridge.BridgeConstants.COMPLIANCE_UNDER_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_COUNT_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_LENGTH_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
@@ -12,6 +17,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_EXTERNAL_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.createEvent;
+import static org.sagebionetworks.bridge.models.AccountTestFilter.PRODUCTION;
 import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.ASSESSMENT_IDS;
 import static org.sagebionetworks.bridge.models.ResourceList.CURRENT_TIMESTAMPS_ONLY;
@@ -62,10 +68,11 @@ import org.mockito.Spy;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
+import org.thymeleaf.util.StringUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
+import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
@@ -93,7 +100,10 @@ public class AdherenceServiceTest extends Mockito {
     private static final DateTime EVENT_TS = CREATED_ON.minusWeeks(1);
 
     @Mock
-    AdherenceRecordDao mockDao;
+    AdherenceRecordDao mockRecordDao;
+    
+    @Mock
+    AdherenceReportDao mockReportDao;
     
     @Mock
     StudyService mockStudyService;
@@ -142,7 +152,7 @@ public class AdherenceServiceTest extends Mockito {
         
         service.updateAdherenceRecords(TEST_APP_ID, records);
         
-        verify(mockDao, times(3)).updateAdherenceRecord(recordCaptor.capture());
+        verify(mockRecordDao, times(3)).updateAdherenceRecord(recordCaptor.capture());
         assertEquals(recordCaptor.getAllValues().get(0).getInstanceGuid(), "AAA");
         assertEquals(recordCaptor.getAllValues().get(1).getInstanceGuid(), "BBB");
         assertEquals(recordCaptor.getAllValues().get(2).getInstanceGuid(), "sessionInstanceGuid");
@@ -186,8 +196,8 @@ public class AdherenceServiceTest extends Mockito {
         
         service.updateAdherenceRecords(TEST_APP_ID, list);
         
-        verify(mockDao).updateAdherenceRecord(list.getRecords().get(0));
-        verify(mockDao).updateAdherenceRecord(list.getRecords().get(1));
+        verify(mockRecordDao).updateAdherenceRecord(list.getRecords().get(0));
+        verify(mockRecordDao).updateAdherenceRecord(list.getRecords().get(1));
         verify(mockStudyActivityEventService, times(3)).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         
         StudyActivityEvent event = eventCaptor.getAllValues().get(2);
@@ -211,8 +221,8 @@ public class AdherenceServiceTest extends Mockito {
         
         service.updateAdherenceRecords(TEST_APP_ID, list);
         
-        verify(mockDao).updateAdherenceRecord(list.getRecords().get(0));
-        verify(mockDao).updateAdherenceRecord(list.getRecords().get(1));
+        verify(mockRecordDao).updateAdherenceRecord(list.getRecords().get(0));
+        verify(mockRecordDao).updateAdherenceRecord(list.getRecords().get(1));
         verify(mockStudyActivityEventService, times(1)).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         
         StudyActivityEvent event = eventCaptor.getValue();
@@ -281,7 +291,7 @@ public class AdherenceServiceTest extends Mockito {
         MetadataContainer container = new MetadataContainer(mockScheduleService, list.getRecords());
         service.updateSessionState(TEST_APP_ID, container, list.getRecords().get(0));
         
-        verify(mockDao, never()).updateAdherenceRecord(any());
+        verify(mockRecordDao, never()).updateAdherenceRecord(any());
         verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false), eq(true));
     }
     
@@ -506,7 +516,7 @@ public class AdherenceServiceTest extends Mockito {
         
         service.updateAdherenceRecords(TEST_APP_ID, list);
         
-        verify(mockDao, times(3)).updateAdherenceRecord(recordCaptor.capture());
+        verify(mockRecordDao, times(3)).updateAdherenceRecord(recordCaptor.capture());
         
         AdherenceRecord session = recordCaptor.getAllValues().get(2);
         assertEquals(session.getStartedOn(), STARTED_ON);
@@ -541,7 +551,7 @@ public class AdherenceServiceTest extends Mockito {
         
         List<AdherenceRecord> list = ImmutableList.of(mockAssessmentRecord("AAA"), mockAssessmentRecord("BBB"));
         PagedResourceList<AdherenceRecord> page = new PagedResourceList<AdherenceRecord>(list, 100);
-        when(mockDao.getAdherenceRecords(any())).thenReturn(page);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page);
         
         PagedResourceList<AdherenceRecord> retValue = service.getAdherenceRecords(TEST_APP_ID, search);
         assertSame(retValue, page);
@@ -565,7 +575,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(rp.get(PREDICATE), AND);
         assertEquals(rp.get(STRING_SEARCH_POSITION), INFIX);
         
-        verify(mockDao).getAdherenceRecords(searchCaptor.capture());
+        verify(mockRecordDao).getAdherenceRecords(searchCaptor.capture());
         AdherenceRecordsSearch adjSearch = searchCaptor.getValue();
         // verify that this was parsed
         assertEquals(adjSearch.getInstanceGuidStartedOnMap().get("AAA"), CREATED_ON);
@@ -689,7 +699,7 @@ public class AdherenceServiceTest extends Mockito {
         
         // Note that because we save the assessments, when we later query for them,
         // they are always present in this call.
-        when(mockDao.getAdherenceRecords(any()))
+        when(mockRecordDao.getAdherenceRecords(any()))
                 .thenReturn(new PagedResourceList<>(ImmutableList.of(asmt, session), 1, true));
         
         service.updateSessionState(TEST_APP_ID, container, asmt);
@@ -714,7 +724,7 @@ public class AdherenceServiceTest extends Mockito {
 
         service.deleteAdherenceRecord(record);
 
-        verify(mockDao).deleteAdherenceRecordPermanently(eq(record));
+        verify(mockRecordDao).deleteAdherenceRecordPermanently(eq(record));
         assertEquals(record.getInstanceTimestamp(), record.getStartedOn());
     }
 
@@ -731,7 +741,7 @@ public class AdherenceServiceTest extends Mockito {
 
         service.deleteAdherenceRecord(record);
 
-        verify(mockDao).deleteAdherenceRecordPermanently(eq(record));
+        verify(mockRecordDao).deleteAdherenceRecordPermanently(eq(record));
         assertEquals(record.getInstanceTimestamp(), record.getEventTimestamp());
     }
 
@@ -745,7 +755,7 @@ public class AdherenceServiceTest extends Mockito {
 
         service.deleteAdherenceRecord(record);
 
-        verifyZeroInteractions(mockDao);
+        verifyZeroInteractions(mockRecordDao);
         assertNull(record.getInstanceTimestamp());
     }
 
@@ -808,7 +818,7 @@ public class AdherenceServiceTest extends Mockito {
                 TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(events);
         
         PagedResourceList<AdherenceRecord> adherencePage = new PagedResourceList<>(ImmutableList.of(), 0);
-        when(mockDao.getAdherenceRecords(any())).thenReturn(adherencePage);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(adherencePage);
         
         EventStreamAdherenceReport report = service.getEventStreamAdherenceReport(
                 TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, EVENT_TS, TEST_CLIENT_TIME_ZONE, true);
@@ -817,7 +827,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(report.getAdherencePercent(), 100);
         assertTrue(report.isActiveOnly());
         
-        verify(mockDao).getAdherenceRecords(searchCaptor.capture());
+        verify(mockRecordDao).getAdherenceRecords(searchCaptor.capture());
         AdherenceRecordsSearch search = searchCaptor.getValue();
         assertTrue(search.getCurrentTimestampsOnly());
         assertTrue(search.getIncludeRepeats());
@@ -850,7 +860,7 @@ public class AdherenceServiceTest extends Mockito {
                 TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(page);
         
         PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
-        when(mockDao.getAdherenceRecords(any())).thenReturn(page2);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page2);
         
         WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
                 TEST_APP_ID, TEST_STUDY_ID, account);
@@ -867,6 +877,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(retValue.getParticipant().getPhone(), TestConstants.PHONE);
         assertEquals(retValue.getParticipant().getExternalId(), TEST_EXTERNAL_ID);
         
+        verify(mockReportDao).saveWeeklyAdherenceReport(retValue);
         // The contents of the weekly report are tested separately by testing the generator
     }
     
@@ -893,7 +904,7 @@ public class AdherenceServiceTest extends Mockito {
                 TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(page);
         
         PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
-        when(mockDao.getAdherenceRecords(any())).thenReturn(page2);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page2);
         
         WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
                 TEST_APP_ID, TEST_STUDY_ID, account);
@@ -905,7 +916,77 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(retValue.getWeeklyAdherencePercent(), 100);
         assertEquals(retValue.getParticipant().getIdentifier(), TEST_USER_ID);
         
+        verify(mockReportDao).saveWeeklyAdherenceReport(retValue);
         // The contents of the weekly report are tested separately by testing the generator
+    }
+    
+    @Test
+    public void getWeeklyAdherenceReports() {
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 2);
+        when(mockReportDao.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 75, 100, 50)).thenReturn(page);
+        
+        PagedResourceList<WeeklyAdherenceReport> retValue = service.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 75, 100, 50);
+        assertSame(retValue, page);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = NEGATIVE_OFFSET_ERROR)
+    public void getWeeklyAdherenceReports_offsetNegative() {
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 75, -1, 50);
+    }    
+
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
+    public void getWeeklyAdherenceReports_pageSizeTooSmall() {
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 75, 100, 1);
+    }    
+
+    @Test(expectedExceptions = BadRequestException.class, 
+            expectedExceptionsMessageRegExp = PAGE_SIZE_ERROR)
+    public void getWeeklyAdherenceReports_pageSizeTooLarge() {
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 75, 100, 300);
+    }
+    
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = LABEL_FILTER_COUNT_ERROR)
+    public void getWeeklyAdherenceReports_labelFilterTooManyEntries() {
+        List<String> labelFilter = new ArrayList<>();
+        for (int i=0; i < 52; i++) {
+            labelFilter.add("label");
+        }
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, labelFilter, 75, 50, 100);
+    }    
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = LABEL_FILTER_LENGTH_ERROR)
+    public void getWeeklyAdherenceReports_labelFilterTooLong() {
+        String tooLongString = StringUtils.randomAlphanumeric(101);
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of(tooLongString), 75, 50, 100);
+    }    
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = COMPLIANCE_UNDER_ERROR)
+    public void getWeeklyAdherenceReports_complianceTooSmall() {
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 0, 50, 100);
+    }    
+
+    @Test(expectedExceptions = BadRequestException.class,
+            expectedExceptionsMessageRegExp = COMPLIANCE_UNDER_ERROR)
+    public void getWeeklyAdherenceReports_complianceTooLarge() {
+        service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, ImmutableList.of("label"), 101, 50, 100);
+    }
+
+    @Test
+    public void getWeeklyAdherenceReports_defaults() {
+        PagedResourceList<WeeklyAdherenceReport> page = new PagedResourceList<>(ImmutableList.of(), 2);
+        when(mockReportDao.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, null, null, null, null)).thenReturn(page);
+        
+        PagedResourceList<WeeklyAdherenceReport> retValue = service.getWeeklyAdherenceReports(
+                TEST_APP_ID, TEST_STUDY_ID, PRODUCTION, null, null, null, null);
+        assertSame(retValue, page);
     }
     
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {
@@ -982,7 +1063,7 @@ public class AdherenceServiceTest extends Mockito {
             .thenReturn(Optional.of(sessMeta));
         
         PagedResourceList<AdherenceRecord> page = new PagedResourceList<>(records, records.size(), true);
-        when(mockDao.getAdherenceRecords(any())).thenReturn(page);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page);
         
         return new AdherenceRecordList(records);
     }

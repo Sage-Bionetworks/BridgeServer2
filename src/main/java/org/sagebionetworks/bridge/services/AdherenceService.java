@@ -5,6 +5,14 @@ import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.COMPLIANCE_UNDER_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_COUNT_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_LENGTH_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
 import static org.sagebionetworks.bridge.models.ResourceList.ASSESSMENT_IDS;
@@ -45,7 +53,9 @@ import org.springframework.stereotype.Component;
 
 import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
+import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.models.AccountTestFilter;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
@@ -73,7 +83,9 @@ import org.slf4j.LoggerFactory;
 public class AdherenceService {
     private static final Logger LOG = LoggerFactory.getLogger(AdherenceService.class);
 
-    private AdherenceRecordDao dao;
+    private AdherenceRecordDao recordDao;
+    
+    private AdherenceReportDao reportDao;
     
     private StudyService studyService;
 
@@ -82,10 +94,15 @@ public class AdherenceService {
     private Schedule2Service scheduleService;
     
     @Autowired
-    final void setAdherenceRecordDao(AdherenceRecordDao dao) {
-        this.dao = dao;
+    final void setAdherenceRecordDao(AdherenceRecordDao recordDao) {
+        this.recordDao = recordDao;
     }
 
+    @Autowired
+    final void setAdherenceReportDao(AdherenceReportDao reportDao) {
+        this.reportDao = reportDao;
+    }
+    
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
@@ -125,7 +142,7 @@ public class AdherenceService {
         // Update assessments
         for (AdherenceRecord record : container.getAssessments()) {
             TimelineMetadata meta = container.getMetadata(record.getInstanceGuid());
-            dao.updateAdherenceRecord(record);
+            recordDao.updateAdherenceRecord(record);
             publishEvent(appId, meta, record);
         }
         // Update sessions implied by assessments
@@ -135,7 +152,7 @@ public class AdherenceService {
         // Update sessions
         for (AdherenceRecord record : container.getSessionUpdates()) {
             TimelineMetadata sessionMeta = container.getMetadata(record.getInstanceGuid());
-            dao.updateAdherenceRecord(record);
+            recordDao.updateAdherenceRecord(record);
             publishEvent(appId, sessionMeta, record);
         }
     }
@@ -151,7 +168,7 @@ public class AdherenceService {
                 .collect(toSet());
         instanceGuids.add(sessionInstanceGuid);
         
-        PagedResourceList<AdherenceRecord> allRecords = dao.getAdherenceRecords(new AdherenceRecordsSearch.Builder()
+        PagedResourceList<AdherenceRecord> allRecords = recordDao.getAdherenceRecords(new AdherenceRecordsSearch.Builder()
                 .withUserId(asmt.getUserId())
                 .withStudyId(asmt.getStudyId())
                 .withEventTimestamps(ImmutableMap.of(asmtMeta.getSessionStartEventId(), asmt.getEventTimestamp()))
@@ -219,7 +236,7 @@ public class AdherenceService {
                 AuthEvaluatorField.STUDY_ID, search.getStudyId(), 
                 AuthEvaluatorField.USER_ID, search.getUserId());
         
-        return dao.getAdherenceRecords(search)
+        return recordDao.getAdherenceRecords(search)
                 .withRequestParam(ASSESSMENT_IDS, search.getAssessmentIds())
                 .withRequestParam(CURRENT_TIMESTAMPS_ONLY, search.getCurrentTimestampsOnly())
                 .withRequestParam(END_TIME, search.getEndTime())
@@ -321,7 +338,7 @@ public class AdherenceService {
                 record.setInstanceTimestamp(record.getEventTimestamp());
             }
 
-            dao.deleteAdherenceRecordPermanently(record);
+            recordDao.deleteAdherenceRecordPermanently(record);
         }
     }
     
@@ -383,10 +400,47 @@ public class AdherenceService {
         report.setStudyId(studyId);
         report.setUserId(account.getId());
         report.setParticipant(new AccountRef(account, studyId));
+        report.setTestAccount(account.getDataGroups().contains(TEST_USER_GROUP));
+        
+        reportDao.saveWeeklyAdherenceReport(report);
         
         watch.stop();
         LOG.info("Weekly adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return report;
+    }
+    
+    public PagedResourceList<WeeklyAdherenceReport> getWeeklyAdherenceReports(String appId, String studyId,
+            AccountTestFilter testFilter, List<String> labelFilter, Integer complianceUnder, Integer offsetBy, 
+            Integer pageSize) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(testFilter);
+        
+        if (offsetBy != null && offsetBy < 0) {
+            throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
+        }
+        if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
+            throw new BadRequestException(PAGE_SIZE_ERROR);
+        }
+        if (labelFilter != null) {
+            if (labelFilter.size() > 50) {
+                throw new BadRequestException(LABEL_FILTER_COUNT_ERROR);   
+            } else {
+                if (labelFilter.stream().anyMatch(oneLabel -> oneLabel.length() > 25)) {
+                    throw new BadRequestException(LABEL_FILTER_LENGTH_ERROR);   
+                }
+            }
+        }
+        if (complianceUnder != null && (complianceUnder < 1 ||  complianceUnder > 100)) {
+            throw new BadRequestException(COMPLIANCE_UNDER_ERROR);
+        }
+        return reportDao.getWeeklyAdherenceReports(
+                appId, studyId, testFilter, labelFilter, complianceUnder, offsetBy, pageSize)
+                .withRequestParam(PagedResourceList.TEST_FILTER, testFilter)
+                .withRequestParam(PagedResourceList.LABEL_FILTER, labelFilter)
+                .withRequestParam(PagedResourceList.COMPLIANCE_UNDER, complianceUnder)
+                .withRequestParam(PagedResourceList.OFFSET_BY, offsetBy)
+                .withRequestParam(PagedResourceList.PAGE_SIZE, pageSize);
     }
     
     private WeeklyAdherenceReport getWeeklyAdherenceReportInternal(String appId, String studyId, String userId,
