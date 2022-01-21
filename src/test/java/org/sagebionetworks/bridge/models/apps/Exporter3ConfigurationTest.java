@@ -13,6 +13,7 @@ public class Exporter3ConfigurationTest {
         // Make one that is configured.
         Exporter3Configuration config = new Exporter3Configuration();
         config.setDataAccessTeamId(1L);
+        config.setParticipantVersionTableId("test-table-id");
         config.setProjectId("test-project-id");
         config.setRawDataFolderId("test-folder-id");
         config.setStorageLocationId(2L);
@@ -22,6 +23,12 @@ public class Exporter3ConfigurationTest {
         config.setDataAccessTeamId(null);
         assertFalse(config.isConfigured());
         config.setDataAccessTeamId(1L);
+        assertTrue(config.isConfigured());
+
+        // Null participant version table ID.
+        config.setParticipantVersionTableId(null);
+        assertFalse(config.isConfigured());
+        config.setParticipantVersionTableId("test-table-id");
         assertTrue(config.isConfigured());
 
         // Null project ID.
