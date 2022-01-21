@@ -67,7 +67,6 @@ public class MySQLHibernatePersistenceExceptionConverter implements PersistenceE
 
     @Override
     public RuntimeException convert(PersistenceException exception, Object entity) {
-        exception.printStackTrace();
         String name = (entity == null) ? "item" : getTypeName(entity.getClass());
         
         if (exception instanceof OptimisticLockException) {
