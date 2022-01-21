@@ -88,7 +88,14 @@ public class AccountRefTest {
         assertEquals(node.size(), 8);
         assertNull(node.get("externalId"));
         
-        // This reference object is never deserialized on the server.
+        ref = BridgeObjectMapper.get().readValue(node.toString(), AccountRef.class);
+        assertEquals(ref.getFirstName(), "firstName");
+        assertEquals(ref.getLastName(), "lastName");
+        assertEquals(ref.getEmail(), EMAIL);
+        assertEquals(ref.getPhone(), PHONE);
+        assertEquals(ref.getSynapseUserId(), "synapseUserId");
+        assertEquals(ref.getOrgMembership(), TEST_ORG_ID);
+        assertEquals(ref.getIdentifier(), TEST_USER_ID);
     }
 
 }

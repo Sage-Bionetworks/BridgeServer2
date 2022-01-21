@@ -29,6 +29,7 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     private String appId;
     private String studyId;
     private String healthCode;
+    private Integer participantVersion;
     private Long createdOn;
     private String clientInfo;
     private boolean exported;
@@ -108,6 +109,16 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     @Override
     public void setHealthCode(String healthCode) {
         this.healthCode = healthCode;
+    }
+
+    @Override
+    public Integer getParticipantVersion() {
+        return participantVersion;
+    }
+
+    @Override
+    public void setParticipantVersion(Integer participantVersion) {
+        this.participantVersion = participantVersion;
     }
 
     @DynamoDBIndexRangeKey(attributeName = "createdOn", globalSecondaryIndexNames = { APPID_CREATEDON_INDEX,

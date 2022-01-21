@@ -20,6 +20,7 @@ import org.testng.annotations.Test;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 public class WeeklyAdherenceReportGeneratorTest extends Mockito {
     
@@ -28,6 +29,10 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         AdherenceState state = TestUtils.getAdherenceStateBuilder().build();
         WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(state);
 
+        // Because these are different from what is serialized in the JSON, test them here.
+        assertEquals(report.getLabels(), ImmutableSet.of(":Week 1:session3:", 
+                ":Week 2:session1:", ":burst 2:Week 1:session2:"));
+        
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
         assertEquals(node.get("createdOn").textValue(), 
                 ADHERENCE_STATE_NOW.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)).toString());
@@ -38,7 +43,7 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         ArrayNode entry1 = (ArrayNode)node.get("byDayEntries").get("0");
         assertEquals(entry1.size(), 1);
         JsonNode dayNode1 = entry1.get(0);
-        assertEquals(dayNode1.get("label").textValue(), "Week 2 : session1");
+        assertEquals(dayNode1.get("label").textValue(), "Week 2 / session1");
         assertEquals(dayNode1.get("sessionGuid").textValue(), "guid1");
         assertEquals(dayNode1.get("sessionName").textValue(), "session1");
         assertEquals(dayNode1.get("sessionSymbol").textValue(), "1");
@@ -55,7 +60,7 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         ArrayNode entry2 = (ArrayNode)node.get("byDayEntries").get("2");
         assertEquals(entry2.size(), 1);
         JsonNode dayNode2 = entry2.get(0);
-        assertEquals(dayNode2.get("label").textValue(), "burst 2 : Week 1 : session2");
+        assertEquals(dayNode2.get("label").textValue(), "burst 2 / Week 1 / session2");
         assertEquals(dayNode2.get("sessionGuid").textValue(), "guid2");
         assertEquals(dayNode2.get("sessionName").textValue(), "session2");
         assertEquals(dayNode2.get("sessionSymbol").textValue(), "2");
@@ -74,7 +79,7 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         JsonNode entry3 = (ArrayNode)node.get("byDayEntries").get("3");
         assertEquals(entry3.size(), 1);
         JsonNode dayNode3 = entry3.get(0);
-        assertEquals(dayNode3.get("label").textValue(), "Week 1 : session3");
+        assertEquals(dayNode3.get("label").textValue(), "Week 1 / session3");
         assertEquals(dayNode3.get("sessionGuid").textValue(), "guid3");
         assertEquals(dayNode3.get("sessionName").textValue(), "session3");
         assertEquals(dayNode3.get("sessionSymbol").textValue(), "3");

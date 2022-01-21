@@ -12,6 +12,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 
 public class BridgeConstants {
+    public static final String CONFIG_KEY_WORKER_SQS_URL = "workerPlatform.request.sqs.queue.url";
     public static final String EXTERNAL_ID_NONE = "<none>";
 
     // Excessively long User-Agent strings break the database and generally aren't parseable anyway.
@@ -144,6 +145,12 @@ public class BridgeConstants {
     public static final int API_MAXIMUM_PAGE_SIZE = 100;
     
     public static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
+    
+    public static final String LABEL_FILTER_COUNT_ERROR = "labelFilter cannot have over 50 entries";
+    
+    public static final String LABEL_FILTER_LENGTH_ERROR = "labelFilter cannot be over 100 characters";
+    
+    public static final String COMPLIANCE_UNDER_ERROR = "complianceUnder percentage must be from 1-100";
     
     public static final String TEST_USER_GROUP = "test_user";
     
