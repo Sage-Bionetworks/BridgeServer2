@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
@@ -43,7 +44,6 @@ import org.mockito.Spy;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
@@ -510,5 +510,31 @@ public class StudyControllerTest extends Mockito {
         controller.withdrawn(TEST_STUDY_ID);
         
         verify(mockStudyService).transitionToWithdrawn(TEST_APP_ID, TEST_STUDY_ID);
+    }
+    
+    @Test
+    public void getAppStudiesForWorker() {
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+        
+        PagedResourceList<Study> page = new PagedResourceList<>(ImmutableList.of(), 100);
+        when(mockStudyService.getStudies(TEST_APP_ID, 20, 100, true)).thenReturn(page);
+        
+        PagedResourceList<Study> retValue = controller.getAppStudiesForWorker(TEST_APP_ID, "20", "100", "true");
+        assertSame(retValue, page);
+        
+        verify(mockStudyService).getStudies(TEST_APP_ID, 20, 100, true);
+    }
+
+    @Test
+    public void getAppStudiesForWorker_defaults() {
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+        
+        PagedResourceList<Study> page = new PagedResourceList<>(ImmutableList.of(), 100);
+        when(mockStudyService.getStudies(TEST_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false)).thenReturn(page);
+        
+        PagedResourceList<Study> retValue = controller.getAppStudiesForWorker(TEST_APP_ID, null, null, null);
+        assertSame(retValue, page);
+        
+        verify(mockStudyService).getStudies(TEST_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false);
     }
 }

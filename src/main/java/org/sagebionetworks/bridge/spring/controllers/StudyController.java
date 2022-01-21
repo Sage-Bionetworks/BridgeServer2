@@ -191,7 +191,7 @@ public class StudyController extends BaseController {
     public PagedResourceList<Study> getAppStudiesForWorker(@PathVariable String appId,
             @RequestParam(required = false) String offsetBy, 
             @RequestParam(required = false) String pageSize,
-            @RequestParam(required = false) String includeDeleted) throws JsonProcessingException {
+            @RequestParam(required = false) String includeDeleted) {
         getAuthenticatedSession(WORKER);
         
         int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);

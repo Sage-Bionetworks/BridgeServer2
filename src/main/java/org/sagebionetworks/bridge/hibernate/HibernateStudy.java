@@ -131,7 +131,7 @@ public class HibernateStudy implements Study {
      */
     public HibernateStudy(String name, String identifier, String appId, 
             DateTime createdOn, DateTime modifiedOn, boolean deleted, 
-            StudyPhase phase, String logoURL, Long version) {
+            StudyPhase phase, String logoURL, Long version, String scheduleGuid) {
         this.name = name;
         this.identifier = identifier;
         this.appId = appId;
@@ -141,6 +141,7 @@ public class HibernateStudy implements Study {
         this.modifiedOn = modifiedOn;
         this.studyLogoUrl = logoURL;
         this.version = version;
+        this.scheduleGuid = scheduleGuid;
     }
     
     @Override

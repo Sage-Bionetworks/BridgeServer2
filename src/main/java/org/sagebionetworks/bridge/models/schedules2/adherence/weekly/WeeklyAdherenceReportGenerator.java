@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
