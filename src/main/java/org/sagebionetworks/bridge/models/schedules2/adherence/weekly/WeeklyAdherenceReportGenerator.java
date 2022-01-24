@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -66,9 +67,13 @@ public class WeeklyAdherenceReportGenerator {
                 finalReport.addEntry(dayOfWeek, oneDay);   
             }
         }
+        
+        // The report is now entirely sparse, which is an issue. We're going to iterate through all of it
+        // and determine the full set of rows that are present, but then we need to fill the report in.
 
         // Add labels. The labels are colon-separated here to facilitate string searches on the labels.
-        Set<String> labels = new TreeSet<>();
+        Set<String> labels = new LinkedHashSet<>();
+        Set<WeeklyAdherenceReportRow> rows = new LinkedHashSet<>();
         for (List<EventStreamDay> days : finalReport.getByDayEntries().values()) {
             for (EventStreamDay oneDay : days) {
                 String searchableLabel = (oneDay.getStudyBurstId() != null) ?
@@ -78,10 +83,41 @@ public class WeeklyAdherenceReportGenerator {
                         String.format("%s %s / Week %s / %s", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneDay.getWeek(), oneDay.getSessionName()) :
                         String.format("Week %s / %s", oneDay.getWeek(), oneDay.getSessionName());
                 labels.add(searchableLabel);
-                oneDay.setLabel(displayLabel);
+                
+                WeeklyAdherenceReportRow row = new WeeklyAdherenceReportRow(); 
+                row.setLabel(displayLabel);
+                row.setSearchableLabel(searchableLabel);
+                row.setSessionGuid(oneDay.getSessionGuid());
+                row.setSessionName(oneDay.getSessionName());
+                row.setSessionSymbol(oneDay.getSessionSymbol());
+                row.setStudyBurstId(oneDay.getStudyBurstId());
+                row.setStudyBurstNum(oneDay.getStudyBurstNum());
+                row.setWeek(oneDay.getWeek());
+                
+                // Do not repeat these in the day-by-day entries.
+                oneDay.setSessionName(null);
+                oneDay.setSessionSymbol(null);
+                oneDay.setStudyBurstId(null);
+                oneDay.setStudyBurstNum(null);
+                oneDay.setWeek(null);
+                rows.add(row);
             }
         }
-
+        
+        // Now pad the report to fix the number and position of the row entries, so the rows
+        // can be read straight through in any UI of the report. We had two UIs run into serious
+        // problems because this report was initially sparse.
+        for (int i=0; i < 7; i++) { // day of week
+            List<EventStreamDay> paddedDays = new ArrayList<>();
+            
+            for (WeeklyAdherenceReportRow row : rows) {
+                List<EventStreamDay> days = finalReport.getByDayEntries().get(i);
+                EventStreamDay oneDay = padEventStreamDay(days, row.getSessionGuid());
+                paddedDays.add(oneDay);
+            }
+            finalReport.getByDayEntries().put(i, paddedDays);
+        }
+        
         // If the report is empty, then we seek ahead and store information on the next activity
         EventStreamDay nextDay = getNextActivity(state, finalReport, reports);
         int percentage = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(finalReport));
@@ -92,9 +128,22 @@ public class WeeklyAdherenceReportGenerator {
         report.setClientTimeZone(state.getClientTimeZone());
         report.setWeeklyAdherencePercent(percentage);
         report.setNextActivity(NextActivity.create(nextDay));
-        report.setLabels(labels);
+        report.setLabels(labels); // REMOVEME
+        report.setRows(ImmutableList.copyOf(rows));
         
         return report;
+    }
+    
+    private EventStreamDay padEventStreamDay(List<EventStreamDay> days, String sessionGuid) {
+        if (days != null) {
+            Optional<EventStreamDay> oneDay = days.stream()
+                    .filter(day -> day.getSessionGuid().equals(sessionGuid))
+                    .findFirst();
+            if (oneDay.isPresent()) {
+                return oneDay.get();
+            }
+        }
+        return new EventStreamDay();
     }
     
     private EventStreamDay getNextActivity(AdherenceState state, EventStream finalReport, EventStreamAdherenceReport reports) {

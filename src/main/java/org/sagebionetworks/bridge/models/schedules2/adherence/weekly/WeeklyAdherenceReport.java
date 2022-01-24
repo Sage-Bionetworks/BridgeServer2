@@ -15,6 +15,7 @@ import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
 import javax.persistence.Table;
+import javax.persistence.Transient;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -22,6 +23,7 @@ import org.sagebionetworks.bridge.hibernate.AccountRefConverter;
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.EventStreamDayMapConverter;
 import org.sagebionetworks.bridge.hibernate.NextActivityConverter;
+import org.sagebionetworks.bridge.hibernate.WeeklyAdherenceReportRowListConverter;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
@@ -34,7 +36,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Entity
 @Table(name = "WeeklyAdherenceReports")
 @IdClass(WeeklyAdherenceReportId.class)
-@JsonPropertyOrder({ "participant", "rowLabels", "weeklyAdherencePercent", "clientTimeZone", "createdOn",
+@JsonPropertyOrder({ "participant", "rowLabels", "rows", "weeklyAdherencePercent", "clientTimeZone", "createdOn",
         "byDayEntries", "type" })
 public class WeeklyAdherenceReport {
     
@@ -55,13 +57,13 @@ public class WeeklyAdherenceReport {
     private NextActivity nextActivity;
     @Convert(converter = EventStreamDayMapConverter.class)
     private Map<Integer, List<EventStreamDay>> byDayEntries;
-    
     @CollectionTable(name = "WeeklyAdherenceReportLabels", joinColumns = {
-        @JoinColumn(name = "appId"), @JoinColumn(name = "studyId"), @JoinColumn(name = "userId") 
-    })
+        @JoinColumn(name = "appId"), @JoinColumn(name = "studyId"), @JoinColumn(name = "userId")})
     @Column(name = "label")
     @ElementCollection(fetch = FetchType.EAGER)
     private Set<String> labels;
+    @Convert(converter = WeeklyAdherenceReportRowListConverter.class)
+    List<WeeklyAdherenceReportRow> rows;
     
     public WeeklyAdherenceReport() {
         byDayEntries = new HashMap<>();    
@@ -132,12 +134,18 @@ public class WeeklyAdherenceReport {
     public void setNextActivity(NextActivity nextActivity) {
         this.nextActivity = nextActivity;
     }
-    @JsonProperty("rowLabels")
+    @JsonIgnore
     public Set<String> getLabels() {
         return labels;
     }
     public void setLabels(Set<String> labels) {
         this.labels = labels;
+    }
+    public List<WeeklyAdherenceReportRow> getRows() {
+        return rows;
+    }
+    public void setRows(List<WeeklyAdherenceReportRow> rows) {
+        this.rows = rows;
     }
 }
 

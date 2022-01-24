@@ -896,3 +896,7 @@ CREATE TABLE IF NOT EXISTS `WeeklyAdherenceReportLabels` (
   FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+-- changeset bridge:60
+
+ALTER TABLE `WeeklyAdherenceReports`
+ADD COLUMN `rows` mediumtext;

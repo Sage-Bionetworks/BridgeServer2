@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.eventstream;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.joda.time.LocalDate;
 
@@ -89,5 +90,26 @@ public class EventStreamDay {
     }
     public void setLabel(String label) {
         this.label = label;
+    }
+    @Override
+    public int hashCode() {
+        return Objects.hash(label, sessionGuid, sessionName, sessionSymbol, startDate, startDay, studyBurstId,
+                studyBurstNum, timeWindows, week);
+    }
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        EventStreamDay other = (EventStreamDay) obj;
+        return Objects.equals(label, other.label) && Objects.equals(sessionGuid, other.sessionGuid)
+                && Objects.equals(sessionName, other.sessionName) && Objects.equals(sessionSymbol, other.sessionSymbol)
+                && Objects.equals(startDate, other.startDate) && Objects.equals(startDay, other.startDay)
+                && Objects.equals(studyBurstId, other.studyBurstId)
+                && Objects.equals(studyBurstNum, other.studyBurstNum) && Objects.equals(timeWindows, other.timeWindows)
+                && Objects.equals(week, other.week);
     }
 }
