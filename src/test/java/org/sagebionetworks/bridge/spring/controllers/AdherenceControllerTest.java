@@ -615,6 +615,13 @@ public class AdherenceControllerTest extends Mockito {
         verify(mockService).getWeeklyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
     }
     
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getWeeklyAdherenceReportForWorker_rejectsNonWorker() {
+        doThrow(new UnauthorizedException()).when(controller).getAuthenticatedSession(WORKER);
+        
+        controller.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);    
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getWeeklyAdherenceReportForWorker_accountNotFound() {
         doReturn(session).when(controller).getAuthenticatedSession(WORKER);

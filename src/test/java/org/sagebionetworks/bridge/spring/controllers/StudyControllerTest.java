@@ -537,4 +537,11 @@ public class StudyControllerTest extends Mockito {
         
         verify(mockStudyService).getStudies(TEST_APP_ID, 0, API_DEFAULT_PAGE_SIZE, false);
     }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getAppStudiesForWorker_rejectsNonWorker() { 
+        doThrow(new UnauthorizedException()).when(controller).getAuthenticatedSession(WORKER);
+            
+        controller.getAppStudiesForWorker(TEST_APP_ID, null, null, null);
+    }
 }
