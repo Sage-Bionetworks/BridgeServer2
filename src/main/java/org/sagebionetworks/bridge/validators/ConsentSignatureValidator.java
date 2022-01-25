@@ -20,6 +20,9 @@ public class ConsentSignatureValidator implements Validator {
     private static final String TOO_YOUNG = "too recent (the study requires participants to be %s years of age or older).";
     private static final String CANNOT_BE_BLANK = "cannot be missing, null, or blank";
     private static final String CANNOT_BE_EMPTY_STRING = "cannot be an empty string";
+
+    private static final int LEAP_YEAR_MONTH = 2;
+    private static final int LEAP_YEAR_DAY = 29;
     
     private final int minAgeOfConsent;
 
@@ -54,6 +57,15 @@ public class ConsentSignatureValidator implements Validator {
                 Period period = new Period(birthdate, now);
 
                 if (period.getYears() < minAgeOfConsent) {
+                    String message = String.format(TOO_YOUNG, minAgeOfConsent);
+                    errors.rejectValue("birthdate", message);
+                }
+
+                // Handle participants' birthdays on 2/29 of a leap year.
+                if (period.getYears() == minAgeOfConsent && now.getMonthOfYear() == LEAP_YEAR_MONTH &&
+                        birthdate.getMonthOfYear() == LEAP_YEAR_MONTH &&
+                        birthdate.getDayOfMonth() == LEAP_YEAR_DAY)
+                {
                     String message = String.format(TOO_YOUNG, minAgeOfConsent);
                     errors.rejectValue("birthdate", message);
                 }
