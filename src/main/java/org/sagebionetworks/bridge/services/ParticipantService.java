@@ -12,11 +12,15 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CANNOT_ACCESS_PARTICIPANTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_DOWNLOAD_PARTICIPANT_ROSTER;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.addToSet;
 import static org.sagebionetworks.bridge.BridgeUtils.studyAssociationsVisibleToCaller;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.CAN_BE_EDITED_BY;
+import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.dao.AccountDao.MIGRATION_VERSION;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.UNVERIFIED;
@@ -40,6 +44,7 @@ import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -54,6 +59,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.sagebionetworks.bridge.AuthEvaluatorField;
+import org.sagebionetworks.bridge.AuthUtils;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.BridgeUtils.StudyAssociations;
@@ -963,9 +970,12 @@ public class ParticipantService {
     public void requestParticipantRoster(App app, String userId, ParticipantRosterRequest request) throws JsonProcessingException {
         Validate.entityThrowingException(ParticipantRosterRequestValidator.INSTANCE, request);
 
+        // the worker cannot report back errors, so check all its preconditions here.
+        CAN_DOWNLOAD_PARTICIPANT_ROSTER.checkAndThrow(STUDY_ID, request.getStudyId());
+        
         StudyParticipant participant = getParticipant(app, userId, false);
         if (participant.getEmail() == null || !TRUE.equals(participant.getEmailVerified())) {
-            throw new BadRequestException("A valid email address is required to send the requested participant roster.");
+            throw new BadRequestException("Participant roster requestor must have a valid email address.");
         }
 
         ObjectMapper jsonObjectMapper = BridgeObjectMapper.get();

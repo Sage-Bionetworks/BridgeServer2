@@ -2584,6 +2584,46 @@ public class ParticipantServiceTest extends Mockito {
         participantService.requestParticipantRoster(APP, TEST_USER_ID, request);
     }
     
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void requestParticipantRoster_unauthorized() throws JsonProcessingException { 
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(WORKER)).build());
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
+
+        participantService.requestParticipantRoster(APP, TEST_USER_ID, request);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void requestParticipantRoster_notStudyCoordinatorNoStudyAccess() throws JsonProcessingException {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of("study1", "study2")).build());
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
+
+        participantService.requestParticipantRoster(APP, TEST_USER_ID, request);
+    }
+    
+    @Test
+    public void requestParticipantRoster_studyCoordinatorWorks() throws JsonProcessingException {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(STUDY_ID)).build());
+        account.setEmail(EMAIL);
+        account.setEmailVerified(TRUE);
+        when(accountService.getAccount(any())).thenReturn(Optional.of(account));
+        
+        when(sqsClient.sendMessage(any(), any())).thenReturn(mock(SendMessageResult.class));
+
+        ParticipantRosterRequest request = new ParticipantRosterRequest.Builder().withPassword(PASSWORD).withStudyId(STUDY_ID).build();
+
+        participantService.requestParticipantRoster(APP, TEST_USER_ID, request);
+        
+        verify(sqsClient).sendMessage(any(), any());
+    }
+    
     @Test
     public void updateParticipantNoteSuccessfulAsAdmin() {
         // RESEARCHER role set in Before method

@@ -6,6 +6,7 @@ import static org.sagebionetworks.bridge.AuthEvaluatorField.OWNER_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_DOWNLOAD_PARTICIPANT_ROSTER;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_ASSESSMENTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_SHARED_ASSESSMENTS;
@@ -1044,6 +1045,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canEditOtherEnrollments_studyDesignerWithStudyAccessSucceeds() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
@@ -1054,6 +1056,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canEditOtherEnrollments_studyDesignerWithoutStudyAccessFails() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_DESIGNER))
                 .build());
 
@@ -1063,6 +1066,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canEditOtherEnrollments_studyCoordinatorWithStudyAccessSucceeds() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
                 .build());
@@ -1073,6 +1077,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canEditOtherEnrollments_studyCoordinatorWithoutStudyAccessFails() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
                 .build());
 
@@ -1082,6 +1087,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canEditOtherEnrollments_adminSucceeds() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(ADMIN))
                 .build());
 
@@ -1091,6 +1097,7 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canEditOtherEnrollments_researcherSucceeds() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(RESEARCHER))
                 .build());
 
@@ -1100,12 +1107,65 @@ public class AuthUtilsTest extends Mockito {
     @Test
     public void canEditOtherEnrollments_developerSucceeds() {
         RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
                 .withCallerRoles(ImmutableSet.of(DEVELOPER))
                 .build());
 
         assertTrue(CAN_EDIT_OTHER_ENROLLMENTS.check(STUDY_ID, TEST_STUDY_ID, USER_ID, TEST_USER_ID));
     }
     
+    @Test
+    public void canDownloadParticipantRoster_researcherSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(RESEARCHER))
+                .build());
+
+        assertTrue(CAN_DOWNLOAD_PARTICIPANT_ROSTER.check(STUDY_ID, null));
+    }
+
+    @Test
+    public void canDownloadParticipantRoster_adminSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(ADMIN))
+                .build());
+
+        assertTrue(CAN_DOWNLOAD_PARTICIPANT_ROSTER.check(STUDY_ID, null));
+    }
+
+    @Test
+    public void canDownloadParticipantRoster_superadminSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(SUPERADMIN))
+                .build());
+
+        assertTrue(CAN_DOWNLOAD_PARTICIPANT_ROSTER.check(STUDY_ID, null));
+    }
+
+    @Test
+    public void canDownloadParticipantRoster_studyCoordinatorSucceeds() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .build());
+
+        assertTrue(CAN_DOWNLOAD_PARTICIPANT_ROSTER.check(STUDY_ID, TEST_STUDY_ID));
+    }
+
+    @Test
+    public void canDownloadParticipantRoster_studyCoordinatorFails() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .withOrgSponsoredStudies(ImmutableSet.of("another-study"))
+                .build());
+
+        assertFalse(CAN_DOWNLOAD_PARTICIPANT_ROSTER.check(STUDY_ID, TEST_STUDY_ID));
+    }
+
     @Test
     public void canAccessAdherenceData_participantSucceeds() {
         RequestContext.set(new RequestContext.Builder()

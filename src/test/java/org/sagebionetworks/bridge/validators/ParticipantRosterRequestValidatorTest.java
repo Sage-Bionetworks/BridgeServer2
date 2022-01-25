@@ -18,15 +18,6 @@ public class ParticipantRosterRequestValidatorTest {
     public static final String STUDY_ID = "test-study-id";
 
     @Test
-    public void validPasswordNoStudyId() throws Exception {
-        ParticipantRosterRequest request = createRequest("{\n" +
-                "   \"password\":\"" + PASSWORD + "\",\n" +
-                "   \"studyId\":\"\"\n" +
-                "}");
-        Validate.entityThrowingException(ParticipantRosterRequestValidator.INSTANCE, request);
-    }
-
-    @Test
     public void validPasswordAndStudyId() throws Exception {
         ParticipantRosterRequest request = createRequest("{\n" +
                 "   \"password\":\"" + PASSWORD + "\",\n" +
@@ -87,6 +78,23 @@ public class ParticipantRosterRequestValidatorTest {
                 "   \"studyId\":\"" + STUDY_ID + "\"\n" +
                 "}");
         assertValidatorMessage(ParticipantRosterRequestValidator.INSTANCE, request, "password", "must contain at least one uppercase letter (A-Z)");
+    }
+    
+    @Test
+    public void blankStudyId() throws Exception {
+        ParticipantRosterRequest request = createRequest("{\n" +
+                "   \"password\":\"" + PASSWORD + "\",\n" +
+                "   \"studyId\":\"\"\n" +
+                "}");
+        assertValidatorMessage(ParticipantRosterRequestValidator.INSTANCE, request, "studyId", "cannot be null or blank");
+    }
+
+    @Test
+    public void nullStudyId() throws Exception {
+        ParticipantRosterRequest request = createRequest("{\n" +
+                "   \"password\":\"" + PASSWORD + "\"" +
+                "}");
+        assertValidatorMessage(ParticipantRosterRequestValidator.INSTANCE, request, "studyId", "cannot be null or blank");
     }
 
     private ParticipantRosterRequest createRequest(String json) throws Exception {

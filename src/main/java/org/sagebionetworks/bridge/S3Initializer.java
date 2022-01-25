@@ -116,6 +116,7 @@ public class S3Initializer {
             .put("usersigned.consents.bucket", BucketType.INTERNAL)
             .put("participant-file.bucket", BucketType.INTERNAL)
             .put("docs.bucket", BucketType.PUBLIC_ACCESSIBLE)
+            .put("participantroster.bucket", BucketType.INTERNAL)
             .build();
     
     // Accessor so we can mock this list of buckets
