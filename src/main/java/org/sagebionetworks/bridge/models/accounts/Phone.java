@@ -31,7 +31,9 @@ public final class Phone {
     }
     
     private static final PhoneNumberUtil PHONE_UTIL = PhoneNumberUtil.getInstance();
+    @Column(name="phone", length=20)
     private String number;
+    @Column(name="phoneRegion", length=2)
     private String regionCode;
     
     // For Hibernate. 

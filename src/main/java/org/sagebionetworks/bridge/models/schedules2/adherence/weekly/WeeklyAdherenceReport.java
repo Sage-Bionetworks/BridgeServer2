@@ -9,6 +9,7 @@ import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.ElementCollection;
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
@@ -46,7 +47,7 @@ public class WeeklyAdherenceReport {
     private String studyId;
     @Id
     private String userId;
-    @Convert(converter = AccountRefConverter.class)
+    @Embedded
     private AccountRef participant;
     private boolean testAccount;
     private String clientTimeZone;
