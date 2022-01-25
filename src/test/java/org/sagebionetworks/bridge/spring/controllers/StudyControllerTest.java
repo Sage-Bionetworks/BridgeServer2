@@ -517,12 +517,12 @@ public class StudyControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         
         PagedResourceList<Study> page = new PagedResourceList<>(ImmutableList.of(), 100);
-        when(mockStudyService.getStudies(TEST_APP_ID, 20, 100, true)).thenReturn(page);
+        when(mockStudyService.getStudies(TEST_APP_ID, 20, 70, true)).thenReturn(page);
         
-        PagedResourceList<Study> retValue = controller.getAppStudiesForWorker(TEST_APP_ID, "20", "100", "true");
+        PagedResourceList<Study> retValue = controller.getAppStudiesForWorker(TEST_APP_ID, "20", "70", "true");
         assertSame(retValue, page);
         
-        verify(mockStudyService).getStudies(TEST_APP_ID, 20, 100, true);
+        verify(mockStudyService).getStudies(TEST_APP_ID, 20, 70, true);
     }
 
     @Test
