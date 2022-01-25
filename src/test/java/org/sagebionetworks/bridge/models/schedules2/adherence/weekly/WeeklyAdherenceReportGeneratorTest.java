@@ -8,6 +8,9 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
+import java.time.LocalDate;
+
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.TestUtils;
@@ -25,6 +28,16 @@ import com.google.common.collect.ImmutableSet;
 public class WeeklyAdherenceReportGeneratorTest extends Mockito {
     
     @Test
+    public void main() {
+        int minAgeOfConsent = 18;
+        LocalDate birthday = LocalDate.parse("2004-01-24");
+        LocalDate today = LocalDate.now();
+        boolean oldEnough = birthday.plusYears(minAgeOfConsent).isBefore(today) || 
+                birthday.plusYears(minAgeOfConsent).isEqual(today);
+        assertTrue(oldEnough);
+    }
+    
+    @Test
     public void canSerialize() throws Exception { 
         AdherenceState state = TestUtils.getAdherenceStateBuilder().build();
         WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(state);
@@ -38,10 +51,10 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
                 ADHERENCE_STATE_NOW.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)).toString());
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
         assertEquals(node.get("weeklyAdherencePercent").intValue(), 33);
-        assertEquals(node.get("byDayEntries").size(), 3);
+        assertEquals(node.get("byDayEntries").size(), 7);
         
         ArrayNode entry1 = (ArrayNode)node.get("byDayEntries").get("0");
-        assertEquals(entry1.size(), 1);
+        assertEquals(entry1.size(), 3);
         JsonNode dayNode1 = entry1.get(0);
         assertEquals(dayNode1.get("label").textValue(), "Week 2 / session1");
         assertEquals(dayNode1.get("sessionGuid").textValue(), "guid1");

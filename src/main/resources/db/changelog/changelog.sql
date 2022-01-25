@@ -899,7 +899,7 @@ CREATE TABLE IF NOT EXISTS `WeeklyAdherenceReportLabels` (
 -- changeset bridge:60
 
 ALTER TABLE `WeeklyAdherenceReports`
-DROP COLUMN `particpant`,
+DROP COLUMN `participant`,
 ADD COLUMN `rows` mediumtext,
 ADD COLUMN `identifier` varchar(255),
 ADD COLUMN `firstName` varchar(255),

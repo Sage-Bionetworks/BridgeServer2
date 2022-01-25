@@ -34,6 +34,10 @@ public final class AccountRef {
     private String identifier;
     private String externalId;
     
+    // Default constructor for Hibernate
+    AccountRef() {
+    }
+    
     public AccountRef(Account account) {
         this.firstName = account.getFirstName();
         this.lastName = account.getLastName();

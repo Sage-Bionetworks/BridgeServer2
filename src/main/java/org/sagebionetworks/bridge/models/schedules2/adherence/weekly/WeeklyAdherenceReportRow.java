@@ -6,7 +6,7 @@ import java.util.Objects;
  * A substantial amount of metadata is moved from being repeated in the EventStreamDay element
  * to a separate row metdata element, which helps in UI tools to lay out the report.
  */
-public class WeeklyAdherenceReportRow {
+public final class WeeklyAdherenceReportRow {
     private String label;
     private String searchableLabel;
     private String sessionGuid;
@@ -43,8 +43,8 @@ public class WeeklyAdherenceReportRow {
     public String getSessionSymbol() {
         return sessionSymbol;
     }
-    public void setSessionSymbol(String sesionSymbol) {
-        this.sessionSymbol = sesionSymbol;
+    public void setSessionSymbol(String sessionSymbol) {
+        this.sessionSymbol = sessionSymbol;
     }
     public Integer getWeek() {
         return week;
@@ -66,7 +66,8 @@ public class WeeklyAdherenceReportRow {
     }
     @Override
     public int hashCode() {
-        return Objects.hash(label, sessionGuid, sessionName, sessionSymbol, studyBurstId, studyBurstNum, week);
+        return Objects.hash(label, searchableLabel, sessionGuid, sessionName, sessionSymbol, studyBurstId,
+                studyBurstNum, week);
     }
     @Override
     public boolean equals(Object obj) {
@@ -77,8 +78,9 @@ public class WeeklyAdherenceReportRow {
         if (getClass() != obj.getClass())
             return false;
         WeeklyAdherenceReportRow other = (WeeklyAdherenceReportRow) obj;
-        return Objects.equals(label, other.label) && Objects.equals(sessionGuid, other.sessionGuid)
-                && Objects.equals(sessionName, other.sessionName) && Objects.equals(sessionSymbol, other.sessionSymbol)
+        return Objects.equals(label, other.label) && Objects.equals(searchableLabel, other.searchableLabel)
+                && Objects.equals(sessionGuid, other.sessionGuid) && Objects.equals(sessionName, other.sessionName)
+                && Objects.equals(sessionSymbol, other.sessionSymbol)
                 && Objects.equals(studyBurstId, other.studyBurstId)
                 && Objects.equals(studyBurstNum, other.studyBurstNum) && Objects.equals(week, other.week);
     }

@@ -41,6 +41,7 @@ public class WeeklyAdherenceReportTest {
         report.setParticipant(new AccountRef(account, "study1"));
         report.setTestAccount(true);
         report.setWeeklyAdherencePercent(79);
+        report.setRows(ImmutableList.of(new WeeklyAdherenceReportRow()));
         report.setByDayEntries(ImmutableMap.of(
                 new Integer(6), ImmutableList.of(new EventStreamDay())));
         report.setNextActivity(nextActivity);
@@ -61,8 +62,7 @@ public class WeeklyAdherenceReportTest {
         assertNull(node.get("userId"));
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
         assertEquals(node.get("createdOn").textValue(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)).toString());
-        assertEquals(node.get("rowLabels").get(0).textValue(), "label1");
-        assertEquals(node.get("rowLabels").get(1).textValue(), "label2");
+        assertEquals(node.get("rows").size(), 1);
         assertEquals(node.get("weeklyAdherencePercent").intValue(), 79);
         assertEquals(node.get("participant").get("identifier").textValue(), TEST_USER_ID);
         assertNull(node.get("accountTest"));
