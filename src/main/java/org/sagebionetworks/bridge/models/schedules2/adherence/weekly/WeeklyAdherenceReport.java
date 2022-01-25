@@ -93,7 +93,6 @@ public class WeeklyAdherenceReport {
     public void setParticipant(AccountRef participant) {
         this.participant = participant;
     }
-    @JsonIgnore
     public boolean isTestAccount() {
         return testAccount;
     }

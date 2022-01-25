@@ -64,11 +64,11 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         } else if (testFilter == AccountTestFilter.PRODUCTION) {
             where.append("testAccount = 0");
         }
-        builder.append("ORDER BY weeklyAdherencePercent");
+        builder.append("ORDER BY weeklyAdherencePercent, lastName, firstName, email, phone, externalId");
         
         int total = hibernateHelper.queryCount("SELECT COUNT(*) " + builder.getQuery(), builder.getParameters());
         
-        List<WeeklyAdherenceReport> reports = hibernateHelper.queryGet("SELECT h " + builder.getQuery(),
+        List<WeeklyAdherenceReport> reports = hibernateHelper.queryGet("SELECT DISTINCT h " + builder.getQuery(),
                 builder.getParameters(), offsetBy, pageSize, WeeklyAdherenceReport.class);
 
         return new PagedResourceList<>(reports, total, true);
