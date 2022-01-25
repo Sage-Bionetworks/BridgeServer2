@@ -8,6 +8,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.BOTH;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.PRODUCTION;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.TEST;
@@ -95,6 +96,18 @@ public class AdherenceController extends BaseController {
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
         return service.getWeeklyAdherenceReport(session.getAppId(), studyId, account);
+    }
+    
+    @GetMapping("/v1/apps/{appId}/studies/{studyId}/participants/{userId}/adherence/weekly")
+    public WeeklyAdherenceReport getWeeklyAdherenceReportForWorker(@PathVariable String appId,
+            @PathVariable String studyId, @PathVariable String userId) {
+        getAuthenticatedSession(WORKER);
+
+        AccountId accountId = AccountId.forId(appId, userId);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        return service.getWeeklyAdherenceReport(appId, studyId, account);
     }
     
     @GetMapping("/v5/studies/{studyId}/adherence/weekly")    
