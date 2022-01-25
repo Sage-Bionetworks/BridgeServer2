@@ -6,11 +6,10 @@ import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_NOW;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
-import java.time.LocalDate;
-
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.TestUtils;
@@ -26,16 +25,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 public class WeeklyAdherenceReportGeneratorTest extends Mockito {
-    
-    @Test
-    public void main() {
-        int minAgeOfConsent = 18;
-        LocalDate birthday = LocalDate.parse("2004-01-24");
-        LocalDate today = LocalDate.now();
-        boolean oldEnough = birthday.plusYears(minAgeOfConsent).isBefore(today) || 
-                birthday.plusYears(minAgeOfConsent).isEqual(today);
-        assertTrue(oldEnough);
-    }
     
     @Test
     public void canSerialize() throws Exception { 
@@ -56,11 +45,11 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         ArrayNode entry1 = (ArrayNode)node.get("byDayEntries").get("0");
         assertEquals(entry1.size(), 3);
         JsonNode dayNode1 = entry1.get(0);
-        assertEquals(dayNode1.get("label").textValue(), "Week 2 / session1");
+        assertNull(dayNode1.get("label"));
         assertEquals(dayNode1.get("sessionGuid").textValue(), "guid1");
-        assertEquals(dayNode1.get("sessionName").textValue(), "session1");
-        assertEquals(dayNode1.get("sessionSymbol").textValue(), "1");
-        assertEquals(dayNode1.get("week").intValue(), 2);
+        assertNull(dayNode1.get("sessionName"));
+        assertNull(dayNode1.get("sessionSymbol"));
+        assertNull(dayNode1.get("week"));
         assertEquals(dayNode1.get("startDay").intValue(), 1);
         assertEquals(dayNode1.get("startDate").textValue(), "2015-01-27");
         
@@ -71,32 +60,39 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         assertEquals(win1.get("endDate").textValue(), "2015-02-10");
         
         ArrayNode entry2 = (ArrayNode)node.get("byDayEntries").get("2");
-        assertEquals(entry2.size(), 1);
-        JsonNode dayNode2 = entry2.get(0);
-        assertEquals(dayNode2.get("label").textValue(), "burst 2 / Week 1 / session2");
-        assertEquals(dayNode2.get("sessionGuid").textValue(), "guid2");
-        assertEquals(dayNode2.get("sessionName").textValue(), "session2");
-        assertEquals(dayNode2.get("sessionSymbol").textValue(), "2");
-        assertEquals(dayNode2.get("week").intValue(), 1);
-        assertEquals(dayNode2.get("studyBurstId").textValue(), "burst");
-        assertEquals(dayNode2.get("studyBurstNum").intValue(), 2);
-        assertEquals(dayNode2.get("startDay").intValue(), 2);
-        assertEquals(dayNode2.get("startDate").textValue(), "2015-02-02");
+        assertEquals(entry2.size(), 3);
         
-        JsonNode win2 = dayNode2.get("timeWindows").get(0);
+        JsonNode dayNode2_0 = entry2.get(0);
+        assertEquals(dayNode2_0.size(), 2);
+        assertEquals(dayNode2_0.get("timeWindows").size(), 0);
+        assertEquals(dayNode2_0.get("type").textValue(), "EventStreamDay");
+        
+        JsonNode dayNode2_1 = entry2.get(1);
+        assertNull(dayNode2_1.get("label"));
+        assertEquals(dayNode2_1.get("sessionGuid").textValue(), "guid2");
+        assertNull(dayNode2_1.get("sessionName"));
+        assertNull(dayNode2_1.get("sessionSymbol"));
+        assertNull(dayNode2_1.get("week"));
+        assertNull(dayNode2_1.get("studyBurstId"));
+        assertNull(dayNode2_1.get("studyBurstNum"));
+        assertEquals(dayNode2_1.get("startDay").intValue(), 2);
+        assertEquals(dayNode2_1.get("startDate").textValue(), "2015-02-02");
+
+        JsonNode dayNode2_2 = entry2.get(2);
+        assertEquals(dayNode2_2.size(), 2);
+        assertEquals(dayNode2_2.get("timeWindows").size(), 0);
+        assertEquals(dayNode2_2.get("type").textValue(), "EventStreamDay");
+
+        JsonNode win2 = dayNode2_1.get("timeWindows").get(0);
         assertEquals(win2.get("sessionInstanceGuid").textValue(), "instanceGuid2");
         assertEquals(win2.get("state").textValue(), "unstarted");
         assertEquals(win2.get("endDay").intValue(), 16);
         assertEquals(win2.get("endDate").textValue(), "2015-02-16");
         
         JsonNode entry3 = (ArrayNode)node.get("byDayEntries").get("3");
-        assertEquals(entry3.size(), 1);
-        JsonNode dayNode3 = entry3.get(0);
-        assertEquals(dayNode3.get("label").textValue(), "Week 1 / session3");
+        assertEquals(entry3.size(), 3);
+        JsonNode dayNode3 = entry3.get(2);
         assertEquals(dayNode3.get("sessionGuid").textValue(), "guid3");
-        assertEquals(dayNode3.get("sessionName").textValue(), "session3");
-        assertEquals(dayNode3.get("sessionSymbol").textValue(), "3");
-        assertEquals(dayNode3.get("week").intValue(), 1);
         assertEquals(dayNode3.get("startDay").intValue(), 3);
         assertEquals(dayNode3.get("startDate").textValue(), "2015-02-03");
         
@@ -116,7 +112,14 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         
         assertEquals(report.getCreatedOn(), CREATED_ON);
         assertEquals(report.getWeeklyAdherencePercent(), 100);
-        assertTrue(report.getByDayEntries().isEmpty());
+        assertNotNull(report.getByDayEntries());
+        assertTrue(report.getByDayEntries().get(0).isEmpty());
+        assertTrue(report.getByDayEntries().get(1).isEmpty());
+        assertTrue(report.getByDayEntries().get(2).isEmpty());
+        assertTrue(report.getByDayEntries().get(3).isEmpty());
+        assertTrue(report.getByDayEntries().get(4).isEmpty());
+        assertTrue(report.getByDayEntries().get(5).isEmpty());
+        assertTrue(report.getByDayEntries().get(6).isEmpty());
     }
     
     @Test
@@ -136,7 +139,6 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         
         WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
         assertEquals(report.getWeeklyAdherencePercent(), 100);
-        assertTrue(report.getByDayEntries().isEmpty());
         
         NextActivity na = report.getNextActivity();
         assertEquals(na.getSessionGuid(), "guid4");
@@ -164,13 +166,11 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         builder.withEvents(ImmutableList.of(e1, e2));
         
         WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
-        assertTrue(report.getByDayEntries().isEmpty());
         // The next is from session 1
         assertEquals(report.getNextActivity().getSessionName(), "session1");
         
         builder.withEvents(ImmutableList.of(e2));
         report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
-        assertTrue(report.getByDayEntries().isEmpty());
         // Now it's from session 2
         assertEquals(report.getNextActivity().getSessionName(), "session2");
     }
@@ -187,7 +187,6 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         builder.withEvents(ImmutableList.of(event));
         
         WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
-        assertTrue(report.getByDayEntries().isEmpty());
         
         NextActivity na = report.getNextActivity();
         assertEquals(na.getSessionGuid(), "guid1");
@@ -203,13 +202,10 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         builder.withNow(ADHERENCE_STATE_NOW.plusDays(100));
         
         WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
+        
         assertEquals(report.getCreatedOn(), ADHERENCE_STATE_NOW.plusDays(100)
                 .withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
         assertEquals(report.getWeeklyAdherencePercent(), 100);
-        assertTrue(report.getByDayEntries().isEmpty());
-    }
-    
-    @Test
-    public void impactOfHighestEndDay() {
+        assertTrue(report.isDone());
     }
 }

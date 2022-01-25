@@ -5,7 +5,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
@@ -147,14 +146,19 @@ public class WeeklyAdherenceReportGenerator {
     }
     
     private EventStreamDay getNextActivity(AdherenceState state, EventStream finalReport, EventStreamAdherenceReport reports) {
-        if (finalReport.getByDayEntries().isEmpty()) {
+        
+        boolean hasActivity = finalReport.getByDayEntries().values().stream()
+                .flatMap(list -> list.stream())
+                .anyMatch(day -> day.getStartDate() != null & !day.getTimeWindows().isEmpty());
+        
+        if (!hasActivity) {
             for (EventStream report : reports.getStreams()) {
                 for (List<EventStreamDay> days :report.getByDayEntries().values()) {
                     for (EventStreamDay oneDay : days) {
                         LocalDate startDate = oneDay.getStartDate();
                         // If an activity is "not applicable," then the startDate cannot be determined and
                         // it will be null...and it's not the next activity for this user, so skip it.
-                        if (startDate == null) {
+                        if (startDate == null || oneDay.getTimeWindows().isEmpty()) {
                             continue;
                         }
                         if (startDate.isAfter(state.getNow().toLocalDate())) {

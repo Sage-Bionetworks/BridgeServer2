@@ -16,11 +16,9 @@ import javax.persistence.Id;
 import javax.persistence.IdClass;
 import javax.persistence.JoinColumn;
 import javax.persistence.Table;
-import javax.persistence.Transient;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.sagebionetworks.bridge.hibernate.AccountRefConverter;
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.EventStreamDayMapConverter;
 import org.sagebionetworks.bridge.hibernate.NextActivityConverter;
@@ -30,15 +28,14 @@ import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @Entity
 @Table(name = "WeeklyAdherenceReports")
 @IdClass(WeeklyAdherenceReportId.class)
-@JsonPropertyOrder({ "participant", "rowLabels", "rows", "weeklyAdherencePercent", "clientTimeZone", "createdOn",
-        "byDayEntries", "type" })
+@JsonPropertyOrder({ "participant", "rowLabels", "rows", "done", "weeklyAdherencePercent", "clientTimeZone",
+        "createdOn", "byDayEntries", "type" })
 public class WeeklyAdherenceReport {
     
     @Id
@@ -102,6 +99,9 @@ public class WeeklyAdherenceReport {
     }
     public void setTestAccount(boolean testAccount) {
         this.testAccount = testAccount;
+    }
+    public boolean isDone() {
+        return getByDayEntries().values().stream().anyMatch(list -> list.isEmpty());
     }
     public int getWeeklyAdherencePercent() {
         return weeklyAdherencePercent;

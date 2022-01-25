@@ -31,6 +31,16 @@ public class WeeklyAdherenceReportTest {
         
         NextActivity nextActivity = NextActivity.create(new EventStreamDay());
         
+        WeeklyAdherenceReportRow row = new WeeklyAdherenceReportRow();
+        row.setLabel("rowLabel");
+        row.setSearchableLabel(":rowLabel:");
+        row.setSessionGuid("sessionGuid");
+        row.setSessionSymbol("sessionSymbol");
+        row.setSessionName("sessionName");
+        row.setStudyBurstId("studyBurstId");
+        row.setStudyBurstNum(2);
+        row.setWeek(4);
+        
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
         report.setAppId(TEST_APP_ID);
         report.setStudyId(TEST_STUDY_ID);
@@ -41,11 +51,11 @@ public class WeeklyAdherenceReportTest {
         report.setParticipant(new AccountRef(account, "study1"));
         report.setTestAccount(true);
         report.setWeeklyAdherencePercent(79);
-        report.setRows(ImmutableList.of(new WeeklyAdherenceReportRow()));
+        report.setRows(ImmutableList.of(row));
         report.setByDayEntries(ImmutableMap.of(
                 new Integer(6), ImmutableList.of(new EventStreamDay())));
         report.setNextActivity(nextActivity);
-        
+
         // It's there, it works, it's persisted, but it's not part of JSON output
         assertTrue(report.isTestAccount());
         
@@ -56,23 +66,31 @@ public class WeeklyAdherenceReportTest {
         assertEquals(report.getLabels(), ImmutableSet.of("label1", "label2"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
-        assertEquals(node.size(), 8);
+        
+        assertEquals(node.size(), 9);
         assertNull(node.get("appId"));
         assertNull(node.get("studyId"));
         assertNull(node.get("userId"));
+        assertFalse(node.get("done").booleanValue());
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
         assertEquals(node.get("createdOn").textValue(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)).toString());
-        assertEquals(node.get("rows").size(), 1);
         assertEquals(node.get("weeklyAdherencePercent").intValue(), 79);
         assertEquals(node.get("participant").get("identifier").textValue(), TEST_USER_ID);
         assertNull(node.get("accountTest"));
         assertEquals(node.get("nextActivity").get("type").textValue(), "NextActivity");
         assertEquals(node.get("byDayEntries").get("6").get(0).get("type").textValue(), "EventStreamDay");
         assertEquals(node.get("type").textValue(), "WeeklyAdherenceReport");
-        
-        report.setParticipant(new AccountRef(account, "study1"));
-        report.setByDayEntries(ImmutableMap.of(new Integer(6), ImmutableList.of()));
-        report.setNextActivity(nextActivity);
+
+        assertEquals(node.get("rows").size(), 1);
+        JsonNode rowNode = node.get("rows").get(0);
+        assertEquals(rowNode.get("label").textValue(), "rowLabel");
+        assertEquals(rowNode.get("searchableLabel").textValue(), ":rowLabel:");
+        assertEquals(rowNode.get("sessionGuid").textValue(), "sessionGuid");
+        assertEquals(rowNode.get("sessionSymbol").textValue(), "sessionSymbol");
+        assertEquals(rowNode.get("sessionName").textValue(), "sessionName");
+        assertEquals(rowNode.get("studyBurstId").textValue(), "studyBurstId");
+        assertEquals(rowNode.get("studyBurstNum").intValue(), 2);
+        assertEquals(rowNode.get("week").intValue(), 4);
     }
     
     @Test
