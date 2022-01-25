@@ -9,7 +9,7 @@ import org.joda.time.LocalDate;
 
 import com.google.common.collect.ImmutableList;
 
-public class EventStreamDay {
+public final class EventStreamDay {
     private String label;
     private String sessionGuid;
     private String sessionName;
@@ -100,9 +100,7 @@ public class EventStreamDay {
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
+        if (obj == null || getClass() != obj.getClass())
             return false;
         EventStreamDay other = (EventStreamDay) obj;
         return Objects.equals(label, other.label) && Objects.equals(sessionGuid, other.sessionGuid)

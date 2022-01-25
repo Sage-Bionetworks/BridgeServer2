@@ -92,13 +92,6 @@ public class WeeklyAdherenceReportGenerator {
                 row.setStudyBurstId(oneDay.getStudyBurstId());
                 row.setStudyBurstNum(oneDay.getStudyBurstNum());
                 row.setWeek(oneDay.getWeek());
-                
-                // Do not repeat these in the day-by-day entries.
-                oneDay.setSessionName(null);
-                oneDay.setSessionSymbol(null);
-                oneDay.setStudyBurstId(null);
-                oneDay.setStudyBurstNum(null);
-                oneDay.setWeek(null);
                 rows.add(row);
             }
         }
@@ -127,9 +120,20 @@ public class WeeklyAdherenceReportGenerator {
         report.setClientTimeZone(state.getClientTimeZone());
         report.setWeeklyAdherencePercent(percentage);
         report.setNextActivity(NextActivity.create(nextDay));
-        report.setLabels(labels); // REMOVEME
+        report.setLabels(labels);
         report.setRows(ImmutableList.copyOf(rows));
         
+        // scrub this information from the day entries, as we've moved it to rows in this report
+        for (List<EventStreamDay> days : report.getByDayEntries().values()) {
+            for (EventStreamDay oneDay : days) {
+                // Do not repeat these in the day-by-day entries.
+                oneDay.setSessionName(null);
+                oneDay.setSessionSymbol(null);
+                oneDay.setStudyBurstId(null);
+                oneDay.setStudyBurstNum(null);
+                oneDay.setWeek(null);
+            }
+        }
         return report;
     }
     

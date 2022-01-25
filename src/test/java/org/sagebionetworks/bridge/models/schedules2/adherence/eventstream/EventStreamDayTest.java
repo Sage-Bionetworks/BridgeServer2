@@ -11,7 +11,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+
 public class EventStreamDayTest {
+    
+    @Test
+    public void hashCodeEquals() {
+        EqualsVerifier.forClass(EventStreamDay.class)
+            .suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+    }
     
     @Test
     public void canSerialize() throws Exception {
