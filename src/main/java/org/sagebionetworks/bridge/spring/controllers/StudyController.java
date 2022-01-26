@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.files.FileDispositionType.INLINE;
 import static org.springframework.http.MediaType.APPLICATION_JSON_UTF8_VALUE;
 
@@ -186,6 +187,20 @@ public class StudyController extends BaseController {
         return json;
     }
     
+    @GetMapping(path = "/v1/apps/{appId}/studies")
+    public PagedResourceList<Study> getAppStudiesForWorker(@PathVariable String appId,
+            @RequestParam(required = false) String offsetBy, 
+            @RequestParam(required = false) String pageSize,
+            @RequestParam(required = false) String includeDeleted) {
+        getAuthenticatedSession(WORKER);
+        
+        int offsetByInt = BridgeUtils.getIntOrDefault(offsetBy, 0);
+        int pageSizeInt = BridgeUtils.getIntOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
+        boolean incDeletedBool = Boolean.valueOf(includeDeleted);
+        
+        return service.getStudies(appId, offsetByInt, pageSizeInt, incDeletedBool);
+    }
+
     @PostMapping("/v5/studies/{studyId}/design")
     public Study design(@PathVariable String studyId) {
         UserSession session = getAdministrativeSession();

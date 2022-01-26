@@ -66,7 +66,7 @@ public class HibernateStudyTest {
     @Test
     public void shortConstructor() {
         HibernateStudy study = new HibernateStudy("name", "identifier", "appId", 
-                CREATED_ON, MODIFIED_ON, true, DESIGN, TEST_LINK, 10L);
+                CREATED_ON, MODIFIED_ON, true, DESIGN, TEST_LINK, 10L, "scheduleGuid");
         assertEquals(study.getName(), "name");
         assertEquals(study.getIdentifier(), "identifier");
         assertEquals(study.getAppId(), "appId");
@@ -76,6 +76,7 @@ public class HibernateStudyTest {
         assertEquals(study.getPhase(), DESIGN);
         assertEquals(study.getStudyLogoUrl(), TEST_LINK);
         assertEquals(study.getVersion(), Long.valueOf(10L));
+        assertEquals(study.getScheduleGuid(), "scheduleGuid");
     }
     
     @Test

@@ -125,6 +125,14 @@ public class AuthUtils {
             .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**
+     * Can the caller download the participant roster? It does not currently support the download
+     * of test accounts, so the permissions are more restrictive than similar tests.
+     */
+    public static final AuthEvaluator CAN_DOWNLOAD_PARTICIPANT_ROSTER = new AuthEvaluator()
+            .canAccessStudy().hasAnyRole(STUDY_COORDINATOR).or()
+            .hasAnyRole(RESEARCHER, ADMIN);
+    
+    /**
      * Can the caller read participant reports? 
      */
     public static final AuthEvaluator CAN_READ_PARTICIPANT_REPORTS = new AuthEvaluator().isSelf().or()
@@ -177,7 +185,7 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_READ_STUDIES = new AuthEvaluator()
             .isEnrolledInStudy().or()
             .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN).or()
-            .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
+            .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**
      * Can the caller edit studies? Caller must be a study coordinator, or a developer.
@@ -250,7 +258,7 @@ public class AuthUtils {
     public static final AuthEvaluator CAN_ACCESS_ADHERENCE_DATA = new AuthEvaluator()
             .isSelf().isEnrolledInStudy().or()
             .canAccessStudy().hasAnyRole(STUDY_DESIGNER, STUDY_COORDINATOR).or()
-            .hasAnyRole(DEVELOPER, RESEARCHER, ADMIN);
+            .hasAnyRole(DEVELOPER, RESEARCHER, WORKER, ADMIN);
     
     /**
      * Does the caller have the required role? Note that a few roles pass for other roles.
