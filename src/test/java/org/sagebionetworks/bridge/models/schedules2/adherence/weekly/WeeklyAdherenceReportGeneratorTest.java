@@ -14,16 +14,19 @@ import static org.testng.Assert.assertTrue;
 import java.util.Collections;
 import java.util.List;
 
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.mockito.Mockito;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
+import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.testng.annotations.Test;
 import org.testng.collections.Lists;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.google.common.collect.ImmutableList;
@@ -262,6 +265,70 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         Collections.sort(rows, ROW_COMPARATOR);
         
         assertEquals(rows, ImmutableList.of(r2, r1, r3));
+    }
+    
+    @Test
+    public void sessionTriggeredByMultipleEventsReportedCorrectly() throws JsonProcessingException {
+        // Two events triggered at the same time, the schedule will trigger one sesssion
+        // off both of these...
+        DateTime timestamp = DateTime.now().minusDays(10);
+        StudyActivityEvent e1 = new StudyActivityEvent.Builder()
+                .withEventId("custom:Clinic Visit")
+                .withTimestamp(timestamp).build();
+        StudyActivityEvent e2 = new StudyActivityEvent.Builder()
+                .withEventId("custom:Survey Returned")
+                .withTimestamp(timestamp).build();
+        List<StudyActivityEvent> events = ImmutableList.of(e1, e2);
+        
+        TimelineMetadata m1 = new TimelineMetadata();
+        m1.setGuid("AAA");
+        m1.setSessionGuid("sessionGuid");
+        m1.setSessionInstanceStartDay(1);
+        m1.setSessionInstanceEndDay(28);
+        m1.setSessionStartEventId("custom:Clinic Visit");
+        m1.setSessionName("Session #1");
+        
+        TimelineMetadata m2 = new TimelineMetadata();
+        m2.setGuid("BBB");
+        m2.setSessionGuid("sessionGuid");
+        m2.setSessionInstanceStartDay(1);
+        m2.setSessionInstanceEndDay(28);
+        m2.setSessionStartEventId("custom:Survey Returned");
+        m2.setSessionName("Session #1");
+        List<TimelineMetadata> metadata = ImmutableList.of(m1, m2);
+        
+        AdherenceState state = new AdherenceState.Builder()
+                .withClientTimeZone(TEST_CLIENT_TIME_ZONE)
+                .withEvents(events)
+                .withMetadata(metadata)
+                .withNow(timestamp.plusDays(10))
+                .withShowActive(false).build();
+        
+        WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(state);
+        
+        // These two rows are exactly the same in all respects and yet they were triggered
+        // from different events, and so we are tracking that. And the entries will be aligned
+        // correctly.
+        WeeklyAdherenceReportRow row1 = report.getRows().get(0);
+        assertEquals(row1.getLabel(), "Session #1 / Week 2");
+        assertEquals(row1.getSearchableLabel(), ":Session #1:Week 2:");
+        assertEquals(row1.getSessionGuid(), "sessionGuid");
+        assertEquals(row1.getStartEventId(), "custom:Clinic Visit");
+        assertEquals(row1.getSessionName(), "Session #1");
+        assertEquals(row1.getWeek(), Integer.valueOf(2));
+        
+        WeeklyAdherenceReportRow row2 = report.getRows().get(1);
+        assertEquals(row2.getLabel(), "Session #1 / Week 2");
+        assertEquals(row2.getSearchableLabel(), ":Session #1:Week 2:");
+        assertEquals(row2.getSessionGuid(), "sessionGuid");
+        assertEquals(row2.getStartEventId(), "custom:Survey Returned");
+        assertEquals(row2.getSessionName(), "Session #1");
+        assertEquals(row2.getWeek(), Integer.valueOf(2));
+        
+        List<EventStreamDay> days = report.getByDayEntries().get(0);
+        assertEquals(days.size(), 2);
+        assertEquals(days.get(0).getStartEventId(), "custom:Clinic Visit");
+        assertEquals(days.get(1).getStartEventId(), "custom:Survey Returned");
     }
     
 }
