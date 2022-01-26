@@ -67,11 +67,10 @@ public class WeeklyAdherenceReportTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
         
-        assertEquals(node.size(), 10);
+        assertEquals(node.size(), 9);
         assertNull(node.get("appId"));
         assertNull(node.get("studyId"));
         assertNull(node.get("userId"));
-        assertFalse(node.get("done").booleanValue());
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
         assertEquals(node.get("createdOn").textValue(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)).toString());
         assertEquals(node.get("weeklyAdherencePercent").intValue(), 79);

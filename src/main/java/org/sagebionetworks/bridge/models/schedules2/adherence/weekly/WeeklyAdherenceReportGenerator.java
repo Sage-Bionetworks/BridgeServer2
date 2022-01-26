@@ -1,7 +1,10 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 
+import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_APPLICABLE;
+
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -10,6 +13,7 @@ import java.util.Set;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
+import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
@@ -17,6 +21,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventS
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 public class WeeklyAdherenceReportGenerator {
@@ -35,11 +40,11 @@ public class WeeklyAdherenceReportGenerator {
         
         // The service always sets showActive=false, but for tests it is useful to force this
         AdherenceState stateCopy = state.toBuilder().withShowActive(false).build();
-        EventStreamAdherenceReport reports = EventStreamAdherenceReportGenerator.INSTANCE.generate(stateCopy);
+        EventStreamAdherenceReport eventReport = EventStreamAdherenceReportGenerator.INSTANCE.generate(stateCopy);
         
         EventStream finalReport = new EventStream();
 
-        for (EventStream report : reports.getStreams()) {
+        for (EventStream report : eventReport.getStreams()) {
             Integer currentDay = state.getDaysSinceEventById(report.getStartEventId());
             if (currentDay == null || currentDay < 0) {
                 // Participant has not yet begun the activities scheduled by this event
@@ -124,7 +129,7 @@ public class WeeklyAdherenceReportGenerator {
         }
         
         // If the report is empty, then we seek ahead and store information on the next activity
-        EventStreamDay nextDay = getNextActivity(state, finalReport, reports);
+        EventStreamDay nextDay = getNextActivity(state, finalReport, eventReport);
         int percentage = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(finalReport));
         
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();

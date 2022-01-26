@@ -99,9 +99,6 @@ public class WeeklyAdherenceReport {
     public void setTestAccount(boolean testAccount) {
         this.testAccount = testAccount;
     }
-    public boolean isDone() {
-        return getByDayEntries().values().stream().anyMatch(list -> list.isEmpty());
-    }
     public int getWeeklyAdherencePercent() {
         return weeklyAdherencePercent;
     }

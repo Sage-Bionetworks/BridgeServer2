@@ -212,7 +212,6 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         assertEquals(report.getCreatedOn(), ADHERENCE_STATE_NOW.plusDays(100)
                 .withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
         assertEquals(report.getWeeklyAdherencePercent(), 100);
-        assertTrue(report.isDone());
     }
     
     @Test
