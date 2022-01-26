@@ -47,7 +47,7 @@ public class WeeklyAdherenceReportTest {
         report.setUserId(TEST_USER_ID);
         report.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
         report.setCreatedOn(MODIFIED_ON);
-        report.setLabels(ImmutableSet.of("label1", "label2"));
+        report.setSearchableLabels(ImmutableSet.of("label1", "label2"));
         report.setParticipant(new AccountRef(account, "study1"));
         report.setTestAccount(true);
         report.setWeeklyAdherencePercent(79);
@@ -63,7 +63,7 @@ public class WeeklyAdherenceReportTest {
         assertEquals(report.getAppId(), TEST_APP_ID);
         assertEquals(report.getStudyId(), TEST_STUDY_ID);
         assertEquals(report.getUserId(), TEST_USER_ID);
-        assertEquals(report.getLabels(), ImmutableSet.of("label1", "label2"));
+        assertEquals(report.getSearchableLabels(), ImmutableSet.of("label1", "label2"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
         

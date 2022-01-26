@@ -1,10 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_APPLICABLE;
-
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -13,7 +10,6 @@ import java.util.Set;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
-import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
@@ -21,7 +17,6 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventS
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 public class WeeklyAdherenceReportGenerator {
@@ -90,6 +85,12 @@ public class WeeklyAdherenceReportGenerator {
         Set<WeeklyAdherenceReportRow> rows = new LinkedHashSet<>();
         for (List<EventStreamDay> days : finalReport.getByDayEntries().values()) {
             for (EventStreamDay oneDay : days) {
+                // The main searches to support are:
+                // <Study Burst ID> 1
+                // <Study Burst ID> 1:Week 1
+                // <Session Name>
+                // <Session Name>:Week 1
+                // Week 1
                 String searchableLabel = (oneDay.getStudyBurstId() != null) ?
                     String.format(":%s %s:Week %s:%s:", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneDay.getWeek(), oneDay.getSessionName()) :
                     String.format(":%s:Week %s:", oneDay.getSessionName(), oneDay.getWeek());
@@ -102,6 +103,7 @@ public class WeeklyAdherenceReportGenerator {
                 row.setLabel(displayLabel);
                 row.setSearchableLabel(searchableLabel);
                 row.setSessionGuid(oneDay.getSessionGuid());
+                row.setStartEventId(oneDay.getStartEventId());
                 row.setSessionName(oneDay.getSessionName());
                 row.setSessionSymbol(oneDay.getSessionSymbol());
                 row.setStudyBurstId(oneDay.getStudyBurstId());
@@ -122,14 +124,17 @@ public class WeeklyAdherenceReportGenerator {
             
             for (WeeklyAdherenceReportRow row : rowList) {
                 List<EventStreamDay> days = finalReport.getByDayEntries().get(i);
-                EventStreamDay oneDay = padEventStreamDay(days, row.getSessionGuid());
+                EventStreamDay oneDay = padEventStreamDay(days, row.getSessionGuid(), row.getStartEventId());
                 paddedDays.add(oneDay);
             }
             finalReport.getByDayEntries().put(i, paddedDays);
         }
         
         // If the report is empty, then we seek ahead and store information on the next activity
-        EventStreamDay nextDay = getNextActivity(state, finalReport, eventReport);
+        EventStreamDay nextDay = null;
+        if (rowList.isEmpty()) {
+            nextDay = getNextActivity(state, finalReport, eventReport);
+        }
         int percentage = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(finalReport));
         
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
@@ -138,7 +143,7 @@ public class WeeklyAdherenceReportGenerator {
         report.setClientTimeZone(state.getClientTimeZone());
         report.setWeeklyAdherencePercent(percentage);
         report.setNextActivity(NextActivity.create(nextDay));
-        report.setLabels(labels);
+        report.setSearchableLabels(labels);
         report.setRows(rowList);
         
         // Remove this information from the day entries, as we've moved it to rows in this report.
@@ -154,10 +159,14 @@ public class WeeklyAdherenceReportGenerator {
         return report;
     }
     
-    private EventStreamDay padEventStreamDay(List<EventStreamDay> days, String sessionGuid) {
+    private EventStreamDay padEventStreamDay(List<EventStreamDay> days, String sessionGuid, String eventId) {
         if (days != null) {
+            // If a session is triggered twice by two different events, it can appear twice in rows.
+            // If the events have nearly the same timestamp, the GUIDs and the labels would be exactly
+            // the same. For this reason we carry over the event ID as this identifies two unique streams
+            // and these must be tracked separately, even though they look the same in the report.
             Optional<EventStreamDay> oneDay = days.stream()
-                    .filter(day -> day.getSessionGuid().equals(sessionGuid))
+                    .filter(day -> day.getSessionGuid().equals(sessionGuid) && day.getStartEventId().equals(eventId))
                     .findFirst();
             if (oneDay.isPresent()) {
                 return oneDay.get();
@@ -168,32 +177,26 @@ public class WeeklyAdherenceReportGenerator {
     
     private EventStreamDay getNextActivity(AdherenceState state, EventStream finalReport, EventStreamAdherenceReport reports) {
         
-        boolean hasActivity = finalReport.getByDayEntries().values().stream()
-                .flatMap(list -> list.stream())
-                .anyMatch(day -> day.getStartDate() != null & !day.getTimeWindows().isEmpty());
-        
-        if (!hasActivity) {
-            for (EventStream report : reports.getStreams()) {
-                for (List<EventStreamDay> days :report.getByDayEntries().values()) {
-                    for (EventStreamDay oneDay : days) {
-                        LocalDate startDate = oneDay.getStartDate();
-                        // If an activity is "not applicable," then the startDate cannot be determined and
-                        // it will be null...and it's not the next activity for this user, so skip it.
-                        if (startDate == null || oneDay.getTimeWindows().isEmpty()) {
-                            continue;
+        for (EventStream report : reports.getStreams()) {
+            for (List<EventStreamDay> days :report.getByDayEntries().values()) {
+                for (EventStreamDay oneDay : days) {
+                    LocalDate startDate = oneDay.getStartDate();
+                    // If an activity is "not applicable," then the startDate cannot be determined and
+                    // it will be null...and it's not the next activity for this user, so skip it.
+                    if (startDate == null || oneDay.getTimeWindows().isEmpty()) {
+                        continue;
+                    }
+                    if (startDate.isAfter(state.getNow().toLocalDate())) {
+                        oneDay.setStartDay(null);
+                        oneDay.setStudyBurstId(report.getStudyBurstId());
+                        oneDay.setStudyBurstNum(report.getStudyBurstNum());
+                        Integer currentDay = state.getDaysSinceEventById(report.getStartEventId());
+                        // currentDay cannot be null (if it were, there would have been no startDate)
+                        if (currentDay >= 0) {
+                            int currentWeek = currentDay / 7;
+                            oneDay.setWeek(currentWeek+1);    
                         }
-                        if (startDate.isAfter(state.getNow().toLocalDate())) {
-                            oneDay.setStartDay(null);
-                            oneDay.setStudyBurstId(report.getStudyBurstId());
-                            oneDay.setStudyBurstNum(report.getStudyBurstNum());
-                            Integer currentDay = state.getDaysSinceEventById(report.getStartEventId());
-                            // currentDay cannot be null (if it were, there would have been no startDate)
-                            if (currentDay >= 0) {
-                                int currentWeek = currentDay / 7;
-                                oneDay.setWeek(currentWeek+1);    
-                            }
-                            return oneDay;
-                        }
+                        return oneDay;
                     }
                 }
             }

@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Entity
 @Table(name = "WeeklyAdherenceReports")
 @IdClass(WeeklyAdherenceReportId.class)
-@JsonPropertyOrder({ "participant", "rowLabels", "rows", "done", "weeklyAdherencePercent", "clientTimeZone",
+@JsonPropertyOrder({ "participant", "rowLabels", "rows", "weeklyAdherencePercent", "clientTimeZone",
         "createdOn", "byDayEntries", "type" })
 public class WeeklyAdherenceReport {
     
@@ -59,7 +59,7 @@ public class WeeklyAdherenceReport {
         @JoinColumn(name = "appId"), @JoinColumn(name = "studyId"), @JoinColumn(name = "userId")})
     @Column(name = "label")
     @ElementCollection(fetch = FetchType.EAGER)
-    private Set<String> labels;
+    private Set<String> searchableLabels;
     @Convert(converter = WeeklyAdherenceReportRowListConverter.class)
     List<WeeklyAdherenceReportRow> rows;
     
@@ -131,12 +131,21 @@ public class WeeklyAdherenceReport {
     public void setNextActivity(NextActivity nextActivity) {
         this.nextActivity = nextActivity;
     }
+    /**
+     * Reports contain multiple rows with composite search information (e.g. study burst
+     * foo, iteration 2, possibly even a specific week of that study burst). To make
+     * the search API for these reports simpler, we're combining this information into
+     * string descriptors that can be specified via API search, e.g. "study burst 2" + 
+     * "Week 2". These are not displayed as a group for the whole report, they are 
+     * shown in the row descriptors. But they are persisted as a collection on the report
+     * for the SQL to retrieve records. 
+     */
     @JsonIgnore
-    public Set<String> getLabels() {
-        return labels;
+    public Set<String> getSearchableLabels() {
+        return searchableLabels;
     }
-    public void setLabels(Set<String> labels) {
-        this.labels = labels;
+    public void setSearchableLabels(Set<String> labels) {
+        this.searchableLabels = labels;
     }
     public List<WeeklyAdherenceReportRow> getRows() {
         return rows;

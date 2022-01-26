@@ -37,7 +37,7 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(state);
 
         // Because these are different from what is serialized in the JSON, test them here.
-        assertEquals(report.getLabels(), ImmutableSet.of(":session3:Week 1:", 
+        assertEquals(report.getSearchableLabels(), ImmutableSet.of(":session3:Week 1:", 
                 ":session1:Week 2:", ":burst 2:Week 1:session2:"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
@@ -133,7 +133,7 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         AdherenceState.Builder builder = TestUtils.getAdherenceStateBuilder();
         
         TimelineMetadata meta4 = new TimelineMetadata();
-        meta4.setSessionInstanceGuid("instanceGuid4");
+        //meta4.setSessionInstanceGuid("instanceGuid4");
         meta4.setSessionStartEventId("event1");
         meta4.setSessionGuid("guid4");
         meta4.setSessionInstanceStartDay(20);

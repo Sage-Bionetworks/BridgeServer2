@@ -10,6 +10,7 @@ public final class WeeklyAdherenceReportRow {
     private String label;
     private String searchableLabel;
     private String sessionGuid;
+    private String startEventId;
     private String sessionName;
     private String sessionSymbol;
     private Integer week;
@@ -33,6 +34,12 @@ public final class WeeklyAdherenceReportRow {
     }
     public void setSessionGuid(String sessionGuid) {
         this.sessionGuid = sessionGuid;
+    }
+    public String getStartEventId() {
+        return startEventId;
+    }
+    public void setStartEventId(String startEventId) {
+        this.startEventId = startEventId;
     }
     public String getSessionName() {
         return sessionName;
@@ -66,21 +73,19 @@ public final class WeeklyAdherenceReportRow {
     }
     @Override
     public int hashCode() {
-        return Objects.hash(label, searchableLabel, sessionGuid, sessionName, sessionSymbol, studyBurstId,
+        return Objects.hash(label, searchableLabel, sessionGuid, startEventId, sessionName, sessionSymbol, studyBurstId,
                 studyBurstNum, week);
     }
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (obj == null)
-            return false;
-        if (getClass() != obj.getClass())
+        if (obj == null || getClass() != obj.getClass())
             return false;
         WeeklyAdherenceReportRow other = (WeeklyAdherenceReportRow) obj;
         return Objects.equals(label, other.label) && Objects.equals(searchableLabel, other.searchableLabel)
-                && Objects.equals(sessionGuid, other.sessionGuid) && Objects.equals(sessionName, other.sessionName)
-                && Objects.equals(sessionSymbol, other.sessionSymbol)
+                && Objects.equals(sessionGuid, other.sessionGuid) && Objects.equals(startEventId, other.startEventId)
+                && Objects.equals(sessionName, other.sessionName) && Objects.equals(sessionSymbol, other.sessionSymbol)
                 && Objects.equals(studyBurstId, other.studyBurstId)
                 && Objects.equals(studyBurstNum, other.studyBurstNum) && Objects.equals(week, other.week);
     }

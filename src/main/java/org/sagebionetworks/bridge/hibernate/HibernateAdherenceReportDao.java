@@ -48,7 +48,7 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM WeeklyAdherenceReport h");
         if (hasLabels) {
-            builder.append("JOIN h.labels label");    
+            builder.append("JOIN h.searchableLabels label");
         }
         WhereClauseBuilder where = builder.startWhere(AND);
         where.append("h.appId = :appId", APP_ID_FIELD, appId);

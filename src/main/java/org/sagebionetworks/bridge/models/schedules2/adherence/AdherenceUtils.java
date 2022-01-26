@@ -64,7 +64,7 @@ public class AdherenceUtils {
         return (int) (percentage * 100);
     }
     
-    public static long counting(Collection<EventStream> streams, Set<SessionCompletionState> states) {
+    private static long counting(Collection<EventStream> streams, Set<SessionCompletionState> states) {
       return streams.stream()
           .flatMap(es -> es.getByDayEntries().values().stream())
           .flatMap(list -> list.stream())

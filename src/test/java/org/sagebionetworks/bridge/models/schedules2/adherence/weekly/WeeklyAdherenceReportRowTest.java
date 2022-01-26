@@ -15,10 +15,13 @@ import nl.jqno.equalsverifier.Warning;
 public class WeeklyAdherenceReportRowTest {
     
     @Test
-    public void hashCodeEquals() { 
+    public void hashCodeEquals() {
+        // We don't use session instance GUID because we're trying to find the rows
+        // that are the same across the full report, and we don't want new rows for 
+        // multiple session instances in the one week.
         EqualsVerifier.forClass(WeeklyAdherenceReportRow.class)
-            .suppress(Warning.NONFINAL_FIELDS)
-            .allFieldsShouldBeUsed().verify();
+            .suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed()
+            .verify();
     }
     
     @Test
@@ -27,6 +30,7 @@ public class WeeklyAdherenceReportRowTest {
         row.setLabel("label");
         row.setSearchableLabel("searchableLabel");
         row.setSessionGuid("sessionGuid");
+        row.setStartEventId("eventId");
         row.setSessionName("sessionName");
         row.setSessionSymbol("sessionSymbol");
         row.setWeek(2);
@@ -37,6 +41,7 @@ public class WeeklyAdherenceReportRowTest {
         assertEquals(node.get("label").textValue(), "label");
         assertEquals(node.get("searchableLabel").textValue(), "searchableLabel");
         assertEquals(node.get("sessionGuid").textValue(), "sessionGuid");
+        assertEquals(node.get("startEventId").textValue(), "eventId");
         assertEquals(node.get("sessionName").textValue(), "sessionName");
         assertEquals(node.get("sessionSymbol").textValue(), "sessionSymbol");
         assertEquals(node.get("week").intValue(), 2);
