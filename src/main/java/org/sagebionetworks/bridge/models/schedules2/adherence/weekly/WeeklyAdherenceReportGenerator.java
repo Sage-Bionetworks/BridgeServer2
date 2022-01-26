@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -16,10 +17,19 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventS
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 public class WeeklyAdherenceReportGenerator {
     
     public static final WeeklyAdherenceReportGenerator INSTANCE = new WeeklyAdherenceReportGenerator();
+    
+    static final Comparator<String> STRING_COMPARATOR = Comparator.nullsLast((r1, r2) -> r1.compareToIgnoreCase(r2));
+    
+    /** Sort by label ignoring case, but study bursts come first. */
+    static final Comparator<WeeklyAdherenceReportRow> ROW_COMPARATOR = (r1, r2) -> {
+        int sb = STRING_COMPARATOR.compare(r1.getStudyBurstId(), r2.getStudyBurstId());
+        return (sb != 0) ? sb : STRING_COMPARATOR.compare(r1.getLabel(), r2.getLabel());
+    };
 
     public WeeklyAdherenceReport generate(AdherenceState state) {
         
@@ -77,10 +87,10 @@ public class WeeklyAdherenceReportGenerator {
             for (EventStreamDay oneDay : days) {
                 String searchableLabel = (oneDay.getStudyBurstId() != null) ?
                     String.format(":%s %s:Week %s:%s:", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneDay.getWeek(), oneDay.getSessionName()) :
-                    String.format(":Week %s:%s:", oneDay.getWeek(), oneDay.getSessionName());
+                    String.format(":%s:Week %s:", oneDay.getSessionName(), oneDay.getWeek());
                 String displayLabel = (oneDay.getStudyBurstId() != null) ?
                         String.format("%s %s / Week %s / %s", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneDay.getWeek(), oneDay.getSessionName()) :
-                        String.format("Week %s / %s", oneDay.getWeek(), oneDay.getSessionName());
+                        String.format("%s / Week %s", oneDay.getSessionName(), oneDay.getWeek());
                 labels.add(searchableLabel);
                 
                 WeeklyAdherenceReportRow row = new WeeklyAdherenceReportRow(); 
@@ -97,12 +107,15 @@ public class WeeklyAdherenceReportGenerator {
         }
         
         // Now pad the report to fix the number and position of the row entries, so the rows
-        // can be read straight through in any UI of the report. We had two UIs run into serious
-        // problems because this report was initially sparse.
+        // can be read straight through in any UI of the report. Sort the rows so they display
+        // in an order that makes sense.
+        List<WeeklyAdherenceReportRow> rowList = Lists.newArrayList(rows);
+        rowList.sort(ROW_COMPARATOR);
+        
         for (int i=0; i < 7; i++) { // day of week
             List<EventStreamDay> paddedDays = new ArrayList<>();
             
-            for (WeeklyAdherenceReportRow row : rows) {
+            for (WeeklyAdherenceReportRow row : rowList) {
                 List<EventStreamDay> days = finalReport.getByDayEntries().get(i);
                 EventStreamDay oneDay = padEventStreamDay(days, row.getSessionGuid());
                 paddedDays.add(oneDay);
@@ -113,7 +126,7 @@ public class WeeklyAdherenceReportGenerator {
         // If the report is empty, then we seek ahead and store information on the next activity
         EventStreamDay nextDay = getNextActivity(state, finalReport, reports);
         int percentage = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(finalReport));
-
+        
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
         report.setByDayEntries(finalReport.getByDayEntries());
         report.setCreatedOn(state.getNow());
@@ -121,12 +134,11 @@ public class WeeklyAdherenceReportGenerator {
         report.setWeeklyAdherencePercent(percentage);
         report.setNextActivity(NextActivity.create(nextDay));
         report.setLabels(labels);
-        report.setRows(ImmutableList.copyOf(rows));
+        report.setRows(rowList);
         
-        // scrub this information from the day entries, as we've moved it to rows in this report
+        // Remove this information from the day entries, as we've moved it to rows in this report.
         for (List<EventStreamDay> days : report.getByDayEntries().values()) {
             for (EventStreamDay oneDay : days) {
-                // Do not repeat these in the day-by-day entries.
                 oneDay.setSessionName(null);
                 oneDay.setSessionSymbol(null);
                 oneDay.setStudyBurstId(null);

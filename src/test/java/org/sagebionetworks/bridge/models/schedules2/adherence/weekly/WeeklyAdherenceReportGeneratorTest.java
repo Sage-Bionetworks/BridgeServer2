@@ -5,10 +5,14 @@ import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_EVENT_TS2
 import static org.sagebionetworks.bridge.TestConstants.ADHERENCE_STATE_NOW;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportGenerator.ROW_COMPARATOR;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
+
+import java.util.Collections;
+import java.util.List;
 
 import org.joda.time.DateTimeZone;
 import org.mockito.Mockito;
@@ -18,6 +22,7 @@ import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.testng.annotations.Test;
+import org.testng.collections.Lists;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -32,10 +37,11 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(state);
 
         // Because these are different from what is serialized in the JSON, test them here.
-        assertEquals(report.getLabels(), ImmutableSet.of(":Week 1:session3:", 
-                ":Week 2:session1:", ":burst 2:Week 1:session2:"));
+        assertEquals(report.getLabels(), ImmutableSet.of(":session3:Week 1:", 
+                ":session1:Week 2:", ":burst 2:Week 1:session2:"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
+        
         assertEquals(node.get("createdOn").textValue(), 
                 ADHERENCE_STATE_NOW.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)).toString());
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
@@ -44,7 +50,7 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         
         ArrayNode entry1 = (ArrayNode)node.get("byDayEntries").get("0");
         assertEquals(entry1.size(), 3);
-        JsonNode dayNode1 = entry1.get(0);
+        JsonNode dayNode1 = entry1.get(1);
         assertNull(dayNode1.get("label"));
         assertEquals(dayNode1.get("sessionGuid").textValue(), "guid1");
         assertNull(dayNode1.get("sessionName"));
@@ -63,31 +69,31 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         assertEquals(entry2.size(), 3);
         
         JsonNode dayNode2_0 = entry2.get(0);
-        assertEquals(dayNode2_0.size(), 2);
-        assertEquals(dayNode2_0.get("timeWindows").size(), 0);
-        assertEquals(dayNode2_0.get("type").textValue(), "EventStreamDay");
-        
-        JsonNode dayNode2_1 = entry2.get(1);
-        assertNull(dayNode2_1.get("label"));
-        assertEquals(dayNode2_1.get("sessionGuid").textValue(), "guid2");
-        assertNull(dayNode2_1.get("sessionName"));
-        assertNull(dayNode2_1.get("sessionSymbol"));
-        assertNull(dayNode2_1.get("week"));
-        assertNull(dayNode2_1.get("studyBurstId"));
-        assertNull(dayNode2_1.get("studyBurstNum"));
-        assertEquals(dayNode2_1.get("startDay").intValue(), 2);
-        assertEquals(dayNode2_1.get("startDate").textValue(), "2015-02-02");
+        assertNull(dayNode2_0.get("label"));
+        assertEquals(dayNode2_0.get("sessionGuid").textValue(), "guid2");
+        assertNull(dayNode2_0.get("sessionName"));
+        assertNull(dayNode2_0.get("sessionSymbol"));
+        assertNull(dayNode2_0.get("week"));
+        assertNull(dayNode2_0.get("studyBurstId"));
+        assertNull(dayNode2_0.get("studyBurstNum"));
+        assertEquals(dayNode2_0.get("startDay").intValue(), 2);
+        assertEquals(dayNode2_0.get("startDate").textValue(), "2015-02-02");
 
-        JsonNode dayNode2_2 = entry2.get(2);
-        assertEquals(dayNode2_2.size(), 2);
-        assertEquals(dayNode2_2.get("timeWindows").size(), 0);
-        assertEquals(dayNode2_2.get("type").textValue(), "EventStreamDay");
-
-        JsonNode win2 = dayNode2_1.get("timeWindows").get(0);
+        JsonNode win2 = dayNode2_0.get("timeWindows").get(0);
         assertEquals(win2.get("sessionInstanceGuid").textValue(), "instanceGuid2");
         assertEquals(win2.get("state").textValue(), "unstarted");
         assertEquals(win2.get("endDay").intValue(), 16);
         assertEquals(win2.get("endDate").textValue(), "2015-02-16");
+
+        JsonNode dayNode2_1 = entry2.get(1);
+        assertEquals(dayNode2_1.size(), 2);
+        assertEquals(dayNode2_1.get("timeWindows").size(), 0);
+        assertEquals(dayNode2_1.get("type").textValue(), "EventStreamDay");
+        
+        JsonNode dayNode2_2 = entry2.get(2);
+        assertEquals(dayNode2_2.size(), 2);
+        assertEquals(dayNode2_2.get("timeWindows").size(), 0);
+        assertEquals(dayNode2_2.get("type").textValue(), "EventStreamDay");
         
         JsonNode entry3 = (ArrayNode)node.get("byDayEntries").get("3");
         assertEquals(entry3.size(), 3);
@@ -208,4 +214,55 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         assertEquals(report.getWeeklyAdherencePercent(), 100);
         assertTrue(report.isDone());
     }
+    
+    @Test
+    public void sortRowsLabelsOnly() {
+        WeeklyAdherenceReportRow r1 = new WeeklyAdherenceReportRow();
+        r1.setLabel("A");
+        WeeklyAdherenceReportRow r2 = new WeeklyAdherenceReportRow();
+        r2.setLabel("b");
+        WeeklyAdherenceReportRow r3 = new WeeklyAdherenceReportRow();
+        r3.setLabel("C");
+        
+        List<WeeklyAdherenceReportRow> rows = Lists.newArrayList(r3, r2, r1);
+        Collections.sort(rows, ROW_COMPARATOR);
+        
+        assertEquals(rows, ImmutableList.of(r1, r2, r3));
+    }
+    
+    @Test
+    public void sortRowsLabelsAndStudyBursts() {
+        WeeklyAdherenceReportRow r1 = new WeeklyAdherenceReportRow();
+        r1.setLabel("A");
+        r1.setStudyBurstId("E");
+        WeeklyAdherenceReportRow r2 = new WeeklyAdherenceReportRow();
+        r2.setLabel("b");
+        r2.setStudyBurstId("D");
+        WeeklyAdherenceReportRow r3 = new WeeklyAdherenceReportRow();
+        r3.setLabel("C");
+        r3.setStudyBurstId("d");
+        
+        List<WeeklyAdherenceReportRow> rows = Lists.newArrayList(r3, r2, r1);
+        Collections.sort(rows, ROW_COMPARATOR);
+        
+        assertEquals(rows, ImmutableList.of(r2, r3, r1));
+    }
+    
+    @Test
+    public void sortRowsStudyBurstsFirst() {
+        WeeklyAdherenceReportRow r1 = new WeeklyAdherenceReportRow();
+        r1.setLabel("B");
+        r1.setStudyBurstId("E");
+        WeeklyAdherenceReportRow r2 = new WeeklyAdherenceReportRow();
+        r2.setLabel("C");
+        r2.setStudyBurstId("D");
+        WeeklyAdherenceReportRow r3 = new WeeklyAdherenceReportRow();
+        r3.setLabel("A");
+        
+        List<WeeklyAdherenceReportRow> rows = Lists.newArrayList(r3, r2, r1);
+        Collections.sort(rows, ROW_COMPARATOR);
+        
+        assertEquals(rows, ImmutableList.of(r2, r1, r3));
+    }
+    
 }
