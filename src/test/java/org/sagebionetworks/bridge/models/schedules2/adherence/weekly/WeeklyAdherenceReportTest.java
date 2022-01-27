@@ -40,6 +40,7 @@ public class WeeklyAdherenceReportTest {
         row.setStudyBurstId("studyBurstId");
         row.setStudyBurstNum(2);
         row.setWeek(4);
+        row.setStartEventId("event1");
         
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
         report.setAppId(TEST_APP_ID);
@@ -90,6 +91,7 @@ public class WeeklyAdherenceReportTest {
         assertEquals(rowNode.get("studyBurstId").textValue(), "studyBurstId");
         assertEquals(rowNode.get("studyBurstNum").intValue(), 2);
         assertEquals(rowNode.get("week").intValue(), 4);
+        assertEquals(rowNode.get("startEventId").textValue(), "event1");
     }
     
     @Test
