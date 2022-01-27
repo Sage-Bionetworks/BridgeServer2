@@ -4,6 +4,9 @@ import static org.sagebionetworks.bridge.BridgeUtils.getElement;
 
 import java.util.Optional;
 
+import javax.persistence.Embeddable;
+import javax.persistence.Embedded;
+
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -18,16 +21,22 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
  */
 @JsonPropertyOrder({ "identifier", "firstName", "lastName", "email", "phone", "synapseUserId", "externalId",
         "orgMembership", "type" })
+@Embeddable
 public final class AccountRef {
     
     private String firstName;
     private String lastName;
     private String email;
+    @Embedded
     private Phone phone;
     private String synapseUserId;
     private String orgMembership;
     private String identifier;
     private String externalId;
+    
+    // Default constructor for Hibernate
+    AccountRef() {
+    }
     
     public AccountRef(Account account) {
         this.firstName = account.getFirstName();

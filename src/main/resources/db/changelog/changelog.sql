@@ -896,3 +896,17 @@ CREATE TABLE IF NOT EXISTS `WeeklyAdherenceReportLabels` (
   FOREIGN KEY (`studyId`, `appId`) REFERENCES `Substudies` (`id`, `studyId`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
 
+-- changeset bridge:60
+
+ALTER TABLE `WeeklyAdherenceReports`
+DROP COLUMN `participant`,
+ADD COLUMN `rows` mediumtext,
+ADD COLUMN `identifier` varchar(255),
+ADD COLUMN `firstName` varchar(255),
+ADD COLUMN `lastName` varchar(255),
+ADD COLUMN `email` varchar(255),
+ADD COLUMN `orgMembership` varchar(255),
+ADD COLUMN `phone` varchar(20),
+ADD COLUMN `phoneRegion` varchar(2),
+ADD COLUMN `synapseUserId` varchar(255),
+ADD COLUMN `externalId` varchar(255);

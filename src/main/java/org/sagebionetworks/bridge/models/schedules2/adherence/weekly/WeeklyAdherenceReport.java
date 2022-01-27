@@ -9,6 +9,7 @@ import javax.persistence.CollectionTable;
 import javax.persistence.Column;
 import javax.persistence.Convert;
 import javax.persistence.ElementCollection;
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
@@ -18,24 +19,23 @@ import javax.persistence.Table;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
-import org.sagebionetworks.bridge.hibernate.AccountRefConverter;
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.EventStreamDayMapConverter;
 import org.sagebionetworks.bridge.hibernate.NextActivityConverter;
+import org.sagebionetworks.bridge.hibernate.WeeklyAdherenceReportRowListConverter;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @Entity
 @Table(name = "WeeklyAdherenceReports")
 @IdClass(WeeklyAdherenceReportId.class)
-@JsonPropertyOrder({ "participant", "rowLabels", "weeklyAdherencePercent", "clientTimeZone", "createdOn",
-        "byDayEntries", "type" })
+@JsonPropertyOrder({ "participant", "rowLabels", "rows", "weeklyAdherencePercent", "clientTimeZone",
+        "createdOn", "byDayEntries", "type" })
 public class WeeklyAdherenceReport {
     
     @Id
@@ -44,7 +44,7 @@ public class WeeklyAdherenceReport {
     private String studyId;
     @Id
     private String userId;
-    @Convert(converter = AccountRefConverter.class)
+    @Embedded
     private AccountRef participant;
     private boolean testAccount;
     private String clientTimeZone;
@@ -55,13 +55,13 @@ public class WeeklyAdherenceReport {
     private NextActivity nextActivity;
     @Convert(converter = EventStreamDayMapConverter.class)
     private Map<Integer, List<EventStreamDay>> byDayEntries;
-    
     @CollectionTable(name = "WeeklyAdherenceReportLabels", joinColumns = {
-        @JoinColumn(name = "appId"), @JoinColumn(name = "studyId"), @JoinColumn(name = "userId") 
-    })
+        @JoinColumn(name = "appId"), @JoinColumn(name = "studyId"), @JoinColumn(name = "userId")})
     @Column(name = "label")
     @ElementCollection(fetch = FetchType.EAGER)
-    private Set<String> labels;
+    private Set<String> searchableLabels;
+    @Convert(converter = WeeklyAdherenceReportRowListConverter.class)
+    List<WeeklyAdherenceReportRow> rows;
     
     public WeeklyAdherenceReport() {
         byDayEntries = new HashMap<>();    
@@ -93,7 +93,6 @@ public class WeeklyAdherenceReport {
     public void setParticipant(AccountRef participant) {
         this.participant = participant;
     }
-    @JsonIgnore
     public boolean isTestAccount() {
         return testAccount;
     }
@@ -132,12 +131,27 @@ public class WeeklyAdherenceReport {
     public void setNextActivity(NextActivity nextActivity) {
         this.nextActivity = nextActivity;
     }
-    @JsonProperty("rowLabels")
-    public Set<String> getLabels() {
-        return labels;
+    /**
+     * Reports contain multiple rows with composite search information (e.g. study burst
+     * foo, iteration 2, possibly even a specific week of that study burst). To make
+     * the search API for these reports simpler, we're combining this information into
+     * string descriptors that can be specified via API search, e.g. "study burst 2" + 
+     * "Week 2". These are not displayed as a group for the whole report, they are 
+     * shown in the row descriptors. But they are persisted as a collection on the report
+     * for the SQL to retrieve records. 
+     */
+    @JsonIgnore
+    public Set<String> getSearchableLabels() {
+        return searchableLabels;
     }
-    public void setLabels(Set<String> labels) {
-        this.labels = labels;
+    public void setSearchableLabels(Set<String> labels) {
+        this.searchableLabels = labels;
+    }
+    public List<WeeklyAdherenceReportRow> getRows() {
+        return rows;
+    }
+    public void setRows(List<WeeklyAdherenceReportRow> rows) {
+        this.rows = rows;
     }
 }
 

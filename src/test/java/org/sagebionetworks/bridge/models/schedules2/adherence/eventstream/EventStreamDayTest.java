@@ -11,7 +11,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
+import nl.jqno.equalsverifier.EqualsVerifier;
+import nl.jqno.equalsverifier.Warning;
+
 public class EventStreamDayTest {
+    
+    @Test
+    public void hashCodeEquals() {
+        EqualsVerifier.forClass(EventStreamDay.class)
+            .suppress(Warning.NONFINAL_FIELDS).allFieldsShouldBeUsed().verify();
+    }
     
     @Test
     public void canSerialize() throws Exception {
@@ -20,6 +29,7 @@ public class EventStreamDayTest {
         day.setSessionGuid("sessionGuid");
         day.setSessionName("sessionName");
         day.setSessionSymbol("sessionSymbol");
+        day.setStartEventId("event1");
         day.setStartDay(3);
         day.setStartDate(LocalDate.parse("2021-10-01"));
         day.setWeek(5);
@@ -33,6 +43,7 @@ public class EventStreamDayTest {
         assertEquals(node.get("sessionGuid").textValue(), "sessionGuid");
         assertEquals(node.get("sessionName").textValue(), "sessionName");
         assertEquals(node.get("sessionSymbol").textValue(), "sessionSymbol");
+        assertEquals(node.get("startEventId").textValue(), "event1");
         assertEquals(node.get("week").intValue(), 5);
         assertEquals(node.get("studyBurstId").textValue(), "studyBurstId");
         assertEquals(node.get("studyBurstNum").intValue(), 2);
@@ -44,6 +55,7 @@ public class EventStreamDayTest {
         assertEquals(deser.getSessionGuid(), "sessionGuid");
         assertEquals(deser.getSessionName(), "sessionName");
         assertEquals(deser.getSessionSymbol(), "sessionSymbol");
+        assertEquals(deser.getStartEventId(), "event1");
         assertEquals(deser.getWeek(), Integer.valueOf(5));
         assertEquals(deser.getStudyBurstId(), "studyBurstId");
         assertEquals(deser.getStudyBurstNum(), Integer.valueOf(2));

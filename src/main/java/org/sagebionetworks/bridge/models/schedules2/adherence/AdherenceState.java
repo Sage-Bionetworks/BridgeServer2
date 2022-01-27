@@ -115,6 +115,7 @@ public final class AdherenceState {
             eventStreamDay.setSessionGuid(meta.getSessionGuid());
             eventStreamDay.setSessionName(meta.getSessionName());
             eventStreamDay.setSessionSymbol(meta.getSessionSymbol());
+            eventStreamDay.setStartEventId(meta.getSessionStartEventId());
             eventStreamDay.setWeek(startDay / 7);
             eventStreamDay.setStudyBurstId(meta.getStudyBurstId());
             eventStreamDay.setStudyBurstNum(meta.getStudyBurstNum());

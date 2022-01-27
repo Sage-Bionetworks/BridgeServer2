@@ -31,55 +31,60 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdher
 public class HibernateAdherenceReportDaoTest extends Mockito {
     
     private static String FULL_COUNT_SQL = "SELECT COUNT(*) FROM WeeklyAdherenceReport h "
-            +"JOIN h.labels label WHERE h.appId = :appId AND h.studyId = :studyId AND "
+            +"JOIN h.searchableLabels label WHERE h.appId = :appId AND h.studyId = :studyId AND "
             +"weeklyAdherencePercent < :complianceUnder AND (label LIKE :labelFilter0) "
-            +"ORDER BY weeklyAdherencePercent";
+            +"ORDER BY weeklyAdherencePercent, lastName, firstName, email, phone, externalId";
     
-    private static String FULL_QUERY_SQL = "SELECT h FROM WeeklyAdherenceReport h JOIN h.labels "
+    private static String FULL_QUERY_SQL = "SELECT DISTINCT h FROM WeeklyAdherenceReport h JOIN h.searchableLabels "
             +"label WHERE h.appId = :appId AND h.studyId = :studyId AND weeklyAdherencePercent < "
-            +":complianceUnder AND (label LIKE :labelFilter0) ORDER BY weeklyAdherencePercent";
+            +":complianceUnder AND (label LIKE :labelFilter0) ORDER BY weeklyAdherencePercent, lastName, "
+            +"firstName, email, phone, externalId";
 
     private static String TEST_COUNT_SQL = "SELECT COUNT(*) FROM WeeklyAdherenceReport h "
-            +"JOIN h.labels label WHERE h.appId = :appId AND h.studyId = :studyId AND "
+            +"JOIN h.searchableLabels label WHERE h.appId = :appId AND h.studyId = :studyId AND "
             +"weeklyAdherencePercent < :complianceUnder AND (label LIKE :labelFilter0) "
-            +"AND testAccount = 1 ORDER BY weeklyAdherencePercent";
+            +"AND testAccount = 1 ORDER BY weeklyAdherencePercent, lastName, firstName, email, phone, externalId";
     
-    private static String TEST_QUERY_SQL = "SELECT h FROM WeeklyAdherenceReport h JOIN h.labels "
+    private static String TEST_QUERY_SQL = "SELECT DISTINCT h FROM WeeklyAdherenceReport h JOIN h.searchableLabels "
             +"label WHERE h.appId = :appId AND h.studyId = :studyId AND weeklyAdherencePercent < "
-            +":complianceUnder AND (label LIKE :labelFilter0) AND testAccount = 1 ORDER BY weeklyAdherencePercent";
+            +":complianceUnder AND (label LIKE :labelFilter0) AND testAccount = 1 ORDER BY "
+            +"weeklyAdherencePercent, lastName, firstName, email, phone, externalId";
 
     private static String PROD_COUNT_SQL = "SELECT COUNT(*) FROM WeeklyAdherenceReport h "
-            +"JOIN h.labels label WHERE h.appId = :appId AND h.studyId = :studyId AND "
+            +"JOIN h.searchableLabels label WHERE h.appId = :appId AND h.studyId = :studyId AND "
             +"weeklyAdherencePercent < :complianceUnder AND (label LIKE :labelFilter0) "
-            +"AND testAccount = 0 ORDER BY weeklyAdherencePercent";
+            +"AND testAccount = 0 ORDER BY weeklyAdherencePercent, lastName, firstName, email, phone, externalId";
     
-    private static String PROD_QUERY_SQL = "SELECT h FROM WeeklyAdherenceReport h JOIN h.labels "
+    private static String PROD_QUERY_SQL = "SELECT DISTINCT h FROM WeeklyAdherenceReport h JOIN h.searchableLabels "
             +"label WHERE h.appId = :appId AND h.studyId = :studyId AND weeklyAdherencePercent < "
-            +":complianceUnder AND (label LIKE :labelFilter0) AND testAccount = 0 ORDER BY weeklyAdherencePercent";
+            +":complianceUnder AND (label LIKE :labelFilter0) AND testAccount = 0 ORDER BY weeklyAdherencePercent, "
+            +"lastName, firstName, email, phone, externalId";
 
     private static String FULL_MULTILABEL_COUNT_SQL = "SELECT COUNT(*) FROM WeeklyAdherenceReport h "
-            +"JOIN h.labels label WHERE h.appId = :appId AND h.studyId = :studyId AND weeklyAdherencePercent "
-            +"< :complianceUnder AND (label LIKE :labelFilter0 OR label LIKE :labelFilter1) ORDER BY weeklyAdherencePercent";
+            +"JOIN h.searchableLabels label WHERE h.appId = :appId AND h.studyId = :studyId AND weeklyAdherencePercent "
+            +"< :complianceUnder AND (label LIKE :labelFilter0 OR label LIKE :labelFilter1) ORDER BY "
+            +"weeklyAdherencePercent, lastName, firstName, email, phone, externalId";
     
-    private static String FULL_MULTILABEL_QUERY_SQL = "SELECT h FROM WeeklyAdherenceReport h JOIN h.labels "
+    private static String FULL_MULTILABEL_QUERY_SQL = "SELECT DISTINCT h FROM WeeklyAdherenceReport h JOIN h.searchableLabels "
             +"label WHERE h.appId = :appId AND h.studyId = :studyId AND weeklyAdherencePercent < :complianceUnder "
-            +"AND (label LIKE :labelFilter0 OR label LIKE :labelFilter1) ORDER BY weeklyAdherencePercent";
+            +"AND (label LIKE :labelFilter0 OR label LIKE :labelFilter1) ORDER BY weeklyAdherencePercent, lastName, "
+            +"firstName, email, phone, externalId";
 
     private static String NO_LABEL_FILTER_COUNT_SQL = "SELECT COUNT(*) FROM WeeklyAdherenceReport h "
             +"WHERE h.appId = :appId AND h.studyId = :studyId AND weeklyAdherencePercent < :complianceUnder "
-            +"ORDER BY weeklyAdherencePercent";
+            +"ORDER BY weeklyAdherencePercent, lastName, firstName, email, phone, externalId";
     
-    private static String NO_LABEL_FILTER_QUERY_SQL = "SELECT h FROM WeeklyAdherenceReport h WHERE "
+    private static String NO_LABEL_FILTER_QUERY_SQL = "SELECT DISTINCT h FROM WeeklyAdherenceReport h WHERE "
             +"h.appId = :appId AND h.studyId = :studyId AND weeklyAdherencePercent < :complianceUnder "
-            +"ORDER BY weeklyAdherencePercent";
+            +"ORDER BY weeklyAdherencePercent, lastName, firstName, email, phone, externalId";
     
     private static String NO_ADHERENCE_COUNT_SQL = "SELECT COUNT(*) FROM WeeklyAdherenceReport h "
-            +"JOIN h.labels label WHERE h.appId = :appId AND h.studyId = :studyId AND (label LIKE "
-            +":labelFilter0) ORDER BY weeklyAdherencePercent";
+            +"JOIN h.searchableLabels label WHERE h.appId = :appId AND h.studyId = :studyId AND (label LIKE "
+            +":labelFilter0) ORDER BY weeklyAdherencePercent, lastName, firstName, email, phone, externalId";
     
-    private static String NO_ADHERENCE_QUERY_SQL = "SELECT h FROM WeeklyAdherenceReport h JOIN h.labels "
+    private static String NO_ADHERENCE_QUERY_SQL = "SELECT DISTINCT h FROM WeeklyAdherenceReport h JOIN h.searchableLabels "
             +"label WHERE h.appId = :appId AND h.studyId = :studyId AND (label LIKE :labelFilter0) ORDER BY "
-            +"weeklyAdherencePercent";
+            +"weeklyAdherencePercent, lastName, firstName, email, phone, externalId";
 
     @Mock
     HibernateHelper mockHelper;

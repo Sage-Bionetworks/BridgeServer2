@@ -43,6 +43,7 @@ public class AdherenceStateTest extends Mockito {
     public void beforeMethod() { 
         meta1 = new TimelineMetadata();
         meta1.setSessionStartEventId("event1");
+        meta1.setSessionInstanceGuid("instanceGuid1");
         meta1.setSessionGuid("guid1");
         meta1.setSessionInstanceStartDay(1);
         meta1.setSessionName("session1");
@@ -50,6 +51,7 @@ public class AdherenceStateTest extends Mockito {
         
         meta2 = new TimelineMetadata();
         meta2.setSessionStartEventId("event2");
+        meta2.setSessionInstanceGuid("instanceGuid2");
         meta2.setSessionGuid("guid2");
         meta2.setSessionInstanceStartDay(2);
         meta2.setSessionName("session2");
@@ -128,6 +130,7 @@ public class AdherenceStateTest extends Mockito {
         assertEquals(day1.getSessionGuid(), "guid1");
         assertEquals(day1.getSessionName(), "session1");
         assertEquals(day1.getSessionSymbol(), "1");
+        assertEquals(day1.getStartEventId(), "event1");
         assertNull(day1.getStudyBurstId());
         assertNull(day1.getStudyBurstNum());
         
@@ -135,6 +138,7 @@ public class AdherenceStateTest extends Mockito {
         assertEquals(day2.getSessionGuid(), "guid2");
         assertEquals(day2.getSessionName(), "session2");
         assertEquals(day2.getSessionSymbol(), "2");
+        assertEquals(day2.getStartEventId(), "event2");
         assertEquals(day2.getStudyBurstId(), "burst2");
         assertEquals(day2.getStudyBurstNum(), Integer.valueOf(2));
         
