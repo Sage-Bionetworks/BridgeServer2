@@ -23,13 +23,13 @@ public class ConsentSignatureValidator implements Validator {
 
     private static final int LEAP_YEAR_MONTH = 2;
     private static final int LEAP_YEAR_DAY = 29;
-    
+
     private final int minAgeOfConsent;
 
     public ConsentSignatureValidator(int minAgeOfConsent) {
         this.minAgeOfConsent = minAgeOfConsent;
     }
-    
+
     @Override
     public boolean supports(Class<?> clazz) {
         return ConsentSignature.class.isAssignableFrom(clazz);
@@ -38,7 +38,7 @@ public class ConsentSignatureValidator implements Validator {
     @Override
     public void validate(Object target, Errors errors) {
         ConsentSignature sig = (ConsentSignature) target;
-        
+
         if (Strings.isNullOrEmpty(sig.getName())) {
             errors.rejectValue("name", CANNOT_BE_BLANK);
         }
@@ -56,16 +56,7 @@ public class ConsentSignatureValidator implements Validator {
                 LocalDate now = LocalDate.now(DateTimeZone.UTC);
                 Period period = new Period(birthdate, now);
 
-                if (period.getYears() < minAgeOfConsent) {
-                    String message = String.format(TOO_YOUNG, minAgeOfConsent);
-                    errors.rejectValue("birthdate", message);
-                }
-
-                // Handle participants' birthdays on 2/29 of a leap year.
-                if (period.getYears() == minAgeOfConsent && now.getMonthOfYear() == LEAP_YEAR_MONTH &&
-                        birthdate.getMonthOfYear() == LEAP_YEAR_MONTH &&
-                        birthdate.getDayOfMonth() == LEAP_YEAR_DAY)
-                {
+                if (period.getYears() < minAgeOfConsent || bissextileBirthdayAgeCheck(birthdate, now)) {
                     String message = String.format(TOO_YOUNG, minAgeOfConsent);
                     errors.rejectValue("birthdate", message);
                 }
@@ -92,7 +83,18 @@ public class ConsentSignatureValidator implements Validator {
             errors.reject("must specify imageData and imageMimeType if you specify either of them");
         }
     }
-    
+
+    // Add additional check to handle participants' birthdays on 2/29 of a leap year and current day is 2/28 of 18
+    // years later - e.g. Joda thinks there are 18 years between 2/29/2004 and 2/28/2022, but it won't be
+    // 18 years until 3/1/2022. (Jira issue: https://sagebionetworks.jira.com/browse/BRIDGE-2136)
+    private boolean bissextileBirthdayAgeCheck(LocalDate birthdate, LocalDate now) {
+        Period period = new Period(birthdate, now);
+        return (period.getYears() == minAgeOfConsent &&
+                now.getMonthOfYear() == LEAP_YEAR_MONTH &&
+                birthdate.getMonthOfYear() == LEAP_YEAR_MONTH &&
+                birthdate.getDayOfMonth() == LEAP_YEAR_DAY);
+    }
+
     private LocalDate parseBirthday(String birthdate) {
         if (birthdate != null) {
             try {

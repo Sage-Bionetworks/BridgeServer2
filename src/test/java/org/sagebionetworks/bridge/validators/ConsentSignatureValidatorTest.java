@@ -9,6 +9,8 @@ import static org.testng.Assert.fail;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.LocalDate;
+import org.joda.time.Period;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -20,7 +22,7 @@ import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
 import org.sagebionetworks.bridge.time.DateUtils;
 
 public class ConsentSignatureValidatorTest {
-    private static final DateTime NOW = DateTime.parse("2022-02-21T00:00:00.000Z");
+    private static final DateTime NOW = DateTime.parse("2022-02-22T00:00:00.000Z");
     private static final long SIGNED_ON_TIMESTAMP = DateUtils.getCurrentMillisFromEpoch();
     private ConsentSignatureValidator validator;
     
@@ -257,7 +259,6 @@ public class ConsentSignatureValidatorTest {
         validator = new ConsentSignatureValidator(18);
         ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate(birthdate).build();
         Validate.entityThrowingException(validator, sig);
-
     }
 
     // Test for subject birthdate on 2/29 of leap year (e.g. 2004) & today's date is 2/28 of (18 + one's birth year,
@@ -267,8 +268,8 @@ public class ConsentSignatureValidatorTest {
         DateTime today = DateTime.parse("2022-02-28T00:00:00.000Z");
         DateTimeUtils.setCurrentMillisFixed(today.getMillis());
         String birthdate =  DateTime.parse("2004-02-29T00:00:00.000Z").toLocalDate().toString();
-        validator = new ConsentSignatureValidator(18);
 
+        validator = new ConsentSignatureValidator(18);
         ConsentSignature sig = new ConsentSignature.Builder().withName("test name").withBirthdate(birthdate).build();
         assertValidatorMessage(validator, sig, "birthdate", "too recent (the study requires participants to be 18 years of age or older).");
     }
