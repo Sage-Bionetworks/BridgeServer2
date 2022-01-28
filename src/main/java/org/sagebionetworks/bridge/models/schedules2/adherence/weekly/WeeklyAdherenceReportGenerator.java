@@ -2,6 +2,12 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 
 import java.util.ArrayList;
 import java.util.Comparator;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState.DONE;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState.IN_PROGRESS;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState.UNSTARTED;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_APPLICABLE;
+
+import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -10,6 +16,8 @@ import java.util.Set;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
+import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState;
+import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
@@ -17,6 +25,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventS
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 public class WeeklyAdherenceReportGenerator {
@@ -77,22 +86,20 @@ public class WeeklyAdherenceReportGenerator {
             }
         }
         
-        // The report is now entirely sparse, which is an issue. We're going to iterate through all of it
-        // and determine the full set of rows that are present, but then we need to fill the report in.
-
         // Add labels. The labels are colon-separated here to facilitate string searches on the labels.
         Set<String> labels = new LinkedHashSet<>();
         Set<WeeklyAdherenceReportRow> rows = new LinkedHashSet<>();
         for (List<EventStreamDay> days : finalReport.getByDayEntries().values()) {
             for (EventStreamDay oneDay : days) {
                 // The main searches to support are:
+                // <Study Burst>
                 // <Study Burst ID> 1
                 // <Study Burst ID> 1:Week 1
                 // <Session Name>
                 // <Session Name>:Week 1
                 // Week 1
                 String searchableLabel = (oneDay.getStudyBurstId() != null) ?
-                    String.format(":%s %s:Week %s:%s:", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneDay.getWeek(), oneDay.getSessionName()) :
+                    String.format(":%s:%s %s:Week %s:%s:", oneDay.getStudyBurstId(), oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneDay.getWeek(), oneDay.getSessionName()) :
                     String.format(":%s:Week %s:", oneDay.getSessionName(), oneDay.getWeek());
                 String displayLabel = (oneDay.getStudyBurstId() != null) ?
                         String.format("%s %s / Week %s / %s", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneDay.getWeek(), oneDay.getSessionName()) :
@@ -137,7 +144,19 @@ public class WeeklyAdherenceReportGenerator {
         }
         int percentage = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(finalReport));
         
+        ParticipantProgressionState progression = IN_PROGRESS;
+        if (rowList.isEmpty() && nextDay == null) {
+            long na = AdherenceUtils.counting(eventReport.getStreams(), ImmutableSet.of(NOT_APPLICABLE));
+            long total = AdherenceUtils.counting(eventReport.getStreams(), EnumSet.allOf(SessionCompletionState.class));
+            if (na == total) {
+                progression = UNSTARTED;    
+            } else {
+                progression = DONE;
+            }
+        }
+
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
+        report.setProgression(progression);
         report.setByDayEntries(finalReport.getByDayEntries());
         report.setCreatedOn(state.getNow());
         report.setClientTimeZone(state.getClientTimeZone());
@@ -149,6 +168,7 @@ public class WeeklyAdherenceReportGenerator {
         // Remove this information from the day entries, as we've moved it to rows in this report.
         for (List<EventStreamDay> days : report.getByDayEntries().values()) {
             for (EventStreamDay oneDay : days) {
+                oneDay.setStartEventId(null);
                 oneDay.setSessionName(null);
                 oneDay.setSessionSymbol(null);
                 oneDay.setStudyBurstId(null);
@@ -176,7 +196,6 @@ public class WeeklyAdherenceReportGenerator {
     }
     
     private EventStreamDay getNextActivity(AdherenceState state, EventStream finalReport, EventStreamAdherenceReport reports) {
-        
         for (EventStream report : reports.getStreams()) {
             for (List<EventStreamDay> days :report.getByDayEntries().values()) {
                 for (EventStreamDay oneDay : days) {
