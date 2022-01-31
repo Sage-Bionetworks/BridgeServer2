@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.upload;
 
+import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
@@ -14,9 +15,11 @@ public class UploadRequest implements BridgeEntity {
     private final boolean encrypted;
     private final ObjectNode metadata;
     private final boolean zipped;
+    private final String instanceGuid;
+    private final DateTime eventTimestamp;
 
     private UploadRequest(String name, long contentLength, String contentMd5, String contentType, boolean encrypted,
-            ObjectNode metadata, boolean zipped) {
+            ObjectNode metadata, boolean zipped, String instanceGuid, DateTime eventTimestamp) {
         this.name = name;
         this.contentLength = contentLength;
         this.contentMd5 = contentMd5;
@@ -24,6 +27,8 @@ public class UploadRequest implements BridgeEntity {
         this.encrypted = encrypted;
         this.metadata = metadata;
         this.zipped = zipped;
+        this.instanceGuid = instanceGuid;
+        this.eventTimestamp = eventTimestamp;
     }
 
     public String getName() {
@@ -59,6 +64,14 @@ public class UploadRequest implements BridgeEntity {
     public boolean isZipped() {
         return zipped;
     }
+    
+    public String getInstanceGuid() {
+        return instanceGuid;
+    }
+    
+    public DateTime getEventTimestamp() {
+        return eventTimestamp;
+    }
 
     public static class Builder {
         private String name;
@@ -68,6 +81,8 @@ public class UploadRequest implements BridgeEntity {
         private Boolean encrypted;
         private ObjectNode metadata;
         private Boolean zipped;
+        private String instanceGuid;
+        private DateTime eventTimestamp;
 
         public Builder withName(String name) {
             this.name = name;
@@ -103,6 +118,16 @@ public class UploadRequest implements BridgeEntity {
             this.zipped = zipped;
             return this;
         }
+        
+        public Builder withInstanceGuid(String instanceGuid) {
+            this.instanceGuid = instanceGuid;
+            return this;
+        }
+        
+        public Builder withEventTimestamp(DateTime eventTimestamp) {
+            this.eventTimestamp = eventTimestamp;
+            return this;
+        }
 
         public UploadRequest build() {
             // contentLength defaults to 0.
@@ -112,8 +137,8 @@ public class UploadRequest implements BridgeEntity {
             boolean actualEncrypted = encrypted != null ? encrypted : true;
             boolean actualZipped = zipped != null ? zipped : true;
 
-            return new UploadRequest(name, actualContentLength, contentMd5, contentType, actualEncrypted,
-                    metadata, actualZipped);
+            return new UploadRequest(name, actualContentLength, contentMd5, contentType, actualEncrypted, metadata,
+                    actualZipped, instanceGuid, eventTimestamp);
         }
     }
 }

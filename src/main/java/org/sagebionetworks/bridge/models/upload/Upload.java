@@ -3,6 +3,8 @@ package org.sagebionetworks.bridge.models.upload;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;
@@ -126,4 +128,20 @@ public interface Upload {
      * might be unencrypted, uncompressed, and it might not fit any of the expected schemas for the app.
      */
     List<String> getValidationMessageList();
+    
+    /**
+     * If this upload is based on an assessment specified by the v2 scheduler, this optional field should
+     * be the instance GUID of the assessment or session in the participant’s Timeline. This will be used 
+     * to associate the upload with scheduling context information. 
+     */
+    String getInstanceGuid();
+    void setInstanceGuid(String instanceGuid);
+    
+    /**
+     * If this upload is based on an assessment specified by the v2 scheduler, this optional field should
+     * be the timestamp of the event that triggered this performance of the assessment or session in the 
+     * participant’s Timeline. This will be used to associate the upload with scheduling context information. 
+     */
+    DateTime getEventTimestamp();
+    void setEventTimestamp(DateTime eventTimestamp);
 }

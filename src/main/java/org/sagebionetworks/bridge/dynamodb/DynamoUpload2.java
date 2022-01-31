@@ -8,8 +8,12 @@ import javax.annotation.Nonnull;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.json.DateTimeDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.models.upload.UploadCompletionClient;
@@ -24,6 +28,7 @@ import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBTypeConverted;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBVersionAttribute;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableList;
 
@@ -52,6 +57,8 @@ public class DynamoUpload2 implements Upload {
     private final List<String> validationMessageList = new ArrayList<>();
     private Long version;
     private Boolean zipped;
+    private String instanceGuid;
+    private DateTime eventTimestamp;
 
     /** This empty constructor is needed by the DynamoDB mapper. */
     public DynamoUpload2() {}
@@ -69,6 +76,8 @@ public class DynamoUpload2 implements Upload {
         status = UploadStatus.REQUESTED;
         uploadId = BridgeUtils.generateGuid();
         zipped = uploadRequest.isZipped();
+        instanceGuid = uploadRequest.getInstanceGuid();
+        eventTimestamp = uploadRequest.getEventTimestamp();
     }
 
     /** {@inheritDoc} */
@@ -354,7 +363,43 @@ public class DynamoUpload2 implements Upload {
         return zipped != null ? zipped : true;
     }
 
-    @Override public void setZipped(boolean zipped) {
+    @Override
+    public void setZipped(boolean zipped) {
         this.zipped = zipped;
+    }
+
+    /**
+     * If this upload is based on an assessment specified by the v2 scheduler, this optional field should
+     * be the instance GUID of the assessment or session in the participant’s Timeline. This will be used 
+     * to associate the upload with scheduling context information. 
+     */
+    @Override
+    public String getInstanceGuid() {
+        return instanceGuid;
+    }
+
+    @Override
+    /** @see #getInstanceGuid */
+    public void setInstanceGuid(String instanceGuid) {
+        this.instanceGuid = instanceGuid;
+    }
+
+    /**
+     * If this upload is based on an assessment specified by the v2 scheduler, this optional field should
+     * be the timestamp of the event that triggered this performance of the assessment or session in the 
+     * participant’s Timeline. This will be used to associate the upload with scheduling context information. 
+     */
+    @Override
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @DynamoDBTypeConverted(converter = DateTimeToLongMarshaller.class)
+    public DateTime getEventTimestamp() {
+        return eventTimestamp;
+    }
+
+    @Override
+    @JsonDeserialize(using = DateTimeDeserializer.class)
+    /** @see #getEventTimestamp */
+    public void setEventTimestamp(DateTime eventTimestamp) {
+        this.eventTimestamp = eventTimestamp;
     }
 }

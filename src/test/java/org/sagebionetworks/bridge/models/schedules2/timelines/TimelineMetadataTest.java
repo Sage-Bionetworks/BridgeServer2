@@ -118,7 +118,7 @@ public class TimelineMetadataTest extends Mockito {
         assertNull(map.get("studyBurstNum"));
     }
 
-    private TimelineMetadata createTimelineMetadata() {
+    public static TimelineMetadata createTimelineMetadata() {
         TimelineMetadata meta = new TimelineMetadata();
         meta.setGuid(SESSION_GUID_1);
         meta.setAssessmentInstanceGuid("assessmentInstanceGuid");

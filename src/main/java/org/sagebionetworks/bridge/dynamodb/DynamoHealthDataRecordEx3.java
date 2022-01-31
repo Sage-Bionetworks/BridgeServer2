@@ -14,6 +14,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.json.DateTimeDeserializer;
+import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
@@ -36,6 +39,8 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     private Long exportedOn;
     private Map<String, String> metadata;
     private SharingScope sharingScope;
+    private String instanceGuid;
+    private DateTime eventTimestamp;
     private Long version;
 
     @DynamoDBHashKey
@@ -190,6 +195,29 @@ public class DynamoHealthDataRecordEx3 implements HealthDataRecordEx3 {
     @Override
     public void setSharingScope(SharingScope sharingScope) {
         this.sharingScope = sharingScope;
+    }
+
+    @Override
+    public String getInstanceGuid() {
+        return instanceGuid;
+    }
+
+    @Override
+    public void setInstanceGuid(String instanceGuid) {
+        this.instanceGuid = instanceGuid;
+    }
+
+    @Override
+    @JsonSerialize(using = DateTimeSerializer.class)
+    @DynamoDBTypeConverted(converter = DateTimeToLongMarshaller.class)
+    public DateTime getEventTimestamp() {
+        return eventTimestamp;
+    }
+
+    @Override
+    @JsonDeserialize(using = DateTimeDeserializer.class)
+    public void setEventTimestamp(DateTime eventTimestamp) {
+        this.eventTimestamp = eventTimestamp;
     }
 
     @DynamoDBVersionAttribute
