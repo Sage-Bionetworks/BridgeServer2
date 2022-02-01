@@ -416,7 +416,7 @@ public class AdherenceService {
                 .withRequestParam(PagedResourceList.LABEL_FILTER, search.getLabelFilters())
                 .withRequestParam(PagedResourceList.ADHERENCE_MIN, search.getAdherenceMin())
                 .withRequestParam(PagedResourceList.ADHERENCE_MAX, search.getAdherenceMax())
-                .withRequestParam(PagedResourceList.PROGRESSION_FILTER, search.getProgressionFilter())
+                .withRequestParam(PagedResourceList.PROGRESSION_FILTERS, search.getProgressionFilters())
                 .withRequestParam(PagedResourceList.ID_FILTER, search.getIdFilter())
                 .withRequestParam(PagedResourceList.OFFSET_BY, search.getOffsetBy())
                 .withRequestParam(PagedResourceList.PAGE_SIZE, search.getPageSize());

@@ -7,18 +7,20 @@ import static org.sagebionetworks.bridge.hibernate.HibernateAdherenceReportDao.A
 import static org.sagebionetworks.bridge.hibernate.HibernateAdherenceReportDao.ADHERENCE_MIN_FIELD;
 import static org.sagebionetworks.bridge.hibernate.HibernateAdherenceReportDao.ID_FILTER_FIELD;
 import static org.sagebionetworks.bridge.hibernate.HibernateAdherenceReportDao.LABEL_FILTER_FIELD;
-import static org.sagebionetworks.bridge.hibernate.HibernateAdherenceReportDao.PROGRESSION_FIELD;
+import static org.sagebionetworks.bridge.hibernate.HibernateAdherenceReportDao.PROGRESSION_FILTER_FIELD;
 import static org.sagebionetworks.bridge.hibernate.HibernateAdherenceReportDao.SELECT_COUNT;
 import static org.sagebionetworks.bridge.hibernate.HibernateAdherenceReportDao.SELECT_DISTINCT;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.BOTH;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.PRODUCTION;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.TEST;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState.IN_PROGRESS;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.DONE;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.IN_PROGRESS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
@@ -29,11 +31,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import org.mockito.MockitoAnnotations;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
-import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState;
+import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 
 public class HibernateAdherenceReportDaoTest extends Mockito {
@@ -42,7 +45,7 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
     
     private static String FULL_SQL = "FROM WeeklyAdherenceReport h JOIN h.searchableLabels label WHERE "
             +"h.appId = :appId AND h.studyId = :studyId AND weeklyAdherencePercent >= :adherenceMin AND "
-            +"weeklyAdherencePercent <= :adherenceMax AND progression = :progressionFilter AND (label "
+            +"weeklyAdherencePercent <= :adherenceMax AND progression IN :progressionFilters AND (label "
             +"LIKE :labelFilter0) AND (externalId LIKE :id OR identifier LIKE :id OR firstName LIKE :id "
             +"OR lastName LIKE :id OR email LIKE :id OR phone LIKE :id)"+ORDER_BY;
     
@@ -70,7 +73,7 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
             +"LIKE :id OR lastName LIKE :id OR email LIKE :id OR phone LIKE :id)"+ORDER_BY;
     
     private static String PROGRESSION_FILTER = "FROM WeeklyAdherenceReport h WHERE h.appId = :appId AND h.studyId "
-            +"= :studyId AND progression = :progressionFilter"+ORDER_BY;
+            +"= :studyId AND progression IN :progressionFilters"+ORDER_BY;
     
     @Mock
     HibernateHelper mockHelper;
@@ -104,10 +107,10 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
 
         AdherenceReportSearch search = new AdherenceReportSearch();
         search.setTestFilter(BOTH);
-        search.setLabelFilters(ImmutableList.of("label"));
+        search.setLabelFilters(ImmutableSet.of("label"));
         search.setAdherenceMin(10);
         search.setAdherenceMax(75);
-        search.setProgressionFilter(IN_PROGRESS);
+        search.setProgressionFilters(ImmutableSet.of(IN_PROGRESS));
         search.setIdFilter("anId");
         search.setOffsetBy(50);
         search.setPageSize(100);
@@ -127,7 +130,7 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
         assertEquals(paramsCaptor.getValue().get(LABEL_FILTER_FIELD+"0"), "%:label:%");
         assertEquals(paramsCaptor.getValue().get(ADHERENCE_MIN_FIELD), 10);
         assertEquals(paramsCaptor.getValue().get(ADHERENCE_MAX_FIELD), 75);
-        assertEquals(paramsCaptor.getValue().get(PROGRESSION_FIELD), IN_PROGRESS);
+        assertEquals(paramsCaptor.getValue().get(PROGRESSION_FILTER_FIELD), ImmutableSet.of(IN_PROGRESS));
     }
     
     @Test
@@ -179,7 +182,7 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
     @Test
     public void getWeeklyAdherenceReports_multipleLabels() {
         AdherenceReportSearch search = new AdherenceReportSearch();
-        search.setLabelFilters(ImmutableList.of("A", "B"));
+        search.setLabelFilters(ImmutableSet.of("A", "B"));
 
         List<WeeklyAdherenceReport> reports = ImmutableList.of();
         when(mockHelper.queryCount(any(), any())).thenReturn(1000);
@@ -203,7 +206,7 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
     @Test
     public void getWeeklyAdherenceReports_withEmptyLabelFilter() {
         AdherenceReportSearch search = new AdherenceReportSearch();
-        search.setLabelFilters(ImmutableList.of());
+        search.setLabelFilters(ImmutableSet.of());
 
         List<WeeklyAdherenceReport> reports = ImmutableList.of();
         when(mockHelper.queryCount(any(), any())).thenReturn(1000);
@@ -271,9 +274,10 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
     }
 
     @Test
-    public void getWeeklyAdherenceReports_progressionFilter() {
+    public void getWeeklyAdherenceReports_progressionFilters() {
+        Set<ParticipantStudyProgress> progressStates = ImmutableSet.of(IN_PROGRESS, DONE);
         AdherenceReportSearch search = new AdherenceReportSearch();
-        search.setProgressionFilter(ParticipantProgressionState.UNSTARTED);
+        search.setProgressionFilters(progressStates);
 
         dao.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, search);
         
@@ -283,6 +287,6 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
         
         assertEquals(stringCaptor.getAllValues().get(0), SELECT_COUNT + PROGRESSION_FILTER);
         assertEquals(stringCaptor.getAllValues().get(1), SELECT_DISTINCT + PROGRESSION_FILTER);
-        assertEquals(paramsCaptor.getValue().get(PROGRESSION_FIELD), ParticipantProgressionState.UNSTARTED);
+        assertEquals(paramsCaptor.getValue().get(PROGRESSION_FILTER_FIELD), progressStates);
     }
 }

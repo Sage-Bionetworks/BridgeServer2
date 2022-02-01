@@ -20,7 +20,7 @@ import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.BOTH;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.PRODUCTION;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.TEST;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState.IN_PROGRESS;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.IN_PROGRESS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
 
@@ -480,8 +480,8 @@ public class AdherenceControllerTest extends Mockito {
         
         AdherenceReportSearch search = new AdherenceReportSearch();
         search.setTestFilter(PRODUCTION);
-        search.setLabelFilters(ImmutableList.of("label1", "label2"));
-        search.setProgressionFilter(IN_PROGRESS);
+        search.setLabelFilters(ImmutableSet.of("label1", "label2"));
+        search.setProgressionFilters(ImmutableSet.of(IN_PROGRESS));
         search.setIdFilter("id");
         search.setAdherenceMax(75);
         search.setOffsetBy(50);

@@ -25,7 +25,7 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
     static final String ADHERENCE_MIN_FIELD = "adherenceMin";
     static final String ADHERENCE_MAX_FIELD = "adherenceMax";
     static final String ID_FILTER_FIELD = "id";
-    static final String PROGRESSION_FIELD = "progressionFilter"; 
+    static final String PROGRESSION_FILTER_FIELD = "progressionFilters"; 
     static final String LABEL_FILTER_FIELD = "labelFilter";
     static final String STUDY_ID_FIELD = "studyId";
     static final String APP_ID_FIELD = "appId";
@@ -60,13 +60,13 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         where.append("h.appId = :appId", APP_ID_FIELD, appId);
         where.append("h.studyId = :studyId", STUDY_ID_FIELD, studyId);
         if (search.getAdherenceMin() > 0) {
-            where.append("weeklyAdherencePercent >= :adherenceMin", "adherenceMin", search.getAdherenceMin());    
+            where.append("weeklyAdherencePercent >= :adherenceMin", ADHERENCE_MIN_FIELD, search.getAdherenceMin());    
         }
         if (search.getAdherenceMax() < 100) {
-            where.append("weeklyAdherencePercent <= :adherenceMax", "adherenceMax", search.getAdherenceMax());    
+            where.append("weeklyAdherencePercent <= :adherenceMax", ADHERENCE_MAX_FIELD, search.getAdherenceMax());    
         }
-        if (search.getProgressionFilter() != null) {
-            where.append("progression = :progressionFilter", PROGRESSION_FIELD, search.getProgressionFilter());
+        if (search.getProgressionFilters() != null && !search.getProgressionFilters().isEmpty()) {
+            where.append("progression IN :progressionFilters", PROGRESSION_FILTER_FIELD, search.getProgressionFilters());
         }
         if (hasLabels) {
             where.labels(search.getLabelFilters());

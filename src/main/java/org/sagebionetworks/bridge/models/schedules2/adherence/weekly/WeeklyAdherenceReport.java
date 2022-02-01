@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.hibernate.NextActivityConverter;
 import org.sagebionetworks.bridge.hibernate.WeeklyAdherenceReportRowListConverter;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
-import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState;
+import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -50,7 +50,7 @@ public class WeeklyAdherenceReport {
     @Embedded
     private AccountRef participant;
     @Enumerated(EnumType.STRING)
-    private ParticipantProgressionState progression;
+    private ParticipantStudyProgress progression;
     private boolean testAccount;
     private String clientTimeZone;
     private int weeklyAdherencePercent;
@@ -98,10 +98,10 @@ public class WeeklyAdherenceReport {
     public void setParticipant(AccountRef participant) {
         this.participant = participant;
     }
-    public ParticipantProgressionState getProgression() {
+    public ParticipantStudyProgress getProgression() {
         return progression;
     }
-    public void setProgression(ParticipantProgressionState progression) {
+    public void setProgression(ParticipantStudyProgress progression) {
         this.progression = progression;
     }
     public boolean isTestAccount() {

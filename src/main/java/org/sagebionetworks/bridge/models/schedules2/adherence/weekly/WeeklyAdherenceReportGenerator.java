@@ -2,9 +2,9 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState.DONE;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState.IN_PROGRESS;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState.UNSTARTED;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.DONE;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.IN_PROGRESS;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.UNSTARTED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_APPLICABLE;
 
 import java.util.EnumSet;
@@ -16,7 +16,7 @@ import java.util.Set;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
-import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState;
+import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
@@ -144,7 +144,7 @@ public class WeeklyAdherenceReportGenerator {
         }
         int percentage = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(finalReport));
         
-        ParticipantProgressionState progression = IN_PROGRESS;
+        ParticipantStudyProgress progression = IN_PROGRESS;
         if (rowList.isEmpty() && nextDay == null) {
             long na = AdherenceUtils.counting(eventReport.getStreams(), ImmutableSet.of(NOT_APPLICABLE));
             long total = AdherenceUtils.counting(eventReport.getStreams(), EnumSet.allOf(SessionCompletionState.class));

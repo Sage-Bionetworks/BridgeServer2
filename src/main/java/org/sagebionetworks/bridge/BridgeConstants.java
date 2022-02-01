@@ -152,6 +152,8 @@ public class BridgeConstants {
     
     public static final String ADHERENCE_RANGE_ERROR = "% must be from 0-100";
     
+    public static final String ADHERENCE_RANGE_ORDER_ERROR = "cannot be less than adherenceMin";
+    
     public static final String TEST_USER_GROUP = "test_user";
     
     public static final String EXPIRATION_PERIOD_KEY = "expirationPeriod";

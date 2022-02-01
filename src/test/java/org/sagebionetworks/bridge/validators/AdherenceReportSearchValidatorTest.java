@@ -1,6 +1,7 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.BridgeConstants.ADHERENCE_RANGE_ERROR;
+import static org.sagebionetworks.bridge.BridgeConstants.ADHERENCE_RANGE_ORDER_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_COUNT_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_LENGTH_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
@@ -8,8 +9,8 @@ import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.lang3.StringUtils;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
@@ -57,9 +58,9 @@ public class AdherenceReportSearchValidatorTest {
 
     @Test
     public void tooManyLabelOptions() { 
-        List<String> labels = new ArrayList<>();
+        Set<String> labels = new HashSet<>();
         for (int i=0; i < 300; i++) {
-            labels.add("abc");
+            labels.add("abc"+i);
         }
         AdherenceReportSearch search = new AdherenceReportSearch();
         search.setLabelFilters(labels);
@@ -69,7 +70,7 @@ public class AdherenceReportSearchValidatorTest {
 
     @Test
     public void nullLabelOption() { 
-        List<String> labels = new ArrayList<>();
+        Set<String> labels = new HashSet<>();
         labels.add(null);
         AdherenceReportSearch search = new AdherenceReportSearch();
         search.setLabelFilters(labels);
@@ -79,7 +80,7 @@ public class AdherenceReportSearchValidatorTest {
 
     @Test
     public void blankLabelOption() { 
-        List<String> labels = new ArrayList<>();
+        Set<String> labels = new HashSet<>();
         labels.add(" ");
         AdherenceReportSearch search = new AdherenceReportSearch();
         search.setLabelFilters(labels);
@@ -89,7 +90,7 @@ public class AdherenceReportSearchValidatorTest {
     
     @Test
     public void negativeLabelTooLong() { 
-        List<String> labels = new ArrayList<>();
+        Set<String> labels = new HashSet<>();
         labels.add(StringUtils.repeat("A", 300));
         AdherenceReportSearch search = new AdherenceReportSearch();
         search.setLabelFilters(labels);
@@ -132,8 +133,9 @@ public class AdherenceReportSearchValidatorTest {
     @Test
     public void adherenceMaxHigherThanMin() { 
         AdherenceReportSearch search = new AdherenceReportSearch();
-        search.setAdherenceMax(101);
+        search.setAdherenceMin(80);
+        search.setAdherenceMax(70);
         
-        assertValidatorMessage(validator, search, "adherenceMax", ADHERENCE_RANGE_ERROR);
+        assertValidatorMessage(validator, search, "adherenceMax", ADHERENCE_RANGE_ORDER_ERROR);
     }
 }

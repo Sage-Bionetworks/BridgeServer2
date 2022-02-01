@@ -2,8 +2,11 @@ package org.sagebionetworks.bridge.models;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.BOTH;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantProgressionState.DONE;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.DONE;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.IN_PROGRESS;
 import static org.testng.Assert.assertEquals;
+
+import java.util.Set;
 
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.testng.annotations.Test;
@@ -11,7 +14,7 @@ import org.testng.annotations.Test;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 import nl.jqno.equalsverifier.EqualsVerifier;
 import nl.jqno.equalsverifier.Warning;
@@ -28,9 +31,9 @@ public class AdherenceReportSearchTest {
     public void canSerialize() throws JsonMappingException, JsonProcessingException {
         AdherenceReportSearch search = new AdherenceReportSearch();
         search.setTestFilter(BOTH);
-        search.setLabelFilters(ImmutableList.of("labelFilters"));
+        search.setLabelFilters(ImmutableSet.of("labelFilters"));
         search.setAdherenceMax(53);
-        search.setProgressionFilter(DONE);
+        search.setProgressionFilters(ImmutableSet.of(IN_PROGRESS, DONE));
         search.setIdFilter("idFilter");
         search.setOffsetBy(5);
         search.setPageSize(10);
@@ -40,11 +43,13 @@ public class AdherenceReportSearchTest {
         assertEquals(node.get("labelFilters").get(0).textValue(), "labelFilters");
         assertEquals(node.get("adherenceMin").intValue(), 0);
         assertEquals(node.get("adherenceMax").intValue(), 53);
-        assertEquals(node.get("progressionFilter").textValue(), "done");
+        Set<String> progressions = ImmutableSet.of(
+                node.get("progressionFilters").get(0).textValue(),
+                node.get("progressionFilters").get(1).textValue());
+        assertEquals(progressions, ImmutableSet.of("in_progress", "done"));
         assertEquals(node.get("idFilter").textValue(), "idFilter");
         assertEquals(node.get("offsetBy").intValue(), 5);
         assertEquals(node.get("pageSize").intValue(), 10);
-        
         
         AdherenceReportSearch deser = BridgeObjectMapper.get()
                 .readValue(node.toString(), AdherenceReportSearch.class);
