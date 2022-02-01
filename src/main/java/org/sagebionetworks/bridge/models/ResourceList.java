@@ -23,6 +23,8 @@ import com.google.common.collect.ImmutableMap;
  */
 public class ResourceList<T> {
     
+    public static final String ADHERENCE_MAX = "adherenceMax";
+    public static final String ADHERENCE_MIN = "adherenceMin";
     public static final String ADHERENCE_RECORD_TYPE = "adherenceRecordType";
     public static final String ADMIN_ONLY = "adminOnly";
     public static final String ALL_OF_GROUPS = "allOfGroups";
@@ -31,7 +33,6 @@ public class ResourceList<T> {
     public static final String ATTRIBUTE_KEY = "attributeKey";
     public static final String ATTRIBUTE_VALUE_FILTER = "attributeValueFilter";
     public static final String CATEGORIES = "categories"; // should be a set or list
-    public static final String COMPLIANCE_UNDER = "complianceUnder";
     public static final String CURRENT_TIMESTAMPS_ONLY = "currentTimestampsOnly";
     public static final String EMAIL_FILTER = "emailFilter";
     public static final String END_DATE = "endDate";
@@ -59,6 +60,7 @@ public class ResourceList<T> {
     public static final String PAGE_SIZE = "pageSize";
     public static final String PHONE_FILTER = "phoneFilter";
     public static final String PREDICATE = "predicate";
+    public static final String PROGRESSION_FILTERS = "progressionFilters";
     public static final String REPORT_TYPE = "reportType";
     public static final String SCHEDULED_ON_END = "scheduledOnEnd";
     public static final String SCHEDULED_ON_START = "scheduledOnStart";

@@ -5,6 +5,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.IN_PROGRESS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
@@ -51,6 +52,7 @@ public class WeeklyAdherenceReportTest {
         report.setSearchableLabels(ImmutableSet.of("label1", "label2"));
         report.setParticipant(new AccountRef(account, "study1"));
         report.setTestAccount(true);
+        report.setProgression(IN_PROGRESS);
         report.setWeeklyAdherencePercent(79);
         report.setRows(ImmutableList.of(row));
         report.setByDayEntries(ImmutableMap.of(
@@ -68,7 +70,7 @@ public class WeeklyAdherenceReportTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
         
-        assertEquals(node.size(), 9);
+        assertEquals(node.size(), 10);
         assertNull(node.get("appId"));
         assertNull(node.get("studyId"));
         assertNull(node.get("userId"));
@@ -77,6 +79,7 @@ public class WeeklyAdherenceReportTest {
         assertEquals(node.get("weeklyAdherencePercent").intValue(), 79);
         assertEquals(node.get("participant").get("identifier").textValue(), TEST_USER_ID);
         assertTrue(node.get("testAccount").booleanValue());
+        assertEquals(node.get("progression").textValue(), "in_progress");
         assertEquals(node.get("nextActivity").get("type").textValue(), "NextActivity");
         assertEquals(node.get("byDayEntries").get("6").get(0).get("type").textValue(), "EventStreamDay");
         assertEquals(node.get("type").textValue(), "WeeklyAdherenceReport");

@@ -11,6 +11,8 @@ import javax.persistence.Convert;
 import javax.persistence.ElementCollection;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.IdClass;
@@ -25,6 +27,7 @@ import org.sagebionetworks.bridge.hibernate.NextActivityConverter;
 import org.sagebionetworks.bridge.hibernate.WeeklyAdherenceReportRowListConverter;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
+import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
@@ -34,8 +37,8 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Entity
 @Table(name = "WeeklyAdherenceReports")
 @IdClass(WeeklyAdherenceReportId.class)
-@JsonPropertyOrder({ "participant", "rowLabels", "rows", "weeklyAdherencePercent", "clientTimeZone",
-        "createdOn", "byDayEntries", "type" })
+@JsonPropertyOrder({ "participant", "testAccount", "progression", "weeklyAdherencePercent", "clientTimeZone",
+        "createdOn", "rows", "byDayEntries", "type" })
 public class WeeklyAdherenceReport {
     
     @Id
@@ -46,6 +49,8 @@ public class WeeklyAdherenceReport {
     private String userId;
     @Embedded
     private AccountRef participant;
+    @Enumerated(EnumType.STRING)
+    private ParticipantStudyProgress progression;
     private boolean testAccount;
     private String clientTimeZone;
     private int weeklyAdherencePercent;
@@ -92,6 +97,12 @@ public class WeeklyAdherenceReport {
     }
     public void setParticipant(AccountRef participant) {
         this.participant = participant;
+    }
+    public ParticipantStudyProgress getProgression() {
+        return progression;
+    }
+    public void setProgression(ParticipantStudyProgress progression) {
+        this.progression = progression;
     }
     public boolean isTestAccount() {
         return testAccount;

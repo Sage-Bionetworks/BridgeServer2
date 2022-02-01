@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLE
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.WITHDRAWN;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -143,11 +144,12 @@ class QueryBuilder {
                 whereParams.put(key, searchString);
             }
         }
-        public void labels(List<String> labelFilter) {
+        public void labels(Collection<String> labelFilters) {
             List<String> phrases = new ArrayList<>();
-            for (int i=0; i < labelFilter.size(); i++) {
+            int i=0;
+            for (String labelFilter : labelFilters) {
                 phrases.add("label LIKE :labelFilter"+i);
-                whereParams.put("labelFilter"+i,  "%:" + labelFilter.get(i) + ":%");
+                whereParams.put("labelFilter"+(i++),  "%:" + labelFilter + ":%");
             }
             predicated.add("(" + Joiner.on(" OR ").join(phrases) + ")");
         }

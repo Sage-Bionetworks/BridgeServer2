@@ -41,7 +41,7 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
 
         // Because these are different from what is serialized in the JSON, test them here.
         assertEquals(report.getSearchableLabels(), ImmutableSet.of(":session3:Week 1:", 
-                ":session1:Week 2:", ":burst 2:Week 1:session2:"));
+                ":session1:Week 2:", ":burst:burst 2:Week 1:session2:"));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
         
@@ -327,8 +327,6 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         
         List<EventStreamDay> days = report.getByDayEntries().get(0);
         assertEquals(days.size(), 2);
-        assertEquals(days.get(0).getStartEventId(), "custom:Clinic Visit");
-        assertEquals(days.get(1).getStartEventId(), "custom:Survey Returned");
     }
     
 }

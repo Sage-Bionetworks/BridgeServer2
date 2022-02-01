@@ -1,8 +1,10 @@
 package org.sagebionetworks.bridge.hibernate;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static org.sagebionetworks.bridge.BridgeUtils.OR_JOINER;
 import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.annotation.Resource;
@@ -10,6 +12,7 @@ import javax.annotation.Resource;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
 import org.sagebionetworks.bridge.models.AccountTestFilter;
+import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.springframework.stereotype.Component;
@@ -17,7 +20,12 @@ import org.springframework.stereotype.Component;
 @Component
 public class HibernateAdherenceReportDao implements AdherenceReportDao {
 
-    static final String COMPLIANCE_UNDER_FIELD = "complianceUnder";
+    static final String SELECT_COUNT = "SELECT COUNT(*) ";
+    static final String SELECT_DISTINCT = "SELECT DISTINCT h ";
+    static final String ADHERENCE_MIN_FIELD = "adherenceMin";
+    static final String ADHERENCE_MAX_FIELD = "adherenceMax";
+    static final String ID_FILTER_FIELD = "id";
+    static final String PROGRESSION_FILTER_FIELD = "progressionFilters"; 
     static final String LABEL_FILTER_FIELD = "labelFilter";
     static final String STUDY_ID_FIELD = "studyId";
     static final String APP_ID_FIELD = "appId";
@@ -37,13 +45,11 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
 
     @Override
     public PagedResourceList<WeeklyAdherenceReport> getWeeklyAdherenceReports(String appId, String studyId,
-            AccountTestFilter testFilter, List<String> labelFilter, Integer complianceUnder, Integer offsetBy,
-            Integer pageSize) {
+            AdherenceReportSearch search) {
         checkNotNull(appId);
         checkNotNull(studyId);
-        checkNotNull(testFilter);
         
-        boolean hasLabels = (labelFilter != null && !labelFilter.isEmpty());
+        boolean hasLabels = (search.getLabelFilters() != null && !search.getLabelFilters().isEmpty());
         
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM WeeklyAdherenceReport h");
@@ -53,23 +59,39 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         WhereClauseBuilder where = builder.startWhere(AND);
         where.append("h.appId = :appId", APP_ID_FIELD, appId);
         where.append("h.studyId = :studyId", STUDY_ID_FIELD, studyId);
-        if (complianceUnder != null) {
-            where.append("weeklyAdherencePercent < :complianceUnder", COMPLIANCE_UNDER_FIELD, complianceUnder);
+        if (search.getAdherenceMin() > 0) {
+            where.append("weeklyAdherencePercent >= :adherenceMin", ADHERENCE_MIN_FIELD, search.getAdherenceMin());    
+        }
+        if (search.getAdherenceMax() < 100) {
+            where.append("weeklyAdherencePercent <= :adherenceMax", ADHERENCE_MAX_FIELD, search.getAdherenceMax());    
+        }
+        if (search.getProgressionFilters() != null && !search.getProgressionFilters().isEmpty()) {
+            where.append("progression IN :progressionFilters", PROGRESSION_FILTER_FIELD, search.getProgressionFilters());
         }
         if (hasLabels) {
-            where.labels(labelFilter);
+            where.labels(search.getLabelFilters());
         }
-        if (testFilter == AccountTestFilter.TEST) {
+        if (search.getTestFilter() == AccountTestFilter.TEST) {
             where.append("testAccount = 1");
-        } else if (testFilter == AccountTestFilter.PRODUCTION) {
+        } else if (search.getTestFilter() == AccountTestFilter.PRODUCTION) {
             where.append("testAccount = 0");
+        }
+        if (search.getIdFilter() != null) {
+            List<String> clauses = new ArrayList<>();
+            clauses.add("externalId LIKE :id");
+            clauses.add("identifier LIKE :id");
+            clauses.add("firstName LIKE :id");
+            clauses.add("lastName LIKE :id");
+            clauses.add("email LIKE :id");
+            clauses.add("phone LIKE :id");
+            where.append("(" + OR_JOINER.join(clauses) + ")", "id", "%" + search.getIdFilter() + "%");
         }
         builder.append("ORDER BY weeklyAdherencePercent, lastName, firstName, email, phone, externalId");
         
-        int total = hibernateHelper.queryCount("SELECT COUNT(*) " + builder.getQuery(), builder.getParameters());
+        int total = hibernateHelper.queryCount(SELECT_COUNT + builder.getQuery(), builder.getParameters());
         
-        List<WeeklyAdherenceReport> reports = hibernateHelper.queryGet("SELECT DISTINCT h " + builder.getQuery(),
-                builder.getParameters(), offsetBy, pageSize, WeeklyAdherenceReport.class);
+        List<WeeklyAdherenceReport> reports = hibernateHelper.queryGet(SELECT_DISTINCT + builder.getQuery(),
+                builder.getParameters(), search.getOffsetBy(), search.getPageSize(), WeeklyAdherenceReport.class);
 
         return new PagedResourceList<>(reports, total, true);
     }

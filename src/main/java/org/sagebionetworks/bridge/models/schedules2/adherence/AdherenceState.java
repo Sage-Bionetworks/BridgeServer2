@@ -36,11 +36,17 @@ public final class AdherenceState {
     private final DateTimeZone zone;
     
     public AdherenceState(AdherenceState.Builder builder) {
-        LocalDate localNow = builder.now.toLocalDate(); 
+        // All times should be adjusted to the same time zone. This will be the participant’s 
+        // declared time zone if we have it, otherwise it will be the server’s default time zone.
+        // In general it doesn’t make a difference, with the exception of edge cases like daylight
+        // savings time for short periods of time. We’d prefer to be accurate in the participant’s
+        // local time zone if we can be.
         zone = builder.zone;
+        now = builder.now.withZone(zone);
+        LocalDate localNow = now.toLocalDate();
+        
         showActive = builder.showActiveOnly;
         clientTimeZone = builder.clientTimeZone;
-        now = builder.now.withZone(zone);
         metadata = builder.metadata;
         events = builder.events;
         adherenceRecords = builder.adherenceRecords;
@@ -56,6 +62,7 @@ public final class AdherenceState {
             // DateTime eventTimestamp = event.getTimestamp();
             DateTime eventTimestamp = event.getTimestamp().withZone(zone);
             int daysSince = Days.daysBetween(eventTimestamp.toLocalDate(), localNow).getDays();
+            
             daysSinceEventByEventId.put(event.getEventId(), daysSince);
             eventTimestampByEventId.put(event.getEventId(), eventTimestamp);
         }
