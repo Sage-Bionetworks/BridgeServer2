@@ -8,7 +8,6 @@ import javax.annotation.Nonnull;
 
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBIndexRangeKey;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;

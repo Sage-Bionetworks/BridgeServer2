@@ -3,7 +3,6 @@ package org.sagebionetworks.bridge.models.upload;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import org.joda.time.LocalDate;
 
 import org.sagebionetworks.bridge.dynamodb.DynamoUpload2;

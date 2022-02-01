@@ -112,8 +112,8 @@ public class UploadRequest implements BridgeEntity {
             boolean actualEncrypted = encrypted != null ? encrypted : true;
             boolean actualZipped = zipped != null ? zipped : true;
 
-            return new UploadRequest(name, actualContentLength, contentMd5, contentType, actualEncrypted, metadata,
-                    actualZipped);
+            return new UploadRequest(name, actualContentLength, contentMd5, contentType, actualEncrypted,
+                    metadata, actualZipped);
         }
     }
 }
