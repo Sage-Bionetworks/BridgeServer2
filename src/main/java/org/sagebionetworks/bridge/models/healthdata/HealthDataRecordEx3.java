@@ -8,7 +8,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dynamodb.DynamoHealthDataRecordEx3;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
@@ -36,8 +35,6 @@ public interface HealthDataRecordEx3 extends BridgeEntity {
         record.setHealthCode(upload.getHealthCode());
         record.setCreatedOn(upload.getCompletedOn());
         record.setClientInfo(RequestContext.get().getCallerClientInfo().toString());
-        record.setInstanceGuid(upload.getInstanceGuid());
-        record.setEventTimestamp(upload.getEventTimestamp());
 
         ObjectNode metadata = upload.getMetadata();
         if (metadata != null) {
@@ -118,22 +115,6 @@ public interface HealthDataRecordEx3 extends BridgeEntity {
      */
     SharingScope getSharingScope();
     void setSharingScope(SharingScope sharingScope);
-    
-    /**
-     * If this upload is based on an assessment specified by the v2 scheduler, this optional field should
-     * be the instance GUID of the assessment or session in the participant’s Timeline. This will be used 
-     * to associate the upload with scheduling context information. 
-     */
-    String getInstanceGuid();
-    void setInstanceGuid(String instanceGuid);
-    
-    /**
-     * If this upload is based on an assessment specified by the v2 scheduler, this optional field should
-     * be the timestamp of the event that triggered this performance of the assessment or session in the 
-     * participant’s Timeline. This will be used to associate the upload with scheduling context information. 
-     */
-    DateTime getEventTimestamp();
-    void setEventTimestamp(DateTime eventTimestamp);
 
     /**
      * Record version. This is used to detect concurrency conflicts. For creating new health data records, this field

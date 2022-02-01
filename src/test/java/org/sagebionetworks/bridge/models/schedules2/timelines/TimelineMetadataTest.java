@@ -110,10 +110,10 @@ public class TimelineMetadataTest extends Mockito {
         assertNull(map.get("sessionInstanceEndDay"));
         assertNull(map.get("sessionLabel"));
         assertNull(map.get("timeWindowGuid"));
-        assertEquals(map.get("timeWindowPersistent"), "false");
+        assertNull(map.get("timeWindowPersistent"));
         assertNull(map.get("scheduleGuid"));
         assertNull(map.get("scheduleModifiedOn"));
-        assertEquals(map.get("schedulePublished"), "false");
+        assertNull(map.get("schedulePublished"));
         assertNull(map.get("studyBurstId"));
         assertNull(map.get("studyBurstNum"));
     }
