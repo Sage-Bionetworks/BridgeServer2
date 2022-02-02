@@ -71,8 +71,7 @@ public class TimelineMetadataTest extends Mockito {
         TimelineMetadata meta = createTimelineMetadata();
         
         Map<String,String> map = meta.asMap();
-        assertEquals(map.size(), 17);
-        assertEquals(map.get("appId"), "appId");
+        assertEquals(map.size(), 16);
         assertEquals(map.get("assessmentInstanceGuid"), "assessmentInstanceGuid");
         assertEquals(map.get("assessmentGuid"), ASSESSMENT_1_GUID);
         assertEquals(map.get("assessmentId"), "assessmentId");
@@ -96,7 +95,6 @@ public class TimelineMetadataTest extends Mockito {
         TimelineMetadata meta = new TimelineMetadata();
         
         Map<String,String> map = meta.asMap();
-        assertNull(map.get("appId"));
         assertNull(map.get("assessmentInstanceGuid"));
         assertNull(map.get("assessmentGuid"));
         assertNull(map.get("assessmentId"));
