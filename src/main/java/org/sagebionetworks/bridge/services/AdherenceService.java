@@ -5,13 +5,6 @@ import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toMap;
 import static java.util.stream.Collectors.toSet;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_ACCESS_ADHERENCE_DATA;
-import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.COMPLIANCE_UNDER_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_COUNT_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_LENGTH_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.NEGATIVE_OFFSET_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.TEST_USER_GROUP;
 import static org.sagebionetworks.bridge.BridgeUtils.formatActivityEventId;
 import static org.sagebionetworks.bridge.models.ResourceList.ADHERENCE_RECORD_TYPE;
@@ -55,7 +48,7 @@ import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.models.AccountTestFilter;
+import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
@@ -75,6 +68,7 @@ import org.sagebionetworks.bridge.models.schedules2.timelines.SessionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
+import org.sagebionetworks.bridge.validators.AdherenceReportSearchValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -410,37 +404,22 @@ public class AdherenceService {
     }
     
     public PagedResourceList<WeeklyAdherenceReport> getWeeklyAdherenceReports(String appId, String studyId,
-            AccountTestFilter testFilter, List<String> labelFilter, Integer complianceUnder, Integer offsetBy, 
-            Integer pageSize) {
+            AdherenceReportSearch search) {
         checkNotNull(appId);
         checkNotNull(studyId);
-        checkNotNull(testFilter);
+        checkNotNull(search);
         
-        if (offsetBy != null && offsetBy < 0) {
-            throw new BadRequestException(NEGATIVE_OFFSET_ERROR);
-        }
-        if (pageSize != null && (pageSize < API_MINIMUM_PAGE_SIZE || pageSize > API_MAXIMUM_PAGE_SIZE)) {
-            throw new BadRequestException(PAGE_SIZE_ERROR);
-        }
-        if (labelFilter != null) {
-            if (labelFilter.size() > 50) {
-                throw new BadRequestException(LABEL_FILTER_COUNT_ERROR);   
-            } else {
-                if (labelFilter.stream().anyMatch(oneLabel -> oneLabel.length() > 25)) {
-                    throw new BadRequestException(LABEL_FILTER_LENGTH_ERROR);   
-                }
-            }
-        }
-        if (complianceUnder != null && (complianceUnder < 1 ||  complianceUnder > 100)) {
-            throw new BadRequestException(COMPLIANCE_UNDER_ERROR);
-        }
-        return reportDao.getWeeklyAdherenceReports(
-                appId, studyId, testFilter, labelFilter, complianceUnder, offsetBy, pageSize)
-                .withRequestParam(PagedResourceList.TEST_FILTER, testFilter)
-                .withRequestParam(PagedResourceList.LABEL_FILTER, labelFilter)
-                .withRequestParam(PagedResourceList.COMPLIANCE_UNDER, complianceUnder)
-                .withRequestParam(PagedResourceList.OFFSET_BY, offsetBy)
-                .withRequestParam(PagedResourceList.PAGE_SIZE, pageSize);
+        Validate.entityThrowingException(AdherenceReportSearchValidator.INSTANCE, search);
+
+        return reportDao.getWeeklyAdherenceReports(appId, studyId, search)
+                .withRequestParam(PagedResourceList.TEST_FILTER, search.getTestFilter())
+                .withRequestParam(PagedResourceList.LABEL_FILTER, search.getLabelFilters())
+                .withRequestParam(PagedResourceList.ADHERENCE_MIN, search.getAdherenceMin())
+                .withRequestParam(PagedResourceList.ADHERENCE_MAX, search.getAdherenceMax())
+                .withRequestParam(PagedResourceList.PROGRESSION_FILTERS, search.getProgressionFilters())
+                .withRequestParam(PagedResourceList.ID_FILTER, search.getIdFilter())
+                .withRequestParam(PagedResourceList.OFFSET_BY, search.getOffsetBy())
+                .withRequestParam(PagedResourceList.PAGE_SIZE, search.getPageSize());
     }
     
     private WeeklyAdherenceReport getWeeklyAdherenceReportInternal(String appId, String studyId, String userId,

@@ -3,17 +3,12 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CANNOT_ACCESS_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
-import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
 import static org.sagebionetworks.bridge.Roles.WORKER;
-import static org.sagebionetworks.bridge.models.AccountTestFilter.BOTH;
-import static org.sagebionetworks.bridge.models.AccountTestFilter.PRODUCTION;
 import static org.sagebionetworks.bridge.models.AccountTestFilter.TEST;
-
-import java.util.List;
 
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,7 +21,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
-import org.sagebionetworks.bridge.models.AccountTestFilter;
+import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.Account;
@@ -110,36 +105,21 @@ public class AdherenceController extends BaseController {
         return service.getWeeklyAdherenceReport(appId, studyId, account);
     }
     
-    @GetMapping("/v5/studies/{studyId}/adherence/weekly")    
-    public PagedResourceList<WeeklyAdherenceReport> getWeeklyAdherenceReports(@PathVariable String studyId,
-            @RequestParam(required = false) String testFilter,
-            @RequestParam(required = false) List<String> labelFilter, 
-            @RequestParam(required = false) String complianceUnder, 
-            @RequestParam(required = false) String offsetBy, 
-            @RequestParam(required = false) String pageSize) {
+    @PostMapping("/v5/studies/{studyId}/adherence/weekly")    
+    public PagedResourceList<WeeklyAdherenceReport> getWeeklyAdherenceReports(@PathVariable String studyId) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+        
+        AdherenceReportSearch search = parseJson(AdherenceReportSearch.class);
         
         // May need to have access to the study
         CAN_READ_PARTICIPANT_REPORTS.checkAndThrow(STUDY_ID, studyId);
         
-        Integer offsetByInt = BridgeUtils.getIntegerOrDefault(offsetBy, 0);
-        Integer pageSizeInt = BridgeUtils.getIntegerOrDefault(pageSize, API_DEFAULT_PAGE_SIZE);
-        Integer complianceUnderInt = BridgeUtils.getIntegerOrDefault(complianceUnder, null);
-        
         // If a developer-type account, you can only retrieve test accounts. Otherwise we'll look at the 
         // testFilter flag, with an incorrect value or no value defaulting to production.
-        AccountTestFilter accountTestFilter = PRODUCTION;
         if (CANNOT_ACCESS_PARTICIPANTS.check()) {
-            accountTestFilter = TEST;
-        } else if (testFilter != null) {
-            if ("test".equals(testFilter)) {
-                accountTestFilter = TEST;
-            } else if ("both".equals(testFilter)) {
-                accountTestFilter = BOTH;
-            }
+            search.setTestFilter(TEST);
         }
-        return service.getWeeklyAdherenceReports(session.getAppId(), studyId, accountTestFilter, labelFilter,
-                complianceUnderInt, offsetByInt, pageSizeInt);
+        return service.getWeeklyAdherenceReports(session.getAppId(), studyId, search);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence")

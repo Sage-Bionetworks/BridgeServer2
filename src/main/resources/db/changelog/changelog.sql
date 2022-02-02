@@ -910,3 +910,8 @@ ADD COLUMN `phone` varchar(20),
 ADD COLUMN `phoneRegion` varchar(2),
 ADD COLUMN `synapseUserId` varchar(255),
 ADD COLUMN `externalId` varchar(255);
+
+-- changeset bridge:61
+
+ALTER TABLE `WeeklyAdherenceReports`
+ADD COLUMN `progression` varchar(255);
