@@ -50,7 +50,6 @@ public class TimelineMetadata implements BridgeEntity {
     
     public final Map<String,String> asMap() {
         Map<String,String> map = new HashMap<>();
-        map.put("guid", guid);
         map.put("assessmentInstanceGuid", assessmentInstanceGuid);
         map.put("assessmentGuid", assessmentGuid);
         map.put("assessmentId", assessmentId);
