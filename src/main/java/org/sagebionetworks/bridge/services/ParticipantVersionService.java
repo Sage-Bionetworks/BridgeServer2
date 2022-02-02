@@ -27,6 +27,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.worker.Ex3ParticipantVersionRequest;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -37,9 +38,15 @@ public class ParticipantVersionService {
 
     static final String WORKER_NAME_EX_3_PARTICIPANT_VERSION = "Ex3ParticipantVersionWorker";
 
+    private AppService appService;
     private ParticipantVersionDao participantVersionDao;
     private AmazonSQSClient sqsClient;
     private String workerQueueUrl;
+
+    @Autowired
+    public final void setAppService(AppService appService) {
+        this.appService = appService;
+    }
 
     @Autowired
     public final void setConfig(BridgeConfig config) {
@@ -58,6 +65,13 @@ public class ParticipantVersionService {
 
     /** Creates a participant version from an account. */
     public void createParticipantVersionFromAccount(Account account) {
+        String appId = account.getAppId();
+        App app = appService.getApp(appId);
+        if (!BridgeUtils.isExporter3Configured(app)) {
+            // If Exporter 3.0 isn't enabled, there's no point in creating a Participant Version.
+            return;
+        }
+
         if (!account.getRoles().isEmpty()) {
             // Accounts that have roles aren't research participants. Don't export them to Synapse.
             return;

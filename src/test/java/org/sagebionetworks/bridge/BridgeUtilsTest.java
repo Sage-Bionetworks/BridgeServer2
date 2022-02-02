@@ -101,7 +101,37 @@ public class BridgeUtilsTest extends Mockito {
         }
         assertEquals(uuids.size(), 20);
     }
-    
+
+    @Test
+    public void isExporter3Configured_IsExported3EnabledFalse() {
+        App app = TestUtils.getValidApp(BridgeUtilsTest.class);
+        app.setExporter3Enabled(false);
+        assertFalse(BridgeUtils.isExporter3Configured(app));
+    }
+
+    @Test
+    public void isExporter3Configured_ConfigObjectNull() {
+        App app = TestUtils.getValidApp(BridgeUtilsTest.class);
+        app.setExporter3Enabled(true);
+        app.setExporter3Configuration(null);
+        assertFalse(BridgeUtils.isExporter3Configured(app));
+    }
+
+    @Test
+    public void isExporter3Configured_ConfiguredFalse() {
+        App app = TestUtils.getValidApp(BridgeUtilsTest.class);
+        app.setExporter3Enabled(true);
+        app.getExporter3Configuration().setProjectId(null);
+        assertFalse(BridgeUtils.isExporter3Configured(app));
+    }
+
+    @Test
+    public void isExporter3Configured_ConfiguredTrue() {
+        App app = TestUtils.getValidApp(BridgeUtilsTest.class);
+        app.setExporter3Enabled(true);
+        assertTrue(BridgeUtils.isExporter3Configured(app));
+    }
+
     @Test
     public void mapStudyMemberships() {
         Account account = Account.create();
