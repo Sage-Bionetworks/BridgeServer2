@@ -37,6 +37,7 @@ import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.Roles;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.ParticipantVersionDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -44,6 +45,7 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.ParticipantVersion;
 import org.sagebionetworks.bridge.models.accounts.SharingScope;
+import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.worker.Ex3ParticipantVersionRequest;
 import org.sagebionetworks.bridge.models.worker.WorkerRequest;
@@ -63,6 +65,9 @@ public class ParticipantVersionServiceTest {
     private static final String WORKER_QUEUE_URL = "http://example.com/dummy-sqs-url";
 
     @Mock
+    private AppService mockAppService;
+
+    @Mock
     private ParticipantVersionDao mockParticipantVersionDao;
 
     @Mock
@@ -70,6 +75,8 @@ public class ParticipantVersionServiceTest {
 
     @InjectMocks
     private ParticipantVersionService participantVersionService;
+
+    private App app;
 
     @BeforeClass
     public static void beforeClass() {
@@ -84,6 +91,11 @@ public class ParticipantVersionServiceTest {
         BridgeConfig mockConfig = mock(BridgeConfig.class);
         when(mockConfig.getProperty(BridgeConstants.CONFIG_KEY_WORKER_SQS_URL)).thenReturn(WORKER_QUEUE_URL);
         participantVersionService.setConfig(mockConfig);
+
+        // Mock app service.
+        app = TestUtils.getValidApp(ParticipantVersionServiceTest.class);
+        app.setExporter3Enabled(true);
+        when(mockAppService.getApp(TestConstants.TEST_APP_ID)).thenReturn(app);
     }
 
     @AfterClass
@@ -138,9 +150,24 @@ public class ParticipantVersionServiceTest {
     }
 
     @Test
+    public void createParticipantVersionFromAccount_Ex3NotConfigured() {
+        // Set Exporter 3.0 to false.
+        app.setExporter3Enabled(false);
+
+        // Execute.
+        Account account = Account.create();
+        account.setAppId(TestConstants.TEST_APP_ID);
+        participantVersionService.createParticipantVersionFromAccount(account);
+
+        // We never call through to the dao.
+        verifyZeroInteractions(mockParticipantVersionDao);
+    }
+
+    @Test
     public void createParticipantVersionFromAccount_HasRoles() {
         // Make Account with role.
         Account account = Account.create();
+        account.setAppId(TestConstants.TEST_APP_ID);
         account.setRoles(ImmutableSet.of(Roles.STUDY_DESIGNER));
 
         // Execute.
@@ -154,6 +181,7 @@ public class ParticipantVersionServiceTest {
     public void createParticipantVersionFromAccount_NoSharing() {
         // Make account with no_sharing.
         Account account = Account.create();
+        account.setAppId(TestConstants.TEST_APP_ID);
         account.setSharingScope(SharingScope.NO_SHARING);
 
         // Execute.
@@ -166,6 +194,7 @@ public class ParticipantVersionServiceTest {
     @Test
     public void createParticipantFromAccount_noEnrollments() {
         Account account = Account.create();
+        account.setAppId(TestConstants.TEST_APP_ID);
         account.setSharingScope(SharingScope.ALL_QUALIFIED_RESEARCHERS);
 
         // Add a withdrawn enrollment for good measure.

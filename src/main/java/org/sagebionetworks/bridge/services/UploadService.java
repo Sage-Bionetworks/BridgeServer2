@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
@@ -41,7 +42,6 @@ import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.ConcurrentModificationException;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -450,8 +450,7 @@ public class UploadService {
         // kick off upload validation
         // Note: Exporter 3.0 is disabled for redrive. See https://sagebionetworks.jira.com/browse/BRIDGE-3080
         App app = appService.getApp(appId);
-        Exporter3Configuration exporter3Config = app.getExporter3Configuration();
-        if (!redrive && app.isExporter3Enabled() && exporter3Config != null && exporter3Config.isConfigured()) {
+        if (!redrive && BridgeUtils.isExporter3Configured(app)) {
             exporter3Service.completeUpload(app, upload);
         }
 
