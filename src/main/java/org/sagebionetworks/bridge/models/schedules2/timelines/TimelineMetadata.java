@@ -61,18 +61,10 @@ public class TimelineMetadata implements BridgeEntity {
         map.put("sessionInstanceEndDay", sessionInstanceEndDay == null ? null : Integer.toString(sessionInstanceEndDay));
         map.put("sessionStartEventId", sessionStartEventId);
         map.put("timeWindowGuid", timeWindowGuid);
-        if (guid != null) {
-            map.put("timeWindowPersistent", Boolean.toString(timeWindowPersistent));    
-        } else {
-            map.put("timeWindowPersistent", null);
-        }
+        map.put("timeWindowPersistent", timeWindowPersistent ? "true" : null);
         map.put("scheduleGuid", scheduleGuid);
         map.put("scheduleModifiedOn", scheduleModifiedOn == null ? null : scheduleModifiedOn.toString());
-        if (guid != null) {
-            map.put("schedulePublished", Boolean.toString(schedulePublished));    
-        } else {
-            map.put("schedulePublished", null);   
-        }
+        map.put("schedulePublished", schedulePublished ? "true" : null);    
         map.put("appId", appId);
         map.put("studyBurstId", studyBurstId);
         map.put("studyBurstNum", studyBurstNum == null ? null : studyBurstNum.toString());
