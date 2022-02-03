@@ -71,9 +71,7 @@ public class TimelineMetadataTest extends Mockito {
         TimelineMetadata meta = createTimelineMetadata();
         
         Map<String,String> map = meta.asMap();
-        assertEquals(map.size(), 18);
-        assertEquals(map.get("appId"), "appId");
-        assertEquals(map.get("guid"), SESSION_GUID_1);
+        assertEquals(map.size(), 16);
         assertEquals(map.get("assessmentInstanceGuid"), "assessmentInstanceGuid");
         assertEquals(map.get("assessmentGuid"), ASSESSMENT_1_GUID);
         assertEquals(map.get("assessmentId"), "assessmentId");
@@ -97,8 +95,6 @@ public class TimelineMetadataTest extends Mockito {
         TimelineMetadata meta = new TimelineMetadata();
         
         Map<String,String> map = meta.asMap();
-        assertNull(map.get("appId"));
-        assertNull(map.get("guid"));
         assertNull(map.get("assessmentInstanceGuid"));
         assertNull(map.get("assessmentGuid"));
         assertNull(map.get("assessmentId"));
@@ -110,15 +106,15 @@ public class TimelineMetadataTest extends Mockito {
         assertNull(map.get("sessionInstanceEndDay"));
         assertNull(map.get("sessionLabel"));
         assertNull(map.get("timeWindowGuid"));
-        assertEquals(map.get("timeWindowPersistent"), "false");
+        assertNull(map.get("timeWindowPersistent"));
         assertNull(map.get("scheduleGuid"));
         assertNull(map.get("scheduleModifiedOn"));
-        assertEquals(map.get("schedulePublished"), "false");
+        assertNull(map.get("schedulePublished"));
         assertNull(map.get("studyBurstId"));
         assertNull(map.get("studyBurstNum"));
     }
 
-    private TimelineMetadata createTimelineMetadata() {
+    public static TimelineMetadata createTimelineMetadata() {
         TimelineMetadata meta = new TimelineMetadata();
         meta.setGuid(SESSION_GUID_1);
         meta.setAssessmentInstanceGuid("assessmentInstanceGuid");

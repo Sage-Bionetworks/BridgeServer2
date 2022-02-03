@@ -50,7 +50,6 @@ public class TimelineMetadata implements BridgeEntity {
     
     public final Map<String,String> asMap() {
         Map<String,String> map = new HashMap<>();
-        map.put("guid", guid);
         map.put("assessmentInstanceGuid", assessmentInstanceGuid);
         map.put("assessmentGuid", assessmentGuid);
         map.put("assessmentId", assessmentId);
@@ -61,11 +60,10 @@ public class TimelineMetadata implements BridgeEntity {
         map.put("sessionInstanceEndDay", sessionInstanceEndDay == null ? null : Integer.toString(sessionInstanceEndDay));
         map.put("sessionStartEventId", sessionStartEventId);
         map.put("timeWindowGuid", timeWindowGuid);
-        map.put("timeWindowPersistent", Boolean.toString(timeWindowPersistent));
+        map.put("timeWindowPersistent", timeWindowPersistent ? "true" : null);
         map.put("scheduleGuid", scheduleGuid);
         map.put("scheduleModifiedOn", scheduleModifiedOn == null ? null : scheduleModifiedOn.toString());
-        map.put("schedulePublished", Boolean.toString(schedulePublished));
-        map.put("appId", appId);
+        map.put("schedulePublished", schedulePublished ? "true" : null);    
         map.put("studyBurstId", studyBurstId);
         map.put("studyBurstNum", studyBurstNum == null ? null : studyBurstNum.toString());
         // we don't need to export session name or symbol, they are for editing tools

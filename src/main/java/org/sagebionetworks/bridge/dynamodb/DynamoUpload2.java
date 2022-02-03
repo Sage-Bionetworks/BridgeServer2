@@ -354,7 +354,8 @@ public class DynamoUpload2 implements Upload {
         return zipped != null ? zipped : true;
     }
 
-    @Override public void setZipped(boolean zipped) {
+    @Override
+    public void setZipped(boolean zipped) {
         this.zipped = zipped;
     }
 }
