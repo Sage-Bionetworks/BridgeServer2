@@ -31,8 +31,6 @@ public class TimelineMetadataViewTest {
         assertEquals(meta.get("studyBurstId").textValue(), "studyBurstId");
         assertEquals(meta.get("sessionStartEventId").textValue(), "enrollment");
         assertEquals(meta.get("scheduleModifiedOn").textValue(), "2015-01-27T01:38:32.486Z");
-        assertEquals(meta.get("appId").textValue(), "appId");
-        assertEquals(meta.get("guid").textValue(), "BBBBBBBBBBBBBBBBBBBBBBBB");
         assertEquals(meta.get("sessionGuid").textValue(), "sessionGuid");
         assertEquals(meta.get("assessmentId").textValue(), "assessmentId");
         assertEquals(meta.get("scheduleGuid").textValue(), "scheduleGuid");
