@@ -2,9 +2,8 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
-import static org.sagebionetworks.bridge.validators.Validate.CLIENT_TIME_ZONE_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
-import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
 
 import java.time.ZoneId;
@@ -19,6 +18,8 @@ public class StudyActivityEventValidator extends AbstractValidator implements Va
 
     public static final StudyActivityEventValidator CREATE_INSTANCE = new StudyActivityEventValidator(true);
     public static final StudyActivityEventValidator DELETE_INSTANCE = new StudyActivityEventValidator(false);
+    
+    static final String CLIENT_TIME_ZONE_FIELD = "clientTimeZone";
     
     private final boolean createOnly;
     
@@ -54,7 +55,7 @@ public class StudyActivityEventValidator extends AbstractValidator implements Va
                 try {
                     ZoneId.of(event.getClientTimeZone());
                 } catch (Exception e) {
-                    errors.rejectValue(CLIENT_TIME_ZONE_FIELD, TIME_ZONE_ERROR);
+                    errors.rejectValue(StudyActivityEventValidator.CLIENT_TIME_ZONE_FIELD, INVALID_TIME_ZONE);
                 }
             }
         }

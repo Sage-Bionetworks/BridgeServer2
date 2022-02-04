@@ -2,10 +2,6 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.BridgeConstants.API_MAXIMUM_PAGE_SIZE;
 import static org.sagebionetworks.bridge.BridgeConstants.API_MINIMUM_PAGE_SIZE;
-import static org.sagebionetworks.bridge.BridgeConstants.ADHERENCE_RANGE_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.ADHERENCE_RANGE_ORDER_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_COUNT_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_LENGTH_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 
@@ -18,6 +14,11 @@ import org.springframework.validation.Errors;
 public class AdherenceReportSearchValidator extends AbstractValidator {
     
     public static final AdherenceReportSearchValidator INSTANCE = new AdherenceReportSearchValidator();
+
+    static final String ADHERENCE_RANGE_ERROR = "% must be from 0-100";
+    static final String ADHERENCE_RANGE_ORDER_ERROR = "cannot be less than adherenceMin";
+    static final String LABEL_FILTER_COUNT_ERROR = "cannot have over 50 entries";
+    static final String LABEL_FILTER_LENGTH_ERROR = "cannot be over 100 characters";
 
     @Override
     public void validate(Object object, Errors errors) {

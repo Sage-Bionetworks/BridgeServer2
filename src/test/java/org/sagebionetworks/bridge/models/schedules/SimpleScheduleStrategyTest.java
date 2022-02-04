@@ -5,20 +5,18 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.springframework.validation.Errors;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-
+import org.mockito.Mockito;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoSchedulePlan;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.time.DateUtils;
-import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
@@ -30,7 +28,7 @@ import nl.jqno.equalsverifier.Warning;
 /**
  * Further tests for these strategy objects are in ScheduleStrategyTest.
  */
-public class SimpleScheduleStrategyTest {
+public class SimpleScheduleStrategyTest extends Mockito {
 
     private static final BridgeObjectMapper MAPPER = BridgeObjectMapper.get();
     private App app;
@@ -78,12 +76,11 @@ public class SimpleScheduleStrategyTest {
         SimpleScheduleStrategy strategy = new SimpleScheduleStrategy();
         strategy.setSchedule(TestUtils.getSchedule("A Schedule"));
         
-        Errors errors = Validate.getErrorsFor(plan);
-        strategy.validate(TestConstants.USER_DATA_GROUPS, TestConstants.USER_STUDY_IDS, taskIdentifiers, errors);
-        Map<String,List<String>> map = Validate.convertErrorsToSimpleMap(errors);
+        Errors mockErrors = mock(Errors.class);
+        strategy.validate(TestConstants.USER_DATA_GROUPS, TestConstants.USER_STUDY_IDS, taskIdentifiers, mockErrors);
         
-        List<String> errorMessages = map.get("schedule.expires");
-        assertEquals(errorMessages.get(0), "schedule.expires must be set if schedule repeats");
+        verify(mockErrors).pushNestedPath("schedule");
+        verify(mockErrors).rejectValue("expires", "must be set if schedule repeats");
     }
     
     @Test

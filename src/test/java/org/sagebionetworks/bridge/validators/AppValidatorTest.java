@@ -2,6 +2,9 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
+import static org.sagebionetworks.bridge.validators.AppValidator.APP_LINK_MAX_LENGTH;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_IDENTIFIER_ERROR;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,7 +17,6 @@ import com.google.common.collect.ImmutableMap;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.dynamodb.DynamoApp;
@@ -101,13 +103,13 @@ public class AppValidatorTest {
     @Test
     public void cannotCreateIdentifierWithUppercase() {
         app.setIdentifier("Test");
-        assertValidatorMessage(INSTANCE, app, "identifier", BridgeConstants.BRIDGE_IDENTIFIER_ERROR);
+        assertValidatorMessage(INSTANCE, app, "identifier", BRIDGE_IDENTIFIER_ERROR);
     }
 
     @Test
     public void cannotCreateInvalidIdentifierWithSpaces() {
         app.setIdentifier("test test");
-        assertValidatorMessage(INSTANCE, app, "identifier", BridgeConstants.BRIDGE_IDENTIFIER_ERROR);
+        assertValidatorMessage(INSTANCE, app, "identifier", BRIDGE_IDENTIFIER_ERROR);
     }
 
     @Test
@@ -127,7 +129,7 @@ public class AppValidatorTest {
         app.getCustomEvents().put("a-1", FUTURE_ONLY);
         app.getCustomEvents().put("b:2", FUTURE_ONLY);
         
-        assertValidatorMessage(INSTANCE, app, "customEvents", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(INSTANCE, app, "customEvents", BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
@@ -135,7 +137,7 @@ public class AppValidatorTest {
         app.getCustomEvents().put("a-1", FUTURE_ONLY);
         app.getCustomEvents().put("b:2", FUTURE_ONLY);
         
-        assertValidatorMessage(INSTANCE, app, "customEvents", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(INSTANCE, app, "customEvents", BRIDGE_EVENT_ID_ERROR);
     }
 
     @Test
@@ -540,13 +542,13 @@ public class AppValidatorTest {
     @Test
     public void installAppLinksCannotExceedSMSLength() {
         String msg = "";
-        for (int i = 0; i < BridgeConstants.APP_LINK_MAX_LENGTH; i++) {
+        for (int i = 0; i < APP_LINK_MAX_LENGTH; i++) {
             msg += "A";
         }
         msg += "A";
         app.getInstallLinks().put("foo", msg);
         assertValidatorMessage(INSTANCE, app, "installLinks", "cannot be longer than " +
-                BridgeConstants.APP_LINK_MAX_LENGTH + " characters");
+                APP_LINK_MAX_LENGTH + " characters");
     }
     
     @Test
@@ -579,7 +581,7 @@ public class AppValidatorTest {
     @Test
     public void invalidAutomaticCustomEventKey() {
         app.setAutomaticCustomEvents(ImmutableMap.of("@not-valid", "activities_retrieved:P-14D"));
-        assertValidatorMessage(INSTANCE, app, "automaticCustomEvents[@not-valid]", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(INSTANCE, app, "automaticCustomEvents[@not-valid]", BRIDGE_EVENT_ID_ERROR);
     }
     
     @Test

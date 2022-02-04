@@ -3,6 +3,11 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.SYNAPSE_OAUTH_VENDOR_ID;
 import static org.sagebionetworks.bridge.BridgeUtils.COMMA_SPACE_JOINER;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_IDENTIFIER_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_IDENTIFIER_PATTERN;
+import static org.sagebionetworks.bridge.validators.Validate.JS_IDENTIFIER_PATTERN;
+import static org.sagebionetworks.bridge.validators.Validate.SYNAPSE_IDENTIFIER_PATTERN;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -16,7 +21,6 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.validator.routines.EmailValidator;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
@@ -40,9 +44,12 @@ import org.springframework.validation.Validator;
 public class AppValidator implements Validator {
     public static final AppValidator INSTANCE = new AppValidator();
     
-    private static final int MAX_SYNAPSE_LENGTH = 250;
-    private static final int METADATA_MAX_BYTES = 2500;
-    private static final int METADATA_MAX_COLUMNS = 20;
+    static final int MAX_SYNAPSE_LENGTH = 250;
+    static final int METADATA_MAX_BYTES = 2500;
+    static final int METADATA_MAX_COLUMNS = 20;
+    /** We want app links to fit in a single SMS, so limit them to 140 chars. */
+    static final int APP_LINK_MAX_LENGTH = 140;
+
     private static final Pattern FINGERPRINT_PATTERN = Pattern.compile("^[0-9a-fA-F:]{95,95}$");
     protected static final String EMAIL_ERROR = "is not a comma-separated list of email addresses";
     
@@ -67,16 +74,16 @@ public class AppValidator implements Validator {
         if (isBlank(app.getIdentifier())) {
             errors.rejectValue("identifier", "is required");
         } else {
-            if (!app.getIdentifier().matches(BridgeConstants.BRIDGE_IDENTIFIER_PATTERN)) {
-                errors.rejectValue("identifier", BridgeConstants.BRIDGE_IDENTIFIER_ERROR);
+            if (!app.getIdentifier().matches(BRIDGE_IDENTIFIER_PATTERN)) {
+                errors.rejectValue("identifier", BRIDGE_IDENTIFIER_ERROR);
             }
             if (app.getIdentifier().length() < 2) {
                 errors.rejectValue("identifier", "must be at least 2 characters");
             }
         }
         if (app.getCustomEvents().keySet().stream()
-                .anyMatch(k -> !k.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN))) {
-            errors.rejectValue("customEvents", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+                .anyMatch(k -> !k.matches(Validate.BRIDGE_EVENT_ID_PATTERN))) {
+            errors.rejectValue("customEvents", BRIDGE_EVENT_ID_ERROR);
         }
         if (app.getAutomaticCustomEvents() != null) {
             for (Map.Entry<String, String> entry : app.getAutomaticCustomEvents().entrySet()) {
@@ -84,8 +91,8 @@ public class AppValidator implements Validator {
                 String value = entry.getValue();
                 
                 // Validate that the key follows the same rules for activity event keys
-                if (!key.matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
-                    errors.rejectValue("automaticCustomEvents["+key+"]", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+                if (!key.matches(Validate.BRIDGE_EVENT_ID_PATTERN)) {
+                    errors.rejectValue("automaticCustomEvents["+key+"]", BRIDGE_EVENT_ID_ERROR);
                 }
                 
                 Tuple<String> autoEventSpec = BridgeUtils.parseAutoEventValue(value);
@@ -168,7 +175,7 @@ public class AppValidator implements Validator {
                 errors.rejectValue("userProfileAttributes", msg);
             }
             // For backwards compatibility, we require this to be a valid JavaScript identifier.
-            if (!userProfileAttribute.matches(BridgeConstants.JS_IDENTIFIER_PATTERN)) {
+            if (!userProfileAttribute.matches(JS_IDENTIFIER_PATTERN)) {
                 String msg = String.format("'%s' must contain only digits, letters, underscores and dashes, and cannot start with a dash", userProfileAttribute);
                 errors.rejectValue("userProfileAttributes", msg);
             }
@@ -188,9 +195,9 @@ public class AppValidator implements Validator {
             for (Map.Entry<String,String> entry : app.getInstallLinks().entrySet()) {
                 if (isBlank(entry.getValue())) {
                     errors.rejectValue("installLinks", "cannot be blank");
-                } else if (entry.getValue().length() > BridgeConstants.APP_LINK_MAX_LENGTH) {
+                } else if (entry.getValue().length() > APP_LINK_MAX_LENGTH) {
                     errors.rejectValue("installLinks", "cannot be longer than " +
-                            BridgeConstants.APP_LINK_MAX_LENGTH + " characters");
+                            APP_LINK_MAX_LENGTH + " characters");
                 }
             }
         }        
@@ -317,7 +324,7 @@ public class AppValidator implements Validator {
     private void validateDataGroupNamesAndFitForSynapseExport(Errors errors, Set<String> dataGroups) {
         if (dataGroups != null) {
             for (String group : dataGroups) {
-                if (!group.matches(BridgeConstants.SYNAPSE_IDENTIFIER_PATTERN)) {
+                if (!group.matches(SYNAPSE_IDENTIFIER_PATTERN)) {
                     errors.rejectValue("dataGroups", "contains invalid tag '"+group+"' (only letters, numbers, underscore and dash allowed)");
                 }
             }

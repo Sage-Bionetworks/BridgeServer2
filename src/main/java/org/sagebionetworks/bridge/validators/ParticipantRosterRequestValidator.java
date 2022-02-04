@@ -22,7 +22,7 @@ public class ParticipantRosterRequestValidator implements Validator {
         if (target == null) {
             errors.rejectValue("ParticipantRosterRequest", Validate.CANNOT_BE_NULL);
         } else if (!(target instanceof ParticipantRosterRequest)) {
-            errors.rejectValue("ParticipantRosterRequest", Validate.WRONG_TYPE);
+            errors.rejectValue("ParticipantRosterRequest", Validate.INVALID_TYPE);
         } else {
             ParticipantRosterRequest request = (ParticipantRosterRequest) target;
 
@@ -31,7 +31,7 @@ public class ParticipantRosterRequestValidator implements Validator {
                 errors.rejectValue("password", Validate.CANNOT_BE_BLANK);
             } else {
                 PasswordPolicy passwordPolicy = new PasswordPolicy(8, true, false, true, true);
-                ValidatorUtils.validatePassword(errors, passwordPolicy, request.getPassword());
+                ValidatorUtils.password(errors, passwordPolicy, request.getPassword());
             }
             if (isBlank(request.getStudyId())) {
                 errors.rejectValue("studyId", Validate.CANNOT_BE_BLANK);

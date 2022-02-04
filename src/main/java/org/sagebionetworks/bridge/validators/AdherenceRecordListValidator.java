@@ -3,13 +3,7 @@ package org.sagebionetworks.bridge.validators;
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
-import static org.sagebionetworks.bridge.validators.Validate.CLIENT_TIME_ZONE_FIELD;
-import static org.sagebionetworks.bridge.validators.Validate.EVENT_TIMESTAMP_FIELD;
-import static org.sagebionetworks.bridge.validators.Validate.INSTANCE_GUID_FIELD;
-import static org.sagebionetworks.bridge.validators.Validate.STARTED_ON_FIELD;
-import static org.sagebionetworks.bridge.validators.Validate.STUDY_ID_FIELD;
-import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
-import static org.sagebionetworks.bridge.validators.Validate.USER_ID_FIELD;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 
@@ -24,6 +18,13 @@ public class AdherenceRecordListValidator extends AbstractValidator {
     
     public static final AdherenceRecordListValidator INSTANCE = new AdherenceRecordListValidator();
     
+    static final String CLIENT_TIME_ZONE_FIELD = "clientTimeZone";
+    static final String EVENT_TIMESTAMP_FIELD = "eventTimestamp";
+    static final String INSTANCE_GUID_FIELD = "instanceGuid";
+    static final String STARTED_ON_FIELD = "startedOn";
+    static final String STUDY_ID_FIELD = "studyId";
+    static final String USER_ID_FIELD = "userId";
+
     private AdherenceRecordListValidator() {}
 
     @Override
@@ -54,7 +55,7 @@ public class AdherenceRecordListValidator extends AbstractValidator {
                 try {
                     ZoneId.of(record.getClientTimeZone());
                 } catch (Exception e) {
-                    errors.rejectValue(CLIENT_TIME_ZONE_FIELD, TIME_ZONE_ERROR);
+                    errors.rejectValue(CLIENT_TIME_ZONE_FIELD, INVALID_TIME_ZONE);
                 }
             }
             validateJsonLength(errors, TEXT_SIZE,record.getClientData(), "clientData");

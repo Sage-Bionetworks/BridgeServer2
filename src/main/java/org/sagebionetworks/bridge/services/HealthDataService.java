@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.services;
 
+import static org.sagebionetworks.bridge.BridgeConstants.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.BridgeConstants.CANNOT_BE_NULL;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -11,7 +14,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.base.Charsets;
 import com.google.common.base.Preconditions;
 import org.apache.commons.lang3.StringUtils;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.exceptions.NotFoundException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
@@ -326,7 +328,7 @@ public class HealthDataService {
     public String createOrUpdateRecord(HealthDataRecord record) {
         // validate record
         if (record == null) {
-            throw new InvalidEntityException(String.format(Validate.CANNOT_BE_NULL, "HealthDataRecord"));
+            throw new InvalidEntityException(String.format(CANNOT_BE_NULL, "HealthDataRecord"));
         }
         Validate.entityThrowingException(HealthDataRecordValidator.INSTANCE, record);
 
@@ -348,7 +350,7 @@ public class HealthDataService {
     public int deleteRecordsForHealthCode(String healthCode) {
         // validate health code
         if (StringUtils.isBlank(healthCode)) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "healthCode"));
+            throw new BadRequestException(String.format(CANNOT_BE_BLANK, "healthCode"));
         }
         // TODO: validate health code against health code table
 
@@ -366,7 +368,7 @@ public class HealthDataService {
     public HealthDataRecord getRecordById(String id) {
         // validate ID
         if (StringUtils.isBlank(id)) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "id"));
+            throw new BadRequestException(String.format(CANNOT_BE_BLANK, "id"));
         }
 
         // call through to DAO
@@ -384,7 +386,7 @@ public class HealthDataService {
     public List<HealthDataRecord> getRecordsForUploadDate(String uploadDate) {
         // validate upload date
         if (StringUtils.isBlank(uploadDate)) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadDate"));
+            throw new BadRequestException(String.format(CANNOT_BE_BLANK, "uploadDate"));
         }
 
         // use Joda to parse the upload date, to validate it
@@ -404,10 +406,10 @@ public class HealthDataService {
             DateTime createdOnEnd) {
         Preconditions.checkArgument(StringUtils.isNotBlank(healthCode));
         if (createdOnStart == null) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "createdOnStart"));
+            throw new BadRequestException(String.format(CANNOT_BE_NULL, "createdOnStart"));
         }
         if (createdOnEnd == null) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_NULL, "createdOnEnd"));
+            throw new BadRequestException(String.format(CANNOT_BE_NULL, "createdOnEnd"));
         }
         if (createdOnStart.isAfter(createdOnEnd)) {
             throw new BadRequestException("createdOnStart can't be after createdOnEnd");

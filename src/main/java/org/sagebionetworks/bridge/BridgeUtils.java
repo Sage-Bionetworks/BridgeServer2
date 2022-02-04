@@ -5,6 +5,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.Integer.parseInt;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDY_ASSOCIATIONS;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.USER_ID;
@@ -37,8 +38,10 @@ import javax.annotation.Nonnull;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.Duration;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
+import org.joda.time.Period;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Document.OutputSettings.Syntax;
@@ -58,6 +61,7 @@ import org.sagebionetworks.bridge.models.RequestInfo;
 import org.sagebionetworks.bridge.models.Tuple;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountId;
+import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventRequest;
@@ -115,6 +119,42 @@ public class BridgeUtils {
     private static final SecureRandom SECURE_RANDOM = new SecureRandom();
     private static final StudyAssociations NO_ASSOCIATIONS = new StudyAssociations(ImmutableSet.of(),
             ImmutableMap.of());
+    
+    public static boolean hasValidIdentifier(Account account) {
+        Phone phone = account.getPhone();
+        String email = account.getEmail();
+        String synapseUserId = account.getSynapseUserId();
+        Set<String> externalIds = BridgeUtils.collectExternalIds(account);
+        return (email != null || !externalIds.isEmpty() || phone != null || isNotBlank(synapseUserId));
+    }
+    
+    /**
+     * This converts the period to minutes, but only those fields that have a
+     * conventional measurement in minutes (so months and years are ignored).
+     */
+    public static final long periodInMinutes(Period period) {
+        return convertPeriod(period, (d) -> d.getStandardMinutes());
+    }
+
+    /**
+     * This converts the period to days, but only those fields that have a
+     * conventional measurement in days (so months and years are ignored).
+     */
+    public static final long periodInDays(Period period) {
+        return convertPeriod(period, (d) -> d.getStandardDays());
+    }
+
+    private static final long convertPeriod(Period period, Function<Duration, Long> func) {
+        if (period == null) {
+            return 0L;
+        }
+        try {
+            Duration d = period.toStandardDuration();
+            return func.apply(d);
+        } catch(UnsupportedOperationException e) {
+            return 0L;
+        }
+    }
 
     /** Returns true if the given app is configured for Exporter 3.0. */
     public static boolean isExporter3Configured(App app) {

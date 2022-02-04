@@ -7,12 +7,12 @@ import java.util.Map;
 
 import com.google.common.collect.Maps;
 
+import org.mockito.Mockito;
 import org.springframework.validation.Errors;
 import org.springframework.validation.MapBindingResult;
 import org.testng.annotations.Test;
 
-public class ValidateTest {
-    
+public class ValidateTest extends Mockito {
     @Test
     public void rejectValueDifferentFormattedErrorMessages() {
         Errors errors = getErrors();

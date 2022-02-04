@@ -1,16 +1,5 @@
 package org.sagebionetworks.bridge.services;
 
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
@@ -24,6 +13,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.USER_STUDY_IDS;
 import static org.sagebionetworks.bridge.models.accounts.AccountSecretType.REAUTH;
+import static org.sagebionetworks.bridge.models.apps.PasswordPolicy.DEFAULT_PASSWORD_POLICY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -90,8 +80,6 @@ import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.validators.PasswordResetValidator;
 import org.sagebionetworks.bridge.validators.Validate;
-import org.sagebionetworks.bridge.validators.ValidatorUtils;
-import org.springframework.validation.Errors;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -101,7 +89,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 
-public class AuthenticationServiceTest {
+public class AuthenticationServiceTest extends Mockito {
     private static final Set<String> DATA_GROUP_SET = ImmutableSet.of("group1", "group2");
     private static final String IP_ADDRESS = "ip-address";
     private static final List<String> LANGUAGES = ImmutableList.of("es","de");
@@ -1096,11 +1084,20 @@ public class AuthenticationServiceTest {
     public void generatedPasswordPassesValidation() {
         // This is a very large password, which you could set in a app like this
         String password = service.generatePassword(100);
-
-        Errors errors = Validate.getErrorsFor(password);
-        ValidatorUtils.validatePassword(errors, PasswordPolicy.DEFAULT_PASSWORD_POLICY, password);
-        assertFalse(errors.hasErrors());
+        
+        App app = mock(App.class);
+        when(app.getPasswordPolicy()).thenReturn(DEFAULT_PASSWORD_POLICY);
+        
+        AppService appService = mock(AppService.class);
+        when(appService.getApp(TEST_APP_ID)).thenReturn(app);
+        
+        PasswordResetValidator validator = new PasswordResetValidator();
+        validator.setAppService(appService);
+        
         assertEquals(password.length(), 100);
+        
+        PasswordReset passwordReset = new PasswordReset(password, "sptoken", TEST_APP_ID);
+        Validate.entityThrowingException(validator, passwordReset);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
