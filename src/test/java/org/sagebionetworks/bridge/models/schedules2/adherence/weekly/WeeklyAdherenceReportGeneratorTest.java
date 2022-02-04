@@ -332,16 +332,12 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
     
     @Test
     public void progressionStates() {
-        DateTime timestamp = DateTime.now();
-        AdherenceState state = new AdherenceState.Builder()
-                .withClientTimeZone(TEST_CLIENT_TIME_ZONE)
-                .withNow(timestamp.plusDays(10))
-                .withShowActive(false).build();
-        
-        WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(state);
+        AdherenceState.Builder builder = TestUtils.getAdherenceStateBuilder();
+        builder.withMetadata(ImmutableList.of());
+        WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
         assertEquals(report.getProgression(), ParticipantStudyProgress.NO_SCHEDULE);
         
-        AdherenceState.Builder builder = TestUtils.getAdherenceStateBuilder();
+        builder = TestUtils.getAdherenceStateBuilder();
         report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
         assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
         
