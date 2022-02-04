@@ -54,40 +54,44 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
         QueryBuilder builder = new QueryBuilder();
         builder.append("FROM WeeklyAdherenceReport h");
         if (hasLabels) {
-            builder.append("JOIN h.searchableLabels label");
+            builder.append("LEFT JOIN h.searchableLabels label");
         }
         WhereClauseBuilder where = builder.startWhere(AND);
         where.append("h.appId = :appId", APP_ID_FIELD, appId);
         where.append("h.studyId = :studyId", STUDY_ID_FIELD, studyId);
         if (search.getAdherenceMin() > 0) {
-            where.append("weeklyAdherencePercent >= :adherenceMin", ADHERENCE_MIN_FIELD, search.getAdherenceMin());    
+            where.append("h.weeklyAdherencePercent >= :adherenceMin", ADHERENCE_MIN_FIELD, search.getAdherenceMin());    
         }
         if (search.getAdherenceMax() < 100) {
-            where.append("weeklyAdherencePercent <= :adherenceMax", ADHERENCE_MAX_FIELD, search.getAdherenceMax());    
+            where.append("h.weeklyAdherencePercent <= :adherenceMax", ADHERENCE_MAX_FIELD, search.getAdherenceMax());    
         }
         if (search.getProgressionFilters() != null && !search.getProgressionFilters().isEmpty()) {
-            where.append("progression IN :progressionFilters", PROGRESSION_FILTER_FIELD, search.getProgressionFilters());
+            where.append("h.progression IN :progressionFilters", PROGRESSION_FILTER_FIELD, search.getProgressionFilters());
         }
         if (hasLabels) {
             where.labels(search.getLabelFilters());
         }
         if (search.getTestFilter() == AccountTestFilter.TEST) {
-            where.append("testAccount = 1");
+            where.append("h.testAccount = 1");
         } else if (search.getTestFilter() == AccountTestFilter.PRODUCTION) {
-            where.append("testAccount = 0");
+            where.append("h.testAccount = 0");
         }
         if (search.getIdFilter() != null) {
             List<String> clauses = new ArrayList<>();
-            clauses.add("externalId LIKE :id");
-            clauses.add("identifier LIKE :id");
-            clauses.add("firstName LIKE :id");
-            clauses.add("lastName LIKE :id");
-            clauses.add("email LIKE :id");
-            clauses.add("phone LIKE :id");
+            clauses.add("h.participant.externalId LIKE :id");
+            clauses.add("h.participant.identifier LIKE :id");
+            clauses.add("h.participant.firstName LIKE :id");
+            clauses.add("h.participant.lastName LIKE :id");
+            clauses.add("h.participant.email LIKE :id");
+            // Hibernate wants the name of the property on Phone ('number') and NOT the name of the 
+            // DB column ('phone'). It sort of makes sense, since we're referencing Participant which isn’t
+            // even in the database.
+            clauses.add("h.participant.phone.number LIKE :id");
             where.append("(" + OR_JOINER.join(clauses) + ")", "id", "%" + search.getIdFilter() + "%");
         }
-        builder.append("ORDER BY weeklyAdherencePercent, lastName, firstName, email, phone, externalId");
-        
+        builder.append("ORDER BY h.weeklyAdherencePercent, h.participant.lastName, h.participant.firstName, "
+                +"h.participant.email, h.participant.phone, h.participant.externalId");
+
         int total = hibernateHelper.queryCount(SELECT_COUNT + builder.getQuery(), builder.getParameters());
         
         List<WeeklyAdherenceReport> reports = hibernateHelper.queryGet(SELECT_DISTINCT + builder.getQuery(),
