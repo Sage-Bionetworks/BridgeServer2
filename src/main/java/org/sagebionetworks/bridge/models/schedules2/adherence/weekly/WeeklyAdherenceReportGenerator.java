@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.DONE;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.IN_PROGRESS;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.NO_SCHEDULE;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.UNSTARTED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_APPLICABLE;
 
@@ -145,7 +146,9 @@ public class WeeklyAdherenceReportGenerator {
         int percentage = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(finalReport));
         
         ParticipantStudyProgress progression = IN_PROGRESS;
-        if (rowList.isEmpty() && nextDay == null) {
+        if (state.getMetadata().isEmpty()) {
+            progression = NO_SCHEDULE;
+        } else if (rowList.isEmpty() && nextDay == null) {
             long na = AdherenceUtils.counting(eventReport.getStreams(), ImmutableSet.of(NOT_APPLICABLE));
             long total = AdherenceUtils.counting(eventReport.getStreams(), EnumSet.allOf(SessionCompletionState.class));
             if (na == total) {

@@ -413,7 +413,7 @@ public class AdherenceService {
 
         return reportDao.getWeeklyAdherenceReports(appId, studyId, search)
                 .withRequestParam(PagedResourceList.TEST_FILTER, search.getTestFilter())
-                .withRequestParam(PagedResourceList.LABEL_FILTER, search.getLabelFilters())
+                .withRequestParam(PagedResourceList.LABEL_FILTERS, search.getLabelFilters())
                 .withRequestParam(PagedResourceList.ADHERENCE_MIN, search.getAdherenceMin())
                 .withRequestParam(PagedResourceList.ADHERENCE_MAX, search.getAdherenceMax())
                 .withRequestParam(PagedResourceList.PROGRESSION_FILTERS, search.getProgressionFilters())
