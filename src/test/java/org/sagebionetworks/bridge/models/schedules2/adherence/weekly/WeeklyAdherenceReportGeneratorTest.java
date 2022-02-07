@@ -21,6 +21,7 @@ import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
+import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.testng.annotations.Test;
@@ -327,6 +328,36 @@ public class WeeklyAdherenceReportGeneratorTest extends Mockito {
         
         List<EventStreamDay> days = report.getByDayEntries().get(0);
         assertEquals(days.size(), 2);
+    }
+    
+    @Test
+    public void progressionStates() {
+        AdherenceState.Builder builder = TestUtils.getAdherenceStateBuilder();
+        builder.withMetadata(ImmutableList.of());
+        WeeklyAdherenceReport report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
+        assertEquals(report.getProgression(), ParticipantStudyProgress.NO_SCHEDULE);
+        
+        builder = TestUtils.getAdherenceStateBuilder();
+        report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
+        assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
+        
+        builder = TestUtils.getAdherenceStateBuilder();
+        builder.withEvents(ImmutableList.of());
+        report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
+        assertEquals(report.getProgression(), ParticipantStudyProgress.UNSTARTED);
+        
+        builder = TestUtils.getAdherenceStateBuilder();
+        StudyActivityEvent e1 = new StudyActivityEvent.Builder()
+                .withEventId("event1")
+                .withTimestamp(ADHERENCE_STATE_EVENT_TS1.minusWeeks(50))
+                .build();
+        StudyActivityEvent e2 = new StudyActivityEvent.Builder()
+                .withEventId("event2")
+                .withTimestamp(ADHERENCE_STATE_EVENT_TS2.minusWeeks(50))
+                .build();
+        builder.withEvents(ImmutableList.of(e1, e2));
+        report = WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
+        assertEquals(report.getProgression(), ParticipantStudyProgress.DONE);
     }
     
 }

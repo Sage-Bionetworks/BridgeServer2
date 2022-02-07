@@ -49,7 +49,7 @@ public class ResourceList<T> {
     public static final String INCLUDE_REPEATS = "includeRepeats";
     public static final String INSTANCE_GUIDS = "instanceGuids";
     public static final String IN_USE = "inUse";
-    public static final String LABEL_FILTER = "labelFilter";
+    public static final String LABEL_FILTERS = "labelFilters";
     public static final String LANGUAGE = "language";
     public static final String MAX_REVISION = "maxRevision";
     public static final String MIN_REVISION = "minRevision";

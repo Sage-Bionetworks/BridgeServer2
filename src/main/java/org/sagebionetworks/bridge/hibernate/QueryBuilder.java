@@ -149,7 +149,7 @@ class QueryBuilder {
             int i=0;
             for (String labelFilter : labelFilters) {
                 phrases.add("label LIKE :labelFilter"+i);
-                whereParams.put("labelFilter"+(i++),  "%:" + labelFilter + ":%");
+                whereParams.put("labelFilter"+(i++),  "%" + labelFilter + "%");
             }
             predicated.add("(" + Joiner.on(" OR ").join(phrases) + ")");
         }
