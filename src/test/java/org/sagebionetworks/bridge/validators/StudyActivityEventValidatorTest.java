@@ -14,7 +14,7 @@ import static org.sagebionetworks.bridge.validators.StudyActivityEventValidator.
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
-import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
 
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
@@ -102,7 +102,7 @@ public class StudyActivityEventValidatorTest extends Mockito {
     public void clientTimeZoneInvalid() {
         StudyActivityEvent.Builder builder = createBuilder();
         builder.withClientTimeZone("America/Europe");
-        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "clientTimeZone", TIME_ZONE_ERROR);
+        assertValidatorMessage(CREATE_INSTANCE, builder.build(), "clientTimeZone", INVALID_TIME_ZONE);
     }
     
     @Test

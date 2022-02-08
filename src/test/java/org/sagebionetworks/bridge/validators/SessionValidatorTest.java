@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.models.schedules2.SessionTest.createValidSession;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_2;
@@ -30,6 +29,7 @@ import static org.sagebionetworks.bridge.validators.SessionValidator.STUDY_BURST
 import static org.sagebionetworks.bridge.validators.SessionValidator.WINDOW_EXPIRATION_AFTER_SCHEDULE_DURATION;
 import static org.sagebionetworks.bridge.validators.SessionValidator.WINDOW_OVERLAPS_ERROR;
 import static org.sagebionetworks.bridge.validators.SessionValidator.WINDOW_SHORTER_THAN_DAY_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;

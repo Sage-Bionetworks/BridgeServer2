@@ -24,7 +24,6 @@ import org.sagebionetworks.bridge.exceptions.EntityAlreadyExistsException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.apps.App;
-import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -58,7 +57,7 @@ public class DynamoAppDao implements AppDao {
     
     @Override
     public App getApp(String appId) {
-        checkArgument(isNotBlank(appId), Validate.CANNOT_BE_BLANK, "appId");
+        checkArgument(isNotBlank(appId));
         
         DynamoApp app = new DynamoApp();
         app.setIdentifier(appId);
@@ -81,7 +80,7 @@ public class DynamoAppDao implements AppDao {
 
     @Override
     public App createApp(App app) {
-        checkNotNull(app, Validate.CANNOT_BE_NULL, "app");
+        checkNotNull(app);
         checkArgument(app.getVersion() == null, "%s has a version; may not be new", "app");
         try {
             mapper.save(app);
@@ -93,8 +92,8 @@ public class DynamoAppDao implements AppDao {
 
     @Override
     public App updateApp(App app) {
-        checkNotNull(app, Validate.CANNOT_BE_NULL, "app");
-        checkNotNull(app.getVersion(), Validate.CANNOT_BE_NULL, "app version");
+        checkNotNull(app);
+        checkNotNull(app.getVersion());
         try {
             mapper.save(app);
         } catch(ConditionalCheckFailedException e) {
@@ -105,7 +104,7 @@ public class DynamoAppDao implements AppDao {
 
     @Override
     public void deleteApp(App app) {
-        checkNotNull(app, Validate.CANNOT_BE_BLANK, "app");
+        checkNotNull(app);
 
         String appId = app.getIdentifier();
         if (appWhitelist.contains(appId)) {
@@ -117,7 +116,7 @@ public class DynamoAppDao implements AppDao {
 
     @Override
     public void deactivateApp(String appId) {
-        checkNotNull(appId, Validate.CANNOT_BE_BLANK, "appId");
+        checkNotNull(appId);
 
         if (appWhitelist.contains(appId)) {
             throw new UnauthorizedException(appId + " is protected by whitelist.");

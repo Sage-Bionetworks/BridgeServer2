@@ -48,7 +48,7 @@ public class HealthDataRecordValidator implements Validator {
         if (object == null) {
             errors.rejectValue("HealthDataRecord", Validate.CANNOT_BE_NULL);
         } else if (!(object instanceof HealthDataRecord)) {
-            errors.rejectValue("HealthDataRecord", Validate.WRONG_TYPE);
+            errors.rejectValue("HealthDataRecord", Validate.INVALID_TYPE);
         } else {
             HealthDataRecord record = (HealthDataRecord) object;
 
@@ -63,7 +63,7 @@ public class HealthDataRecordValidator implements Validator {
                 errors.rejectValue("data", Validate.CANNOT_BE_NULL);
             } else if (!data.isObject()) {
                 // We don't need to check isNull(). If it's null, then it's not an object.
-                errors.rejectValue("data", Validate.WRONG_TYPE);
+                errors.rejectValue("data", Validate.INVALID_TYPE);
             }
 
             // health code
@@ -83,7 +83,7 @@ public class HealthDataRecordValidator implements Validator {
                 errors.rejectValue("metadata", Validate.CANNOT_BE_NULL);
             } else if (!metadata.isObject()) {
                 // We don't need to check isNull(). If it's null, then it's not an object.
-                errors.rejectValue("metadata", Validate.WRONG_TYPE);
+                errors.rejectValue("metadata", Validate.INVALID_TYPE);
             }
 
             // If schema ID is specified, it can't be blank.

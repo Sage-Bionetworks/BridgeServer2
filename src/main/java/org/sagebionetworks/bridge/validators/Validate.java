@@ -21,30 +21,46 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class Validate {
+    
+    // see https://owasp.org/www-community/OWASP_Validation_Regex_Repository
+    static final String OWASP_REGEXP_VALID_EMAIL = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
 
-    public static final String EVENT_TIMESTAMP_FIELD = "eventTimestamp";
-    public static final String STARTED_ON_FIELD = "startedOn";
-    public static final String INSTANCE_GUID_FIELD = "instanceGuid";
-    public static final String STUDY_ID_FIELD = "studyId";
-    public static final String USER_ID_FIELD = "userId";
-    public static final String CLIENT_TIME_ZONE_FIELD = "clientTimeZone";
+    /** A common string constraint Synapse places on model identifiers. */
+    static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
     
-    public static final String CANNOT_BE_BLANK = "%s cannot be null or blank";
-    public static final String CANNOT_BE_DUPLICATE = "%s cannot duplicate an earlier value";
-    public static final String CANNOT_BE_EMPTY = "%s cannot be empty";
-    public static final String CANNOT_BE_EMPTY_STRING = "%s cannot be an empty string";
-    public static final String CANNOT_BE_NEGATIVE = "%s cannot be negative";
-    public static final String CANNOT_BE_NULL = "%s cannot be null";
-    public static final String CANNOT_BE_NULL_OR_EMPTY = "%s cannot be null or empty";
-    public static final String CANNOT_BE_ZERO_OR_NEGATIVE = "%s cannot be zero or negative";
-    public static final String WRONG_TYPE = "%s is the wrong type";
-    public static final String TIME_ZONE_ERROR = "is not a recognized IANA time zone name (eg. “America/Los_Angeles”)";
-    public static final String INVALID_EVENT_ID = "is not a valid custom event ID";
-    public static final String INVALID_EMAIL_ERROR = "does not appear to be an email address";
-    public static final String INVALID_PHONE_ERROR = "does not appear to be a phone number";
-    public static final String EXCEEDS_MAXIMUM_SIZE = "%s exceeds the maximum allowed size";
+    /** The pattern used to validate activity event keys and automatic custom event keys. */
+    static final String BRIDGE_EVENT_ID_PATTERN = "^[a-zA-Z0-9_-]+$";
     
-    public static Errors getErrorsFor(Object object) {
+    /** An identifier field that can contain spaces, some punctuation (but not colons) where it's infeasible 
+     * to include a separate label and unnecessary to restrict the string for external systems like Synapse. 
+     */
+    static final String BRIDGE_RELAXED_ID_PATTERN = "^[^:]+$";
+
+    /** A common string constraint we place on model identifiers. */
+    static final String BRIDGE_IDENTIFIER_PATTERN = "^[a-z0-9-]+$";
+
+    /** The pattern of a valid JavaScript variable/object property name. */
+    static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";
+
+    static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
+    static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
+    static final String BRIDGE_RELAXED_ID_ERROR = "cannot contain colons";
+    
+    static final String CANNOT_BE_BLANK = "%s cannot be null or blank";
+    static final String CANNOT_BE_DUPLICATE = "cannot duplicate an earlier value";
+    static final String CANNOT_BE_EMPTY = "cannot be empty";
+    static final String CANNOT_BE_EMPTY_STRING = "cannot be an empty string";
+    static final String CANNOT_BE_NEGATIVE = "cannot be negative";
+    static final String CANNOT_BE_NULL = "%s cannot be null";
+    static final String CANNOT_BE_NULL_OR_EMPTY = "cannot be null or empty";
+    static final String CANNOT_BE_ZERO_OR_NEGATIVE = "cannot be zero or negative";
+    static final String INVALID_EMAIL_ERROR = "does not appear to be an email address";
+    static final String INVALID_EVENT_ID = "is not a valid custom event ID";
+    static final String INVALID_PHONE_ERROR = "does not appear to be a phone number";
+    static final String INVALID_TIME_ZONE = "is not a recognized IANA time zone name (eg. “America/Los_Angeles”)";
+    static final String INVALID_TYPE = "is the wrong type";
+
+    private static Errors getErrorsFor(Object object) {
         String entityName = BridgeUtils.getTypeName(object.getClass());
         return new MapBindingResult(Maps.newHashMap(), entityName);
     }
@@ -88,7 +104,7 @@ public class Validate {
         throwException(errors, (BridgeEntity)object);
     }
     
-    public static void entity(Validator validator, Errors errors, Object object) {
+    static void entity(Validator validator, Errors errors, Object object) {
         checkNotNull(validator);
         checkArgument(object instanceof BridgeEntity);
         checkArgument(validator.supports(object.getClass()), "Invalid validator");
@@ -97,7 +113,7 @@ public class Validate {
         
         validator.validate(object, errors);
     }
-    public static void throwException(Errors errors, BridgeEntity entity) {
+    static void throwException(Errors errors, BridgeEntity entity) {
         if (errors.hasErrors()) {
             String message = convertErrorToMessage(errors);
             Map<String,List<String>> map = convertErrorsToSimpleMap(errors);
@@ -105,7 +121,7 @@ public class Validate {
             throw new InvalidEntityException(entity, message, map);
         }
     }
-    public static Map<String,List<String>> convertErrorsToSimpleMap(Errors errors) {
+    static Map<String,List<String>> convertErrorsToSimpleMap(Errors errors) {
         Map<String,List<String>> map = Maps.newHashMap();
         
         if (errors.hasGlobalErrors()) {

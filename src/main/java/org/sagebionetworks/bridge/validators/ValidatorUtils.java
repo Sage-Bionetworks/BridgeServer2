@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.BridgeUtils.periodInMinutes;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
@@ -12,66 +13,45 @@ import java.util.Locale;
 import java.util.Set;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 
 import org.apache.commons.lang3.LocaleUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.joda.time.Duration;
 import org.joda.time.DurationFieldType;
 import org.joda.time.Period;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.springframework.validation.Errors;
 
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.HasLang;
 import org.sagebionetworks.bridge.models.Label;
-import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.Phone;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.PasswordPolicy;
 import org.sagebionetworks.bridge.models.assessments.ColorScheme;
 import org.sagebionetworks.bridge.models.notifications.NotificationMessage;
 
-public class ValidatorUtils {
+class ValidatorUtils {
+
+    static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{6}$";
+    static final int TEXT_SIZE = 65535;
+    static final int MEDIUMTEXT_SIZE = 16777215;
 
     static final String WRONG_PERIOD = "%s can only specify minute, hour, day, or week duration units";
     static final String WRONG_LONG_PERIOD = "%s can only specify day or week duration units";
     static final String DUPLICATE_LANG = "%s is a duplicate message under the same language code";
     static final String INVALID_LANG = "%s is not a valid ISO 639 alpha-2 or alpha-3 language code";
     static final String INVALID_HEX_TRIPLET = "%s is not in hex triplet format (ie #FFFFF format)";
-    static final String HEX_TRIPLET_FORMAT = "^#[0-9a-fA-F]{6}$";
     static final String INVALID_STRING_LENGTH = "is longer than the allowed field length of %d characters";
-    
-    static final int TEXT_SIZE = 65535;
-    static final int MEDIUMTEXT_SIZE = 16777215;
 
     private static final Set<DurationFieldType> FIXED_LENGTH_DURATIONS = ImmutableSet.of(DurationFieldType.minutes(),
             DurationFieldType.hours(), DurationFieldType.days(), DurationFieldType.weeks());
 
     private static final Set<DurationFieldType> FIXED_LENGTH_LONG_DURATIONS = ImmutableSet.of(DurationFieldType.days(),
             DurationFieldType.weeks());
-
-    public static boolean participantHasValidIdentifier(StudyParticipant participant) {
-        Phone phone = participant.getPhone();
-        String email = participant.getEmail();
-        String anyExternalId = participant.getExternalIds().isEmpty() ? null
-                : Iterables.getFirst(participant.getExternalIds().entrySet(), null).getValue();
-        String synapseUserId = participant.getSynapseUserId();
-        return (email != null || isNotBlank(anyExternalId) || phone != null || isNotBlank(synapseUserId));
-    }
-
-    public static boolean accountHasValidIdentifier(Account account) {
-        Phone phone = account.getPhone();
-        String email = account.getEmail();
-        String synapseUserId = account.getSynapseUserId();
-        Set<String> externalIds = BridgeUtils.collectExternalIds(account);
-        return (email != null || !externalIds.isEmpty() || phone != null || isNotBlank(synapseUserId));
-    }
-
-    public static void validatePassword(Errors errors, PasswordPolicy passwordPolicy, String password) {
+    
+    static void password(Errors errors, PasswordPolicy passwordPolicy, String password) {
         if (StringUtils.isBlank(password)) {
             errors.rejectValue("password", "is required");
         } else {
@@ -91,6 +71,15 @@ public class ValidatorUtils {
                 errors.rejectValue("password", "must contain at least one uppercase letter (A-Z)");
             }
         }
+    }
+
+    static boolean participantHasValidIdentifier(StudyParticipant participant) {
+        Phone phone = participant.getPhone();
+        String email = participant.getEmail();
+        String anyExternalId = participant.getExternalIds().isEmpty() ? null
+                : Iterables.getFirst(participant.getExternalIds().entrySet(), null).getValue();
+        String synapseUserId = participant.getSynapseUserId();
+        return (email != null || isNotBlank(anyExternalId) || phone != null || isNotBlank(synapseUserId));
     }
 
     private static void validateLanguageSet(Errors errors, List<? extends HasLang> items, String fieldName) {
@@ -116,7 +105,7 @@ public class ValidatorUtils {
         }
     }
 
-    public static void validateLabels(Errors errors, List<Label> labels) {
+    static void validateLabels(Errors errors, List<Label> labels) {
         if (labels == null || labels.isEmpty()) {
             return;
         }
@@ -132,7 +121,7 @@ public class ValidatorUtils {
         }
     }
 
-    public static void validateMessages(Errors errors, List<NotificationMessage> messages) {
+    static void validateMessages(Errors errors, List<NotificationMessage> messages) {
         if (messages == null || messages.isEmpty()) {
             return;
         }
@@ -162,7 +151,7 @@ public class ValidatorUtils {
         }
     }
 
-    public static final void validateColorScheme(Errors errors, ColorScheme cs, String fieldName) {
+    static final void validateColorScheme(Errors errors, ColorScheme cs, String fieldName) {
         if (cs != null) {
             errors.pushNestedPath(fieldName);
             if (cs.getBackground() != null && !cs.getBackground().matches(HEX_TRIPLET_FORMAT)) {
@@ -181,11 +170,11 @@ public class ValidatorUtils {
         }
     }
 
-    public static void validateFixedLengthPeriod(Errors errors, Period period, String fieldName, boolean required) {
+    static void validateFixedLengthPeriod(Errors errors, Period period, String fieldName, boolean required) {
         validateDuration(FIXED_LENGTH_DURATIONS, errors, period, fieldName, WRONG_PERIOD, required);
     }
 
-    public static void validateFixedLengthLongPeriod(Errors errors, Period period, String fieldName, boolean required) {
+    static void validateFixedLengthLongPeriod(Errors errors, Period period, String fieldName, boolean required) {
         validateDuration(FIXED_LENGTH_LONG_DURATIONS, errors, period, fieldName, WRONG_LONG_PERIOD, required);
     }
 
@@ -218,35 +207,7 @@ public class ValidatorUtils {
         }
     }
 
-    /**
-     * This converts the period to minutes, but only those fields that have a
-     * conventional measurement in minutes (so months and years are ignored).
-     */
-    public static final long periodInMinutes(Period period) {
-        return convertPeriod(period, (d) -> d.getStandardMinutes());
-    }
-
-    /**
-     * This converts the period to days, but only those fields that have a
-     * conventional measurement in days (so months and years are ignored).
-     */
-    public static final long periodInDays(Period period) {
-        return convertPeriod(period, (d) -> d.getStandardDays());
-    }
-
-    private static final long convertPeriod(Period period, Function<Duration, Long> func) {
-        if (period == null) {
-            return 0L;
-        }
-        try {
-            Duration d = period.toStandardDuration();
-            return func.apply(d);
-        } catch(UnsupportedOperationException e) {
-            return 0L;
-        }
-    }
-
-    public static final void validateStringLength(Errors errors, int maxLength, String persistingText, String fieldName) {
+    static final void validateStringLength(Errors errors, int maxLength, String persistingText, String fieldName) {
         if (persistingText == null || persistingText.isEmpty()) {
             return;
         }
@@ -255,7 +216,7 @@ public class ValidatorUtils {
         }
     }
     
-    public static <T> void validateJsonLength(Errors errors, int maxLength, T persistingObject, String fieldName) {
+    static <T> void validateJsonLength(Errors errors, int maxLength, T persistingObject, String fieldName) {
         if (persistingObject == null) {
             return;
         }

@@ -1,7 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
@@ -17,11 +15,13 @@ import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.EXEMPT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.validators.StudyValidator.*;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
-import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
 import static org.sagebionetworks.bridge.validators.Validate.entityThrowingException;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
@@ -106,7 +106,7 @@ public class StudyValidatorTest {
     public void studyTimeZoneInvalid() {
         study = createStudy();
         study.setStudyTimeZone("America/Aspen");
-        assertValidatorMessage(validator, study, STUDY_TIME_ZONE_FIELD, TIME_ZONE_ERROR);
+        assertValidatorMessage(validator, study, STUDY_TIME_ZONE_FIELD, INVALID_TIME_ZONE);
     }
     
     @Test

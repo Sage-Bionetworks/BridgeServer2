@@ -7,6 +7,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.BridgeConstants.API_APP_ID;
 import static org.sagebionetworks.bridge.BridgeConstants.API_DEFAULT_PAGE_SIZE;
+import static org.sagebionetworks.bridge.BridgeConstants.CANNOT_BE_BLANK;
 
 import java.net.URL;
 import java.util.Date;
@@ -32,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
@@ -245,14 +245,14 @@ public class UploadService {
      */
     public Upload getUpload(@Nonnull String uploadId) {
         if (Strings.isNullOrEmpty(uploadId)) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadId"));
+            throw new BadRequestException(String.format(CANNOT_BE_BLANK, "uploadId"));
         }
         return uploadDao.getUpload(uploadId);
     }
     
     public UploadView getUploadView(String uploadId) {
         if (Strings.isNullOrEmpty(uploadId)) {
-            throw new BadRequestException(String.format(Validate.CANNOT_BE_BLANK, "uploadId"));
+            throw new BadRequestException(String.format(CANNOT_BE_BLANK, "uploadId"));
         }
         Upload upload = uploadDao.getUpload(uploadId);
         return uploadToUploadView(upload, true);

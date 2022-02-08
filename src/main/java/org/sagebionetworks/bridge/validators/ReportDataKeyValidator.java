@@ -5,7 +5,8 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
-import org.sagebionetworks.bridge.BridgeConstants;
+import static org.sagebionetworks.bridge.validators.Validate.SYNAPSE_IDENTIFIER_PATTERN;
+
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportType;
 
@@ -34,7 +35,7 @@ public class ReportDataKeyValidator implements Validator {
         }
         if (isBlank(key.getIdentifier())) {
             errors.rejectValue("identifier", "cannot be missing or blank");
-        } else if (!key.getIdentifier().matches(BridgeConstants.SYNAPSE_IDENTIFIER_PATTERN)) {
+        } else if (!key.getIdentifier().matches(SYNAPSE_IDENTIFIER_PATTERN)) {
             errors.rejectValue("identifier", "can only contain letters, numbers, underscore and dash");
         }
     }

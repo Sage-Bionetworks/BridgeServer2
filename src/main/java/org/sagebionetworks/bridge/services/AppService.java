@@ -49,7 +49,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.stereotype.Component;
-import org.springframework.validation.Errors;
 
 import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.BridgeUtils;
@@ -81,7 +80,6 @@ import org.sagebionetworks.bridge.models.upload.UploadValidationStrictness;
 import org.sagebionetworks.bridge.services.email.BasicEmailProvider;
 import org.sagebionetworks.bridge.services.email.EmailType;
 import org.sagebionetworks.bridge.validators.AppAndUsersValidator;
-import org.sagebionetworks.bridge.validators.StudyParticipantValidator;
 import org.sagebionetworks.bridge.validators.AppValidator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -248,7 +246,7 @@ public class AppService {
     }
     
     public App getApp(String identifier, boolean includeDeleted) {
-        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, IDENTIFIER_PROPERTY);
+        checkArgument(isNotBlank(identifier));
 
         App app = cacheProvider.getApp(identifier);
         if (app == null) {
@@ -282,28 +280,13 @@ public class AppService {
     }
 
     public App createAppAndUsers(AppAndUsers appAndUsers) throws SynapseException {
-        checkNotNull(appAndUsers, Validate.CANNOT_BE_NULL, "app and users");
-        
-        App app = appAndUsers.getApp();
-        StudyParticipantValidator val = new StudyParticipantValidator(studyService, organizationService, app, true);
-        
-        Errors errors = Validate.getErrorsFor(appAndUsers);
+        checkNotNull(appAndUsers);
         
         // Validate AppAndUsers
-        Validate.entity(appAndUsersValidator, errors, appAndUsers);
-        Validate.throwException(errors, appAndUsers);
-        
-        // Validate each StudyParticipant object
-        for (int i=0; i < appAndUsers.getUsers().size(); i++) {
-            errors.pushNestedPath("users["+i+"]");
-            StudyParticipant participant = appAndUsers.getUsers().get(i);
-            Validate.entity(val, errors, participant);
-            errors.popNestedPath();
-        }
-        Validate.throwException(errors, appAndUsers);
+        Validate.entityThrowingException(appAndUsersValidator, appAndUsers);
 
         // Create app
-        app = createApp(appAndUsers.getApp());
+        App app = createApp(appAndUsers.getApp());
 
         // Create users and send password reset email
         for (StudyParticipant user: appAndUsers.getUsers()) {
@@ -321,7 +304,7 @@ public class AppService {
     }
 
     public App createApp(App app) {
-        checkNotNull(app, Validate.CANNOT_BE_NULL, "app");
+        checkNotNull(app);
         if (app.getVersion() != null){
             throw new EntityAlreadyExistsException(App.class, "App has a version value; it may already exist",
                 new ImmutableMap.Builder<String,Object>().put(IDENTIFIER_PROPERTY, app.getIdentifier()).build()); 
@@ -515,7 +498,7 @@ public class AppService {
     }
     
     public App updateApp(App app, boolean isAdminUpdate) {
-        checkNotNull(app, Validate.CANNOT_BE_NULL, "app");
+        checkNotNull(app);
 
         // These cannot be set through the API and will be null here, so they are set on update
         App originalApp = appDao.getApp(app.getIdentifier());
@@ -637,7 +620,7 @@ public class AppService {
     }
 
     public void deleteApp(String identifier, boolean physical) {
-        checkArgument(isNotBlank(identifier), Validate.CANNOT_BE_BLANK, IDENTIFIER_PROPERTY);
+        checkArgument(isNotBlank(identifier));
 
         if (appWhitelist.contains(identifier)) {
             throw new UnauthorizedException(identifier + " is protected by whitelist.");

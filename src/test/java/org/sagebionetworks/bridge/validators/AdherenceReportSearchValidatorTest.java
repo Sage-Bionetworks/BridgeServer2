@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.ADHERENCE_RANGE_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.ADHERENCE_RANGE_ORDER_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_COUNT_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.LABEL_FILTER_LENGTH_ERROR;
 import static org.sagebionetworks.bridge.BridgeConstants.PAGE_SIZE_ERROR;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.AdherenceReportSearchValidator.ADHERENCE_RANGE_ERROR;
+import static org.sagebionetworks.bridge.validators.AdherenceReportSearchValidator.ADHERENCE_RANGE_ORDER_ERROR;
+import static org.sagebionetworks.bridge.validators.AdherenceReportSearchValidator.LABEL_FILTER_COUNT_ERROR;
+import static org.sagebionetworks.bridge.validators.AdherenceReportSearchValidator.LABEL_FILTER_LENGTH_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 

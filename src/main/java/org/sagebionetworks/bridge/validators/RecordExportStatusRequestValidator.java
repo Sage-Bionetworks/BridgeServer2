@@ -29,7 +29,7 @@ public class RecordExportStatusRequestValidator implements Validator {
         if (target == null) {
             errors.rejectValue("RecordExportStatusRequest", Validate.CANNOT_BE_NULL);
         } else if (!(target instanceof RecordExportStatusRequest)) {
-            errors.rejectValue("RecordExportStatusRequest", Validate.WRONG_TYPE);
+            errors.rejectValue("RecordExportStatusRequest", Validate.INVALID_TYPE);
         } else {
             RecordExportStatusRequest record = (RecordExportStatusRequest) target;
 

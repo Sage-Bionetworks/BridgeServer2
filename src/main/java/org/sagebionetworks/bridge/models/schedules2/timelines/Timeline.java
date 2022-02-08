@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
+import static org.sagebionetworks.bridge.BridgeUtils.periodInMinutes;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -14,7 +14,6 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.google.common.collect.ImmutableList;
 
 import org.joda.time.Period;
-
 import org.sagebionetworks.bridge.models.schedules2.Notification;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 

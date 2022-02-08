@@ -252,8 +252,8 @@ public class SurveyService {
      * @return
      */
     public List<Survey> getSurveyAllVersions(String appId, String guid, boolean includeDeleted) {
-        checkNotNull(appId, Validate.CANNOT_BE_NULL, "appId");
-        checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
+        checkNotNull(appId);
+        checkArgument(isNotBlank(guid));
 
         List<Survey> allVersions = surveyDao.getSurveyAllVersions(appId, guid, includeDeleted);
         if (allVersions.isEmpty()) {
@@ -270,8 +270,8 @@ public class SurveyService {
      * @return
      */
     public Survey getSurveyMostRecentVersion(String appId, String guid) {
-        checkNotNull(appId, Validate.CANNOT_BE_NULL, "appId");
-        checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
+        checkNotNull(appId);
+        checkArgument(isNotBlank(guid));
 
         Survey survey = surveyDao.getSurveyMostRecentVersion(appId, guid);
         if (survey == null || !isInApp(appId, survey)) {
@@ -291,8 +291,8 @@ public class SurveyService {
      * @return
      */
     public Survey getSurveyMostRecentlyPublishedVersion(String appId, String guid, boolean includeElements) {
-        checkNotNull(appId, Validate.CANNOT_BE_NULL, "appId");
-        checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "survey guid");
+        checkNotNull(appId);
+        checkArgument(isNotBlank(guid));
 
         Survey survey = surveyDao.getSurveyMostRecentlyPublishedVersion(appId, guid, includeElements);
         if (survey == null || !isInApp(appId, survey)) {
@@ -306,7 +306,7 @@ public class SurveyService {
      * published, nothing is returned.
      */
     public List<Survey> getAllSurveysMostRecentlyPublishedVersion(String appId, boolean includeDeleted) {
-        checkNotNull(appId, Validate.CANNOT_BE_NULL, "appId");
+        checkNotNull(appId);
 
         return surveyDao.getAllSurveysMostRecentlyPublishedVersion(appId, includeDeleted);
     }
@@ -318,7 +318,7 @@ public class SurveyService {
      * @return
      */
     public List<Survey> getAllSurveysMostRecentVersion(String appId, boolean includeDeleted) {
-        checkNotNull(appId, Validate.CANNOT_BE_NULL, "appId");
+        checkNotNull(appId);
 
         return surveyDao.getAllSurveysMostRecentVersion(appId, includeDeleted);
     }
