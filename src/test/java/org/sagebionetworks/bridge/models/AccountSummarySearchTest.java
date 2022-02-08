@@ -14,6 +14,7 @@ import static org.sagebionetworks.bridge.models.SearchTermPredicate.OR;
 import static org.sagebionetworks.bridge.models.accounts.AccountStatus.ENABLED;
 import static org.sagebionetworks.bridge.models.studies.EnrollmentFilter.ENROLLED;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -58,6 +59,7 @@ public class AccountSummarySearchTest {
                 .withEnrollment(ENROLLED)
                 .withAttributeKey("foo")
                 .withAttributeValueFilter("bar")
+                .withInUse(true)
                 .build();
         
         ObjectMapper mapper = BridgeObjectMapper.get();
@@ -95,6 +97,7 @@ public class AccountSummarySearchTest {
             .withAttributeKey("foo")
             .withAttributeValueFilter("bar")
             .withPredicate(OR)
+            .withInUse(false)
             .build();
         
         String json = BridgeObjectMapper.get().writeValueAsString(search);
@@ -123,6 +126,7 @@ public class AccountSummarySearchTest {
         assertEquals(deser.getAttributeKey(), "foo");
         assertEquals(deser.getAttributeValueFilter(), "bar");
         assertEquals(deser.getPredicate(), OR);
+        assertFalse(deser.isInUse());
     }
     
     @Test
@@ -149,6 +153,7 @@ public class AccountSummarySearchTest {
             .withAttributeKey("foo")
             .withAttributeValueFilter("bar")
             .withPredicate(OR)
+            .withInUse(true)
             .build();
 
         AccountSummarySearch copy = search.toBuilder().build();
@@ -170,6 +175,7 @@ public class AccountSummarySearchTest {
         assertEquals(copy.getAttributeKey(), "foo");
         assertEquals(copy.getAttributeValueFilter(), "bar");
         assertEquals(copy.getPredicate(), OR);
+        assertTrue(copy.isInUse());
     }
     
     @Test

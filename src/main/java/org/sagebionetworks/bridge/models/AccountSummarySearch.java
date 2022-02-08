@@ -40,6 +40,7 @@ public final class AccountSummarySearch implements BridgeEntity {
     private final String attributeValueFilter;
     private final SearchTermPredicate predicate;
     private final StringSearchPosition stringSearchPosition;
+    private final Boolean inUse;
 
     private AccountSummarySearch(AccountSummarySearch.Builder builder) {
         this.offsetBy = builder.offsetBy;
@@ -61,6 +62,7 @@ public final class AccountSummarySearch implements BridgeEntity {
         this.attributeValueFilter = builder.attributeValueFilter;
         this.predicate = builder.predicate;
         this.stringSearchPosition = builder.stringSearchPosition;
+        this.inUse = builder.inUse;
     }
 
     public int getOffsetBy() {
@@ -143,6 +145,9 @@ public final class AccountSummarySearch implements BridgeEntity {
     public StringSearchPosition getStringSearchPosition() {
         return stringSearchPosition;
     }
+    public Boolean isInUse() {
+        return inUse;
+    }
     public AccountSummarySearch.Builder toBuilder() {
         return new AccountSummarySearch.Builder()
             .withOffsetBy(offsetBy)
@@ -163,7 +168,8 @@ public final class AccountSummarySearch implements BridgeEntity {
             .withAttributeKey(attributeKey)
             .withAttributeValueFilter(attributeValueFilter)
             .withPredicate(predicate)
-            .withStringSearchPosition(stringSearchPosition);
+            .withStringSearchPosition(stringSearchPosition)
+            .withInUse(inUse);
     }
 
     @Override
@@ -175,7 +181,7 @@ public final class AccountSummarySearch implements BridgeEntity {
         return Objects.hash(allOfGroups, emailFilter, nullsafeDateString(endTime), language, noneOfGroups, offsetBy,
                 pageSize, phoneFilter, nullsafeDateString(startTime), orgMembership, adminOnly, enrolledInStudyId,
                 externalIdFilter, status, enrollment, attributeKey, attributeValueFilter, predicate,
-                stringSearchPosition);
+                stringSearchPosition, inUse);
     }
 
     @Override
@@ -204,7 +210,8 @@ public final class AccountSummarySearch implements BridgeEntity {
                 && Objects.equals(attributeKey, other.attributeKey)
                 && Objects.equals(attributeValueFilter, other.attributeValueFilter)
                 && Objects.equals(predicate, other.predicate)
-                && Objects.equals(stringSearchPosition, other.stringSearchPosition);
+                && Objects.equals(stringSearchPosition, other.stringSearchPosition)
+                && Objects.equals(inUse, other.inUse);
     }
     
     private String nullsafeDateString(DateTime dateTime) {
@@ -219,7 +226,7 @@ public final class AccountSummarySearch implements BridgeEntity {
                 + orgMembership + ", adminOnly=" + adminOnly + ", enrolledInStudyId=" + enrolledInStudyId
                 + ", externalIdFilter=" + externalIdFilter + ", status=" + status + ", enrollment=" + enrollment
                 + ", attributeKey=" + attributeKey + ", attributeValueFilter=" + attributeValueFilter + ", predicate="
-                + predicate + ", stringSearchPosition=" + stringSearchPosition + "]";
+                + predicate + ", stringSearchPosition=" + stringSearchPosition + ", inUse=" + inUse + "]";
     }
 
     public static class Builder {
@@ -242,6 +249,7 @@ public final class AccountSummarySearch implements BridgeEntity {
         private String attributeValueFilter;
         private SearchTermPredicate predicate;
         private StringSearchPosition stringSearchPosition;
+        private Boolean inUse;
         
         public Builder withOffsetBy(Integer offsetBy) {
             this.offsetBy = offsetBy;
@@ -323,6 +331,10 @@ public final class AccountSummarySearch implements BridgeEntity {
         }
         public Builder withStringSearchPosition(StringSearchPosition stringSearchPosition) {
             this.stringSearchPosition = stringSearchPosition;
+            return this;
+        }
+        public Builder withInUse(Boolean inUse) {
+            this.inUse = inUse;
             return this;
         }
         public AccountSummarySearch build() {
