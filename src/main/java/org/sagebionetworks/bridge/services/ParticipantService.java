@@ -27,7 +27,6 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectTy
 import static org.sagebionetworks.bridge.models.templates.TemplateType.EMAIL_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.models.templates.TemplateType.SMS_APP_INSTALL_LINK;
 import static org.sagebionetworks.bridge.validators.IdentifierUpdateValidator.INSTANCE;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.accountHasValidIdentifier;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -537,7 +536,7 @@ public class ParticipantService {
         // account record. We should handle this with validation, but it would break existing
         // clients that are known to submit an external ID during sign up. So we check again and do 
         // not save if the account is inaccessible after construction.
-        if (accountHasValidIdentifier(account)) {
+        if (BridgeUtils.hasValidIdentifier(account)) {
             accountService.createAccount(app, account);    
         }
         

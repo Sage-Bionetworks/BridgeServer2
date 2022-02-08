@@ -29,7 +29,7 @@ public class UploadValidationStatusValidator implements Validator {
         if (target == null) {
             errors.rejectValue("uploadValidationStatus", Validate.CANNOT_BE_NULL);
         } else if (!(target instanceof UploadValidationStatus)) {
-            errors.rejectValue("uploadValidationStatus", Validate.WRONG_TYPE);
+            errors.rejectValue("uploadValidationStatus", Validate.INVALID_TYPE);
         } else {
             UploadValidationStatus validationStatus = (UploadValidationStatus) target;
 

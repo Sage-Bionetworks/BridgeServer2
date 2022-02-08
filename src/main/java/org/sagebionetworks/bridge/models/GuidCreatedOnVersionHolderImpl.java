@@ -11,7 +11,6 @@ import org.sagebionetworks.bridge.json.DateTimeToLongDeserializer;
 import org.sagebionetworks.bridge.json.DateTimeToLongSerializer;
 import org.sagebionetworks.bridge.models.schedules.SurveyReference;
 import org.sagebionetworks.bridge.models.surveys.Survey;
-import org.sagebionetworks.bridge.validators.Validate;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -26,7 +25,7 @@ public final class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersio
     private final Long version;
     
     public GuidCreatedOnVersionHolderImpl(Survey survey) {
-        checkNotNull(survey, Validate.CANNOT_BE_NULL, "survey");
+        checkNotNull(survey);
         this.guid = survey.getGuid();
         this.createdOn = survey.getCreatedOn();
         this.version = survey.getVersion();
@@ -42,7 +41,7 @@ public final class GuidCreatedOnVersionHolderImpl implements GuidCreatedOnVersio
     @JsonCreator
     public GuidCreatedOnVersionHolderImpl(@JsonProperty("guid") String guid,
             @JsonProperty("createdOn") @JsonDeserialize(using = DateTimeToLongDeserializer.class) long createdOn) {
-        checkArgument(isNotBlank(guid), Validate.CANNOT_BE_BLANK, "guid");
+        checkArgument(isNotBlank(guid));
         checkArgument(createdOn != 0, "createdOn cannot be zero");
         this.guid = guid;
         this.createdOn = createdOn;

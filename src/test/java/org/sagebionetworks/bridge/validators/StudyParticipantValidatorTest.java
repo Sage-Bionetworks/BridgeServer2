@@ -13,7 +13,7 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getExcess
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
-import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.testng.Assert.assertNull;
 import static org.mockito.Mockito.when;
@@ -430,7 +430,7 @@ public class StudyParticipantValidatorTest {
     @Test
     public void validateInvalidClientTimeZoneFails() {
         validator = makeValidator(true);
-        assertValidatorMessage(validator, withClientTimeZone("Invalid/Time_Zone"), "clientTimeZone", TIME_ZONE_ERROR);
+        assertValidatorMessage(validator, withClientTimeZone("Invalid/Time_Zone"), "clientTimeZone", INVALID_TIME_ZONE);
     }
 
     @Test

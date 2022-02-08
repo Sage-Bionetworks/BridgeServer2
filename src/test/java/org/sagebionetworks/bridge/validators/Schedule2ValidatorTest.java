@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getExcessivelyLargeClientData;
@@ -28,6 +27,7 @@ import static org.sagebionetworks.bridge.validators.Schedule2Validator.OWNER_ID_
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.SESSIONS_FIELD;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.STUDY_BURSTS_FIELD;
 import static org.sagebionetworks.bridge.validators.Schedule2Validator.UPDATE_TYPE_FIELD;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;

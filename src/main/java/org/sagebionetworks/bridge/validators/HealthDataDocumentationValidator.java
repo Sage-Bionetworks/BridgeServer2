@@ -14,6 +14,8 @@ public class HealthDataDocumentationValidator implements Validator {
     /** Singleton instance of this validator. */
     public static final HealthDataDocumentationValidator INSTANCE = new HealthDataDocumentationValidator();
 
+    static final String EXCEEDS_MAXIMUM_SIZE = "%s exceeds the maximum allowed size";
+
     /** {@inheritDoc} */
     @Override
     public boolean supports(Class<?> clazz) {
@@ -25,7 +27,7 @@ public class HealthDataDocumentationValidator implements Validator {
         if (object == null) {
             errors.rejectValue("HealthDataDocumentation", Validate.CANNOT_BE_NULL);
         } else if (!(object instanceof HealthDataDocumentation)) {
-            errors.rejectValue("HealthDataDocumentation", Validate.WRONG_TYPE);
+            errors.rejectValue("HealthDataDocumentation", Validate.INVALID_TYPE);
         } else {
             HealthDataDocumentation doc = (HealthDataDocumentation) object;
 
@@ -60,7 +62,7 @@ public class HealthDataDocumentationValidator implements Validator {
             } else if (StringUtils.isBlank(documentation)) {
                 errors.rejectValue("documentation", Validate.CANNOT_BE_EMPTY_STRING);
             } else if (documentation.getBytes(StandardCharsets.UTF_8).length > MAX_DOCUMENTATION_BYTES) {
-                errors.rejectValue("documentation", Validate.EXCEEDS_MAXIMUM_SIZE);
+                errors.rejectValue("documentation", EXCEEDS_MAXIMUM_SIZE);
             }
         }
     }

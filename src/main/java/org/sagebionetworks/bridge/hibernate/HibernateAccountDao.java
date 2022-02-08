@@ -15,6 +15,7 @@ import static org.sagebionetworks.bridge.models.ResourceList.END_TIME;
 import static org.sagebionetworks.bridge.models.ResourceList.ENROLLED_IN_STUDY_ID;
 import static org.sagebionetworks.bridge.models.ResourceList.ENROLLMENT;
 import static org.sagebionetworks.bridge.models.ResourceList.EXTERNAL_ID_FILTER;
+import static org.sagebionetworks.bridge.models.ResourceList.IN_USE;
 import static org.sagebionetworks.bridge.models.ResourceList.LANGUAGE;
 import static org.sagebionetworks.bridge.models.ResourceList.NONE_OF_GROUPS;
 import static org.sagebionetworks.bridge.models.ResourceList.OFFSET_BY;
@@ -149,7 +150,10 @@ public class HibernateAccountDao implements AccountDao {
         builder.append(prefix);
         builder.append("LEFT JOIN acct.enrollments AS enrollment");
         builder.append("WITH acct.id = enrollment.accountId");
-        
+        if (search != null && search.isInUse() != null) {
+            builder.append("LEFT JOIN org.sagebionetworks.bridge.models.RequestInfo AS ri");
+            builder.append("WITH acct.id = ri.userId");
+        }
         SearchTermPredicate predicate = (search != null) ? search.getPredicate() : AND;
         WhereClauseBuilder where = builder.startWhere(predicate);
         where.appendRequired("acct.appId = :appId", "appId", appId);
@@ -195,6 +199,13 @@ public class HibernateAccountDao implements AccountDao {
                     where.appendRequired("enrollment.studyId = :studyId", "studyId", enrolledInStudy);
                 } else if (!callerStudies.isEmpty() && !context.isInRole(ADMIN, DEVELOPER, RESEARCHER, WORKER)) {
                     where.appendRequired("enrollment.studyId IN (:studies)", "studies", callerStudies);
+                }
+            }
+            if (search.isInUse() != null) {
+                if (Boolean.TRUE.equals(search.isInUse())) {
+                    where.append("ri.signedInOn IS NOT NULL");
+                } else {
+                    where.append("ri.signedInOn IS NULL");
                 }
             }
         }
@@ -252,7 +263,8 @@ public class HibernateAccountDao implements AccountDao {
                 .withRequestParam(ENROLLMENT, search.getEnrollment())
                 .withRequestParam(ATTRIBUTE_KEY, search.getAttributeKey())
                 .withRequestParam(ATTRIBUTE_VALUE_FILTER, search.getAttributeValueFilter())
-                .withRequestParam(ENROLLED_IN_STUDY_ID, search.getEnrolledInStudyId());
+                .withRequestParam(ENROLLED_IN_STUDY_ID, search.getEnrolledInStudyId())
+                .withRequestParam(IN_USE, search.isInUse());
     }
     
     // Callers of AccountDao assume that an Account will always a health code and health ID. All accounts created

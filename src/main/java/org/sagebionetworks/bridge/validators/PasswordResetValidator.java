@@ -46,6 +46,6 @@ public class PasswordResetValidator implements Validator {
         App app = appService.getApp(passwordReset.getAppId());
         PasswordPolicy passwordPolicy = app.getPasswordPolicy();
         String password = passwordReset.getPassword();
-        ValidatorUtils.validatePassword(errors, passwordPolicy, password);
+        ValidatorUtils.password(errors, passwordPolicy, password);
     }
 }

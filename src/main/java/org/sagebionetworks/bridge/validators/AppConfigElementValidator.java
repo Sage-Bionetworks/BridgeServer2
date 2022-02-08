@@ -1,8 +1,8 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERROR;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -22,8 +22,8 @@ public class AppConfigElementValidator implements Validator {
         
         if (isBlank(appConfigElement.getId())) {
             errors.rejectValue("id", "is required");
-        } else if (!appConfigElement.getId().matches(BridgeConstants.BRIDGE_EVENT_ID_PATTERN)) {
-            errors.rejectValue("id", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+        } else if (!appConfigElement.getId().matches(Validate.BRIDGE_EVENT_ID_PATTERN)) {
+            errors.rejectValue("id", BRIDGE_EVENT_ID_ERROR);
         }
         if (appConfigElement.getRevision() == null) {
             errors.rejectValue("revision", "is required");
