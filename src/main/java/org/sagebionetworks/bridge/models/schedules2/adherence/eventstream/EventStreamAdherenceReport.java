@@ -5,12 +5,13 @@ import java.util.List;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
+import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonPropertyOrder({ "activeOnly", "timestamp", "clientTimeZone", "adherencePercent", "dayRangeOfAllStreams",
-        "streams", "type" })
+        "progression", "streams", "type" })
 public class EventStreamAdherenceReport {
     
     public static final class DayRange {
@@ -28,6 +29,7 @@ public class EventStreamAdherenceReport {
     private DateTime timestamp;
     private String clientTimeZone;
     private int adherencePercent = 100;
+    private ParticipantStudyProgress progression;
     private List<EventStream> streams = new ArrayList<>();
     
     public DayRange getDayRangeOfAllStreams() {
@@ -73,6 +75,12 @@ public class EventStreamAdherenceReport {
     }
     public void setAdherencePercent(int adherencePercent) {
         this.adherencePercent = adherencePercent;
+    }
+    public ParticipantStudyProgress getProgression() {
+        return progression;
+    }
+    public void setProgression(ParticipantStudyProgress progression) {
+        this.progression = progression;
     }
     public List<EventStream> getStreams() {
         return streams;

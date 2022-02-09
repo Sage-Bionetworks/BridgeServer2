@@ -13,6 +13,8 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNSTARTED;
 
 import java.util.Collection;
+import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -62,6 +64,22 @@ public class AdherenceUtils {
             percentage = ((float) compliantSessions / (float) totalSessions);
         }
         return (int) (percentage * 100);
+    }
+    
+    public static ParticipantStudyProgress calculateProgress(AdherenceState state, List<EventStream> eventStreams) {
+        if (state.getMetadata().isEmpty()) {
+            return ParticipantStudyProgress.NO_SCHEDULE;
+        }
+        long total = counting(eventStreams, EnumSet.allOf(SessionCompletionState.class));
+        long na = counting(eventStreams, EnumSet.of(NOT_APPLICABLE));
+        long done = counting(eventStreams, EnumSet.of(ABANDONED, EXPIRED, DECLINED, COMPLETED));
+        
+        if (na == total) {
+            return ParticipantStudyProgress.UNSTARTED;
+        } else if ((na + done) == total) {
+            return ParticipantStudyProgress.DONE;
+        }
+        return ParticipantStudyProgress.IN_PROGRESS;
     }
     
     public static long counting(Collection<EventStream> streams, Set<SessionCompletionState> states) {
