@@ -20,19 +20,23 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStrin
 import java.time.DateTimeException;
 import java.time.ZoneId;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.studies.Address;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
-
+import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
 
 public class StudyValidator implements Validator {
     
+    static final String ADHERENCE_THRESHOLD_PERCENTAGE_FIELD = "adherenceThresholdPercentage";
     static final String ADDRESS_FIELD = "address";
     static final String AFFILIATION_FIELD = "affiliation";
     static final String APP_ID_FIELD = "appId";
@@ -62,15 +66,22 @@ public class StudyValidator implements Validator {
     static final String POSITION_FIELD = "position";
     static final String POSTAL_CODE_FIELD = "postalCode";
     static final String ROLE_FIELD = "role";
+    static final String SCHEDULE_GUID_FIELD = "scheduleGuid";
     static final String STREET_FIELD = "street";
     static final String STUDY_LOGO_URL_FIELD = "studyLogoUrl";
     static final String STUDY_TIME_ZONE_FIELD = "studyTimeZone";
-    static final String ADHERENCE_THRESHOLD_PERCENTAGE_FIELD = "adherenceThresholdPercentage";
-    
+
+    static final String SCHEDULE_GUID_OWNER_ERROR_MSG = "is not owned by the caller’s organization";
+    static final String SCHEDULE_GUID_INVALID_MSG = "is not a valid schedule GUID";
+
     private final Set<String> protectedCustomEventIds;
+    private final Schedule2Service scheduleService;
+    private final String orgId;
     
-    public StudyValidator(Set<String> protectedCustomEventIds) {
+    public StudyValidator(Set<String> protectedCustomEventIds, Schedule2Service scheduleService, String orgId) {
         this.protectedCustomEventIds = protectedCustomEventIds;
+        this.scheduleService = scheduleService;
+        this.orgId = orgId;
     }
 
     @Override
@@ -201,6 +212,20 @@ public class StudyValidator implements Validator {
             for (String disease : study.getDiseases()) {
                 validateStringLength(errors, 255, disease, "diseases["+disease+"]");
             }
+        }
+        if (study.getScheduleGuid() != null) {
+            try {
+                Optional<Schedule2> opt = scheduleService.getScheduleForStudy(study.getAppId(), study);
+                if (!opt.isPresent()) {
+                    errors.rejectValue(SCHEDULE_GUID_FIELD, SCHEDULE_GUID_INVALID_MSG);
+                } else if (!opt.get().getOwnerId().equals(orgId)) {
+                    errors.rejectValue(SCHEDULE_GUID_FIELD, SCHEDULE_GUID_OWNER_ERROR_MSG);    
+                }
+            } catch(UnauthorizedException e) {
+                // This can happen, though it's nearly impossible to trigger because permissions are lax
+                errors.rejectValue(SCHEDULE_GUID_FIELD, SCHEDULE_GUID_OWNER_ERROR_MSG);
+            }
+            
         }
         validateJsonLength(errors, TEXT_SIZE, study.getClientData(), CLIENT_DATA_FIELD);
         validateStringLength(errors, 510, study.getDetails(), DETAILS_FIELD);
