@@ -382,10 +382,12 @@ public class EventStreamAdherenceReportGeneratorTest {
     
     @Test
     public void progression_done() { 
-        AdherenceState state = new AdherenceState.Builder().withNow(NOW).build();
+        AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
+        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
         
         EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertEquals(report.getProgression(), ParticipantStudyProgress.NO_SCHEDULE);
+        assertEquals(report.getProgression(), ParticipantStudyProgress.DONE);        
     }
     
     @Test
