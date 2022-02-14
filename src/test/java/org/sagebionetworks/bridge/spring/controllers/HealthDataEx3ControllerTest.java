@@ -7,6 +7,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCrossOrigin;
 import static org.sagebionetworks.bridge.TestUtils.assertDelete;
 import static org.sagebionetworks.bridge.TestUtils.assertGet;
@@ -71,6 +72,9 @@ public class HealthDataEx3ControllerTest {
     @Mock
     private StudyService mockStudyService;
 
+    @Mock
+    private UserSession mockDeveloperTestAccountSession;
+
     @InjectMocks
     @Spy
     private HealthDataEx3Controller controller;
@@ -87,6 +91,7 @@ public class HealthDataEx3ControllerTest {
 
         // Mock session.
         doReturn(new UserSession()).when(controller).getAuthenticatedSession(any());
+        doReturn(mockDeveloperTestAccountSession).when(controller).getAuthenticatedAndConsentedSession();
     }
 
     @Test
@@ -305,5 +310,89 @@ public class HealthDataEx3ControllerTest {
                 .thenThrow(EntityNotFoundException.class);
         controller.getRecordsForStudy(TestConstants.TEST_APP_ID, STUDY_ID, CREATED_ON_START_STRING,
                 CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
+    }
+
+    // Tests of getRecordForDeveloperTestAccount API.
+    @Test
+    public void getRecordForDeveloperTestAccount_Success() {
+        when(mockDeveloperTestAccountSession.getAppId()).thenReturn(TestConstants.TEST_APP_ID);
+        when(mockDeveloperTestAccountSession.getHealthCode()).thenReturn(TestConstants.HEALTH_CODE);
+
+        HealthDataRecordEx3 record = HealthDataRecordEx3.create();
+        record.setAppId(TestConstants.TEST_APP_ID);
+        record.setId(RECORD_ID);
+        record.setHealthCode(HEALTH_CODE);
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
+
+        // Execute and verify.
+        HealthDataRecordEx3 result = controller.getRecordForDeveloperTestAccount(RECORD_ID);
+        assertSame(result, record);
+
+        verify(mockHealthDataEx3Service).getRecord(RECORD_ID);
+        verify(mockMetrics).setRecordId(RECORD_ID);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getRecordForDeveloperTestAccount_RecordInWrongApp() {
+        when(mockDeveloperTestAccountSession.getAppId()).thenReturn(TEST_APP_ID);
+        when(mockDeveloperTestAccountSession.getHealthCode()).thenReturn(HEALTH_CODE);
+
+        HealthDataRecordEx3 record = HealthDataRecordEx3.create();
+        record.setAppId("wrong-app");
+        record.setId(RECORD_ID);
+        record.setHealthCode(HEALTH_CODE);
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
+
+        // Execute.
+        controller.getRecordForDeveloperTestAccount(RECORD_ID);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getRecordForDeveloperTestAccount_RecordNotFound() {
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.empty());
+
+        // Execute.
+        controller.getRecordForDeveloperTestAccount(RECORD_ID);
+    }
+
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getRecordForDeveloperTestAccount_RecordOfWrongUser() {
+        when(mockDeveloperTestAccountSession.getAppId()).thenReturn(TEST_APP_ID);
+        when(mockDeveloperTestAccountSession.getHealthCode()).thenReturn(HEALTH_CODE);
+
+        HealthDataRecordEx3 record = HealthDataRecordEx3.create();
+        record.setAppId(TEST_APP_ID);
+        record.setId(RECORD_ID);
+        record.setHealthCode("wrong-user");
+        when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
+
+        // Execute.
+        controller.getRecordForDeveloperTestAccount(RECORD_ID);
+    }
+
+    // Tests of getRecordsForUserForDeveloperTestAccount API.
+    @Test
+    public void getRecordsForUserForDeveloperTestAccount_Success() {
+        // Set up mocks.
+        when(mockDeveloperTestAccountSession.getHealthCode()).thenReturn(HEALTH_CODE);
+
+        ForwardCursorPagedResourceList<HealthDataRecordEx3> recordList = new ForwardCursorPagedResourceList<>(
+                ImmutableList.of(HealthDataRecordEx3.create()), null);
+        when(mockHealthDataEx3Service.getRecordsForHealthCode(HEALTH_CODE, CREATED_ON_START,
+                CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY)).thenReturn(recordList);
+
+        // Execute and verify.
+        ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForUserForDeveloperTestAccount(
+                CREATED_ON_START_STRING, CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
+        assertSame(outputList, recordList);
+        assertEquals(outputList.getRequestParams().size(), 5);
+        assertEquals(outputList.getRequestParams().get(ResourceList.START_TIME), CREATED_ON_START_STRING);
+        assertEquals(outputList.getRequestParams().get(ResourceList.END_TIME), CREATED_ON_END_STRING);
+        assertEquals(outputList.getRequestParams().get(ResourceList.PAGE_SIZE), BridgeConstants.API_DEFAULT_PAGE_SIZE);
+        assertEquals(outputList.getRequestParams().get(ResourceList.OFFSET_KEY), OFFSET_KEY);
+        assertEquals(outputList.getRequestParams().get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
+
+        verify(mockHealthDataEx3Service).getRecordsForHealthCode(HEALTH_CODE, CREATED_ON_START,
+                CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY);
     }
 }
