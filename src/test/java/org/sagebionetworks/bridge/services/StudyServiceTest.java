@@ -33,6 +33,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -96,6 +97,12 @@ public class StudyServiceTest {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
+        
+        RequestContext.set(new RequestContext.Builder().withCallerOrgMembership(TEST_ORG_ID).build());
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setOwnerId(TEST_ORG_ID);
+        when(mockScheduleService.getScheduleForStudy(any(), any())).thenReturn(Optional.of(schedule));
     }
     
     @AfterMethod

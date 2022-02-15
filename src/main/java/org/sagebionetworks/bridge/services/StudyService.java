@@ -160,7 +160,10 @@ public class StudyService {
         study.setAppId(appId);
         study.setPhase(DESIGN);
         
-        StudyValidator validator = new StudyValidator(getCustomEventIdsFromSchedule(appId, study.getScheduleGuid()));
+        String orgId = RequestContext.get().getCallerOrgMembership();
+        
+        StudyValidator validator = new StudyValidator(getCustomEventIdsFromSchedule(appId, study.getScheduleGuid()),
+                scheduleService, orgId);
         Validate.entityThrowingException(validator, study);
         
         study.setVersion(null);
@@ -178,7 +181,6 @@ public class StudyService {
         // yet exist. After initial app creation when accounts are established in the app, it should be 
         // possible to create studies that are associated to the caller's organization (so the study 
         // creator can access the study!).
-        String orgId = RequestContext.get().getCallerOrgMembership();
         if (setStudySponsor && orgId != null) {
             sponsorService.createStudyWithSponsorship(appId, study.getIdentifier(), orgId);    
         }
@@ -207,8 +209,11 @@ public class StudyService {
         study.setCreatedOn(existing.getCreatedOn());
         study.setModifiedOn(DateTime.now());
         study.setPhase(existing.getPhase());
+        
+        String orgId = RequestContext.get().getCallerOrgMembership();
     
-        StudyValidator validator = new StudyValidator(getCustomEventIdsFromSchedule(appId, study.getScheduleGuid()));
+        StudyValidator validator = new StudyValidator(getCustomEventIdsFromSchedule(appId, study.getScheduleGuid()),
+                scheduleService, orgId);
         Validate.entityThrowingException(validator, study);
         
         VersionHolder keys = studyDao.updateStudy(study);
