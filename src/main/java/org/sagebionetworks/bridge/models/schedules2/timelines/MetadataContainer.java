@@ -43,8 +43,12 @@ public class MetadataContainer {
                 record.setInstanceTimestamp(record.getEventTimestamp());    
             }
             if (meta.getAssessmentInstanceGuid() == null) {
+                record.setSessionGuid(meta.getSessionGuid());
+                record.setAssessmentGuid(null);
                 sessionUpdates.put(meta.getSessionInstanceGuid(), record);
             } else {
+                record.setSessionGuid(null);
+                record.setAssessmentGuid(meta.getAssessmentGuid());
                 assessmentUpdates.add(record);
             }
         }

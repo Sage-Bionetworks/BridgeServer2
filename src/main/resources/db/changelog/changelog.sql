@@ -915,3 +915,11 @@ ADD COLUMN `externalId` varchar(255);
 
 ALTER TABLE `WeeklyAdherenceReports`
 ADD COLUMN `progression` varchar(255);
+
+-- changeset bridge:62
+
+ALTER TABLE `AdherenceRecords`
+ADD COLUMN `assessmentGuid` varchar(60),
+ADD COLUMN `sessionGuid` varchar(60),
+ADD CONSTRAINT FOREIGN KEY (`assessmentGuid`) REFERENCES `Assessments` (`guid`) ON DELETE CASCADE,
+ADD CONSTRAINT FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DELETE CASCADE;
