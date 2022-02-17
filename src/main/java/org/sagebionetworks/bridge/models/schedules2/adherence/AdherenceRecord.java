@@ -96,7 +96,8 @@ public class AdherenceRecord implements BridgeEntity {
      * Persistent activities can be done more than once, and are only differentiated by their
      * start times, while other activities can only be done once in a time stream, so we use
      * the startedOn timestamp for persistent records and the eventTimestamp for other records.
-     * This is set on all updates and is not exposed through the API.
+     * This is set on all updates and is not exposed through the API, and it forms part of 
+     * the record’s primary key.
      */
     public DateTime getInstanceTimestamp() {
         return instanceTimestamp;
