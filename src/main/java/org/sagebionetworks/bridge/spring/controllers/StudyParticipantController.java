@@ -71,6 +71,7 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule.ParticipantSchedule;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
@@ -83,6 +84,7 @@ import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.services.AdherenceService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 
@@ -124,6 +126,8 @@ public class StudyParticipantController extends BaseController {
 
     private ReportService reportService;
     
+    private AdherenceService adherenceService;
+    
     @Autowired
     final void setParticipantService(ParticipantService participantService) {
         this.participantService = participantService;
@@ -157,6 +161,11 @@ public class StudyParticipantController extends BaseController {
     @Autowired
     final void setReportService(ReportService reportService) {
         this.reportService = reportService;
+    }
+    
+    @Autowired
+    final void setAdherenceService(AdherenceService adherenceService) {
+        this.adherenceService = adherenceService; 
     }
     
     DateTime getDateTime() {
@@ -244,6 +253,52 @@ public class StudyParticipantController extends BaseController {
             throw new EntityNotFoundException(Schedule2.class);
         }
         return scheduleService.getTimelineForSchedule(session.getAppId(), study.getScheduleGuid());
+    }
+    
+    @GetMapping("/v5/studies/{studyId}/participants/{userId}/schedule")
+    public ParticipantSchedule getParticipantScheduleForUser(@PathVariable String studyId, @PathVariable String userId) {
+        UserSession session = getAdministrativeSession();
+        
+        CAN_EDIT_STUDY_PARTICIPANTS.checkAndThrow(STUDY_ID, studyId);
+        
+        Account account = getValidAccountInStudy(session.getAppId(), studyId, userId);
+        
+        return adherenceService.getParticipantSchedule(session.getAppId(), studyId, account);
+    }
+    
+    @GetMapping("/v5/studies/{studyId}/participants/self/schedule")
+    public ParticipantSchedule getParticipantScheduleForSelf(@PathVariable String studyId, 
+            @RequestParam(required = false) String clientTimeZone) {
+        UserSession session = getAuthenticatedAndConsentedSession();
+        
+        // This produces the desired error (unauthorized rather than 404)
+        if (!session.getParticipant().getStudyIds().contains(studyId)) {
+            throw new UnauthorizedException("Caller is not enrolled in study '" + studyId + "'");
+        }
+        AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));        
+        if (clientTimeZone != null && !clientTimeZone.equals(account.getClientTimeZone())) {
+            account.setClientTimeZone(clientTimeZone);
+            accountService.updateAccount(account);
+        }
+        DateTime timelineRequestedOn = getDateTime();
+        
+        RequestInfo requestInfo = getRequestInfoBuilder(session)
+                .withTimelineAccessedOn(timelineRequestedOn).build();
+        requestInfoService.updateRequestInfo(requestInfo);
+        
+        // Any change to the schedule, to the events, or to the adherence records should invalidate this schedule 
+        ParticipantSchedule schedule = adherenceService.getParticipantSchedule(session.getAppId(), studyId, account);
+
+        studyActivityEventService.publishEvent(new StudyActivityEvent.Builder()
+                .withAppId(session.getAppId())
+                .withStudyId(studyId)
+                .withUserId(session.getId())
+                .withObjectType(TIMELINE_RETRIEVED)
+                .withTimestamp(timelineRequestedOn).build(), false, true);
+        
+        return schedule;
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/enrollments")

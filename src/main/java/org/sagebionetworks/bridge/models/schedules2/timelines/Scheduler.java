@@ -145,7 +145,7 @@ public class Scheduler {
             }
             
             // This session will be used, so we can add it
-            builder.withSessionInfo(SessionInfo.create(session));
+            builder.withSessionInfo(SessionInfo.createTimelineEntry(session));
             
             ScheduledSession.Builder scheduledSession = new ScheduledSession.Builder();
             scheduledSession.withSession(session);
@@ -174,7 +174,7 @@ public class Scheduler {
             for (String oneEventId : startEventIds) {
                 // Clear the assessments that are calculated in each iteration. Other fields calculated 
                 // in this loop will be reset.
-                scheduledSession = scheduledSession.copyWithoutAssessments();
+                scheduledSession = scheduledSession.build().toBuilder();
 
                 // The position of an assessment in a session is used to differentiate repeated assessments
                 // in a single session. Assessments can be configured differently, but if they are exactly
@@ -190,7 +190,10 @@ public class Scheduler {
                     AssessmentInfo asmtInfo = AssessmentInfo.create(ref);
                     builder.withAssessmentInfo(asmtInfo);
                     
-                    ScheduledAssessment schAsmt = new ScheduledAssessment(asmtInfo.getKey(), asmtInstanceGuid, ref);
+                    ScheduledAssessment schAsmt = new ScheduledAssessment.Builder()
+                            .withRefKey(asmtInfo.getKey())
+                            .withInstanceGuid(asmtInstanceGuid)
+                            .withReference(ref).build();
                     scheduledSession.withScheduledAssessment(schAsmt);
                 }
                 
