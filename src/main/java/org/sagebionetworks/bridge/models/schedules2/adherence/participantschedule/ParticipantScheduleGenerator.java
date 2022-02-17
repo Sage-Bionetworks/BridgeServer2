@@ -67,17 +67,19 @@ public class ParticipantScheduleGenerator {
                 SessionCompletionState asmtState = AdherenceUtils.calculateSessionState(
                         asmtRecord, schSession.getStartDay(), schSession.getEndDay(), days);
                 
+                // Copy these values over to from the adherence record if they exist, and put the timestamp
+                // in the supplied timezone if it has been persisted.
                 DateTime finishedOn = null;
                 String clientTimeZone = null;
-                if (asmtRecord != null) {
+                if (asmtRecord != null && asmtRecord.getFinishedOn() != null) {
+                    finishedOn = asmtRecord.getFinishedOn();
+                }
+                if (asmtRecord != null && asmtRecord.getClientTimeZone() != null) {
                     clientTimeZone = asmtRecord.getClientTimeZone();
-                    if (clientTimeZone == null) {
-                        clientTimeZone = state.getClientTimeZone();
-                    }
-                    if (asmtRecord.getFinishedOn() != null) {
-                        DateTimeZone zone = DateTimeZone.forID(clientTimeZone);
-                        finishedOn = asmtRecord.getFinishedOn().withZone(zone);
-                    }
+                }
+                if (finishedOn != null && clientTimeZone != null) {
+                    DateTimeZone zone = DateTimeZone.forID(clientTimeZone);
+                    finishedOn = finishedOn.withZone(zone);
                 }
                 ScheduledAssessment.Builder asmtBuilder = new ScheduledAssessment.Builder()
                         .withRefKey(schAssessment.getRefKey())

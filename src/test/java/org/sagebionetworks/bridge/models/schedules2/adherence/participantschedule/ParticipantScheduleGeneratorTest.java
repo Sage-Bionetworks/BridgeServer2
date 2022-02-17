@@ -87,12 +87,12 @@ public class ParticipantScheduleGeneratorTest {
         // This one defaulted to the user's tz because none was set in the adherence record
         ScheduledAssessment schAsmt2 = sess1.getAssessments().get(1);
         assertEquals(schAsmt2.getState(), COMPLETED);
-        assertEquals(schAsmt2.getClientTimeZone(), "America/Los_Angeles");
-        assertEquals(schAsmt2.getFinishedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Los_Angeles")));
+        assertNull(schAsmt2.getClientTimeZone());
+        assertEquals(schAsmt2.getFinishedOn(), MODIFIED_ON);
         
         ScheduledAssessment schAsmt3 = retValue.getSchedule().get(1).getAssessments().get(0);
         assertEquals(schAsmt3.getState(), STARTED);
-        assertEquals(schAsmt3.getClientTimeZone(), "America/Los_Angeles");
+        assertNull(schAsmt3.getClientTimeZone());
         assertNull(schAsmt3.getFinishedOn());
         
         assertEquals(retValue.getSessions().size(), 1);
