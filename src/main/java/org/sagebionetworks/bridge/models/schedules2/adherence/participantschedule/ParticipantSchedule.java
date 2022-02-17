@@ -16,7 +16,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 /**
  * A schedule that is very similar to a timeline, but laid out with a real chronology for a specific
  * user, along with information about their adherence to this schedule.
- *
  */
 @JsonPropertyOrder({ "createdOn", "clientTimeZone", "dateRange", "schedule", "sessions", "assessments", "studyBursts",
         "type" })

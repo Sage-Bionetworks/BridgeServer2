@@ -440,7 +440,6 @@ public class AdherenceService {
         }
         Schedule2 studySchedule = scheduleService.getScheduleForStudy(appId, study)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
-        // Schedule2 studySchedule = scheduleService.getSchedule(appId, study.getScheduleGuid());
         Timeline timeline = Scheduler.INSTANCE.calculateTimeline(studySchedule);
         
         AdherenceState state = getAdherenceStateForParticipantSchedule(account, studyId);
@@ -466,7 +465,7 @@ public class AdherenceService {
                 .withUserId(account.getId())
                 .build()).getItems();
         
-        // don't need TimelineMetadata, as we're using the timeline instead (passed separately)
+        // State does not need to include TimelineMetadata, as we're using the Timeline instead (passed separately)
         AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withNow(getDateTime());
         builder.withClientTimeZone(account.getClientTimeZone());

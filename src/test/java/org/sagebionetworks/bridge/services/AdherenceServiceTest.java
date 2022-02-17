@@ -954,7 +954,7 @@ public class AdherenceServiceTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
-        when(mockScheduleService.getSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(schedule);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
         
         ResourceList<StudyActivityEvent> events = new ResourceList<>(ImmutableList.of());
         when(mockStudyActivityEventService.getRecentStudyActivityEvents(

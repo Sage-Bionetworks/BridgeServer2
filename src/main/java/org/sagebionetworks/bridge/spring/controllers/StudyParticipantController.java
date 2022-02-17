@@ -277,18 +277,19 @@ public class StudyParticipantController extends BaseController {
         }
         AccountId accountId = AccountId.forId(session.getAppId(), session.getId());
         Account account = accountService.getAccount(accountId)
-                .orElseThrow(() -> new EntityNotFoundException(Account.class));        
-        if (clientTimeZone != null && !clientTimeZone.equals(account.getClientTimeZone())) {
-            account.setClientTimeZone(clientTimeZone);
-            accountService.updateAccount(account);
-        }
-        DateTime timelineRequestedOn = getDateTime();
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
+        boolean updateClientTimeZone = (clientTimeZone != null && !clientTimeZone.equals(account.getClientTimeZone()));
+        if (updateClientTimeZone) {
+            account.setClientTimeZone(clientTimeZone);
+        }
+        
+        // Even if the call fails, we want to know they tried it
+        DateTime timelineRequestedOn = getDateTime();
         RequestInfo requestInfo = getRequestInfoBuilder(session)
                 .withTimelineAccessedOn(timelineRequestedOn).build();
         requestInfoService.updateRequestInfo(requestInfo);
         
-        // Any change to the schedule, to the events, or to the adherence records should invalidate this schedule 
         ParticipantSchedule schedule = adherenceService.getParticipantSchedule(session.getAppId(), studyId, account);
 
         studyActivityEventService.publishEvent(new StudyActivityEvent.Builder()
@@ -298,6 +299,10 @@ public class StudyParticipantController extends BaseController {
                 .withObjectType(TIMELINE_RETRIEVED)
                 .withTimestamp(timelineRequestedOn).build(), false, true);
         
+        // We don't update the call until we're quite certain this call will succeed
+        if (updateClientTimeZone) {
+            accountService.updateAccount(account);
+        }
         return schedule;
     }
     

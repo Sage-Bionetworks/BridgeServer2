@@ -80,7 +80,5 @@ public class ParticipantScheduleTest extends Mockito {
         assertEquals(sbNode.get("interval").textValue(), "P1W");
         assertEquals(sbNode.get("occurrences").intValue(), 2);
         assertEquals(sbNode.get("type").textValue(), "StudyBurstInfo");
-        
-        
     }
 }
