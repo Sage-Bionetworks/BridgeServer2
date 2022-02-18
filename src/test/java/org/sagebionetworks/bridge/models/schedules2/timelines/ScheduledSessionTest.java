@@ -1,7 +1,10 @@
 package org.sagebionetworks.bridge.models.schedules2.timelines;
 
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
+import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.ABANDONED;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
@@ -13,7 +16,6 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.mockito.Mockito;
 import org.testng.annotations.Test;
-
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
@@ -29,7 +31,9 @@ public class ScheduledSessionTest extends Mockito {
         TimeWindow window = new TimeWindow();
         window.setGuid(SESSION_WINDOW_GUID_1);
         
-        ScheduledAssessment asmt = new ScheduledAssessment("ref", "instanceGuid", null);
+        ScheduledAssessment asmt = new ScheduledAssessment.Builder()
+                .withRefKey("ref")
+                .withInstanceGuid("instanceGuid").build();
         
         ScheduledSession schSession = new ScheduledSession.Builder()
                 .withSession(session)
@@ -43,6 +47,9 @@ public class ScheduledSessionTest extends Mockito {
                 .withExpiration(Period.parse("PT30M"))
                 .withPersistent(true)
                 .withScheduledAssessment(asmt)
+                .withStartDate(CREATED_ON.toLocalDate())
+                .withEndDate(MODIFIED_ON.toLocalDate())
+                .withState(ABANDONED)
                 .build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(schSession);
@@ -56,6 +63,9 @@ public class ScheduledSessionTest extends Mockito {
         assertEquals(node.get("expiration").textValue(), "PT30M");
         assertEquals(node.get("timeWindowGuid").textValue(), SESSION_WINDOW_GUID_1);
         assertTrue(node.get("persistent").booleanValue());
+        assertEquals(node.get("startDate").textValue(), CREATED_ON.toLocalDate().toString());
+        assertEquals(node.get("endDate").textValue(), MODIFIED_ON.toLocalDate().toString());
+        assertEquals(node.get("state").textValue(), "abandoned");
         assertEquals(node.get("type").textValue(), "ScheduledSession");
         assertEquals(node.get("assessments").size(), 1);
         
@@ -72,9 +82,9 @@ public class ScheduledSessionTest extends Mockito {
                 .build();
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(schSession);
-        assertEquals(node.size(), 4);
-        assertEquals(node.get("startDay").intValue(), 0);
-        assertEquals(node.get("endDay").intValue(), 0);
+        assertEquals(node.size(), 2);
+        assertNull(node.get("startDay"));
+        assertNull(node.get("endDay"));
         assertEquals(node.get("assessments").size(), 0);
         assertEquals(node.get("type").textValue(), "ScheduledSession");
     }
@@ -88,7 +98,9 @@ public class ScheduledSessionTest extends Mockito {
         TimeWindow window = new TimeWindow();
         window.setGuid(SESSION_WINDOW_GUID_1);
         
-        ScheduledAssessment asmt = new ScheduledAssessment("ref", "instanceGuid", null);
+        ScheduledAssessment asmt = new ScheduledAssessment.Builder()
+                .withRefKey("ref")
+                .withInstanceGuid("instanceGuid").build();
         
         ScheduledSession.Builder builder = new ScheduledSession.Builder()
                 .withSession(session)
@@ -103,14 +115,14 @@ public class ScheduledSessionTest extends Mockito {
                 .withPersistent(true)
                 .withScheduledAssessment(asmt);
         
-        ScheduledSession.Builder copy = builder.copyWithoutAssessments();
+        ScheduledSession.Builder copy = builder.build().toBuilder();
         ScheduledSession schSession = copy.build();
         
         assertEquals(schSession.getRefGuid(), SESSION_GUID_1);
         assertEquals(schSession.getInstanceGuid(), "instanceGuid");
         assertEquals(schSession.getStartEventId(), "timeline_retrieved");
-        assertEquals(schSession.getStartDay(), 10);
-        assertEquals(schSession.getEndDay(), 13);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(10));
+        assertEquals(schSession.getEndDay(), Integer.valueOf(13));
         assertEquals(schSession.getStartTime(), LocalTime.parse("17:00"));
         assertEquals(schSession.getDelayTime(), Period.parse("PT3H"));
         assertEquals(schSession.getExpiration(), Period.parse("PT30M"));

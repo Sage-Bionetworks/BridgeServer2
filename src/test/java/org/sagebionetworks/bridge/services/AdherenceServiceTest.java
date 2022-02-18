@@ -36,6 +36,7 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SortOrder.A
 import static org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator.DEFAULT_PAGE_SIZE;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
@@ -67,6 +68,7 @@ import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
@@ -75,11 +77,14 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2Test;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule.ParticipantSchedule;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
@@ -932,6 +937,54 @@ public class AdherenceServiceTest extends Mockito {
         search.setAdherenceMax(101);
 
         service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, search);
+    }
+    
+    @Test
+    public void getParticipantSchedule() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId(TEST_USER_ID)
+                .withCallerEnrolledStudies(ImmutableSet.of(TEST_STUDY_ID)).build());
+        
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        Schedule2 schedule = Schedule2Test.createValidSchedule();
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        
+        ResourceList<StudyActivityEvent> events = new ResourceList<>(ImmutableList.of());
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(events);
+        
+        PagedResourceList<AdherenceRecord> records = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(records);
+        
+        ParticipantSchedule retValue = service.getParticipantSchedule(TEST_APP_ID, TEST_STUDY_ID, account);
+        assertNotNull(retValue);
+        
+        verify(mockRecordDao).getAdherenceRecords(searchCaptor.capture());
+        AdherenceRecordsSearch search = searchCaptor.getValue();
+        assertEquals(search.getCurrentTimestampsOnly(), TRUE);
+        assertEquals(search.getIncludeRepeats(), TRUE);
+        assertEquals(search.getStudyId(), TEST_STUDY_ID);
+        assertEquals(search.getUserId(), TEST_USER_ID);
+        assertNull(search.getAdherenceRecordType());
+    }
+    
+    @Test(expectedExceptions = EntityNotFoundException.class)
+    public void getParticipantSchedule_scheduledNotFound() {
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        
+        Study study = Study.create();
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        service.getParticipantSchedule(TEST_APP_ID, TEST_STUDY_ID, account);
     }
 
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {
