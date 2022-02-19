@@ -41,21 +41,23 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdher
 
 public class HibernateAdherenceReportDaoTest extends Mockito {
 
-    private static String ORDER_BY = " ORDER BY weeklyAdherencePercent, lastName, firstName, email, phone, externalId";
+    private static String ORDER_BY = " ORDER BY h.weeklyAdherencePercent, h.participant.lastName, "
+            +"h.participant.firstName, h.participant.email, h.participant.phone, h.participant.externalId";
     
-    private static String FULL_SQL = "FROM WeeklyAdherenceReport h JOIN h.searchableLabels label WHERE "
-            +"h.appId = :appId AND h.studyId = :studyId AND weeklyAdherencePercent >= :adherenceMin AND "
-            +"weeklyAdherencePercent <= :adherenceMax AND progression IN :progressionFilters AND (label "
-            +"LIKE :labelFilter0) AND (externalId LIKE :id OR identifier LIKE :id OR firstName LIKE :id "
-            +"OR lastName LIKE :id OR email LIKE :id OR phone LIKE :id)"+ORDER_BY;
+    private static String FULL_SQL = "FROM WeeklyAdherenceReport h LEFT JOIN h.searchableLabels label WHERE "
+            +"h.appId = :appId AND h.studyId = :studyId AND h.weeklyAdherencePercent >= :adherenceMin AND "
+            +"h.weeklyAdherencePercent <= :adherenceMax AND h.progression IN :progressionFilters AND (label "
+            +"LIKE :labelFilter0) AND (h.participant.externalId LIKE :id OR h.participant.identifier LIKE :id "
+            +"OR h.participant.firstName LIKE :id OR h.participant.lastName LIKE :id OR h.participant.email "
+            +"LIKE :id OR h.participant.phone.number LIKE :id)"+ORDER_BY;
     
     private static String TEST_ACCOUNTS_SQL = "FROM WeeklyAdherenceReport h WHERE h.appId = :appId AND "
-            +"h.studyId = :studyId AND testAccount = 1"+ORDER_BY;
+            +"h.studyId = :studyId AND h.testAccount = 1"+ORDER_BY;
     
     private static String PROD_ACCOUNTS_SQL = "FROM WeeklyAdherenceReport h WHERE h.appId = :appId AND "
-            +"h.studyId = :studyId AND testAccount = 0"+ORDER_BY;
+            +"h.studyId = :studyId AND h.testAccount = 0"+ORDER_BY;
     
-    private static String LABELS_SQL = "FROM WeeklyAdherenceReport h JOIN h.searchableLabels label WHERE "
+    private static String LABELS_SQL = "FROM WeeklyAdherenceReport h LEFT JOIN h.searchableLabels label WHERE "
             +"h.appId = :appId AND h.studyId = :studyId AND (label LIKE :labelFilter0 OR label LIKE "
             +":labelFilter1)"+ORDER_BY;
     
@@ -63,17 +65,17 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
             +"h.studyId = :studyId"+ORDER_BY;
 
     private static String MIN_NO_MAX_SQL = "FROM WeeklyAdherenceReport h WHERE h.appId = :appId AND "
-            +"h.studyId = :studyId AND weeklyAdherencePercent >= :adherenceMin"+ORDER_BY;
+            +"h.studyId = :studyId AND h.weeklyAdherencePercent >= :adherenceMin"+ORDER_BY;
 
     private static String MAX_NO_MIN_SQL = "FROM WeeklyAdherenceReport h WHERE h.appId = :appId AND "
-            +"h.studyId = :studyId AND weeklyAdherencePercent <= :adherenceMax"+ORDER_BY;
+            +"h.studyId = :studyId AND h.weeklyAdherencePercent <= :adherenceMax"+ORDER_BY;
     
-    private static String ID_FILTER = "FROM WeeklyAdherenceReport h WHERE h.appId = "
-            +":appId AND h.studyId = :studyId AND (externalId LIKE :id OR identifier LIKE :id OR firstName "
-            +"LIKE :id OR lastName LIKE :id OR email LIKE :id OR phone LIKE :id)"+ORDER_BY;
+    private static String ID_FILTER = "FROM WeeklyAdherenceReport h WHERE h.appId = :appId AND h.studyId = :studyId "
+            +"AND (h.participant.externalId LIKE :id OR h.participant.identifier LIKE :id OR h.participant.firstName "
+            +"LIKE :id OR h.participant.lastName LIKE :id OR h.participant.email LIKE :id OR h.participant.phone.number LIKE :id)"+ORDER_BY;
     
     private static String PROGRESSION_FILTER = "FROM WeeklyAdherenceReport h WHERE h.appId = :appId AND h.studyId "
-            +"= :studyId AND progression IN :progressionFilters"+ORDER_BY;
+            +"= :studyId AND h.progression IN :progressionFilters"+ORDER_BY;
     
     @Mock
     HibernateHelper mockHelper;
@@ -127,7 +129,7 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
         
         assertEquals(stringCaptor.getAllValues().get(0), SELECT_COUNT + FULL_SQL);
         assertEquals(stringCaptor.getAllValues().get(1), SELECT_DISTINCT + FULL_SQL);
-        assertEquals(paramsCaptor.getValue().get(LABEL_FILTER_FIELD+"0"), "%:label:%");
+        assertEquals(paramsCaptor.getValue().get(LABEL_FILTER_FIELD+"0"), "%label%");
         assertEquals(paramsCaptor.getValue().get(ADHERENCE_MIN_FIELD), 10);
         assertEquals(paramsCaptor.getValue().get(ADHERENCE_MAX_FIELD), 75);
         assertEquals(paramsCaptor.getValue().get(PROGRESSION_FILTER_FIELD), ImmutableSet.of(IN_PROGRESS));
@@ -199,8 +201,8 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
         
         assertEquals(stringCaptor.getAllValues().get(0), SELECT_COUNT + LABELS_SQL);
         assertEquals(stringCaptor.getAllValues().get(1), SELECT_DISTINCT + LABELS_SQL);
-        assertEquals(paramsCaptor.getValue().get(LABEL_FILTER_FIELD+"0"), "%:A:%");
-        assertEquals(paramsCaptor.getValue().get(LABEL_FILTER_FIELD+"1"), "%:B:%");
+        assertEquals(paramsCaptor.getValue().get(LABEL_FILTER_FIELD+"0"), "%A%");
+        assertEquals(paramsCaptor.getValue().get(LABEL_FILTER_FIELD+"1"), "%B%");
     }
 
     @Test

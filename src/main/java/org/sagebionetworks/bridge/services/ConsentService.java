@@ -170,11 +170,11 @@ public class ConsentService {
      */
     public void consentToResearch(App app, SubpopulationGuid subpopGuid, StudyParticipant participant,
             ConsentSignature consentSignature, SharingScope sharingScope, boolean sendSignedConsent) {
-        checkNotNull(app, Validate.CANNOT_BE_NULL, "app");
-        checkNotNull(subpopGuid, Validate.CANNOT_BE_NULL, "subpopulationGuid");
-        checkNotNull(participant, Validate.CANNOT_BE_NULL, "participant");
-        checkNotNull(consentSignature, Validate.CANNOT_BE_NULL, "consentSignature");
-        checkNotNull(sharingScope, Validate.CANNOT_BE_NULL, "sharingScope");
+        checkNotNull(app);
+        checkNotNull(subpopGuid);
+        checkNotNull(participant);
+        checkNotNull(consentSignature);
+        checkNotNull(sharingScope);
 
         ConsentSignatureValidator validator = new ConsentSignatureValidator(app.getMinAgeOfConsent());
         Validate.entityThrowingException(validator, consentSignature);

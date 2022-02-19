@@ -1,9 +1,9 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_PATTERN;
 import static org.sagebionetworks.bridge.BridgeConstants.SHARED_APP_ID;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_PATTERN;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NEGATIVE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;

@@ -6,7 +6,10 @@ import static org.sagebionetworks.bridge.AuthUtils.CAN_UPDATE_STUDIES;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.CAN_EDIT_STUDY_CORE;
+
+import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +26,8 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadataView;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -31,6 +36,7 @@ import org.sagebionetworks.bridge.services.StudyService;
 @RestController
 public class Schedule2Controller extends BaseController {
 
+    static final TimelineMetadataView EMPTY_VIEW = new TimelineMetadataView(new TimelineMetadata());
     static final StatusMessage DELETED_MSG = new StatusMessage("Schedule deleted.");
     
     private Schedule2Service service;
@@ -98,5 +104,13 @@ public class Schedule2Controller extends BaseController {
         service.deleteSchedulePermanently(session.getAppId(), guid);
         
         return DELETED_MSG;
+    }
+    
+    @GetMapping("/v1/apps/{appId}/timelinemetadata/{instanceGuid}")
+    public TimelineMetadataView getTimelineMetadataForWorker(@PathVariable String appId, @PathVariable String instanceGuid) { 
+        getAuthenticatedSession(WORKER);
+        
+        Optional<TimelineMetadata> optional = service.getTimelineMetadata(instanceGuid);
+        return (optional.isPresent()) ? new TimelineMetadataView(optional.get()) : EMPTY_VIEW;
     }
 }

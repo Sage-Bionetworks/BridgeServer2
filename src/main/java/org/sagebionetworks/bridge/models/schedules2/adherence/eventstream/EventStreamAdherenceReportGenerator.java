@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.eventstream;
 
+import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils.calculateProgress;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils.calculateSessionState;
 
 import org.joda.time.DateTime;
@@ -58,9 +59,8 @@ public class EventStreamAdherenceReportGenerator {
             windowEntry.setState(sessionState);
             eventStreamDay.addTimeWindow(windowEntry);
         }
-
+        
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
-
         report.setActiveOnly(state.showActive());
         report.setTimestamp(state.getNow());
         report.setClientTimeZone(state.getClientTimeZone());
@@ -68,6 +68,7 @@ public class EventStreamAdherenceReportGenerator {
         for (String eventId : state.getStreamEventIds()) {
             report.getStreams().add(state.getEventStreamById(eventId));
         }
+        report.setProgression(calculateProgress(state, report.getStreams()));
         return report;
     }
 }

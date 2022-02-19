@@ -25,7 +25,17 @@ public class SessionInfo {
     private List<String> timeWindowGuids;
     private List<NotificationInfo> notifications;
     
-    public static final SessionInfo create(Session session) {
+    public static final SessionInfo createScheduleEntry(SessionInfo info) {
+        SessionInfo schInfo = new SessionInfo();
+        schInfo.guid = info.getGuid();
+        schInfo.label = info.getLabel();
+        schInfo.performanceOrder = info.getPerformanceOrder();
+        schInfo.notifications = info.getNotifications();
+        schInfo.minutesToComplete = info.getMinutesToComplete();
+        return schInfo;
+    }
+    
+    public static final SessionInfo createTimelineEntry(Session session) {
         List<String> languages = RequestContext.get().getCallerLanguages();
         
         Label label = selectByLang(session.getLabels(), languages, new Label("", session.getName()));

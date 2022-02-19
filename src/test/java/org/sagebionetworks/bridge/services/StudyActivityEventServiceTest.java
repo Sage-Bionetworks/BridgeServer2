@@ -20,7 +20,6 @@ import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateTy
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.CREATED_ON_FIELD;
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.ENROLLMENT_FIELD;
 import static org.sagebionetworks.bridge.services.StudyActivityEventService.INSTALL_LINK_SENT_FIELD;
-import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
@@ -157,18 +156,12 @@ public class StudyActivityEventServiceTest extends Mockito {
         verify(mockDao, never()).deleteEvent(any());
     }
     
-    @Test
+    @Test(expectedExceptions = InvalidEntityException.class)
     public void deleteEvent_eventInvalid() {
         // this is not a custom event. Object ID needs to be included or you
         // get (correctly) a validation error for not including an eventId.
         StudyActivityEvent originEvent = makeBuilder().withObjectType(CUSTOM).build();
-        
-        try {
-            service.deleteEvent(originEvent, false);
-            fail("should have thrown exception");
-        } catch(InvalidEntityException e) {
-            assertEquals(e.getErrors().get("eventId").get(0), "eventId " + INVALID_EVENT_ID);
-        }
+        service.deleteEvent(originEvent, false);
     }
     
     @Test

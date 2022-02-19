@@ -16,12 +16,14 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.testng.Assert.assertEquals;
 
 import java.util.Collection;
+import java.util.List;
 
 import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
@@ -228,7 +230,64 @@ public class AdherenceUtilsTest {
     private static Object[] dataRow(int expectedPercentage, EventStream... streams) {
         return new Object[] { expectedPercentage, ImmutableList.copyOf(streams) };
     }
+
     
+    @Test(dataProvider = "progressStates")
+    public void calculateProgress(ParticipantStudyProgress expectedProgress, AdherenceState state, List<EventStream> eventStreams) {
+        ParticipantStudyProgress retValue = AdherenceUtils.calculateProgress(state, eventStreams);
+        assertEquals(retValue, expectedProgress);
+    }
+
+    @DataProvider(name = "progressStates")
+    public static Object[] progressStates() {
+        return new Object[][] {
+            progressDataRow(false, 
+                    ParticipantStudyProgress.NO_SCHEDULE, 
+                    createEventStream(0, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
+            // Even if there are completed records, if there are no timeline records,
+            // then we don't measure progress because there's no schedule. We have
+            // nothing against which to measure the progress.
+            progressDataRow(false, 
+                    ParticipantStudyProgress.NO_SCHEDULE, 
+                    createEventStream(0, COMPLETED, DECLINED)),
+            progressDataRow(true, 
+                    ParticipantStudyProgress.UNSTARTED, 
+                    createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),
+            progressDataRow(true, 
+                    ParticipantStudyProgress.IN_PROGRESS, 
+                    createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE),
+                    createEventStream(0, NOT_APPLICABLE, UNSTARTED)),
+            progressDataRow(true, 
+                    ParticipantStudyProgress.IN_PROGRESS, 
+                    createEventStream(0, NOT_APPLICABLE, NOT_YET_AVAILABLE)),
+            progressDataRow(true, 
+                    ParticipantStudyProgress.IN_PROGRESS, 
+                    createEventStream(0, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
+            progressDataRow(true, 
+                    ParticipantStudyProgress.IN_PROGRESS, 
+                    createEventStream(0, NOT_YET_AVAILABLE, UNSTARTED)),
+            progressDataRow(true, 
+                    ParticipantStudyProgress.IN_PROGRESS, 
+                    createEventStream(0, COMPLETED, DECLINED),
+                    createEventStream(0, STARTED, UNSTARTED)),
+            progressDataRow(true, 
+                    ParticipantStudyProgress.DONE, 
+                    createEventStream(0, EXPIRED, ABANDONED)),
+            progressDataRow(true, 
+                    ParticipantStudyProgress.DONE, 
+                    createEventStream(0, EXPIRED, COMPLETED),
+                    createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),
+        };
+    }
+    
+    private static Object[] progressDataRow(boolean state, ParticipantStudyProgress progress, EventStream... streams) {
+        AdherenceState.Builder builder = new AdherenceState.Builder().withNow(DateTime.now());
+        if (state) {
+            builder.withMetadata(ImmutableList.of(new TimelineMetadata(), new TimelineMetadata()));
+        }
+        return new Object[] { progress, builder.build(), ImmutableList.copyOf(streams) };
+    }
+
     private static EventStream createEventStream(int dayNum, SessionCompletionState state, SessionCompletionState state2) {
         EventStreamDay day = new EventStreamDay();
 

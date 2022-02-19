@@ -4,11 +4,11 @@ import static org.apache.commons.lang3.StringUtils.isBlank;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.ORG_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_EDIT_MEMBERS;
-import static org.sagebionetworks.bridge.BridgeConstants.OWASP_REGEXP_VALID_EMAIL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
-import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.OWASP_REGEXP_VALID_EMAIL;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;
@@ -83,7 +83,7 @@ public class StudyParticipantValidator implements Validator {
             String password = participant.getPassword();
             if (password != null) {
                 PasswordPolicy passwordPolicy = app.getPasswordPolicy();
-                ValidatorUtils.validatePassword(errors, passwordPolicy, password);
+                ValidatorUtils.password(errors, passwordPolicy, password);
             }
             
             // After account creation, organizational membership cannot be changed by updating an account
@@ -143,7 +143,7 @@ public class StudyParticipantValidator implements Validator {
             try {
                 ZoneId.of(participant.getClientTimeZone());
             } catch (DateTimeException e) {
-                errors.rejectValue("clientTimeZone", TIME_ZONE_ERROR);
+                errors.rejectValue("clientTimeZone", INVALID_TIME_ZONE);
             }
         }
         validateStringLength(errors, 255, participant.getEmail(), "email");

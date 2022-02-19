@@ -1,11 +1,11 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERROR;
 
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.TestUtils;
 import org.sagebionetworks.bridge.models.appconfig.AppConfigElement;
 
@@ -36,7 +36,7 @@ public class AppConfigElementValidatorTest {
     @Test
     public void idInvalid() {
         element.setId("@bad");
-        assertValidatorMessage(VALIDATOR, element, "id", BridgeConstants.BRIDGE_EVENT_ID_ERROR);
+        assertValidatorMessage(VALIDATOR, element, "id", BRIDGE_EVENT_ID_ERROR);
     }
     
     @Test

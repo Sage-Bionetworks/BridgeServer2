@@ -19,15 +19,14 @@ import java.util.Set;
 
 import org.springframework.validation.Errors;
 import org.testng.annotations.Test;
-
+import org.mockito.Mockito;
 import org.sagebionetworks.bridge.models.appconfig.AppConfig;
-import org.sagebionetworks.bridge.validators.Validate;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
-public class CriteriaUtilsTest {
+public class CriteriaUtilsTest extends Mockito {
     
     private static final String KEY = "key";
     private static final Set<String> EMPTY_SET = ImmutableSet.of();
@@ -180,28 +179,30 @@ public class CriteriaUtilsTest {
     public void validateIosMinMaxSameVersionOK() {
         Criteria criteria = getCriteria().appVersion(IOS, 1, 1).build();
         
-        Errors errors = Validate.getErrorsFor(criteria);
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
-        assertFalse(errors.hasErrors());
+        verifyNoMoreInteractions(errors);
     }
 
     @Test
     public void validateIosCannotSetMaxUnderMinAppVersion() {
         Criteria criteria = getCriteria().appVersion(IOS, 2, 1).build();
         
-        Errors errors = Validate.getErrorsFor(criteria);
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
-        assertEquals(errors.getFieldErrors("maxAppVersions.iphone_os").get(0).getCode(),
-                "cannot be less than minAppVersions.iphone_os");
+        
+        verify(errors).pushNestedPath("maxAppVersions");
+        verify(errors).rejectValue("iphone_os", "cannot be less than minAppVersions.iphone_os");
     }
     
     @Test
     public void validateIosCannotSetMinLessThanZero() {
         Criteria criteria = getCriteria().minAppVersion(IOS, -2).build();
         
-        Errors errors = Validate.getErrorsFor(criteria);
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
-        assertEquals(errors.getFieldErrors("minAppVersions.iphone_os").get(0).getCode(), "cannot be negative");
+        verify(errors).pushNestedPath("minAppVersions");
+        verify(errors).rejectValue("iphone_os", "cannot be negative");
     }
     
     // Try these again with a different os name. If two different values work, any value should work.
@@ -210,28 +211,29 @@ public class CriteriaUtilsTest {
     public void validateAndroidMinMaxSameVersionOK() {
         Criteria criteria = getCriteria().appVersion(ANDROID, 1, 1).build();
         
-        Errors errors = Validate.getErrorsFor(criteria);
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
-        assertFalse(errors.hasErrors());
+        verifyNoMoreInteractions(errors);
     }
 
     @Test
     public void validateAndroidCannotSetMaxUnderMinAppVersion() {
         Criteria criteria = getCriteria().appVersion(ANDROID, 2, 1).build();
         
-        Errors errors = Validate.getErrorsFor(criteria);
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
-        assertEquals(errors.getFieldErrors("maxAppVersions.android").get(0).getCode(),
-                "cannot be less than minAppVersions.android");
+        verify(errors).pushNestedPath("maxAppVersions");
+        verify(errors).rejectValue("android", "cannot be less than minAppVersions.android");
     }
     
     @Test
     public void validateAndroidCannotSetMinLessThanZero() {
         Criteria criteria = getCriteria().minAppVersion(ANDROID, -2).build();
         
-        Errors errors = Validate.getErrorsFor(criteria);
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
-        assertEquals(errors.getFieldErrors("minAppVersions.android").get(0).getCode(), "cannot be negative");
+        verify(errors).pushNestedPath("minAppVersions");
+        verify(errors).rejectValue("android", "cannot be negative");
     }
     
     @Test
@@ -266,12 +268,12 @@ public class CriteriaUtilsTest {
                 .addAll(minAppVersions.keySet()).addAll(maxAppVersions.keySet()).build(); }
         };
         
-        Errors errors = Validate.getErrorsFor(criteria);
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
-        assertEquals(errors.getFieldErrors("allOfGroups").get(0).getCode(), "cannot be null");
-        assertEquals(errors.getFieldErrors("noneOfGroups").get(0).getCode(), "cannot be null");
-        assertEquals(errors.getFieldErrors("allOfStudyIds").get(0).getCode(), "cannot be null");
-        assertEquals(errors.getFieldErrors("noneOfStudyIds").get(0).getCode(), "cannot be null");
+        verify(errors).rejectValue("allOfGroups", "cannot be null");
+        verify(errors).rejectValue("noneOfGroups", "cannot be null");
+        verify(errors).rejectValue("allOfStudyIds", "cannot be null");
+        verify(errors).rejectValue("noneOfStudyIds", "cannot be null");
     }
     
     @Test
@@ -279,10 +281,10 @@ public class CriteriaUtilsTest {
         Criteria criteria = getCriteria().allOfGroups(ImmutableSet.of("group1"))
                 .noneOfGroups(ImmutableSet.of("group2")).build();
         
-        Errors errors = Validate.getErrorsFor(criteria);
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, ImmutableSet.of("group3"), EMPTY_SET, errors);
-        assertEquals(errors.getFieldErrors("allOfGroups").get(0).getCode(), "'group1' is not in enumeration: group3");
-        assertEquals(errors.getFieldErrors("noneOfGroups").get(0).getCode(), "'group2' is not in enumeration: group3");
+        verify(errors).rejectValue("allOfGroups", "'group1' is not in enumeration: group3");
+        verify(errors).rejectValue("noneOfGroups", "'group2' is not in enumeration: group3");
     }
     
     @Test
@@ -290,12 +292,10 @@ public class CriteriaUtilsTest {
         Criteria criteria = getCriteria().allOfGroups(ImmutableSet.of("group1", "group2", "group3"))
                 .noneOfGroups(ImmutableSet.of("group2", "group3")).build();
         
-        Errors errors = Validate.getErrorsFor(criteria);
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, ImmutableSet.of("group1","group2","group3","group4"), EMPTY_SET, errors);
         // It's a set so validate without describing the order of the groups in the error message
-        assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("includes these excluded data groups: "));
-        assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group2"));
-        assertTrue(errors.getFieldErrors("allOfGroups").get(0).getCode().contains("group3"));
+        verify(errors).rejectValue("allOfGroups", "includes these excluded data groups: group2, group3");
     }
     
     @Test
@@ -303,10 +303,10 @@ public class CriteriaUtilsTest {
         Criteria criteria = getCriteria().allOfStudyIds(ImmutableSet.of("studyA"))
                 .noneOfStudyIds(ImmutableSet.of("studyB")).build();
         
-        Errors errors = Validate.getErrorsFor(criteria);
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, EMPTY_SET, ImmutableSet.of("studyC"), errors);
-        assertEquals(errors.getFieldErrors("allOfStudyIds").get(0).getCode(), "'studyA' is not in enumeration: studyC");
-        assertEquals(errors.getFieldErrors("noneOfStudyIds").get(0).getCode(), "'studyB' is not in enumeration: studyC");
+        verify(errors).rejectValue("allOfStudyIds", "'studyA' is not in enumeration: studyC");
+        verify(errors).rejectValue("noneOfStudyIds", "'studyB' is not in enumeration: studyC");
     }
     
     @Test
@@ -314,26 +314,25 @@ public class CriteriaUtilsTest {
         Criteria criteria = getCriteria().build();
         criteria.setAllOfStudyIds(ImmutableSet.of("studyA", "studyB", "studyC"));
         criteria.setNoneOfStudyIds(ImmutableSet.of("studyB", "studyC"));
-        Errors errors = Validate.getErrorsFor(criteria);
+
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, EMPTY_SET, ImmutableSet.of("studyA", "studyB", "studyC"), errors);
         // It's a set so validate without describing the order of the groups in the error message
-        assertTrue(errors.getFieldErrors("allOfStudyIds").get(0).getCode().contains("includes these excluded studies: "));
-        assertTrue(errors.getFieldErrors("allOfStudyIds").get(0).getCode().contains("studyB"));
-        assertTrue(errors.getFieldErrors("allOfStudyIds").get(0).getCode().contains("studyC"));
+        verify(errors).rejectValue("allOfStudyIds", "includes these excluded studies: studyB, studyC");
     }
     
     @Test
     public void validateLanguage() {
-        Criteria criteria = getCriteria().minAppVersion(IOS, -2).lang("ena").build();
+        Criteria criteria = getCriteria().minAppVersion(IOS, 2).lang("ena").build();
         
-        Errors errors = Validate.getErrorsFor(criteria);
+        Errors errors = mock(Errors.class);
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
-        assertTrue(errors.getFieldErrors("language").get(0).getCode().contains("is not a valid language code"));
+        verify(errors).rejectValue("language", "is not a valid language code");    
         
-        errors = Validate.getErrorsFor(criteria);
+        errors = mock(Errors.class);
         criteria.setLanguage("en");
         CriteriaUtils.validate(criteria, EMPTY_SET, EMPTY_SET, errors);
-        assertTrue(errors.getFieldErrors("language").isEmpty());
+        verify(errors, never()).rejectValue(any(), any());
     }
     
     @Test

@@ -4,16 +4,16 @@ import static org.sagebionetworks.bridge.TestConstants.GUID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
 import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getExcessivelyLargeClientData;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.CLIENT_TIME_ZONE_FIELD;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.EVENT_TIMESTAMP_FIELD;
 import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.INSTANCE_GUID_FIELD;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.STARTED_ON_FIELD;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.STUDY_ID_FIELD;
+import static org.sagebionetworks.bridge.validators.AdherenceRecordListValidator.USER_ID_FIELD;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
-import static org.sagebionetworks.bridge.validators.Validate.CLIENT_TIME_ZONE_FIELD;
-import static org.sagebionetworks.bridge.validators.Validate.EVENT_TIMESTAMP_FIELD;
-import static org.sagebionetworks.bridge.validators.Validate.INSTANCE_GUID_FIELD;
-import static org.sagebionetworks.bridge.validators.Validate.STARTED_ON_FIELD;
-import static org.sagebionetworks.bridge.validators.Validate.STUDY_ID_FIELD;
-import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
-import static org.sagebionetworks.bridge.validators.Validate.USER_ID_FIELD;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
 import com.google.common.collect.ImmutableList;
@@ -95,7 +95,7 @@ public class AdherenceRecordListValidatorTest extends Mockito {
     public void clientTimeZoneInvalid() {
         AdherenceRecord record = new AdherenceRecord();
         record.setClientTimeZone("East Coast/Arkam");
-        assertValidatorMessage(INSTANCE, asList(record), asField(CLIENT_TIME_ZONE_FIELD), TIME_ZONE_ERROR);
+        assertValidatorMessage(INSTANCE, asList(record), asField(CLIENT_TIME_ZONE_FIELD), INVALID_TIME_ZONE);
     }
     
     @Test

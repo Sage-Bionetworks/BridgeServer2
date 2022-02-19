@@ -1,15 +1,15 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_PATTERN;
+import static org.sagebionetworks.bridge.BridgeUtils.periodInMinutes;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_RELAXED_ID_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_RELAXED_ID_PATTERN;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_EMPTY;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateColorScheme;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthPeriod;
@@ -30,7 +30,6 @@ import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
-
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
 import org.sagebionetworks.bridge.models.schedules2.Notification;
 import org.sagebionetworks.bridge.models.schedules2.Session;

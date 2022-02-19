@@ -610,21 +610,16 @@ public class HibernateAccountDaoTest extends Mockito {
 
     @Test
     public void getPagedWithOptionalParams() throws Exception {
-        String expQuery = "SELECT acct.id FROM HibernateAccount AS acct LEFT JOIN acct.enrollments AS "
-                + "enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = :appId "
-                + "AND size(acct.roles) > 0 AND acct.orgMembership = :orgId AND acct.email LIKE :email "
-                + "AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND acct.createdOn "
-                + "<= :endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) "
-                + "AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) "
-                + "AND :NOTIN2 NOT IN elements(acct.dataGroups)) GROUP BY acct.id";
-
-        String expCountQuery = "SELECT COUNT(DISTINCT acct.id) FROM HibernateAccount AS acct LEFT JOIN "
-                + "acct.enrollments AS enrollment WITH acct.id = enrollment.accountId WHERE acct.appId = "
-                + ":appId AND size(acct.roles) > 0 AND acct.orgMembership = :orgId AND acct.email LIKE "
-                + ":email AND acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND "
-                + "acct.createdOn <= :endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN "
-                + "elements(acct.dataGroups) AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN "
-                + "elements(acct.dataGroups) AND :NOTIN2 NOT IN elements(acct.dataGroups))";
+        String expBaseQuery = "FROM HibernateAccount AS acct LEFT JOIN acct.enrollments "
+                +"AS enrollment WITH acct.id = enrollment.accountId LEFT JOIN org.sagebionetworks.bridge."
+                +"models.RequestInfo AS ri WITH acct.id = ri.userId WHERE acct.appId = :appId AND "
+                +"size(acct.roles) > 0 AND acct.orgMembership = :orgId AND acct.email LIKE :email AND "
+                +"acct.phone.number LIKE :number AND acct.createdOn >= :startTime AND acct.createdOn <= "
+                +":endTime AND :language IN ELEMENTS(acct.languages) AND (:IN1 IN elements(acct.dataGroups) "
+                +"AND :IN2 IN elements(acct.dataGroups)) AND (:NOTIN1 NOT IN elements(acct.dataGroups) AND "
+                +":NOTIN2 NOT IN elements(acct.dataGroups)) AND ri.signedInOn IS NOT NULL";
+        String expQuery = "SELECT acct.id " + expBaseQuery + " GROUP BY acct.id";
+        String expCountQuery = "SELECT COUNT(DISTINCT acct.id) " + expBaseQuery;
 
         // Setup start and end dates.
         DateTime startDate = DateTime.parse("2017-05-19T11:40:06.247-0700");
@@ -642,12 +637,12 @@ public class HibernateAccountDaoTest extends Mockito {
                 .withEmailFilter(EMAIL).withPhoneFilter(PHONE.getNationalFormat())
                 .withAllOfGroups(Sets.newHashSet("a", "b")).withNoneOfGroups(Sets.newHashSet("c", "d"))
                 .withLanguage("de").withStartTime(startDate).withEndTime(endDate).withAdminOnly(true)
-                .withOrgMembership(TEST_ORG_ID).build();
+                .withOrgMembership(TEST_ORG_ID).withInUse(TRUE).build();
 
         PagedResourceList<AccountSummary> accountSummaryResourceList = dao.getPagedAccountSummaries(TEST_APP_ID, search);
 
         Map<String, Object> paramsMap = accountSummaryResourceList.getRequestParams();
-        assertEquals(paramsMap.size(), 14);
+        assertEquals(paramsMap.size(), 15);
         assertEquals(paramsMap.get("pageSize"), 5);
         assertEquals(paramsMap.get("offsetBy"), 10);
         assertEquals(paramsMap.get("emailFilter"), EMAIL);
@@ -660,6 +655,7 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(paramsMap.get("orgMembership"), TEST_ORG_ID);
         assertEquals(paramsMap.get("stringSearchPosition"), INFIX);
         assertEquals(paramsMap.get("predicate"), AND);
+        assertEquals(paramsMap.get("inUse"), TRUE);
         assertTrue((Boolean)paramsMap.get("adminOnly"));
         assertEquals(paramsMap.get(ResourceList.TYPE), ResourceList.REQUEST_PARAMS);
 
@@ -1219,6 +1215,38 @@ public class HibernateAccountDaoTest extends Mockito {
         assertEquals(builder.getQuery(), finalQuery);
         assertNull(builder.getParameters().get("studies"));
 
+    }
+    
+    @Test
+    public void filterForActiveAccountsCorrect() {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withInUse(Boolean.TRUE).build();
+
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "
+                +"acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
+                +"LEFT JOIN org.sagebionetworks.bridge.models.RequestInfo AS ri WITH "
+                +"acct.id = ri.userId WHERE acct.appId = :appId AND ri.signedInOn "
+                +"IS NOT NULL GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
+    }
+    
+    @Test
+    public void filterForInactiveAccountsCorrect() {
+        AccountSummarySearch search = new AccountSummarySearch.Builder()
+                .withInUse(Boolean.FALSE).build();
+
+        QueryBuilder builder = dao.makeQuery(FULL_QUERY, TEST_APP_ID, null, search, false);
+
+        String finalQuery = "SELECT acct FROM HibernateAccount AS acct LEFT JOIN "
+                +"acct.enrollments AS enrollment WITH acct.id = enrollment.accountId "
+                +"LEFT JOIN org.sagebionetworks.bridge.models.RequestInfo AS ri WITH "
+                +"acct.id = ri.userId WHERE acct.appId = :appId AND ri.signedInOn "
+                +"IS NULL GROUP BY acct.id";
+
+        assertEquals(builder.getQuery(), finalQuery);
     }
     
     @Test

@@ -1,5 +1,8 @@
 package org.sagebionetworks.bridge.models.upload;
 
+import static org.sagebionetworks.bridge.BridgeConstants.CANNOT_BE_BLANK;
+import static org.sagebionetworks.bridge.BridgeConstants.CANNOT_BE_NULL;
+
 import java.util.List;
 
 import javax.annotation.Nonnull;
@@ -50,7 +53,7 @@ public class UploadValidationStatus implements BridgeEntity {
     public static UploadValidationStatus from(@Nonnull Upload upload, HealthDataRecord record)
             throws InvalidEntityException {
         if (upload == null) {
-            throw new InvalidEntityException(String.format(Validate.CANNOT_BE_NULL, "upload"));
+            throw new InvalidEntityException(String.format(CANNOT_BE_NULL, "upload"));
         }
         return new Builder().withId(upload.getUploadId()).withMessageList(upload.getValidationMessageList())
                 .withStatus(upload.getStatus()).withRecord(record).build();
@@ -123,12 +126,12 @@ public class UploadValidationStatus implements BridgeEntity {
             // Validate messageList. We need to do this upfront, since ImmutableList will crash if this is invalid.
             // We also can't use Validate.entityThrowingException(), since that only works with BridgeEntities.
             if (messageList == null) {
-                throw new InvalidEntityException(String.format(Validate.CANNOT_BE_NULL, "messageList"));
+                throw new InvalidEntityException(String.format(CANNOT_BE_NULL, "messageList"));
             }
             int numMessages = messageList.size();
             for (int i = 0; i < numMessages; i++) {
                 if (Strings.isNullOrEmpty(messageList.get(i))) {
-                    throw new InvalidEntityException(String.format(Validate.CANNOT_BE_BLANK,
+                    throw new InvalidEntityException(String.format(CANNOT_BE_BLANK,
                             String.format("messageList[%d]", i)));
                 }
             }

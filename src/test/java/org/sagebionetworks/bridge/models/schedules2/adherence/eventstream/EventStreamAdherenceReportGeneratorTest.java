@@ -24,6 +24,7 @@ import org.joda.time.DateTime;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
+import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.testng.annotations.Test;
@@ -369,6 +370,43 @@ public class EventStreamAdherenceReportGeneratorTest {
         assertEquals(100, report.getAdherencePercent());
         assertEquals(report.getTimestamp(), NOW); // no time zone adjustment
         assertTrue(report.getStreams().isEmpty());
+    }
+    
+    @Test
+    public void progression_noSchedule() { 
+        AdherenceState state = new AdherenceState.Builder().withNow(NOW).build();
+        
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        assertEquals(report.getProgression(), ParticipantStudyProgress.NO_SCHEDULE);
+    }
+    
+    @Test
+    public void progression_done() { 
+        AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
+        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
+        
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        assertEquals(report.getProgression(), ParticipantStudyProgress.DONE);        
+    }
+    
+    @Test
+    public void progression_unstarted() {
+        AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
+        AdherenceState state = createState(NOW, META1, null, adherenceRecord, true);
+        
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        assertEquals(report.getProgression(), ParticipantStudyProgress.UNSTARTED);
+    }
+    
+    @Test
+    public void progression_inProgress() {
+        AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
+        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
+        AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
+        
+        EventStreamAdherenceReport report = INSTANCE.generate(state);
+        assertEquals(report.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
     }
     
     private AdherenceState createState(DateTime now, TimelineMetadata meta,

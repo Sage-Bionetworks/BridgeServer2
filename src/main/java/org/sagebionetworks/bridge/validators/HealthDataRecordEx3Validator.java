@@ -25,7 +25,7 @@ public class HealthDataRecordEx3Validator implements Validator {
         if (object == null) {
             errors.rejectValue("HealthDataRecordEx3", Validate.CANNOT_BE_NULL);
         } else if (!(object instanceof HealthDataRecordEx3)) {
-            errors.rejectValue("HealthDataRecordEx3", Validate.WRONG_TYPE);
+            errors.rejectValue("HealthDataRecordEx3", Validate.INVALID_TYPE);
         } else {
             HealthDataRecordEx3 record = (HealthDataRecordEx3) object;
 

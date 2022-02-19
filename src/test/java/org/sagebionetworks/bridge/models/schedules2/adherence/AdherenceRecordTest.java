@@ -37,16 +37,20 @@ public class AdherenceRecordTest extends Mockito {
         record.setClientTimeZone("America/Los_Angeles");
         record.setDeclined(true);
         record.setInstanceGuid(GUID);
+        record.setAssessmentGuid("assessmentGuid");
+        record.setSessionGuid("sessionGuid"); // in reality, both of these won't be set
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(record);
-        assertEquals(node.size(), 9);
         assertEquals(node.get("startedOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("finishedOn").textValue(), MODIFIED_ON.toString());
         assertEquals(node.get("uploadedOn").textValue(), MODIFIED_ON.plusHours(1).toString());
         assertEquals(node.get("eventTimestamp").textValue(), CREATED_ON.plusHours(1).toString());
+        assertEquals(node.size(), 11);
         assertEquals(node.get("clientData").get("intValue").intValue(), 4);
         assertEquals(node.get("instanceGuid").textValue(), GUID);
         assertEquals(node.get("clientTimeZone").textValue(), "America/Los_Angeles");
+        assertEquals(node.get("assessmentGuid").textValue(), "assessmentGuid");
+        assertEquals(node.get("sessionGuid").textValue(), "sessionGuid");
         assertTrue(node.get("declined").booleanValue());
         assertEquals(node.get("type").textValue(), "AdherenceRecord");
         
@@ -59,6 +63,8 @@ public class AdherenceRecordTest extends Mockito {
         assertNotNull(deser.getClientData());
         assertEquals(deser.getClientTimeZone(), "America/Los_Angeles");
         assertEquals(deser.getInstanceGuid(), GUID);
+        assertEquals(deser.getAssessmentGuid(), "assessmentGuid");
+        assertEquals(deser.getSessionGuid(), "sessionGuid");
         assertTrue(deser.isDeclined());
     }
 }

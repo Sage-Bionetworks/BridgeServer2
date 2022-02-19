@@ -14,12 +14,12 @@ import com.google.common.collect.ImmutableList;
 public class BridgeConstants {
     public static final String CONFIG_KEY_WORKER_SQS_URL = "workerPlatform.request.sqs.queue.url";
     public static final String EXTERNAL_ID_NONE = "<none>";
+    
+    public static final String CANNOT_BE_BLANK = "%s cannot be null or blank";
+    public static final String CANNOT_BE_NULL = "%s cannot be null";
 
     // Excessively long User-Agent strings break the database and generally aren't parseable anyway.
     public static final int MAX_USER_AGENT_LENGTH = 255;
-
-    // see https://owasp.org/www-community/OWASP_Validation_Regex_Repository
-    public static final String OWASP_REGEXP_VALID_EMAIL = "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$";
     
     public static final TypeReference<Set<String>> STRING_SET_TYPEREF = new TypeReference<Set<String>>() {};
     public static final TypeReference<Map<String, Map<String, JsonNode>>> UPDATES_TYPEREF = new TypeReference<Map<String, Map<String, JsonNode>>>() {};
@@ -42,37 +42,16 @@ public class BridgeConstants {
     public static final int SYNAPSE_TIMEOUT = 10000;
     
     public static final String MAX_USERS_ERROR = "While app is in evaluation mode, it may not exceed %s accounts.";
-    public static final String BRIDGE_IDENTIFIER_ERROR = "must contain only lower-case letters and/or numbers with optional dashes";
-    public static final String BRIDGE_EVENT_ID_ERROR = "must contain only lower- or upper-case letters, numbers, dashes, and/or underscores";
-    public static final String BRIDGE_RELAXED_ID_ERROR = "cannot contain colons";
-    public static final String CALLER_NOT_MEMBER_ERROR = "Assessment must be associated to the caller’s organization.";
     public static final String NEGATIVE_OFFSET_ERROR = "offsetBy cannot be negative";
     public static final String NONPOSITIVE_REVISION_ERROR = "revision cannot be less than 1";
 
     // App ID for the test app, used in local tests and most integ tests.
     public static final String API_APP_ID = "api";
 
-    /** A common string constraint we place on model identifiers. */
-    public static final String BRIDGE_IDENTIFIER_PATTERN = "^[a-z0-9-]+$";
-
     // App ID used for the Shared Module Library
     public static final String SHARED_APP_ID = "shared";
     
     public static final String API_2_APP_ID = "api-2";
-
-    /** A common string constraint Synapse places on model identifiers. */
-    public static final String SYNAPSE_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_-]+$";
-    
-    /** The pattern used to validate activity event keys and automatic custom event keys. */
-    public static final String BRIDGE_EVENT_ID_PATTERN = "^[a-zA-Z0-9_-]+$";
-    
-    /** An identifier field that can contain spaces, some punctuation (but not colons) where it's infeasible 
-     * to include a separate label and unnecessary to restrict the string for external systems like Synapse. 
-     */
-    public static final String BRIDGE_RELAXED_ID_PATTERN = "^[^:]+$";
-    
-    /** The pattern of a valid JavaScript variable/object property name. */
-    public  static final String JS_IDENTIFIER_PATTERN = "^[a-zA-Z0-9_][a-zA-Z0-9_-]*$";
     
     public static final String BRIDGE_API_STATUS_HEADER = "Bridge-Api-Status";
 
@@ -111,24 +90,12 @@ public class BridgeConstants {
     // 7 days
     public static final int SIGNED_CONSENT_DOWNLOAD_EXPIRE_IN_SECONDS = (7 * 24 * 60 * 60);
     
-    // 5 minutes
-    public static final int BRIDGE_UPDATE_ATTEMPT_EXPIRE_IN_SECONDS = 5 * 60;
-    
     // 5 hrs
     public static final int BRIDGE_VIEW_EXPIRE_IN_SECONDS = 5 * 60 * 60;
     
     // 3 minutes
     public static final int APP_LINKS_EXPIRE_IN_SECONDS = 3* 60;
     
-    // 1 minute
-    public static final int BRIDGE_APP_EMAIL_STATUS_IN_SECONDS = 60;
-    
-    // 15 seconds
-    public static final int REAUTH_TOKEN_CACHE_LOOKUP_IN_SECONDS = 15;
-
-    // 3 days
-    public static final int REAUTH_TOKEN_GRACE_PERIOD_SECONDS = (3*24*60*60);
-
     public static final String SCHEDULE_STRATEGY_PACKAGE = "org.sagebionetworks.bridge.models.schedules.";
 
     public static final String ASSETS_HOST = "assets.sagebridge.org";
@@ -146,14 +113,6 @@ public class BridgeConstants {
     
     public static final String PAGE_SIZE_ERROR = "pageSize must be from "+API_MINIMUM_PAGE_SIZE+"-"+API_MAXIMUM_PAGE_SIZE+" records";
     
-    public static final String LABEL_FILTER_COUNT_ERROR = "cannot have over 50 entries";
-    
-    public static final String LABEL_FILTER_LENGTH_ERROR = "cannot be over 100 characters";
-    
-    public static final String ADHERENCE_RANGE_ERROR = "% must be from 0-100";
-    
-    public static final String ADHERENCE_RANGE_ORDER_ERROR = "cannot be less than adherenceMin";
-    
     public static final String TEST_USER_GROUP = "test_user";
     
     public static final String EXPIRATION_PERIOD_KEY = "expirationPeriod";
@@ -161,9 +120,6 @@ public class BridgeConstants {
     public static final String CONSENT_URL = "consentUrl";
     
     public static final int ONE_DAY_IN_SECONDS = 60*60*24;
-
-    /** We want app links to fit in a single SMS, so limit them to 140 chars. */
-    public static final int APP_LINK_MAX_LENGTH = 140;
 
     /**
      * 11 character label as to who sent the SMS message. Only in some supported countries (not US):

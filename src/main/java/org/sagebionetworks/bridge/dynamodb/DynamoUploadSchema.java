@@ -32,7 +32,6 @@ import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadSchema;
 import org.sagebionetworks.bridge.models.upload.UploadSchemaType;
 import org.sagebionetworks.bridge.schema.UploadSchemaKey;
-import org.sagebionetworks.bridge.validators.Validate;
 
 /**
  * The DynamoDB implementation of UploadSchema. This is a mutable class with getters and setters so that it can work
@@ -106,8 +105,8 @@ public class DynamoUploadSchema implements UploadSchema {
      */
     @JsonProperty
     public void setKey(String key) {
-        Preconditions.checkNotNull(key, Validate.CANNOT_BE_NULL, "key");
-        Preconditions.checkArgument(!key.isEmpty(), Validate.CANNOT_BE_EMPTY_STRING, "key");
+        Preconditions.checkNotNull(key);
+        Preconditions.checkArgument(!key.isEmpty());
 
         String[] parts = key.split(":", 2);
         Preconditions.checkArgument(parts.length == 2, "key has wrong number of parts");

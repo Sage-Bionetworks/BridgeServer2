@@ -13,6 +13,7 @@ import javax.annotation.Resource;
 import com.google.common.collect.ImmutableSet;
 
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.Errors;
 import org.springframework.validation.Validator;
@@ -21,6 +22,8 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.apps.AppAndUsers;
+import org.sagebionetworks.bridge.services.OrganizationService;
+import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.client.SynapseClient;
 import org.sagebionetworks.client.exceptions.SynapseException;
 import org.sagebionetworks.client.exceptions.SynapseNotFoundException;
@@ -30,9 +33,23 @@ public class AppAndUsersValidator implements Validator {
 
     private SynapseClient synapseClient;
 
+    private StudyService studyService;
+    
+    private OrganizationService organizationService;
+
     @Resource(name = "bridgePFSynapseClient")
     public final void setSynapseClient(SynapseClient synapseClient) {
         this.synapseClient = synapseClient;
+    }
+    
+    @Autowired
+    public final void setStudyService(StudyService studyService) {
+        this.studyService = studyService;
+    }
+    
+    @Autowired
+    public final void setOrganizationService(OrganizationService organizationService) {
+        this.organizationService = organizationService;
     }
     
     @Override
@@ -43,6 +60,27 @@ public class AppAndUsersValidator implements Validator {
     @Override
     public void validate(Object object, Errors errors) {
         AppAndUsers appAndUsers = (AppAndUsers)object;
+        
+        App app = appAndUsers.getApp();
+        if (app == null) {
+            errors.rejectValue("app", "cannot be null");
+            return;
+        } else {
+            errors.pushNestedPath("app");
+            try {
+                BridgeUtils.toSynapseFriendlyName(app.getName());    
+            } catch(NullPointerException | IllegalArgumentException e) {
+                errors.rejectValue("name", "is an invalid Synapse project name");
+            }
+            if (StringUtils.isBlank(app.getSponsorName())) {
+                errors.rejectValue("sponsorName", "is required");
+            }
+            if (StringUtils.isBlank(app.getIdentifier())) {
+                errors.rejectValue("identifier", "is required");
+            }
+            errors.popNestedPath();
+        }
+        StudyParticipantValidator participantValidator = new StudyParticipantValidator(studyService, organizationService, app, true);
         
         List<String> adminIds = appAndUsers.getAdminIds();
         if (adminIds == null || adminIds.isEmpty()) {
@@ -91,27 +129,11 @@ public class AppAndUsersValidator implements Validator {
                     errors.rejectValue("roles", "can only have roles developer and/or researcher");
                 }
                 
+                // validate the user
+                participantValidator.validate(user, errors);
+                
                 errors.popNestedPath();
             }
-        }
-        
-        App app = appAndUsers.getApp();
-        if (app == null) {
-            errors.rejectValue("app", "cannot be null");
-        } else {
-            errors.pushNestedPath("app");
-            try {
-                BridgeUtils.toSynapseFriendlyName(app.getName());    
-            } catch(NullPointerException | IllegalArgumentException e) {
-                errors.rejectValue("name", "is an invalid Synapse project name");
-            }
-            if (StringUtils.isBlank(app.getSponsorName())) {
-                errors.rejectValue("sponsorName", "is required");
-            }
-            if (StringUtils.isBlank(app.getIdentifier())) {
-                errors.rejectValue("identifier", "is required");
-            }
-            errors.popNestedPath();
         }
     }
 }

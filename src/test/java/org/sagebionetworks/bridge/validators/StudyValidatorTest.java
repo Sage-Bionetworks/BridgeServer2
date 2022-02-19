@@ -1,15 +1,17 @@
 package org.sagebionetworks.bridge.validators;
 
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_EVENT_ID_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertValidatorMessage;
 import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.generateStringOfLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getExcessivelyLargeClientData;
 import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvalidStringLengthMessage;
+
+import java.util.Optional;
+
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.studies.ContactRole.TECHNICAL_SUPPORT;
@@ -17,11 +19,13 @@ import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.EXEMPT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.validators.StudyValidator.*;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_EVENT_ID_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_RELAXED_ID_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
-import static org.sagebionetworks.bridge.validators.Validate.TIME_ZONE_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
 import static org.sagebionetworks.bridge.validators.Validate.entityThrowingException;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
 
@@ -31,16 +35,22 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.mockito.Mock;
+import org.mockito.Mockito;
+import org.mockito.MockitoAnnotations;
 import org.sagebionetworks.bridge.models.studies.Address;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.exceptions.UnauthorizedException;
 import org.sagebionetworks.bridge.models.accounts.Phone;
+import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.studies.Contact;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
+import org.sagebionetworks.bridge.services.Schedule2Service;
 
-public class StudyValidatorTest {
-    
+public class StudyValidatorTest extends Mockito {
     private static final LocalDate DECISION_ON = DateTime.now().toLocalDate();
     private static final LocalDate EXPIRES_ON = DateTime.now().plusDays(10).toLocalDate();
     
@@ -48,9 +58,13 @@ public class StudyValidatorTest {
     
     private StudyValidator validator;
     
+    @Mock
+    Schedule2Service mockScheduleService;
+    
     @BeforeMethod
     public void before() {
-        validator = new StudyValidator(Sets.newHashSet());
+        MockitoAnnotations.initMocks(this);
+        validator = new StudyValidator(Sets.newHashSet(), mockScheduleService, TEST_ORG_ID);
     }
     
     @Test
@@ -106,7 +120,7 @@ public class StudyValidatorTest {
     public void studyTimeZoneInvalid() {
         study = createStudy();
         study.setStudyTimeZone("America/Aspen");
-        assertValidatorMessage(validator, study, STUDY_TIME_ZONE_FIELD, TIME_ZONE_ERROR);
+        assertValidatorMessage(validator, study, STUDY_TIME_ZONE_FIELD, INVALID_TIME_ZONE);
     }
     
     @Test
@@ -303,7 +317,12 @@ public class StudyValidatorTest {
         study = createStudy();
         study.setScheduleGuid(SCHEDULE_GUID);
         
-        validator = new StudyValidator(Sets.newHashSet("aaa", "ccc"));
+        Schedule2 schedule = new Schedule2();
+        schedule.setOwnerId(TEST_ORG_ID);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+            .thenReturn(Optional.of(schedule));
+
+        validator = new StudyValidator(Sets.newHashSet("aaa", "ccc"), mockScheduleService, TEST_ORG_ID);
     
         StudyCustomEvent studyCustomEvent = new StudyCustomEvent();
         studyCustomEvent.setEventId("aaa");
@@ -318,7 +337,12 @@ public class StudyValidatorTest {
         study = createStudy();
         study.setScheduleGuid(SCHEDULE_GUID);
         
-        validator = new StudyValidator(Sets.newHashSet());
+        Schedule2 schedule = new Schedule2();
+        schedule.setOwnerId(TEST_ORG_ID);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+            .thenReturn(Optional.of(schedule));
+        
+        validator = new StudyValidator(Sets.newHashSet(), mockScheduleService, TEST_ORG_ID);
         
         StudyCustomEvent studyCustomEvent = new StudyCustomEvent();
         studyCustomEvent.setEventId("aaa");
@@ -334,7 +358,12 @@ public class StudyValidatorTest {
         study = createStudy();
         study.setScheduleGuid(SCHEDULE_GUID);
         
-        validator = new StudyValidator(null);
+        Schedule2 schedule = new Schedule2();
+        schedule.setOwnerId(TEST_ORG_ID);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study))
+            .thenReturn(Optional.of(schedule));
+        
+        validator = new StudyValidator(null, mockScheduleService, TEST_ORG_ID);
         
         StudyCustomEvent studyCustomEvent = new StudyCustomEvent();
         studyCustomEvent.setEventId("aaa");
@@ -590,6 +619,51 @@ public class StudyValidatorTest {
         assertValidatorMessage(validator, study, "clientData", getInvalidStringLengthMessage(TEXT_SIZE));
     }
     
+    @Test
+    public void scheduleGuidNotFund() { 
+        study = createStudy();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.empty());
+        
+        assertValidatorMessage(validator, study, SCHEDULE_GUID_FIELD, SCHEDULE_GUID_INVALID_MSG);
+    }
+    
+    @Test
+    public void scheduleGuidCallerHasNoOrg() {
+        // This fails because the caller has NO organization...
+        study = createStudy();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setOwnerId("some-other-org");
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        
+        assertValidatorMessage(validator, study, SCHEDULE_GUID_FIELD, SCHEDULE_GUID_OWNER_ERROR_MSG);
+    }
+    
+    @Test
+    public void scheduleGuidCallerDoesNotOwnSchedule() {
+        RequestContext.set(new RequestContext.Builder().withCallerOrgMembership(TEST_ORG_ID).build());
+        study = createStudy();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        
+        Schedule2 schedule = new Schedule2();
+        schedule.setOwnerId("some-other-org");
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenReturn(Optional.of(schedule));
+        
+        assertValidatorMessage(validator, study, SCHEDULE_GUID_FIELD, SCHEDULE_GUID_OWNER_ERROR_MSG);
+    }
+    
+    @Test
+    public void scheduleGuidScheduleUnauthorized() { 
+        study = createStudy();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        
+        when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenThrow(new UnauthorizedException());
+        
+        assertValidatorMessage(validator, study, SCHEDULE_GUID_FIELD, SCHEDULE_GUID_OWNER_ERROR_MSG);
+    }
+    
     private Study createStudy() {
         Study study = Study.create();
         study.setIdentifier("id");
@@ -621,5 +695,4 @@ public class StudyValidatorTest {
         address.setCountry("country");
         return address;
     }
-    
 }

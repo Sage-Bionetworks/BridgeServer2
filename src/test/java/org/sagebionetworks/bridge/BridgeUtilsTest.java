@@ -9,6 +9,7 @@ import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.EMAIL;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
+import static org.sagebionetworks.bridge.TestConstants.SYNAPSE_USER_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
@@ -46,6 +47,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
+import org.joda.time.Period;
 import org.jsoup.safety.Safelist;
 import org.mockito.Mockito;
 import org.testng.annotations.AfterMethod;
@@ -91,6 +93,71 @@ public class BridgeUtilsTest extends Mockito {
     }
     
     @Test
+    public void accountHasValidIdentifierValidEmail() {
+        Account account = Account.create();
+        account.setEmail(EMAIL);
+        assertTrue(BridgeUtils.hasValidIdentifier(account));
+    }
+
+    @Test
+    public void accountHasValidIdentifierValiPhone() {
+        Account account = Account.create();
+        account.setPhone(PHONE);
+        assertTrue(BridgeUtils.hasValidIdentifier(account));
+    }
+
+    @Test
+    public void accountHasValidIdentifierValidEnrollment() {
+        Account account = Account.create();
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        Enrollment en2 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, "externalID");
+        account.setEnrollments(ImmutableSet.of(en1, en2));
+
+        assertTrue(BridgeUtils.hasValidIdentifier(account));
+    }
+
+    @Test
+    public void accountHasValidIdentifierValidSynapseUserId() {
+        Account account = Account.create();
+        account.setSynapseUserId(SYNAPSE_USER_ID);
+        assertTrue(BridgeUtils.hasValidIdentifier(account));
+    }
+
+    @Test
+    public void accountHasValidIdentifierInvalid() {
+        Account account = Account.create();
+        account.setEnrollments(null);
+        assertFalse(BridgeUtils.hasValidIdentifier(account));
+
+        account = Account.create();
+        Enrollment en1 = Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
+        account.setEnrollments(ImmutableSet.of(en1));
+        assertFalse(BridgeUtils.hasValidIdentifier(account));
+
+        account = Account.create();
+        account.setEnrollments(ImmutableSet.of());
+        assertFalse(BridgeUtils.hasValidIdentifier(account));
+    }
+
+    @Test
+    public void periodInMinutes() {
+        Period period = Period.parse("P3W2DT10H14M"); // 33,734 minutes
+        assertEquals(BridgeUtils.periodInMinutes(period), 33734);
+
+        period = Period.parse("P0W0DT0H0M"); // 0 minutes
+        assertEquals(BridgeUtils.periodInMinutes(period), 0);
+    }
+
+    @Test
+    public void periodInDays() {
+        Period period = Period.parse("P3W2D"); // 23 days
+        assertEquals(BridgeUtils.periodInDays(period), 23);
+
+        period = Period.parse("P0W0DT24H"); // 1 days
+        assertEquals(BridgeUtils.periodInDays(period), 1);
+    }
+
+    @Test
     public void generateUUID() {
         // create 20 UUIDs, they should all be unique.
         Set<String> uuids = new HashSet<>();
@@ -101,7 +168,37 @@ public class BridgeUtilsTest extends Mockito {
         }
         assertEquals(uuids.size(), 20);
     }
-    
+
+    @Test
+    public void isExporter3Configured_IsExported3EnabledFalse() {
+        App app = TestUtils.getValidApp(BridgeUtilsTest.class);
+        app.setExporter3Enabled(false);
+        assertFalse(BridgeUtils.isExporter3Configured(app));
+    }
+
+    @Test
+    public void isExporter3Configured_ConfigObjectNull() {
+        App app = TestUtils.getValidApp(BridgeUtilsTest.class);
+        app.setExporter3Enabled(true);
+        app.setExporter3Configuration(null);
+        assertFalse(BridgeUtils.isExporter3Configured(app));
+    }
+
+    @Test
+    public void isExporter3Configured_ConfiguredFalse() {
+        App app = TestUtils.getValidApp(BridgeUtilsTest.class);
+        app.setExporter3Enabled(true);
+        app.getExporter3Configuration().setProjectId(null);
+        assertFalse(BridgeUtils.isExporter3Configured(app));
+    }
+
+    @Test
+    public void isExporter3Configured_ConfiguredTrue() {
+        App app = TestUtils.getValidApp(BridgeUtilsTest.class);
+        app.setExporter3Enabled(true);
+        assertTrue(BridgeUtils.isExporter3Configured(app));
+    }
+
     @Test
     public void mapStudyMemberships() {
         Account account = Account.create();

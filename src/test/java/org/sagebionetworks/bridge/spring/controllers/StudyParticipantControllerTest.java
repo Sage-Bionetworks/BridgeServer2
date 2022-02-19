@@ -20,6 +20,7 @@ import static org.sagebionetworks.bridge.TestConstants.PASSWORD;
 import static org.sagebionetworks.bridge.TestConstants.PHONE;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_CLIENT_TIME_ZONE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.TestUtils.assertCreate;
@@ -30,6 +31,7 @@ import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.TestUtils.createJson;
 import static org.sagebionetworks.bridge.TestUtils.mockRequestBody;
 import static org.sagebionetworks.bridge.cache.CacheKey.scheduleModificationTimestamp;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.reports.ReportType.PARTICIPANT;
@@ -102,6 +104,7 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule.ParticipantSchedule;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
 import org.sagebionetworks.bridge.models.studies.EnrollmentDetail;
@@ -110,6 +113,7 @@ import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 import org.sagebionetworks.bridge.models.subpopulations.SubpopulationGuid;
 import org.sagebionetworks.bridge.models.upload.UploadView;
 import org.sagebionetworks.bridge.services.AccountService;
+import org.sagebionetworks.bridge.services.AdherenceService;
 import org.sagebionetworks.bridge.services.AppService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
@@ -150,6 +154,9 @@ public class StudyParticipantControllerTest extends Mockito {
     Schedule2Service mockScheduleService;
     
     @Mock
+    AdherenceService mockAdherenceService;
+    
+    @Mock
     CacheProvider mockCacheProvider;
     
     @Mock
@@ -188,6 +195,9 @@ public class StudyParticipantControllerTest extends Mockito {
     @Captor
     ArgumentCaptor<ReportData> dataCaptor;
     
+    @Captor
+    ArgumentCaptor<Account> accountCaptor;
+    
     @InjectMocks
     @Spy
     StudyParticipantController controller;
@@ -208,6 +218,7 @@ public class StudyParticipantControllerTest extends Mockito {
         session = new UserSession();
         session.setAppId(TEST_APP_ID);
         session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID)
                 .withHealthCode(HEALTH_CODE).build());
         
         account = Account.create();
@@ -1948,6 +1959,129 @@ public class StudyParticipantControllerTest extends Mockito {
         when(mockReportService.getReportIndex(key)).thenReturn(index);
         
         controller.deleteParticipantReport(TEST_STUDY_ID, TEST_USER_ID, IDENTIFIER);
+    }
+    
+    @Test
+    public void getParticipantScheduleForUser() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        mockAccountInStudy();
+        
+        ParticipantSchedule schedule = new ParticipantSchedule();
+        when(mockAdherenceService.getParticipantSchedule(
+                eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
+        
+        ParticipantSchedule retValue = controller.getParticipantScheduleForUser(TEST_STUDY_ID, TEST_USER_ID);
+        assertSame(retValue, schedule);
+    }
+    
+    @Test
+    public void getParticipantScheduleForSelf() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        mockAccountInStudy(TEST_USER_ID);
+        
+        when(controller.getDateTime()).thenReturn(CREATED_ON);
+        
+        ParticipantSchedule schedule = new ParticipantSchedule();
+        when(mockAdherenceService.getParticipantSchedule(
+                eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
+        
+        ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID, null);
+        assertSame(retValue, schedule);
+        
+        verify(mockAccountService, never()).updateAccount(accountCaptor.capture());
+        
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
+        RequestInfo info = requestInfoCaptor.getValue();
+        assertEquals(info.getTimelineAccessedOn(), CREATED_ON);
+        
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
+        StudyActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getEventId(), TIMELINE_RETRIEVED.name().toLowerCase());
+        assertEquals(event.getTimestamp(), CREATED_ON);
+    }
+    
+    @Test
+    public void getParticipantScheduleForSelf_setsTimezone() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        mockAccountInStudy(TEST_USER_ID);
+        
+        when(controller.getDateTime()).thenReturn(CREATED_ON);
+        
+        ParticipantSchedule schedule = new ParticipantSchedule();
+        when(mockAdherenceService.getParticipantSchedule(
+                eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
+        
+        ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
+        assertSame(retValue, schedule);
+        
+        verify(mockAccountService).updateAccount(accountCaptor.capture());
+        assertEquals(accountCaptor.getValue().getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
+        
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
+        RequestInfo info = requestInfoCaptor.getValue();
+        assertEquals(info.getTimelineAccessedOn(), CREATED_ON);
+        
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
+        StudyActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getEventId(), TIMELINE_RETRIEVED.name().toLowerCase());
+        assertEquals(event.getTimestamp(), CREATED_ON);
+    }
+    
+    @Test
+    public void getParticipantScheduleForSelf_skipsExistingTimezone() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withStudyIds(ImmutableSet.of(TEST_STUDY_ID)).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        mockAccountInStudy(TEST_USER_ID);
+        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
+        
+        when(controller.getDateTime()).thenReturn(CREATED_ON);
+        
+        ParticipantSchedule schedule = new ParticipantSchedule();
+        when(mockAdherenceService.getParticipantSchedule(
+                eq(TEST_APP_ID), eq(TEST_STUDY_ID), any())).thenReturn(schedule);
+        
+        ParticipantSchedule retValue = controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
+        assertSame(retValue, schedule);
+        
+        verify(mockAccountService, never()).updateAccount(accountCaptor.capture());
+        
+        verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
+        RequestInfo info = requestInfoCaptor.getValue();
+        assertEquals(info.getTimelineAccessedOn(), CREATED_ON);
+        
+        verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
+        StudyActivityEvent event = eventCaptor.getValue();
+        assertEquals(event.getAppId(), TEST_APP_ID);
+        assertEquals(event.getStudyId(), TEST_STUDY_ID);
+        assertEquals(event.getUserId(), TEST_USER_ID);
+        assertEquals(event.getEventId(), TIMELINE_RETRIEVED.name().toLowerCase());
+        assertEquals(event.getTimestamp(), CREATED_ON);
+    }
+    
+    @Test(expectedExceptions = UnauthorizedException.class)
+    public void getParticipantScheduleForSelf_notEnrolledInStudy() {
+        session.setParticipant(new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).build());
+        doReturn(session).when(controller).getAuthenticatedAndConsentedSession();
+        mockAccountInStudy(TEST_USER_ID);
+        account.setClientTimeZone(TEST_CLIENT_TIME_ZONE);
+        
+        controller.getParticipantScheduleForSelf(TEST_STUDY_ID, TEST_CLIENT_TIME_ZONE);
     }
     
     private void mockAccountInStudy() {

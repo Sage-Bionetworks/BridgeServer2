@@ -1,14 +1,14 @@
 package org.sagebionetworks.bridge.validators;
 
 import static org.apache.commons.lang3.StringUtils.isBlank;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_ERROR;
-import static org.sagebionetworks.bridge.BridgeConstants.BRIDGE_RELAXED_ID_PATTERN;
+import static org.sagebionetworks.bridge.BridgeUtils.periodInDays;
+import static org.sagebionetworks.bridge.BridgeUtils.periodInMinutes;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_RELAXED_ID_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_RELAXED_ID_PATTERN;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_DUPLICATE;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.TEXT_SIZE;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInDays;
-import static org.sagebionetworks.bridge.validators.ValidatorUtils.periodInMinutes;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateFixedLengthLongPeriod;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateJsonLength;
 import static org.sagebionetworks.bridge.validators.ValidatorUtils.validateStringLength;

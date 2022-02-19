@@ -4,6 +4,7 @@ import static org.sagebionetworks.bridge.RequestContext.NULL_INSTANCE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.STUDY_DESIGNER;
+import static org.sagebionetworks.bridge.Roles.WORKER;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -14,12 +15,15 @@ import static org.sagebionetworks.bridge.TestUtils.assertPost;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.DESIGN;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 
+import java.util.Map;
 import java.util.Optional;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.common.collect.ImmutableSet;
 
 import org.mockito.ArgumentCaptor;
@@ -42,6 +46,9 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadataTest;
+import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadataView;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyService;
@@ -231,5 +238,30 @@ public class Schedule2ControllerTest extends Mockito {
         doReturn(session).when(controller).getAdministrativeSession();
         
         controller.getTimeline(TEST_STUDY_ID);
-    }    
+    }
+    
+    @Test
+    public void getTimelineMetadataForWorker() { 
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+        
+        TimelineMetadata meta = TimelineMetadataTest.createTimelineMetadata();
+        when(mockService.getTimelineMetadata("instanceGuid")).thenReturn(Optional.of(meta));
+        
+        TimelineMetadataView view = controller.getTimelineMetadataForWorker(TEST_APP_ID, "instanceGuid");
+        // It's there
+        assertEquals(view.getMetadata().get("sessionInstanceGuid"), "sessionInstanceGuid");
+    }
+
+    @Test
+    public void getTimelineMetadataForWorker_noData() throws JsonProcessingException { 
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
+        
+        when(mockService.getTimelineMetadata("instanceGuid")).thenReturn(Optional.empty());
+        
+        TimelineMetadataView view = controller.getTimelineMetadataForWorker(TEST_APP_ID, "instanceGuid");
+        // Map is populated but empty. It serializes to an empty map.
+        for (Map.Entry<String, String> entry : view.getMetadata().entrySet()) {
+            assertNull(entry.getValue());
+        }
+    }
 }

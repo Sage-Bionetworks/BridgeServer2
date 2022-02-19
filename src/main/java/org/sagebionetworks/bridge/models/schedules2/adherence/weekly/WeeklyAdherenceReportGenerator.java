@@ -2,12 +2,7 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.weekly;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.DONE;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.IN_PROGRESS;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.UNSTARTED;
-import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.NOT_APPLICABLE;
 
-import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -16,8 +11,6 @@ import java.util.Set;
 import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
-import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
-import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
@@ -25,7 +18,6 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventS
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamWindow;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
 public class WeeklyAdherenceReportGenerator {
@@ -143,20 +135,9 @@ public class WeeklyAdherenceReportGenerator {
             nextDay = getNextActivity(state, finalReport, eventReport);
         }
         int percentage = AdherenceUtils.calculateAdherencePercentage(ImmutableList.of(finalReport));
-        
-        ParticipantStudyProgress progression = IN_PROGRESS;
-        if (rowList.isEmpty() && nextDay == null) {
-            long na = AdherenceUtils.counting(eventReport.getStreams(), ImmutableSet.of(NOT_APPLICABLE));
-            long total = AdherenceUtils.counting(eventReport.getStreams(), EnumSet.allOf(SessionCompletionState.class));
-            if (na == total) {
-                progression = UNSTARTED;    
-            } else {
-                progression = DONE;
-            }
-        }
 
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
-        report.setProgression(progression);
+        report.setProgression(eventReport.getProgression());
         report.setByDayEntries(finalReport.getByDayEntries());
         report.setCreatedOn(state.getNow());
         report.setClientTimeZone(state.getClientTimeZone());
