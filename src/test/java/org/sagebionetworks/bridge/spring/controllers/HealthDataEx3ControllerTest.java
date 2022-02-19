@@ -312,9 +312,9 @@ public class HealthDataEx3ControllerTest {
                 CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
     }
 
-    // Tests of getRecordForDeveloperTestAccount API.
+    // Tests of getRecordForSelf API.
     @Test
-    public void getRecordForDeveloperTestAccount_Success() {
+    public void getRecordForSelf_Success() {
         when(mockDeveloperTestAccountSession.getAppId()).thenReturn(TestConstants.TEST_APP_ID);
         when(mockDeveloperTestAccountSession.getHealthCode()).thenReturn(TestConstants.HEALTH_CODE);
 
@@ -325,7 +325,7 @@ public class HealthDataEx3ControllerTest {
         when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
 
         // Execute and verify.
-        HealthDataRecordEx3 result = controller.getRecordForDeveloperTestAccount(RECORD_ID);
+        HealthDataRecordEx3 result = controller.getRecordForSelf(RECORD_ID);
         assertSame(result, record);
 
         verify(mockHealthDataEx3Service).getRecord(RECORD_ID);
@@ -333,7 +333,7 @@ public class HealthDataEx3ControllerTest {
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getRecordForDeveloperTestAccount_RecordInWrongApp() {
+    public void getRecordForSelf_RecordInWrongApp() {
         when(mockDeveloperTestAccountSession.getAppId()).thenReturn(TEST_APP_ID);
         when(mockDeveloperTestAccountSession.getHealthCode()).thenReturn(HEALTH_CODE);
 
@@ -344,19 +344,19 @@ public class HealthDataEx3ControllerTest {
         when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
 
         // Execute.
-        controller.getRecordForDeveloperTestAccount(RECORD_ID);
+        controller.getRecordForSelf(RECORD_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getRecordForDeveloperTestAccount_RecordNotFound() {
+    public void getRecordForSelf_RecordNotFound() {
         when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.empty());
 
         // Execute.
-        controller.getRecordForDeveloperTestAccount(RECORD_ID);
+        controller.getRecordForSelf(RECORD_ID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
-    public void getRecordForDeveloperTestAccount_RecordOfWrongUser() {
+    public void getRecordForSelf_RecordOfWrongUser() {
         when(mockDeveloperTestAccountSession.getAppId()).thenReturn(TEST_APP_ID);
         when(mockDeveloperTestAccountSession.getHealthCode()).thenReturn(HEALTH_CODE);
 
@@ -367,12 +367,12 @@ public class HealthDataEx3ControllerTest {
         when(mockHealthDataEx3Service.getRecord(RECORD_ID)).thenReturn(Optional.of(record));
 
         // Execute.
-        controller.getRecordForDeveloperTestAccount(RECORD_ID);
+        controller.getRecordForSelf(RECORD_ID);
     }
 
-    // Tests of getRecordsForUserForDeveloperTestAccount API.
+    // Tests of getRecordsForUserForSelf API.
     @Test
-    public void getRecordsForUserForDeveloperTestAccount_Success() {
+    public void getRecordsForUserForSelf_Success() {
         // Set up mocks.
         when(mockDeveloperTestAccountSession.getHealthCode()).thenReturn(HEALTH_CODE);
 
@@ -382,7 +382,7 @@ public class HealthDataEx3ControllerTest {
                 CREATED_ON_END, BridgeConstants.API_DEFAULT_PAGE_SIZE, OFFSET_KEY)).thenReturn(recordList);
 
         // Execute and verify.
-        ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForUserForDeveloperTestAccount(
+        ResourceList<HealthDataRecordEx3> outputList = controller.getRecordsForUserForSelf(
                 CREATED_ON_START_STRING, CREATED_ON_END_STRING, PAGE_SIZE_STRING, OFFSET_KEY);
         assertSame(outputList, recordList);
         assertEquals(outputList.getRequestParams().size(), 5);

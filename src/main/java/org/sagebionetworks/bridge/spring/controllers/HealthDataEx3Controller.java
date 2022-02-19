@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.Roles.SUPERADMIN;
 import static org.sagebionetworks.bridge.Roles.WORKER;
 
 import org.joda.time.DateTime;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,9 +22,9 @@ import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
-import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.services.HealthDataEx3Service;
 import org.sagebionetworks.bridge.services.StudyService;
+import org.sagebionetworks.bridge.models.accounts.UserSession;
 
 /**
  * This controller exposes the Exporter 3 implementation of Health Data Records. This is primarily used by the worker.
@@ -177,9 +176,9 @@ public class HealthDataEx3Controller extends BaseController {
                 .withRequestParam(ResourceList.OFFSET_KEY, offsetKey);
     }
 
-    /** Retrieves the record for the given ID - Developer Version. */
+    /** Retrieves the record for the given ID for self. */
     @GetMapping(path="/v3/participants/self/exporter3/healthdata/{recordId}")
-    public HealthDataRecordEx3 getRecordForDeveloperTestAccount(@PathVariable String recordId) {
+    public HealthDataRecordEx3 getRecordForSelf(@PathVariable String recordId) {
         UserSession session = getAuthenticatedAndConsentedSession();
 
         HealthDataRecordEx3 record = healthDataEx3Service.getRecord(recordId).orElseThrow(() ->
@@ -199,9 +198,9 @@ public class HealthDataEx3Controller extends BaseController {
         return record;
     }
 
-    /** Retrieves all records for the given user and time range - Developer Version. */
+    /** Retrieves all records for the given user and time range for self. */
     @GetMapping(path="/v3/participants/self/exporter3/healthdata")
-    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForUserForDeveloperTestAccount(
+    public ForwardCursorPagedResourceList<HealthDataRecordEx3> getRecordsForUserForSelf(
             @RequestParam(required = false) String createdOnStart, @RequestParam(required = false) String createdOnEnd,
             @RequestParam(required = false) String pageSize, @RequestParam(required = false) String offsetKey) {
         UserSession session = getAuthenticatedAndConsentedSession();
