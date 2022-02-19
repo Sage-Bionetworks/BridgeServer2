@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.dao;
 
+import java.util.List;
 import java.util.Set;
 
 import org.sagebionetworks.bridge.models.PagedResourceList;
@@ -9,6 +10,8 @@ import org.sagebionetworks.bridge.models.studies.Study;
 public interface StudyDao {
     
     void removeScheduleFromStudies(String appId, String scheduleGuid);
+    
+    List<String> getStudiesUsingSchedule(String appId, String scheduleGuid);
     
     PagedResourceList<Study> getStudies(String appId, Set<String> studyIds, 
             Integer offsetBy, Integer pageSize, boolean includeDeleted);

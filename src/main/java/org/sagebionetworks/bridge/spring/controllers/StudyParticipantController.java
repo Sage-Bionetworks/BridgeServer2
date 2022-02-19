@@ -83,6 +83,7 @@ import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.spring.util.EtagSupport;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
 
@@ -163,6 +164,7 @@ public class StudyParticipantController extends BaseController {
         return DateTime.now();
     }
     
+    @EtagSupport({"appId", "studyId"})
     @GetMapping("/v5/studies/{studyId}/participants/self/timeline")
     public ResponseEntity<Timeline> getTimelineForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -230,6 +232,7 @@ public class StudyParticipantController extends BaseController {
         return PREPARING_ROSTER_MSG;
     }
     
+    @EtagSupport({"appId", "studyId"})
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/timeline")
     public Timeline getTimelineForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();

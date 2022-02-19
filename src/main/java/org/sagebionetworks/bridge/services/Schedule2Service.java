@@ -30,6 +30,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -59,6 +61,8 @@ public class Schedule2Service {
     
     private StudyService studyService;
     
+    private CacheProvider cacheProvider;
+    
     private Schedule2Dao dao;
     
     @Autowired
@@ -69,6 +73,11 @@ public class Schedule2Service {
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    
+    @Autowired
+    final void setCacheProvider(CacheProvider cacheProvider) { 
+        this.cacheProvider = cacheProvider;
     }
     
     @Autowired
@@ -190,6 +199,9 @@ public class Schedule2Service {
         schedule = createSchedule(study, schedule);
         study.setScheduleGuid(schedule.getGuid());
         studyService.updateStudy(schedule.getAppId(), study);
+        
+        cacheProvider.removeObject(CacheKey.etag(Study.class, study.getAppId(), study.getIdentifier()));
+        
         return schedule;
     }
     
@@ -239,7 +251,7 @@ public class Schedule2Service {
      * Update a schedule. Will throw an exception once the schedule is published. Ownership
      * cannot be changed once a schedule is created.
      */
-    public Schedule2 updateSchedule(Study study, Schedule2 existing, Schedule2 schedule) {
+    protected Schedule2 updateSchedule(Study study, Schedule2 existing, Schedule2 schedule) {
         checkNotNull(existing);
         checkNotNull(schedule);
         
@@ -289,7 +301,7 @@ public class Schedule2Service {
      * Logically delete this schedule. It is still available to callers who have a 
      * reference to the schedule.
      */
-    public void deleteSchedule(String appId, String guid) {
+    protected void deleteSchedule(String appId, String guid) {
         checkNotNull(appId);
         checkNotNull(guid);
         
@@ -316,6 +328,8 @@ public class Schedule2Service {
         
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
         
+        // TODO: We need etag removal support here which means we need to know the studies
+        // that use this schedule.
         studyService.removeScheduleFromStudies(appId, guid);
         
         dao.deleteSchedulePermanently(existing);

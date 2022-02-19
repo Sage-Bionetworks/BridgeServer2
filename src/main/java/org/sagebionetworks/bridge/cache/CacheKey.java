@@ -20,7 +20,7 @@ public final class CacheKey {
     
     private static final String[] PUBLIC_KEYS = new String[] { "emailVerificationStatus", 
             "AppConfigList", "channel-throttling", "lock", "App", "Subpopulation", 
-            "SubpopulationList", "view" };
+            "SubpopulationList", "view", "CurrentEtag" };
     
     public final static boolean isPublic(String key) {
         for (String suffix : PUBLIC_KEYS) {
@@ -29,6 +29,9 @@ public final class CacheKey {
             }
         }
         return false;
+    }
+    public static final CacheKey etag(Class<?> model, String... keys) {
+        return new CacheKey(COLON_JOINER.join(keys), model.getSimpleName(), "Etag");
     }
     public static final CacheKey publicStudy(String appId, String studyId) {
         return new CacheKey(appId, studyId, "PublicStudy");

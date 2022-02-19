@@ -56,6 +56,19 @@ public class HibernateStudyDao implements StudyDao {
     }
     
     @Override
+    public List<String> getStudiesUsingSchedule(String appId, String scheduleGuid) {
+        checkNotNull(appId);
+        checkNotNull(scheduleGuid);
+        
+        QueryBuilder builder = new QueryBuilder();
+        builder.append("SELET id FROM Substudies");
+        builder.append("WHERE studyId = :appId", "appId", appId);
+        builder.append("AND scheduleGuid = :scheduleGuid", "scheduleGuid", scheduleGuid);
+        
+        return hibernateHelper.nativeQueryGet(builder.getQuery(), builder.getParameters(), null, null, String.class);
+    }
+    
+    @Override
     public PagedResourceList<Study> getStudies(String appId, Set<String> studyIds, 
             Integer offsetBy, Integer pageSize, boolean includeDeleted) {
         checkNotNull(appId);

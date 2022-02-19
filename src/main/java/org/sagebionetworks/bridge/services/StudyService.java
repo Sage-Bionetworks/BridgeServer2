@@ -25,6 +25,7 @@ import static org.sagebionetworks.bridge.models.studies.StudyPhase.RECRUITMENT;
 import static org.sagebionetworks.bridge.models.studies.StudyPhase.WITHDRAWN;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -42,6 +43,7 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyPhase;
 import org.sagebionetworks.bridge.validators.StudyValidator;
@@ -86,6 +88,10 @@ public class StudyService {
         checkNotNull(appId);
         checkNotNull(scheduleGuid);
         
+        List<String> studyIds = studyDao.getStudiesUsingSchedule(appId, scheduleGuid);
+        for (String studyId : studyIds) {
+            cacheProvider.removeObject(CacheKey.etag(Timeline.class, appId, studyId));
+        }
         studyDao.removeScheduleFromStudies(appId, scheduleGuid);
     }
     
@@ -355,8 +361,8 @@ public class StudyService {
         }
         studyDao.updateStudy(study);
         
-        CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
-        cacheProvider.removeObject(cacheKey);
+        cacheProvider.removeObject(CacheKey.publicStudy(appId, studyId));
+        cacheProvider.removeObject(CacheKey.etag(Study.class, appId, studyId));
         
         return study;
     }
