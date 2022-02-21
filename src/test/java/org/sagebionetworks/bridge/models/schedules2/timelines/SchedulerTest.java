@@ -230,8 +230,8 @@ public class SchedulerTest extends Mockito {
         ScheduledSession schSession = timeline.getSchedule().get(0);
         assertEquals(schSession.getRefGuid(), SESSION_GUID_3);
         // instance guid
-        assertEquals(schSession.getStartDay(), 0);
-        assertEquals(schSession.getEndDay(), 0);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(0));
+        assertEquals(schSession.getEndDay(), Integer.valueOf(0));
         assertEquals(schSession.getStartTime(), LocalTime.parse("08:00"));
         assertEquals(schSession.getExpiration(), Period.parse("PT8H"));
         assertNull(schSession.isPersistent());
@@ -620,8 +620,8 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getSchedule().size(), 1);
         
         ScheduledSession schSession = timeline.getSchedule().get(0);
-        assertEquals(schSession.getStartDay(), 0);
-        assertEquals(schSession.getEndDay(), 0);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(0));
+        assertEquals(schSession.getEndDay(), Integer.valueOf(0));
         assertEquals(schSession.getStartTime(), LocalTime.parse("08:00"));
         assertEquals(schSession.getExpiration(), Period.parse("PT8H"));
     }
@@ -639,8 +639,8 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getSchedule().size(), 1);
         
         ScheduledSession schSession = timeline.getSchedule().get(0);
-        assertEquals(schSession.getStartDay(), 0);
-        assertEquals(schSession.getEndDay(), 1);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(0));
+        assertEquals(schSession.getEndDay(), Integer.valueOf(1));
         assertEquals(schSession.getStartTime(), LocalTime.parse("08:00"));
         assertEquals(schSession.getExpiration(), Period.parse("PT961M"));
     }
@@ -657,8 +657,8 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getSchedule().size(), 1);
         
         ScheduledSession schSession = timeline.getSchedule().get(0);
-        assertEquals(schSession.getStartDay(), 0);
-        assertEquals(schSession.getEndDay(), 1);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(0));
+        assertEquals(schSession.getEndDay(), Integer.valueOf(1));
         assertEquals(schSession.getStartTime(), LocalTime.parse("08:00"));
         assertEquals(schSession.getExpiration(), Period.parse("PT17H"));
     }
@@ -674,8 +674,8 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getSchedule().size(), 1);
         
         ScheduledSession schSession = timeline.getSchedule().get(0);
-        assertEquals(schSession.getStartDay(), 0);
-        assertEquals(schSession.getEndDay(), 4);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(0));
+        assertEquals(schSession.getEndDay(), Integer.valueOf(4));
         assertEquals(schSession.getStartTime(), LocalTime.parse("08:00"));
         assertEquals(schSession.getExpiration(), Period.parse("P4D"));        
     }
@@ -691,8 +691,8 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getSchedule().size(), 1);
         
         ScheduledSession schSession = timeline.getSchedule().get(0);
-        assertEquals(schSession.getStartDay(), 0);
-        assertEquals(schSession.getEndDay(), 7);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(0));
+        assertEquals(schSession.getEndDay(), Integer.valueOf(7));
         assertEquals(schSession.getStartTime(), LocalTime.parse("08:00"));
         assertEquals(schSession.getExpiration(), Period.parse("P1W"));        
     }
@@ -1001,7 +1001,7 @@ public class SchedulerTest extends Mockito {
         assertEquals(timeline.getSchedule().size(), 1);
         
         ScheduledSession schSession = timeline.getSchedule().get(0);
-        assertEquals(schSession.getEndDay(), 20);
+        assertEquals(schSession.getEndDay(), Integer.valueOf(20));
         assertEquals(schSession.getExpiration(), Period.parse("P19D"));
     }
     
@@ -1066,22 +1066,22 @@ public class SchedulerTest extends Mockito {
         ScheduledSession schSession = timeline.getSchedule().get(0); 
         assertEquals(schSession.getStartEventId(), "enrollment");
         assertEquals(schSession.getRefGuid(), SESSION_GUID_1);
-        assertEquals(schSession.getStartDay(), 0);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(0));
         
         schSession = timeline.getSchedule().get(1); 
         assertEquals(schSession.getStartEventId(), "timeline_retrieved");
         assertEquals(schSession.getRefGuid(), SESSION_GUID_1);
-        assertEquals(schSession.getStartDay(), 0);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(0));
 
         schSession = timeline.getSchedule().get(2); 
         assertEquals(schSession.getStartEventId(), "enrollment");
         assertEquals(schSession.getRefGuid(), SESSION_GUID_1);
-        assertEquals(schSession.getStartDay(), 1);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(1));
         
         schSession = timeline.getSchedule().get(3); 
         assertEquals(schSession.getStartEventId(), "timeline_retrieved");
         assertEquals(schSession.getRefGuid(), SESSION_GUID_1);
-        assertEquals(schSession.getStartDay(), 1);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(1));
     }
     
     @Test
@@ -1219,15 +1219,15 @@ public class SchedulerTest extends Mockito {
     
     private void assertDayRange(Timeline timeline, int schSessionIndex, int startDay, int endDay) {
         ScheduledSession schSession = timeline.getSchedule().get(schSessionIndex);
-        assertEquals(schSession.getStartDay(), startDay);
-        assertEquals(schSession.getEndDay(), endDay);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(startDay));
+        assertEquals(schSession.getEndDay(), Integer.valueOf(endDay));
     }
     
     private void assertDayRange(Timeline timeline, int schSessionIndex, String guid, int startDay, int endDay) {
         ScheduledSession schSession = timeline.getSchedule().get(schSessionIndex);
         assertEquals(schSession.getRefGuid(), guid);
-        assertEquals(schSession.getStartDay(), startDay);
-        assertEquals(schSession.getEndDay(), endDay);
+        assertEquals(schSession.getStartDay(), Integer.valueOf(startDay));
+        assertEquals(schSession.getEndDay(), Integer.valueOf(endDay));
     }
     
     private Schedule2 createComplexSchedule() {

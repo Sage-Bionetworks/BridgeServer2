@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.models.schedules2.timelines;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_GUID_1;
 import static org.sagebionetworks.bridge.TestConstants.SESSION_WINDOW_GUID_1;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,11 +17,12 @@ import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 
 public class SessionInfoTest extends Mockito {
 
+    // This also tests SessionInfo.createTimelineEntry constructor
     @Test
     public void canSerialize() throws Exception {
         Session session = SessionTest.createValidSession();
         
-        SessionInfo info = SessionInfo.create(session);
+        SessionInfo info = SessionInfo.createTimelineEntry(session);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
         assertEquals(node.get("guid").textValue(), SESSION_GUID_1);
@@ -41,12 +43,28 @@ public class SessionInfoTest extends Mockito {
     }
     
     @Test
+    public void createScheduleEntry() {
+        Session session = SessionTest.createValidSession();
+        SessionInfo info = SessionInfo.createTimelineEntry(session);
+        
+        SessionInfo min = SessionInfo.createScheduleEntry(info);
+        assertEquals(min.getGuid(), session.getGuid());
+        assertEquals(min.getLabel(), info.getLabel());
+        assertEquals(min.getPerformanceOrder(), info.getPerformanceOrder());
+        assertFalse(min.getNotifications().isEmpty());
+        assertEquals(min.getMinutesToComplete(), info.getMinutesToComplete());
+        assertNull(min.getSymbol());
+        assertNull(min.getStartEventId());
+        assertNull(min.getTimeWindowGuids());
+    }
+    
+    @Test
     public void noMinutesAddsUpToNoProperty() {
         Session session = SessionTest.createValidSession();
         session.getAssessments().get(0).setMinutesToComplete(null);
         session.getAssessments().get(1).setMinutesToComplete(null);
         
-        SessionInfo info = SessionInfo.create(session);
+        SessionInfo info = SessionInfo.createTimelineEntry(session);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
         assertNull(node.get("minutesToComplete"));
@@ -57,7 +75,7 @@ public class SessionInfoTest extends Mockito {
         Session session = SessionTest.createValidSession();
         session.getAssessments().get(0).setMinutesToComplete(null);
         
-        SessionInfo info = SessionInfo.create(session);
+        SessionInfo info = SessionInfo.createTimelineEntry(session);
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
         assertEquals(node.get("minutesToComplete").intValue(), 5);
@@ -65,7 +83,7 @@ public class SessionInfoTest extends Mockito {
 
     @Test
     public void serializationHandlesNulls() {
-        SessionInfo info = SessionInfo.create(new Session());
+        SessionInfo info = SessionInfo.createTimelineEntry(new Session());
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(info);
         assertEquals(node.get("timeWindowGuids").size(), 0);

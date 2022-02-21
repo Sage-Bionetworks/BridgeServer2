@@ -10,7 +10,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import org.joda.time.DateTime;
-
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.JsonNodeAttributeConverter;
 import org.sagebionetworks.bridge.models.BridgeEntity;
@@ -48,6 +47,8 @@ public class AdherenceRecord implements BridgeEntity {
     private JsonNode clientData;
     private String clientTimeZone;
     private boolean declined;
+    private String sessionGuid;
+    private String assessmentGuid;
     
     public String getAppId() {
         return appId;
@@ -91,12 +92,24 @@ public class AdherenceRecord implements BridgeEntity {
     public void setUploadedOn(DateTime uploadedOn) {
         this.uploadedOn = uploadedOn;
     }
+    /**
+     * Persistent activities can be done more than once, and are only differentiated by their
+     * start times, while other activities can only be done once in a time stream, so we use
+     * the startedOn timestamp for persistent records and the eventTimestamp for other records.
+     * This is set on all updates and is not exposed through the API, and it forms part of 
+     * the record’s primary key.
+     */
     public DateTime getInstanceTimestamp() {
         return instanceTimestamp;
     }
     public void setInstanceTimestamp(DateTime instanceTimestamp) {
         this.instanceTimestamp = instanceTimestamp;
     }
+    /**
+     * The eventTimestamp is reported in the clientTimeZone of AdherenceRecord, and not the 
+     * underlying event itself. This is a limitation of how we convert events into a map,
+     * at least for now.
+     */
     public DateTime getEventTimestamp() {
         return eventTimestamp;
     }
@@ -123,5 +136,17 @@ public class AdherenceRecord implements BridgeEntity {
     }
     public void setDeclined(boolean declined) {
         this.declined = declined;
+    }
+    public String getSessionGuid() {
+        return sessionGuid;
+    }
+    public void setSessionGuid(String sessionGuid) {
+        this.sessionGuid = sessionGuid;
+    }
+    public String getAssessmentGuid() {
+        return assessmentGuid;
+    }
+    public void setAssessmentGuid(String assessmentGuid) {
+        this.assessmentGuid = assessmentGuid;
     }
 }

@@ -697,7 +697,6 @@ public class TestUtils {
         record.setClientTimeZone("America/Los_Angeles");
         record.setStartedOn(MODIFIED_ON);
         record.setInstanceGuid(instanceGuid);
-        record.setClientTimeZone("America/Los_Angeles");
         return record;
     }
 
