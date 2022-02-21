@@ -82,14 +82,11 @@ public class Schedule2Controller extends BaseController {
         int status = (study.getScheduleGuid() == null) ? 201: 200;
         Schedule2 retValue = service.createOrUpdateStudySchedule(study, schedule);
         
-        cacheProvider.removeObject(CacheKey.etag(Timeline.class, session.getAppId(), studyId));
-        
         return ResponseEntity.status(status).body(retValue);
     }
     
-    @EtagSupport({"appId", "studyId"})
     @GetMapping("/v5/studies/{studyId}/timeline")
-    public Timeline getTimeline(@PathVariable String studyId) {
+    public Timeline     (@PathVariable String studyId) {
         UserSession session = getAdministrativeSession();
         
         Study study = studyService.getStudy(session.getAppId(), studyId, true);
