@@ -43,7 +43,6 @@ import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
-import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyPhase;
 import org.sagebionetworks.bridge.validators.StudyValidator;
@@ -90,7 +89,8 @@ public class StudyService {
         
         List<String> studyIds = studyDao.getStudiesUsingSchedule(appId, scheduleGuid);
         for (String studyId : studyIds) {
-            cacheProvider.removeObject(CacheKey.etag(Timeline.class, appId, studyId));
+            CacheKey cacheKey = CacheKey.etag(Schedule2.class, appId, studyId);
+            cacheProvider.removeObject(cacheKey);
         }
         studyDao.removeScheduleFromStudies(appId, scheduleGuid);
     }
@@ -362,8 +362,6 @@ public class StudyService {
         studyDao.updateStudy(study);
         
         cacheProvider.removeObject(CacheKey.publicStudy(appId, studyId));
-        cacheProvider.removeObject(CacheKey.etag(Study.class, appId, studyId));
-        
         return study;
     }
     

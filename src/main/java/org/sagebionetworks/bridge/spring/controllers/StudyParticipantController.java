@@ -71,6 +71,7 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule.ParticipantSchedule;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
@@ -85,6 +86,7 @@ import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
 import org.sagebionetworks.bridge.spring.util.EtagSupport;
+import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
 import org.sagebionetworks.bridge.services.AdherenceService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
@@ -173,7 +175,9 @@ public class StudyParticipantController extends BaseController {
         return DateTime.now();
     }
     
-    @EtagSupport({"appId", "studyId"})
+    @EtagSupport({
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"})
+    })
     @GetMapping("/v5/studies/{studyId}/participants/self/timeline")
     public ResponseEntity<Timeline> getTimelineForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -241,7 +245,9 @@ public class StudyParticipantController extends BaseController {
         return PREPARING_ROSTER_MSG;
     }
     
-    @EtagSupport({"appId", "studyId"})
+    @EtagSupport({
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"})
+    })
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/timeline")
     public Timeline getTimelineForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
@@ -258,6 +264,11 @@ public class StudyParticipantController extends BaseController {
         return scheduleService.getTimelineForSchedule(session.getAppId(), study.getScheduleGuid());
     }
     
+    @EtagSupport({
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"}),
+        @EtagCacheKey(model=StudyActivityEvent.class, keys={"userId"}),
+        @EtagCacheKey(model=AdherenceRecord.class, keys={"userId"})
+    })
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/schedule")
     public ParticipantSchedule getParticipantScheduleForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
@@ -269,6 +280,12 @@ public class StudyParticipantController extends BaseController {
         return adherenceService.getParticipantSchedule(session.getAppId(), studyId, account);
     }
     
+    // NOTE: time zone needs to be removed, it makes it impossible to cache this effectively.
+    @EtagSupport({
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"}),
+        @EtagCacheKey(model=StudyActivityEvent.class, keys={"userId"}),
+        @EtagCacheKey(model=AdherenceRecord.class, keys={"userId"})
+    })
     @GetMapping("/v5/studies/{studyId}/participants/self/schedule")
     public ParticipantSchedule getParticipantScheduleForSelf(@PathVariable String studyId, 
             @RequestParam(required = false) String clientTimeZone) {

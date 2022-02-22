@@ -61,9 +61,9 @@ public class Schedule2Service {
     
     private StudyService studyService;
     
-    private CacheProvider cacheProvider;
-    
     private Schedule2Dao dao;
+    
+    private CacheProvider cacheProvider;
     
     @Autowired
     final void setOrganizationService(OrganizationService organizationService) {
@@ -76,13 +76,13 @@ public class Schedule2Service {
     }
     
     @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) { 
-        this.cacheProvider = cacheProvider;
+    final void setScheduleDao(Schedule2Dao dao) {
+        this.dao = dao;
     }
     
     @Autowired
-    final void setScheduleDao(Schedule2Dao dao) {
-        this.dao = dao;
+    final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
     }
     
     DateTime getCreatedOn() {
@@ -200,8 +200,6 @@ public class Schedule2Service {
         study.setScheduleGuid(schedule.getGuid());
         studyService.updateStudy(schedule.getAppId(), study);
         
-        cacheProvider.removeObject(CacheKey.etag(Study.class, study.getAppId(), study.getIdentifier()));
-        
         return schedule;
     }
     
@@ -244,7 +242,12 @@ public class Schedule2Service {
         
         Validate.entityThrowingException(INSTANCE, schedule);
         
-        return dao.createSchedule(schedule);
+        Schedule2 updatedSchedule = dao.createSchedule(schedule);
+
+        CacheKey cacheKey = CacheKey.etag(Schedule2.class, study.getAppId(), study.getIdentifier());
+        cacheProvider.setObject(cacheKey, updatedSchedule.getModifiedOn());
+        
+        return updatedSchedule;
     }
     
     /**
@@ -274,7 +277,12 @@ public class Schedule2Service {
 
         Validate.entityThrowingException(INSTANCE, schedule);
         
-        return dao.updateSchedule(schedule);
+        Schedule2 updatedSchedule = dao.updateSchedule(schedule);
+        
+        CacheKey cacheKey = CacheKey.etag(Schedule2.class, study.getAppId(), study.getIdentifier());
+        cacheProvider.setObject(cacheKey, updatedSchedule.getModifiedOn());
+
+        return updatedSchedule;
     }
     
     /**
@@ -294,6 +302,10 @@ public class Schedule2Service {
         }
         existing.setPublished(true);
         existing.setModifiedOn(getModifiedOn());
+        
+        // Don't really need to update the etag caching timestamp as the schedule
+        // itself doesn't change in this call.
+        
         return dao.updateSchedule(existing);
     }
     
@@ -311,6 +323,9 @@ public class Schedule2Service {
             throw new EntityNotFoundException(Schedule2.class);
         }
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
+        
+        studyService.removeScheduleFromStudies(appId, guid);
+        
         dao.deleteSchedule(existing);
     }
     
@@ -328,8 +343,6 @@ public class Schedule2Service {
         
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
         
-        // TODO: We need etag removal support here which means we need to know the studies
-        // that use this schedule.
         studyService.removeScheduleFromStudies(appId, guid);
         
         dao.deleteSchedulePermanently(existing);

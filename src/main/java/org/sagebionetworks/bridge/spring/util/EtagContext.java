@@ -16,7 +16,7 @@ import org.aspectj.lang.reflect.MethodSignature;
 public class EtagContext {
     
     private final Class<?> model;
-    private final List<String> cacheKeys;
+    private final List<EtagCacheKey> cacheKeys;
     private final Map<String,Object> argumentValues;
 
     public EtagContext(ProceedingJoinPoint joinPoint) {
@@ -38,7 +38,7 @@ public class EtagContext {
     public Class<?> getModel() {
         return model;
     }
-    public List<String> getCacheKeys() {
+    public List<EtagCacheKey> getCacheKeys() {
         return cacheKeys;
     }
     public Map<String,Object> getArgValues() {

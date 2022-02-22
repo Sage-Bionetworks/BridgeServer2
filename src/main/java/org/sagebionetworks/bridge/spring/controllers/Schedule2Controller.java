@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.StatusMessage;
@@ -32,6 +31,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.spring.util.EtagSupport;
+import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
 
 @CrossOrigin
 @RestController
@@ -54,6 +54,9 @@ public class Schedule2Controller extends BaseController {
         this.studyService = studyService;
     }
     
+    @EtagSupport({
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"})
+    })
     @GetMapping("/v5/studies/{studyId}/schedule")
     public Schedule2 getSchedule(@PathVariable String studyId) {
         UserSession session = getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
@@ -85,8 +88,11 @@ public class Schedule2Controller extends BaseController {
         return ResponseEntity.status(status).body(retValue);
     }
     
+    @EtagSupport({
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"})
+    })
     @GetMapping("/v5/studies/{studyId}/timeline")
-    public Timeline     (@PathVariable String studyId) {
+    public Timeline getTimeline(@PathVariable String studyId) {
         UserSession session = getAdministrativeSession();
         
         Study study = studyService.getStudy(session.getAppId(), studyId, true);

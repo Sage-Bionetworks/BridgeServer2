@@ -18,5 +18,5 @@ public @interface EtagSupport {
      * fulfill one of these key values, then the ETag implementation will throw an 
      * IllegalArgumentException.
      */
-    String[] value() default {};
+    EtagCacheKey[] value() default {};
 }

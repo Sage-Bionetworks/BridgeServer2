@@ -65,6 +65,8 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -113,6 +115,9 @@ public class AdherenceServiceTest extends Mockito {
     @Mock
     Schedule2Service mockScheduleService;
     
+    @Mock
+    CacheProvider mockCacheProvider;
+    
     @Captor
     ArgumentCaptor<AdherenceRecordsSearch> searchCaptor;
     
@@ -158,6 +163,9 @@ public class AdherenceServiceTest extends Mockito {
         
         // Nothing is finished, nothing is published.
         verify(mockStudyActivityEventService, never()).publishEvent(any(), eq(false), eq(true));
+        
+        CacheKey key = CacheKey.etag(AdherenceRecord.class, TEST_USER_ID);
+        verify(mockCacheProvider).setObject(key, MODIFIED_ON);
     }
     
     @Test(expectedExceptions = BadRequestException.class)
@@ -205,6 +213,9 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(event.getUserId(), TEST_USER_ID);
         assertEquals(event.getEventId(), "session:sessionGuid:finished");
         assertEquals(event.getTimestamp(), FINISHED_ON); 
+        
+        CacheKey key = CacheKey.etag(AdherenceRecord.class, TEST_USER_ID);
+        verify(mockCacheProvider).setObject(key, MODIFIED_ON);
     }
 
     @Test
@@ -230,6 +241,9 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(event.getUserId(), TEST_USER_ID);
         assertEquals(event.getEventId(), "assessment:idBBB:finished");
         assertEquals(event.getTimestamp(), FINISHED_ON); 
+        
+        CacheKey key = CacheKey.etag(AdherenceRecord.class, TEST_USER_ID);
+        verify(mockCacheProvider).setObject(key, MODIFIED_ON);
     }
     
     @Test
@@ -522,6 +536,9 @@ public class AdherenceServiceTest extends Mockito {
         // based on the assessment records, any value submitted for session is ignored
         assertEquals(session.getFinishedOn(), FINISHED_ON);
         assertFalse(session.isDeclined());
+        
+        CacheKey key = CacheKey.etag(AdherenceRecord.class, TEST_USER_ID);
+        verify(mockCacheProvider).setObject(key, MODIFIED_ON);
     }
     
     @Test
@@ -725,6 +742,9 @@ public class AdherenceServiceTest extends Mockito {
 
         verify(mockRecordDao).deleteAdherenceRecordPermanently(eq(record));
         assertEquals(record.getInstanceTimestamp(), record.getStartedOn());
+        
+        CacheKey key = CacheKey.etag(AdherenceRecord.class, TEST_USER_ID);
+        verify(mockCacheProvider).removeObject(key);
     }
 
     @Test
@@ -742,6 +762,9 @@ public class AdherenceServiceTest extends Mockito {
 
         verify(mockRecordDao).deleteAdherenceRecordPermanently(eq(record));
         assertEquals(record.getInstanceTimestamp(), record.getEventTimestamp());
+        
+        CacheKey key = CacheKey.etag(AdherenceRecord.class, TEST_USER_ID);
+        verify(mockCacheProvider).removeObject(key);
     }
 
     @Test

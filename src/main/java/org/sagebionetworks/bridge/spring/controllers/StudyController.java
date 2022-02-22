@@ -88,7 +88,6 @@ public class StudyController extends BaseController {
         return service.createStudy(session.getAppId(), study, true);
     }
 
-    @EtagSupport({"appId", "id"})
     @GetMapping(path = {"/v5/studies/{id}", "/v3/substudies/{id}"})
     public Study getStudy(@PathVariable String id) {
         UserSession session = getAuthenticatedSession();
@@ -108,8 +107,6 @@ public class StudyController extends BaseController {
         Study study = parseJson(Study.class);
         study.setIdentifier(id);
         
-        cacheProvider.removeObject(CacheKey.etag(Study.class, session.getAppId(), id));
-        
         return service.updateStudy(session.getAppId(), study);
     }
 
@@ -123,7 +120,6 @@ public class StudyController extends BaseController {
         } else {
             service.deleteStudy(session.getAppId(), id);
         }
-        cacheProvider.removeObject(CacheKey.etag(Study.class, session.getAppId(), id));
         return DELETED_MSG;
     }
     
@@ -146,8 +142,6 @@ public class StudyController extends BaseController {
             metadata = fileService.createFile(session.getAppId(), metadata);
             study.setLogoGuid(metadata.getGuid());
             service.updateStudy(session.getAppId(), study);
-            
-            cacheProvider.removeObject(CacheKey.etag(Study.class, session.getAppId(), id));
         }
         
         FileRevision revision = parseJson(FileRevision.class);
@@ -176,8 +170,6 @@ public class StudyController extends BaseController {
         
         study.setStudyLogoUrl(revision.getDownloadURL());
         service.updateStudy(session.getAppId(), study);
-        
-        cacheProvider.removeObject(CacheKey.etag(Study.class, session.getAppId(), id));
         
         return study;
     }

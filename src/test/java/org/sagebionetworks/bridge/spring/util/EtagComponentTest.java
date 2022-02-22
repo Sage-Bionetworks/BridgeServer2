@@ -1,6 +1,10 @@
 package org.sagebionetworks.bridge.spring.util;
 
+import static com.google.common.net.HttpHeaders.IF_NONE_MATCH;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
+import static org.sagebionetworks.bridge.TestConstants.ACCOUNT_ID;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
+import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
@@ -8,15 +12,16 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNull;
 
+import java.lang.annotation.Annotation;
 import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.aspectj.lang.ProceedingJoinPoint;
+import org.joda.time.DateTime;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -24,9 +29,12 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
+import org.sagebionetworks.bridge.models.organizations.Organization;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
+import org.sagebionetworks.bridge.models.studies.Study;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -36,10 +44,7 @@ import com.google.common.net.HttpHeaders;
 
 public class EtagComponentTest extends Mockito {
     
-    private static final String TEST_OTHER_STUDY_ID = "some-other-study";
-    private static final String TEST_ETAG_HASH = "ABCD";
-    private static final String TEST_SESSION_TOKEN = "session-token";
-    private static final Timeline TIMELINE = new Timeline.Builder().build();
+    private static final String ETAG = "45544147";
 
     @Mock
     CacheProvider mockCacheProvider;
@@ -61,261 +66,233 @@ public class EtagComponentTest extends Mockito {
     
     @Mock
     EtagContext mockContext;
-    
+
     @InjectMocks
     @Spy
     EtagComponent component;
 
     @BeforeMethod
-    public void beforeMethod() {
+    public void beforeMethod() throws Throwable {
         MockitoAnnotations.initMocks(this);
         
         doReturn(mockRequest).when(component).request();
         doReturn(mockResponse).when(component).response();
-        doReturn(Timeline.class).when(mockContext).getModel();
         doReturn(mockContext).when(component).context(mockJoinPoint);
+        
+        EtagCacheKey studyKeyAnn = new EtagCacheKey() {
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return EtagCacheKey.class;
+            }
+            @Override
+            public Class<?> model() {
+                return Study.class;
+            }
+            @Override
+            public String[] keys() {
+                return new String[] {"appId", "studyId"};
+            }
+        };
+        EtagCacheKey userKeyAnn = new EtagCacheKey() {
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return EtagCacheKey.class;
+            }
+            @Override
+            public Class<?> model() {
+                return Account.class;
+            }
+            @Override
+            public String[] keys() {
+                return new String[] {"userId"};
+            }
+        };
+        doReturn(Timeline.class).when(mockContext).getModel();
+        doReturn(ImmutableList.of(studyKeyAnn, userKeyAnn)).when(mockContext).getCacheKeys();
+        doReturn(ImmutableMap.of("studyId", TEST_STUDY_ID)).when(mockContext).getArgValues();
+        when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
+        when(mockSession.getId()).thenReturn(TEST_USER_ID);
+        when(mockSession.getParticipant()).thenReturn(new StudyParticipant.Builder()
+                .withOrgMembership(TEST_ORG_ID).build());
+        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn("ABC");
+        when(mockCacheProvider.getUserSession("ABC")).thenReturn(mockSession);
+        
+        CacheKey studyKey = CacheKey.etag(Study.class, TEST_APP_ID, TEST_STUDY_ID);
+        when(mockCacheProvider.getObject(studyKey, DateTime.class)).thenReturn(CREATED_ON);
+        CacheKey userKey = CacheKey.etag(Account.class, TEST_USER_ID);
+        when(mockCacheProvider.getObject(userKey, DateTime.class)).thenReturn(MODIFIED_ON);
+        
+        String stringToHash = CREATED_ON.toString() + ":" + MODIFIED_ON.toString();
+        when(mockMd5DigestUtils.digest(stringToHash.getBytes())).thenReturn("ETAG".getBytes());
+        
+        when(mockJoinPoint.proceed()).thenReturn(ACCOUNT_ID);
     }
     
     @Test
-    public void testCacheHit() throws Throwable {
-        // Mock the request
-        when(mockRequest.getHeader(HttpHeaders.IF_NONE_MATCH)).thenReturn(TEST_ETAG_HASH);
+    public void cacheHit() throws Throwable {
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
         
-        // Mock the cache provider
-        CacheKey key = CacheKey.etag(Timeline.class, new String[] {TEST_APP_ID, TEST_STUDY_ID});
-        when(mockCacheProvider.getObject(key, String.class)).thenReturn(TEST_ETAG_HASH);
-
-        // Mock the session
-        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(TEST_SESSION_TOKEN);
-        when(mockCacheProvider.getUserSession(TEST_SESSION_TOKEN)).thenReturn(mockSession);
-        when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
-        
-        // In this test, one value will come from the method arguments, and one will come 
-        // from the user’s session.
-        when(mockContext.getCacheKeys()).thenReturn(ImmutableList.of("appId", "studyId"));
-        when(mockContext.getArgValues()).thenReturn(ImmutableMap.of("studyId", TEST_STUDY_ID));
-
         Object retValue = component.checkEtag(mockJoinPoint);
+        
         assertNull(retValue);
+        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
         verify(mockResponse).setStatus(304);
     }
+
+    @Test
+    public void cacheMiss() throws Throwable {
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn("SOME-OTHER-ETAG");
+        
+        Object retValue = component.checkEtag(mockJoinPoint);
+        
+        assertEquals(retValue, ACCOUNT_ID);
+        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
+        verify(mockResponse, never()).setStatus(304);
+    }
     
     @Test
-    public void testCacheMissNoHeader() throws Throwable {
-        // Mock the session
-        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(TEST_SESSION_TOKEN);
-        when(mockCacheProvider.getUserSession(TEST_SESSION_TOKEN)).thenReturn(mockSession);
-        when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
-        
-        // In this test, one value will come from the method arguments, and one will come 
-        // from the user’s session.
-        when(mockContext.getCacheKeys()).thenReturn(ImmutableList.of("appId", "studyId"));
-        when(mockContext.getArgValues()).thenReturn(ImmutableMap.of("studyId", TEST_OTHER_STUDY_ID));
-        
-        // mock join point return value and the hash calculated from it
-        byte[] hash = mockMethodCall();
-
+    public void cacheMiss_noEtag() throws Throwable {
         Object retValue = component.checkEtag(mockJoinPoint);
-        assertEquals(retValue, TIMELINE);
         
-        CacheKey newKey = CacheKey.etag(Timeline.class, TEST_APP_ID, TEST_OTHER_STUDY_ID);
-        String newHash = Hex.encodeHexString(hash);
-        verify(mockResponse).addHeader(HttpHeaders.ETAG, newHash);
-        verify(mockCacheProvider).setObject(newKey, newHash);
-    }
-
-    @Test
-    public void testCacheMissNoCacheEntry() throws Throwable {
-        // Mock the request
-        when(mockRequest.getHeader(HttpHeaders.IF_NONE_MATCH)).thenReturn(TEST_ETAG_HASH);
-
-        // Mock the session
-        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(TEST_SESSION_TOKEN);
-        when(mockCacheProvider.getUserSession(TEST_SESSION_TOKEN)).thenReturn(mockSession);
-        when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
-        
-        // In this test, one value will come from the method arguments, and one will come 
-        // from the user’s session.
-        when(mockContext.getCacheKeys()).thenReturn(ImmutableList.of("appId", "studyId"));
-        when(mockContext.getArgValues()).thenReturn(ImmutableMap.of("studyId", TEST_OTHER_STUDY_ID));
-        
-        // mock join point return value and the hash calculated from it
-        byte[] hash = mockMethodCall();
-
-        Object retValue = component.checkEtag(mockJoinPoint);
-        assertEquals(retValue, TIMELINE);
-        
-        CacheKey newKey = CacheKey.etag(Timeline.class, TEST_APP_ID, TEST_OTHER_STUDY_ID);
-        String newHash = Hex.encodeHexString(hash);
-        verify(mockResponse).addHeader(HttpHeaders.ETAG, newHash);
-        verify(mockCacheProvider).setObject(newKey, newHash);
+        assertEquals(retValue, ACCOUNT_ID);
+        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
+        verify(mockResponse, never()).setStatus(304);
     }
     
     @Test(expectedExceptions = IllegalArgumentException.class,
             expectedExceptionsMessageRegExp = "EtagSupport: no value for key: appId")
     public void missingSessionThrowsError() throws Throwable {
-        // Mock the request
-        when(mockRequest.getHeader(HttpHeaders.IF_NONE_MATCH)).thenReturn(TEST_ETAG_HASH);
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
+        when(mockCacheProvider.getUserSession("ABC")).thenReturn(null);
         
-        // Mock the cache provider
-        CacheKey key = CacheKey.etag(Timeline.class, new String[] {TEST_APP_ID, TEST_STUDY_ID});
-        when(mockCacheProvider.getObject(key, String.class)).thenReturn(TEST_ETAG_HASH);
+        Object retValue = component.checkEtag(mockJoinPoint);
         
-        // In this test, one value will come from the method arguments, and one will come 
-        // from the user’s session.
-        when(mockContext.getCacheKeys()).thenReturn(ImmutableList.of("appId", "studyId"));
-        when(mockContext.getArgValues()).thenReturn(ImmutableMap.of("studyId", TEST_STUDY_ID));
-
-        component.checkEtag(mockJoinPoint);
+        assertNull(retValue);
+        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
+        verify(mockResponse).setStatus(304);
     }
 
     @Test
     public void missingSessionOkWhenNotNeeded() throws Throwable {
-        // Mock the request
-        when(mockRequest.getHeader(HttpHeaders.IF_NONE_MATCH)).thenReturn(TEST_ETAG_HASH);
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
+        when(mockCacheProvider.getUserSession(any())).thenReturn(null);
         
-        // There is no session, but the cache key doesn't need anything from it. This is ok.
-        when(mockContext.getCacheKeys()).thenReturn(ImmutableList.of("studyId"));
-        when(mockContext.getArgValues()).thenReturn(ImmutableMap.of("studyId", TEST_STUDY_ID));
-
-        // mock join point return value and the hash calculated from it
-        byte[] hash = mockMethodCall();
-
+        CacheKey studyKey = CacheKey.etag(Study.class, TEST_STUDY_ID);
+        when(mockCacheProvider.getObject(studyKey, DateTime.class)).thenReturn(CREATED_ON);
+        
+        String stringToHash = CREATED_ON.toString();
+        when(mockMd5DigestUtils.digest(stringToHash.getBytes())).thenReturn("ETAG".getBytes());
+        
+        // Study is in the arguments, which is to say, it was provided in the 
+        // method wrapped by this aspect.
+        EtagCacheKey studyKeyAnn = new EtagCacheKey() {
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return EtagCacheKey.class;
+            }
+            @Override
+            public Class<?> model() {
+                return Study.class;
+            }
+            @Override
+            public String[] keys() {
+                return new String[] {"studyId"};
+            }
+        };
+        doReturn(ImmutableList.of(studyKeyAnn)).when(mockContext).getCacheKeys();
+        
         Object retValue = component.checkEtag(mockJoinPoint);
-        assertEquals(retValue, TIMELINE);
         
-        CacheKey newKey = CacheKey.etag(Timeline.class, TEST_STUDY_ID);
-        String newHash = Hex.encodeHexString(hash);
-        verify(mockResponse).addHeader(HttpHeaders.ETAG, newHash);
-        verify(mockCacheProvider).setObject(newKey, newHash);
+        assertNull(retValue);
+        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
+        verify(mockResponse).setStatus(304);
     }
-    
+
     @Test
     public void methodParamsOverrideSessionValues() throws Throwable {
-        // Mock the request
-        when(mockRequest.getHeader(HttpHeaders.IF_NONE_MATCH)).thenReturn(TEST_ETAG_HASH);
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
         
-        // Mock the cache provider
-        CacheKey key = CacheKey.etag(Timeline.class, new String[] {TEST_APP_ID, TEST_USER_ID});
-        when(mockCacheProvider.getObject(key, String.class)).thenReturn(TEST_ETAG_HASH);
-
-        // Mock the session
-        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(TEST_SESSION_TOKEN);
-        when(mockCacheProvider.getUserSession(TEST_SESSION_TOKEN)).thenReturn(mockSession);
-        when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
-        when(mockSession.getId()).thenReturn("some-other-id");
+        when(mockSession.getId()).thenReturn("this-is-not-the-right-value");
+        doReturn(ImmutableMap.of("studyId", TEST_STUDY_ID, "userId", TEST_USER_ID)).when(mockContext).getArgValues();
         
-        // In this test, one value will come from the method arguments, and one will come 
-        // from the user’s session.
-        when(mockContext.getCacheKeys()).thenReturn(ImmutableList.of("appId", "userId"));
-        when(mockContext.getArgValues()).thenReturn(ImmutableMap.of("userId", TEST_USER_ID));
-
         Object retValue = component.checkEtag(mockJoinPoint);
-        assertNull(retValue);
-        verify(mockResponse).setStatus(304);
         
-        verify(mockSession, never()).getId(); // not needed
+        assertNull(retValue);
+        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
+        verify(mockResponse).setStatus(304);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class,
             expectedExceptionsMessageRegExp = "EtagSupport: no value for key: studyId")
     public void nullArgThrowsException() throws Throwable {
-        // Mock the session
-        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(TEST_SESSION_TOKEN);
-        when(mockCacheProvider.getUserSession(TEST_SESSION_TOKEN)).thenReturn(mockSession);
-        when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
         
-        when(mockContext.getCacheKeys()).thenReturn(ImmutableList.of("appId", "studyId"));
-        Map<String,Object> map = new HashMap<>();
-        map.put("studyId", null);
-        when(mockContext.getArgValues()).thenReturn(map);
-
+        doReturn(ImmutableMap.of()).when(mockContext).getArgValues();
+        
         component.checkEtag(mockJoinPoint);
     }
     
-    // appIdRetrievedFromSession is tested by testCacheHit
+    @Test
+    public void cacheMiss_timestampMissing() throws Throwable {
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
+        
+        CacheKey userKey = CacheKey.etag(Account.class, TEST_USER_ID);
+        when(mockCacheProvider.getObject(userKey, DateTime.class)).thenReturn(null);
+        
+        Object retValue = component.checkEtag(mockJoinPoint);
+        assertEquals(retValue, ACCOUNT_ID);
+    }
+    
+    // retrieving appId and userId are tested in the default set up for these tests.
     
     @Test
-    public void userIdRetrievedFromSession() throws Throwable {
-        // Mock the request
-        when(mockRequest.getHeader(HttpHeaders.IF_NONE_MATCH)).thenReturn(TEST_ETAG_HASH);
+    public void orgIdRetrievedFromSession() throws Throwable {
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
         
-        // Mock the cache provider
-        CacheKey key = CacheKey.etag(Timeline.class, new String[] {TEST_APP_ID, TEST_USER_ID});
-        when(mockCacheProvider.getObject(key, String.class)).thenReturn(TEST_ETAG_HASH);
-
-        // Mock the session
-        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(TEST_SESSION_TOKEN);
-        when(mockCacheProvider.getUserSession(TEST_SESSION_TOKEN)).thenReturn(mockSession);
-        when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
-        when(mockSession.getId()).thenReturn(TEST_USER_ID);
+        EtagCacheKey orgKeyAnn = new EtagCacheKey() {
+            @Override
+            public Class<? extends Annotation> annotationType() {
+                return EtagCacheKey.class;
+            }
+            @Override
+            public Class<?> model() {
+                return Organization.class;
+            }
+            @Override
+            public String[] keys() {
+                return new String[] {"orgId"};
+            }
+        };
+        doReturn(ImmutableList.of(orgKeyAnn)).when(mockContext).getCacheKeys();
         
-        // In this test, one value will come from the method arguments, and one will come 
-        // from the user’s session.
-        when(mockContext.getCacheKeys()).thenReturn(ImmutableList.of("appId", "userId"));
-        when(mockContext.getArgValues()).thenReturn(ImmutableMap.of("studyId", TEST_USER_ID));
-
+        CacheKey orgKey = CacheKey.etag(Organization.class, TEST_ORG_ID);
+        when(mockCacheProvider.getObject(orgKey, DateTime.class)).thenReturn(MODIFIED_ON);
+        
+        String stringToHash = MODIFIED_ON.toString();
+        when(mockMd5DigestUtils.digest(stringToHash.getBytes())).thenReturn("ETAG".getBytes());
+        
         Object retValue = component.checkEtag(mockJoinPoint);
+        
         assertNull(retValue);
-        verify(mockResponse).setStatus(304);
+        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
+        verify(mockResponse).setStatus(304);        
     }
     
-    @Test
-    public void orgUserIdRetrievedFromSession() throws Throwable {
-        // Mock the request
-        when(mockRequest.getHeader(HttpHeaders.IF_NONE_MATCH)).thenReturn(TEST_ETAG_HASH);
+    // This will probably never trigger in reality, since the values are usually path parameters
+    // in the controller. But it's logically possible.
+    @Test(expectedExceptions = IllegalArgumentException.class,
+        expectedExceptionsMessageRegExp = "EtagSupport: no value for key: studyId")
+    public void shouldHaveProvidedArgumentValueButDidNot() throws Throwable {
+        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
         
-        // Mock the cache provider
-        CacheKey key = CacheKey.etag(Timeline.class, new String[] {TEST_APP_ID, TEST_ORG_ID});
-        when(mockCacheProvider.getObject(key, String.class)).thenReturn(TEST_ETAG_HASH);
-
-        // Mock the session
-        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(TEST_SESSION_TOKEN);
-        when(mockCacheProvider.getUserSession(TEST_SESSION_TOKEN)).thenReturn(mockSession);
-        when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
-        when(mockSession.getParticipant()).thenReturn(
-                new StudyParticipant.Builder().withOrgMembership(TEST_ORG_ID).build());
+        Map<String, Object> map = new HashMap<>();
+        map.put("studyId", null);
+        doReturn(map).when(mockContext).getArgValues();
         
-        // In this test, one value will come from the method arguments, and one will come 
-        // from the user’s session.
-        when(mockContext.getCacheKeys()).thenReturn(ImmutableList.of("appId", "orgId"));
-        when(mockContext.getArgValues()).thenReturn(ImmutableMap.of("studyId", TEST_ORG_ID));
-
         Object retValue = component.checkEtag(mockJoinPoint);
+        
         assertNull(retValue);
+        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
         verify(mockResponse).setStatus(304);
-    }
-    
-    @Test
-    public void noEtagSkipsCaching() throws Throwable {
-        // Mock the session
-        when(mockRequest.getHeader(SESSION_TOKEN_HEADER)).thenReturn(TEST_SESSION_TOKEN);
-        when(mockCacheProvider.getUserSession(TEST_SESSION_TOKEN)).thenReturn(mockSession);
-        when(mockSession.getAppId()).thenReturn(TEST_APP_ID);
-        
-        // In this test, one value will come from the method arguments, and one will come 
-        // from the user’s session.
-        when(mockContext.getCacheKeys()).thenReturn(ImmutableList.of("appId", "studyId"));
-        when(mockContext.getArgValues()).thenReturn(ImmutableMap.of("studyId", TEST_STUDY_ID));
-        
-        byte[] hash = mockMethodCall();
-
-        Object retValue = component.checkEtag(mockJoinPoint);
-        assertEquals(retValue, TIMELINE);
-        
-        CacheKey newKey = CacheKey.etag(Timeline.class, TEST_APP_ID, TEST_STUDY_ID);
-        String newHash = Hex.encodeHexString(hash);
-        verify(mockResponse).addHeader(HttpHeaders.ETAG, newHash);
-        verify(mockCacheProvider).setObject(newKey, newHash);
-        
-        verify(mockCacheProvider, never()).getObject(any(), eq(String.class));
-    }
-    
-    private byte[] mockMethodCall() throws Throwable { 
-        // mock join point return value and the hash calculated from it
-        when(mockJoinPoint.proceed()).thenReturn(TIMELINE);
-        byte[] hash = "EFGH".getBytes();
-        when(mockMd5DigestUtils.digest((byte[])any())).thenReturn(hash);
-        return hash;
     }
 }
