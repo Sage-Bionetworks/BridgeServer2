@@ -90,7 +90,6 @@ public class StudyService {
         List<String> studyIds = studyDao.getStudyIdsUsingSchedule(appId, scheduleGuid);
         for (String studyId : studyIds) {
             CacheKey cacheKey = CacheKey.etag(Schedule2.class, appId, studyId);
-            System.out.println("############ DELETING CACHE KEY: " + cacheKey);
             cacheProvider.removeObject(cacheKey);
         }
         studyDao.removeScheduleFromStudies(appId, scheduleGuid);
