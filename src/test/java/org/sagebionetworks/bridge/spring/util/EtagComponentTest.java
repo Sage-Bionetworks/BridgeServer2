@@ -29,6 +29,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
@@ -158,54 +159,11 @@ public class EtagComponentTest extends Mockito {
         verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
         verify(mockResponse, never()).setStatus(304);
     }
-    
-    @Test(expectedExceptions = IllegalArgumentException.class,
-            expectedExceptionsMessageRegExp = "EtagSupport: no value for key: appId")
-    public void missingSessionThrowsError() throws Throwable {
-        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
-        when(mockCacheProvider.getUserSession("ABC")).thenReturn(null);
-        
-        Object retValue = component.checkEtag(mockJoinPoint);
-        
-        assertNull(retValue);
-        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
-        verify(mockResponse).setStatus(304);
-    }
 
-    @Test
-    public void missingSessionOkWhenNotNeeded() throws Throwable {
-        when(mockRequest.getHeader(IF_NONE_MATCH)).thenReturn(ETAG);
+    @Test(expectedExceptions = NotAuthenticatedException.class)
+    public void missingSession_notAuthenticated() throws Throwable {
         when(mockCacheProvider.getUserSession(any())).thenReturn(null);
-        
-        CacheKey studyKey = CacheKey.etag(Study.class, TEST_STUDY_ID);
-        when(mockCacheProvider.getObject(studyKey, DateTime.class)).thenReturn(CREATED_ON);
-        
-        String stringToHash = CREATED_ON.toString();
-        when(mockMd5DigestUtils.digest(stringToHash.getBytes())).thenReturn("ETAG".getBytes());
-        
-        // Study is in the arguments, which is to say, it was provided in the 
-        // method wrapped by this aspect.
-        EtagCacheKey studyKeyAnn = new EtagCacheKey() {
-            @Override
-            public Class<? extends Annotation> annotationType() {
-                return EtagCacheKey.class;
-            }
-            @Override
-            public Class<?> model() {
-                return Study.class;
-            }
-            @Override
-            public String[] keys() {
-                return new String[] {"studyId"};
-            }
-        };
-        doReturn(ImmutableList.of(studyKeyAnn)).when(mockContext).getCacheKeys();
-        
-        Object retValue = component.checkEtag(mockJoinPoint);
-        
-        assertNull(retValue);
-        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
-        verify(mockResponse).setStatus(304);
+        component.checkEtag(mockJoinPoint);
     }
 
     @Test

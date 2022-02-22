@@ -19,6 +19,7 @@ import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
+import org.sagebionetworks.bridge.exceptions.NotAuthenticatedException;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,7 +85,14 @@ public class EtagComponent {
         
         String requestEtag = request.getHeader(IF_NONE_MATCH);
         String sessionToken = request.getHeader(SESSION_TOKEN_HEADER);
-        UserSession session = cacheProvider.getUserSession(sessionToken); // can be null
+        
+        // Because this tag executes before security checks, it requires that the caller be 
+        // authenticated. We can add a flag if we want to use this code on public endpoints 
+        // to skip a check of the session.
+        UserSession session = cacheProvider.getUserSession(sessionToken);
+        if (session == null) {
+            throw new NotAuthenticatedException();
+        }
 
         // Etag can be null (until all dependent objects have cached their timestamps, 
         // or when a dependent object is deleted).
@@ -145,16 +153,14 @@ public class EtagComponent {
         // to look up a field value from the session, no problem. But if it needs the session 
         // to find a value for a key, and the session isn't present, it will throw an exception.
         String value = null;
-        if (session != null) {
-            if (APP_ID_FIELD.equals(fieldName)) {
-                value = session.getAppId();
-            }
-            if (USER_ID_FIELD.equals(fieldName)) {
-                value = session.getId();
-            }
-            if (ORG_ID_FIELD.equals(fieldName)) {
-                value = session.getParticipant().getOrgMembership();
-            }
+        if (APP_ID_FIELD.equals(fieldName)) {
+            value = session.getAppId();
+        }
+        if (USER_ID_FIELD.equals(fieldName)) {
+            value = session.getId();
+        }
+        if (ORG_ID_FIELD.equals(fieldName)) {
+            value = session.getParticipant().getOrgMembership();
         }
         if (value == null) {
             throw new IllegalArgumentException(NO_VALUE_ERROR + fieldName);
