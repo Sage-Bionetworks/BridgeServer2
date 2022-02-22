@@ -38,6 +38,12 @@ public class CacheKeyTest {
     }
     
     @Test
+    public void scheduleModificationTimestamp() {
+        assertEquals(CacheKey.scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID).toString(),
+                TEST_STUDY_ID + ":" + TEST_APP_ID + ":ScheduleModifiedOnByStudy");
+    }
+    
+    @Test
     public void orgSponsoredStudies() {
         assertEquals(CacheKey.orgSponsoredStudies(TEST_APP_ID, TEST_ORG_ID).toString(), 
                 "test-org-id:test-app:OrgSponsoredStudies");

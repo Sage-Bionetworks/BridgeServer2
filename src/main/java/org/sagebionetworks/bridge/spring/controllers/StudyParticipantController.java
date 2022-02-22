@@ -193,14 +193,14 @@ public class StudyParticipantController extends BaseController {
         
         Study study = studyService.getStudy(session.getAppId(), studyId, true);
         DateTime modifiedSince = modifiedSinceHeader();
-        DateTime modifiedOn = modifiedOn(studyId);
+        DateTime modifiedOn = modifiedOn(session.getAppId(), studyId);
         
         if (isUpToDate(modifiedSince, modifiedOn)) {
             return new ResponseEntity<>(NOT_MODIFIED);
         }
         Schedule2 schedule = scheduleService.getScheduleForStudy(session.getAppId(), study)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
-        cacheProvider.setObject(scheduleModificationTimestamp(studyId), schedule.getModifiedOn().toString());
+        cacheProvider.setObject(scheduleModificationTimestamp(session.getAppId(), studyId), schedule.getModifiedOn().toString());
         
         studyActivityEventService.publishEvent(new StudyActivityEvent.Builder()
                 .withAppId(session.getAppId())
@@ -216,9 +216,9 @@ public class StudyParticipantController extends BaseController {
         return getDateTimeOrDefault(request().getHeader(IF_MODIFIED_SINCE), null);
     }
 
-    private DateTime modifiedOn(String studyId) {
+    private DateTime modifiedOn(String appId, String studyId) {
         return getDateTimeOrDefault(cacheProvider.getObject(
-                scheduleModificationTimestamp(studyId), String.class), null);
+                scheduleModificationTimestamp(appId, studyId), String.class), null);
     }
     
     private boolean isUpToDate(DateTime modifiedSince, DateTime modifiedOn) {

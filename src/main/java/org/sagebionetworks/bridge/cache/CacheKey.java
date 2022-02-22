@@ -36,8 +36,8 @@ public final class CacheKey {
     public static final CacheKey publicStudy(String appId, String studyId) {
         return new CacheKey(appId, studyId, "PublicStudy");
     }
-    public static final CacheKey scheduleModificationTimestamp(String studyId) {
-        return new CacheKey(studyId, "ScheduleModifiedOnByStudy");
+    public static final CacheKey scheduleModificationTimestamp(String appId, String studyId) {
+        return new CacheKey(studyId, appId, "ScheduleModifiedOnByStudy");
     }
     public static final CacheKey orgSponsoredStudies(String appId, String orgId) {
         return new CacheKey(orgId, appId, "OrgSponsoredStudies");
@@ -54,7 +54,6 @@ public final class CacheKey {
     public static final CacheKey appConfigList(String appId) {
         return new CacheKey(appId, "AppConfigList");
     }
-
     /**
      * Cache key for mapping a used channel sign-in token to the cached session token, used for when a second channel
      * sign-in call is made within the grace period.
