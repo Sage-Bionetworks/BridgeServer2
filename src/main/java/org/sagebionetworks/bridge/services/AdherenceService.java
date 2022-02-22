@@ -165,8 +165,6 @@ public class AdherenceService {
             recordDao.updateAdherenceRecord(record);
             publishEvent(appId, sessionMeta, record);
         }
-        CacheKey cacheKey = CacheKey.etag(AdherenceRecord.class, userId);
-        cacheProvider.setObject(cacheKey, getDateTime());
     }
     
     protected void updateSessionState(String appId, MetadataContainer container, AdherenceRecord asmt) {
@@ -350,9 +348,6 @@ public class AdherenceService {
                 record.setInstanceTimestamp(record.getEventTimestamp());
             }
             recordDao.deleteAdherenceRecordPermanently(record);
-            
-            CacheKey cacheKey = CacheKey.etag(AdherenceRecord.class, record.getUserId());
-            cacheProvider.removeObject(cacheKey);
         }
     }
     

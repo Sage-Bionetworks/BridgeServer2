@@ -3,8 +3,7 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.participantschedu
 import static java.lang.Boolean.TRUE;
 import static java.util.stream.Collectors.toList;
 
-import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.joda.time.DateTime;
@@ -27,6 +26,14 @@ import com.google.common.collect.Multimap;
 public class ParticipantScheduleGenerator {
     private static final LocalDate EARLIEST_LOCAL_DATE = LocalDate.parse("1900-01-01");
     private static final LocalDate LATEST_LOCAL_DATE = LocalDate.parse("9999-12-31");
+    
+    private static final Comparator<ScheduledSession> SCHEDULED_SESSION_COMPARATOR = (sch1, sch2) -> {
+        int order = sch1.getStartDate().compareTo(sch2.getStartDate());
+        if (order == 0) {
+            return sch1.getStartTime().compareTo(sch2.getStartTime());
+        }
+        return order;
+    };
 
     public static final ParticipantScheduleGenerator INSTANCE = new ParticipantScheduleGenerator();
 
@@ -101,16 +108,14 @@ public class ParticipantScheduleGenerator {
             chronology.put(startDate, builder.build());
         }
 
-        List<LocalDate> sortedDates = Lists.newArrayList(chronology.keySet());
-        Collections.sort(sortedDates);
-        
-        List<ScheduledSession> scheduledSessions = new ArrayList<>();
-        for (LocalDate date : sortedDates) {
-            List<ScheduledSession> sortedSessions = Lists.newArrayList(chronology.get(date));
-            sortedSessions.sort((s1, s2) -> s1.getStartTime().compareTo(s2.getStartTime()));
-            scheduledSessions.addAll(sortedSessions);
+        // chronology.size() is the total number of pairs, not the total number of keys (and thus correct).
+        List<ScheduledSession> scheduledSessions = Lists.newArrayListWithCapacity(chronology.size());
+        for (LocalDate date : chronology.keySet()) {
+            scheduledSessions.addAll(chronology.get(date));
         }
-
+        
+        scheduledSessions.sort(SCHEDULED_SESSION_COMPARATOR);
+        
         DateRange range = null;
         if (earliestDate.isBefore(latestDate)) {
             range = new DateRange(earliestDate, latestDate);

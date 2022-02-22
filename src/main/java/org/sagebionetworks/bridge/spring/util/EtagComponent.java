@@ -93,7 +93,7 @@ public class EtagComponent {
         if (requestEtag != null) {
             if (requestEtag.equals(etag)) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Returning 304 for key: " + etag);
+                    LOG.debug("Returning 304 for etag: " + etag);
                 }
                 response.addHeader(HttpHeaders.ETAG, etag);
                 response.setStatus(304);

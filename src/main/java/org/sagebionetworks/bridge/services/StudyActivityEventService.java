@@ -130,9 +130,6 @@ public class StudyActivityEventService {
 
         if (event.getUpdateType().canDelete(mostRecent, event)) {
             dao.deleteEvent(event);
-            
-            CacheKey cacheKey = CacheKey.etag(StudyActivityEvent.class, event.getUserId());
-            cacheProvider.removeObject(cacheKey);
 
             Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
             Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
@@ -193,9 +190,6 @@ public class StudyActivityEventService {
         List<String> failedEventIds = new ArrayList<>();
         if (event.getUpdateType().canUpdate(mostRecent, event)) {
             dao.publishEvent(event);
-            
-            CacheKey cacheKey = CacheKey.etag(StudyActivityEvent.class, event.getUserId());
-            cacheProvider.setObject(cacheKey, event.getCreatedOn());
         } else {
             failedEventIds.add(event.getEventId());
         }

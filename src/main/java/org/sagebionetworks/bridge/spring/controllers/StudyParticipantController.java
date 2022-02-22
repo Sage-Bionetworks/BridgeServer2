@@ -71,7 +71,6 @@ import org.sagebionetworks.bridge.models.reports.ReportData;
 import org.sagebionetworks.bridge.models.reports.ReportDataKey;
 import org.sagebionetworks.bridge.models.reports.ReportIndex;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
-import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule.ParticipantSchedule;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.studies.Enrollment;
@@ -264,11 +263,7 @@ public class StudyParticipantController extends BaseController {
         return scheduleService.getTimelineForSchedule(session.getAppId(), study.getScheduleGuid());
     }
     
-    @EtagSupport({
-        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"}),
-        @EtagCacheKey(model=StudyActivityEvent.class, keys={"userId"}),
-        @EtagCacheKey(model=AdherenceRecord.class, keys={"userId"})
-    })
+    // right now I do not believe this can be cached because it is  updated based on the time of the request
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/schedule")
     public ParticipantSchedule getParticipantScheduleForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
@@ -280,12 +275,7 @@ public class StudyParticipantController extends BaseController {
         return adherenceService.getParticipantSchedule(session.getAppId(), studyId, account);
     }
     
-    // NOTE: time zone needs to be removed, it makes it impossible to cache this effectively.
-    @EtagSupport({
-        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"}),
-        @EtagCacheKey(model=StudyActivityEvent.class, keys={"userId"}),
-        @EtagCacheKey(model=AdherenceRecord.class, keys={"userId"})
-    })
+    // right now I do not believe this can be cached because it is  updated based on the time of the request
     @GetMapping("/v5/studies/{studyId}/participants/self/schedule")
     public ParticipantSchedule getParticipantScheduleForSelf(@PathVariable String studyId, 
             @RequestParam(required = false) String clientTimeZone) {
