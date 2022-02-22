@@ -149,9 +149,6 @@ public class EtagComponent {
             }
             return value;
         }
-        // It is possible to use @EtagSupport on an unauthenticated method. If it never needs 
-        // to look up a field value from the session, no problem. But if it needs the session 
-        // to find a value for a key, and the session isn't present, it will throw an exception.
         String value = null;
         if (APP_ID_FIELD.equals(fieldName)) {
             value = session.getAppId();

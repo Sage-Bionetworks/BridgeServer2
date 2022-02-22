@@ -263,7 +263,6 @@ public class StudyParticipantController extends BaseController {
         return scheduleService.getTimelineForSchedule(session.getAppId(), study.getScheduleGuid());
     }
     
-    // right now I do not believe this can be cached because it is  updated based on the time of the request
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/schedule")
     public ParticipantSchedule getParticipantScheduleForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();
@@ -275,7 +274,6 @@ public class StudyParticipantController extends BaseController {
         return adherenceService.getParticipantSchedule(session.getAppId(), studyId, account);
     }
     
-    // right now I do not believe this can be cached because it is  updated based on the time of the request
     @GetMapping("/v5/studies/{studyId}/participants/self/schedule")
     public ParticipantSchedule getParticipantScheduleForSelf(@PathVariable String studyId, 
             @RequestParam(required = false) String clientTimeZone) {

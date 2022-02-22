@@ -11,11 +11,11 @@ import java.lang.annotation.Target;
  * 
  * The tag has one or more @EtagCacheKey values that specify the values of a CacheKey.etag key.
  * These are the dependencies that need to be tracked to ensure the etag submitted by the client
- * is up-to-date. If the property name matches a method argument name of the annotated method, that value will
- * be used. Otherwise, the property name will be used to retrieve the information from the 
- * caller’s session (the supported values here are “appId”, “userId”, and “orgId“). If the
- * annotation requests one of these values and the request is not associated with a session, the 
- * annotation will throw an IllegalArgumentException.
+ * is up-to-date. If the property name matches a method argument name of the annotated method, 
+ * that value will be used. Otherwise, the property name will be used to retrieve the information 
+ * from the caller’s session (the supported values here are “appId”, “userId”, and “orgId“). 
+ * Currently this tag can only be used on authenticated requests (the presence of the session is 
+ * required). 
  * 
  * The values of the etag CacheKeys are Joda DateTime instances, representing the last time that 
  * model was updated.

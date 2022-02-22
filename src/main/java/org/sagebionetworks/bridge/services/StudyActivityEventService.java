@@ -28,7 +28,6 @@ import org.joda.time.DateTime;
 import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -78,7 +77,6 @@ public class StudyActivityEventService {
     private AccountService accountService;
     private ActivityEventService activityEventService;
     private Schedule2Service scheduleService;
-    private CacheProvider cacheProvider;
     
     @Autowired
     final void setStudyActivityEventDao(StudyActivityEventDao dao) {
@@ -99,10 +97,6 @@ public class StudyActivityEventService {
     @Autowired
     final void setSchedule2Service(Schedule2Service scheduleService) {
         this.scheduleService = scheduleService;
-    }
-    @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
     }
     
     DateTime getCreatedOn() { 
@@ -129,7 +123,6 @@ public class StudyActivityEventService {
 
         if (event.getUpdateType().canDelete(mostRecent, event)) {
             dao.deleteEvent(event);
-
             Study study = studyService.getStudy(event.getAppId(), event.getStudyId(), true);
             Schedule2 schedule = scheduleService.getScheduleForStudy(study.getAppId(), study).orElse(null);
             if (schedule != null) {

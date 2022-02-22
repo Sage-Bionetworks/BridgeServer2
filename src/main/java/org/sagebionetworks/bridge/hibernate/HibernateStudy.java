@@ -445,18 +445,4 @@ public class HibernateStudy implements Study {
     public void setAdherenceThresholdPercentage(Integer adherenceThresholdPercentage) {
         this.adherenceThresholdPercentage = adherenceThresholdPercentage;
     }
-
-    @Override
-    public String toString() {
-        return "HibernateStudy [identifier=" + identifier + ", appId=" + appId + ", name=" + name + ", deleted="
-                + deleted + ", createdOn=" + createdOn + ", modifiedOn=" + modifiedOn + ", clientData=" + clientData
-                + ", phase=" + phase + ", details=" + details + ", irbName=" + irbName + ", irbDecisionOn="
-                + irbDecisionOn + ", irbExpiresOn=" + irbExpiresOn + ", irbDecisionType=" + irbDecisionType
-                + ", irbProtocolId=" + irbProtocolId + ", irbProtocolName=" + irbProtocolName + ", studyLogoUrl="
-                + studyLogoUrl + ", colorScheme=" + colorScheme + ", institutionId=" + institutionId + ", scheduleGuid="
-                + scheduleGuid + ", logoGuid=" + logoGuid + ", keywords=" + keywords + ", version=" + version
-                + ", contacts=" + contacts + ", diseases=" + diseases + ", studyDesignTypes=" + studyDesignTypes
-                + ", signInTypes=" + signInTypes + ", customEvents=" + customEvents + ", studyTimeZone=" + studyTimeZone
-                + ", adherenceThresholdPercentage=" + adherenceThresholdPercentage + "]";
-    }
 }

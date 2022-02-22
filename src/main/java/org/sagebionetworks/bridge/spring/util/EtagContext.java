@@ -10,8 +10,8 @@ import org.aspectj.lang.reflect.MethodSignature;
 
 /** 
  * The context information for the Etag annotation is difficult to mock (some classes 
- * are final), so we will mock this context object instead. This code gets verified 
- * through integration and manual tests.
+ * are final), so we mock this context object instead. This code gets verified through 
+ * integration and manual tests.
  */
 public class EtagContext {
     
