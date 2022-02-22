@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.validators.ValidatorUtilsTest.getInvali
 import java.util.Optional;
 
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
+import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
 import static org.sagebionetworks.bridge.models.studies.ContactRole.TECHNICAL_SUPPORT;
 import static org.sagebionetworks.bridge.models.studies.IrbDecisionType.APPROVED;
@@ -24,6 +25,7 @@ import static org.sagebionetworks.bridge.validators.Validate.BRIDGE_RELAXED_ID_E
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_BLANK;
 import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_EMAIL_ERROR;
+import static org.sagebionetworks.bridge.validators.Validate.INVALID_EVENT_ID;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_PHONE_ERROR;
 import static org.sagebionetworks.bridge.validators.Validate.INVALID_TIME_ZONE;
 import static org.sagebionetworks.bridge.validators.Validate.entityThrowingException;
@@ -662,6 +664,41 @@ public class StudyValidatorTest extends Mockito {
         when(mockScheduleService.getScheduleForStudy(TEST_APP_ID, study)).thenThrow(new UnauthorizedException());
         
         assertValidatorMessage(validator, study, SCHEDULE_GUID_FIELD, SCHEDULE_GUID_OWNER_ERROR_MSG);
+    }
+    
+    @Test
+    public void studyStartEventIdInvalid() { 
+        study = createStudy();
+        study.setStudyStartEventId("foo");
+        
+        assertValidatorMessage(validator, study, STUDY_START_EVENT_ID_FIELD, INVALID_EVENT_ID);
+    }
+    
+    @Test
+    public void studyStartEventValidSystemEvent() { 
+        study = createStudy();
+        study.setStudyStartEventId("timeline_retrieved");
+        
+        entityThrowingException(validator, study);
+    }
+    
+    @Test
+    public void studyStartEventValidCustomEvent() {
+        StudyCustomEvent event = new StudyCustomEvent();
+        event.setEventId("foo");
+        event.setUpdateType(IMMUTABLE);
+        
+        study = createStudy();
+        study.setStudyStartEventId("foo");
+        study.setCustomEvents(ImmutableList.of(event));
+        
+        entityThrowingException(validator, study);
+        
+        study = createStudy();
+        study.setStudyStartEventId("custom:foo");
+        study.setCustomEvents(ImmutableList.of(event));
+        
+        entityThrowingException(validator, study);
     }
     
     private Study createStudy() {

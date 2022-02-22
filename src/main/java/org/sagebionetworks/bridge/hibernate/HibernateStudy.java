@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static org.sagebionetworks.bridge.models.activities.ActivityEventObjectType.TIMELINE_RETRIEVED;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -50,6 +52,7 @@ public class HibernateStudy implements Study {
     @Id
     private String appId;
     private String name;
+    private String studyStartEventId;
     private boolean deleted;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
@@ -164,7 +167,8 @@ public class HibernateStudy implements Study {
     @Override
     public void setAppId(String appId) {
         this.appId = appId;
-    }    
+    }
+    
     @Override
     public String getName() {
         return name;
@@ -174,7 +178,20 @@ public class HibernateStudy implements Study {
     public void setName(String name) {
         this.name = name;
     }
+    
+    @Override
+    public String getStudyStartEventId() {
+        if (studyStartEventId == null) {
+            return TIMELINE_RETRIEVED.name().toLowerCase();
+        }
+        return studyStartEventId;
+    }
 
+    @Override
+    public void setStudyStartEventId(String studyStartEventId) {
+        this.studyStartEventId = studyStartEventId;
+    }
+    
     @Override
     public boolean isDeleted() {
         return deleted;
