@@ -113,7 +113,6 @@ public class ParticipantScheduleGenerator {
         for (LocalDate date : chronology.keySet()) {
             scheduledSessions.addAll(chronology.get(date));
         }
-        
         scheduledSessions.sort(SCHEDULED_SESSION_COMPARATOR);
         
         DateRange range = null;

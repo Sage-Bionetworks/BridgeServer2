@@ -20,7 +20,7 @@ public final class CacheKey {
     
     private static final String[] PUBLIC_KEYS = new String[] { "emailVerificationStatus", 
             "AppConfigList", "channel-throttling", "lock", "App", "Subpopulation", 
-            "SubpopulationList", "view", "CurrentEtag" };
+            "SubpopulationList", "view" };
     
     public final static boolean isPublic(String key) {
         for (String suffix : PUBLIC_KEYS) {

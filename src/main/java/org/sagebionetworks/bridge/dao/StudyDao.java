@@ -11,7 +11,7 @@ public interface StudyDao {
     
     void removeScheduleFromStudies(String appId, String scheduleGuid);
     
-    List<String> getStudiesUsingSchedule(String appId, String scheduleGuid);
+    List<String> getStudyIdsUsingSchedule(String appId, String scheduleGuid);
     
     PagedResourceList<Study> getStudies(String appId, Set<String> studyIds, 
             Integer offsetBy, Integer pageSize, boolean includeDeleted);

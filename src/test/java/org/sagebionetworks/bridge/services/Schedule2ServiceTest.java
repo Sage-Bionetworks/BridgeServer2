@@ -44,7 +44,6 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -381,9 +380,6 @@ public class Schedule2ServiceTest extends Mockito {
         assertFalse(captured.isDeleted());
         assertFalse(captured.isPublished());
         assertEquals(captured.getVersion(), 0L);
-        
-        CacheKey cacheKey = CacheKey.etag(Schedule2.class, TEST_APP_ID, TEST_STUDY_ID);
-        verify(mockCacheProvider).setObject(cacheKey, CREATED_ON);
     }
     
     @Test(expectedExceptions = InvalidEntityException.class)
@@ -531,9 +527,6 @@ public class Schedule2ServiceTest extends Mockito {
         assertFalse(captured.isDeleted());
         assertFalse(captured.isPublished());
         assertEquals(captured.getVersion(), 2L);
-        
-        CacheKey cacheKey = CacheKey.etag(Schedule2.class, TEST_APP_ID, TEST_STUDY_ID);
-        verify(mockCacheProvider).setObject(cacheKey, MODIFIED_ON);
     }
     
     @Test(expectedExceptions = PublishedEntityException.class)
@@ -604,6 +597,7 @@ public class Schedule2ServiceTest extends Mockito {
         permitToAccess();
         
         Schedule2 existing = new Schedule2();
+        existing.setGuid(GUID);
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
         
         service.publishSchedule(TEST_APP_ID, GUID);
@@ -611,6 +605,8 @@ public class Schedule2ServiceTest extends Mockito {
         verify(mockDao).updateSchedule(scheduleCaptor.capture());
         assertTrue(scheduleCaptor.getValue().isPublished());
         assertEquals(scheduleCaptor.getValue().getModifiedOn(), MODIFIED_ON);
+        
+        verify(mockStudyService).updateStudyEtags(TEST_APP_ID, GUID, MODIFIED_ON);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -654,6 +650,8 @@ public class Schedule2ServiceTest extends Mockito {
         service.deleteSchedule(TEST_APP_ID, GUID);
         
         verify(mockDao).deleteSchedule(existing);
+        
+        verify(mockStudyService).removeStudyEtags(TEST_APP_ID, GUID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -702,7 +700,7 @@ public class Schedule2ServiceTest extends Mockito {
         service.deleteSchedulePermanently(TEST_APP_ID, GUID);
         
         verify(mockDao).deleteSchedulePermanently(existing);
-        verify(mockStudyService).removeScheduleFromStudies(TEST_APP_ID, GUID);
+        verify(mockStudyService).removeStudyEtags(TEST_APP_ID, GUID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -1016,6 +1014,8 @@ public class Schedule2ServiceTest extends Mockito {
         verify(mockDao).createSchedule(schedule);
         verify(mockStudyService).updateStudy(TEST_APP_ID, study);
         assertEquals(GUID, study.getScheduleGuid());
+        
+        verify(mockStudyService).updateStudyEtags(TEST_APP_ID, GUID, CREATED_ON);
     }
 
     @Test
@@ -1057,6 +1057,7 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(schedule.getGuid(), SCHEDULE_GUID);
         
         verify(mockDao).updateSchedule(schedule);
+        verify(mockStudyService).updateStudyEtags(TEST_APP_ID, SCHEDULE_GUID, MODIFIED_ON);
     }
     
     @Test

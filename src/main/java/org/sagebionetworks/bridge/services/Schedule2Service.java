@@ -30,8 +30,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
-import org.sagebionetworks.bridge.cache.CacheKey;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -63,8 +61,6 @@ public class Schedule2Service {
     
     private Schedule2Dao dao;
     
-    private CacheProvider cacheProvider;
-    
     @Autowired
     final void setOrganizationService(OrganizationService organizationService) {
         this.organizationService = organizationService;
@@ -78,11 +74,6 @@ public class Schedule2Service {
     @Autowired
     final void setScheduleDao(Schedule2Dao dao) {
         this.dao = dao;
-    }
-    
-    @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
     }
     
     DateTime getCreatedOn() {
@@ -194,11 +185,17 @@ public class Schedule2Service {
             // with keys and all, to the update API, and at some point we have to check that
             // we're talking about the same object.
             schedule.setGuid(study.getScheduleGuid());
-            return updateSchedule(study, existing, schedule);
+            schedule = updateSchedule(study, existing, schedule);
+            
+            studyService.updateStudyEtags(study.getAppId(), schedule.getGuid(), schedule.getModifiedOn());
+
+            return schedule;
         }
         schedule = createSchedule(study, schedule);
         study.setScheduleGuid(schedule.getGuid());
         studyService.updateStudy(schedule.getAppId(), study);
+        
+        studyService.updateStudyEtags(study.getAppId(), schedule.getGuid(), schedule.getModifiedOn());
         
         return schedule;
     }
@@ -207,7 +204,7 @@ public class Schedule2Service {
      * Create a schedule. The schedule will be owned by the caller’s organization (unless
      * an admin or superadmin is making the call and they have specified an organization).
      */
-    public Schedule2 createSchedule(Study study, Schedule2 schedule) {
+    protected Schedule2 createSchedule(Study study, Schedule2 schedule) {
         checkNotNull(schedule);
         
         CAN_CREATE_SCHEDULES.checkAndThrow();
@@ -242,12 +239,7 @@ public class Schedule2Service {
         
         Validate.entityThrowingException(INSTANCE, schedule);
         
-        Schedule2 updatedSchedule = dao.createSchedule(schedule);
-
-        CacheKey cacheKey = CacheKey.etag(Schedule2.class, study.getAppId(), study.getIdentifier());
-        cacheProvider.setObject(cacheKey, updatedSchedule.getModifiedOn());
-        
-        return updatedSchedule;
+        return dao.createSchedule(schedule);
     }
     
     /**
@@ -277,12 +269,7 @@ public class Schedule2Service {
 
         Validate.entityThrowingException(INSTANCE, schedule);
         
-        Schedule2 updatedSchedule = dao.updateSchedule(schedule);
-        
-        CacheKey cacheKey = CacheKey.etag(Schedule2.class, study.getAppId(), study.getIdentifier());
-        cacheProvider.setObject(cacheKey, updatedSchedule.getModifiedOn());
-
-        return updatedSchedule;
+        return dao.updateSchedule(schedule);
     }
     
     /**
@@ -303,8 +290,7 @@ public class Schedule2Service {
         existing.setPublished(true);
         existing.setModifiedOn(getModifiedOn());
         
-        // Don't really need to update the etag caching timestamp as the schedule
-        // itself doesn't change in this call.
+        studyService.updateStudyEtags(appId, guid, existing.getModifiedOn());
         
         return dao.updateSchedule(existing);
     }
@@ -324,7 +310,7 @@ public class Schedule2Service {
         }
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
         
-        studyService.removeScheduleFromStudies(appId, guid);
+        studyService.removeStudyEtags(appId, guid);
         
         dao.deleteSchedule(existing);
     }
@@ -343,7 +329,7 @@ public class Schedule2Service {
         
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
         
-        studyService.removeScheduleFromStudies(appId, guid);
+        studyService.removeStudyEtags(appId, guid);
         
         dao.deleteSchedulePermanently(existing);
     }

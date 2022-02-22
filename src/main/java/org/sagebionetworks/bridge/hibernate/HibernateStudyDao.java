@@ -8,12 +8,16 @@ import java.util.Set;
 
 import javax.annotation.Resource;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 import org.sagebionetworks.bridge.dao.StudyDao;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.VersionHolder;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyId;
-
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import com.google.common.collect.ImmutableList;
@@ -31,9 +35,16 @@ public class HibernateStudyDao implements StudyDao {
     
     private HibernateHelper hibernateHelper;
     
+    private SessionFactory sessionFactory;
+    
     @Resource(name = "mysqlHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
+    }
+    
+    @Autowired
+    final void setSessionFactory(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
     /**
@@ -56,16 +67,23 @@ public class HibernateStudyDao implements StudyDao {
     }
     
     @Override
-    public List<String> getStudiesUsingSchedule(String appId, String scheduleGuid) {
+    public List<String> getStudyIdsUsingSchedule(String appId, String scheduleGuid) {
         checkNotNull(appId);
         checkNotNull(scheduleGuid);
         
         QueryBuilder builder = new QueryBuilder();
-        builder.append("SELET id FROM Substudies");
+        builder.append("SELECT id FROM Substudies");
         builder.append("WHERE studyId = :appId", "appId", appId);
         builder.append("AND scheduleGuid = :scheduleGuid", "scheduleGuid", scheduleGuid);
         
-        return hibernateHelper.nativeQueryGet(builder.getQuery(), builder.getParameters(), null, null, String.class);
+        try (Session session = sessionFactory.openSession()) {  
+            @SuppressWarnings("unchecked")
+            NativeQuery<String> query = session.createNativeQuery(builder.getQuery());
+            query.addScalar("id", StandardBasicTypes.STRING);
+            query.setParameter("appId", appId);
+            query.setParameter("scheduleGuid", scheduleGuid);
+            return (List<String>)query.list();
+        }
     }
     
     @Override

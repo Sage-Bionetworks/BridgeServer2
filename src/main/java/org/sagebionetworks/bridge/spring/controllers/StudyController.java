@@ -40,7 +40,6 @@ import org.sagebionetworks.bridge.models.files.FileRevision;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.services.FileService;
 import org.sagebionetworks.bridge.services.StudyService;
-import org.sagebionetworks.bridge.spring.util.EtagSupport;
 
 @CrossOrigin
 @RestController

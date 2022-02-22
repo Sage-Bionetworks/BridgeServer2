@@ -44,8 +44,6 @@ import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.AuthEvaluatorField;
-import org.sagebionetworks.bridge.cache.CacheKey;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -94,8 +92,6 @@ public class AdherenceService {
     
     private Schedule2Service scheduleService;
     
-    private CacheProvider cacheProvider;
-    
     @Autowired
     final void setAdherenceRecordDao(AdherenceRecordDao recordDao) {
         this.recordDao = recordDao;
@@ -121,11 +117,6 @@ public class AdherenceService {
         this.scheduleService = scheduleService;
     }
     
-    @Autowired
-    final void setCacheProvider(CacheProvider cacheProvider) {
-        this.cacheProvider = cacheProvider;
-    }
-    
     protected DateTime getDateTime() {
         return DateTime.now();
     }
@@ -138,14 +129,12 @@ public class AdherenceService {
         }
         
         Validate.entityThrowingException(INSTANCE, recordList);
-        
-        String studyId = recordList.getRecords().get(0).getStudyId();
-        String userId = recordList.getRecords().get(0).getUserId();
 
         // The only caller of this method sets all the userId and studyId fields, 
         // so this only needs to be called once.
-        CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(AuthEvaluatorField.STUDY_ID, studyId, 
-                AuthEvaluatorField.USER_ID, userId);
+        CAN_ACCESS_ADHERENCE_DATA.checkAndThrow(
+                AuthEvaluatorField.STUDY_ID, recordList.getRecords().get(0).getStudyId(), 
+                AuthEvaluatorField.USER_ID, recordList.getRecords().get(0).getUserId());
         
         MetadataContainer container = new MetadataContainer(scheduleService, recordList.getRecords());
         
@@ -347,6 +336,7 @@ public class AdherenceService {
             } else {
                 record.setInstanceTimestamp(record.getEventTimestamp());
             }
+
             recordDao.deleteAdherenceRecordPermanently(record);
         }
     }

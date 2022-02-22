@@ -83,16 +83,28 @@ public class StudyService {
         this.scheduleService = scheduleService;
     }
     
-    public void removeScheduleFromStudies(String appId, String scheduleGuid) {
+    public void removeStudyEtags(String appId, String scheduleGuid) {
         checkNotNull(appId);
         checkNotNull(scheduleGuid);
         
-        List<String> studyIds = studyDao.getStudiesUsingSchedule(appId, scheduleGuid);
+        List<String> studyIds = studyDao.getStudyIdsUsingSchedule(appId, scheduleGuid);
         for (String studyId : studyIds) {
             CacheKey cacheKey = CacheKey.etag(Schedule2.class, appId, studyId);
             cacheProvider.removeObject(cacheKey);
         }
         studyDao.removeScheduleFromStudies(appId, scheduleGuid);
+    }
+    
+    public void updateStudyEtags(String appId, String scheduleGuid, DateTime timestamp) {
+        checkNotNull(appId);
+        checkNotNull(scheduleGuid);
+        checkNotNull(timestamp);
+        
+        List<String> studyIds = studyDao.getStudyIdsUsingSchedule(appId, scheduleGuid);
+        for (String studyId : studyIds) {
+            CacheKey cacheKey = CacheKey.etag(Schedule2.class, appId, studyId);
+            cacheProvider.setObject(cacheKey, timestamp);
+        }
     }
     
     public Study getStudy(String appId, String studyId, boolean throwsException) {

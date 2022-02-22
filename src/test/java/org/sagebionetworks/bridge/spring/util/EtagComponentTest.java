@@ -122,7 +122,7 @@ public class EtagComponentTest extends Mockito {
         CacheKey userKey = CacheKey.etag(Account.class, TEST_USER_ID);
         when(mockCacheProvider.getObject(userKey, DateTime.class)).thenReturn(MODIFIED_ON);
         
-        String stringToHash = CREATED_ON.toString() + ":" + MODIFIED_ON.toString();
+        String stringToHash = CREATED_ON.toString() + " " + MODIFIED_ON.toString();
         when(mockMd5DigestUtils.digest(stringToHash.getBytes())).thenReturn("ETAG".getBytes());
         
         when(mockJoinPoint.proceed()).thenReturn(ACCOUNT_ID);

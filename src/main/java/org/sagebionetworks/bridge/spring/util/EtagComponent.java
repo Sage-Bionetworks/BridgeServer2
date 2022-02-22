@@ -128,7 +128,7 @@ public class EtagComponent {
             }
             timestamps.add(timestamp.withZone(DateTimeZone.UTC));
         }
-        String base = BridgeUtils.COLON_JOINER.join(timestamps);
+        String base = BridgeUtils.SPACE_JOINER.join(timestamps);
         byte[] md5 = md5DigestUtils.digest(base.getBytes());
         return Hex.encodeHexString(md5);
     }
