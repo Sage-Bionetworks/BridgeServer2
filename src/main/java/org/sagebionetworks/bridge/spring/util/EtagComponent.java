@@ -86,8 +86,8 @@ public class EtagComponent {
         String sessionToken = request.getHeader(SESSION_TOKEN_HEADER);
         UserSession session = cacheProvider.getUserSession(sessionToken); // can be null
 
-        // Etag can be null (until all dependent objects have cached their timestamps, or when
-        // a dependent object is deleted).
+        // Etag can be null (until all dependent objects have cached their timestamps, 
+        // or when a dependent object is deleted).
         String etag = calculateEtag(context, session);
         
         if (requestEtag != null) {
@@ -141,9 +141,9 @@ public class EtagComponent {
             }
             return value;
         }
-        // It is possible to use @EtagSupport on an unauthenticated method, if it never needs to look up a field 
-        // value from the session. But if it needs the session to find a value for a key, and the session isn't
-        // present, it will throw an exception.
+        // It is possible to use @EtagSupport on an unauthenticated method. If it never needs 
+        // to look up a field value from the session, no problem. But if it needs the session 
+        // to find a value for a key, and the session isn't present, it will throw an exception.
         String value = null;
         if (session != null) {
             if (APP_ID_FIELD.equals(fieldName)) {
