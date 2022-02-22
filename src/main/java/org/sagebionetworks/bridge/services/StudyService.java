@@ -373,7 +373,9 @@ public class StudyService {
         }
         studyDao.updateStudy(study);
         
-        cacheProvider.removeObject(CacheKey.publicStudy(appId, studyId));
+        CacheKey cacheKey = CacheKey.publicStudy(appId, studyId);
+        cacheProvider.removeObject(cacheKey);
+
         return study;
     }
     

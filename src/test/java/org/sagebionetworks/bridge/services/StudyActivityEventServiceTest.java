@@ -48,7 +48,6 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestUtils;
-import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -88,9 +87,6 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Mock
     Schedule2Service mockScheduleService;
-    
-    @Mock
-    CacheProvider mockCacheProvider;
     
     @InjectMocks
     @Spy
