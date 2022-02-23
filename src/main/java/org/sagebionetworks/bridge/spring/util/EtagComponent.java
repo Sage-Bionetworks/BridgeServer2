@@ -150,14 +150,16 @@ public class EtagComponent {
             return value;
         }
         String value = null;
-        if (APP_ID_FIELD.equals(fieldName)) {
+        switch(fieldName) {
+        case APP_ID_FIELD:
             value = session.getAppId();
-        }
-        if (USER_ID_FIELD.equals(fieldName)) {
+            break;
+        case USER_ID_FIELD:
             value = session.getId();
-        }
-        if (ORG_ID_FIELD.equals(fieldName)) {
+            break;
+        case ORG_ID_FIELD:
             value = session.getParticipant().getOrgMembership();
+            break;
         }
         if (value == null) {
             throw new IllegalArgumentException(NO_VALUE_ERROR + fieldName);

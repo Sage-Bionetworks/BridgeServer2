@@ -199,6 +199,7 @@ public class EtagComponentTest extends Mockito {
         
         Object retValue = component.checkEtag(mockJoinPoint);
         assertEquals(retValue, ACCOUNT_ID);
+        verify(mockResponse, never()).setStatus(304);
     }
     
     // retrieving appId and userId are tested in the default set up for these tests.
@@ -247,10 +248,6 @@ public class EtagComponentTest extends Mockito {
         map.put("studyId", null);
         doReturn(map).when(mockContext).getArgValues();
         
-        Object retValue = component.checkEtag(mockJoinPoint);
-        
-        assertNull(retValue);
-        verify(mockResponse).addHeader(HttpHeaders.ETAG, ETAG);
-        verify(mockResponse).setStatus(304);
+        component.checkEtag(mockJoinPoint);
     }
 }
