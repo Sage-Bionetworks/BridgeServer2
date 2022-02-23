@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.util;
 import static com.google.common.net.HttpHeaders.IF_NONE_MATCH;
 import static org.sagebionetworks.bridge.BridgeConstants.SESSION_TOKEN_HEADER;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -137,7 +138,7 @@ public class EtagComponent {
             timestamps.add(timestamp.withZone(DateTimeZone.UTC));
         }
         String base = BridgeUtils.SPACE_JOINER.join(timestamps);
-        byte[] md5 = md5DigestUtils.digest(base.getBytes());
+        byte[] md5 = md5DigestUtils.digest(base.getBytes(Charset.defaultCharset()));
         return Hex.encodeHexString(md5);
     }
     
@@ -160,6 +161,8 @@ public class EtagComponent {
         case ORG_ID_FIELD:
             value = session.getParticipant().getOrgMembership();
             break;
+        default:
+            // no default
         }
         if (value == null) {
             throw new IllegalArgumentException(NO_VALUE_ERROR + fieldName);
