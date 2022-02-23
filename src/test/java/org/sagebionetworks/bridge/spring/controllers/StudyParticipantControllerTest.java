@@ -1271,7 +1271,7 @@ public class StudyParticipantControllerTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         when(mockCacheProvider.getObject(
-                scheduleModificationTimestamp(TEST_STUDY_ID), String.class)).thenReturn(MODIFIED_ON.toString());
+                scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class)).thenReturn(MODIFIED_ON.toString());
         
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
@@ -1284,7 +1284,7 @@ public class StudyParticipantControllerTest extends Mockito {
         assertTrue(retValue.getBody() instanceof Timeline);
         
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
-        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_STUDY_ID), MODIFIED_ON.toString());
+        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), MODIFIED_ON.toString());
         verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
         
         verify(mockRequestInfoService).updateRequestInfo(requestInfoCaptor.capture());
@@ -1351,8 +1351,8 @@ public class StudyParticipantControllerTest extends Mockito {
         assertTrue(retValue.getBody() instanceof Timeline);
         
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
-        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
-        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_STUDY_ID), MODIFIED_ON.toString());
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
+        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), MODIFIED_ON.toString());
         verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
     }
     
@@ -1370,7 +1370,7 @@ public class StudyParticipantControllerTest extends Mockito {
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
-        when(mockCacheProvider.getObject(scheduleModificationTimestamp(TEST_STUDY_ID), 
+        when(mockCacheProvider.getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), 
                 String.class)).thenReturn(MODIFIED_ON.toString());
         
         Schedule2 schedule = new Schedule2();
@@ -1383,8 +1383,8 @@ public class StudyParticipantControllerTest extends Mockito {
         assertTrue(retValue.getBody() instanceof Timeline);
         
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
-        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
-        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_STUDY_ID), CREATED_ON.toString());
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
+        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), CREATED_ON.toString());
         verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
     }
     
@@ -1401,7 +1401,7 @@ public class StudyParticipantControllerTest extends Mockito {
         study.setScheduleGuid(SCHEDULE_GUID);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
-        when(mockCacheProvider.getObject(scheduleModificationTimestamp(TEST_STUDY_ID), 
+        when(mockCacheProvider.getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), 
                 String.class)).thenReturn(MODIFIED_ON.toString());
         
         Schedule2 schedule = new Schedule2();
@@ -1414,8 +1414,8 @@ public class StudyParticipantControllerTest extends Mockito {
         assertTrue(retValue.getBody() instanceof Timeline);
         
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
-        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
-        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_STUDY_ID), CREATED_ON.toString());
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
+        verify(mockCacheProvider).setObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), CREATED_ON.toString());
         verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
     }
     
@@ -1442,7 +1442,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
-        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
     }
     
     @Test
@@ -1459,7 +1459,7 @@ public class StudyParticipantControllerTest extends Mockito {
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
         when(mockCacheProvider.getObject(
-                scheduleModificationTimestamp(TEST_STUDY_ID), String.class)).thenReturn(MODIFIED_ON.toString());
+                scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class)).thenReturn(MODIFIED_ON.toString());
         
         Schedule2 schedule = new Schedule2();
         schedule.setModifiedOn(MODIFIED_ON);
@@ -1471,7 +1471,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockScheduleService, never()).getScheduleForStudy(any(), any());
-        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
     }
     
     @Test
@@ -1499,7 +1499,7 @@ public class StudyParticipantControllerTest extends Mockito {
         
         verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
         verify(mockScheduleService).getScheduleForStudy(TEST_APP_ID, study);
-        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_STUDY_ID), String.class);
+        verify(mockCacheProvider).getObject(scheduleModificationTimestamp(TEST_APP_ID, TEST_STUDY_ID), String.class);
         verify(mockStudyActivityEventService).publishEvent(eventCaptor.capture(), eq(false), eq(true));
         StudyActivityEvent event = eventCaptor.getValue();
         assertEquals(event.getAppId(), TEST_APP_ID);

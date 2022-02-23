@@ -44,6 +44,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -76,6 +77,9 @@ public class Schedule2ServiceTest extends Mockito {
     
     @Mock
     Schedule2Dao mockDao;
+    
+    @Mock
+    CacheProvider mockCacheProvider;
 
     @InjectMocks
     @Spy
@@ -357,7 +361,9 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setVersion(1L);
         
         Study study = Study.create();
-        
+        study.setAppId(TEST_APP_ID);
+        study.setIdentifier(TEST_STUDY_ID);
+
         Schedule2 retValue = service.createSchedule(study, schedule);
         assertEquals(retValue, schedule);
 
@@ -415,7 +421,11 @@ public class Schedule2ServiceTest extends Mockito {
         schedule.setOwnerId("this-will-be-ignored");
         
         Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        study.setIdentifier(TEST_STUDY_ID);
         
+        when(mockDao.createSchedule(any())).thenReturn(schedule);
+
         service.createSchedule(study, schedule);        
     }
     
@@ -495,12 +505,14 @@ public class Schedule2ServiceTest extends Mockito {
         existing.setPublished(false);
         existing.setVersion(1L);
         
-        when(mockDao.updateSchedule(any())).thenReturn(existing);
+        when(mockDao.updateSchedule(any())).thenReturn(schedule);
         
         Study study = Study.create();
-        
+        study.setAppId(TEST_APP_ID);
+        study.setIdentifier(TEST_STUDY_ID);
+
         Schedule2 retValue = service.updateSchedule(study, existing, schedule);
-        assertEquals(retValue, existing);
+        assertEquals(retValue, schedule);
         
         verify(mockDao).updateSchedule(scheduleCaptor.capture());
         Schedule2 captured = scheduleCaptor.getValue();
@@ -585,6 +597,7 @@ public class Schedule2ServiceTest extends Mockito {
         permitToAccess();
         
         Schedule2 existing = new Schedule2();
+        existing.setGuid(GUID);
         when(mockDao.getSchedule(TEST_APP_ID, GUID)).thenReturn(Optional.of(existing));
         
         service.publishSchedule(TEST_APP_ID, GUID);
@@ -592,6 +605,8 @@ public class Schedule2ServiceTest extends Mockito {
         verify(mockDao).updateSchedule(scheduleCaptor.capture());
         assertTrue(scheduleCaptor.getValue().isPublished());
         assertEquals(scheduleCaptor.getValue().getModifiedOn(), MODIFIED_ON);
+        
+        verify(mockStudyService).updateStudyEtags(TEST_APP_ID, GUID, MODIFIED_ON);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -635,6 +650,8 @@ public class Schedule2ServiceTest extends Mockito {
         service.deleteSchedule(TEST_APP_ID, GUID);
         
         verify(mockDao).deleteSchedule(existing);
+        
+        verify(mockStudyService).removeStudyEtags(TEST_APP_ID, GUID);
     }
     
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -683,7 +700,7 @@ public class Schedule2ServiceTest extends Mockito {
         service.deleteSchedulePermanently(TEST_APP_ID, GUID);
         
         verify(mockDao).deleteSchedulePermanently(existing);
-        verify(mockStudyService).removeScheduleFromStudies(TEST_APP_ID, GUID);
+        verify(mockStudyService).removeStudyEtags(TEST_APP_ID, GUID);
     }
 
     @Test(expectedExceptions = EntityNotFoundException.class)
@@ -731,7 +748,11 @@ public class Schedule2ServiceTest extends Mockito {
         Schedule2 schedule = Schedule2Test.createValidSchedule();
         
         Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        study.setIdentifier(TEST_STUDY_ID);
         
+        when(mockDao.createSchedule(any())).thenReturn(schedule);
+
         service.createSchedule(study, schedule);
         
         assertEquals(schedule.getGuid(), "otherGuid");
@@ -780,7 +801,11 @@ public class Schedule2ServiceTest extends Mockito {
         doReturn("otherGuid").when(service).generateGuid();
         
         Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        study.setIdentifier(TEST_STUDY_ID);
         
+        when(mockDao.updateSchedule(any())).thenReturn(schedule);
+
         service.updateSchedule(study, existing, schedule);
         
         assertEquals(schedule.getSessions().get(0).getGuid(), SESSION_GUID_1);
@@ -798,6 +823,8 @@ public class Schedule2ServiceTest extends Mockito {
                 .build());
 
         Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        study.setIdentifier(TEST_STUDY_ID);
         study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("event1", MUTABLE)));
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
@@ -806,6 +833,8 @@ public class Schedule2ServiceTest extends Mockito {
         
         // This will fail validation unless it's included in the schedule (it is)
         schedule.getSessions().get(0).setStudyBurstIds(ImmutableList.of("burst1"));
+        
+        when(mockDao.createSchedule(any())).thenReturn(schedule);
         
         service.createSchedule(study, schedule);
         
@@ -843,6 +872,8 @@ public class Schedule2ServiceTest extends Mockito {
     @Test
     public void cleanupEventIdsOnUpdate() {
         Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        study.setIdentifier(TEST_STUDY_ID);
         study.setCustomEvents(ImmutableList.of(new StudyCustomEvent("event1", MUTABLE)));
         
         Schedule2 schedule = Schedule2Test.createValidSchedule();
@@ -853,6 +884,8 @@ public class Schedule2ServiceTest extends Mockito {
         
         // This will fail validation unless it's included in the schedule (it is)
         schedule.getSessions().get(0).setStudyBurstIds(ImmutableList.of("burst1"));
+        
+        when(mockDao.updateSchedule(any())).thenReturn(schedule);
         
         Schedule2 existing = Schedule2Test.createValidSchedule();
         existing.setPublished(false);
@@ -965,6 +998,8 @@ public class Schedule2ServiceTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        study.setIdentifier(TEST_STUDY_ID);
         study.setPhase(DESIGN);
         
         Schedule2 schedule = new Schedule2();
@@ -979,6 +1014,8 @@ public class Schedule2ServiceTest extends Mockito {
         verify(mockDao).createSchedule(schedule);
         verify(mockStudyService).updateStudy(TEST_APP_ID, study);
         assertEquals(GUID, study.getScheduleGuid());
+        
+        verify(mockStudyService).updateStudyEtags(TEST_APP_ID, GUID, CREATED_ON);
     }
 
     @Test
@@ -992,6 +1029,8 @@ public class Schedule2ServiceTest extends Mockito {
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
         Study study = Study.create();
+        study.setAppId(TEST_APP_ID);
+        study.setIdentifier(TEST_STUDY_ID);
         study.setPhase(DESIGN);
         study.setScheduleGuid(SCHEDULE_GUID);
         
@@ -1018,6 +1057,7 @@ public class Schedule2ServiceTest extends Mockito {
         assertEquals(schedule.getGuid(), SCHEDULE_GUID);
         
         verify(mockDao).updateSchedule(schedule);
+        verify(mockStudyService).updateStudyEtags(TEST_APP_ID, SCHEDULE_GUID, MODIFIED_ON);
     }
     
     @Test

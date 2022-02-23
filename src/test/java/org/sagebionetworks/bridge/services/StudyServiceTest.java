@@ -13,6 +13,7 @@ import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.ORG_ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
+import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_ORG_ID;
@@ -908,9 +909,26 @@ public class StudyServiceTest {
     }
     
     @Test
-    public void removeScheduleFromStudies() {
-        service.removeScheduleFromStudies(TEST_APP_ID, SCHEDULE_GUID);
+    public void removeStudyEtags() {
+        when(mockStudyDao.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
+            .thenReturn(ImmutableList.of("studyA", "studyB"));
+        
+        service.removeStudyEtags(TEST_APP_ID, SCHEDULE_GUID);
         verify(mockStudyDao).removeScheduleFromStudies(TEST_APP_ID, SCHEDULE_GUID);
+        
+        verify(mockCacheProvider).removeObject(CacheKey.etag(Schedule2.class, TEST_APP_ID, "studyA"));
+        verify(mockCacheProvider).removeObject(CacheKey.etag(Schedule2.class, TEST_APP_ID, "studyB"));
+    }
+    
+    @Test
+    public void updateStudyEtags() {
+        when(mockStudyDao.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID))
+            .thenReturn(ImmutableList.of("studyA", "studyB"));
+        
+        service.updateStudyEtags(TEST_APP_ID, SCHEDULE_GUID, CREATED_ON);
+        
+        verify(mockCacheProvider).setObject(CacheKey.etag(Schedule2.class, TEST_APP_ID, "studyA"), CREATED_ON);
+        verify(mockCacheProvider).setObject(CacheKey.etag(Schedule2.class, TEST_APP_ID, "studyB"), CREATED_ON);
     }
     
     @Test

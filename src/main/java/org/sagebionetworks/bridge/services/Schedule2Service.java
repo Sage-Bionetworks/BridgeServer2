@@ -185,11 +185,18 @@ public class Schedule2Service {
             // with keys and all, to the update API, and at some point we have to check that
             // we're talking about the same object.
             schedule.setGuid(study.getScheduleGuid());
-            return updateSchedule(study, existing, schedule);
+            schedule = updateSchedule(study, existing, schedule);
+            
+            studyService.updateStudyEtags(study.getAppId(), schedule.getGuid(), schedule.getModifiedOn());
+
+            return schedule;
         }
         schedule = createSchedule(study, schedule);
         study.setScheduleGuid(schedule.getGuid());
         studyService.updateStudy(schedule.getAppId(), study);
+        
+        studyService.updateStudyEtags(study.getAppId(), schedule.getGuid(), schedule.getModifiedOn());
+        
         return schedule;
     }
     
@@ -197,7 +204,7 @@ public class Schedule2Service {
      * Create a schedule. The schedule will be owned by the caller’s organization (unless
      * an admin or superadmin is making the call and they have specified an organization).
      */
-    public Schedule2 createSchedule(Study study, Schedule2 schedule) {
+    protected Schedule2 createSchedule(Study study, Schedule2 schedule) {
         checkNotNull(schedule);
         
         CAN_CREATE_SCHEDULES.checkAndThrow();
@@ -239,7 +246,7 @@ public class Schedule2Service {
      * Update a schedule. Will throw an exception once the schedule is published. Ownership
      * cannot be changed once a schedule is created.
      */
-    public Schedule2 updateSchedule(Study study, Schedule2 existing, Schedule2 schedule) {
+    protected Schedule2 updateSchedule(Study study, Schedule2 existing, Schedule2 schedule) {
         checkNotNull(existing);
         checkNotNull(schedule);
         
@@ -282,6 +289,9 @@ public class Schedule2Service {
         }
         existing.setPublished(true);
         existing.setModifiedOn(getModifiedOn());
+        
+        studyService.updateStudyEtags(appId, guid, existing.getModifiedOn());
+        
         return dao.updateSchedule(existing);
     }
     
@@ -289,7 +299,7 @@ public class Schedule2Service {
      * Logically delete this schedule. It is still available to callers who have a 
      * reference to the schedule.
      */
-    public void deleteSchedule(String appId, String guid) {
+    protected void deleteSchedule(String appId, String guid) {
         checkNotNull(appId);
         checkNotNull(guid);
         
@@ -299,6 +309,9 @@ public class Schedule2Service {
             throw new EntityNotFoundException(Schedule2.class);
         }
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
+        
+        studyService.removeStudyEtags(appId, guid);
+        
         dao.deleteSchedule(existing);
     }
     
@@ -316,7 +329,7 @@ public class Schedule2Service {
         
         CAN_EDIT_SCHEDULES.checkAndThrow(ORG_ID, existing.getOwnerId());
         
-        studyService.removeScheduleFromStudies(appId, guid);
+        studyService.removeStudyEtags(appId, guid);
         
         dao.deleteSchedulePermanently(existing);
     }

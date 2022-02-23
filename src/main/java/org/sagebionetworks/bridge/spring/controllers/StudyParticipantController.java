@@ -84,6 +84,8 @@ import org.sagebionetworks.bridge.services.Schedule2Service;
 import org.sagebionetworks.bridge.services.StudyActivityEventService;
 import org.sagebionetworks.bridge.services.StudyService;
 import org.sagebionetworks.bridge.services.UserAdminService;
+import org.sagebionetworks.bridge.spring.util.EtagSupport;
+import org.sagebionetworks.bridge.spring.util.EtagCacheKey;
 import org.sagebionetworks.bridge.services.AdherenceService;
 import org.sagebionetworks.bridge.services.AuthenticationService.ChannelType;
 import org.sagebionetworks.bridge.services.EnrollmentService;
@@ -172,6 +174,9 @@ public class StudyParticipantController extends BaseController {
         return DateTime.now();
     }
     
+    @EtagSupport({
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"})
+    })
     @GetMapping("/v5/studies/{studyId}/participants/self/timeline")
     public ResponseEntity<Timeline> getTimelineForSelf(@PathVariable String studyId) {
         UserSession session = getAuthenticatedAndConsentedSession();
@@ -188,14 +193,14 @@ public class StudyParticipantController extends BaseController {
         
         Study study = studyService.getStudy(session.getAppId(), studyId, true);
         DateTime modifiedSince = modifiedSinceHeader();
-        DateTime modifiedOn = modifiedOn(studyId);
+        DateTime modifiedOn = modifiedOn(session.getAppId(), studyId);
         
         if (isUpToDate(modifiedSince, modifiedOn)) {
             return new ResponseEntity<>(NOT_MODIFIED);
         }
         Schedule2 schedule = scheduleService.getScheduleForStudy(session.getAppId(), study)
                 .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
-        cacheProvider.setObject(scheduleModificationTimestamp(studyId), schedule.getModifiedOn().toString());
+        cacheProvider.setObject(scheduleModificationTimestamp(session.getAppId(), studyId), schedule.getModifiedOn().toString());
         
         studyActivityEventService.publishEvent(new StudyActivityEvent.Builder()
                 .withAppId(session.getAppId())
@@ -211,9 +216,9 @@ public class StudyParticipantController extends BaseController {
         return getDateTimeOrDefault(request().getHeader(IF_MODIFIED_SINCE), null);
     }
 
-    private DateTime modifiedOn(String studyId) {
+    private DateTime modifiedOn(String appId, String studyId) {
         return getDateTimeOrDefault(cacheProvider.getObject(
-                scheduleModificationTimestamp(studyId), String.class), null);
+                scheduleModificationTimestamp(appId, studyId), String.class), null);
     }
     
     private boolean isUpToDate(DateTime modifiedSince, DateTime modifiedOn) {
@@ -239,6 +244,9 @@ public class StudyParticipantController extends BaseController {
         return PREPARING_ROSTER_MSG;
     }
     
+    @EtagSupport({
+        @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"})
+    })
     @GetMapping("/v5/studies/{studyId}/participants/{userId}/timeline")
     public Timeline getTimelineForUser(@PathVariable String studyId, @PathVariable String userId) {
         UserSession session = getAdministrativeSession();

@@ -6,13 +6,20 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.hibernate.HibernateStudyDao.FROM_PHRASE;
 import static org.sagebionetworks.bridge.hibernate.HibernateStudyDao.SELECT_PHRASE;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertSame;
 
+import java.util.List;
 import java.util.Map;
 
 import javax.persistence.PersistenceException;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -34,6 +41,16 @@ public class HibernateStudyDaoTest extends Mockito {
     @Mock
     private HibernateHelper hibernateHelper;
     
+    @Mock
+    private SessionFactory mockSessionFactory;
+    
+    @Mock
+    private Session mockSession;
+    
+    @Mock
+    private NativeQuery<?> mockNativeQuery;
+    
+    @InjectMocks
     private HibernateStudyDao dao;
     
     @Captor
@@ -51,8 +68,6 @@ public class HibernateStudyDaoTest extends Mockito {
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        dao = new HibernateStudyDao();
-        dao.setHibernateHelper(hibernateHelper);
     }
     
     @Test
@@ -211,5 +226,25 @@ public class HibernateStudyDaoTest extends Mockito {
         verify(hibernateHelper).queryUpdate(queryCaptor.capture(), paramsCaptor.capture());
         assertEquals(queryCaptor.getValue(), "delete from HibernateStudy where appId = :appId");
         assertEquals(paramsCaptor.getValue().get("appId"), TEST_APP_ID);
+    }
+    
+    @Test
+    public void getStudyIdsUsingSchedule() {
+        List<?> studyIds = ImmutableList.of("studyA", "studyB");
+        
+        when(mockSessionFactory.openSession()).thenReturn(mockSession);
+        when(mockSession.createNativeQuery(any())).thenReturn(mockNativeQuery);
+        doReturn(studyIds).when(mockNativeQuery).list();
+        
+        List<String> retValue = dao.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID);
+        assertSame(retValue, studyIds);
+
+        verify(mockSession).createNativeQuery(queryCaptor.capture());
+        verify(mockNativeQuery).addScalar("id", StandardBasicTypes.STRING);
+        verify(mockNativeQuery).setParameter("appId", TEST_APP_ID);
+        verify(mockNativeQuery).setParameter("scheduleGuid", SCHEDULE_GUID);
+        
+        assertEquals(queryCaptor.getValue(), "SELECT id FROM Substudies WHERE studyId = "
+                +":appId AND scheduleGuid = :scheduleGuid");
     }
 }
