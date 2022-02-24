@@ -48,6 +48,8 @@ import org.mockito.Spy;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.StudyActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -66,6 +68,7 @@ import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.models.studies.StudyCustomEvent;
 
 public class StudyActivityEventServiceTest extends Mockito {
+    private static final CacheKey ETAG_KEY = CacheKey.etag(StudyActivityEvent.class, TEST_USER_ID);
     private static final AccountId ACCOUNT_ID = AccountId.forId(TEST_APP_ID, TEST_USER_ID);
     private static final DateTime TIMELINE_RETRIEVED_TS = DateTime.parse("2019-03-05T01:34:53.395Z");
     private static final DateTime ENROLLMENT_TS = DateTime.parse("2019-10-14T01:34:53.395Z");
@@ -87,6 +90,9 @@ public class StudyActivityEventServiceTest extends Mockito {
     
     @Mock
     Schedule2Service mockScheduleService;
+    
+    @Mock
+    CacheProvider mockCacheProvider;
     
     @InjectMocks
     @Spy
@@ -132,6 +138,9 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(event.getStudyId(), TEST_STUDY_ID);
         assertEquals(event.getUserId(), TEST_USER_ID);
         assertEquals(event.getEventId(), "custom:event1");
+        
+        verify(mockCacheProvider).setObject(
+                ETAG_KEY, CREATED_ON);
     }
     
     @Test
@@ -257,6 +266,8 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(event.getTimestamp(), MODIFIED_ON);
         assertEquals(event.getCreatedOn(), CREATED_ON);
         assertEquals(event.getClientTimeZone(), "America/Los_Angeles");
+        
+        verify(mockCacheProvider).setObject(ETAG_KEY, CREATED_ON);
     }
     
     @Test
@@ -284,14 +295,20 @@ public class StudyActivityEventServiceTest extends Mockito {
         verify(mockDao, never()).publishEvent(any());
     }
     
-    @Test(expectedExceptions = InvalidEntityException.class)
+    @Test
     public void publishEvent_eventInvalid() {
         StudyActivityEvent event = makeBuilder().build();
         
-        service.publishEvent(event, false, true);
+        try {
+            service.publishEvent(event, false, true);
+            fail("Should have thrown exception");
+        } catch(InvalidEntityException e) {
+        }
+        // In this case, we known nothing will be updated
+        verify(mockCacheProvider, never()).setObject(ETAG_KEY, CREATED_ON);
     }
     
-    @Test(expectedExceptions = BadRequestException.class)
+    @Test
     public void publishEvent_throwsError() { 
         // This event doesn’t update unless there is no persisted event. Here
         // it does not persist.
@@ -300,7 +317,13 @@ public class StudyActivityEventServiceTest extends Mockito {
         
         when(mockDao.getRecentStudyActivityEvent(any(), any(), any())).thenReturn(PERSISTED_EVENT);
 
-        service.publishEvent(event, true, true);
+        try {
+            service.publishEvent(event, true, true);
+            fail("Should have thrown exception");
+        } catch(BadRequestException e) {
+        }
+        // We have to publish an event because we don't know if some succeeded.
+        verify(mockCacheProvider).setObject(ETAG_KEY, CREATED_ON);
     }
     
     @Test
@@ -424,6 +447,8 @@ public class StudyActivityEventServiceTest extends Mockito {
         assertEquals(sb3.getEventId(), "study_burst:foo:03");
         assertEquals(sb3.getTimestamp(), ENROLLMENT_TS.plusWeeks(3));
         assertEquals(sb3.getPeriodFromOrigin(), Period.parse("P3W"));
+        
+        verify(mockCacheProvider).setObject(ETAG_KEY, CREATED_ON);
     }
     
     @Test

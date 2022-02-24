@@ -11,6 +11,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.sagebionetworks.bridge.TestConstants.HEALTH_CODE;
 import static org.sagebionetworks.bridge.TestConstants.TEST_APP_ID;
+import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.FUTURE_ONLY;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.IMMUTABLE;
 import static org.sagebionetworks.bridge.models.activities.ActivityEventUpdateType.MUTABLE;
@@ -20,6 +21,7 @@ import static org.testng.Assert.fail;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import com.google.common.collect.ImmutableMap;
 import org.joda.time.DateTime;
@@ -28,6 +30,7 @@ import org.joda.time.LocalDateTime;
 import org.joda.time.Period;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
@@ -35,9 +38,12 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.subpopulations.ConsentSignature;
@@ -48,11 +54,13 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class ActivityEventServiceTest {
+    private static final CacheKey ETAG_KEY = CacheKey.etag(StudyActivityEvent.class, TEST_USER_ID);
     private static final DateTime ACTIVITIES_RETRIEVED = DateTime.parse("2017-05-27T00:00:00.000Z");
     private static final DateTime ENROLLMENT = DateTime.parse("2017-05-28T00:00:00.000Z");
     private static final DateTime CREATED_ON = DateTime.parse("2017-05-26T00:00:00.000Z");
     
     @Spy
+    @InjectMocks
     private ActivityEventService activityEventService;
     
     @Mock
@@ -64,21 +72,26 @@ public class ActivityEventServiceTest {
     @Mock
     private ParticipantService mockParticipantService;
     
+    @Mock
+    private AccountService mockAccountService;
+    
+    @Mock
+    private CacheProvider mockCacheProvider;
+    
     @Captor
     private ArgumentCaptor<ActivityEvent> eventCaptor;
     
     @BeforeMethod
     public void before() {
         MockitoAnnotations.initMocks(this);
-        activityEventService = new ActivityEventService();
+        when(activityEventService.getDateTime()).thenReturn(CREATED_ON);
         
-        activityEventService.setActivityEventDao(activityEventDao);
-        activityEventService.setAppService(mockAppService);
-        activityEventService.setParticipantService(mockParticipantService);
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:"+HEALTH_CODE))
+            .thenReturn(Optional.of(TEST_USER_ID));
     }
 
     @Test
-    public void canPublishGlobalCustomEvent() throws Exception {
+    public void publishCustomEvent() throws Exception {
         App app = App.create();
         app.setCustomEvents(ImmutableMap.of("eventKey1", FUTURE_ONLY, "eventKey2", FUTURE_ONLY));
 
@@ -97,7 +110,7 @@ public class ActivityEventServiceTest {
     }
 
     @Test
-    public void canPublishGlobalCustomEventPassesUpdateType() throws Exception {
+    public void publishCustomEvent_passesUpdateType() throws Exception {
         App app = App.create();
         app.setCustomEvents(ImmutableMap.of("eventKey1", IMMUTABLE, "eventKey2", FUTURE_ONLY));
 
@@ -112,7 +125,7 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void canPublishCustomEventFromAutomaticEvents() {
+    public void publishCustomEvent_publishesAutomaticEvents() {
         DateTime timestamp1 = DateTime.now();
         DateTime timestamp2 = timestamp1.plusDays(3);
         
@@ -142,7 +155,7 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void canPublishCustomEventAutomaticEventsSkippedOnFailure() {
+    public void publishCustomEvent_customEventsSkippedOnFailure() {
         DateTime timestamp1 = DateTime.now();
         
         App app = App.create();
@@ -164,7 +177,7 @@ public class ActivityEventServiceTest {
     }
 
     @Test
-    public void cannotPublishUnknownCustomEvent() throws Exception {
+    public void publishCustomEvent_unknownEventFails() throws Exception {
         App app = App.create();
         try {
             activityEventService.publishCustomEvent(app, HEALTH_CODE, "eventKey5", DateTime.now());
@@ -175,10 +188,10 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void canPublishGlobalCreatedOn() {
+    public void publishCreatedOnEvent() {
         DateTime now = DateTime.now();
         
-        activityEventService.publishCreatedOnEvent(HEALTH_CODE, now);
+        activityEventService.publishCreatedOnEvent(TEST_APP_ID, TEST_USER_ID, HEALTH_CODE, now);
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao).publishEvent(argument.capture());
@@ -187,10 +200,14 @@ public class ActivityEventServiceTest {
         assertEquals(argument.getValue().getTimestamp(), now);
         assertEquals(argument.getValue().getUpdateType(), IMMUTABLE);
         assertEquals(argument.getValue().getHealthCode(), HEALTH_CODE);
+        
+        // mockAccountService;
+        
+        verify(mockCacheProvider).setObject(ETAG_KEY, now);
     }
     
     @Test
-    public void canGetGlobalActivityEventMap() {
+    public void getActivityEventMap() {
         Map<String, DateTime> map = Maps.newHashMap();
         map.put("activities_retrieved", ACTIVITIES_RETRIEVED);
         map.put("enrollment", ENROLLMENT);
@@ -210,7 +227,7 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void canSetGlobalStudyStartDateWithEnrollment() {
+    public void getActivityEventMap_setsStudyStartDateAsEnrollment() {
         Map<String, DateTime> map = Maps.newHashMap();
         map.put("enrollment", ENROLLMENT);
         map.put("created_on", CREATED_ON);
@@ -228,7 +245,7 @@ public class ActivityEventServiceTest {
     }
 
     @Test
-    public void canSetGlobalStudyStartDateWithActivitiesRetrieved() {
+    public void getActivityEventMap_setsStudyStartDateAsActivitiesRetrieved() {
         Map<String, DateTime> map = Maps.newHashMap();
         map.put("enrollment", ENROLLMENT);
         map.put("created_on", CREATED_ON);
@@ -248,7 +265,7 @@ public class ActivityEventServiceTest {
     }
 
     @Test
-    public void canSetGlobalStudyStartDateWithCreatedOn() {
+    public void getActivityEventMap_setsCreatedOnEvent() {
         Map<String, DateTime> map = Maps.newHashMap();
         when(activityEventDao.getActivityEventMap(HEALTH_CODE)).thenReturn(map);
         
@@ -256,7 +273,8 @@ public class ActivityEventServiceTest {
         app.setIdentifier(TEST_APP_ID);
         when(mockAppService.getApp(TEST_APP_ID)).thenReturn(app);
         
-        StudyParticipant studyParticipant = new StudyParticipant.Builder().withCreatedOn(CREATED_ON).build();
+        StudyParticipant studyParticipant = new StudyParticipant.Builder()
+                .withId(TEST_USER_ID).withCreatedOn(CREATED_ON).build();
         when(mockParticipantService.getParticipant(app, "healthcode:" + HEALTH_CODE, false)).thenReturn(studyParticipant);
         
         Map<String, DateTime> results = activityEventService.getActivityEventMap(TEST_APP_ID, HEALTH_CODE);
@@ -270,15 +288,16 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void canDeleteGlobalActivityEvents() {
-        activityEventService.deleteActivityEvents(HEALTH_CODE);
+    public void deleteActivityEvents() {
+        activityEventService.deleteActivityEvents(TEST_APP_ID, HEALTH_CODE);
         
         verify(activityEventDao).deleteActivityEvents(HEALTH_CODE);
+        verify(mockCacheProvider).setObject(ETAG_KEY, CREATED_ON);
         verifyNoMoreInteractions(activityEventDao);
     }
     
     @Test
-    public void badGetDoesntCallDao() {
+    public void getActivityEventMap_doesNotCallDaoOnError() {
         try {
             activityEventService.getActivityEventMap(TEST_APP_ID, null);
             fail("Exception should have been thrown");
@@ -287,16 +306,16 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void badDeleteDoesntCallDao() {
+    public void deleteActivityEvents_doesNotCallDaoOnError() {
         try {
-            activityEventService.deleteActivityEvents(null);
+            activityEventService.deleteActivityEvents(TEST_APP_ID, null);
             fail("Exception should have been thrown");
         } catch(NullPointerException e) {}
         verifyNoMoreInteractions(activityEventDao);
     }
 
     @Test
-    public void canPublishGlobalEnrollmentEvent() {
+    public void publishEnrollmentEvent() {
         DateTime now = DateTime.now(DateTimeZone.UTC);
         
         ConsentSignature signature = new ConsentSignature.Builder()
@@ -304,8 +323,12 @@ public class ActivityEventServiceTest {
                 .withName("A Name")
                 .withConsentCreatedOn(now.minusDays(10).getMillis())
                 .withSignedOn(now.getMillis()).build();
+        
+        when(activityEventDao.publishEvent(any())).thenReturn(true);
 
-        activityEventService.publishEnrollmentEvent(App.create(), "AAA-BBB-CCC", signature.getSignedOnAsDateTime());
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        activityEventService.publishEnrollmentEvent(app, HEALTH_CODE, signature.getSignedOnAsDateTime());
         
         ArgumentCaptor<ActivityEvent> argument = ArgumentCaptor.forClass(ActivityEvent.class);
         verify(activityEventDao).publishEvent(argument.capture());
@@ -313,13 +336,16 @@ public class ActivityEventServiceTest {
         assertEquals(argument.getValue().getEventId(), "enrollment");
         assertEquals(argument.getValue().getTimestamp(), now);
         assertEquals(argument.getValue().getUpdateType(), IMMUTABLE);
-        assertEquals(argument.getValue().getHealthCode(), "AAA-BBB-CCC");
+        assertEquals(argument.getValue().getHealthCode(), HEALTH_CODE);
+        
+        verify(mockCacheProvider).setObject(ETAG_KEY, now);
     }
 
     @Test
-    public void canPublishEnrollmentEventWithAutomaticCustomEvents() {
+    public void publishEnrollmentEvent_publishesAutomaticCustomEvents() {
         // Configure app with automatic custom events
         App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
         // Note that these events include events that are implicitly and explicitly related to 
         // enrollment, and some that are not applicable that should be ignored.
         app.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
@@ -340,7 +366,7 @@ public class ActivityEventServiceTest {
         when(activityEventDao.publishEvent(any())).thenReturn(true);
         
         // Execute
-        activityEventService.publishEnrollmentEvent(app, "AAA-BBB-CCC", signature.getSignedOnAsDateTime());
+        activityEventService.publishEnrollmentEvent(app, HEALTH_CODE, signature.getSignedOnAsDateTime());
 
         // Verify published events (4)
         ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
@@ -351,29 +377,29 @@ public class ActivityEventServiceTest {
         assertEquals(publishedEventList.get(0).getEventId(), "enrollment");
         assertTrue(publishedEventList.get(0).getTimestamp().isEqual(enrollment));
         assertEquals(publishedEventList.get(0).getUpdateType(), IMMUTABLE);
-        assertEquals(publishedEventList.get(0).getHealthCode(), "AAA-BBB-CCC");
+        assertEquals(publishedEventList.get(0).getHealthCode(), HEALTH_CODE);
 
         assertEquals(publishedEventList.get(1).getEventId(), "custom:3-days-after");
         assertTrue(publishedEventList.get(1).getTimestamp().isEqual(
                 enrollment.plusDays(3)));
         assertEquals(publishedEventList.get(1).getUpdateType(), MUTABLE);
-        assertEquals(publishedEventList.get(1).getHealthCode(), "AAA-BBB-CCC");
+        assertEquals(publishedEventList.get(1).getHealthCode(), HEALTH_CODE);
 
         assertEquals(publishedEventList.get(2).getEventId(), "custom:1-week-after");
         assertTrue(publishedEventList.get(2).getTimestamp().isEqual(
                 enrollment.plusWeeks(1)));
         assertEquals(publishedEventList.get(2).getUpdateType(), MUTABLE);
-        assertEquals(publishedEventList.get(2).getHealthCode(), "AAA-BBB-CCC");
+        assertEquals(publishedEventList.get(2).getHealthCode(), HEALTH_CODE);
 
         assertEquals(publishedEventList.get(3).getEventId(), "custom:13-weeks-after");
         assertTrue(publishedEventList.get(3).getTimestamp().isEqual(
                 enrollment.plusWeeks(13)));
         assertEquals(publishedEventList.get(3).getUpdateType(), MUTABLE);
-        assertEquals(publishedEventList.get(3).getHealthCode(), "AAA-BBB-CCC");
+        assertEquals(publishedEventList.get(3).getHealthCode(), HEALTH_CODE);
     }
     
     @Test
-    public void whenNoEnrollmentEventPublishNoCustomEvents() {
+    public void publishEnrollmentEvent_noEventPublishesNoAutomaticEvents() {
         // Configure app with automatic custom events
         App app = App.create();
         // Note that these events include events that are implicitly and explicitly related to 
@@ -392,10 +418,11 @@ public class ActivityEventServiceTest {
         
         // Only happens once, none of the other custom events are published.
         verify(activityEventDao, times(1)).publishEvent(any());
+        verify(mockCacheProvider, never()).setObject(any(), any());
     }
     
     @Test
-    public void whenActivitiesRetrievedEventFailsPublishNoAutomaticEvents() {
+    public void publishActivitiesRetrieved_noEventPublishesNoAutomaticEvents() {
         // Configure app with automatic custom events
         App app = App.create();
         // Note that these automatic events include events that are triggered by enrollment, 
@@ -416,29 +443,7 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void whenEnrollmentEventFailsPublishNoAutomaticEvents() {
-        // Configure app with automatic custom events
-        App app = App.create();
-        // Note that these automatic events include events that are triggered by enrollment, 
-        // and some that are not, that should be ignored
-        app.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
-                .put("3-days-after", "enrollment:P3D")
-                .put("1-week-after", "enrollment:P1W")
-                .put("13-weeks-after", "enrollment:P13W")
-                .put("5-years-after", "not_enrollment:P5Y")
-                .put("10-years-after", "not_entrollment:P10Y").build());
-        
-        when(activityEventDao.publishEvent(any())).thenReturn(false);
-        
-        // timestamp here does not matter
-        activityEventService.publishEnrollmentEvent(app, "AAA-BBB-CCC", CREATED_ON);
-        
-        // Only happens once, none of the other custom events are published.
-        verify(activityEventDao, times(1)).publishEvent(any());
-    }
-
-    @Test
-    public void whenCustomEventFailsPublishNoAutomaticEvents() {
+    public void publishCustomEvent_noEventPublishesNoAutomaticEvents() {
         // Configure app with automatic custom events
         App app = App.create();
         app.setCustomEvents(ImmutableMap.of("myEvent", FUTURE_ONLY));
@@ -457,7 +462,7 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void canPublishGlobalActivitiesRetrievedEventWithAutomaticCustomEvents() {
+    public void publishActivitiesRetrieved_withAutomaticCustomEvents() {
         // Configure app with automatic custom events
         App app = App.create();
         // Note that these events include events that should be triggered for enrollment, 
@@ -508,7 +513,7 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void canPublishCustomEventWithAutomaticCustomEvents() {
+    public void publishCustomEvent_withAutomaticCustomEvents() {
         // This also verifies the correct parsing of the custom event key, which contains a colon.
         App app = App.create();
         app.setCustomEvents(ImmutableMap.of("myEvent", FUTURE_ONLY));
@@ -546,7 +551,7 @@ public class ActivityEventServiceTest {
     }
 
     @Test
-    public void canPublishSurveyAnswer() {
+    public void publishQuestionAnsweredEvent() {
         DateTime now = DateTime.now();
         
         SurveyAnswer answer = new SurveyAnswer();
@@ -566,7 +571,7 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void doesNotPublishActivityFinishedEventForOldActivity() {
+    public void publishActivityFinishedEvent_failureDoesNotCallDao() {
         ScheduledActivity activity = ScheduledActivity.create();
         activity.setGuid("AAA");
 
@@ -575,7 +580,7 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void canPublishActivityFinishedEvents() {
+    public void publishActivityFinishedEvent() {
         DateTime finishedOn = DateTime.now();
         
         ScheduledActivity schActivity = ScheduledActivity.create();
@@ -598,7 +603,7 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void getGlobalActivityEventList() {
+    public void getActivityEventList() {
         Map<String, DateTime> map = Maps.newHashMap();
         map.put("activities_retrieved", ACTIVITIES_RETRIEVED);
         map.put("enrollment", ENROLLMENT);
@@ -636,7 +641,7 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void canDeleteCustomEvent() {
+    public void deleteCustomEvent() {
         App app = App.create();
         app.setCustomEvents(ImmutableMap.of("eventKey", FUTURE_ONLY));
         
@@ -651,7 +656,7 @@ public class ActivityEventServiceTest {
     }
     
     @Test
-    public void canDeleteCustomEventPassesUpdateType() {
+    public void deleteCustomEvent_passesUpdateType() {
         App app = App.create();
         app.setCustomEvents(ImmutableMap.of("eventKey", MUTABLE));
         
@@ -665,9 +670,92 @@ public class ActivityEventServiceTest {
     
     @Test(expectedExceptions = BadRequestException.class, 
             expectedExceptionsMessageRegExp = ".*App's customEvents do not contain event ID: eventKey.*")
-    public void deleteCustomEventBadEventId() {
+    public void deleteCustomEvent_badEventId() {
         App app = App.create();
         
         activityEventService.deleteCustomEvent(app, HEALTH_CODE, "eventKey");
+    }
+    
+    @Test
+    public void publishInstallLinkSent_noEventPublishesNoAutomaticEvents() {
+        // Configure app with automatic custom events
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        // Note that these automatic events include events that are triggered by enrollment, 
+        // and some that are not, that should be ignored
+        app.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "enrollment:P3D")
+                .put("1-week-after", "enrollment:P1W")
+                .put("13-weeks-after", "enrollment:P13W")
+                .put("5-years-after", "not_enrollment:P5Y")
+                .put("10-years-after", "not_entrollment:P10Y").build());
+        
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:"+HEALTH_CODE))
+            .thenReturn(Optional.of(TEST_USER_ID));
+        
+        when(activityEventDao.publishEvent(any())).thenReturn(false);
+        
+        activityEventService.publishInstallLinkSent(app, HEALTH_CODE, CREATED_ON);
+        
+        // Only happens once, none of the other custom events are published.
+        verify(activityEventDao, times(1)).publishEvent(any());
+        verify(mockCacheProvider, never()).setObject(ETAG_KEY, CREATED_ON);
+    }
+
+    @Test
+    public void publishInstallLinkSent_withAutomaticCustomEvents() {
+        // Configure app with automatic custom events
+        App app = App.create();
+        app.setIdentifier(TEST_APP_ID);
+        // Note that these events include events that should be triggered for enrollment, 
+        // not activities retrieved. These are ignore.
+        app.setAutomaticCustomEvents(ImmutableMap.<String, String>builder()
+                .put("3-days-after", "install_link_sent:P3D")
+                .put("1-week-after", "install_link_sent:P1W")
+                .put("13-weeks-after", "install_link_sent:P13W")
+                .put("5-years-after", "enrollment:P5Y")
+                .put("10-years-after", "enrollment:P10Y").build());
+
+        // Create consent signature
+        DateTime retrieved = DateTime.parse("2018-04-04T16:00-07:00");
+        
+        when(activityEventDao.publishEvent(any())).thenReturn(true);
+
+        when(mockAccountService.getAccountId(TEST_APP_ID, "healthcode:"+HEALTH_CODE))
+            .thenReturn(Optional.of(TEST_USER_ID));
+
+        // Execute
+        activityEventService.publishInstallLinkSent(app, HEALTH_CODE, retrieved);
+
+        // Verify published events (4)
+        ArgumentCaptor<ActivityEvent> publishedEventCaptor = ArgumentCaptor.forClass(ActivityEvent.class);
+        verify(activityEventDao, times(4)).publishEvent(publishedEventCaptor.capture());
+
+        List<ActivityEvent> publishedEventList = publishedEventCaptor.getAllValues();
+
+        assertEquals(publishedEventList.get(0).getEventId(), "install_link_sent");
+        assertEquals(publishedEventList.get(0).getTimestamp(), retrieved);
+        assertEquals(publishedEventList.get(0).getUpdateType(), FUTURE_ONLY);
+        assertEquals(publishedEventList.get(0).getHealthCode(), HEALTH_CODE);
+
+        assertEquals(publishedEventList.get(1).getEventId(), "custom:3-days-after");
+        assertEquals(publishedEventList.get(1).getTimestamp(),
+                DateTime.parse("2018-04-07T16:00-0700"));
+        assertEquals(publishedEventList.get(1).getUpdateType(), MUTABLE);
+        assertEquals(publishedEventList.get(1).getHealthCode(), HEALTH_CODE);
+
+        assertEquals(publishedEventList.get(2).getEventId(), "custom:1-week-after");
+        assertEquals(publishedEventList.get(2).getTimestamp(),
+                DateTime.parse("2018-04-11T16:00-0700"));
+        assertEquals(publishedEventList.get(2).getUpdateType(), MUTABLE);
+        assertEquals(publishedEventList.get(2).getHealthCode(), HEALTH_CODE);
+
+        assertEquals(publishedEventList.get(3).getEventId(), "custom:13-weeks-after");
+        assertEquals(publishedEventList.get(3).getTimestamp(),
+                DateTime.parse("2018-07-04T16:00-0700"));
+        assertEquals(publishedEventList.get(3).getUpdateType(), MUTABLE);
+        assertEquals(publishedEventList.get(3).getHealthCode(), HEALTH_CODE);
+        
+        verify(mockCacheProvider).setObject(ETAG_KEY, retrieved);
     }
 }

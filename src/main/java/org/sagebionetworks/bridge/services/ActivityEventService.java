@@ -27,12 +27,17 @@ import org.joda.time.Period;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.BridgeUtils;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.ActivityEventDao;
 import org.sagebionetworks.bridge.dynamodb.DynamoActivityEvent;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.Tuple;
+import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.StudyParticipant;
 import org.sagebionetworks.bridge.models.activities.ActivityEvent;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.apps.App;
 import org.sagebionetworks.bridge.models.schedules.ScheduledActivity;
 import org.sagebionetworks.bridge.models.surveys.SurveyAnswer;
@@ -54,6 +59,8 @@ public class ActivityEventService {
     private ActivityEventDao activityEventDao;
     private ParticipantService participantService;
     private AppService appService;
+    private AccountService accountService;
+    private CacheProvider cacheProvider;
     
     @Autowired
     final void setActivityEventDao(ActivityEventDao activityEventDao) {
@@ -68,6 +75,20 @@ public class ActivityEventService {
     @Autowired
     final void setAppService(AppService appService) {
         this.appService = appService;
+    }
+    
+    @Autowired
+    final void setAccountService(AccountService accountService) {
+        this.accountService = accountService;
+    }
+    
+    @Autowired
+    final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
+    }
+    
+    public DateTime getDateTime() {
+        return DateTime.now();
     }
     
     /**
@@ -139,6 +160,7 @@ public class ActivityEventService {
         Validate.entityThrowingException(INSTANCE, globalEvent);
         
         if (activityEventDao.publishEvent(globalEvent)) {
+            updateEtagCache(app.getIdentifier(), healthCode, enrolledOn);
             // Create automatic events, as defined in the app
             createAutomaticCustomEvents(app, healthCode, globalEvent);
         }
@@ -175,6 +197,7 @@ public class ActivityEventService {
         Validate.entityThrowingException(INSTANCE, globalEvent);
         
         if (activityEventDao.publishEvent(globalEvent)) {
+            updateEtagCache(app.getIdentifier(), healthCode, timestamp);
             // Create automatic events, as defined in the app
             createAutomaticCustomEvents(app, healthCode, globalEvent);
         }
@@ -231,7 +254,7 @@ public class ActivityEventService {
      * Publishes a created_on event for a user that essentially copies over the createdOn 
      * timestamp of an Account.
      */
-    public void publishCreatedOnEvent(String healthCode, DateTime createdOn) {
+    protected void publishCreatedOnEvent(String appId, String userId, String healthCode, DateTime createdOn) {
         checkNotNull(healthCode);
         
         ActivityEvent globalEvent = new DynamoActivityEvent.Builder()
@@ -240,8 +263,7 @@ public class ActivityEventService {
                 .withObjectType(CREATED_ON).build();
         activityEventDao.publishEvent(globalEvent);
         
-        // If the globalEvent is valid, all other derivations are valid 
-        Validate.entityThrowingException(INSTANCE, globalEvent);
+        updateEtagCache(appId, healthCode, createdOn);
     }
     
     /**
@@ -262,7 +284,7 @@ public class ActivityEventService {
             App app = appService.getApp(appId);
             StudyParticipant studyParticipant = participantService.getParticipant(app, "healthcode:"+healthCode, false);
             createdOn = studyParticipant.getCreatedOn();
-            publishCreatedOnEvent(healthCode, createdOn);
+            publishCreatedOnEvent(appId, studyParticipant.getId(), healthCode, createdOn);
             builder.put(CREATED_ON.name().toLowerCase(), createdOn);
         }
         DateTime studyStartDate = createdOn;
@@ -298,9 +320,13 @@ public class ActivityEventService {
         return activityEventList;
     }
     
-    public void deleteActivityEvents(String healthCode) {
+    public void deleteActivityEvents(String appId, String healthCode) {
+        checkNotNull(appId);
         checkNotNull(healthCode);
+        
         activityEventDao.deleteActivityEvents(healthCode);
+        
+        updateEtagCache(appId, healthCode, getDateTime());
     }
 
     /**
@@ -326,5 +352,18 @@ public class ActivityEventService {
                 activityEventDao.publishEvent(automaticEvent);
             }
         }        
+    }
+
+    /**
+     * We have to look up the userId because we switched away from the use of healthCode
+     * in our system, and userId is referenced in the controllers where we are calculating
+     * ETag values. This is always a set, not a remove, because it's a timestamp for the
+     * entire collection of events for this user.
+     */
+    private void updateEtagCache(String appId, String healthCode, DateTime timestamp) {
+        String userId = accountService.getAccountId(appId, "healthcode:"+healthCode)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        CacheKey cacheKey = CacheKey.etag(StudyActivityEvent.class, userId);
+        cacheProvider.setObject(cacheKey, timestamp);
     }
 }
