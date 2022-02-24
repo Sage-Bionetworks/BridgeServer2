@@ -220,6 +220,7 @@ public class StudyService {
         if (!CAN_EDIT_STUDY_CORE.contains(existing.getPhase())) {
             study.setScheduleGuid(existing.getScheduleGuid());
             study.setCustomEvents(existing.getCustomEvents());
+            study.setStudyStartEventId(existing.getStudyStartEventId());
         } else if (existing.getScheduleGuid() != null) {
             study.setScheduleGuid(existing.getScheduleGuid());
         }

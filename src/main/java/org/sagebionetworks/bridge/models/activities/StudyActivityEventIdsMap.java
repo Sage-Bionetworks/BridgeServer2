@@ -24,7 +24,9 @@ public class StudyActivityEventIdsMap {
     public void addCustomEvents(List<StudyCustomEvent> events) {
         if (events != null) {
             for (StudyCustomEvent event : events) {
-                customEvents.put(event.getEventId(), event.getUpdateType());
+                if (event != null && event.getEventId() != null && event.getUpdateType() != null) {
+                    customEvents.put(event.getEventId(), event.getUpdateType());    
+                }
             }
         }
     }
@@ -32,7 +34,9 @@ public class StudyActivityEventIdsMap {
     public void addStudyBursts(List<StudyBurst> bursts) {
         if (bursts != null) {
             for (StudyBurst burst : bursts) {
-                studyBursts.put(burst.getIdentifier(), burst.getUpdateType());
+                if (burst != null && burst.getIdentifier() != null && burst.getUpdateType() != null) {
+                    studyBursts.put(burst.getIdentifier(), burst.getUpdateType());    
+                }
             }
         }
     }
