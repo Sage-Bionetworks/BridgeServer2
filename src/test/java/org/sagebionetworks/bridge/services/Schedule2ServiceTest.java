@@ -64,7 +64,7 @@ import org.sagebionetworks.bridge.models.schedules2.Schedule2Test;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.SessionTest;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
-import org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule.ParticipantSchedule;
+import org.sagebionetworks.bridge.models.schedules2.participantschedules.ParticipantSchedule;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.studies.Study;

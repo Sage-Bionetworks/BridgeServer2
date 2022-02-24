@@ -1,4 +1,4 @@
-package org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule;
+package org.sagebionetworks.bridge.models.schedules2.participantschedules;
 
 import static java.util.stream.Collectors.toList;
 
