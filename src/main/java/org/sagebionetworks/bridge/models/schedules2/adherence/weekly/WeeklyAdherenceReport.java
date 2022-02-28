@@ -37,7 +37,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Entity
 @Table(name = "WeeklyAdherenceReports")
 @IdClass(WeeklyAdherenceReportId.class)
-@JsonPropertyOrder({ "participant", "testAccount", "progression", "weeklyAdherencePercent", "clientTimeZone",
+@JsonPropertyOrder({ "participant", "testAccount", "progression", "weeklyAdherencePercent", "week", "clientTimeZone",
         "createdOn", "rows", "byDayEntries", "type" })
 public class WeeklyAdherenceReport {
     
@@ -53,7 +53,8 @@ public class WeeklyAdherenceReport {
     private ParticipantStudyProgress progression;
     private boolean testAccount;
     private String clientTimeZone;
-    private int weeklyAdherencePercent;
+    private Integer weeklyAdherencePercent;
+    private int week;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
     @Convert(converter = NextActivityConverter.class)
@@ -110,11 +111,17 @@ public class WeeklyAdherenceReport {
     public void setTestAccount(boolean testAccount) {
         this.testAccount = testAccount;
     }
-    public int getWeeklyAdherencePercent() {
+    public Integer getWeeklyAdherencePercent() {
         return weeklyAdherencePercent;
     }
-    public void setWeeklyAdherencePercent(int weeklyAdherencePercent) {
+    public void setWeeklyAdherencePercent(Integer weeklyAdherencePercent) {
         this.weeklyAdherencePercent = weeklyAdherencePercent;
+    }
+    public int getWeek() {
+        return week;
+    }
+    public void setWeek(int week) {
+        this.week = week;
     }
     public String getClientTimeZone() {
         return clientTimeZone;

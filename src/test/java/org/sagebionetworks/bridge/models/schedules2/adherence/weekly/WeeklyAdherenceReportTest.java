@@ -7,7 +7,6 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.IN_PROGRESS;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
@@ -70,10 +69,11 @@ public class WeeklyAdherenceReportTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
         
-        assertEquals(node.size(), 10);
+        assertEquals(node.size(), 11);
         assertNull(node.get("appId"));
         assertNull(node.get("studyId"));
         assertNull(node.get("userId"));
+        assertEquals(node.get("participant").get("identifier").textValue(), "userId");
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
         assertEquals(node.get("createdOn").textValue(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)).toString());
         assertEquals(node.get("weeklyAdherencePercent").intValue(), 79);
@@ -112,8 +112,7 @@ public class WeeklyAdherenceReportTest {
     public void nullSafe( ) {
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
-        assertEquals(node.size(), 4);
-        assertFalse(node.get("activeOnly").booleanValue());
+        assertEquals(node.size(), 3);
         assertEquals(node.get("adherencePercent").intValue(), 100);
         assertEquals(node.get("streams").size(), 0);
         assertEquals(node.get("type").textValue(), "EventStreamAdherenceReport");

@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.services.AdherenceService;
 
@@ -79,6 +80,20 @@ public class AdherenceController extends BaseController {
 
         return service.getEventStreamAdherenceReport(session.getAppId(), studyId, session.getId(), now,
                 session.getParticipant().getClientTimeZone(), showActiveOnly);
+    }
+    
+    @GetMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence/study")
+    public StudyAdherenceReport getStudyAdherenceReport(@PathVariable String studyId, 
+            @PathVariable String userIdToken, @RequestParam(required = false) String timestamp) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
+        Account account = accountService.getAccount(accountId)
+                .orElseThrow(() -> new EntityNotFoundException(Account.class));
+
+        DateTime timestampDT = BridgeUtils.getDateTimeOrDefault(timestamp, getDateTime());
+
+        return service.getStudyAdherenceReport(session.getAppId(), studyId, timestampDT, account);
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence/weekly")

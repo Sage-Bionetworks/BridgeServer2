@@ -21,12 +21,12 @@ import com.google.common.collect.Lists;
 
 public final class AdherenceState {
 
-    private final boolean showActive;
     private final DateTime now;
     private final String clientTimeZone;
     private final List<TimelineMetadata> metadata;
     private final List<StudyActivityEvent> events;
     private final List<AdherenceRecord> adherenceRecords;
+    private final String studyStartEventId;
     
     private final Map<String, EventStream> streamsByEventId;
     private final Map<String, EventStreamDay> streamsByStreamKey;
@@ -45,7 +45,7 @@ public final class AdherenceState {
         now = builder.now.withZone(zone);
         LocalDate localNow = now.toLocalDate();
         
-        showActive = builder.showActiveOnly;
+        studyStartEventId = builder.studyStartEventId;
         clientTimeZone = builder.clientTimeZone;
         metadata = builder.metadata;
         events = builder.events;
@@ -75,8 +75,8 @@ public final class AdherenceState {
                 .withEvents(events)
                 .withAdherenceRecords(adherenceRecords)
                 .withNow(now)
-                .withShowActive(showActive)
-                .withClientTimeZone(clientTimeZone);
+                .withClientTimeZone(clientTimeZone)
+                .withStudyStartEventId(studyStartEventId);
     }
     
     public List<TimelineMetadata> getMetadata() {
@@ -90,14 +90,14 @@ public final class AdherenceState {
     List<AdherenceRecord> getAdherenceRecords() {
         return adherenceRecords;
     }
-    public boolean showActive() {
-        return showActive;
-    }
     public DateTime getNow() {
         return now;
     }
     public String getClientTimeZone() {
         return clientTimeZone;
+    }
+    public String getStudyStartEventId() {
+        return studyStartEventId;
     }
     public EventStream getEventStreamById(String eventId) {
         EventStream stream = streamsByEventId.get(eventId);
@@ -159,13 +159,13 @@ public final class AdherenceState {
         return keysSorted;
     }
     public static class Builder {
-        private boolean showActiveOnly;
         private List<TimelineMetadata> metadata;
         private List<StudyActivityEvent> events;
         private List<AdherenceRecord> adherenceRecords;
         private DateTime now;
         private String clientTimeZone;
         private DateTimeZone zone;
+        private String studyStartEventId;
 
         public Builder withMetadata(List<TimelineMetadata> metadata) {
             this.metadata = metadata;
@@ -183,12 +183,12 @@ public final class AdherenceState {
             this.now = now;
             return this;
         }
-        public Builder withShowActive(boolean showActiveOnly) {
-            this.showActiveOnly = showActiveOnly;
-            return this;
-        }
         public Builder withClientTimeZone(String clientTimeZone) {
             this.clientTimeZone = clientTimeZone;
+            return this;
+        }
+        public Builder withStudyStartEventId(String studyStartEventId) {
+            this.studyStartEventId = studyStartEventId;
             return this;
         }
         public AdherenceState build() {

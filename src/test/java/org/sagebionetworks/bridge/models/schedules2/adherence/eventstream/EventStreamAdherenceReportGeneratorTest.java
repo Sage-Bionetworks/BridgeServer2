@@ -13,7 +13,6 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState.UNSTARTED;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator.INSTANCE;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -58,7 +57,6 @@ public class EventStreamAdherenceReportGeneratorTest {
         EventStreamAdherenceReport report = INSTANCE.generate(state);
         assertEquals(report.getTimestamp(), NOW);
         assertEquals(report.getAdherencePercent(), 100);
-        assertFalse(report.isActiveOnly());
         assertEquals(report.getStreams().size(), 1);
         
         EventStream stream = report.getStreams().get(0);
@@ -295,61 +293,6 @@ public class EventStreamAdherenceReportGeneratorTest {
     }
 
     @Test
-    public void showActiveFiltersNotYetAvailable() throws Exception { 
-        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
-
-        AdherenceState state = createState(NOW.minusDays(10), META1, event, null, true);
-
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertTrue(report.getStreams().isEmpty());        
-    }
-
-    @Test
-    public void showActiveFiltersNotApplicable() throws Exception { 
-        AdherenceState state = createState(NOW.minusDays(10), META1, null, null, true);
-
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertTrue(report.getStreams().isEmpty());        
-    }
-    
-    @Test
-    public void showActiveFiltersExpired() throws Exception { 
-        AdherenceRecord adherenceRecord = createRecord(null, null, "sessionInstanceGuid", false);
-        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
-
-        AdherenceState state = createState(NOW.plusDays(2), META1, event, adherenceRecord, true);
-
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertTrue(report.getStreams().isEmpty());
-    }
-    
-    @Test
-    public void showActiveFiltersCompleted() throws Exception {
-        // Note thought that we will return completed sessions if they are in their time window, and
-        // we want users to see that they've finished it.
-        AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
-        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(17));
-        
-        AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
-        
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertTrue(report.getStreams().isEmpty());
-    }
-    
-    @Test
-    public void showActiveDoesNotFilterCompletedInWindow() throws Exception {
-        // Note thought that we will return completed sessions if they are in their time window, and
-        // we want users to see that they've finished it.
-        AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "sessionInstanceGuid", false);
-        StudyActivityEvent event = createEvent("sessionStartEventId", NOW.minusDays(14));
-        
-        AdherenceState state = createState(NOW, META1, event, adherenceRecord, true);
-
-        EventStreamAdherenceReport report = INSTANCE.generate(state);
-        assertEquals(getReportStates(report), ImmutableList.of(COMPLETED));
-    }
-    
-    @Test
     public void groupsUnderEventId() throws Exception {
         AdherenceRecord adherenceRecord = createRecord(STARTED_ON, FINISHED_ON, "gnescr0HRz5T2JEjc0Ad6Q", false);        
         StudyActivityEvent event = createEvent("study_burst:Main Sequence:01", NOW.minusDays(3));
@@ -436,7 +379,6 @@ public class EventStreamAdherenceReportGeneratorTest {
         if (adherenceRecord != null) {
             builder.withAdherenceRecords(ImmutableList.of(adherenceRecord));
         }
-        builder.withShowActive(showActive);
         builder.withNow(now);
         return builder.build();
     }

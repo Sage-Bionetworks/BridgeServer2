@@ -15,10 +15,12 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
+import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 
 public class AdherenceUtils {
 
@@ -53,10 +55,23 @@ public class AdherenceUtils {
         return STARTED;
     }
     
+    public static int calculateAdherencePercentage(Map<Integer, List<EventStreamDay>> byDayEntries) {
+        long compliantSessions = countDays(byDayEntries.values(), COMPLIANT);
+        long noncompliantSessions = countDays(byDayEntries.values(), NONCOMPLIANT);
+        long unkSessions = countDays(byDayEntries.values(), UNKNOWN);
+        long totalSessions = compliantSessions + noncompliantSessions + unkSessions;
+
+        float percentage = 1.0f;
+        if (totalSessions > 0) {
+            percentage = ((float) compliantSessions / (float) totalSessions);
+        }
+        return (int) (percentage * 100);
+    }
+    
     public static int calculateAdherencePercentage(Collection<EventStream> streams) {
-        long compliantSessions = counting(streams, COMPLIANT);
-        long noncompliantSessions = counting(streams, NONCOMPLIANT);
-        long unkSessions = counting(streams, UNKNOWN);
+        long compliantSessions = countDaysInStreams(streams, COMPLIANT);
+        long noncompliantSessions = countDaysInStreams(streams, NONCOMPLIANT);
+        long unkSessions = countDaysInStreams(streams, UNKNOWN);
         long totalSessions = compliantSessions + noncompliantSessions + unkSessions;
 
         float percentage = 1.0f;
@@ -70,9 +85,9 @@ public class AdherenceUtils {
         if (state.getMetadata().isEmpty()) {
             return ParticipantStudyProgress.NO_SCHEDULE;
         }
-        long total = counting(eventStreams, EnumSet.allOf(SessionCompletionState.class));
-        long na = counting(eventStreams, EnumSet.of(NOT_APPLICABLE));
-        long done = counting(eventStreams, EnumSet.of(ABANDONED, EXPIRED, DECLINED, COMPLETED));
+        long total = countDaysInStreams(eventStreams, EnumSet.allOf(SessionCompletionState.class));
+        long na = countDaysInStreams(eventStreams, EnumSet.of(NOT_APPLICABLE));
+        long done = countDaysInStreams(eventStreams, EnumSet.of(ABANDONED, EXPIRED, DECLINED, COMPLETED));
         
         if (na == total) {
             return ParticipantStudyProgress.UNSTARTED;
@@ -82,12 +97,20 @@ public class AdherenceUtils {
         return ParticipantStudyProgress.IN_PROGRESS;
     }
     
-    public static long counting(Collection<EventStream> streams, Set<SessionCompletionState> states) {
+    public static long countDaysInStreams(Collection<EventStream> streams, Set<SessionCompletionState> states) {
       return streams.stream()
           .flatMap(es -> es.getByDayEntries().values().stream())
           .flatMap(list -> list.stream())
           .flatMap(esd -> esd.getTimeWindows().stream())
           .filter(win -> states.contains(win.getState()))
           .collect(Collectors.counting());
+    }
+
+    public static long countDays(Collection<List<EventStreamDay>> days, Set<SessionCompletionState> states) {
+        return days.stream()
+            .flatMap(list -> list.stream())
+            .flatMap(esd -> esd.getTimeWindows().stream())
+            .filter(win -> states.contains(win.getState()))
+            .collect(Collectors.counting());
     }
 }

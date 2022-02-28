@@ -796,7 +796,6 @@ public class AdherenceServiceTest extends Mockito {
         assertTrue(report.getStreams().isEmpty());
         assertEquals(report.getTimestamp(), EVENT_TS.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
         assertEquals(report.getAdherencePercent(), 100);
-        assertTrue(report.isActiveOnly());
     }
     
     @Test
@@ -824,7 +823,6 @@ public class AdherenceServiceTest extends Mockito {
         assertTrue(report.getStreams().isEmpty());
         assertEquals(report.getTimestamp(), EVENT_TS.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
         assertEquals(report.getAdherencePercent(), 100);
-        assertTrue(report.isActiveOnly());
         
         verify(mockRecordDao).getAdherenceRecords(searchCaptor.capture());
         AdherenceRecordsSearch search = searchCaptor.getValue();
@@ -868,7 +866,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(retValue.getUserId(), TEST_USER_ID);
         assertEquals(retValue.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         assertEquals(retValue.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
-        assertEquals(retValue.getWeeklyAdherencePercent(), 100);
+        assertNull(retValue.getWeeklyAdherencePercent());
         assertEquals(retValue.getParticipant().getIdentifier(), TEST_USER_ID);
         assertEquals(retValue.getParticipant().getFirstName(), "firstName");
         assertEquals(retValue.getParticipant().getLastName(), "lastName");
@@ -912,7 +910,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(retValue.getUserId(), TEST_USER_ID);
         assertEquals(retValue.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         assertEquals(retValue.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
-        assertEquals(retValue.getWeeklyAdherencePercent(), 100);
+        assertNull(retValue.getWeeklyAdherencePercent());
         assertEquals(retValue.getParticipant().getIdentifier(), TEST_USER_ID);
         
         verify(mockReportDao).saveWeeklyAdherenceReport(retValue);

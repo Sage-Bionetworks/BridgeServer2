@@ -834,7 +834,6 @@ public class TestUtils {
             .withEvents(events)
             .withAdherenceRecords(adherenceRecords)
             .withNow(ADHERENCE_STATE_NOW)
-            .withShowActive(true)
             .withClientTimeZone(TEST_CLIENT_TIME_ZONE);
     }
 }
