@@ -13,6 +13,7 @@ import org.sagebionetworks.bridge.models.DateRange;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2Test;
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
+import org.sagebionetworks.bridge.models.schedules2.participantschedules.ParticipantSchedule;
 import org.sagebionetworks.bridge.models.schedules2.timelines.ScheduledSession;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;

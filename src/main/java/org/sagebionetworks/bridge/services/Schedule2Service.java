@@ -22,12 +22,17 @@ import static org.sagebionetworks.bridge.validators.Schedule2Validator.INSTANCE;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.google.common.base.Stopwatch;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.dao.Schedule2Dao;
@@ -35,16 +40,23 @@ import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.PublishedEntityException;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.accounts.Account;
+import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
 import org.sagebionetworks.bridge.models.schedules2.HasGuid;
 import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.Session;
 import org.sagebionetworks.bridge.models.schedules2.TimeWindow;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
+import org.sagebionetworks.bridge.models.schedules2.participantschedules.ParticipantSchedule;
+import org.sagebionetworks.bridge.models.schedules2.participantschedules.ParticipantScheduleGenerator;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Bridge v2 schedules. These replace the older SchedulePlans and their APIs. The 
@@ -54,10 +66,13 @@ import org.sagebionetworks.bridge.validators.Validate;
  */
 @Component
 public class Schedule2Service {
-    
+    private static final Logger LOG = LoggerFactory.getLogger(Schedule2Service.class);
+
     private OrganizationService organizationService;
     
     private StudyService studyService;
+    
+    private StudyActivityEventService studyActivityEventService;
     
     private Schedule2Dao dao;
     
@@ -69,6 +84,11 @@ public class Schedule2Service {
     @Autowired
     final void setStudyService(StudyService studyService) {
         this.studyService = studyService;
+    }
+    
+    @Autowired
+    final void setStudyActivityEventService(StudyActivityEventService studyActivityEventService) {
+        this.studyActivityEventService = studyActivityEventService;
     }
     
     @Autowired
@@ -388,4 +408,42 @@ public class Schedule2Service {
             session.setStartEventIds(events);
         }
     }
+    
+    public ParticipantSchedule getParticipantSchedule(String appId, String studyId, Account account) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(account);
+        
+        Stopwatch watch = Stopwatch.createStarted();
+
+        List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
+                account.getAppId(), studyId, account.getId()).getItems();
+
+        AdherenceState.Builder builder = new AdherenceState.Builder();
+        builder.withEvents(events);
+        builder.withNow(getCreatedOn());
+        builder.withClientTimeZone(DateTimeZone.getDefault().getID());
+        if (account.getClientTimeZone() != null) {
+            builder.withClientTimeZone(account.getClientTimeZone());    
+        }
+        AdherenceState state = builder.build();
+        
+        Schedule2 schedule = null;
+        ParticipantSchedule participantSchedule = null;
+        Study study = studyService.getStudy(appId, studyId, true);
+        if (study.getScheduleGuid() != null) {
+            schedule = getScheduleForStudy(appId, study).orElse(null);
+        }
+        if (schedule == null) {
+            Timeline timeline = new Timeline.Builder().build();
+            participantSchedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
+        } else {
+            Timeline timeline = Scheduler.INSTANCE.calculateTimeline(schedule);
+            participantSchedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
+        }
+        watch.stop();
+        LOG.info("Participant schedule took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
+        return participantSchedule;
+    }
+
 }

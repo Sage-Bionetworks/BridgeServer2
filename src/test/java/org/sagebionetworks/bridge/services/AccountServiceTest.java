@@ -50,6 +50,7 @@ import com.google.common.collect.Sets;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
+import org.joda.time.DateTimeZone;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -63,6 +64,8 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
 import org.sagebionetworks.bridge.exceptions.AccountDisabledException;
@@ -125,6 +128,9 @@ public class AccountServiceTest extends Mockito {
     
     @Mock
     PagedResourceList<AccountSummary> mockAccountSummaries;
+    
+    @Mock
+    CacheProvider mockCacheProvider;
 
     @Mock
     AccountSecret mockSecret;
@@ -277,6 +283,8 @@ public class AccountServiceTest extends Mockito {
         assertEquals(createdAccount.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         // This was not set because the caller is not definitively a dev account.
         assertEquals(createdAccount.getDataGroups(), ImmutableSet.of());
+        
+        verify(mockCacheProvider).setObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID), MOCK_DATETIME);
 
         // Verify we also create a participant version.
         verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(createdAccount));
@@ -320,14 +328,30 @@ public class AccountServiceTest extends Mockito {
 
     @Test
     public void updateAccount() throws Exception {
+        mockGetAccountById(ACCOUNT_ID, false);
+        
+        Account updated = Account.create();
+        updated.setAppId(TEST_APP_ID);
+        updated.setId(TEST_USER_ID);
+        updated.setClientTimeZone("America/Los_Angeles");
+
+        service.updateAccount(updated);
+        
+        verify(mockAccountDao).updateAccount(updated);
+        
+        verify(mockCacheProvider).setObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID), MOCK_DATETIME);
+
+        // Verify we also create a participant version.
+        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(updated));
+    }
+    
+    @Test
+    public void updateAccount_noTimeZoneUpdate() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);
 
         service.updateAccount(account);
         
-        verify(mockAccountDao).updateAccount(account);
-
-        // Verify we also create a participant version.
-        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(account));
+        verify(mockCacheProvider, never()).setObject(any(), any());
     }
     
     @Test
@@ -453,15 +477,28 @@ public class AccountServiceTest extends Mockito {
     @Test
     public void editAccount() throws Exception {
         Account account = mockGetAccountById(ACCOUNT_ID, false);
+        
+        // This particular edit updates the time zone, so we reset the etag
+        service.editAccount(ACCOUNT_ID, (acct) -> acct.setClientTimeZone("America/Los_Angeles"));
 
-        service.editAccount(ACCOUNT_ID, mockConsumer);
-
-        verify(mockConsumer).accept(account);
-
+        verify(mockCacheProvider).setObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID), MOCK_DATETIME);
         // Verify we also create a participant version.
         verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(account));
     }
 
+    @Test
+    public void editAccount_noTimeZoneUpdate() throws Exception {
+        Account account = mockGetAccountById(ACCOUNT_ID, false);
+        
+        // This edit does not change the default time zone (null), so no etag update.
+        service.editAccount(ACCOUNT_ID, mockConsumer);
+        
+        verify(mockConsumer).accept(account);
+        verify(mockCacheProvider, never()).setObject(any(), any());
+        // Verify we also create a participant version.
+        verify(mockParticipantVersionService).createParticipantVersionFromAccount(same(account));
+    }
+    
     @Test
     public void editAccountWhenAccountNotFound() throws Exception {
         try {
@@ -507,13 +544,16 @@ public class AccountServiceTest extends Mockito {
         mockGetAccountById(ACCOUNT_ID, false);
 
         service.deleteAccount(ACCOUNT_ID);
+        
         verify(mockAccountDao).deleteAccount(TEST_USER_ID);
+        verify(mockCacheProvider).removeObject(CacheKey.etag(DateTimeZone.class, TEST_USER_ID));
     }
     
     @Test
     public void deleteAccountNotFound() {
         service.deleteAccount(ACCOUNT_ID);
         verify(mockAccountDao, never()).deleteAccount(any());
+        verify(mockCacheProvider, never()).removeObject(any());
     }
 
     @Test

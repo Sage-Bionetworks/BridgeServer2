@@ -47,14 +47,12 @@ import org.sagebionetworks.bridge.AuthEvaluatorField;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
-import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
-import org.sagebionetworks.bridge.models.schedules2.Schedule2;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
@@ -62,14 +60,10 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSe
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
-import org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule.ParticipantSchedule;
-import org.sagebionetworks.bridge.models.schedules2.adherence.participantschedule.ParticipantScheduleGenerator;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportGenerator;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
-import org.sagebionetworks.bridge.models.schedules2.timelines.Scheduler;
 import org.sagebionetworks.bridge.models.schedules2.timelines.SessionState;
-import org.sagebionetworks.bridge.models.schedules2.timelines.Timeline;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
 import org.sagebionetworks.bridge.models.studies.Study;
 import org.sagebionetworks.bridge.validators.AdherenceRecordsSearchValidator;
@@ -425,53 +419,6 @@ public class AdherenceService {
                 .withRequestParam(PagedResourceList.ID_FILTER, search.getIdFilter())
                 .withRequestParam(PagedResourceList.OFFSET_BY, search.getOffsetBy())
                 .withRequestParam(PagedResourceList.PAGE_SIZE, search.getPageSize());
-    }
-    
-    public ParticipantSchedule getParticipantSchedule(String appId, String studyId, Account account) {
-        checkNotNull(appId);
-        checkNotNull(studyId);
-        checkNotNull(account);
-        
-        Stopwatch watch = Stopwatch.createStarted();
-        
-        Study study = studyService.getStudy(appId, studyId, true);
-        if (study.getScheduleGuid() == null) {
-            throw new EntityNotFoundException(Schedule2.class);
-        }
-        Schedule2 studySchedule = scheduleService.getScheduleForStudy(appId, study)
-                .orElseThrow(() -> new EntityNotFoundException(Schedule2.class));
-        Timeline timeline = Scheduler.INSTANCE.calculateTimeline(studySchedule);
-        
-        AdherenceState state = getAdherenceStateForParticipantSchedule(account, studyId);
-        
-        ParticipantSchedule schedule = ParticipantScheduleGenerator.INSTANCE.generate(state, timeline);
-        
-        watch.stop();
-        LOG.info("Participant schedule took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
-        return schedule;
-    }
-    
-    private AdherenceState getAdherenceStateForParticipantSchedule(Account account, String studyId) {
-        List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
-                account.getAppId(), studyId, account.getId()).getItems();
-
-        // we need both session and assessment adherence records in this case
-        List<AdherenceRecord> adherenceRecords = getAdherenceRecords(account.getAppId(), new AdherenceRecordsSearch.Builder()
-                .withCurrentTimestampsOnly(true)
-                // If includeRepeats=false (which is counter-intuitive) you will not get declined sessions with no 
-                // startedOn value, but it's not needed because persistent time windows are excluded from adherence.
-                .withIncludeRepeats(true)
-                .withStudyId(studyId)
-                .withUserId(account.getId())
-                .build()).getItems();
-        
-        // State does not need to include TimelineMetadata, as we're using the Timeline instead (passed separately)
-        AdherenceState.Builder builder = new AdherenceState.Builder();
-        builder.withNow(getDateTime());
-        builder.withClientTimeZone(account.getClientTimeZone());
-        builder.withEvents(events);
-        builder.withAdherenceRecords(adherenceRecords);
-        return builder.build();
     }
     
     private WeeklyAdherenceReport getWeeklyAdherenceReportInternal(String appId, String studyId, String userId,
