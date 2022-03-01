@@ -31,8 +31,6 @@ import java.util.function.Function;
 
 import com.google.common.collect.Sets;
 
-import io.jsonwebtoken.lang.Objects;
-
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -43,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
@@ -283,7 +282,7 @@ public class AccountService {
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
         
-        boolean timeZoneUpdated = !Objects.nullSafeEquals(
+        boolean timeZoneUpdated = !ObjectUtils.nullSafeEquals(
                 account.getClientTimeZone(), persistedAccount.getClientTimeZone());
         
         // The test_user flag taints an account; once set it cannot be unset.
@@ -366,7 +365,7 @@ public class AccountService {
         
         accountDao.updateAccount(account);
         
-        if (!Objects.nullSafeEquals(oldTimeZone, newTimeZone)) {
+        if (!ObjectUtils.nullSafeEquals(oldTimeZone, newTimeZone)) {
             CacheKey cacheKey = CacheKey.etag(DateTimeZone.class, account.getId());
             cacheProvider.setObject(cacheKey, account.getModifiedOn());
         }
