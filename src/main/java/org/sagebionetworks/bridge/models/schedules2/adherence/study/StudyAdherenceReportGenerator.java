@@ -131,11 +131,12 @@ public class StudyAdherenceReportGenerator {
             calculateRowsAndLabels(oneWeek);
             
             // If there’s a day in this week that is “today”, set a flag for all day entries on that day
-            for (int i=0; i < 7; i++) {
-                List<EventStreamDay> days = oneWeek.getByDayEntries().get(i);
-                if (oneWeek.getStartDate().plusDays(i).isEqual(todayLocal)) {
-                    currentWeek = oneWeek;
-                    days.forEach(day -> day.setToday(true));
+            for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
+                for (EventStreamDay oneDay : days) {
+                    if (oneDay.getStartDate() != null && oneDay.getStartDate().isEqual(todayLocal)) {
+                        currentWeek = oneWeek;
+                        days.forEach(day -> day.setToday(true));
+                    }
                 }
             }
         }
@@ -145,13 +146,15 @@ public class StudyAdherenceReportGenerator {
             adherence = calculateAdherencePercentage(ImmutableList.of(studyStream));    
         }
         NextActivity nextActivity = null;
-        if (!currentWeek.isActiveWeek()) {
+        if (currentWeek != null && !currentWeek.isActiveWeek()) {
             nextActivity = getNextActivity(state, eventReport);    
         }
         // Clean unnecessary fields for this report
         for (StudyReportWeek oneWeek : weeks) {
             for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
                 for (EventStreamDay oneDay : days) {
+                    oneDay.setStudyBurstId(null);
+                    oneDay.setStudyBurstNum(null);
                     oneDay.setSessionGuid(null);
                     oneDay.setSessionName(null);
                     oneDay.setStartEventId(null);
