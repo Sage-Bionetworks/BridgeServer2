@@ -279,6 +279,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         service.publishEvent(event, false, true);
         
         verify(mockDao).publishEvent(any());
+        verify(mockCacheProvider).setObject(ETAG_KEY, CREATED_ON);
     }
     
     @Test
@@ -293,6 +294,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         service.publishEvent(event, false, true);
         
         verify(mockDao, never()).publishEvent(any());
+        verify(mockCacheProvider, never()).setObject(any(), any());
     }
     
     @Test
@@ -323,7 +325,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         } catch(BadRequestException e) {
         }
         // We have to publish an event because we don't know if some succeeded.
-        verify(mockCacheProvider).setObject(ETAG_KEY, CREATED_ON);
+        verify(mockCacheProvider, never()).setObject(ETAG_KEY, CREATED_ON);
     }
     
     @Test
@@ -356,6 +358,7 @@ public class StudyActivityEventServiceTest extends Mockito {
         } catch(BadRequestException e) {
             assertTrue(e.getMessage().contains("Study event(s) failed to publish: enrollment, study_burst:foo:01."));
         }
+        verify(mockCacheProvider, never()).setObject(any(), any());
     }
     
     @Test

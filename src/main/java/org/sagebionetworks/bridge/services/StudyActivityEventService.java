@@ -192,6 +192,9 @@ public class StudyActivityEventService {
         List<String> failedEventIds = new ArrayList<>();
         if (event.getUpdateType().canUpdate(mostRecent, event)) {
             dao.publishEvent(event);
+            
+            CacheKey cacheKey = CacheKey.etag(StudyActivityEvent.class, event.getUserId());
+            cacheProvider.setObject(cacheKey, event.getCreatedOn());
         } else {
             failedEventIds.add(event.getEventId());
         }
@@ -202,8 +205,6 @@ public class StudyActivityEventService {
                 createStudyBurstEvents(schedule, event, failedEventIds);
             }
         }
-        CacheKey cacheKey = CacheKey.etag(StudyActivityEvent.class, event.getUserId());
-        cacheProvider.setObject(cacheKey, event.getCreatedOn());
         if (!failedEventIds.isEmpty()) {
             String eventNames = COMMA_SPACE_JOINER.join(failedEventIds);
             if (LOG.isDebugEnabled()) {
