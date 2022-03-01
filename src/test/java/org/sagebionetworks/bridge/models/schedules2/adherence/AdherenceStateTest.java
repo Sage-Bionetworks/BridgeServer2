@@ -87,6 +87,7 @@ public class AdherenceStateTest extends Mockito {
             .withAdherenceRecords(adherenceRecords)
             .withNow(NOW)
             .withClientTimeZone(TEST_CLIENT_TIME_ZONE)
+            .withStudyStartEventId("event1")
             .build();
     }
     
@@ -150,7 +151,7 @@ public class AdherenceStateTest extends Mockito {
         
         // Nothing to do == in compliance, ignore this person this week
         assertEquals(state.calculateAdherencePercentage(), 100);
-        
+        assertEquals(state.getStudyStartEventId(), "event1");
         assertEquals(state.getStreamEventIds(), ImmutableList.of("event1", "event2"));
     }
     
@@ -212,5 +213,6 @@ public class AdherenceStateTest extends Mockito {
         assertSame(copy.getClientTimeZone(), state.getClientTimeZone());
         assertSame(copy.getEvents(), state.getEvents());
         assertSame(copy.getAdherenceRecords(), state.getAdherenceRecords());
+        assertSame(copy.getStudyStartEventId(), "event1");
     }
 }
