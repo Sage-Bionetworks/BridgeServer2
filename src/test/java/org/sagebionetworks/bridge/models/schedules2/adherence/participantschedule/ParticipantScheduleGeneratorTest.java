@@ -81,8 +81,8 @@ public class ParticipantScheduleGeneratorTest {
         
         ParticipantSchedule retValue = INSTANCE.generate(state, timeline);
         
-        assertEquals(retValue.getCreatedOn(), TIMESTAMP.withZone(DateTimeZone.forID("America/Los_Angeles")));
-        assertEquals(retValue.getClientTimeZone(), "America/Los_Angeles");
+        assertEquals(retValue.getCreatedOn(), TIMESTAMP.withZone(DateTimeZone.getDefault()));
+        assertEquals(retValue.getClientTimeZone(), DateTimeZone.getDefault().getID());
         assertNull(retValue.getDateRange());
         assertTrue(retValue.getSchedule().isEmpty());
         assertTrue(retValue.getSessions().isEmpty());
