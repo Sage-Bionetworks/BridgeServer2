@@ -59,9 +59,13 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.services.AccountService;
 import org.sagebionetworks.bridge.services.AdherenceService;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 
 public class AdherenceControllerTest extends Mockito {
     
@@ -658,5 +662,26 @@ public class AdherenceControllerTest extends Mockito {
             .thenReturn(Optional.empty());
 
         controller.getWeeklyAdherenceReportForWorker(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID);
-   }
+    }
+    
+    @Test
+    public void getStudyAdherenceReport() {
+        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        String timestamp = "2022-02-10T10:10:10.123-08:00";
+        
+        Account account = Account.create();
+        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
+            .thenReturn(Optional.of(account));
+        
+        StudyAdherenceReport report = new StudyAdherenceReport();
+        when(mockService.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, DateTime.parse(timestamp), account))
+                .thenReturn(report);
+
+        StudyAdherenceReport retValue = controller.getStudyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID,
+                "2022-02-10T10:10:10.123-08:00");
+        assertSame(retValue, report);
+        
+        verify(mockService).getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, DateTime.parse(timestamp), account);
+    }
 }

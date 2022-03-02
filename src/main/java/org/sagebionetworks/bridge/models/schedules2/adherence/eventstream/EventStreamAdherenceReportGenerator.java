@@ -26,6 +26,8 @@ public class EventStreamAdherenceReportGenerator {
         
         int min = Integer.MAX_VALUE;
         int max = Integer.MIN_VALUE;
+        
+        String earliestEventId = null;
 
         for (TimelineMetadata meta : state.getMetadata()) {
             if (meta.isTimeWindowPersistent()) {
@@ -68,6 +70,7 @@ public class EventStreamAdherenceReportGenerator {
             
             if (startDate != null && startDate.isBefore(earliestDate)) {
                 earliestDate = startDate;
+                earliestEventId = eventStreamDay.getStartEventId();
             }
             if (endDate != null && endDate.isAfter(latestDate)) {
                 latestDate = endDate;
@@ -94,6 +97,7 @@ public class EventStreamAdherenceReportGenerator {
         report.setAdherencePercent(state.calculateAdherencePercentage());
         report.setDayRangeOfAllStreams(dayRange);
         report.setDateRangeOfAllStreams(dateRange);
+        report.setEarliestEventId(earliestEventId);
         for (String eventId : state.getStreamEventIds()) {
             report.getStreams().add(state.getEventStreamById(eventId));
         }

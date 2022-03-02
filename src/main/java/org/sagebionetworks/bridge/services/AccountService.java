@@ -33,11 +33,15 @@ import com.google.common.collect.Sets;
 
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.sagebionetworks.bridge.RequestContext;
+import org.sagebionetworks.bridge.cache.CacheKey;
+import org.sagebionetworks.bridge.cache.CacheProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.util.ObjectUtils;
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AccountDao;
 import org.sagebionetworks.bridge.dao.AccountSecretDao;
@@ -72,6 +76,7 @@ public class AccountService {
     private ActivityEventService activityEventService;
     private ParticipantVersionService participantVersionService;
     private StudyActivityEventService studyActivityEventService;
+    private CacheProvider cacheProvider;
 
     @Autowired
     public final void setAccountDao(AccountDao accountDao) {
@@ -101,6 +106,11 @@ public class AccountService {
     @Autowired
     public final void setStudyActivityEventService(StudyActivityEventService studyActivityEventService) {
         this.studyActivityEventService = studyActivityEventService;
+    }
+    
+    @Autowired
+    public final void setCacheProvider(CacheProvider cacheProvider) {
+        this.cacheProvider = cacheProvider;
     }
     
     // Provided to override in tests
@@ -254,6 +264,8 @@ public class AccountService {
         for (Enrollment en : account.getEnrollments()) {
             studyActivityEventService.publishEvent(builder.withStudyId(en.getStudyId()).build(), false, true);
         }
+        CacheKey cacheKey = CacheKey.etag(DateTimeZone.class, account.getId());
+        cacheProvider.setObject(cacheKey, account.getCreatedOn());
 
         // Create the corresponding Participant Version.
         participantVersionService.createParticipantVersionFromAccount(account);
@@ -269,6 +281,9 @@ public class AccountService {
 
         Account persistedAccount = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        boolean timeZoneUpdated = !ObjectUtils.nullSafeEquals(
+                account.getClientTimeZone(), persistedAccount.getClientTimeZone());
         
         // The test_user flag taints an account; once set it cannot be unset.
         boolean testUser = persistedAccount.getDataGroups().contains(TEST_USER_GROUP);
@@ -316,6 +331,10 @@ public class AccountService {
             }
         }
 
+        if (timeZoneUpdated) {
+            CacheKey cacheKey = CacheKey.etag(DateTimeZone.class, account.getId());
+            cacheProvider.setObject(cacheKey, account.getModifiedOn());
+        }
         // Create the corresponding Participant Version.
         participantVersionService.createParticipantVersionFromAccount(account);
     }
@@ -333,13 +352,23 @@ public class AccountService {
         
         Account account = accountDao.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
+        
+        String oldTimeZone = account.getClientTimeZone();
  
         if (CANNOT_ACCESS_PARTICIPANTS.check(USER_ID, account.getId()) && !account.getDataGroups().contains(TEST_USER_GROUP)) {
             throw new UnauthorizedException();
         }
         accountEdits.accept(account);
+        
+        String newTimeZone = account.getClientTimeZone();
+        account.setModifiedOn(DateUtils.getCurrentDateTime());
+        
         accountDao.updateAccount(account);
-
+        
+        if (!ObjectUtils.nullSafeEquals(oldTimeZone, newTimeZone)) {
+            CacheKey cacheKey = CacheKey.etag(DateTimeZone.class, account.getId());
+            cacheProvider.setObject(cacheKey, account.getModifiedOn());
+        }
         // Create the corresponding Participant Version.
         participantVersionService.createParticipantVersionFromAccount(account);
     }
@@ -382,7 +411,11 @@ public class AccountService {
         
         Optional<Account> opt = accountDao.getAccount(accountId);
         if (opt.isPresent()) {
-            accountDao.deleteAccount(opt.get().getId());
+            Account account = opt.get();
+            accountDao.deleteAccount(account.getId());
+            
+            CacheKey cacheKey = CacheKey.etag(DateTimeZone.class, account.getId());
+            cacheProvider.removeObject(cacheKey);
         }
     }
     

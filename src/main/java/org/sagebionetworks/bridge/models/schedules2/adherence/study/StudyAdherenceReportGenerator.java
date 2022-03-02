@@ -18,6 +18,7 @@ import java.util.TreeMap;
 import org.joda.time.DateTime;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
+import org.sagebionetworks.bridge.models.DateRange;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
 import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
@@ -47,23 +48,28 @@ public class StudyAdherenceReportGenerator {
     
     /**
      * Find a master starting date for this participant. The studyStartEventId is the canonical 
-     * start of the study, but if that's not present for this user, we'll start with their first 
-     * scheduled day. This can get very confusing when the declared studyStartDate has not been
-     * set for the user, so in that case, we may want to just return an empty report.
+     * start of the study, but if that's not present for the study, we have identified the earliest
+     * activity’s startEventId, and we’ll use that timestamp. This should reduce the appearance of 
+     * negative weeks, though if the studyStartEventId comes after another event mentioned in
+     * the schedule, it can happen. 
      */
-    protected LocalDate getStudyStartDate(AdherenceState state, LocalDate dateRangeStart) {
+    protected LocalDate getStudyStartDate(AdherenceState state, EventStreamAdherenceReport report) {
         DateTime eventTimestamp = state.getEventTimestampById(state.getStudyStartEventId());
-        return (eventTimestamp != null) ? eventTimestamp.toLocalDate() : dateRangeStart;
+        if (eventTimestamp != null) {
+            return eventTimestamp.toLocalDate();
+        }
+        DateTime timestamp = state.getEventTimestampById(report.getEarliestEventId());
+        if (timestamp != null) {
+            return timestamp.toLocalDate();
+        }
+        return null;
     }
 
     public StudyAdherenceReport generate(AdherenceState state) {
         
         EventStreamAdherenceReport eventReport = EventStreamAdherenceReportGenerator.INSTANCE.generate(state);
         
-        if (eventReport.getDateRangeOfAllStreams() == null) {
-            return new StudyAdherenceReport();
-        }
-        LocalDate studyStartDate = getStudyStartDate(state, eventReport.getDateRangeOfAllStreams().getStartDate());
+        LocalDate studyStartDate = getStudyStartDate(state, eventReport);
 
         EventStream studyStream = new EventStream();
         Set<String> unsetEventIds = new HashSet<>();
@@ -146,8 +152,8 @@ public class StudyAdherenceReportGenerator {
             adherence = calculateAdherencePercentage(ImmutableList.of(studyStream));    
         }
         NextActivity nextActivity = null;
-        if (currentWeek != null && !currentWeek.isActiveWeek()) {
-            nextActivity = getNextActivity(state, eventReport);    
+        if (currentWeek == null || !currentWeek.isActiveWeek()) {
+            nextActivity = getNextActivity(weeks, state.getNow());
         }
         // Clean unnecessary fields for this report
         for (StudyReportWeek oneWeek : weeks) {
@@ -155,9 +161,8 @@ public class StudyAdherenceReportGenerator {
                 for (EventStreamDay oneDay : days) {
                     oneDay.setStudyBurstId(null);
                     oneDay.setStudyBurstNum(null);
-                    oneDay.setSessionGuid(null);
                     oneDay.setSessionName(null);
-                    oneDay.setStartEventId(null);
+                    // oneDay.setStartEventId(null);
                     oneDay.setWeek(null);
                     oneDay.setStartDay(null);
                     for (EventStreamWindow window : oneDay.getTimeWindows()) {
@@ -168,8 +173,13 @@ public class StudyAdherenceReportGenerator {
             }
         }
         
+        DateRange dateRange = null;
+        if (eventReport.getDateRangeOfAllStreams() != null) {
+            dateRange = new DateRange(studyStartDate, eventReport.getDateRangeOfAllStreams().getEndDate());
+        }
+        
         StudyAdherenceReport report = new StudyAdherenceReport();
-        report.setDateRange(eventReport.getDateRangeOfAllStreams());
+        report.setDateRange(dateRange);
         report.setWeeks(weeks);
         report.setCurrentWeek(currentWeek);
         report.setNextActivity(nextActivity);
@@ -250,26 +260,15 @@ public class StudyAdherenceReportGenerator {
         return new EventStreamDay();
     }
     
-    private NextActivity getNextActivity(AdherenceState state, EventStreamAdherenceReport reports) {
-        for (EventStream report : reports.getStreams()) {
-            for (List<EventStreamDay> days :report.getByDayEntries().values()) {
-                for (EventStreamDay oneDay : days) {
-                    LocalDate startDate = oneDay.getStartDate();
-                    // If an activity is "not applicable," then the startDate cannot be determined and
-                    // it will be null...and it's not the next activity for this user, so skip it.
-                    if (startDate == null || oneDay.getTimeWindows().isEmpty()) {
-                        continue;
-                    }
-                    if (startDate.isAfter(state.getNow().toLocalDate())) {
-                        oneDay.setStudyBurstId(report.getStudyBurstId());
-                        oneDay.setStudyBurstNum(report.getStudyBurstNum());
-                        Integer currentDay = state.getDaysSinceEventById(report.getStartEventId());
-                        // currentDay cannot be null (if it were, there would have been no startDate)
-                        if (currentDay >= 0) {
-                            int currentWeek = currentDay / 7;
-                            oneDay.setWeek(currentWeek+1);    
+    private NextActivity getNextActivity(Collection<StudyReportWeek> weeks, DateTime now) {
+        for (StudyReportWeek oneWeek : weeks) {
+            if (oneWeek.getStartDate().isAfter(now.toLocalDate())) {
+                for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
+                    for (EventStreamDay oneDay : days) {
+                        if (!oneDay.getTimeWindows().isEmpty()) {
+                            oneDay.setWeek(oneWeek.getWeek());
+                            return NextActivity.create(oneDay);
                         }
-                        return NextActivity.create(oneDay);
                     }
                 }
             }

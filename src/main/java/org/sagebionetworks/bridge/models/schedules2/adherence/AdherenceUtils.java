@@ -86,7 +86,7 @@ public class AdherenceUtils {
             return ParticipantStudyProgress.NO_SCHEDULE;
         }
         long total = countDaysInStreams(eventStreams, EnumSet.allOf(SessionCompletionState.class));
-        long na = countDaysInStreams(eventStreams, EnumSet.of(NOT_APPLICABLE));
+        long na = countDaysInStreams(eventStreams, EnumSet.of(NOT_APPLICABLE, NOT_YET_AVAILABLE));
         long done = countDaysInStreams(eventStreams, EnumSet.of(ABANDONED, EXPIRED, DECLINED, COMPLETED));
         
         if (na == total) {

@@ -23,6 +23,7 @@ public class EventStreamAdherenceReport {
     private List<EventStream> streams = new ArrayList<>();
     private DayRange dayRangeOfAllStreams;
     private DateRange dateRangeOfAllStreams;
+    private String earliestEventId;
     
     public DayRange getDayRangeOfAllStreams() {
         return dayRangeOfAllStreams;
@@ -66,5 +67,11 @@ public class EventStreamAdherenceReport {
     }
     public void setStreams(List<EventStream> streams) {
         this.streams = streams;
+    }
+    public String getEarliestEventId() {
+        return earliestEventId;
+    }
+    public void setEarliestEventId(String earliestEventId) {
+        this.earliestEventId = earliestEventId;
     }
 }
