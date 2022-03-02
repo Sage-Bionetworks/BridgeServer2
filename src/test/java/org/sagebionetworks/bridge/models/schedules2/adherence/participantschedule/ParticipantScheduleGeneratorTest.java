@@ -24,6 +24,8 @@ import com.google.common.collect.ImmutableList;
 
 public class ParticipantScheduleGeneratorTest {
 
+    private static final DateTimeZone TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
+
     @Test
     public void test() throws Exception {
         Schedule2 schedule = Schedule2Test.createValidSchedule();
@@ -35,7 +37,7 @@ public class ParticipantScheduleGeneratorTest {
                 .build();
         
         AdherenceState state = new AdherenceState.Builder()
-                .withClientTimeZone("America/Los_Angeles")
+                .withClientTimeZone(TIME_ZONE.getID())
                 // MSK does not change the dates, which are in user’s tz
                 .withNow(TIMESTAMP.withZone(TIMEZONE_MSK)) 
                 .withEvents(ImmutableList.of(e1))
@@ -43,8 +45,8 @@ public class ParticipantScheduleGeneratorTest {
         
         ParticipantSchedule retValue = INSTANCE.generate(state, timeline);
         
-        assertEquals(retValue.getCreatedOn(), TIMESTAMP.withZone(DateTimeZone.forID("America/Los_Angeles")));
-        assertEquals(retValue.getClientTimeZone(), "America/Los_Angeles");
+        assertEquals(retValue.getCreatedOn(), TIMESTAMP.withZone(TIME_ZONE));
+        assertEquals(retValue.getClientTimeZone(), TIME_ZONE.getID());
         assertEquals(retValue.getDateRange().getStartDate().toString(), "2015-02-02");
         assertEquals(retValue.getDateRange().getEndDate().toString(), "2015-03-16");
         
@@ -53,6 +55,8 @@ public class ParticipantScheduleGeneratorTest {
         assertEquals(retValue.getSessions().size(), 1);
         assertEquals(retValue.getStudyBursts().size(), 1);
         assertEquals(retValue.getAssessments().size(), 2);
+        assertEquals(retValue.getEventTimestamps().size(), 1);
+        assertEquals(retValue.getEventTimestamps().get("timeline_retrieved"), TIMESTAMP.withZone(TIME_ZONE));
 
         // But the schedule is different
         assertEquals(retValue.getSchedule().size(), 7);
