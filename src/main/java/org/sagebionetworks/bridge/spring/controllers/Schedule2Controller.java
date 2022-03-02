@@ -55,6 +55,7 @@ public class Schedule2Controller extends BaseController {
     }
     
     @EtagSupport({
+        // Most recent modification to the schedule
         @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"})
     })
     @GetMapping("/v5/studies/{studyId}/schedule")
@@ -89,6 +90,7 @@ public class Schedule2Controller extends BaseController {
     }
     
     @EtagSupport({
+        // Most recent modification to the schedule
         @EtagCacheKey(model=Schedule2.class, keys={"appId", "studyId"})
     })
     @GetMapping("/v5/studies/{studyId}/timeline")
