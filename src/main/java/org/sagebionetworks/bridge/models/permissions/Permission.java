@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.sagebionetworks.bridge.models.BridgeEntity;
 
 import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
 import javax.persistence.Id;
 import javax.persistence.Table;
 import java.util.Objects;
@@ -17,34 +19,11 @@ public class Permission implements BridgeEntity {
     @JsonIgnore
     private String appId;
     private String userId;
-    private String role; // TODO: rename?
-    private PermissionType permissionType;
-    private String objectId;
-    
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Permission that = (Permission) o;
-        return Objects.equals(guid, that.guid) && Objects.equals(appId, that.appId) && Objects.equals(userId, that.userId) && Objects.equals(role, that.role) && permissionType == that.permissionType && Objects.equals(objectId, that.objectId);
-    }
-    
-    @Override
-    public int hashCode() {
-        return Objects.hash(guid, appId, userId, role, permissionType, objectId);
-    }
-    
-    @Override
-    public String toString() {
-        return "Permission{" +
-                "guid='" + guid + '\'' +
-                ", appId='" + appId + '\'' +
-                ", userId='" + userId + '\'' +
-                ", role='" + role + '\'' +
-                ", permissionType=" + permissionType +
-                ", objectId='" + objectId + '\'' +
-                '}';
-    }
+    @Enumerated(EnumType.STRING)
+    private PermissionAccessLevel accessLevel;
+    @Enumerated(EnumType.STRING)
+    private EntityType entityType;
+    private String entityId;
     
     public String getGuid() {
         return guid;
@@ -70,27 +49,52 @@ public class Permission implements BridgeEntity {
         this.userId = userId;
     }
     
-    public String getRole() {
-        return role;
+    public String getAccessLevel() {
+        return accessLevel;
     }
     
-    public void setRole(String role) {
-        this.role = role;
+    public void setAccessLevel(String accessLevel) {
+        this.accessLevel = accessLevel;
     }
     
-    public PermissionType getPermissionType() {
-        return permissionType;
+    public EntityType getEntityType() {
+        return entityType;
     }
     
-    public void setPermissionType(PermissionType permissionType) {
-        this.permissionType = permissionType;
+    public void setEntityType(EntityType entityType) {
+        this.entityType = entityType;
     }
     
-    public String getObjectId() {
-        return objectId;
+    public String getEntityId() {
+        return entityId;
     }
     
-    public void setObjectId(String objectId) {
-        this.objectId = objectId;
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
+    }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Permission that = (Permission) o;
+        return Objects.equals(guid, that.guid) && Objects.equals(appId, that.appId) && Objects.equals(userId, that.userId) && Objects.equals(accessLevel, that.accessLevel) && entityType == that.entityType && Objects.equals(entityId, that.entityId);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(guid, appId, userId, accessLevel, entityType, entityId);
+    }
+    
+    @Override
+    public String toString() {
+        return "Permission{" +
+                "guid='" + guid + '\'' +
+                ", appId='" + appId + '\'' +
+                ", userId='" + userId + '\'' +
+                ", role='" + accessLevel + '\'' +
+                ", entityType=" + entityType +
+                ", entityId='" + entityId + '\'' +
+                '}';
     }
 }

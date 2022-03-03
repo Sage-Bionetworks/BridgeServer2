@@ -2,7 +2,7 @@ package org.sagebionetworks.bridge.hibernate;
 
 import org.sagebionetworks.bridge.dao.PermissionDao;
 import org.sagebionetworks.bridge.models.permissions.Permission;
-import org.sagebionetworks.bridge.models.permissions.PermissionType;
+import org.sagebionetworks.bridge.models.permissions.EntityType;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.Resource;
@@ -24,7 +24,7 @@ public class HibernatePermissionDao implements PermissionDao {
     }
     
     @Override
-    public Set<Permission> getPermissions(String appId, String userId, Map<PermissionType, List<String>> objectIdFilters) {
+    public Set<Permission> getPermissions(String appId, String userId, Map<EntityType, List<String>> entityIdFilters) {
         checkNotNull(appId);
         
         // TODO: build query based on incoming parameters

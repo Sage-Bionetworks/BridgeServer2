@@ -1,14 +1,14 @@
 package org.sagebionetworks.bridge.models.permissions;
 
-public enum PermissionType {
+public enum EntityType {
     
     ASSESSMENT,
-    ORGANIZATION,
-    STUDY,
-    SPONSORED_STUDIES,
-    MEMBERS,
     ASSESSMENT_LIBRARY,
-    STUDY_PI,
-    PARTICIPANTS
+    MEMBERS,
+    ORGANIZATION,
+    PARTICIPANTS,
+    SPONSORED_STUDIES,
+    STUDY,
+    STUDY_PI
     
 }

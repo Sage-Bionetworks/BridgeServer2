@@ -930,26 +930,14 @@ CREATE TABLE IF NOT EXISTS `Permissions` (
   `guid` varchar(60) NOT NULL,
   `appId` varchar(255) NOT NULL,
   `userId` varchar(255) NOT NULL,
-  `role` varchar(255) NOT NULL, -- Should this be an enum?
-  `permissionType` enum('STUDY') NOT NULL,
-  `objectId` varchar(255) NOT NULL,
---  `assessmentId` varchar(255) AS (IF(permissionType = 'ASSESSMENT', objectId, NULL)) STORED,
-  `studyId` varchar(255) AS (IF(permissionType = 'STUDY', objectId, NULL)) STORED,
---  `organizationId` varchar(255) AS (IF(permissionType = 'ORGANIZATION', objectId, NULL)) STORED,
-  PRIMARY KEY (`guid`), --  UNIQUE KEY (`appId`, `userId`, `role`, `permissionType`, `foreignId`),
---  FOREIGN KEY (`assessmentId`) REFERENCES Assessments(`guid`) ON DELETE CASCADE,
---  FOREIGN KEY (`organizationId`) REFERENCES Organizations(`identifier`) ON DELETE CASCADE,
-  FOREIGN KEY (`studyId`) REFERENCES Substudies(`id`) ON DELETE CASCADE
+  `accessLevel` enum('VIEW', 'EDIT', 'DELETE', 'ADMIN') NOT NULL,
+  `entityType` enum('ASSESSMENT', 'ASSESSMENT_LIBRARY', 'MEMBERS', 'ORGANIZATION', 'PARTICIPANTS', 'SPONSORED_STUDIES', 'STUDY', 'STUDY_PI') NOT NULL,
+  `entityId` varchar(255) NOT NULL,
+  `assessmentId` varchar(255) AS (IF(entityType IN ('ASSESSMENT'), entityId, NULL)) STORED,
+  `organizationId` varchar(255) AS (IF(entityType IN ('ASSESSMENT_LIBRARY', 'MEMBERS', 'ORGANIZATION', 'SPONSORED_STUDIES'), entityId, NULL)) STORED,
+  `studyId` varchar(255) AS (IF(entityType IN ('PARTICIPANTS', 'STUDY', 'STUDY_PI'), entityId, NULL)) STORED,
+  PRIMARY KEY (`guid`), --  UNIQUE KEY (`appId`, `userId`, `accessLevel`, `entityType`, `foreignId`),
+  FOREIGN KEY (`assessmentId`) REFERENCES Assessments(`guid`) ON DELETE CASCADE,
+  FOREIGN KEY (`appId`, `organizationId`) REFERENCES Organizations(`appId`, `identifier`) ON DELETE CASCADE,
+  FOREIGN KEY (`studyId`, `appId`) REFERENCES Substudies(`id`, `studyId`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_unicode_ci;
-
--- changeset bridge:64
-
-ALTER TABLE `Permissions`
-MODIFY COLUMN `permissionType` enum('STUDY', 'ASSESSMENT') NOT NULL;
-
---ADD COLUMN `assessmentId` varchar(255) AS (IF(permissionType = 'ASSESSMENT', objectId, NULL)) STORED,
---ADD FOREIGN KEY (`assessmentId`) REFERENCES Assessments(`guid`) ON DELETE CASCADE;
-
-
---ALTER TABLE `Permissions`
---MODIFY COLUMN `permissionType` enum('ASSESSMENT', 'STUDY') NOT NULL;

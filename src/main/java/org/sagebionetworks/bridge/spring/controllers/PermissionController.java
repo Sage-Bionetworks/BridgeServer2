@@ -36,14 +36,14 @@ public class PermissionController extends BaseController{
         return permissionService.getPermissionsForUser(appId, userId);
     }
     
-    @GetMapping("v1/permissions/{permissionType}/{objectId}")
+    @GetMapping("v1/permissions/{entityType}/{entityId}")
     public Set<Permission> getPermissionsForObject(
-            @PathVariable String permissionType, @PathVariable String objectId) {
+            @PathVariable String entityType, @PathVariable String entityId) {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         String appId = session.getAppId();
         
-        return permissionService.getPermissionsForObject(appId, permissionType, objectId);
+        return permissionService.getPermissionsForObject(appId, entityType, entityId);
     }
     
     @PostMapping("v1/permissions")
@@ -68,6 +68,7 @@ public class PermissionController extends BaseController{
         
         Permission permission = parseJson(Permission.class);
         permission.setAppId(appId);
+        permission.setGuid(guid);
         
         permissionService.updatePermission(appId, permission);
         

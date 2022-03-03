@@ -47,10 +47,10 @@ public class PermissionService {
         return null;
     }
     
-    public Set<Permission> getPermissionsForObject(String appId, String permissionType, String objectId) {
+    public Set<Permission> getPermissionsForObject(String appId, String entityType, String entityId) {
         checkNotNull(appId);
-        checkNotNull(permissionType);
-        checkNotNull(objectId);
+        checkNotNull(entityType);
+        checkNotNull(entityId);
         
         return null;
     }
