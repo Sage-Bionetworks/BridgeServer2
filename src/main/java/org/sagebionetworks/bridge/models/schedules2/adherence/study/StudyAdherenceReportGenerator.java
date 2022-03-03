@@ -1,5 +1,6 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.study;
 
+import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils.calculateAdherencePercentage;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils.calculateProgress;
 
@@ -18,11 +19,11 @@ import java.util.TreeMap;
 import org.joda.time.DateTime;
 import org.joda.time.Days;
 import org.joda.time.LocalDate;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.DateRange;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
 import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
-import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
@@ -83,8 +84,8 @@ public class StudyAdherenceReportGenerator {
                 for (EventStreamDay oneDay : days) {
                     if (oneDay.getStartDate() != null) {
                         // Map this stream into the study stream
-                        Integer day = Days.daysBetween(studyStartDate, oneDay.getStartDate()).getDays();
-                        studyStream.addEntry(day, oneDay);
+                        Integer numDays = Days.daysBetween(studyStartDate, oneDay.getStartDate()).getDays();
+                        studyStream.addEntry(numDays, oneDay);
                         
                         String eventId = oneDay.getStartEventId();
                         eventTimestamps.put(eventId, state.getEventTimestampById(eventId));
@@ -96,11 +97,11 @@ public class StudyAdherenceReportGenerator {
                 }
             }
         }
+        // study-wide progress
+        ParticipantStudyProgress progression = calculateProgress(state, ImmutableList.of(studyStream));
         
-        // Break this study stream down into weeks. Keys are sorted by natural order 
+        // Break this study stream down into weeks. TreeMap sorts the weeks by week number 
         Map<Integer, StudyReportWeek> weekMap = new TreeMap<>();
-        StudyReportWeek currentWeek = null;
-        
         for (Map.Entry<Integer, List<EventStreamDay>> entry : studyStream.getByDayEntries().entrySet()) {
             int week = entry.getKey() / 7;
             int dayOfWeek = entry.getKey() % 7;
@@ -108,76 +109,72 @@ public class StudyAdherenceReportGenerator {
             StudyReportWeek oneWeek = weekMap.get(week);
             if (oneWeek == null) {
                 oneWeek = new StudyReportWeek();
-                // This might be useful later to find “this week” — we’ll see
-                oneWeek.setStartDate(studyStartDate.plusDays(entry.getKey()));
+                oneWeek.setStartDate(studyStartDate.plusDays(week*7));
                 oneWeek.setWeek(week+1);
-                weekMap.put(week, oneWeek);
+                
+                weekMap.put(week, oneWeek);    
             }
-            // the days have a week value that is based on their original event stream, change this to avoid confusion
-            // unnecessary now that we clear this value.
-            // entry.getValue().forEach(day -> day.setWeek(week+1));
             List<EventStreamDay> days = oneWeek.getByDayEntries().get(dayOfWeek);
-            // days can be negative when the events do not line up between the participant and the schedule,
-            // such that the days in the study can even be negative. It doesn’t make sense, but defend 
-            // against it because users can break their schedules this way.
+            // if weeks go negative due to a bad schedule, we need to defend from this
             if (days != null) {
-                days.addAll(entry.getValue());
+                days.addAll(entry.getValue());    
             }
         };
+
+        StudyReportWeek currentWeek = null;
         
-        Collection<StudyReportWeek> weeks = weekMap.values();
-        
+        // Filter out empty weeks. This can happen when the studyStartEvent timestamp is not related
+        // to the schedule, and there are dead weeks before the first event triggers some real activity. 
+        List<StudyReportWeek> weeks = weekMap.values().stream()
+                .filter(week -> week.isActiveWeek()).collect(toList());
         for (StudyReportWeek oneWeek : weeks) {
-            // Calculate adherence if there’s at least one scheduled thing in the week
-            if (AdherenceUtils.countDays(oneWeek.getByDayEntries().values(), SessionCompletionState.SCHEDULED) > 0) {
-                int adherence = AdherenceUtils.calculateAdherencePercentage(oneWeek.getByDayEntries());
-                oneWeek.setAdherencePercent(adherence);
-            }
-            // Add labels and calculate row descriptors for the whole week.
-            calculateRowsAndLabels(oneWeek);
+            calculateRowsAndLabels(oneWeek, todayLocal);
             
             // If there’s a day in this week that is “today”, set a flag for all day entries on that day
-            for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
-                for (EventStreamDay oneDay : days) {
-                    if (oneDay.getStartDate() != null && oneDay.getStartDate().isEqual(todayLocal)) {
-                        currentWeek = oneWeek;
-                        days.forEach(day -> day.setToday(true));
+            LocalDate firstDayOfWeek = oneWeek.getStartDate();
+            LocalDate lastDayOfWeek = oneWeek.getStartDate().plusDays(7);
+            if (BridgeUtils.isLocalDateInRange(firstDayOfWeek, lastDayOfWeek, todayLocal)) {
+                currentWeek = oneWeek;
+                for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
+                    for (EventStreamDay oneDay : days) {
+                        if (oneDay.getStartDate() != null && oneDay.getStartDate().isEqual(todayLocal)) {
+                            days.forEach(day -> day.setToday(true));
+                        }
                     }
                 }
             }
         }
-        ParticipantStudyProgress progression = calculateProgress(state, ImmutableList.of(studyStream));
         Integer adherence = null;
-        if (!studyStream.getByDayEntries().isEmpty()) {
+        if (progression != ParticipantStudyProgress.NO_SCHEDULE) {
             adherence = calculateAdherencePercentage(ImmutableList.of(studyStream));    
         }
         NextActivity nextActivity = null;
         if (currentWeek == null || !currentWeek.isActiveWeek()) {
             nextActivity = getNextActivity(weeks, state.getNow());
         }
-        // Clean unnecessary fields for this report
+        DateRange dateRange = null;
+        if (eventReport.getDateRangeOfAllStreams() != null) {
+            dateRange = new DateRange(studyStartDate, eventReport.getDateRangeOfAllStreams().getEndDate());
+        }
         for (StudyReportWeek oneWeek : weeks) {
+            if (BridgeUtils.isLocalDateInRange(oneWeek.getStartDate(), null, todayLocal)) {
+                int weekAdh = AdherenceUtils.calculateAdherencePercentage(oneWeek.getByDayEntries());
+                oneWeek.setAdherencePercent(weekAdh);
+            }
             for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
                 for (EventStreamDay oneDay : days) {
                     oneDay.setStudyBurstId(null);
                     oneDay.setStudyBurstNum(null);
                     oneDay.setSessionName(null);
-                    // oneDay.setStartEventId(null);
                     oneDay.setWeek(null);
                     oneDay.setStartDay(null);
                     for (EventStreamWindow window : oneDay.getTimeWindows()) {
                         window.setEndDay(null);
-                        // timeWindowGuid is actually necessary or the window is removed
+                        window.setTimeWindowGuid(null);
                     }
                 }
             }
         }
-        
-        DateRange dateRange = null;
-        if (eventReport.getDateRangeOfAllStreams() != null) {
-            dateRange = new DateRange(studyStartDate, eventReport.getDateRangeOfAllStreams().getEndDate());
-        }
-        
         StudyAdherenceReport report = new StudyAdherenceReport();
         report.setDateRange(dateRange);
         report.setWeeks(weeks);
@@ -191,7 +188,14 @@ public class StudyAdherenceReportGenerator {
         return report;
     }
 
-    protected void calculateRowsAndLabels(StudyReportWeek oneWeek) {
+    protected void calculateRowsAndLabels(StudyReportWeek oneWeek, LocalDate todayLocal) {
+        // pad days
+        for (int i=0; i < 7; i++) {
+            if (oneWeek.getByDayEntries().get(i) == null) {
+                oneWeek.getByDayEntries().put(i, ImmutableList.of());
+            }
+        }
+        
         Set<String> labels = new LinkedHashSet<>();
         Set<WeeklyAdherenceReportRow> rows = new LinkedHashSet<>();
         for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
@@ -235,7 +239,10 @@ public class StudyAdherenceReportGenerator {
             
             for (WeeklyAdherenceReportRow row : rowList) {
                 List<EventStreamDay> days = oneWeek.getByDayEntries().get(i);
+                
                 EventStreamDay oneDay = padEventStreamDay(days, row.getSessionGuid(), row.getStartEventId());
+                LocalDate thisDate = oneWeek.getStartDate().plusDays(i);
+                oneDay.setStartDate(thisDate);
                 paddedDays.add(oneDay);
             }
             oneWeek.getByDayEntries().put(i, paddedDays);
@@ -262,7 +269,7 @@ public class StudyAdherenceReportGenerator {
     
     private NextActivity getNextActivity(Collection<StudyReportWeek> weeks, DateTime now) {
         for (StudyReportWeek oneWeek : weeks) {
-            if (oneWeek.getStartDate().isAfter(now.toLocalDate())) {
+            if (oneWeek.getStartDate().plusDays(7).isAfter(now.toLocalDate())) {
                 for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
                     for (EventStreamDay oneDay : days) {
                         if (!oneDay.getTimeWindows().isEmpty()) {

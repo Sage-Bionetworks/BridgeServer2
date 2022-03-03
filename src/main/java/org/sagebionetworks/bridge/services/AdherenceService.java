@@ -119,6 +119,10 @@ public class AdherenceService {
         return DateTime.now();
     }
     
+    protected String getDefaultTimeZoneId() {
+        return DateTimeZone.getDefault().getID();
+    }
+    
     public void updateAdherenceRecords(String appId, AdherenceRecordList recordList) {
         checkNotNull(recordList);
         
@@ -364,7 +368,7 @@ public class AdherenceService {
         if (account.getClientTimeZone() != null) {
             timeZone = account.getClientTimeZone();
         } else {
-            timeZone = DateTimeZone.getDefault().getID();
+            timeZone = getDefaultTimeZoneId();
         }
 
         StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), timestamp, timeZone,
@@ -392,7 +396,7 @@ public class AdherenceService {
         if (account.getClientTimeZone() != null) {
             timeZone = account.getClientTimeZone();
         } else {
-            timeZone = DateTimeZone.getDefault().getID();
+            timeZone = getDefaultTimeZoneId();
         }
 
         StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), createdOn, timeZone,

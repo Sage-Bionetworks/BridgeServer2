@@ -78,6 +78,7 @@ public class AdherenceUtils {
         if (totalSessions > 0) {
             percentage = ((float) compliantSessions / (float) totalSessions);
         }
+        // This truncates to zero for <1%.
         return (int) (percentage * 100);
     }
     
@@ -86,7 +87,7 @@ public class AdherenceUtils {
             return ParticipantStudyProgress.NO_SCHEDULE;
         }
         long total = countDaysInStreams(eventStreams, EnumSet.allOf(SessionCompletionState.class));
-        long na = countDaysInStreams(eventStreams, EnumSet.of(NOT_APPLICABLE, NOT_YET_AVAILABLE));
+        long na = countDaysInStreams(eventStreams, EnumSet.of(NOT_APPLICABLE));
         long done = countDaysInStreams(eventStreams, EnumSet.of(ABANDONED, EXPIRED, DECLINED, COMPLETED));
         
         if (na == total) {

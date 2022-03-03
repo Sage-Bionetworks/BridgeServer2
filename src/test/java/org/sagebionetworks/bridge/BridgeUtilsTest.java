@@ -93,6 +93,19 @@ public class BridgeUtilsTest extends Mockito {
     }
     
     @Test
+    public void localDateInRange() {
+        LocalDate start = LocalDate.parse("2022-02-10");
+        LocalDate end = LocalDate.parse("2022-02-17");
+        
+        assertTrue(BridgeUtils.isLocalDateInRange(start, end, LocalDate.parse("2022-02-10")));
+        assertTrue(BridgeUtils.isLocalDateInRange(start, end, LocalDate.parse("2022-02-17")));
+        assertTrue(BridgeUtils.isLocalDateInRange(null, end, LocalDate.parse("2022-02-01")));
+        assertTrue(BridgeUtils.isLocalDateInRange(start, null, LocalDate.parse("2022-02-17")));
+        assertFalse(BridgeUtils.isLocalDateInRange(start, end, LocalDate.parse("2022-02-09")));
+        assertFalse(BridgeUtils.isLocalDateInRange(start, end, LocalDate.parse("2022-02-18")));
+    }
+    
+    @Test
     public void accountHasValidIdentifierValidEmail() {
         Account account = Account.create();
         account.setEmail(EMAIL);

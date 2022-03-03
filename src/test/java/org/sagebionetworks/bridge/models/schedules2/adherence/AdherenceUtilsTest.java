@@ -195,7 +195,7 @@ public class AdherenceUtilsTest {
         // This is admittedly a random selection of cases, I don't have anything systematic
         // in mind here.
         return new Object[][] {
-            dataRow(100,createEventStream(0, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
+            dataRow(0,  createEventStream(0, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
             dataRow(100,createEventStream(0, COMPLETED, COMPLETED),
                         createEventStream(1, COMPLETED, COMPLETED)),
             dataRow(0,  createEventStream(0, EXPIRED, NOT_YET_AVAILABLE)),
@@ -207,7 +207,7 @@ public class AdherenceUtilsTest {
                         createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),
             dataRow(50, createEventStream(0, COMPLETED, null),
                         createEventStream(2, EXPIRED, null)),
-            dataRow(20, createEventStream(0, EXPIRED, null),
+            dataRow(14, createEventStream(0, EXPIRED, null),
                         createEventStream(1, EXPIRED, COMPLETED),
                         createEventStream(2, UNSTARTED, UNSTARTED),
                         createEventStream(3, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
@@ -223,7 +223,7 @@ public class AdherenceUtilsTest {
             dataRow(33, createEventStream(0, COMPLETED, DECLINED),
                         createEventStream(1, COMPLETED, DECLINED),
                         createEventStream(2, STARTED, UNSTARTED)),
-            dataRow(33, createEventStream(0, ABANDONED, COMPLETED),
+            dataRow(28, createEventStream(0, ABANDONED, COMPLETED),
                         createEventStream(1, COMPLETED, EXPIRED),
                         createEventStream(2, STARTED, UNSTARTED),
                         createEventStream(3, NOT_YET_AVAILABLE, null),

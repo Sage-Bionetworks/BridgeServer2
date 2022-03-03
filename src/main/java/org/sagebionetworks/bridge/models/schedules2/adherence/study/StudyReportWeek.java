@@ -50,9 +50,6 @@ public class StudyReportWeek {
     
     @JsonIgnore
     public boolean isActiveWeek() {
-        if (byDayEntries.isEmpty()) {
-            return false;
-        }
         for(List<EventStreamDay> days : byDayEntries.values()) {
             for (EventStreamDay oneDay : days) {
                 if (!oneDay.getTimeWindows().isEmpty()) {

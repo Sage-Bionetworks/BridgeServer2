@@ -129,6 +129,19 @@ public class BridgeUtils {
     }
     
     /**
+     * Joda time makes <= and >= comparisons somewhat tedious, so this method incorporates a 
+     * range-based test that is inclusive of both the start and end dates.
+     */
+    public static final boolean isLocalDateInRange(LocalDate start, LocalDate end, LocalDate date) {
+        if (date == null) {
+            return false;
+        }
+        boolean onOrBefore = start == null || (start.isEqual(date) || start.isBefore(date));
+        boolean onOrAfter = end == null || (end.isEqual(date) || end.isAfter(date));
+        return onOrBefore && onOrAfter;
+    }
+    
+    /**
      * This converts the period to minutes, but only those fields that have a
      * conventional measurement in minutes (so months and years are ignored).
      */

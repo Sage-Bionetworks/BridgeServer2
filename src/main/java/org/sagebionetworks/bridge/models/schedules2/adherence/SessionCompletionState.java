@@ -23,8 +23,7 @@ public enum SessionCompletionState {
 
     // These include all sessions except sessions that are not yet available, and thus cannot be included
     // in a calculation of adherence.
-    public static final EnumSet<SessionCompletionState> SCHEDULED = EnumSet.of(ABANDONED, EXPIRED, DECLINED, COMPLETED, UNSTARTED, STARTED);
     public static final EnumSet<SessionCompletionState> NONCOMPLIANT = EnumSet.of(ABANDONED, EXPIRED, DECLINED);
     public static final EnumSet<SessionCompletionState> COMPLIANT = EnumSet.of(COMPLETED);
-    public static final EnumSet<SessionCompletionState> UNKNOWN = EnumSet.of(UNSTARTED, STARTED);
+    public static final EnumSet<SessionCompletionState> UNKNOWN = EnumSet.of(UNSTARTED, STARTED, NOT_YET_AVAILABLE);
 }
