@@ -9,7 +9,9 @@ import java.util.Set;
 
 public interface PermissionDao {
     // TODO: add method descriptions
-    Set<Permission> getPermissions(String appId, String userId, Map<EntityType, List<String>> entityIdFilters);
+    Set<Permission> getPermissionsForUser(String appId, String userId);
+    
+    Set<Permission> getPermissionsForEntity(String appId, EntityType entityType, String entityId);
     
     Permission createPermission(String appId, Permission permission);
     

@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.permissions.Permission;
+import org.sagebionetworks.bridge.models.permissions.PermissionDetail;
 import org.sagebionetworks.bridge.services.PermissionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -37,13 +38,13 @@ public class PermissionController extends BaseController{
     }
     
     @GetMapping("v1/permissions/{entityType}/{entityId}")
-    public Set<Permission> getPermissionsForObject(
+    public Set<PermissionDetail> getPermissionsForEntity(
             @PathVariable String entityType, @PathVariable String entityId) {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         String appId = session.getAppId();
         
-        return permissionService.getPermissionsForObject(appId, entityType, entityId);
+        return permissionService.getPermissionsForEntity(appId, entityType, entityId);
     }
     
     @PostMapping("v1/permissions")

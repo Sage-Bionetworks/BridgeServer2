@@ -49,11 +49,11 @@ public class Permission implements BridgeEntity {
         this.userId = userId;
     }
     
-    public String getAccessLevel() {
+    public PermissionAccessLevel getAccessLevel() {
         return accessLevel;
     }
     
-    public void setAccessLevel(String accessLevel) {
+    public void setAccessLevel(PermissionAccessLevel accessLevel) {
         this.accessLevel = accessLevel;
     }
     
@@ -78,7 +78,7 @@ public class Permission implements BridgeEntity {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Permission that = (Permission) o;
-        return Objects.equals(guid, that.guid) && Objects.equals(appId, that.appId) && Objects.equals(userId, that.userId) && Objects.equals(accessLevel, that.accessLevel) && entityType == that.entityType && Objects.equals(entityId, that.entityId);
+        return Objects.equals(guid, that.guid) && Objects.equals(appId, that.appId) && Objects.equals(userId, that.userId) && accessLevel == that.accessLevel && entityType == that.entityType && Objects.equals(entityId, that.entityId);
     }
     
     @Override
@@ -92,7 +92,7 @@ public class Permission implements BridgeEntity {
                 "guid='" + guid + '\'' +
                 ", appId='" + appId + '\'' +
                 ", userId='" + userId + '\'' +
-                ", role='" + accessLevel + '\'' +
+                ", accessLevel=" + accessLevel +
                 ", entityType=" + entityType +
                 ", entityId='" + entityId + '\'' +
                 '}';
