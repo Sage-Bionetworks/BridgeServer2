@@ -793,7 +793,7 @@ public class AppServiceTest extends Mockito {
                 .withName("test-field").withType(UploadFieldType.INT).build()));
 
         // execute - no exception
-        service.updateApp(newApp, false);
+        service.updateApp(newApp, true);
     }
 
     @Test
@@ -810,7 +810,7 @@ public class AppServiceTest extends Mockito {
 
         // execute - expect exception
         try {
-            service.updateApp(newApp, false);
+            service.updateApp(newApp, true);
             fail("expected exception");
         } catch (UnauthorizedException ex) {
             assertEquals(ex.getMessage(),
@@ -838,11 +838,11 @@ public class AppServiceTest extends Mockito {
         newApp.setUploadMetadataFieldDefinitions(ImmutableList.of(reorderedField2, reorderedField1, addedField));
 
         // execute - no exception
-        service.updateApp(newApp, false);
+        service.updateApp(newApp, true);
     }
 
     @Test
-    public void nonAdminCantDeleteOrModifyFields() {
+    public void cantDeleteOrModifyFields() {
         // make fields for test
         UploadFieldDefinition goodField = new UploadFieldDefinition.Builder().withName("good-field")
                 .withType(UploadFieldType.ATTACHMENT_V2).build();
@@ -864,37 +864,12 @@ public class AppServiceTest extends Mockito {
 
         // execute - expect exception
         try {
-            service.updateApp(newApp, false);
+            service.updateApp(newApp, true);
             fail("expected exception");
         } catch (UnauthorizedException ex) {
             assertEquals(ex.getMessage(), "Non-admins cannot delete or modify upload metadata fields; " +
                     "affected fields: deleted-field, modified-field");
         }
-    }
-
-    @Test
-    public void adminCanDeleteOrModifyFields() {
-        // make fields for test
-        UploadFieldDefinition goodField = new UploadFieldDefinition.Builder().withName("good-field")
-                .withType(UploadFieldType.ATTACHMENT_V2).build();
-        UploadFieldDefinition deletedField = new UploadFieldDefinition.Builder().withName("deleted-field")
-                .withType(UploadFieldType.INLINE_JSON_BLOB).withMaxLength(10).build();
-        UploadFieldDefinition modifiedFieldOld = new UploadFieldDefinition.Builder().withName("modified-field")
-                .withType(UploadFieldType.STRING).withMaxLength(10).build();
-        UploadFieldDefinition modifiedlFieldNew = new UploadFieldDefinition.Builder().withName("modified-field")
-                .withType(UploadFieldType.STRING).withMaxLength(20).build();
-
-        // old app
-        App oldApp = getTestApp();
-        oldApp.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, deletedField, modifiedFieldOld));
-        when(mockAppDao.getApp(TEST_APP_ID)).thenReturn(oldApp);
-
-        // new app
-        App newApp = getTestApp();
-        newApp.setUploadMetadataFieldDefinitions(ImmutableList.of(goodField, modifiedlFieldNew));
-
-        // execute - no exception
-        service.updateApp(newApp, true);
     }
 
     @Test(expectedExceptions = BadRequestException.class)
@@ -1755,7 +1730,7 @@ public class AppServiceTest extends Mockito {
     public void adminsCanChangeSomeValuesResearchersCannot() {
         app = TestUtils.getValidApp(AppServiceTest.class);
         app.setAppIdExcludedInExport(true);
-        app.setEmailVerificationEnabled(true);
+        app.setEmailVerificationEnabled(false);
         app.setExternalIdRequiredOnSignup(false);
         app.setEmailSignInEnabled(false);
         app.setPhoneSignInEnabled(false);
@@ -1789,7 +1764,6 @@ public class AppServiceTest extends Mockito {
         app = service.updateApp(app, true);
         // These values have all successfully been changed from the defaults
         assertFalse(app.isAppIdExcludedInExport());
-        assertFalse(app.isEmailVerificationEnabled());
         assertNull(app.getExporter3Configuration());
         assertFalse(app.isVerifyChannelOnSignInEnabled());
         assertTrue(app.isAutoVerificationPhoneSuppressed());
@@ -1798,6 +1772,9 @@ public class AppServiceTest extends Mockito {
         assertTrue(app.isPhoneSignInEnabled());
         assertTrue(app.isReauthenticationEnabled());
         assertEquals(app.getAccountLimit(), 10);
+
+        // Not even admin can change email verification.
+        assertTrue(app.isEmailVerificationEnabled());
     }
 
     private void assertAppDefaults(App app) {
