@@ -4,5 +4,5 @@ public enum ParticipantStudyProgress {
     UNSTARTED,
     IN_PROGRESS,
     DONE,
-    NO_SCHEDULE;
+    NO_SCHEDULE
 }

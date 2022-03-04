@@ -1,6 +1,5 @@
 package org.sagebionetworks.bridge.models.schedules2.adherence.study;
 
-import static java.util.stream.Collectors.toList;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils.calculateAdherencePercentage;
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils.calculateProgress;
 

@@ -31,7 +31,6 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 
 public class AdherenceUtilsTest {
 
@@ -283,33 +282,6 @@ public class AdherenceUtilsTest {
                     createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),
         };
     }
-    
-    @Test
-    public void countDays() {
-        EventStreamDay day1 = new EventStreamDay();
-        day1.addTimeWindow(createWin(SessionCompletionState.DECLINED));
-        day1.addTimeWindow(createWin(SessionCompletionState.COMPLETED));
-        EventStreamDay day2 = new EventStreamDay();
-        day2.addTimeWindow(createWin(SessionCompletionState.COMPLETED));
-        day2.addTimeWindow(createWin(SessionCompletionState.UNSTARTED));
-        List<EventStreamDay> list1 = ImmutableList.of(day1, day2);
-        
-        EventStreamDay day3 = new EventStreamDay();
-        day3.addTimeWindow(createWin(SessionCompletionState.ABANDONED));
-        day3.addTimeWindow(createWin(SessionCompletionState.NOT_APPLICABLE));
-        EventStreamDay day4 = new EventStreamDay();
-        day4.addTimeWindow(createWin(SessionCompletionState.DECLINED));
-        day4.addTimeWindow(createWin(SessionCompletionState.COMPLETED));
-        List<EventStreamDay> list2 = ImmutableList.of(day3, day4);
-        
-        List<List<EventStreamDay>> days = ImmutableList.of(list1, list2);
-        
-        long count = AdherenceUtils.countDays(days, ImmutableSet.of(COMPLETED));
-        assertEquals(count, 3L);
-
-        count = AdherenceUtils.countDays(days, ImmutableSet.of(ABANDONED, DECLINED));
-        assertEquals(count, 3L);
-}
     
     @Test
     public void calculateAdherencePercentage() {

@@ -103,6 +103,7 @@ public class BridgeUtilsTest extends Mockito {
         assertTrue(BridgeUtils.isLocalDateInRange(start, null, LocalDate.parse("2022-02-17")));
         assertFalse(BridgeUtils.isLocalDateInRange(start, end, LocalDate.parse("2022-02-09")));
         assertFalse(BridgeUtils.isLocalDateInRange(start, end, LocalDate.parse("2022-02-18")));
+        assertFalse(BridgeUtils.isLocalDateInRange(start, end, null));
     }
     
     @Test
