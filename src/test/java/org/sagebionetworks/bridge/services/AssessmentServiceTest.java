@@ -768,6 +768,11 @@ public class AssessmentServiceTest extends Mockito {
         assertSame(retValue, ASSESSMENT);
     }
         
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getAssessmentByIdentifierMissing() {
+        service.getAssessmentById(TEST_APP_ID, TEST_OWNER_ID, "", REVISION_VALUE);
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getAssessmentByIdentifierEntityNotFound() {
         when(mockDao.getAssessment(TEST_APP_ID, TEST_OWNER_ID, IDENTIFIER, REVISION_VALUE))
@@ -793,6 +798,11 @@ public class AssessmentServiceTest extends Mockito {
         assertSame(retValue, rev);
     }
         
+    @Test(expectedExceptions = BadRequestException.class)
+    public void getLatestAssessmentIdentifierMissiong() {
+        service.getLatestAssessment(TEST_APP_ID, TEST_OWNER_ID, " ");
+    }
+    
     @Test(expectedExceptions = EntityNotFoundException.class)
     public void getLatestAssessmentEntityNotFound() {
         when(mockDao.getAssessmentRevisions(TEST_APP_ID, TEST_OWNER_ID, IDENTIFIER, 0, 1, false)).thenReturn(EMPTY_LIST);
