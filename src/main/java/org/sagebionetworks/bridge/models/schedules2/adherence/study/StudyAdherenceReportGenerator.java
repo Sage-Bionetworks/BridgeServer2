@@ -104,7 +104,8 @@ public class StudyAdherenceReportGenerator {
         Map<Integer, StudyReportWeek> weekMap = new TreeMap<>();
         for (Map.Entry<Integer, List<EventStreamDay>> entry : studyStream.getByDayEntries().entrySet()) {
             int week = entry.getKey() / 7;
-            int dayOfWeek = entry.getKey() % 7;
+            // Day of week can be negative if the week was negative... just flip it
+            int dayOfWeek = Math.abs(entry.getKey() % 7);
             
             StudyReportWeek oneWeek = weekMap.get(week);
             if (oneWeek == null) {
@@ -115,18 +116,12 @@ public class StudyAdherenceReportGenerator {
                 weekMap.put(week, oneWeek);    
             }
             List<EventStreamDay> days = oneWeek.getByDayEntries().get(dayOfWeek);
-            // if weeks go negative due to a bad schedule, we need to defend from this
-            if (days != null) {
-                days.addAll(entry.getValue());    
-            }
+            days.addAll(entry.getValue());    
         };
 
+        Collection<StudyReportWeek> weeks = weekMap.values();
         StudyReportWeek currentWeek = null;
         
-        // Filter out empty weeks. This can happen when the studyStartEvent timestamp is not related
-        // to the schedule, and there are dead weeks before the first event triggers some real activity. 
-        List<StudyReportWeek> weeks = weekMap.values().stream()
-                .filter(week -> week.isActiveWeek()).collect(toList());
         for (StudyReportWeek oneWeek : weeks) {
             calculateRowsAndLabels(oneWeek, todayLocal);
             
@@ -143,6 +138,10 @@ public class StudyAdherenceReportGenerator {
                     }
                 }
             }
+            if (BridgeUtils.isLocalDateInRange(oneWeek.getStartDate(), null, todayLocal)) {
+                int weekAdh = AdherenceUtils.calculateAdherencePercentage(oneWeek.getByDayEntries());
+                oneWeek.setAdherencePercent(weekAdh);
+            }
         }
         Integer adherence = null;
         if (progression != ParticipantStudyProgress.NO_SCHEDULE) {
@@ -157,10 +156,6 @@ public class StudyAdherenceReportGenerator {
             dateRange = new DateRange(studyStartDate, eventReport.getDateRangeOfAllStreams().getEndDate());
         }
         for (StudyReportWeek oneWeek : weeks) {
-            if (BridgeUtils.isLocalDateInRange(oneWeek.getStartDate(), null, todayLocal)) {
-                int weekAdh = AdherenceUtils.calculateAdherencePercentage(oneWeek.getByDayEntries());
-                oneWeek.setAdherencePercent(weekAdh);
-            }
             for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
                 for (EventStreamDay oneDay : days) {
                     oneDay.setStudyBurstId(null);
@@ -170,8 +165,7 @@ public class StudyAdherenceReportGenerator {
                     oneDay.setStartDay(null);
                     for (EventStreamWindow window : oneDay.getTimeWindows()) {
                         window.setEndDay(null);
-                        // You really can't remove this, or the windows are deduplicated and one is removed
-                        // this is integral to the object’s identity in memory.
+                        // This cannot be removed, or the window will be removed from persisted collection 
                         // window.setTimeWindowGuid(null);
                     }
                 }

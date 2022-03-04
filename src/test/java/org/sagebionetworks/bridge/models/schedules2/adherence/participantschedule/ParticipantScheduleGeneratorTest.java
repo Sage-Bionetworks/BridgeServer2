@@ -102,7 +102,6 @@ public class ParticipantScheduleGeneratorTest {
         assertEquals(session.getEndDate(), endDate);
         assertEquals(session.getAssessments().size(), 2);
         assertNull(session.getTimeWindow().getGuid());
-        assertNull(session.getStartEventId());
         assertNull(session.getStartDay());
         assertNull(session.getEndDay());
         

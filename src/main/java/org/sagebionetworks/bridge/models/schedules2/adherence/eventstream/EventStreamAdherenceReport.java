@@ -13,7 +13,7 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 @JsonPropertyOrder({ "timestamp", "clientTimeZone", "adherencePercent", "dayRangeOfAllStreams",
-        "dateRangeOfAllStreams", "progression", "streams", "type" })
+        "dateRangeOfAllStreams", "earliestEventId", "progression", "streams", "type" })
 public class EventStreamAdherenceReport {
     
     private DateTime timestamp;
