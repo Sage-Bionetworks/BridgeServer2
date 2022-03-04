@@ -91,14 +91,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class BridgeUtils {
-    
-    public static void printJSON(Object object) {
-        try {
-            System.out.println(BridgeObjectMapper.get().writeValueAsString(object));
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
-        }
-    }
 
     public static class StudyAssociations {
         private final Set<String> studyIdsVisibleToCaller;
