@@ -148,7 +148,7 @@ public class StudyAdherenceReportGenerator {
         }
         NextActivity nextActivity = null;
         if (currentWeek == null) {
-            nextActivity = getNextActivity(weeks, state.getNow());
+            nextActivity = getNextActivity(weeks, todayLocal);
         }
         DateRange dateRange = null;
         if (eventReport.getDateRangeOfAllStreams() != null) {
@@ -253,12 +253,13 @@ public class StudyAdherenceReportGenerator {
         return new EventStreamDay();
     }
     
-    private NextActivity getNextActivity(Collection<StudyReportWeek> weeks, DateTime now) {
+    private NextActivity getNextActivity(Collection<StudyReportWeek> weeks, LocalDate localToday) {
         for (StudyReportWeek oneWeek : weeks) {
-            if (oneWeek.getStartDate().plusDays(7).isAfter(now.toLocalDate())) {
+            if (oneWeek.getStartDate().isAfter(localToday)) {
                 for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
                     for (EventStreamDay oneDay : days) {
                         if (!oneDay.getTimeWindows().isEmpty()) {
+                            // this day still has the week from the event stream report
                             oneDay.setWeek(oneWeek.getWeek());
                             return NextActivity.create(oneDay);
                         }

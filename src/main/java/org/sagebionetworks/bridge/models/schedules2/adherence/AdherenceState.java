@@ -57,9 +57,7 @@ public final class AdherenceState {
         adherenceByGuid = builder.adherenceRecords.stream()
                 .collect(toMap(AdherenceRecord::getInstanceGuid, (a) -> a));
         
-        // LocalDate localNow = (builder.now != null) ? builder.now.toLocalDate() : null;
         for (StudyActivityEvent event : builder.events) {
-            // DateTime eventTimestamp = event.getTimestamp();
             DateTime eventTimestamp = event.getTimestamp().withZone(zone);
             int daysSince = Days.daysBetween(eventTimestamp.toLocalDate(), localNow).getDays();
             
