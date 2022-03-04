@@ -23,6 +23,7 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.mockito.Mockito;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
@@ -275,7 +276,10 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     public void studyStartDateBasedOnStudyStartEventId() throws Exception {
         StudyAdherenceReport report = createReport();
         
+        // This also verifies that the calculation of the start date of the first week
+        // is correct, as there was a bug in the implementation. It should be 3/1.
         assertEquals(report.getDateRange().getStartDate().toString(), "2022-03-01");
+        assertEquals(report.getWeeks().iterator().next().getStartDate().toString(), "2022-03-01");
     }
     
     @Test

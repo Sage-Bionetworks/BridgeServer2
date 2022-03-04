@@ -131,7 +131,7 @@ public class StudyAdherenceReportGenerator {
                 currentWeek = oneWeek;
                 for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
                     for (EventStreamDay oneDay : days) {
-                        if (oneDay.getStartDate() != null && oneDay.getStartDate().isEqual(todayLocal)) {
+                        if (oneDay.getStartDate().isEqual(todayLocal)) {
                             days.forEach(day -> day.setToday(true));
                         }
                     }
@@ -147,7 +147,7 @@ public class StudyAdherenceReportGenerator {
             adherence = calculateAdherencePercentage(ImmutableList.of(studyStream));    
         }
         NextActivity nextActivity = null;
-        if (currentWeek == null || !currentWeek.isActiveWeek()) {
+        if (currentWeek == null) {
             nextActivity = getNextActivity(weeks, state.getNow());
         }
         DateRange dateRange = null;
@@ -184,13 +184,6 @@ public class StudyAdherenceReportGenerator {
     }
 
     protected void calculateRowsAndLabels(StudyReportWeek oneWeek, LocalDate todayLocal) {
-        // pad days
-        for (int i=0; i < 7; i++) {
-            if (oneWeek.getByDayEntries().get(i) == null) {
-                oneWeek.getByDayEntries().put(i, ImmutableList.of());
-            }
-        }
-        
         Set<String> labels = new LinkedHashSet<>();
         Set<WeeklyAdherenceReportRow> rows = new LinkedHashSet<>();
         for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
@@ -247,17 +240,15 @@ public class StudyAdherenceReportGenerator {
     }
     
     private EventStreamDay padEventStreamDay(List<EventStreamDay> days, String sessionGuid, String eventId) {
-        if (days != null) {
-            // If a session is triggered twice by two different events, it can appear twice in rows.
-            // If the events have nearly the same timestamp, the GUIDs and the labels would be exactly
-            // the same. For this reason we carry over the event ID as this identifies two unique streams
-            // and these must be tracked separately, even though they look the same in the report.
-            Optional<EventStreamDay> oneDay = days.stream()
-                    .filter(day -> day.getSessionGuid().equals(sessionGuid) && day.getStartEventId().equals(eventId))
-                    .findFirst();
-            if (oneDay.isPresent()) {
-                return oneDay.get();
-            }
+        // If a session is triggered twice by two different events, it can appear twice in rows.
+        // If the events have nearly the same timestamp, the GUIDs and the labels would be exactly
+        // the same. For this reason we carry over the event ID as this identifies two unique streams
+        // and these must be tracked separately, even though they look the same in the report.
+        Optional<EventStreamDay> oneDay = days.stream()
+                .filter(day -> day.getSessionGuid().equals(sessionGuid) && day.getStartEventId().equals(eventId))
+                .findFirst();
+        if (oneDay.isPresent()) {
+            return oneDay.get();
         }
         return new EventStreamDay();
     }
