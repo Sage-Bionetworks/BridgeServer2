@@ -46,6 +46,7 @@ import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.AuthEvaluatorField;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
@@ -356,13 +357,14 @@ public class AdherenceService {
         return report;
     }
     
-    public StudyAdherenceReport getStudyAdherenceReport(String appId, String studyId, DateTime timestamp, Account account) {
+    public StudyAdherenceReport getStudyAdherenceReport(String appId, String studyId, Account account) {
         checkNotNull(appId);
         checkNotNull(studyId);
-        checkNotNull(timestamp);
         checkNotNull(account);
         
         Stopwatch watch = Stopwatch.createStarted();
+        
+        DateTime createdOn = getDateTime();
         
         String timeZone = null;
         if (account.getClientTimeZone() != null) {
@@ -371,12 +373,11 @@ public class AdherenceService {
             timeZone = getDefaultTimeZoneId();
         }
 
-        StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), timestamp, timeZone,
+        StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), createdOn, timeZone,
                 (state) -> StudyAdherenceReportGenerator.INSTANCE.generate(state));
         report.setParticipant(new AccountRef(account, studyId));
         report.setTestAccount(account.getDataGroups().contains(TEST_USER_GROUP));
-        report.setCreatedOn(getDateTime());
-        report.setTimestamp(timestamp);
+        report.setCreatedOn(createdOn);
         report.setClientTimeZone(timeZone);
         
         deriveWeeklyAdherenceFromStudyAdherenceReport(studyId, account, report);
@@ -404,7 +405,6 @@ public class AdherenceService {
         report.setParticipant(new AccountRef(account, studyId));
         report.setTestAccount(account.getDataGroups().contains(TEST_USER_GROUP));
         report.setCreatedOn(createdOn);
-        report.setTimestamp(createdOn);
         report.setClientTimeZone(timeZone);
         
         WeeklyAdherenceReport weeklyReport = deriveWeeklyAdherenceFromStudyAdherenceReport(studyId, account, report);

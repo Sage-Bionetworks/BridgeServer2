@@ -170,7 +170,9 @@ public class StudyAdherenceReportGenerator {
                     oneDay.setStartDay(null);
                     for (EventStreamWindow window : oneDay.getTimeWindows()) {
                         window.setEndDay(null);
-                        window.setTimeWindowGuid(null);
+                        // You really can't remove this, or the windows are deduplicated and one is removed
+                        // this is integral to the object’s identity in memory.
+                        // window.setTimeWindowGuid(null);
                     }
                 }
             }

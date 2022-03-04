@@ -83,17 +83,15 @@ public class AdherenceController extends BaseController {
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence/study")
-    public StudyAdherenceReport getStudyAdherenceReport(@PathVariable String studyId, 
-            @PathVariable String userIdToken, @RequestParam(required = false) String timestamp) {
+    public StudyAdherenceReport getStudyAdherenceReport(@PathVariable String studyId,
+            @PathVariable String userIdToken) {
         UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
 
         AccountId accountId = BridgeUtils.parseAccountId(session.getAppId(), userIdToken);
         Account account = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));
 
-        DateTime timestampDT = BridgeUtils.getDateTimeOrDefault(timestamp, getDateTime());
-
-        return service.getStudyAdherenceReport(session.getAppId(), studyId, timestampDT, account);
+        return service.getStudyAdherenceReport(session.getAppId(), studyId, account);
     }
     
     @GetMapping("/v5/studies/{studyId}/participants/{userIdToken}/adherence/weekly")

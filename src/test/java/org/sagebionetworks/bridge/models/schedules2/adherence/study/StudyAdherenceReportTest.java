@@ -48,7 +48,6 @@ public class StudyAdherenceReportTest {
         report.setCreatedOn(CREATED_ON);
         report.setAdherencePercent(56);
         report.setProgression(ParticipantStudyProgress.IN_PROGRESS);
-        report.setTimestamp(MODIFIED_ON);
         report.setUnsetEventIds(ImmutableSet.of("event1", "event2"));
         report.setDateRange(new DateRange(LocalDate.parse("2022-02-02"), LocalDate.parse("2022-02-04")));
         report.setWeeks(ImmutableList.of(week));
@@ -66,8 +65,6 @@ public class StudyAdherenceReportTest {
         assertEquals(node.get("clientTimeZone").textValue(), "America/Chicago");
         assertEquals(node.get("createdOn").textValue(),
                 CREATED_ON.withZone(DateTimeZone.forID("America/Chicago")).toString());
-        assertEquals(node.get("timestamp").textValue(),
-                MODIFIED_ON.withZone(DateTimeZone.forID("America/Chicago")).toString());
         assertEquals(node.get("adherencePercent").intValue(), 56);
         assertEquals(node.get("progression").textValue(), "in_progress");
         assertEquals(node.get("dateRange").get("startDate").textValue(), "2022-02-02");

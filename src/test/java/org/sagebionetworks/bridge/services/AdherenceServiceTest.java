@@ -1015,13 +1015,10 @@ public class AdherenceServiceTest extends Mockito {
         PagedResourceList<AdherenceRecord> records = new PagedResourceList<>(StudyAdherenceReportGeneratorTest.createAdherenceRecords(), 10);
         when(mockRecordDao.getAdherenceRecords(any())).thenReturn(records);
         
-        DateTime ts = DateTime.parse("2022-02-01T00:00:00.000-08:00");
-        
-        StudyAdherenceReport report = service.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, ts, account);
+        StudyAdherenceReport report = service.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
         assertEquals(report.getParticipant().getIdentifier(), TEST_USER_ID);
         assertTrue(report.isTestAccount());
         assertEquals(report.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Chicago")));
-        assertEquals(report.getTimestamp(), ts.withZone(DateTimeZone.forID("America/Chicago")));
         assertEquals(report.getClientTimeZone(), "America/Chicago");
         
         verify(mockReportDao).saveWeeklyAdherenceReport(weeklyReportCaptor.capture());
@@ -1060,9 +1057,8 @@ public class AdherenceServiceTest extends Mockito {
         PagedResourceList<AdherenceRecord> records = new PagedResourceList<>(ImmutableList.of(), 0);
         when(mockRecordDao.getAdherenceRecords(any())).thenReturn(records);
         
-        StudyAdherenceReport report = service.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, EVENT_TS, account);
+        StudyAdherenceReport report = service.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
         assertEquals(report.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Denver")));
-        assertEquals(report.getTimestamp(), EVENT_TS.withZone(DateTimeZone.forID("America/Denver")));
         assertEquals(report.getClientTimeZone(), "America/Denver");
     }
     

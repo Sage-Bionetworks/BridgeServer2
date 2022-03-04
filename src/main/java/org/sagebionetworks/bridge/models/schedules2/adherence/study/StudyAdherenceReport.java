@@ -24,7 +24,6 @@ public class StudyAdherenceReport {
     private boolean testAccount;
     private String clientTimeZone;
     private DateTime createdOn;
-    private DateTime timestamp;
     private DateRange dateRange;
     private Integer adherencePercent;
     private ParticipantStudyProgress progression;
@@ -71,13 +70,6 @@ public class StudyAdherenceReport {
     }
     public void setProgression(ParticipantStudyProgress progression) {
         this.progression = progression;
-    }
-    @JsonSerialize(using = DateTimeSerializer.class)
-    public DateTime getTimestamp() {
-        return (timestamp == null) ? null : timestamp.withZone(DateTimeZone.forID(clientTimeZone));
-    }
-    public void setTimestamp(DateTime timestamp) {
-        this.timestamp = timestamp;
     }
     public Set<String> getUnsetEventIds() {
         return unsetEventIds;

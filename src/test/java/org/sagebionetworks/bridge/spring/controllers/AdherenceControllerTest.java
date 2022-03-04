@@ -66,7 +66,6 @@ import org.sagebionetworks.bridge.services.AdherenceService;
 
 public class AdherenceControllerTest extends Mockito {
     
-    private static final String TIMESTAMP = "2022-02-10T10:10:10.123-08:00";
     private static final String CLIENT_TIME_ZONE = "America/Chicago";
     private static final DateTime SYSTEM_NOW = MODIFIED_ON;
     private static final DateTime NOW = CREATED_ON;
@@ -671,33 +670,14 @@ public class AdherenceControllerTest extends Mockito {
             .thenReturn(Optional.of(account));
         
         StudyAdherenceReport report = new StudyAdherenceReport();
-        when(mockService.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, DateTime.parse(TIMESTAMP), account))
+        when(mockService.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account))
                 .thenReturn(report);
 
-        StudyAdherenceReport retValue = controller.getStudyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID, TIMESTAMP);
+        StudyAdherenceReport retValue = controller.getStudyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
         assertSame(retValue, report);
         
-        verify(mockService).getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, DateTime.parse(TIMESTAMP), account);
+        verify(mockService).getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
     }
-    
-    @Test
-    public void getStudyAdherenceReport_defaults() {
-        doReturn(session).when(controller).getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
-
-        Account account = Account.create();
-        when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
-            .thenReturn(Optional.of(account));
-        
-        StudyAdherenceReport report = new StudyAdherenceReport();
-        when(mockService.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, SYSTEM_NOW, account))
-                .thenReturn(report);
-
-        StudyAdherenceReport retValue = controller.getStudyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID, null);
-        assertSame(retValue, report);
-        
-        verify(mockService).getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, SYSTEM_NOW, account);
-    }
-
     
     @Test(expectedExceptions = EntityNotFoundException.class,
             expectedExceptionsMessageRegExp = "Account not found.")
@@ -707,7 +687,7 @@ public class AdherenceControllerTest extends Mockito {
         when(mockAccountService.getAccount(AccountId.forId(TEST_APP_ID, TEST_USER_ID)))
             .thenReturn(Optional.empty());
         
-        controller.getStudyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID, TIMESTAMP);
+        controller.getStudyAdherenceReport(TEST_STUDY_ID, TEST_USER_ID);
     }
 
 }
