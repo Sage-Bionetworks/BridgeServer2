@@ -21,6 +21,7 @@ import org.testng.annotations.Test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 public class ParticipantScheduleTest extends Mockito {
     
@@ -51,9 +52,10 @@ public class ParticipantScheduleTest extends Mockito {
         participantSchedule.setAssessments(timeline.getAssessments());
         participantSchedule.setSessions(timeline.getSessions());
         participantSchedule.setStudyBursts(timeline.getStudyBursts());
+        participantSchedule.setEventTimestamps(ImmutableMap.of("enrollment", MODIFIED_ON));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(participantSchedule);
-        assertEquals(node.size(), 8);
+        assertEquals(node.size(), 9);
         assertEquals(node.get("createdOn").textValue(), CREATED_ON.toString());
         assertEquals(node.get("clientTimeZone").textValue(), TEST_CLIENT_TIME_ZONE);
         assertEquals(node.get("dateRange").get("startDate").textValue(), CREATED_ON.toLocalDate().toString());
@@ -81,5 +83,8 @@ public class ParticipantScheduleTest extends Mockito {
         assertEquals(sbNode.get("interval").textValue(), "P1W");
         assertEquals(sbNode.get("occurrences").intValue(), 2);
         assertEquals(sbNode.get("type").textValue(), "StudyBurstInfo");
+        
+        JsonNode etNode = node.get("eventTimestamps");
+        assertEquals(etNode.get("enrollment").textValue(), MODIFIED_ON.toString());
     }
 }

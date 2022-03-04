@@ -3,7 +3,9 @@ package org.sagebionetworks.bridge.models.schedules2.participantschedules;
 import static java.util.stream.Collectors.toList;
 
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
@@ -36,6 +38,7 @@ public class ParticipantScheduleGenerator {
         Multimap<LocalDate, ScheduledSession> chronology = LinkedHashMultimap.create();
         LocalDate earliestDate = LATEST_LOCAL_DATE;
         LocalDate latestDate = EARLIEST_LOCAL_DATE;
+        Map<String, DateTime> eventTimestamps = new HashMap<>();
         
         for (ScheduledSession schSession : timeline.getSchedule()) {
             String eventId = schSession.getStartEventId();
@@ -45,6 +48,7 @@ public class ParticipantScheduleGenerator {
             }
             LocalDate startDate = eventTimestamp.plusDays(schSession.getStartDay()).toLocalDate();
             LocalDate endDate = eventTimestamp.plusDays(schSession.getEndDay()).toLocalDate();
+            eventTimestamps.put(eventId,  eventTimestamp);
             
             ScheduledSession.Builder builder = schSession.toBuilder();
             builder.withStartDate(startDate);
@@ -90,6 +94,7 @@ public class ParticipantScheduleGenerator {
                 .map(SessionInfo::createScheduleEntry).collect(toList()));
         schedule.setAssessments(timeline.getAssessments());
         schedule.setStudyBursts(timeline.getStudyBursts());
+        schedule.setEventTimestamps(eventTimestamps);
         return schedule;
     }
 }

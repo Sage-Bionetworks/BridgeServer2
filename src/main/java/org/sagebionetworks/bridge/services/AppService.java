@@ -514,7 +514,6 @@ public class AppService {
             }
             app.setExporter3Configuration(originalApp.getExporter3Configuration());
             app.setHealthCodeExportEnabled(originalApp.isHealthCodeExportEnabled());
-            app.setEmailVerificationEnabled(originalApp.isEmailVerificationEnabled());
             app.setExternalIdRequiredOnSignup(originalApp.isExternalIdRequiredOnSignup());
             app.setEmailSignInEnabled(originalApp.isEmailSignInEnabled());
             app.setPhoneSignInEnabled(originalApp.isPhoneSignInEnabled());
@@ -523,6 +522,9 @@ public class AppService {
             app.setAppIdExcludedInExport(originalApp.isAppIdExcludedInExport());
             app.setVerifyChannelOnSignInEnabled(originalApp.isVerifyChannelOnSignInEnabled());
         }
+
+        // Email verification flag can never be changed.
+        app.setEmailVerificationEnabled(originalApp.isEmailVerificationEnabled());
 
         // prevent anyone changing active to false -- it should be done by deactivateApp() method
         if (originalApp.isActive() && !app.isActive()) {
@@ -553,12 +555,10 @@ public class AppService {
             app.setConsentNotificationEmailVerified(false);
         }
 
-        // Only admins can delete or modify upload metadata fields. Check this after validation, so we don't have to
+        // No one can delete or modify upload metadata fields. Check this after validation, so we don't have to
         // deal with duplicates.
         // Anyone (admin or developer) can add or re-order fields.
-        if (!isAdminUpdate) {
-            checkUploadMetadataConstraints(originalApp, app);
-        }
+        checkUploadMetadataConstraints(originalApp, app);
 
         App updatedApp = updateAndCacheApp(app);
         
