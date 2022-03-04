@@ -6,11 +6,13 @@ import org.sagebionetworks.bridge.models.permissions.Permission;
 import org.sagebionetworks.bridge.models.permissions.PermissionDetail;
 import org.sagebionetworks.bridge.services.PermissionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Set;
@@ -48,7 +50,8 @@ public class PermissionController extends BaseController{
     }
     
     @PostMapping("v1/permissions")
-    public StatusMessage createPermission() {
+    @ResponseStatus(HttpStatus.CREATED)
+    public PermissionDetail createPermission() {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         String appId = session.getAppId();
@@ -56,13 +59,11 @@ public class PermissionController extends BaseController{
         Permission permission = parseJson(Permission.class);
         permission.setAppId(appId);
         
-        permissionService.createPermission(appId, permission);
-        
-        return new StatusMessage("Permission created.");
+        return permissionService.createPermission(appId, permission);
     }
     
     @PostMapping("v1/permissions/{guid}")
-    public StatusMessage updatePermission(@PathVariable String guid) {
+    public PermissionDetail updatePermission(@PathVariable String guid) {
         UserSession session = getAuthenticatedSession(ADMIN);
         
         String appId = session.getAppId();
@@ -71,9 +72,7 @@ public class PermissionController extends BaseController{
         permission.setAppId(appId);
         permission.setGuid(guid);
         
-        permissionService.updatePermission(appId, permission);
-        
-        return new StatusMessage("Permission updated.");
+        return permissionService.updatePermission(appId, permission);
     }
     
     @DeleteMapping("v1/permissions/{guid}")

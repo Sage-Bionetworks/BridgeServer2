@@ -9,6 +9,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.permissions.EntityType;
 import org.sagebionetworks.bridge.models.permissions.Permission;
 import org.sagebionetworks.bridge.models.permissions.PermissionDetail;
+import org.sagebionetworks.bridge.validators.Validate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -18,6 +19,7 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.validators.PermissionValidator.INSTANCE;
 
 @Component
 public class PermissionService {
@@ -42,7 +44,7 @@ public class PermissionService {
         
         permission.setGuid(BridgeUtils.generateGuid());
         
-        // TODO: validate permission
+        Validate.entityThrowingException(INSTANCE, permission);
         
         Permission createdPermission = permissionDao.createPermission(appId, permission);
         
@@ -53,7 +55,7 @@ public class PermissionService {
         checkArgument(isNotBlank(appId));
         checkNotNull(permission);
     
-        // TODO: validate permission
+        Validate.entityThrowingException(INSTANCE, permission);
         
         Permission updatedPermission = permissionDao.updatePermission(appId, permission);
     
