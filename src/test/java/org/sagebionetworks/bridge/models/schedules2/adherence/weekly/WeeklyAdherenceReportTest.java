@@ -54,6 +54,7 @@ public class WeeklyAdherenceReportTest {
         report.setProgression(IN_PROGRESS);
         report.setWeeklyAdherencePercent(79);
         report.setRows(ImmutableList.of(row));
+        report.setWeek(2);
         report.setByDayEntries(ImmutableMap.of(
                 new Integer(6), ImmutableList.of(new EventStreamDay())));
         report.setNextActivity(nextActivity);
@@ -82,6 +83,7 @@ public class WeeklyAdherenceReportTest {
         assertEquals(node.get("progression").textValue(), "in_progress");
         assertEquals(node.get("nextActivity").get("type").textValue(), "NextActivity");
         assertEquals(node.get("byDayEntries").get("6").get(0).get("type").textValue(), "EventStreamDay");
+        assertEquals(node.get("week").intValue(), 2);
         assertEquals(node.get("type").textValue(), "WeeklyAdherenceReport");
 
         assertEquals(node.get("rows").size(), 1);
