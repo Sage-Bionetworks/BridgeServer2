@@ -31,7 +31,9 @@ public class EventStream {
         byDayEntries = new TreeMap<>(); // maintain the order of the days
     }
     public EventStream(Map<Integer, List<EventStreamDay>> byDayEntries) {
-        this.byDayEntries = byDayEntries; 
+        this.byDayEntries = new TreeMap<>();
+        this.byDayEntries.putAll(byDayEntries);
+        // this.byDayEntries = byDayEntries; 
     }
     public Set<String> getSessionGuids() {
         return byDayEntries.values().stream()

@@ -7,6 +7,7 @@ import static org.sagebionetworks.bridge.TestConstants.TEST_STUDY_ID;
 import static org.sagebionetworks.bridge.TestConstants.TEST_USER_ID;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import org.joda.time.DateTimeZone;
@@ -69,10 +70,11 @@ public class StudyAdherenceReportTest {
         assertEquals(node.get("progression").textValue(), "in_progress");
         assertEquals(node.get("dateRange").get("startDate").textValue(), "2022-02-02");
         assertEquals(node.get("dateRange").get("endDate").textValue(), "2022-02-04");
+        assertNull(node.get("currentWeek"));
         assertEquals(node.get("type").textValue(), "StudyAdherenceReport");
         
         ArrayNode weeksArray = (ArrayNode)node.get("weeks");
-        assertEquals(weeksArray.get(0).get("week").intValue(), 0);
+        assertEquals(weeksArray.get(0).get("weekInStudy").intValue(), 0);
         assertEquals(weeksArray.get(0).get("byDayEntries").size(), 7);
         assertEquals(weeksArray.get(0).get("type").textValue(), "StudyReportWeek");
         

@@ -33,7 +33,7 @@ public class WeeklyAdherenceReportRowTest {
         row.setStartEventId("eventId");
         row.setSessionName("sessionName");
         row.setSessionSymbol("sessionSymbol");
-        row.setWeek(2);
+        row.setWeekInStudy(2);
         row.setStudyBurstId("studyBurstId");
         row.setStudyBurstNum(4);
         
@@ -44,7 +44,7 @@ public class WeeklyAdherenceReportRowTest {
         assertEquals(node.get("startEventId").textValue(), "eventId");
         assertEquals(node.get("sessionName").textValue(), "sessionName");
         assertEquals(node.get("sessionSymbol").textValue(), "sessionSymbol");
-        assertEquals(node.get("week").intValue(), 2);
+        assertEquals(node.get("weekInStudy").intValue(), 2);
         assertEquals(node.get("studyBurstId").textValue(), "studyBurstId");
         assertEquals(node.get("studyBurstNum").intValue(), 4);
         assertEquals(node.get("type").textValue(), "WeeklyAdherenceReportRow");

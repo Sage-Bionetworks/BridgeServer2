@@ -13,7 +13,7 @@ public final class WeeklyAdherenceReportRow {
     private String startEventId;
     private String sessionName;
     private String sessionSymbol;
-    private Integer week;
+    private Integer weekInStudy;
     private String studyBurstId;
     private Integer studyBurstNum;
     
@@ -53,11 +53,11 @@ public final class WeeklyAdherenceReportRow {
     public void setSessionSymbol(String sessionSymbol) {
         this.sessionSymbol = sessionSymbol;
     }
-    public Integer getWeek() {
-        return week;
+    public Integer getWeekInStudy() {
+        return weekInStudy;
     }
-    public void setWeek(Integer week) {
-        this.week = week;
+    public void setWeekInStudy(Integer weekInStudy) {
+        this.weekInStudy = weekInStudy;
     }
     public String getStudyBurstId() {
         return studyBurstId;
@@ -74,7 +74,7 @@ public final class WeeklyAdherenceReportRow {
     @Override
     public int hashCode() {
         return Objects.hash(label, searchableLabel, sessionGuid, startEventId, sessionName, sessionSymbol, studyBurstId,
-                studyBurstNum, week);
+                studyBurstNum, weekInStudy);
     }
     @Override
     public boolean equals(Object obj) {
@@ -87,6 +87,6 @@ public final class WeeklyAdherenceReportRow {
                 && Objects.equals(sessionGuid, other.sessionGuid) && Objects.equals(startEventId, other.startEventId)
                 && Objects.equals(sessionName, other.sessionName) && Objects.equals(sessionSymbol, other.sessionSymbol)
                 && Objects.equals(studyBurstId, other.studyBurstId)
-                && Objects.equals(studyBurstNum, other.studyBurstNum) && Objects.equals(week, other.week);
+                && Objects.equals(studyBurstNum, other.studyBurstNum) && Objects.equals(weekInStudy, other.weekInStudy);
     }
 }

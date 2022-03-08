@@ -54,7 +54,7 @@ public class WeeklyAdherenceReport {
     private boolean testAccount;
     private String clientTimeZone;
     private Integer weeklyAdherencePercent;
-    private Integer week;
+    private Integer weekInStudy;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
     @Convert(converter = NextActivityConverter.class)
@@ -117,11 +117,11 @@ public class WeeklyAdherenceReport {
     public void setWeeklyAdherencePercent(Integer weeklyAdherencePercent) {
         this.weeklyAdherencePercent = weeklyAdherencePercent;
     }
-    public Integer getWeek() {
-        return week;
+    public Integer getWeekInStudy() {
+        return weekInStudy;
     }
-    public void setWeek(Integer week) {
-        this.week = week;
+    public void setWeekInStudy(Integer weekInStudy) {
+        this.weekInStudy = weekInStudy;
     }
     public String getClientTimeZone() {
         return clientTimeZone;

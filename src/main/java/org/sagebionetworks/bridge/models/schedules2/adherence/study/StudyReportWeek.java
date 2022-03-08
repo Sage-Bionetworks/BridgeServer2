@@ -6,15 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.Convert;
-import javax.persistence.ElementCollection;
-import javax.persistence.FetchType;
-import javax.persistence.JoinColumn;
-
 import org.joda.time.LocalDate;
-import org.sagebionetworks.bridge.hibernate.WeeklyAdherenceReportRowListConverter;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportRow;
 
@@ -24,17 +16,12 @@ import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 @JsonPropertyOrder({ "startDate", "endDate", "week", "adherencePercent", "rows", "byDayEntries", "type" })
 public class StudyReportWeek {
     
-    private int week;
+    private int weekInStudy;
     private LocalDate startDate;
     private LocalDate endDate;
     private Integer adherencePercent;
     private Map<Integer, List<EventStreamDay>> byDayEntries;
-    @CollectionTable(name = "WeeklyAdherenceReportLabels", joinColumns = {
-        @JoinColumn(name = "appId"), @JoinColumn(name = "studyId"), @JoinColumn(name = "userId")})
-    @Column(name = "label")
-    @ElementCollection(fetch = FetchType.EAGER)
     private Set<String> searchableLabels;
-    @Convert(converter = WeeklyAdherenceReportRowListConverter.class)
     private List<WeeklyAdherenceReportRow> rows;
 
     public StudyReportWeek() {
@@ -48,11 +35,11 @@ public class StudyReportWeek {
         byDayEntries.put(6, new ArrayList<>());
     }
     
-    public int getWeek() {
-        return week;
+    public int getWeekInStudy() {
+        return weekInStudy;
     }
-    public void setWeek(int week) {
-        this.week = week;
+    public void setWeekInStudy(int weekInStudy) {
+        this.weekInStudy = weekInStudy;
     }    
     public LocalDate getStartDate() {
         return startDate;

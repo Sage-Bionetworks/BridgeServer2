@@ -14,7 +14,7 @@ public class NextActivity {
         activity.sessionGuid = day.getSessionGuid();
         activity.sessionName = day.getSessionName();
         activity.sessionSymbol = day.getSessionSymbol();
-        activity.week = day.getWeek();
+        activity.weekInStudy = day.getWeek();
         activity.studyBurstId = day.getStudyBurstId();
         activity.studyBurstNum = day.getStudyBurstNum();
         activity.startDate = day.getStartDate();
@@ -28,7 +28,7 @@ public class NextActivity {
     private String sessionGuid;
     private String sessionName;
     private String sessionSymbol;
-    private Integer week;
+    private Integer weekInStudy;
     private String studyBurstId;
     private Integer studyBurstNum;
     private LocalDate startDate;
@@ -45,8 +45,8 @@ public class NextActivity {
     public String getSessionSymbol() {
         return sessionSymbol;
     }
-    public Integer getWeek() {
-        return week;
+    public Integer getWeekInStudy() {
+        return weekInStudy;
     }
     public String getStudyBurstId() {
         return studyBurstId;

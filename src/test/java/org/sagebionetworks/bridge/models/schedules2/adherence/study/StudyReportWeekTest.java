@@ -24,7 +24,7 @@ public class StudyReportWeekTest {
         day.setLabel("dayLabel");
         
         StudyReportWeek week = new StudyReportWeek();
-        week.setWeek(7);
+        week.setWeekInStudy(7);
         week.setStartDate(LocalDate.parse("2022-02-10"));
         week.setEndDate(LocalDate.parse("2022-05-11"));
         week.setAdherencePercent(36);

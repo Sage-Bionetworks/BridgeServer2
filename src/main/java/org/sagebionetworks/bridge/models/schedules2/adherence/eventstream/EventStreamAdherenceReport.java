@@ -65,9 +65,6 @@ public class EventStreamAdherenceReport {
     public List<EventStream> getStreams() {
         return streams;
     }
-    public void setStreams(List<EventStream> streams) {
-        this.streams = streams;
-    }
     public String getEarliestEventId() {
         return earliestEventId;
     }

@@ -39,7 +39,7 @@ public class WeeklyAdherenceReportTest {
         row.setSessionName("sessionName");
         row.setStudyBurstId("studyBurstId");
         row.setStudyBurstNum(2);
-        row.setWeek(4);
+        row.setWeekInStudy(4);
         row.setStartEventId("event1");
         
         WeeklyAdherenceReport report = new WeeklyAdherenceReport();
@@ -54,7 +54,7 @@ public class WeeklyAdherenceReportTest {
         report.setProgression(IN_PROGRESS);
         report.setWeeklyAdherencePercent(79);
         report.setRows(ImmutableList.of(row));
-        report.setWeek(2);
+        report.setWeekInStudy(2);
         report.setByDayEntries(ImmutableMap.of(
                 new Integer(6), ImmutableList.of(new EventStreamDay())));
         report.setNextActivity(nextActivity);
@@ -83,7 +83,7 @@ public class WeeklyAdherenceReportTest {
         assertEquals(node.get("progression").textValue(), "in_progress");
         assertEquals(node.get("nextActivity").get("type").textValue(), "NextActivity");
         assertEquals(node.get("byDayEntries").get("6").get(0).get("type").textValue(), "EventStreamDay");
-        assertEquals(node.get("week").intValue(), 2);
+        assertEquals(node.get("weekInStudy").intValue(), 2);
         assertEquals(node.get("type").textValue(), "WeeklyAdherenceReport");
 
         assertEquals(node.get("rows").size(), 1);
@@ -95,7 +95,7 @@ public class WeeklyAdherenceReportTest {
         assertEquals(rowNode.get("sessionName").textValue(), "sessionName");
         assertEquals(rowNode.get("studyBurstId").textValue(), "studyBurstId");
         assertEquals(rowNode.get("studyBurstNum").intValue(), 2);
-        assertEquals(rowNode.get("week").intValue(), 4);
+        assertEquals(rowNode.get("weekInStudy").intValue(), 4);
         assertEquals(rowNode.get("startEventId").textValue(), "event1");
     }
     

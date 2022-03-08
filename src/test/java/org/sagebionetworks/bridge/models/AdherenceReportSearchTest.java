@@ -32,6 +32,7 @@ public class AdherenceReportSearchTest {
         AdherenceReportSearch search = new AdherenceReportSearch();
         search.setTestFilter(BOTH);
         search.setLabelFilters(ImmutableSet.of("labelFilters"));
+        search.setAdherenceMin(1);
         search.setAdherenceMax(53);
         search.setProgressionFilters(ImmutableSet.of(IN_PROGRESS, DONE));
         search.setIdFilter("idFilter");
@@ -41,7 +42,7 @@ public class AdherenceReportSearchTest {
         JsonNode node = BridgeObjectMapper.get().valueToTree(search);
         assertEquals(node.get("testFilter").textValue(), "both");
         assertEquals(node.get("labelFilters").get(0).textValue(), "labelFilters");
-        assertEquals(node.get("adherenceMin").intValue(), 0);
+        assertEquals(node.get("adherenceMin").intValue(), 1);
         assertEquals(node.get("adherenceMax").intValue(), 53);
         Set<String> progressions = ImmutableSet.of(
                 node.get("progressionFilters").get(0).textValue(),
@@ -59,12 +60,10 @@ public class AdherenceReportSearchTest {
     @Test
     public void nullValuesDoNotOverrideInitialObjectFields() throws JsonMappingException, JsonProcessingException {
         // These are explicit nulls. Does Jackson overwrite these values?
-        String json = "{\"adherenceMin\":null,\"adherenceMax\":null,\"offsetBy\":null,\"pageSize\":null}";
+        String json = "{\"offsetBy\":null,\"pageSize\":null}";
         
         AdherenceReportSearch deser = BridgeObjectMapper.get()
                 .readValue(json, AdherenceReportSearch.class);
-        assertEquals(deser.getAdherenceMin(), Integer.valueOf(0));
-        assertEquals(deser.getAdherenceMax(), Integer.valueOf(100));
         assertEquals(deser.getOffsetBy(), Integer.valueOf(0));
         assertEquals(deser.getPageSize(), Integer.valueOf(API_DEFAULT_PAGE_SIZE));
     }

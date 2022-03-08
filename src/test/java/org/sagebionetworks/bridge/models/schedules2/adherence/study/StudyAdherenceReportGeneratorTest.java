@@ -23,7 +23,7 @@ import org.joda.time.DateTime;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
 import org.mockito.Mockito;
-import org.sagebionetworks.bridge.json.BridgeObjectMapper;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.models.activities.ActivityEventObjectType;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.schedules2.AssessmentReference;
@@ -47,6 +47,8 @@ import com.google.common.collect.ImmutableSet;
 
 public class StudyAdherenceReportGeneratorTest extends Mockito {
     
+    private static final DateTime NOW = DateTime.parse("2022-03-15T01:00:00.000-08:00");
+
     public static StudyAdherenceReport createReport() throws Exception {
         AdherenceState state = createAdherenceState().build();
         return StudyAdherenceReportGenerator.INSTANCE.generate(state);
@@ -122,7 +124,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
                 .withStudyStartEventId("timeline_retrieved")
                 .withMetadata(createTimelineMetadata())
                 .withEvents(createEvents())
-                .withNow(DateTime.parse("2022-03-15T01:00:00.000-08:00"));
+                .withNow(NOW);
     }
     
     /**
@@ -414,9 +416,9 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         StudyAdherenceReport report = INSTANCE.generate(state);
         
         List<StudyReportWeek> weeks = ImmutableList.copyOf(report.getWeeks());
-        assertEquals(weeks.get(0).getWeek(), 1);
+        assertEquals(weeks.get(0).getWeekInStudy(), 1);
         assertEquals(weeks.get(0).getStartDate().toString(), "2022-03-01");
-        assertEquals(weeks.get(1).getWeek(), 4);
+        assertEquals(weeks.get(1).getWeekInStudy(), 4);
         assertEquals(weeks.get(1).getStartDate().toString(), "2022-03-22");
         
         // Nothing is "now" because that's in the gap.
@@ -429,7 +431,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         }
         assertEquals(report.getNextActivity().getSessionGuid(), "finalSurveyGuid");
         assertEquals(report.getNextActivity().getSessionName(), "Final Survey");
-        assertEquals(report.getNextActivity().getWeek(), Integer.valueOf(4));
+        assertEquals(report.getNextActivity().getWeekInStudy(), Integer.valueOf(4));
         assertEquals(report.getNextActivity().getStartDate().toString(), "2022-03-25");
     }
     
@@ -524,7 +526,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         StudyReportWeek week = report.getWeeks().iterator().next();
         assertEquals(week.getSearchableLabels(),
                 ImmutableSet.of(":Initial Survey:Week 1:", ":Baseline Tapping Test:Week 1:"));
-        assertEquals(week.getWeek(), 1);
+        assertEquals(week.getWeekInStudy(), 1);
         assertEquals(week.getStartDate().toString(), "2022-03-01");
         assertEquals(week.getAdherencePercent(), Integer.valueOf(100));
         assertEquals(week.getByDayEntries().get(1).get(1).getTimeWindows().get(0).getState(), COMPLETED);
@@ -590,7 +592,7 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         assertEquals(row1.getSessionGuid(), "baselineGuid");
         assertEquals(row1.getStartEventId(), "timeline_retrieved");
         assertEquals(row1.getSessionName(), "Baseline Tapping Test");
-        assertEquals(row1.getWeek(), Integer.valueOf(1));
+        assertEquals(row1.getWeekInStudy(), Integer.valueOf(1));
         
         WeeklyAdherenceReportRow row2 = week.getRows().get(1);
         assertEquals(row2.getLabel(), "Initial Survey / Week 1");
@@ -598,6 +600,64 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
         assertEquals(row2.getSessionGuid(), "initialSurveyGuid");
         assertEquals(row2.getStartEventId(), "timeline_retrieved");
         assertEquals(row2.getSessionName(), "Initial Survey");
-        assertEquals(row2.getWeek(), Integer.valueOf(1));
+        assertEquals(row2.getWeekInStudy(), Integer.valueOf(1));
+    }
+    
+    @Test
+    public void dayAndDateRangesAdjustedToStudyStartTimestamp() throws Exception {
+        StudyAdherenceReport report = createReport();
+        
+        // The timeline_retrieved start date is 3/1
+        assertEquals(report.getDateRange().getStartDate().toString(), "2022-03-01");
+        // the final survey lands on the 24th, and lasts for three days:
+        assertEquals(report.getDateRange().getEndDate().toString(), "2022-03-27");
+    }
+    
+    @Test
+    public void nextActivityIsCorrectlySelected() throws Exception {
+        // testing in particular that the logic for finding the next activity jumps to the
+        // next week correctly).
+        
+        List<StudyActivityEvent> events = createEvents();
+        
+        StudyActivityEvent event = new StudyActivityEvent.Builder()
+                .withEventId("custom:event1")
+                .withTimestamp(DateTime.parse("2022-05-01T16:23:15.999-08:00"))
+                .withObjectType(ActivityEventObjectType.CUSTOM)
+                .build();
+        events = BridgeUtils.addToList(events, event);
+        
+        AdherenceState state = createAdherenceState()
+                .withNow(DateTime.parse("2022-04-15T00:00:00.000-08:00"))
+                .withEvents(events).build();
+        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        
+        assertEquals(report.getNextActivity().getSessionGuid(), "session5");
+        assertEquals(report.getNextActivity().getSessionName(), "Supplemental Survey");
+        assertEquals(report.getNextActivity().getWeekInStudy(), Integer.valueOf(9));
+        assertEquals(report.getNextActivity().getStartDate().toString(), "2022-05-01");
+        
+        // This is the day before (and in the same week) as the next activity, so nextActivity
+        // should be null in this case.
+        state = createAdherenceState().withNow(DateTime.parse("2022-04-30T00:00:00.000-08:00"))
+                .withEvents(events).build();
+        report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        assertNull(report.getNextActivity());
+    }
+    
+    @Test
+    public void adherenceNotCalculatedForFutureWeeks() throws Exception {
+        AdherenceState state = new AdherenceState.Builder()
+                .withStudyStartEventId("timeline_retrieved")
+                .withMetadata(createTimelineMetadata())
+                .withEvents(createEvents())
+                .withNow(DateTime.parse("2022-03-7T01:00:00.000-08:00")).build();
+        StudyAdherenceReport report = StudyAdherenceReportGenerator.INSTANCE.generate(state);
+        
+        List<StudyReportWeek> weeks = ImmutableList.copyOf(report.getWeeks());
+        assertEquals(weeks.get(0).getAdherencePercent(), Integer.valueOf(0));
+        assertNull(weeks.get(1).getAdherencePercent());
+        assertNull(weeks.get(2).getAdherencePercent());
+        assertNull(weeks.get(3).getAdherencePercent());
     }
 }

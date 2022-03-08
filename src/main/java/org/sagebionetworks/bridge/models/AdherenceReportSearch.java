@@ -10,8 +10,8 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyPr
 public final class AdherenceReportSearch implements BridgeEntity {
     private AccountTestFilter testFilter;
     private Set<String> labelFilters; 
-    private Integer adherenceMin = 0;
-    private Integer adherenceMax = 100;
+    private Integer adherenceMin;
+    private Integer adherenceMax;
     private Set<ParticipantStudyProgress> progressionFilters;
     private String idFilter;
     private Integer offsetBy = 0; 

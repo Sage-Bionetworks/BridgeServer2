@@ -17,7 +17,7 @@ public class EventStreamAdherenceReportTest {
         report.setTimestamp(CREATED_ON);
         report.setClientTimeZone("America/Los_Angeles");
         report.setAdherencePercent(56);
-        report.setStreams(ImmutableList.of(createEventStream(14), createEventStream(2)));
+        report.getStreams().addAll(ImmutableList.of(createEventStream(14), createEventStream(2)));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
         assertEquals(node.size(), 5);

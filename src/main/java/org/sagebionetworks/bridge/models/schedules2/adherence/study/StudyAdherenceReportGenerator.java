@@ -110,7 +110,7 @@ public class StudyAdherenceReportGenerator {
             if (oneWeek == null) {
                 oneWeek = new StudyReportWeek();
                 oneWeek.setStartDate(studyStartDate.plusDays(week*7));
-                oneWeek.setWeek(week+1);
+                oneWeek.setWeekInStudy(week+1);
                 
                 weekMap.put(week, oneWeek);    
             }
@@ -137,6 +137,9 @@ public class StudyAdherenceReportGenerator {
                     }
                 }
             }
+            // We want adherence to be calculated for every week up to the current week, but not after
+            // that. the [startDate-] range matches against todayLocal for all weeks (including the 
+            // current one) but not the weeks after todayLocal.
             if (BridgeUtils.isLocalDateInRange(oneWeek.getStartDate(), null, todayLocal)) {
                 int weekAdh = AdherenceUtils.calculateAdherencePercentage(oneWeek.getByDayEntries());
                 oneWeek.setAdherencePercent(weekAdh);
@@ -196,11 +199,11 @@ public class StudyAdherenceReportGenerator {
                 // <Session Name>:Week 1
                 // Week 1
                 String searchableLabel = (oneDay.getStudyBurstId() != null) ?
-                    String.format(":%s:%s %s:Week %s:%s:", oneDay.getStudyBurstId(), oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneWeek.getWeek(), oneDay.getSessionName()) :
-                    String.format(":%s:Week %s:", oneDay.getSessionName(), oneWeek.getWeek());
+                    String.format(":%s:%s %s:Week %s:%s:", oneDay.getStudyBurstId(), oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneWeek.getWeekInStudy(), oneDay.getSessionName()) :
+                    String.format(":%s:Week %s:", oneDay.getSessionName(), oneWeek.getWeekInStudy());
                 String displayLabel = (oneDay.getStudyBurstId() != null) ?
-                        String.format("%s %s / Week %s / %s", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneWeek.getWeek(), oneDay.getSessionName()) :
-                        String.format("%s / Week %s", oneDay.getSessionName(), oneWeek.getWeek());
+                        String.format("%s %s / Week %s / %s", oneDay.getStudyBurstId(), oneDay.getStudyBurstNum(), oneWeek.getWeekInStudy(), oneDay.getSessionName()) :
+                        String.format("%s / Week %s", oneDay.getSessionName(), oneWeek.getWeekInStudy());
                 labels.add(searchableLabel);
                 
                 WeeklyAdherenceReportRow row = new WeeklyAdherenceReportRow(); 
@@ -212,7 +215,7 @@ public class StudyAdherenceReportGenerator {
                 row.setSessionSymbol(oneDay.getSessionSymbol());
                 row.setStudyBurstId(oneDay.getStudyBurstId());
                 row.setStudyBurstNum(oneDay.getStudyBurstNum());
-                row.setWeek(oneWeek.getWeek());
+                row.setWeekInStudy(oneWeek.getWeekInStudy());
                 rows.add(row);
             }
         }
@@ -260,7 +263,7 @@ public class StudyAdherenceReportGenerator {
                     for (EventStreamDay oneDay : days) {
                         if (!oneDay.getTimeWindows().isEmpty()) {
                             // this day still has the week from the event stream report
-                            oneDay.setWeek(oneWeek.getWeek());
+                            oneDay.setWeek(oneWeek.getWeekInStudy());
                             return NextActivity.create(oneDay);
                         }
                     }

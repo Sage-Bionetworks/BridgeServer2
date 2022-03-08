@@ -810,6 +810,13 @@ public class BridgeUtils {
         return new ImmutableSet.Builder<T>().addAll(set).add(item).build();
     }
     
+    /**
+     * Return a new immutable list that includes the additional item..
+     */
+    public static <T> List<T> addToList(List<T> set, T item) {
+        return new ImmutableList.Builder<T>().addAll(set).add(item).build();
+    }
+    
     public static boolean participantEligibleForDeletion(RequestInfoService requestInfoService, Account account) {
         // Test accounts can always be deleted
         boolean testAccount = account.getDataGroups().contains(TEST_USER_GROUP);
