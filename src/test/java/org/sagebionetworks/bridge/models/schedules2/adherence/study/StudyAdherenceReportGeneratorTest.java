@@ -607,7 +607,8 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     public void dayAndDateRangesAdjustedToStudyStartTimestamp() throws Exception {
         StudyAdherenceReport report = createReport();
         
-        // The timeline_retrieved start date is 3/1
+        // The timeline_retrieved start date is 3/1. We use 3/1 and not 3/2, the 
+        // first date there is an activity.
         assertEquals(report.getDateRange().getStartDate().toString(), "2022-03-01");
         // the final survey lands on the 24th, and lasts for three days:
         assertEquals(report.getDateRange().getEndDate().toString(), "2022-03-27");
@@ -615,9 +616,6 @@ public class StudyAdherenceReportGeneratorTest extends Mockito {
     
     @Test
     public void nextActivityIsCorrectlySelected() throws Exception {
-        // testing in particular that the logic for finding the next activity jumps to the
-        // next week correctly).
-        
         List<StudyActivityEvent> events = createEvents();
         
         StudyActivityEvent event = new StudyActivityEvent.Builder()
