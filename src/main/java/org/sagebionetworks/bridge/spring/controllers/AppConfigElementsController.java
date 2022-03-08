@@ -39,7 +39,7 @@ public class AppConfigElementsController extends BaseController {
     }
     
     @GetMapping("/v3/appconfigs/elements")
-    public ResourceList<AppConfigElement> getMostRecentElements(@RequestParam String includeDeleted) {
+    public ResourceList<AppConfigElement> getMostRecentElements(@RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
         
@@ -65,7 +65,7 @@ public class AppConfigElementsController extends BaseController {
     
     @GetMapping("/v3/appconfigs/elements/{id}")
     public ResourceList<AppConfigElement> getElementRevisions(@PathVariable String id,
-            @RequestParam String includeDeleted) {
+            @RequestParam(required = false) String includeDeleted) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         boolean includeDeletedFlag = Boolean.valueOf(includeDeleted);
         List<AppConfigElement> elements = service.getElementRevisions(session.getAppId(), id,
@@ -112,7 +112,8 @@ public class AppConfigElementsController extends BaseController {
     }
 
     @DeleteMapping("/v3/appconfigs/elements/{id}")
-    public StatusMessage deleteElementAllRevisions(@PathVariable String id, @RequestParam String physical) {
+    public StatusMessage deleteElementAllRevisions(@PathVariable String id,
+            @RequestParam(required = false) String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         if ("true".equals(physical) && session.isInRole(ADMIN)) {
@@ -127,7 +128,7 @@ public class AppConfigElementsController extends BaseController {
 
     @DeleteMapping("/v3/appconfigs/elements/{id}/revisions/{revision}")
     public StatusMessage deleteElementRevision(@PathVariable String id, @PathVariable String revision,
-            @RequestParam String physical) {
+            @RequestParam(required = false) String physical) {
         UserSession session = getAuthenticatedSession(DEVELOPER);
         
         Long revisionLong = BridgeUtils.getLongOrDefault(revision, null);
