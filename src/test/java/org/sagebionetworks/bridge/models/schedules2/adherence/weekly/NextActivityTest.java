@@ -33,7 +33,7 @@ public class NextActivityTest {
         assertEquals(node.get("sessionGuid").textValue(), "sessionGuid");
         assertEquals(node.get("sessionName").textValue(), "sessionName");
         assertEquals(node.get("sessionSymbol").textValue(), "sessionSymbol");
-        assertEquals(node.get("week").intValue(), 2);
+        assertEquals(node.get("weekInStudy").intValue(), 2);
         assertEquals(node.get("studyBurstId").textValue(), "burst");
         assertEquals(node.get("studyBurstNum").intValue(), 3);
         assertEquals(node.get("startDate").textValue(), "2015-02-02");

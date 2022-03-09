@@ -110,7 +110,7 @@ import org.sagebionetworks.bridge.validators.Validate;
 
 public class TestUtils {
     private static final DateTime TEST_CREATED_ON = DateTime.parse("2015-01-27T00:38:32.486Z");
-
+    
     public static class CustomServletInputStream extends ServletInputStream {
         private ByteArrayInputStream buffer;
         public CustomServletInputStream(String content) {
@@ -834,7 +834,6 @@ public class TestUtils {
             .withEvents(events)
             .withAdherenceRecords(adherenceRecords)
             .withNow(ADHERENCE_STATE_NOW)
-            .withShowActive(true)
             .withClientTimeZone(TEST_CLIENT_TIME_ZONE);
     }
 }

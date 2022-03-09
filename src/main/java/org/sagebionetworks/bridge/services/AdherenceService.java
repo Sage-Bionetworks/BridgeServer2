@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.Optional;
 
 import com.google.common.base.Stopwatch;
@@ -41,6 +42,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.sagebionetworks.bridge.AuthEvaluatorField;
@@ -60,8 +62,10 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSe
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
+import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReportGenerator;
+import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyReportWeek;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
-import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportGenerator;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.SessionState;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
@@ -113,6 +117,10 @@ public class AdherenceService {
     
     protected DateTime getDateTime() {
         return DateTime.now();
+    }
+    
+    protected String getDefaultTimeZoneId() {
+        return DateTimeZone.getDefault().getID();
     }
     
     public void updateAdherenceRecords(String appId, AdherenceRecordList recordList) {
@@ -340,45 +348,42 @@ public class AdherenceService {
 
         Stopwatch watch = Stopwatch.createStarted();
         
-        EventStreamAdherenceReport report = getEventStreamAdherenceReportInternal(
-                appId, studyId, userId, now, clientTimeZone, showActiveOnly);
+        EventStreamAdherenceReport report = generateReport(appId, studyId, userId, now,
+                clientTimeZone, (state) -> EventStreamAdherenceReportGenerator.INSTANCE.generate(state));
         
         watch.stop();
         LOG.info("Event stream adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
         return report;
     }
     
-    private EventStreamAdherenceReport getEventStreamAdherenceReportInternal(String appId, String studyId, String userId,
-            DateTime now, String clientTimeZone, boolean showActiveOnly) {
-        AdherenceState.Builder builder = new AdherenceState.Builder();
-        builder.withShowActive(showActiveOnly);
-        builder.withNow(now);
-        builder.withClientTimeZone(clientTimeZone);
-
-        Study study = studyService.getStudy(appId, studyId, true);
-        if (study.getScheduleGuid() == null) {
-            return EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
-        }
-        List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
-
-        List<StudyActivityEvent> events = studyActivityEventService.getRecentStudyActivityEvents(
-                appId, studyId, userId).getItems();
-
-        List<AdherenceRecord> adherenceRecords = getAdherenceRecords(appId, new AdherenceRecordsSearch.Builder()
-                .withCurrentTimestampsOnly(true)
-                // If includeRepeats=false (which is counter-intuitive) you will not get declined sessions with no 
-                // startedOn value, but it's not needed because persistent time windows are excluded from adherence.
-                .withIncludeRepeats(true) 
-                .withAdherenceRecordType(AdherenceRecordType.SESSION)
-                .withStudyId(studyId)
-                .withUserId(userId)
-                .build()).getItems();
+    public StudyAdherenceReport getStudyAdherenceReport(String appId, String studyId, Account account) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        checkNotNull(account);
         
-        builder.withMetadata(metadata);
-        builder.withEvents(events);
-        builder.withAdherenceRecords(adherenceRecords);
+        Stopwatch watch = Stopwatch.createStarted();
+        
+        DateTime createdOn = getDateTime();
+        
+        String timeZone = null;
+        if (account.getClientTimeZone() != null) {
+            timeZone = account.getClientTimeZone();
+        } else {
+            timeZone = getDefaultTimeZoneId();
+        }
 
-        return EventStreamAdherenceReportGenerator.INSTANCE.generate(builder.build());
+        StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), createdOn, timeZone,
+                (state) -> StudyAdherenceReportGenerator.INSTANCE.generate(state));
+        report.setParticipant(new AccountRef(account, studyId));
+        report.setTestAccount(account.getDataGroups().contains(TEST_USER_GROUP));
+        report.setCreatedOn(createdOn);
+        report.setClientTimeZone(timeZone);
+        
+        deriveWeeklyAdherenceFromStudyAdherenceReport(studyId, account, report);
+        
+        watch.stop();
+        LOG.info("Study adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
+        return report;
     }
     
     public WeeklyAdherenceReport getWeeklyAdherenceReport(String appId, String studyId, Account account) {
@@ -386,22 +391,52 @@ public class AdherenceService {
         Stopwatch watch = Stopwatch.createStarted();
         
         DateTime createdOn = getDateTime();
+        
+        String timeZone = null;
+        if (account.getClientTimeZone() != null) {
+            timeZone = account.getClientTimeZone();
+        } else {
+            timeZone = getDefaultTimeZoneId();
+        }
 
-        WeeklyAdherenceReport report = getWeeklyAdherenceReportInternal(
-                appId, studyId, account.getId(), createdOn, account.getClientTimeZone());
-        report.setAppId(appId);
-        report.setStudyId(studyId);
-        report.setUserId(account.getId());
+        StudyAdherenceReport report = generateReport(appId, studyId, account.getId(), createdOn, timeZone,
+                (state) -> StudyAdherenceReportGenerator.INSTANCE.generate(state));
         report.setParticipant(new AccountRef(account, studyId));
         report.setTestAccount(account.getDataGroups().contains(TEST_USER_GROUP));
+        report.setCreatedOn(createdOn);
+        report.setClientTimeZone(timeZone);
         
-        reportDao.saveWeeklyAdherenceReport(report);
+        WeeklyAdherenceReport weeklyReport = deriveWeeklyAdherenceFromStudyAdherenceReport(studyId, account, report);
         
         watch.stop();
         LOG.info("Weekly adherence report took " + watch.elapsed(TimeUnit.MILLISECONDS) + "ms");
-        return report;
+        return weeklyReport;
     }
-    
+
+    protected WeeklyAdherenceReport deriveWeeklyAdherenceFromStudyAdherenceReport(String studyId, Account account,
+            StudyAdherenceReport report) {
+        WeeklyAdherenceReport weeklyReport = new WeeklyAdherenceReport();
+        weeklyReport.setAppId(account.getAppId());
+        weeklyReport.setStudyId(studyId);
+        weeklyReport.setUserId(account.getId());
+        weeklyReport.setParticipant(report.getParticipant());
+        weeklyReport.setProgression(report.getProgression());
+        weeklyReport.setTestAccount(report.isTestAccount());
+        weeklyReport.setClientTimeZone(report.getClientTimeZone());
+        weeklyReport.setCreatedOn(report.getCreatedOn());
+        weeklyReport.setNextActivity(report.getNextActivity());
+        StudyReportWeek week = report.getCurrentWeek();
+        if (week != null) {
+            weeklyReport.setSearchableLabels(week.getSearchableLabels());
+            weeklyReport.setRows(week.getRows());
+            weeklyReport.setByDayEntries(week.getByDayEntries());
+            weeklyReport.setWeeklyAdherencePercent(week.getAdherencePercent());
+            weeklyReport.setWeekInStudy(week.getWeekInStudy());
+        }
+        reportDao.saveWeeklyAdherenceReport(weeklyReport);
+        return weeklyReport;
+    }
+
     public PagedResourceList<WeeklyAdherenceReport> getWeeklyAdherenceReports(String appId, String studyId,
             AdherenceReportSearch search) {
         checkNotNull(appId);
@@ -421,16 +456,15 @@ public class AdherenceService {
                 .withRequestParam(PagedResourceList.PAGE_SIZE, search.getPageSize());
     }
     
-    private WeeklyAdherenceReport getWeeklyAdherenceReportInternal(String appId, String studyId, String userId,
-            DateTime createdOn, String clientTimeZone) {
-        
+    private <T> T generateReport(String appId, String studyId, String userId,
+            DateTime createdOn, String clientTimeZone, Function<AdherenceState, T> func) {
         AdherenceState.Builder builder = new AdherenceState.Builder();
         builder.withNow(createdOn);
         builder.withClientTimeZone(clientTimeZone);
         
         Study study = studyService.getStudy(appId, studyId, true);
         if (study.getScheduleGuid() == null) {
-            return WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
+            return func.apply(builder.build());
         }
         List<TimelineMetadata> metadata = scheduleService.getScheduleMetadata(study.getScheduleGuid());
 
@@ -450,6 +484,7 @@ public class AdherenceService {
         builder.withMetadata(metadata);
         builder.withEvents(events);
         builder.withAdherenceRecords(adherenceRecords);
-        return WeeklyAdherenceReportGenerator.INSTANCE.generate(builder.build());
+        builder.withStudyStartEventId(study.getStudyStartEventId());
+        return func.apply(builder.build());
     }
 }

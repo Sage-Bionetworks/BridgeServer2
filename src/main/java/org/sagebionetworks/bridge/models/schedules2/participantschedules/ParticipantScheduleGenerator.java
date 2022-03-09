@@ -67,7 +67,6 @@ public class ParticipantScheduleGenerator {
             }
             // null these out, not useful
             schSession.getTimeWindow().setGuid(null);
-            builder.withStartEventId(null);
             builder.withStartDay(null);
             builder.withEndDay(null);
             chronology.put(startDate, builder.build());

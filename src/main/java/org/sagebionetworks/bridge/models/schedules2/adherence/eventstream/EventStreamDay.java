@@ -11,6 +11,7 @@ import com.google.common.collect.ImmutableList;
 
 public final class EventStreamDay {
     private String label;
+    private boolean today;
     private String sessionGuid;
     private String sessionName;
     private String sessionSymbol;
@@ -24,6 +25,12 @@ public final class EventStreamDay {
     
     public EventStreamDay() { 
         timeWindows = new HashMap<>();
+    }
+    public boolean isToday() {
+        return today;
+    }
+    public void setToday(boolean today) {
+        this.today = today;
     }
     public String getSessionGuid() {
         return sessionGuid;
@@ -101,7 +108,7 @@ public final class EventStreamDay {
     @Override
     public int hashCode() {
         return Objects.hash(label, sessionGuid, startEventId, sessionName, sessionSymbol, startDate, startDay,
-                studyBurstId, studyBurstNum, timeWindows, week);
+                studyBurstId, studyBurstNum, timeWindows, week, today);
     }
     @Override
     public boolean equals(Object obj) {
@@ -115,6 +122,6 @@ public final class EventStreamDay {
                 && Objects.equals(sessionSymbol, other.sessionSymbol) && Objects.equals(startDate, other.startDate)
                 && Objects.equals(startDay, other.startDay) && Objects.equals(studyBurstId, other.studyBurstId)
                 && Objects.equals(studyBurstNum, other.studyBurstNum) && Objects.equals(timeWindows, other.timeWindows)
-                && Objects.equals(week, other.week);
+                && Objects.equals(week, other.week) && Objects.equals(today, other.today);
     }
 }

@@ -6,7 +6,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertSame;
-import static org.testng.Assert.assertTrue;
 
 import java.util.List;
 
@@ -87,8 +86,8 @@ public class AdherenceStateTest extends Mockito {
             .withEvents(events)
             .withAdherenceRecords(adherenceRecords)
             .withNow(NOW)
-            .withShowActive(true)
             .withClientTimeZone(TEST_CLIENT_TIME_ZONE)
+            .withStudyStartEventId("event1")
             .build();
     }
     
@@ -106,7 +105,6 @@ public class AdherenceStateTest extends Mockito {
     @Test
     public void testConstruction() {
         assertSame(state.getMetadata(), metadata);
-        assertTrue(state.showActive());
         assertEquals(state.getNow(), NOW.withZone(TEST_TIME_ZONE));
         assertEquals(state.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         assertEquals(state.getTimeZone(), TEST_TIME_ZONE);
@@ -153,7 +151,7 @@ public class AdherenceStateTest extends Mockito {
         
         // Nothing to do == in compliance, ignore this person this week
         assertEquals(state.calculateAdherencePercentage(), 100);
-        
+        assertEquals(state.getStudyStartEventId(), "event1");
         assertEquals(state.getStreamEventIds(), ImmutableList.of("event1", "event2"));
     }
     
@@ -195,7 +193,6 @@ public class AdherenceStateTest extends Mockito {
         state = new AdherenceState.Builder()
                 .withMetadata(metadata)
                 .withNow(NOW)
-                .withShowActive(true)
                 // no time zone
                 .build();
         // a time zone from the "now" value would be an offset, but same difference
@@ -216,6 +213,6 @@ public class AdherenceStateTest extends Mockito {
         assertSame(copy.getClientTimeZone(), state.getClientTimeZone());
         assertSame(copy.getEvents(), state.getEvents());
         assertSame(copy.getAdherenceRecords(), state.getAdherenceRecords());
-        assertEquals(copy.showActive(), state.showActive());
+        assertSame(copy.getStudyStartEventId(), "event1");
     }
 }

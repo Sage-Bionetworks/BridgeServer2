@@ -16,9 +16,12 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.SessionComp
 import static org.testng.Assert.assertEquals;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.joda.time.DateTime;
+import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamDay;
@@ -191,7 +194,7 @@ public class AdherenceUtilsTest {
         // This is admittedly a random selection of cases, I don't have anything systematic
         // in mind here.
         return new Object[][] {
-            dataRow(100,createEventStream(0, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
+            dataRow(0,  createEventStream(0, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
             dataRow(100,createEventStream(0, COMPLETED, COMPLETED),
                         createEventStream(1, COMPLETED, COMPLETED)),
             dataRow(0,  createEventStream(0, EXPIRED, NOT_YET_AVAILABLE)),
@@ -203,7 +206,7 @@ public class AdherenceUtilsTest {
                         createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),
             dataRow(50, createEventStream(0, COMPLETED, null),
                         createEventStream(2, EXPIRED, null)),
-            dataRow(20, createEventStream(0, EXPIRED, null),
+            dataRow(14, createEventStream(0, EXPIRED, null),
                         createEventStream(1, EXPIRED, COMPLETED),
                         createEventStream(2, UNSTARTED, UNSTARTED),
                         createEventStream(3, NOT_YET_AVAILABLE, NOT_YET_AVAILABLE)),
@@ -219,7 +222,7 @@ public class AdherenceUtilsTest {
             dataRow(33, createEventStream(0, COMPLETED, DECLINED),
                         createEventStream(1, COMPLETED, DECLINED),
                         createEventStream(2, STARTED, UNSTARTED)),
-            dataRow(33, createEventStream(0, ABANDONED, COMPLETED),
+            dataRow(28, createEventStream(0, ABANDONED, COMPLETED),
                         createEventStream(1, COMPLETED, EXPIRED),
                         createEventStream(2, STARTED, UNSTARTED),
                         createEventStream(3, NOT_YET_AVAILABLE, null),
@@ -279,6 +282,43 @@ public class AdherenceUtilsTest {
                     createEventStream(0, NOT_APPLICABLE, NOT_APPLICABLE)),
         };
     }
+    
+    @Test
+    public void calculateAdherencePercentage() {
+        EventStreamDay day1 = new EventStreamDay();
+        day1.addTimeWindow(createWin(SessionCompletionState.DECLINED));
+        day1.addTimeWindow(createWin(SessionCompletionState.COMPLETED));
+        EventStreamDay day2 = new EventStreamDay();
+        day2.addTimeWindow(createWin(SessionCompletionState.COMPLETED));
+        day2.addTimeWindow(createWin(SessionCompletionState.UNSTARTED));
+        List<EventStreamDay> list1 = ImmutableList.of(day1, day2);
+        
+        EventStreamDay day3 = new EventStreamDay();
+        day3.addTimeWindow(createWin(SessionCompletionState.ABANDONED));
+        day3.addTimeWindow(createWin(SessionCompletionState.NOT_APPLICABLE));
+        EventStreamDay day4 = new EventStreamDay();
+        day4.addTimeWindow(createWin(SessionCompletionState.DECLINED));
+        day4.addTimeWindow(createWin(SessionCompletionState.COMPLETED));
+        List<EventStreamDay> list2 = ImmutableList.of(day3, day4);
+
+        Map<Integer, List<EventStreamDay>> byDayEntries = new HashMap<>();
+        byDayEntries.put(1, list1);
+        byDayEntries.put(4, list2);
+        
+        long perc = AdherenceUtils.calculateAdherencePercentage(byDayEntries);
+        assertEquals(perc, 42); // or 3/7 known states were finished
+        
+        perc = AdherenceUtils.calculateAdherencePercentage(new HashMap<>());
+        assertEquals(perc, 100); // in reports we return this as a null in some contexts
+    }
+    
+    private EventStreamWindow createWin(SessionCompletionState state) {
+        EventStreamWindow win = new EventStreamWindow();
+        win.setTimeWindowGuid(BridgeUtils.generateGuid());
+        win.setState(state);
+        return win;
+    }
+    
     
     private static Object[] progressDataRow(boolean state, ParticipantStudyProgress progress, EventStream... streams) {
         AdherenceState.Builder builder = new AdherenceState.Builder().withNow(DateTime.now());

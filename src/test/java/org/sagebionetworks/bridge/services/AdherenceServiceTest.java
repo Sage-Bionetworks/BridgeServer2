@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.services;
 import static java.lang.Boolean.TRUE;
 import static org.sagebionetworks.bridge.Roles.ADMIN;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
+import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
 import static org.sagebionetworks.bridge.TestConstants.CREATED_ON;
 import static org.sagebionetworks.bridge.TestConstants.MODIFIED_ON;
 import static org.sagebionetworks.bridge.TestConstants.SCHEDULE_GUID;
@@ -52,6 +53,7 @@ import com.google.common.collect.Iterables;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.Period;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -62,6 +64,7 @@ import org.mockito.Spy;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.sagebionetworks.bridge.BridgeConstants;
 import org.sagebionetworks.bridge.RequestContext;
 import org.sagebionetworks.bridge.TestConstants;
 import org.sagebionetworks.bridge.dao.AdherenceRecordDao;
@@ -75,11 +78,15 @@ import org.sagebionetworks.bridge.models.ResourceList;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEvent;
 import org.sagebionetworks.bridge.models.activities.StudyActivityEventIdsMap;
+import org.sagebionetworks.bridge.models.schedules2.StudyBurst;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReportGeneratorTest;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.timelines.MetadataContainer;
 import org.sagebionetworks.bridge.models.schedules2.timelines.TimelineMetadata;
@@ -116,6 +123,9 @@ public class AdherenceServiceTest extends Mockito {
     
     @Captor
     ArgumentCaptor<AdherenceRecord> recordCaptor;
+    
+    @Captor
+    ArgumentCaptor<WeeklyAdherenceReport> weeklyReportCaptor;
 
     @InjectMocks
     @Spy
@@ -126,6 +136,7 @@ public class AdherenceServiceTest extends Mockito {
         MockitoAnnotations.initMocks(this);
         
         when(service.getDateTime()).thenReturn(MODIFIED_ON);
+        when(service.getDefaultTimeZoneId()).thenReturn("America/Denver");
     }
     
     @AfterMethod
@@ -791,7 +802,6 @@ public class AdherenceServiceTest extends Mockito {
         assertTrue(report.getStreams().isEmpty());
         assertEquals(report.getTimestamp(), EVENT_TS.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
         assertEquals(report.getAdherencePercent(), 100);
-        assertTrue(report.isActiveOnly());
     }
     
     @Test
@@ -819,7 +829,6 @@ public class AdherenceServiceTest extends Mockito {
         assertTrue(report.getStreams().isEmpty());
         assertEquals(report.getTimestamp(), EVENT_TS.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
         assertEquals(report.getAdherencePercent(), 100);
-        assertTrue(report.isActiveOnly());
         
         verify(mockRecordDao).getAdherenceRecords(searchCaptor.capture());
         AdherenceRecordsSearch search = searchCaptor.getValue();
@@ -863,7 +872,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(retValue.getUserId(), TEST_USER_ID);
         assertEquals(retValue.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         assertEquals(retValue.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
-        assertEquals(retValue.getWeeklyAdherencePercent(), 100);
+        assertNull(retValue.getWeeklyAdherencePercent());
         assertEquals(retValue.getParticipant().getIdentifier(), TEST_USER_ID);
         assertEquals(retValue.getParticipant().getFirstName(), "firstName");
         assertEquals(retValue.getParticipant().getLastName(), "lastName");
@@ -873,6 +882,37 @@ public class AdherenceServiceTest extends Mockito {
         
         verify(mockReportDao).saveWeeklyAdherenceReport(retValue);
         // The contents of the weekly report are tested separately by testing the generator
+    }
+    
+    @Test
+    public void getWeeklyAdherenceReport_defaultTimeZone() throws Exception {
+        RequestContext.set(new RequestContext.Builder().withCallerRoles(ImmutableSet.of(ADMIN)).build());
+        
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setId(TEST_USER_ID);
+        account.setFirstName("firstName");
+        account.setLastName("lastName");
+        account.setEmail(TestConstants.EMAIL);
+        account.setPhone(TestConstants.PHONE);
+        account.getEnrollments().add(Enrollment.create(TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID, TEST_EXTERNAL_ID));
+        
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        List<StudyActivityEvent> events = ImmutableList.of();
+        ResourceList<StudyActivityEvent> page = new ResourceList<>(events, true);
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(page);
+        
+        PagedResourceList<AdherenceRecord> page2 = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(page2);
+        
+        WeeklyAdherenceReport retValue = service.getWeeklyAdherenceReport(
+                TEST_APP_ID, TEST_STUDY_ID, account);
+        assertEquals(retValue.getClientTimeZone(), "America/Denver");
+        assertEquals(retValue.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Denver")));
     }
     
     @Test
@@ -907,7 +947,7 @@ public class AdherenceServiceTest extends Mockito {
         assertEquals(retValue.getUserId(), TEST_USER_ID);
         assertEquals(retValue.getClientTimeZone(), TEST_CLIENT_TIME_ZONE);
         assertEquals(retValue.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID(TEST_CLIENT_TIME_ZONE)));
-        assertEquals(retValue.getWeeklyAdherencePercent(), 100);
+        assertNull(retValue.getWeeklyAdherencePercent());
         assertEquals(retValue.getParticipant().getIdentifier(), TEST_USER_ID);
         
         verify(mockReportDao).saveWeeklyAdherenceReport(retValue);
@@ -934,6 +974,94 @@ public class AdherenceServiceTest extends Mockito {
         service.getWeeklyAdherenceReports(TEST_APP_ID, TEST_STUDY_ID, search);
     }
 
+    @Test
+    public void getStudyAdherenceReport() throws Exception {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        
+        Account account = Account.create();
+        account.setAppId(TEST_APP_ID);
+        account.setDataGroups(ImmutableSet.of(BridgeConstants.TEST_USER_GROUP));
+        account.setId(TEST_USER_ID);
+        account.setClientTimeZone("America/Chicago");
+        
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        when(mockScheduleService.getScheduleMetadata(SCHEDULE_GUID))
+            .thenReturn(StudyAdherenceReportGeneratorTest.createTimelineMetadata());        
+        
+        ResourceList<StudyActivityEvent> events = 
+                new ResourceList<>(StudyAdherenceReportGeneratorTest.createEvents());
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(events);
+        
+        StudyBurst burst = new StudyBurst();
+        burst.setIdentifier("Study Burst");
+        burst.setOriginEventId("timeline_retrieved");
+        burst.setUpdateType(IMMUTABLE);
+        burst.setDelay(Period.parse("P1W"));
+        burst.setOccurrences(3);
+        burst.setInterval(Period.parse("P1W"));
+        
+        StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
+        map.addStudyBursts(ImmutableList.of(burst));
+        when(mockStudyService.getStudyActivityEventIdsMap(TEST_APP_ID, TEST_STUDY_ID)).thenReturn(map);
+        
+        PagedResourceList<AdherenceRecord> records = new PagedResourceList<>(StudyAdherenceReportGeneratorTest.createAdherenceRecords(), 10);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(records);
+        
+        StudyAdherenceReport report = service.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
+        assertEquals(report.getParticipant().getIdentifier(), TEST_USER_ID);
+        assertTrue(report.isTestAccount());
+        assertEquals(report.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Chicago")));
+        assertEquals(report.getClientTimeZone(), "America/Chicago");
+        
+        verify(mockReportDao).saveWeeklyAdherenceReport(weeklyReportCaptor.capture());
+        WeeklyAdherenceReport weeklyReport = weeklyReportCaptor.getValue();
+        assertEquals(weeklyReport.getAppId(), TEST_APP_ID);
+        assertEquals(weeklyReport.getStudyId(), TEST_STUDY_ID);
+        assertEquals(weeklyReport.getUserId(), TEST_USER_ID);
+        assertEquals(weeklyReport.getParticipant(), report.getParticipant());
+        assertEquals(weeklyReport.getProgression(), ParticipantStudyProgress.IN_PROGRESS);
+        assertTrue(weeklyReport.isTestAccount());
+        assertEquals(weeklyReport.getClientTimeZone(), "America/Chicago");
+        assertEquals(weeklyReport.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Chicago")));
+        assertEquals(weeklyReport.getNextActivity().getSessionGuid(), "initialSurveyGuid");
+    }
+    
+    @Test
+    public void getStudyAdherenceReport_defaultTimeZone() {
+        RequestContext.set(new RequestContext.Builder()
+                .withCallerUserId("id")
+                .withOrgSponsoredStudies(ImmutableSet.of(TEST_STUDY_ID))
+                .withCallerRoles(ImmutableSet.of(STUDY_COORDINATOR))
+                .build());
+        
+        Account account = Account.create();
+        account.setDataGroups(ImmutableSet.of(BridgeConstants.TEST_USER_GROUP));
+        account.setId(TEST_USER_ID);
+        
+        Study study = Study.create();
+        study.setScheduleGuid(SCHEDULE_GUID);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+        
+        ResourceList<StudyActivityEvent> events = new ResourceList<>(ImmutableList.of());
+        when(mockStudyActivityEventService.getRecentStudyActivityEvents(
+                TEST_APP_ID, TEST_STUDY_ID, TEST_USER_ID)).thenReturn(events);
+        
+        PagedResourceList<AdherenceRecord> records = new PagedResourceList<>(ImmutableList.of(), 0);
+        when(mockRecordDao.getAdherenceRecords(any())).thenReturn(records);
+        
+        StudyAdherenceReport report = service.getStudyAdherenceReport(TEST_APP_ID, TEST_STUDY_ID, account);
+        assertEquals(report.getCreatedOn(), MODIFIED_ON.withZone(DateTimeZone.forID("America/Denver")));
+        assertEquals(report.getClientTimeZone(), "America/Denver");
+    }
+    
     private AdherenceRecord ar(DateTime startedOn, DateTime finishedOn, String guid, boolean declined) {
         AdherenceRecord sess = new AdherenceRecord();
         sess.setAppId(TEST_APP_ID);

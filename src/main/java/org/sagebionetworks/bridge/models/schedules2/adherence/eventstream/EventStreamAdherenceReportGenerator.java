@@ -5,6 +5,8 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUt
 
 import org.joda.time.DateTime;
 import org.joda.time.LocalDate;
+import org.sagebionetworks.bridge.models.DateRange;
+import org.sagebionetworks.bridge.models.DayRange;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
@@ -14,7 +16,19 @@ public class EventStreamAdherenceReportGenerator {
     
     public static final EventStreamAdherenceReportGenerator INSTANCE = new EventStreamAdherenceReportGenerator();
 
+    private static final LocalDate EARLIEST_LOCAL_DATE = LocalDate.parse("1900-01-01");
+    private static final LocalDate LATEST_LOCAL_DATE = LocalDate.parse("9999-12-31");
+
     public EventStreamAdherenceReport generate(AdherenceState state) {
+        
+        LocalDate earliestDate = LATEST_LOCAL_DATE;
+        LocalDate latestDate = EARLIEST_LOCAL_DATE;
+        
+        int min = Integer.MAX_VALUE;
+        int max = Integer.MIN_VALUE;
+        
+        String earliestEventId = null;
+
         for (TimelineMetadata meta : state.getMetadata()) {
             if (meta.isTimeWindowPersistent()) {
                 continue;
@@ -28,11 +42,6 @@ public class EventStreamAdherenceReportGenerator {
             LocalDate localDate = (timestamp == null) ? null : timestamp.toLocalDate();
             LocalDate startDate = (localDate == null) ? null : localDate.plusDays(startDay);
             LocalDate endDate = (localDate == null) ? null : localDate.plusDays(endDay);
-
-            // Skip entries that are not currently active, according to the server.
-            if (state.showActive() && (daysSinceEvent == null || (startDay > daysSinceEvent || endDay < daysSinceEvent))) {
-                continue;
-            }
 
             // Produce one report for each event ID. Create them lazily as we find each eventId;
             EventStream stream = state.getEventStreamById(eventId);
@@ -58,13 +67,37 @@ public class EventStreamAdherenceReportGenerator {
             windowEntry.setEndDate(endDate);
             windowEntry.setState(sessionState);
             eventStreamDay.addTimeWindow(windowEntry);
+            
+            if (startDate != null && startDate.isBefore(earliestDate)) {
+                earliestDate = startDate;
+                earliestEventId = eventStreamDay.getStartEventId();
+            }
+            if (endDate != null && endDate.isAfter(latestDate)) {
+                latestDate = endDate;
+            }
+            if (min > startDay) {
+                min = startDay;
+            }
+            if (max < endDay) {
+                max = endDay;
+            }
         }
         
+        DayRange dayRange = null;
+        if (min <= max) {
+            dayRange = new DayRange(min, max);
+        }
+        DateRange dateRange = null;
+        if (earliestDate.isBefore(latestDate)) {
+            dateRange = new DateRange(earliestDate, latestDate);
+        }
         EventStreamAdherenceReport report = new EventStreamAdherenceReport();
-        report.setActiveOnly(state.showActive());
         report.setTimestamp(state.getNow());
         report.setClientTimeZone(state.getClientTimeZone());
         report.setAdherencePercent(state.calculateAdherencePercentage());
+        report.setDayRangeOfAllStreams(dayRange);
+        report.setDateRangeOfAllStreams(dateRange);
+        report.setEarliestEventId(earliestEventId);
         for (String eventId : state.getStreamEventIds()) {
             report.getStreams().add(state.getEventStreamById(eventId));
         }

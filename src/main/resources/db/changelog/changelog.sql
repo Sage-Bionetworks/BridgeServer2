@@ -928,3 +928,8 @@ ADD CONSTRAINT FOREIGN KEY (`sessionGuid`) REFERENCES `Sessions` (`guid`) ON DEL
 
 ALTER TABLE `Substudies`
 ADD COLUMN `studyStartEventId` varchar(255);
+
+-- changeset bridge:64
+
+ALTER TABLE `WeeklyAdherenceReports`
+ADD COLUMN `weekInStudy` int(4);
