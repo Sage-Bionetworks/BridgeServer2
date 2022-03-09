@@ -11,6 +11,7 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.accounts.Account;
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
@@ -55,6 +56,7 @@ public class WeeklyAdherenceReportTest {
         report.setWeeklyAdherencePercent(79);
         report.setRows(ImmutableList.of(row));
         report.setWeekInStudy(2);
+        report.setStartDate(LocalDate.parse("2022-02-02"));
         report.setByDayEntries(ImmutableMap.of(
                 new Integer(6), ImmutableList.of(new EventStreamDay())));
         report.setNextActivity(nextActivity);
@@ -70,7 +72,7 @@ public class WeeklyAdherenceReportTest {
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(report);
         
-        assertEquals(node.size(), 11);
+        assertEquals(node.size(), 12);
         assertNull(node.get("appId"));
         assertNull(node.get("studyId"));
         assertNull(node.get("userId"));
@@ -84,6 +86,7 @@ public class WeeklyAdherenceReportTest {
         assertEquals(node.get("nextActivity").get("type").textValue(), "NextActivity");
         assertEquals(node.get("byDayEntries").get("6").get(0).get("type").textValue(), "EventStreamDay");
         assertEquals(node.get("weekInStudy").intValue(), 2);
+        assertEquals(node.get("startDate").textValue(), "2022-02-02");
         assertEquals(node.get("type").textValue(), "WeeklyAdherenceReport");
 
         assertEquals(node.get("rows").size(), 1);

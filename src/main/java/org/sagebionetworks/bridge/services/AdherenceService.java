@@ -432,6 +432,7 @@ public class AdherenceService {
             weeklyReport.setByDayEntries(week.getByDayEntries());
             weeklyReport.setWeeklyAdherencePercent(week.getAdherencePercent());
             weeklyReport.setWeekInStudy(week.getWeekInStudy());
+            weeklyReport.setStartDate(week.getStartDate());
         }
         reportDao.saveWeeklyAdherenceReport(weeklyReport);
         return weeklyReport;

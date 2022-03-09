@@ -21,8 +21,10 @@ import javax.persistence.Table;
 
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
+import org.joda.time.LocalDate;
 import org.sagebionetworks.bridge.hibernate.DateTimeToLongAttributeConverter;
 import org.sagebionetworks.bridge.hibernate.EventStreamDayMapConverter;
+import org.sagebionetworks.bridge.hibernate.LocalDateToStringConverter;
 import org.sagebionetworks.bridge.hibernate.NextActivityConverter;
 import org.sagebionetworks.bridge.hibernate.WeeklyAdherenceReportRowListConverter;
 import org.sagebionetworks.bridge.json.DateTimeSerializer;
@@ -55,6 +57,8 @@ public class WeeklyAdherenceReport {
     private String clientTimeZone;
     private Integer weeklyAdherencePercent;
     private Integer weekInStudy;
+    @Convert(converter = LocalDateToStringConverter.class)
+    private LocalDate startDate;
     @Convert(converter = DateTimeToLongAttributeConverter.class)
     private DateTime createdOn;
     @Convert(converter = NextActivityConverter.class)
@@ -170,6 +174,12 @@ public class WeeklyAdherenceReport {
     }
     public void setRows(List<WeeklyAdherenceReportRow> rows) {
         this.rows = rows;
+    }
+    public LocalDate getStartDate() {
+        return startDate;
+    }
+    public void setStartDate(LocalDate startDate) {
+        this.startDate = startDate;
     }
 }
 
