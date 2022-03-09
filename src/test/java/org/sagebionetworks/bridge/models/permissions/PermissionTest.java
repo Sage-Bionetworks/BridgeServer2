@@ -25,7 +25,7 @@ public class PermissionTest {
         permission.setGuid(GUID);
         permission.setAppId(TEST_APP_ID);
         permission.setUserId(TEST_USER_ID);
-        permission.setAccessLevel(PermissionAccessLevel.ADMIN);
+        permission.setAccessLevel(AccessLevel.ADMIN);
         permission.setEntityType(EntityType.STUDY);
         permission.setEntityId(TEST_STUDY_ID);
         
@@ -43,7 +43,7 @@ public class PermissionTest {
         assertEquals(deser.getGuid(), GUID);
         assertNull(deser.getAppId());
         assertEquals(deser.getUserId(), TEST_USER_ID);
-        assertEquals(deser.getAccessLevel(), PermissionAccessLevel.ADMIN);
+        assertEquals(deser.getAccessLevel(), AccessLevel.ADMIN);
         assertEquals(deser.getEntityType(), EntityType.STUDY);
         assertEquals(deser.getEntityId(), TEST_STUDY_ID);
     }

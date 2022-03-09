@@ -27,7 +27,7 @@ import org.sagebionetworks.bridge.models.accounts.AccountRef;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.permissions.EntityType;
 import org.sagebionetworks.bridge.models.permissions.Permission;
-import org.sagebionetworks.bridge.models.permissions.PermissionAccessLevel;
+import org.sagebionetworks.bridge.models.permissions.AccessLevel;
 import org.sagebionetworks.bridge.models.permissions.PermissionDetail;
 import org.sagebionetworks.bridge.services.PermissionService;
 import org.testng.annotations.BeforeMethod;
@@ -132,7 +132,7 @@ public class PermissionControllerTest extends Mockito {
         assertNull(captured.getGuid());
         assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getUserId(), TEST_USER_ID);
-        assertEquals(captured.getAccessLevel(), PermissionAccessLevel.ADMIN);
+        assertEquals(captured.getAccessLevel(), AccessLevel.ADMIN);
         assertEquals(captured.getEntityType(), EntityType.STUDY);
         assertEquals(captured.getEntityId(), TEST_STUDY_ID);
     }
@@ -202,7 +202,7 @@ public class PermissionControllerTest extends Mockito {
         assertEquals(captured.getGuid(), GUID);
         assertEquals(captured.getAppId(), TEST_APP_ID);
         assertEquals(captured.getUserId(), TEST_USER_ID);
-        assertEquals(captured.getAccessLevel(), PermissionAccessLevel.ADMIN);
+        assertEquals(captured.getAccessLevel(), AccessLevel.ADMIN);
         assertEquals(captured.getEntityType(), EntityType.STUDY);
         assertEquals(captured.getEntityId(), TEST_STUDY_ID);
     }
@@ -267,7 +267,7 @@ public class PermissionControllerTest extends Mockito {
         permission.setGuid(GUID);
         permission.setAppId(TEST_APP_ID);
         permission.setUserId(TEST_USER_ID);
-        permission.setAccessLevel(PermissionAccessLevel.ADMIN);
+        permission.setAccessLevel(AccessLevel.ADMIN);
         permission.setEntityType(EntityType.STUDY);
         permission.setEntityId(TEST_STUDY_ID);
         return permission;

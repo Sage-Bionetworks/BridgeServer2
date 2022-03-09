@@ -1,6 +1,6 @@
 package org.sagebionetworks.bridge.models.permissions;
 
-public enum PermissionAccessLevel {
+public enum AccessLevel {
     
     LIST,
     READ,

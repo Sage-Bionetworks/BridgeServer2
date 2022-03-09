@@ -10,7 +10,7 @@ import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 import org.sagebionetworks.bridge.models.permissions.EntityType;
 import org.sagebionetworks.bridge.models.permissions.Permission;
-import org.sagebionetworks.bridge.models.permissions.PermissionAccessLevel;
+import org.sagebionetworks.bridge.models.permissions.AccessLevel;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -106,7 +106,7 @@ public class HibernatePermissionDaoTest extends Mockito {
         permission.setGuid(GUID);
         permission.setAppId(TEST_APP_ID);
         permission.setUserId(TEST_USER_ID);
-        permission.setAccessLevel(PermissionAccessLevel.ADMIN);
+        permission.setAccessLevel(AccessLevel.ADMIN);
         permission.setEntityType(EntityType.STUDY);
         permission.setEntityId(TEST_STUDY_ID);
         return permission;

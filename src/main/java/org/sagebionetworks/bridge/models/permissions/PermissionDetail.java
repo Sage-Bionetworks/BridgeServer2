@@ -8,7 +8,7 @@ public final class PermissionDetail {
     
     private final String guid;
     private final String userId;
-    private final PermissionAccessLevel accessLevel;
+    private final AccessLevel accessLevel;
     private final EntityType entityType;
     private final String entityId;
     private final AccountRef userAccountRef;
@@ -30,7 +30,7 @@ public final class PermissionDetail {
         return userId;
     }
     
-    public PermissionAccessLevel getAccessLevel() {
+    public AccessLevel getAccessLevel() {
         return accessLevel;
     }
     

@@ -20,7 +20,7 @@ public final class Permission implements BridgeEntity {
     private String appId;
     private String userId;
     @Enumerated(EnumType.STRING)
-    private PermissionAccessLevel accessLevel;
+    private AccessLevel accessLevel;
     @Enumerated(EnumType.STRING)
     private EntityType entityType;
     private String entityId;
@@ -49,11 +49,11 @@ public final class Permission implements BridgeEntity {
         this.userId = userId;
     }
     
-    public PermissionAccessLevel getAccessLevel() {
+    public AccessLevel getAccessLevel() {
         return accessLevel;
     }
     
-    public void setAccessLevel(PermissionAccessLevel accessLevel) {
+    public void setAccessLevel(AccessLevel accessLevel) {
         this.accessLevel = accessLevel;
     }
     

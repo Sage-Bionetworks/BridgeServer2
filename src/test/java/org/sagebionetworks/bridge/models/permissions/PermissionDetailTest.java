@@ -27,7 +27,7 @@ public class PermissionDetailTest {
         permission.setGuid(GUID);
         permission.setAppId(TEST_APP_ID);
         permission.setUserId(TEST_USER_ID);
-        permission.setAccessLevel(PermissionAccessLevel.ADMIN);
+        permission.setAccessLevel(AccessLevel.ADMIN);
         permission.setEntityType(EntityType.STUDY);
         permission.setEntityId(TEST_STUDY_ID);
     

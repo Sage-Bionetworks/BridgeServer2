@@ -17,7 +17,7 @@ import static org.sagebionetworks.bridge.validators.Validate.CANNOT_BE_NULL_OR_E
 
 import org.sagebionetworks.bridge.models.permissions.EntityType;
 import org.sagebionetworks.bridge.models.permissions.Permission;
-import org.sagebionetworks.bridge.models.permissions.PermissionAccessLevel;
+import org.sagebionetworks.bridge.models.permissions.AccessLevel;
 import org.testng.annotations.Test;
 
 public class PermissionValidatorTest {
@@ -102,7 +102,7 @@ public class PermissionValidatorTest {
         permission.setGuid(GUID);
         permission.setAppId(TEST_APP_ID);
         permission.setUserId(TEST_USER_ID);
-        permission.setAccessLevel(PermissionAccessLevel.ADMIN);
+        permission.setAccessLevel(AccessLevel.ADMIN);
         permission.setEntityType(EntityType.STUDY);
         permission.setEntityId(TEST_STUDY_ID);
         return permission;
