@@ -23,6 +23,7 @@ import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Sets;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalTime;
 import org.joda.time.Period;
@@ -34,6 +35,8 @@ import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.time.DateUtils;
 import org.sagebionetworks.bridge.models.upload.UploadFieldDefinition;
 import org.sagebionetworks.bridge.models.upload.UploadFieldType;
+import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
+import org.sagebionetworks.bridge.models.upload.Upload;
 import org.sagebionetworks.bridge.schema.SchemaUtils;
 
 /** Utility class that contains static utility methods for handling uploads. */
@@ -77,6 +80,7 @@ public class UploadUtil {
 
     // Misc constants
     private static final int DEFAULT_MAX_LENGTH = 100;
+    public static final DateTimeZone LOCAL_TIME_ZONE = DateTimeZone.forID("America/Los_Angeles");
 
     // Field def for survey schemas, which contains a key-value pair of all survey answers.
     public static final UploadFieldDefinition ANSWERS_FIELD_DEF = new UploadFieldDefinition.Builder()
@@ -755,5 +759,20 @@ public class UploadUtil {
             sanitizedFieldMap.put(sanitizedFieldName, oneRawFieldEntry.getValue());
         }
         return sanitizedFieldMap;
+    }
+
+    public static String getRawS3KeyForUpload(String appId, Upload upload, HealthDataRecordEx3 record) {
+        String filename = getFilenameForUpload(upload);
+        String dateStr = getCalendarDateForRecord(record);
+        return appId + '/' + dateStr + '/' + filename;
+    }
+
+    private static String getFilenameForUpload(Upload upload) {
+        return upload.getUploadId() + '-' + upload.getFilename();
+    }
+
+    private static String getCalendarDateForRecord(HealthDataRecordEx3 record) {
+        LocalDate localDate = new DateTime(record.getCreatedOn()).withZone(LOCAL_TIME_ZONE).toLocalDate();
+        return localDate.toString();
     }
 }

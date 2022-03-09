@@ -1,18 +1,30 @@
 package org.sagebionetworks.bridge.services;
 
+import java.net.URL;
+import java.util.Date;
 import java.util.Optional;
 
+import com.amazonaws.HttpMethod;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.Headers;
+import static com.amazonaws.HttpMethod.GET;
+import com.amazonaws.services.s3.model.GeneratePresignedUrlRequest;
+import com.amazonaws.services.s3.model.ObjectMetadata;
 import org.apache.commons.lang3.StringUtils;
 import org.joda.time.DateTime;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+
 import org.sagebionetworks.bridge.BridgeConstants;
+import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.HealthDataEx3Dao;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
+import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
 import org.sagebionetworks.bridge.models.ForwardCursorPagedResourceList;
 import org.sagebionetworks.bridge.models.healthdata.HealthDataRecordEx3;
+import org.sagebionetworks.bridge.upload.UploadUtil;
 import org.sagebionetworks.bridge.validators.HealthDataRecordEx3Validator;
 import org.sagebionetworks.bridge.validators.Validate;
 
@@ -23,12 +35,27 @@ import org.sagebionetworks.bridge.validators.Validate;
 @Component
 public class HealthDataEx3Service {
     static final int MAX_DATE_RANGE_DAYS = 60;
+    static final int EXPIRATION_IN_MINUTES = 60;
 
     private HealthDataEx3Dao healthDataEx3Dao;
+    private UploadService uploadService;
+    private String S3bucketName;
+    private String S3Key;
+    private AmazonS3 s3Client;
 
     @Autowired
     public final void setHealthDataEx3Dao(HealthDataEx3Dao healthDataEx3Dao) {
         this.healthDataEx3Dao = healthDataEx3Dao;
+    }
+
+    @Autowired
+    public final void setUploadService(UploadService uploadService) {
+        this.uploadService = uploadService;
+    }
+
+    @Autowired
+    public final void setConfig(BridgeConfig config) {
+        S3bucketName = config.getProperty(Exporter3Service.CONFIG_KEY_RAW_HEALTH_DATA_BUCKET);
     }
 
     /** Create or update health data record. Returns the created or updated record. */
@@ -50,13 +77,40 @@ public class HealthDataEx3Service {
         healthDataEx3Dao.deleteRecordsForHealthCode(healthCode);
     }
 
-    /** Retrieves the record for the given ID. */
-    public Optional<HealthDataRecordEx3> getRecord(String id) {
+    /** Retrieves the record for the given ID. Provide the download link if requested. */
+    public Optional<HealthDataRecordEx3> getRecord(String id, boolean download) {
         if (StringUtils.isBlank(id)) {
             throw new BadRequestException("ID must be specified");
         }
 
-        return healthDataEx3Dao.getRecord(id);
+        Optional<HealthDataRecordEx3> record = Optional.ofNullable(healthDataEx3Dao.getRecord(id))
+                .orElseThrow(() -> new EntityNotFoundException(HealthDataRecordEx3.class));
+
+        if (download) {
+            record.get().setDownloadUrl(generatePresignedUrl(record.get(), GET).toExternalForm());
+        }
+        return record;
+    }
+
+    /**
+     * Returns the url path of the given record.
+     * @param record the record
+     * @return the url path of the given record.
+     */
+    private URL generatePresignedUrl(HealthDataRecordEx3 record, HttpMethod method) {
+        long expiration = DateTime.now().plusMinutes(EXPIRATION_IN_MINUTES).getMillis();
+        record.setDownloadExpiration(expiration);
+
+        String S3Key = UploadUtil.getRawS3KeyForUpload(record.getAppId(),
+                this.uploadService.getUpload(record.getId()), record);
+
+        GeneratePresignedUrlRequest request = new GeneratePresignedUrlRequest(S3bucketName , S3Key, method);
+        request.setExpiration(new Date(expiration));
+        if (GET.equals(method)) {
+            request.addRequestParameter(Headers.SERVER_SIDE_ENCRYPTION, ObjectMetadata.AES_256_SERVER_SIDE_ENCRYPTION);
+        }
+
+        return s3Client.generatePresignedUrl(request);
     }
 
     /** Retrieves all records for the given healthcode and time range. */
