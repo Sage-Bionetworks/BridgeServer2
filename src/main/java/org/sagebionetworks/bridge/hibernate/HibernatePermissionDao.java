@@ -1,5 +1,9 @@
 package org.sagebionetworks.bridge.hibernate;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+
 import com.google.common.collect.ImmutableSet;
 import org.sagebionetworks.bridge.dao.PermissionDao;
 import org.sagebionetworks.bridge.models.permissions.Permission;
@@ -9,10 +13,6 @@ import org.springframework.stereotype.Component;
 import javax.annotation.Resource;
 
 import java.util.Set;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
 
 @Component
 public class HibernatePermissionDao implements PermissionDao {

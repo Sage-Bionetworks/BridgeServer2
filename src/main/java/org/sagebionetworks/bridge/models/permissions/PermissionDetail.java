@@ -2,7 +2,9 @@ package org.sagebionetworks.bridge.models.permissions;
 
 import org.sagebionetworks.bridge.models.accounts.AccountRef;
 
-public class PermissionDetail {
+import java.util.Objects;
+
+public final class PermissionDetail {
     
     private final String guid;
     private final String userId;
@@ -43,4 +45,18 @@ public class PermissionDetail {
     public AccountRef getUserAccountRef() {
         return userAccountRef;
     }
+    
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        PermissionDetail that = (PermissionDetail) o;
+        return Objects.equals(guid, that.guid) && Objects.equals(userId, that.userId) && accessLevel == that.accessLevel && entityType == that.entityType && Objects.equals(entityId, that.entityId) && Objects.equals(userAccountRef, that.userAccountRef);
+    }
+    
+    @Override
+    public int hashCode() {
+        return Objects.hash(guid, userId, accessLevel, entityType, entityId, userAccountRef);
+    }
+    
 }

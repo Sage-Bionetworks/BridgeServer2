@@ -1,5 +1,10 @@
 package org.sagebionetworks.bridge.services;
 
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static org.apache.commons.lang3.StringUtils.isNotBlank;
+import static org.sagebionetworks.bridge.validators.PermissionValidator.INSTANCE;
+
 import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.dao.PermissionDao;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
@@ -15,11 +20,6 @@ import org.springframework.stereotype.Component;
 
 import java.util.HashSet;
 import java.util.Set;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.sagebionetworks.bridge.validators.PermissionValidator.INSTANCE;
 
 @Component
 public class PermissionService {
@@ -38,11 +38,16 @@ public class PermissionService {
         this.accountService = accountService;
     }
     
+    // For mock testing
+    protected String generateGuid() {
+        return BridgeUtils.generateGuid();
+    }
+    
     public PermissionDetail createPermission(String appId, Permission permission) {
         checkArgument(isNotBlank(appId));
         checkNotNull(permission);
         
-        permission.setGuid(BridgeUtils.generateGuid());
+        permission.setGuid(generateGuid());
         
         Validate.entityThrowingException(INSTANCE, permission);
         
@@ -91,7 +96,7 @@ public class PermissionService {
         permissionDao.deletePermission(appId, guid);
     }
     
-    private PermissionDetail getPermissionDetail(String appId, Permission permission) {
+    protected PermissionDetail getPermissionDetail(String appId, Permission permission) {
         AccountId accountId = AccountId.forId(appId, permission.getUserId());
         Account userAccount = accountService.getAccount(accountId)
                 .orElseThrow(() -> new EntityNotFoundException(Account.class));

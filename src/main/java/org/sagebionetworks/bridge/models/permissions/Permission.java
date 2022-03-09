@@ -12,7 +12,7 @@ import java.util.Objects;
 
 @Entity
 @Table(name = "Permissions")
-public class Permission implements BridgeEntity {
+public final class Permission implements BridgeEntity {
     
     @Id
     private String guid;
@@ -86,15 +86,4 @@ public class Permission implements BridgeEntity {
         return Objects.hash(guid, appId, userId, accessLevel, entityType, entityId);
     }
     
-    @Override
-    public String toString() {
-        return "Permission{" +
-                "guid='" + guid + '\'' +
-                ", appId='" + appId + '\'' +
-                ", userId='" + userId + '\'' +
-                ", accessLevel=" + accessLevel +
-                ", entityType=" + entityType +
-                ", entityId='" + entityId + '\'' +
-                '}';
-    }
 }

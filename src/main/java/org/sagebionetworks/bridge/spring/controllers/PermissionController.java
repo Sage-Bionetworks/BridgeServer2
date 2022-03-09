@@ -1,5 +1,7 @@
 package org.sagebionetworks.bridge.spring.controllers;
 
+import static org.sagebionetworks.bridge.Roles.ADMIN;
+
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.permissions.Permission;
@@ -16,8 +18,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Set;
-
-import static org.sagebionetworks.bridge.Roles.ADMIN;
 
 @CrossOrigin
 @RestController
@@ -57,6 +57,7 @@ public class PermissionController extends BaseController{
         String appId = session.getAppId();
     
         Permission permission = parseJson(Permission.class);
+        permission.setGuid(null);
         permission.setAppId(appId);
         
         return permissionService.createPermission(appId, permission);
