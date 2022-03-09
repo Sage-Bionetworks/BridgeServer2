@@ -13,12 +13,11 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdher
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 
-@JsonPropertyOrder({ "startDate", "endDate", "week", "adherencePercent", "rows", "byDayEntries", "type" })
+@JsonPropertyOrder({ "startDate", "endDate", "weekInStudy", "adherencePercent", "rows", "byDayEntries", "type" })
 public class StudyReportWeek {
     
     private int weekInStudy;
     private LocalDate startDate;
-    private LocalDate endDate;
     private Integer adherencePercent;
     private Map<Integer, List<EventStreamDay>> byDayEntries;
     private Set<String> searchableLabels;
@@ -46,12 +45,6 @@ public class StudyReportWeek {
     }
     public void setStartDate(LocalDate startDate) {
         this.startDate = startDate;
-    }
-    public LocalDate getEndDate() {
-        return endDate;
-    }
-    public void setEndDate(LocalDate endDate) {
-        this.endDate = endDate;
     }
     public Integer getAdherencePercent() {
         return adherencePercent;

@@ -26,16 +26,15 @@ public class StudyReportWeekTest {
         StudyReportWeek week = new StudyReportWeek();
         week.setWeekInStudy(7);
         week.setStartDate(LocalDate.parse("2022-02-10"));
-        week.setEndDate(LocalDate.parse("2022-05-11"));
         week.setAdherencePercent(36);
         week.setByDayEntries(ImmutableMap.of(5, ImmutableList.of(day)));
         week.setSearchableLabels(ImmutableSet.of("label"));
         week.setRows(ImmutableList.of(row));
         
         JsonNode node = BridgeObjectMapper.get().valueToTree(week);
-        assertEquals(node.size(), 7);
+        assertEquals(node.size(), 6);
+        assertEquals(node.get("weekInStudy").intValue(), 7);
         assertEquals(node.get("startDate").textValue(), "2022-02-10");
-        assertEquals(node.get("endDate").textValue(), "2022-05-11");
         assertEquals(node.get("adherencePercent").intValue(), 36);
         assertEquals(node.get("rows").get(0).get("label").textValue(), "labelRow");
         assertEquals(node.get("rows").get(0).get("type").textValue(), "WeeklyAdherenceReportRow");
