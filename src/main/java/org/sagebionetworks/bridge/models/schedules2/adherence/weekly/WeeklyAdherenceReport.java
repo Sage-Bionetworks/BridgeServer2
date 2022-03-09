@@ -40,7 +40,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 @Table(name = "WeeklyAdherenceReports")
 @IdClass(WeeklyAdherenceReportId.class)
 @JsonPropertyOrder({ "participant", "testAccount", "progression", "weeklyAdherencePercent", "weekInStudy",
-        "clientTimeZone", "createdOn", "rows", "byDayEntries", "type" })
+        "startDate", "clientTimeZone", "createdOn", "rows", "byDayEntries", "type" })
 public class WeeklyAdherenceReport {
     
     @Id
