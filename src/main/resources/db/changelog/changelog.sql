@@ -933,3 +933,9 @@ ADD COLUMN `studyStartEventId` varchar(255);
 
 ALTER TABLE `WeeklyAdherenceReports`
 ADD COLUMN `weekInStudy` int(4);
+
+-- changeset bridge:65
+
+ALTER TABLE `WeeklyAdherenceReports`
+ADD COLUMN `startDate` varchar(10);
+
