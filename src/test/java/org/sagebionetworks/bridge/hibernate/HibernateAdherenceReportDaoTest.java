@@ -17,11 +17,16 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.Participant
 import static org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress.IN_PROGRESS;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertSame;
+import static org.testng.Assert.assertTrue;
 
+import java.math.BigInteger;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.NativeQuery;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.InjectMocks;
@@ -34,8 +39,11 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 
 import org.mockito.MockitoAnnotations;
+import org.sagebionetworks.bridge.TestUtils;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatistics;
 import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
 
@@ -79,6 +87,15 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
     
     @Mock
     HibernateHelper mockHelper;
+    
+    @Mock
+    NativeQuery<Integer> mockQuery;
+    
+    @Mock
+    SessionFactory mockSessionFactory;
+    
+    @Mock
+    Session mockSession;
     
     @Captor
     ArgumentCaptor<String> stringCaptor;
@@ -290,5 +307,38 @@ public class HibernateAdherenceReportDaoTest extends Mockito {
         assertEquals(stringCaptor.getAllValues().get(0), SELECT_COUNT + PROGRESSION_FILTER);
         assertEquals(stringCaptor.getAllValues().get(1), SELECT_DISTINCT + PROGRESSION_FILTER);
         assertEquals(paramsCaptor.getValue().get(PROGRESSION_FILTER_FIELD), progressStates);
+    }
+    
+    @Test
+    public void getWeeklyAdherenceStatistics_noData() throws Exception {
+        when(mockSessionFactory.openSession()).thenReturn(mockSession);
+        when(mockSession.createNativeQuery(any())).thenReturn(mockQuery);
+        
+        AdherenceStatistics stats = dao.getWeeklyAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, 22);
+        assertEquals(stats.getAdherenceThresholdPercentage(), Integer.valueOf(22));
+        assertTrue(stats.getEntries().isEmpty());
+    }
+
+    @Test
+    public void getWeeklyAdherenceStatistics() throws Exception {
+        when(mockSessionFactory.openSession()).thenReturn(mockSession);
+        when(mockSession.createNativeQuery(any())).thenReturn(mockQuery);
+        
+        String json = TestUtils.createJson("[{'label':'Session #2 / Week 10',"
+                +"'searchableLabel':':label1:','sessionGuid':'lgjaORpbvHSMvmGWPaHxJy9v',"
+                +"'startEventId':'custom:event1','sessionName':'Session #2',"
+                +"'weekInStudy':10,'type':'WeeklyAdherenceReportRow'}]");
+        
+        Object[] row = new Object[] {":label1:", BigInteger.valueOf(10), json};
+        List<Object[]> results = ImmutableList.of(row);
+        when(mockHelper.nativeQuery(stringCaptor.capture(), paramsCaptor.capture()))
+            .thenReturn(results);
+        
+        AdherenceStatistics stats = dao.getWeeklyAdherenceStatistics(TEST_APP_ID, TEST_STUDY_ID, 22);
+        assertEquals(stats.getAdherenceThresholdPercentage(), Integer.valueOf(22));
+        System.out.println(BridgeObjectMapper.get().writeValueAsString(stats));
+        
+        // {"adherenceThresholdPercentage":22,"entries":[{"label":"Session #2 / Week 10","searchableLabel":":label1:","sessionName":"Session #2","weekInStudy":10,"totalActive":10,"type":"AdherenceStatisticsEntry"}],"type":"AdherenceStatistics"}
+
     }
 }

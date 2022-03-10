@@ -60,6 +60,7 @@ import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordLis
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordType;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatistics;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
 import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
@@ -487,5 +488,19 @@ public class AdherenceService {
         builder.withAdherenceRecords(adherenceRecords);
         builder.withStudyStartEventId(study.getStudyStartEventId());
         return func.apply(builder.build());
+    }
+    
+    public AdherenceStatistics geAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold) {
+        checkNotNull(appId);
+        checkNotNull(studyId);
+        
+        if (adherenceThreshold == null) {
+            Study study = studyService.getStudy(appId, studyId, true);
+            adherenceThreshold = study.getAdherenceThresholdPercentage();
+        }
+        if (adherenceThreshold == null) {
+            throw new BadRequestException("No value for the adherence cutoff either in study or request");
+        }
+        return reportDao.getWeeklyAdherenceStatistics(appId, studyId, adherenceThreshold);
     }
 }

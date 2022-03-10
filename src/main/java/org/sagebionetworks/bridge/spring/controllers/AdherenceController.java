@@ -3,6 +3,7 @@ package org.sagebionetworks.bridge.spring.controllers;
 import static org.sagebionetworks.bridge.AuthEvaluatorField.STUDY_ID;
 import static org.sagebionetworks.bridge.AuthUtils.CANNOT_ACCESS_PARTICIPANTS;
 import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_PARTICIPANT_REPORTS;
+import static org.sagebionetworks.bridge.AuthUtils.CAN_READ_STUDIES;
 import static org.sagebionetworks.bridge.Roles.DEVELOPER;
 import static org.sagebionetworks.bridge.Roles.RESEARCHER;
 import static org.sagebionetworks.bridge.Roles.STUDY_COORDINATOR;
@@ -30,6 +31,7 @@ import org.sagebionetworks.bridge.models.accounts.UserSession;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecord;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordList;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceRecordsSearch;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatistics;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.study.StudyAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
@@ -133,6 +135,18 @@ public class AdherenceController extends BaseController {
             search.setTestFilter(TEST);
         }
         return service.getWeeklyAdherenceReports(session.getAppId(), studyId, search);
+    }
+    
+    @GetMapping("/v5/studies/{studyId}/adherence/weekly/stats")    
+    public AdherenceStatistics geAdherenceStatistics(@PathVariable String studyId,
+            @RequestParam(required = false) String adherenceThreshold) {
+        UserSession session = getAuthenticatedSession(DEVELOPER, RESEARCHER, STUDY_DESIGNER, STUDY_COORDINATOR);
+
+        CAN_READ_STUDIES.checkAndThrow(STUDY_ID, studyId);
+        
+        Integer adherenceThresholdInt = BridgeUtils.getIntegerOrDefault(adherenceThreshold, null);
+        
+        return service.geAdherenceStatistics(session.getAppId(), studyId, adherenceThresholdInt);
     }
     
     @PostMapping("/v5/studies/{studyId}/participants/self/adherence")

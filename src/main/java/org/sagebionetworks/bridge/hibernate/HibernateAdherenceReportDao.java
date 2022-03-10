@@ -4,21 +4,59 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.sagebionetworks.bridge.BridgeUtils.OR_JOINER;
 import static org.sagebionetworks.bridge.models.SearchTermPredicate.AND;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Resource;
 
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 import org.sagebionetworks.bridge.dao.AdherenceReportDao;
+import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.hibernate.QueryBuilder.WhereClauseBuilder;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.AccountTestFilter;
 import org.sagebionetworks.bridge.models.AdherenceReportSearch;
 import org.sagebionetworks.bridge.models.PagedResourceList;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatistics;
+import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceStatisticsEntry;
 import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReport;
+import org.sagebionetworks.bridge.models.schedules2.adherence.weekly.WeeklyAdherenceReportRow;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.Lists;
 
 @Component
 public class HibernateAdherenceReportDao implements AdherenceReportDao {
+    
+    private static final TypeReference<List<WeeklyAdherenceReportRow>> ROWS_LIST = new TypeReference<List<WeeklyAdherenceReportRow>>() {};
+    
+    static final String STATISTICS_SQL = "SELECT label, count(*) as total, any_value(rows) FROM WeeklyAdherenceReportLabels "
+            +"labels LEFT JOIN WeeklyAdherenceReports AS reports ON labels.appId = reports.appId AND labels.studyId = "
+            +"reports.studyId and labels.userId = reports.userId WHERE reports.appId = :appId AND reports.studyId = :studyId "
+            +"GROUP BY label";
+    
+    static final String ALL_ACTIVE_SQL = "SELECT count(distinct userId) AS count FROM BridgeDB.WeeklyAdherenceReports WHERE "
+            +"appId = :appId AND studyId = :studyId AND weeklyAdherencePercent IS NOT NULL";
+    
+    static final String UNDER_THRESHOLD_SQL = "SELECT count(distinct userId) AS count FROM BridgeDB.WeeklyAdherenceReports WHERE "
+            +"appId = :appId AND studyId = :studyId AND weeklyAdherencePercent < :threshold";
+
+    static final Comparator<String> STRING_COMPARATOR = Comparator.nullsLast((r1, r2) -> r1.compareToIgnoreCase(r2));
+    
+    static final Comparator<AdherenceStatisticsEntry> ENTRIES_COMPARATOR = (r1, r2) -> {
+        int sb = STRING_COMPARATOR.compare(r1.getStudyBurstId(), r2.getStudyBurstId());
+        return (sb != 0) ? sb : STRING_COMPARATOR.compare(r1.getSessionName(), r2.getSessionName());
+    };
 
     static final String SELECT_COUNT = "SELECT COUNT(*) ";
     static final String SELECT_DISTINCT = "SELECT DISTINCT h ";
@@ -31,10 +69,17 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
     static final String APP_ID_FIELD = "appId";
     
     private HibernateHelper hibernateHelper;
+    
+    private SessionFactory sessionFactory;
 
     @Resource(name = "mysqlHibernateHelper")
     final void setHibernateHelper(HibernateHelper hibernateHelper) {
         this.hibernateHelper = hibernateHelper;
+    }
+    
+    @Autowired
+    final void setSessionFactory(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
     }
 
     @Override
@@ -98,5 +143,75 @@ public class HibernateAdherenceReportDao implements AdherenceReportDao {
                 builder.getParameters(), search.getOffsetBy(), search.getPageSize(), WeeklyAdherenceReport.class);
 
         return new PagedResourceList<>(reports, total, true);
+    }
+
+    @Override
+    public AdherenceStatistics getWeeklyAdherenceStatistics(String appId, String studyId, Integer adherenceThreshold) {
+        AdherenceStatistics stats = new AdherenceStatistics();
+        
+        Map<String, AdherenceStatisticsEntry> entries = new HashMap<>();
+        
+        QueryBuilder builder = new QueryBuilder();
+        builder.append(STATISTICS_SQL, "appId", appId, "studyId", studyId);
+        List<Object[]> results = hibernateHelper.nativeQuery(builder.getQuery(), builder.getParameters());
+        for (Object[] oneResult : results) {
+            try {
+                String label = (String)oneResult[0];
+                BigInteger totalActive = (BigInteger)oneResult[1];
+                List<WeeklyAdherenceReportRow> rows = BridgeObjectMapper.get().readValue((String)oneResult[2], ROWS_LIST);
+                for (WeeklyAdherenceReportRow oneRow : rows) {
+                    if (oneRow.getSearchableLabel().equals(label)) {
+                        AdherenceStatisticsEntry entry = new AdherenceStatisticsEntry();
+                        entry.setLabel(oneRow.getLabel());
+                        entry.setSearchableLabel(oneRow.getSearchableLabel());
+                        entry.setSessionName(oneRow.getSessionName());
+                        entry.setWeekInStudy(oneRow.getWeekInStudy());
+                        entry.setStudyBurstId(oneRow.getStudyBurstId());
+                        entry.setStudyBurstNum(oneRow.getStudyBurstNum());
+                        entry.setTotalActive(totalActive.intValue());
+                        entries.put(label, entry);
+                        break;
+                    }
+                }
+            } catch (JsonProcessingException e) {
+                throw new BridgeServiceException(e);
+            }
+        }
+        
+        builder = new QueryBuilder();
+        builder.append(ALL_ACTIVE_SQL, "appId", appId, "studyId", studyId);
+        Integer total = getCount(builder);
+
+        builder = new QueryBuilder();
+        builder.append(UNDER_THRESHOLD_SQL, "appId", appId, "studyId", studyId, "threshold", adherenceThreshold);
+        Integer noncompliant = getCount(builder);
+        
+        Integer compliant = (total != null && noncompliant != null) ? total - noncompliant : null;
+        
+        List<AdherenceStatisticsEntry> entriesList = Lists.newArrayList(entries.values());
+        entriesList.sort(ENTRIES_COMPARATOR);
+        
+        stats.setAdherenceThresholdPercentage(adherenceThreshold);
+        stats.setNoncompliant(noncompliant);
+        stats.setCompliant(compliant);
+        stats.setTotalActive(total);
+        stats.setEntries(entriesList);
+        
+        return stats;
+    }
+    
+    private Integer getCount(QueryBuilder builder) {
+        try (Session session = sessionFactory.openSession()) {  
+            @SuppressWarnings("unchecked")
+            NativeQuery<Integer> query = session.createNativeQuery(builder.getQuery());
+            query.addScalar("count", StandardBasicTypes.INTEGER);
+            for (Map.Entry<String, Object> entry : builder.getParameters().entrySet()) {
+                query.setParameter(entry.getKey(), entry.getValue());
+            }
+            if (query.list().isEmpty()) {
+                return null;
+            }
+            return ((List<Integer>)query.list()).get(0).intValue();
+        }
     }
 }    
