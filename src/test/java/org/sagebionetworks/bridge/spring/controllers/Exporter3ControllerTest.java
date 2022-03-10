@@ -36,6 +36,7 @@ public class Exporter3ControllerTest {
     public void verifyAnnotations() throws Exception {
         assertCrossOrigin(Exporter3Controller.class);
         assertPost(Exporter3Controller.class, "initExporter3");
+        assertPost(Exporter3Controller.class, "initExporter3ForStudy");
     }
 
     @Test
@@ -51,6 +52,23 @@ public class Exporter3ControllerTest {
 
         // Execute.
         Exporter3Configuration retVal = controller.initExporter3();
+        assertSame(retVal, ex3Config);
+    }
+
+    @Test
+    public void initExporter3ForStudy() throws Exception {
+        // Mock session.
+        UserSession mockSession = new UserSession();
+        mockSession.setAppId(TestConstants.TEST_APP_ID);
+        doReturn(mockSession).when(controller).getAuthenticatedSession(DEVELOPER);
+
+        // Mock service.
+        Exporter3Configuration ex3Config = new Exporter3Configuration();
+        when(mockSvc.initExporter3ForStudy(TestConstants.TEST_APP_ID, TestConstants.TEST_STUDY_ID))
+                .thenReturn(ex3Config);
+
+        // Execute.
+        Exporter3Configuration retVal = controller.initExporter3ForStudy(TestConstants.TEST_STUDY_ID);
         assertSame(retVal, ex3Config);
     }
 }

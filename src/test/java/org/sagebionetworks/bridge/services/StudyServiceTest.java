@@ -31,6 +31,7 @@ import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 
 import java.util.List;
@@ -149,7 +150,18 @@ public class StudyServiceTest {
         Study study = service.getStudy(TEST_APP_ID, TEST_STUDY_ID, false);
         assertNull(study);
     }
-    
+
+    @Test
+    public void getStudyIdsUsingSchedule() {
+        List<String> studyIdList = ImmutableList.of(TEST_STUDY_ID);
+        when(mockStudyDao.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID)).thenReturn(studyIdList);
+
+        List<String> retVal = service.getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID);
+        assertSame(retVal, studyIdList);
+
+        verify(mockStudyDao).getStudyIdsUsingSchedule(TEST_APP_ID, SCHEDULE_GUID);
+    }
+
     @Test
     public void getStudiesIncludeDeleted() {
         when(mockStudyDao.getStudies(TEST_APP_ID, null, 0, 50, true)).thenReturn(STUDIES);

@@ -124,6 +124,7 @@ public class StudyControllerTest extends Mockito {
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, STUDY_COORDINATOR, ORG_ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(ADMIN);
         doReturn(session).when(controller).getAuthenticatedSession(STUDY_DESIGNER, DEVELOPER);
+        doReturn(session).when(controller).getAuthenticatedSession(WORKER);
         doReturn(session).when(controller).getAdministrativeSession();
         
         doReturn(mockRequest).when(controller).request();
@@ -423,7 +424,7 @@ public class StudyControllerTest extends Mockito {
         study.setVersion(10L);
         when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
         
-        String retValue = controller.getStudyForApp(TEST_APP_ID, TEST_STUDY_ID);
+        String retValue = controller.getStudyForApp(TEST_APP_ID, TEST_STUDY_ID, null);
         
         Study deser = BridgeObjectMapper.get().readValue(retValue, Study.class);
         assertEquals(deser.getName(), "Name1");
@@ -447,7 +448,7 @@ public class StudyControllerTest extends Mockito {
         String json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
         when(mockCacheProvider.getObject(key, String.class)).thenReturn(json);
         
-        String retValue = controller.getStudyForApp(TEST_APP_ID, TEST_STUDY_ID);
+        String retValue = controller.getStudyForApp(TEST_APP_ID, TEST_STUDY_ID, null);
         
         Study deser = BridgeObjectMapper.get().readValue(retValue, Study.class);
         assertEquals(deser.getName(), "Name1");
@@ -457,7 +458,26 @@ public class StudyControllerTest extends Mockito {
         verify(mockCacheProvider, never()).setObject(any(), any(), anyInt());
         verify(mockStudyService, never()).getStudy(any(), any(), anyBoolean());
     }
-    
+
+    @Test
+    public void getStudyForApp_Full() throws Exception {
+        // Mock dependencies.
+        Study study = Study.create();
+        study.setName("Name1");
+        study.setIdentifier("id1");
+        study.setVersion(10L);
+        when(mockStudyService.getStudy(TEST_APP_ID, TEST_STUDY_ID, true)).thenReturn(study);
+
+        // Execute and validate.
+        String retValue = controller.getStudyForApp(TEST_APP_ID, TEST_STUDY_ID, "true");
+        Study deser = BridgeObjectMapper.get().readValue(retValue, Study.class);
+        assertEquals(deser.getName(), "Name1");
+        assertEquals(deser.getIdentifier(), "id1");
+        assertEquals(deser.getVersion().intValue(), 10);
+
+        verify(mockStudyService).getStudy(TEST_APP_ID, TEST_STUDY_ID, true);
+    }
+
     @Test
     public void design() {
         doReturn(session).when(controller).getAdministrativeSession();

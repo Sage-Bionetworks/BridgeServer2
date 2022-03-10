@@ -31,6 +31,7 @@ import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.cache.CacheKey;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.EntityNotFoundException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.models.PagedResourceList;
 import org.sagebionetworks.bridge.models.StatusMessage;
 import org.sagebionetworks.bridge.models.VersionHolder;
@@ -174,19 +175,28 @@ public class StudyController extends BaseController {
     }
 
     @GetMapping(path = "/v1/apps/{appId}/studies/{studyId}", produces = { APPLICATION_JSON_UTF8_VALUE })
-    public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId)
+    public String getStudyForApp(@PathVariable String appId, @PathVariable String studyId,
+            @RequestParam(required = false) String full)
             throws JsonProcessingException {
-        CacheKey key = CacheKey.publicStudy(appId, studyId);
-        String json = cacheProvider.getObject(key, String.class);
-        if (json == null) {
+        boolean fullBool = Boolean.parseBoolean(full);
+        if (fullBool) {
+            getAuthenticatedSession(WORKER);
             appService.getApp(appId);
             Study study = service.getStudy(appId, studyId, true);
-            json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
-            cacheProvider.setObject(key, json, ONE_DAY_IN_SECONDS);
+            return BridgeObjectMapper.get().writeValueAsString(study);
+        } else {
+            CacheKey key = CacheKey.publicStudy(appId, studyId);
+            String json = cacheProvider.getObject(key, String.class);
+            if (json == null) {
+                appService.getApp(appId);
+                Study study = service.getStudy(appId, studyId, true);
+                json = Study.STUDY_SUMMARY_WRITER.writeValueAsString(study);
+                cacheProvider.setObject(key, json, ONE_DAY_IN_SECONDS);
+            }
+            return json;
         }
-        return json;
     }
-    
+
     @GetMapping(path = "/v1/apps/{appId}/studies")
     public PagedResourceList<Study> getAppStudiesForWorker(@PathVariable String appId,
             @RequestParam(required = false) String offsetBy, 

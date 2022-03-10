@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
-import org.sagebionetworks.bridge.BridgeUtils;
 import org.sagebionetworks.bridge.config.BridgeConfig;
 import org.sagebionetworks.bridge.dao.UploadDao;
 import org.sagebionetworks.bridge.dao.UploadDedupeDao;
@@ -450,7 +449,7 @@ public class UploadService {
         // kick off upload validation
         // Note: Exporter 3.0 is disabled for redrive. See https://sagebionetworks.jira.com/browse/BRIDGE-3080
         App app = appService.getApp(appId);
-        if (!redrive && BridgeUtils.isExporter3Configured(app)) {
+        if (!redrive && app.isExporter3Enabled()) {
             exporter3Service.completeUpload(app, upload);
         }
 

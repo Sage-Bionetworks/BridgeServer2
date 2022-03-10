@@ -129,7 +129,14 @@ public class StudyService {
                 .map(Study::getIdentifier)
                 .collect(toSet());
     }
-    
+
+    /** Returns a list of all study IDs in the given app that use the given schedule. */
+    public List<String> getStudyIdsUsingSchedule(String appId, String scheduleGuid) {
+        checkNotNull(appId);
+        checkNotNull(scheduleGuid);
+        return studyDao.getStudyIdsUsingSchedule(appId, scheduleGuid);
+    }
+
     public StudyActivityEventIdsMap getStudyActivityEventIdsMap(String appId, String studyId) {
         StudyActivityEventIdsMap map = new StudyActivityEventIdsMap();
 
