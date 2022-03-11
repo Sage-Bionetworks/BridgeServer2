@@ -4,7 +4,6 @@ import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUt
 import static org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils.calculateProgress;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -23,6 +22,7 @@ import org.sagebionetworks.bridge.models.DateRange;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.AdherenceUtils;
 import org.sagebionetworks.bridge.models.schedules2.adherence.ParticipantStudyProgress;
+import org.sagebionetworks.bridge.models.schedules2.adherence.SessionCompletionState;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStream;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReport;
 import org.sagebionetworks.bridge.models.schedules2.adherence.eventstream.EventStreamAdherenceReportGenerator;
@@ -115,32 +115,24 @@ public class StudyAdherenceReportGenerator {
                 weekMap.put(week, oneWeek);    
             }
             List<EventStreamDay> days = oneWeek.getByDayEntries().get(dayOfWeek);
-            days.addAll(entry.getValue());    
+            days.addAll(entry.getValue());
         };
 
-        Collection<StudyReportWeek> weeks = weekMap.values();
+        List<StudyReportWeek> weeks = Lists.newArrayList(weekMap.values());
         StudyReportWeek currentWeek = null;
         
         for (StudyReportWeek oneWeek : weeks) {
             calculateRowsAndLabels(oneWeek, todayLocal);
             
-            // If there’s a day in this week that is “today”, set a flag for all day entries on that day
             LocalDate firstDayOfWeek = oneWeek.getStartDate();
-            LocalDate lastDayOfWeek = oneWeek.getStartDate().plusDays(7);
+            LocalDate lastDayOfWeek = oneWeek.getStartDate().plusDays(6);
             if (BridgeUtils.isLocalDateInRange(firstDayOfWeek, lastDayOfWeek, todayLocal)) {
                 currentWeek = oneWeek;
-                for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
-                    for (EventStreamDay oneDay : days) {
-                        if (oneDay.getStartDate().isEqual(todayLocal)) {
-                            days.forEach(day -> day.setToday(true));
-                        }
-                    }
-                }
             }
             // We want adherence to be calculated for every week up to the current week, but not after
             // that. the [startDate-] range matches against todayLocal for all weeks (including the 
             // current one) but not the weeks after todayLocal.
-            if (BridgeUtils.isLocalDateInRange(oneWeek.getStartDate(), null, todayLocal)) {
+            if (BridgeUtils.isLocalDateInRange(firstDayOfWeek, null, todayLocal)) {
                 int weekAdh = AdherenceUtils.calculateAdherencePercentage(oneWeek.getByDayEntries());
                 oneWeek.setAdherencePercent(weekAdh);
             }
@@ -157,6 +149,8 @@ public class StudyAdherenceReportGenerator {
         if (eventReport.getDateRangeOfAllStreams() != null) {
             dateRange = new DateRange(studyStartDate, eventReport.getDateRangeOfAllStreams().getEndDate());
         }
+        
+        StudyReportWeek weekReport = createWeekReport(weeks, currentWeek, studyStartDate, todayLocal);
         for (StudyReportWeek oneWeek : weeks) {
             for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
                 for (EventStreamDay oneDay : days) {
@@ -164,6 +158,7 @@ public class StudyAdherenceReportGenerator {
                     oneDay.setStudyBurstNum(null);
                     oneDay.setSessionName(null);
                     oneDay.setWeek(null);
+                    oneDay.setToday(todayLocal.isEqual(oneDay.getStartDate()));
                     oneDay.setStartDay(null);
                     for (EventStreamWindow window : oneDay.getTimeWindows()) {
                         window.setEndDay(null);
@@ -176,7 +171,7 @@ public class StudyAdherenceReportGenerator {
         StudyAdherenceReport report = new StudyAdherenceReport();
         report.setDateRange(dateRange);
         report.setWeeks(weeks);
-        report.setCurrentWeek(currentWeek);
+        report.setCurrentWeek(weekReport);
         report.setNextActivity(nextActivity);
         report.setProgression(progression);
         report.setAdherencePercent(adherence);
@@ -231,18 +226,18 @@ public class StudyAdherenceReportGenerator {
             for (WeeklyAdherenceReportRow row : rowList) {
                 List<EventStreamDay> days = oneWeek.getByDayEntries().get(i);
                 
-                EventStreamDay oneDay = padEventStreamDay(days, row.getSessionGuid(), row.getStartEventId());
+                EventStreamDay oneDay = padEventStreamDay(todayLocal, days, row.getSessionGuid(), row.getStartEventId());
                 LocalDate thisDate = oneWeek.getStartDate().plusDays(i);
                 oneDay.setStartDate(thisDate);
                 paddedDays.add(oneDay);
             }
             oneWeek.getByDayEntries().put(i, paddedDays);
         }
-        oneWeek.setSearchableLabels(labels);
-        oneWeek.setRows(rowList);
+        oneWeek.getSearchableLabels().addAll(labels);
+        oneWeek.getRows().addAll(rowList);
     }
     
-    private EventStreamDay padEventStreamDay(List<EventStreamDay> days, String sessionGuid, String eventId) {
+    private EventStreamDay padEventStreamDay(LocalDate todayLocal, List<EventStreamDay> days, String sessionGuid, String eventId) {
         // If a session is triggered twice by two different events, it can appear twice in rows.
         // If the events have nearly the same timestamp, the GUIDs and the labels would be exactly
         // the same. For this reason we carry over the event ID as this identifies two unique streams
@@ -256,7 +251,7 @@ public class StudyAdherenceReportGenerator {
         return new EventStreamDay();
     }
     
-    private NextActivity getNextActivity(Collection<StudyReportWeek> weeks, LocalDate localToday) {
+    private NextActivity getNextActivity(List<StudyReportWeek> weeks, LocalDate localToday) {
         for (StudyReportWeek oneWeek : weeks) {
             if (oneWeek.getStartDate().isAfter(localToday)) {
                 for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
@@ -271,5 +266,59 @@ public class StudyAdherenceReportGenerator {
             }
         }
         return null;
+    }
+    
+    private StudyReportWeek createWeekReport(List<StudyReportWeek> weeks, StudyReportWeek currentWeek,
+            LocalDate studyStartDate, LocalDate todayLocal) {
+        StudyReportWeek weekReport = new StudyReportWeek();
+        if (currentWeek != null) {
+            weekReport.setWeekInStudy(currentWeek.getWeekInStudy());
+            weekReport.setStartDate(currentWeek.getStartDate());
+            weekReport.setAdherencePercent(currentWeek.getAdherencePercent());
+            for (int i=0; i < 7; i++) {
+                weekReport.getByDayEntries().get(i).addAll(currentWeek.getByDayEntries().get(i));    
+            }
+            weekReport.getSearchableLabels().addAll(currentWeek.getSearchableLabels());
+            weekReport.getRows().addAll(currentWeek.getRows());
+        } else {
+            int dayCount = Days.daysBetween(studyStartDate, todayLocal).getDays();
+            int week = dayCount/7;
+            weekReport.setWeekInStudy(week+1);
+            weekReport.setStartDate(studyStartDate.plusDays(week*7));
+        }
+        
+        for (StudyReportWeek oneWeek : weeks) {
+            if (BridgeUtils.isLocalDateInRange(weekReport.getStartDate(), null, oneWeek.getStartDate())) {
+                break;
+            }
+            for (List<EventStreamDay> days : oneWeek.getByDayEntries().values()) {
+                
+                for (int i=0; i < days.size(); i++) {
+                    EventStreamDay oneDay = days.get(i);
+                    
+                    for (EventStreamWindow window :oneDay.getTimeWindows()) {
+                        if (SessionCompletionState.UNKNOWN.contains(window.getState()) && 
+                                BridgeUtils.isLocalDateInRange(weekReport.getStartDate(), null, window.getEndDate())) {
+                            // this needs to be added.
+                            oneDay.setToday(weekReport.getStartDate().isEqual(oneDay.getStartDate()));
+                            weekReport.getByDayEntries().get(0).add(oneDay);
+                            WeeklyAdherenceReportRow row = oneWeek.getRows().get(i);
+                            row.setWeekInStudy(weekReport.getWeekInStudy());
+                            weekReport.getRows().add(row);
+                            for (int j=1; j < 7; j++) {
+                                EventStreamDay paddingDay = new EventStreamDay();
+                                LocalDate dayOf = weekReport.getStartDate().plusDays(j);
+                                paddingDay.setStartDate(dayOf);
+                                paddingDay.setToday(dayOf.isEqual(todayLocal));
+                                weekReport.getByDayEntries().get(j).add(paddingDay);
+                                weekReport.setAdherencePercent(
+                                        calculateAdherencePercentage(weekReport.getByDayEntries()));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return weekReport;
     }
 }

@@ -2,6 +2,7 @@ package org.sagebionetworks.bridge.models.schedules2.adherence.study;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,6 +25,8 @@ public class StudyReportWeek {
     private List<WeeklyAdherenceReportRow> rows;
 
     public StudyReportWeek() {
+        searchableLabels = new HashSet<>();
+        rows = new ArrayList<>();
         byDayEntries = new HashMap<>();
         byDayEntries.put(0, new ArrayList<>());
         byDayEntries.put(1, new ArrayList<>());
@@ -55,9 +58,6 @@ public class StudyReportWeek {
     public Map<Integer, List<EventStreamDay>> getByDayEntries() {
         return byDayEntries;
     }
-    public void setByDayEntries(Map<Integer, List<EventStreamDay>> byDayEntries) {
-        this.byDayEntries = byDayEntries;
-    }
     /**
      * Reports contain multiple rows with composite search information (e.g. study burst
      * foo, iteration 2, possibly even a specific week of that study burst). To make
@@ -71,13 +71,7 @@ public class StudyReportWeek {
     public Set<String> getSearchableLabels() {
         return searchableLabels;
     }
-    public void setSearchableLabels(Set<String> labels) {
-        this.searchableLabels = labels;
-    }
     public List<WeeklyAdherenceReportRow> getRows() {
         return rows;
-    }
-    public void setRows(List<WeeklyAdherenceReportRow> rows) {
-        this.rows = rows;
     }
 }

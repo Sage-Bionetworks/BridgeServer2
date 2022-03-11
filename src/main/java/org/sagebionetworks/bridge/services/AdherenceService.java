@@ -426,14 +426,13 @@ public class AdherenceService {
         weeklyReport.setCreatedOn(report.getCreatedOn());
         weeklyReport.setNextActivity(report.getNextActivity());
         StudyReportWeek week = report.getCurrentWeek();
-        if (week != null) {
-            weeklyReport.setSearchableLabels(week.getSearchableLabels());
-            weeklyReport.setRows(week.getRows());
-            weeklyReport.setByDayEntries(week.getByDayEntries());
-            weeklyReport.setWeeklyAdherencePercent(week.getAdherencePercent());
-            weeklyReport.setWeekInStudy(week.getWeekInStudy());
-            weeklyReport.setStartDate(week.getStartDate());
-        }
+        weeklyReport.setSearchableLabels(week.getSearchableLabels());
+        weeklyReport.setRows(week.getRows());
+        weeklyReport.setByDayEntries(week.getByDayEntries());
+        weeklyReport.setWeeklyAdherencePercent(week.getAdherencePercent());
+        weeklyReport.setWeekInStudy(week.getWeekInStudy());
+        weeklyReport.setStartDate(week.getStartDate());
+        
         reportDao.saveWeeklyAdherenceReport(weeklyReport);
         return weeklyReport;
     }

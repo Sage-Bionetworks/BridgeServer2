@@ -53,6 +53,7 @@ import org.sagebionetworks.bridge.config.BridgeConfigFactory;
 import org.sagebionetworks.bridge.exceptions.BadRequestException;
 import org.sagebionetworks.bridge.exceptions.BridgeServiceException;
 import org.sagebionetworks.bridge.exceptions.InvalidEntityException;
+import org.sagebionetworks.bridge.json.BridgeObjectMapper;
 import org.sagebionetworks.bridge.json.BridgeTypeName;
 import org.sagebionetworks.bridge.models.apps.Exporter3Configuration;
 import org.sagebionetworks.bridge.time.DateUtils;
@@ -77,6 +78,7 @@ import org.springframework.core.annotation.AnnotationUtils;
 import com.amazonaws.services.dynamodbv2.datamodeling.DynamoDBMapper.FailedBatch;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.amazonaws.util.Throwables;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.JsonMappingException.Reference;
 import com.google.common.base.Function;
@@ -89,6 +91,14 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 public class BridgeUtils {
+
+    public static void print(String tag, Object object) {
+        try {
+            System.out.println(tag + BridgeObjectMapper.get().writeValueAsString(object));
+        } catch (JsonProcessingException e) {
+            e.printStackTrace();
+        }
+    }
 
     public static class StudyAssociations {
         private final Set<String> studyIdsVisibleToCaller;
